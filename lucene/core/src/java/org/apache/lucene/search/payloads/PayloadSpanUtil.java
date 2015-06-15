@@ -20,17 +20,13 @@ package org.apache.lucene.search.payloads;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
@@ -44,6 +40,7 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 
 /**
@@ -179,16 +176,12 @@ public class PayloadSpanUtil {
 
   private void getPayloads(Collection<byte []> payloads, SpanQuery query)
       throws IOException {
-    Map<Term,TermContext> termContexts = new HashMap<>();
-    TreeSet<Term> terms = new TreeSet<>();
+
     final IndexSearcher searcher = new IndexSearcher(context);
     searcher.setQueryCache(null);
-    searcher.createNormalizedWeight(query, false).extractTerms(terms);
-    for (Term term : terms) {
-      termContexts.put(term, TermContext.build(context, term));
-    }
+    SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(query, false);
     for (LeafReaderContext leafReaderContext : context.leaves()) {
-      final Spans spans = query.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs(), termContexts);
+      final Spans spans = w.getSpans(leafReaderContext, leafReaderContext.reader().getLiveDocs());
       if (spans != null) {
         while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
           while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {

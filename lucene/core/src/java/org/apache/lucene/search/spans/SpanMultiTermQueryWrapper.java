@@ -18,20 +18,17 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 import java.util.Objects;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopTermsRewrite;
 import org.apache.lucene.search.ScoringRewrite;
-import org.apache.lucene.search.BooleanClause.Occur; // javadocs only
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.search.TopTermsRewrite;
 
 /**
  * Wraps any {@link MultiTermQuery} as a {@link SpanQuery}, 
@@ -75,11 +72,6 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     }
   }
 
-  @Override
-  protected void extractTerms(Set<Term> terms) {
-    throw new IllegalStateException("Rewrite first");
-  }
-
   /**
    * Expert: returns the rewriteMethod
    */
@@ -97,17 +89,17 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   public final void setRewriteMethod(SpanRewriteMethod rewriteMethod) {
     query.setRewriteMethod(rewriteMethod);
   }
-  
-  @Override
-  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
-    throw new UnsupportedOperationException("Query should have been rewritten");
-  }
 
   @Override
   public String getField() {
     return query.getField();
   }
-  
+
+  @Override
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    throw new IllegalArgumentException("Rewrite first!");
+  }
+
   /** Returns the wrapped query */
   public Query getWrappedQuery() {
     return query;
@@ -179,10 +171,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     
       @Override
       protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost, TermContext states) {
-        // TODO: would be nice to not lose term-state here.
-        // we could add a hack option to SpanOrQuery, but the hack would only work if this is the top-level Span
-        // (if you put this thing in another span query, it would extractTerms/double-seek anyway)
-        final SpanTermQuery q = new SpanTermQuery(term);
+        final SpanTermQuery q = new SpanTermQuery(term, states);
         q.setBoost(boost);
         topLevel.addClause(q);
       }
@@ -226,7 +215,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
 
         @Override
         protected void addClause(SpanOrQuery topLevel, Term term, int docFreq, float boost, TermContext states) {
-          final SpanTermQuery q = new SpanTermQuery(term);
+          final SpanTermQuery q = new SpanTermQuery(term, states);
           q.setBoost(boost);
           topLevel.addClause(q);
         }

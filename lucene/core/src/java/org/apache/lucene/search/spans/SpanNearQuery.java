@@ -17,21 +17,22 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
@@ -90,13 +91,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   public String getField() { return field; }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    for (final SpanQuery clause : clauses) {
-      clause.extractTerms(terms);
-    }
-  }
-
-  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanNear([");
@@ -118,25 +112,59 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
-    ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    List<SpanWeight> subWeights = new ArrayList<>();
+    for (SpanQuery q : clauses) {
+      subWeights.add(q.createWeight(searcher, false));
+    }
+    return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null);
+  }
 
-    for (SpanQuery seq : clauses) {
-      Spans subSpan = seq.getSpans(context, acceptDocs, termContexts);
-      if (subSpan != null) {
-        subSpans.add(subSpan);
-      } else {
-        return null; // all required
+  public class SpanNearWeight extends SpanWeight {
+
+    final List<SpanWeight> subWeights;
+
+    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
+      super(SpanNearQuery.this, searcher, terms);
+      this.subWeights = subWeights;
+    }
+
+    @Override
+    public void extractTermContexts(Map<Term, TermContext> contexts) {
+      for (SpanWeight w : subWeights) {
+        w.extractTermContexts(contexts);
       }
     }
 
-    Terms terms = context.reader().terms(field);
-    if (terms == null)
-      return null; // field does not exist
+    @Override
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs) throws IOException {
 
-    // all NearSpans require at least two subSpans
-    return (!inOrder) ? new NearSpansUnordered(this, subSpans) : new NearSpansOrdered(this, subSpans);
+      Terms terms = context.reader().terms(field);
+      if (terms == null) {
+        return null; // field does not exist
+      }
 
+      ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
+      for (SpanWeight w : subWeights) {
+        Spans subSpan = w.getSpans(context, acceptDocs);
+        if (subSpan != null) {
+          subSpans.add(subSpan);
+        } else {
+          return null; // all required
+        }
+      }
+
+      // all NearSpans require at least two subSpans
+      return (!inOrder) ? new NearSpansUnordered(SpanNearQuery.this, subSpans)
+          : new NearSpansOrdered(SpanNearQuery.this, subSpans);
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      for (SpanWeight w : subWeights) {
+        w.extractTerms(terms);
+      }
+    }
   }
 
   @Override

@@ -18,42 +18,53 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
+import java.util.TreeMap;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
-  /** Expert: Returns the matches for this query in an index.  
-   *  Used internally to search for spans.
-   *  This may return null to indicate that the SpanQuery has no results.
-   */
-  public abstract Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException;
-
-  /**
-   * Extract terms from these spans.
-   * @lucene.internal
-   * @see Weight#extractTerms
-   */
-  protected abstract void extractTerms(Set<Term> terms);
 
   /**
    * Returns the name of the field matched by this query.
-   * <p>
-   * Note that this may return null if the query matches no terms.
    */
   public abstract String getField();
 
-  @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new SpanWeight(this, searcher, needsScores);
+  /**
+   * Create a SpanWeight for this query
+   * @param searcher the IndexSearcher to be searched across
+   * @param needsScores if the query needs scores
+   * @return a SpanWeight
+   * @throws IOException on error
+   */
+  public abstract SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException;
+
+  /**
+   * Build a map of terms to termcontexts, for use in constructing SpanWeights
+   * @lucene.internal
+   */
+  protected static Map<Term, TermContext> getTermContexts(SpanWeight... weights) {
+    Map<Term, TermContext> terms = new TreeMap<>();
+    for (SpanWeight w : weights) {
+      w.extractTermContexts(terms);
+    }
+    return terms;
   }
 
+  /**
+   * Build a map of terms to termcontexts, for use in constructing SpanWeights
+   * @lucene.internal
+   */
+  protected static Map<Term, TermContext> getTermContexts(Collection<SpanWeight> weights) {
+    Map<Term, TermContext> terms = new TreeMap<>();
+    for (SpanWeight w : weights) {
+      w.extractTermContexts(terms);
+    }
+    return terms;
+  }
 }

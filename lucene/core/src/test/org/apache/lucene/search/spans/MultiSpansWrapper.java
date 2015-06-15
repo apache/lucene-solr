@@ -18,16 +18,12 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -40,17 +36,14 @@ import org.apache.lucene.util.Bits;
 public class MultiSpansWrapper {
 
   public static Spans wrap(IndexReader reader, SpanQuery spanQuery) throws IOException {
+
     LeafReader lr = SlowCompositeReaderWrapper.wrap(reader); // slow, but ok for testing
     LeafReaderContext lrContext = lr.getContext();
-    SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(lr); // get the term contexts so getSpans can be called directly
-    HashSet<Term> termSet = new HashSet<>();
-    rewrittenQuery.extractTerms(termSet);
-    Map<Term,TermContext> termContexts = new HashMap<>();
-    for (Term term: termSet) {
-      TermContext termContext = TermContext.build(lrContext, term);
-      termContexts.put(term, termContext);
-    }
-    Spans actSpans = spanQuery.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()), termContexts);
-    return actSpans;
+    IndexSearcher searcher = new IndexSearcher(lr);
+    searcher.setQueryCache(null);
+
+    SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(spanQuery, false);
+
+    return w.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()));
   }
 }

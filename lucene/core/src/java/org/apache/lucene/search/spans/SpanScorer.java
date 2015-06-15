@@ -42,7 +42,7 @@ public class SpanScorer extends Scorer {
 
   protected SpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
     super(weight);
-    this.docScorer = Objects.requireNonNull(docScorer);
+    this.docScorer = docScorer;
     this.spans = Objects.requireNonNull(spans);
   }
 
@@ -91,6 +91,10 @@ public class SpanScorer extends Scorer {
       // assert (startPos != prevStartPos) || (endPos > prevEndPos) : "non increased endPos="+endPos;
       assert (startPos != prevStartPos) || (endPos >= prevEndPos) : "decreased endPos="+endPos;
       numMatches++;
+      if (docScorer == null) {  // scores not required, break out here
+        freq = 1;
+        return;
+      }
       int matchLength = endPos - startPos;
       freq += docScorer.computeSlopFactor(matchLength);
       prevStartPos = startPos;

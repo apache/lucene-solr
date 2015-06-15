@@ -18,16 +18,10 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Bits;
 
 /** Wraps a span query with asserts */
 public class AssertingSpanQuery extends SpanQuery {
@@ -35,21 +29,6 @@ public class AssertingSpanQuery extends SpanQuery {
   
   public AssertingSpanQuery(SpanQuery in) {
     this.in = in;
-  }
-
-  @Override
-  protected void extractTerms(Set<Term> terms) {
-    in.extractTerms(terms);
-  }
-
-  @Override
-  public Spans getSpans(LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
-    Spans spans = in.getSpans(context, acceptDocs, termContexts);
-    if (spans == null) {
-      return null;
-    } else {
-      return new AssertingSpans(spans);
-    }
   }
 
   @Override
@@ -64,14 +43,8 @@ public class AssertingSpanQuery extends SpanQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    // TODO: we are wasteful and createWeight twice in this case... use VirtualMethod?
-    // we need to not wrap if the query is e.g. a Payload one that overrides this (it should really be final)
     SpanWeight weight = in.createWeight(searcher, needsScores);
-    if (weight.getClass() == SpanWeight.class) {
-      return super.createWeight(searcher, needsScores);
-    } else {
-      return weight;
-    }
+    return new AssertingSpanWeight(searcher, weight);
   }
 
   @Override

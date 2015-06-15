@@ -17,20 +17,21 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.LeafReaderContext;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
 
 /** Removes matches which overlap with another SpanQuery or which are
  * within x tokens before or y tokens after another SpanQuery.
@@ -78,9 +79,6 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   public String getField() { return include.getField(); }
 
   @Override
-  public void extractTerms(Set<Term> terms) { include.extractTerms(terms); }
-
-  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanNot(");
@@ -105,69 +103,101 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, final Map<Term,TermContext> termContexts) throws IOException {
-    final Spans includeSpans = include.getSpans(context, acceptDocs, termContexts);
-    if (includeSpans == null) {
-      return null;
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    SpanWeight includeWeight = include.createWeight(searcher, false);
+    SpanWeight excludeWeight = exclude.createWeight(searcher, false);
+    return new SpanNotWeight(searcher, needsScores ? getTermContexts(includeWeight, excludeWeight) : null,
+                                   includeWeight, excludeWeight);
+  }
+
+  public class SpanNotWeight extends SpanWeight {
+
+    final SpanWeight includeWeight;
+    final SpanWeight excludeWeight;
+
+    public SpanNotWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
+                         SpanWeight includeWeight, SpanWeight excludeWeight) throws IOException {
+      super(SpanNotQuery.this, searcher, terms);
+      this.includeWeight = includeWeight;
+      this.excludeWeight = excludeWeight;
     }
 
-    final Spans excludeSpans = exclude.getSpans(context, acceptDocs, termContexts);
-    if (excludeSpans == null) {
-      return includeSpans;
+    @Override
+    public void extractTermContexts(Map<Term, TermContext> contexts) {
+      includeWeight.extractTermContexts(contexts);
     }
-    
-    final TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
-    final DocIdSetIterator excludeApproximation = excludeTwoPhase == null ? null : excludeTwoPhase.approximation();
-    
-    return new FilterSpans(includeSpans) {
-      // last document we have checked matches() against for the exclusion, and failed
-      // when using approximations, so we don't call it again, and pass thru all inclusions.
-      int lastApproxDoc = -1;
-      boolean lastApproxResult = false;
-      
-      @Override
-      protected AcceptStatus accept(Spans candidate) throws IOException {
-        // TODO: this logic is ugly and sneaky, can we clean it up?
-        int doc = candidate.docID();
-        if (doc > excludeSpans.docID()) {
-          // catch up 'exclude' to the current doc
-          if (excludeTwoPhase != null) {
-            if (excludeApproximation.advance(doc) == doc) {
-              lastApproxDoc = doc;
-              lastApproxResult = excludeTwoPhase.matches();
-            }
-          } else {
-            excludeSpans.advance(doc);
-          }
-        } else if (excludeTwoPhase != null && doc == excludeSpans.docID() && doc != lastApproxDoc) {
-          // excludeSpans already sitting on our candidate doc, but matches not called yet.
-          lastApproxDoc = doc;
-          lastApproxResult = excludeTwoPhase.matches();
-        }
-        
-        if (doc != excludeSpans.docID() || (doc == lastApproxDoc && lastApproxResult == false)) {
-          return AcceptStatus.YES;
-        }
-        
-        if (excludeSpans.startPosition() == -1) { // init exclude start position if needed
-          excludeSpans.nextStartPosition();
-        }
-        
-        while (excludeSpans.endPosition() <= candidate.startPosition() - pre) {
-          // exclude end position is before a possible exclusion
-          if (excludeSpans.nextStartPosition() == NO_MORE_POSITIONS) {
-            return AcceptStatus.YES; // no more exclude at current doc.
-          }
-        }
-        
-        // exclude end position far enough in current doc, check start position:
-        if (candidate.endPosition() + post <= excludeSpans.startPosition()) {
-          return AcceptStatus.YES;
-        } else {
-          return AcceptStatus.NO;
-        }
+
+
+    @Override
+    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs) throws IOException {
+      Spans includeSpans = includeWeight.getSpans(context, acceptDocs);
+      if (includeSpans == null) {
+        return null;
       }
-    };
+
+      final Spans excludeSpans = excludeWeight.getSpans(context, acceptDocs);
+      if (excludeSpans == null) {
+        return includeSpans;
+      }
+
+      final TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
+      final DocIdSetIterator excludeApproximation = excludeTwoPhase == null ? null : excludeTwoPhase.approximation();
+
+      return new FilterSpans(includeSpans) {
+        // last document we have checked matches() against for the exclusion, and failed
+        // when using approximations, so we don't call it again, and pass thru all inclusions.
+        int lastApproxDoc = -1;
+        boolean lastApproxResult = false;
+
+        @Override
+        protected AcceptStatus accept(Spans candidate) throws IOException {
+          // TODO: this logic is ugly and sneaky, can we clean it up?
+          int doc = candidate.docID();
+          if (doc > excludeSpans.docID()) {
+            // catch up 'exclude' to the current doc
+            if (excludeTwoPhase != null) {
+              if (excludeApproximation.advance(doc) == doc) {
+                lastApproxDoc = doc;
+                lastApproxResult = excludeTwoPhase.matches();
+              }
+            } else {
+              excludeSpans.advance(doc);
+            }
+          } else if (excludeTwoPhase != null && doc == excludeSpans.docID() && doc != lastApproxDoc) {
+            // excludeSpans already sitting on our candidate doc, but matches not called yet.
+            lastApproxDoc = doc;
+            lastApproxResult = excludeTwoPhase.matches();
+          }
+
+          if (doc != excludeSpans.docID() || (doc == lastApproxDoc && lastApproxResult == false)) {
+            return AcceptStatus.YES;
+          }
+
+          if (excludeSpans.startPosition() == -1) { // init exclude start position if needed
+            excludeSpans.nextStartPosition();
+          }
+
+          while (excludeSpans.endPosition() <= candidate.startPosition() - pre) {
+            // exclude end position is before a possible exclusion
+            if (excludeSpans.nextStartPosition() == NO_MORE_POSITIONS) {
+              return AcceptStatus.YES; // no more exclude at current doc.
+            }
+          }
+
+          // exclude end position far enough in current doc, check start position:
+          if (candidate.endPosition() + post <= excludeSpans.startPosition()) {
+            return AcceptStatus.YES;
+          } else {
+            return AcceptStatus.NO;
+          }
+        }
+      };
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      includeWeight.extractTerms(terms);
+    }
   }
 
   @Override

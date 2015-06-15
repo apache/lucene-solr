@@ -18,17 +18,21 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.Objects;
+import java.util.Set;
 
-import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -36,11 +40,23 @@ import org.apache.lucene.util.ToStringUtils;
  * This should not be used for terms that are indexed at position Integer.MAX_VALUE.
  */
 public class SpanTermQuery extends SpanQuery {
-  protected Term term;
+
+  protected final Term term;
+  protected final TermContext termContext;
 
   /** Construct a SpanTermQuery matching the named term's spans. */
   public SpanTermQuery(Term term) {
     this.term = Objects.requireNonNull(term);
+    this.termContext = null;
+  }
+
+  /**
+   * Expert: Construct a SpanTermQuery matching the named term's spans, using
+   * the provided TermContext
+   */
+  public SpanTermQuery(Term term, TermContext context) {
+    this.term = Objects.requireNonNull(term);
+    this.termContext = context;
   }
 
   /** Return the term whose spans are matched. */
@@ -50,8 +66,61 @@ public class SpanTermQuery extends SpanQuery {
   public String getField() { return term.field(); }
 
   @Override
-  public void extractTerms(Set<Term> terms) {
-    terms.add(term);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    final TermContext context;
+    final IndexReaderContext topContext = searcher.getTopReaderContext();
+    if (termContext == null || termContext.topReaderContext != topContext) {
+      context = TermContext.build(topContext, term);
+    }
+    else {
+      context = termContext;
+    }
+    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null);
+  }
+
+  public class SpanTermWeight extends SpanWeight {
+
+    final TermContext termContext;
+
+    public SpanTermWeight(TermContext termContext, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
+      super(SpanTermQuery.this, searcher, terms);
+      this.termContext = termContext;
+      assert termContext != null : "TermContext must not be null";
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      terms.add(term);
+    }
+
+    @Override
+    public void extractTermContexts(Map<Term, TermContext> contexts) {
+      contexts.put(term, termContext);
+    }
+
+    @Override
+    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs) throws IOException {
+
+      assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+
+      final TermState state = termContext.get(context.ord);
+      if (state == null) { // term is not present in that reader
+        assert context.reader().docFreq(term) == 0 : "no termstate found but term exists in reader term=" + term;
+        return null;
+      }
+
+      final Terms terms = context.reader().terms(term.field());
+      if (terms == null)
+        return null;
+      if (terms.hasPositions() == false)
+        throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
+
+      final TermsEnum termsEnum = terms.iterator();
+      termsEnum.seekExact(term.bytes(), state);
+
+      final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.PAYLOADS);
+      return new TermSpans(postings, term);
+    }
   }
 
   @Override
@@ -82,40 +151,4 @@ public class SpanTermQuery extends SpanQuery {
     return term.equals(other.term);
   }
 
-  @Override
-  public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Map<Term,TermContext> termContexts) throws IOException {
-    TermContext termContext = termContexts.get(term);
-    final TermState state;
-    if (termContext == null) {
-      // this happens with span-not query, as it doesn't include the NOT side in extractTerms()
-      // so we seek to the term now in this segment..., this sucks because it's ugly mostly!
-      final Terms terms = context.reader().terms(term.field());
-      if (terms != null) {
-        if (terms.hasPositions() == false) {
-          throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
-        }
-
-        final TermsEnum termsEnum = terms.iterator();
-        if (termsEnum.seekExact(term.bytes())) {
-          state = termsEnum.termState();
-        } else {
-          state = null;
-        }
-      } else {
-        state = null;
-      }
-    } else {
-      state = termContext.get(context.ord);
-    }
-
-    if (state == null) { // term is not present in that reader
-      return null;
-    }
-
-    final TermsEnum termsEnum = context.reader().terms(term.field()).iterator();
-    termsEnum.seekExact(term.bytes(), state);
-
-    final PostingsEnum postings = termsEnum.postings(acceptDocs, null, PostingsEnum.PAYLOADS);
-    return new TermSpans(postings, term);
-  }
 }

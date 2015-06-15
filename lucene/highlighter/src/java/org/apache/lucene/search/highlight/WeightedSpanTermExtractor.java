@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -40,7 +39,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.queries.CommonTermsQuery;
@@ -66,10 +64,10 @@ import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
-
 
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 
@@ -303,14 +301,9 @@ public class WeightedSpanTermExtractor {
         q = spanQuery;
       }
       LeafReaderContext context = getLeafContext();
-      Map<Term,TermContext> termContexts = new HashMap<>();
-      TreeSet<Term> extractedTerms = new TreeSet<>();
-      searcher.createNormalizedWeight(q, false).extractTerms(extractedTerms);
-      for (Term term : extractedTerms) {
-        termContexts.put(term, TermContext.build(context, term));
-      }
+      SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(q, false);
       Bits acceptDocs = context.reader().getLiveDocs();
-      final Spans spans = q.getSpans(context, acceptDocs, termContexts);
+      final Spans spans = w.getSpans(context, acceptDocs);
       if (spans == null) {
         return;
       }
