@@ -19,7 +19,6 @@ package org.apache.lucene.collation;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.util.BytesRef;
 
 import com.ibm.icu.text.Collator;
@@ -30,7 +29,7 @@ import com.ibm.icu.text.RawCollationKey;
  * <p>
  * This is more efficient that {@link ICUCollationKeyAnalyzer} if the field 
  * only has one value: no uninversion is necessary to sort on the field, 
- * locale-sensitive range queries can still work via {@link DocValuesRangeQuery}, 
+ * locale-sensitive range queries can still work via {@code DocValuesRangeQuery}, 
  * and the underlying data structures built at index-time are likely more efficient 
  * and use less memory than FieldCache.
  */

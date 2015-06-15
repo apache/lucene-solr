@@ -17,22 +17,16 @@ package org.apache.lucene.collation;
  * limitations under the License.
  */
 
-import java.text.Collator;
-import java.util.Locale;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesRangeQuery;
+import org.apache.lucene.index.SortedDocValues;
+
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
@@ -40,6 +34,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+
+import java.text.Collator;
+import java.util.Locale;
 
 /**
  * trivial test of CollationDocValuesField
@@ -110,8 +107,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
         String end = TestUtil.randomSimpleString(random());
         BytesRef lowerVal = new BytesRef(collator.getCollationKey(start).toByteArray());
         BytesRef upperVal = new BytesRef(collator.getCollationKey(end).toByteArray());
-        Query query = DocValuesRangeQuery.newBytesRefRange("collated", lowerVal, upperVal, true, true);
-        doTestRanges(is, start, end, query, collator);
+        doTestRanges(is, start, end, lowerVal, upperVal, collator);
       }
     } finally {
       ir.close();
@@ -119,25 +115,15 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     }
   }
   
-  private void doTestRanges(IndexSearcher is, String startPoint, String endPoint, Query query, Collator collator) throws Exception { 
-    QueryUtils.check(query);
-    
-    // positive test
-    TopDocs docs = is.search(query, is.getIndexReader().maxDoc());
-    for (ScoreDoc doc : docs.scoreDocs) {
-      String value = is.doc(doc.doc).get("field");
-      assertTrue(collate(collator, value, startPoint) >= 0);
-      assertTrue(collate(collator, value, endPoint) <= 0);
-    }
-    
-    // negative test
-    BooleanQuery bq = new BooleanQuery();
-    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-    bq.add(query, Occur.MUST_NOT);
-    docs = is.search(bq, is.getIndexReader().maxDoc());
-    for (ScoreDoc doc : docs.scoreDocs) {
-      String value = is.doc(doc.doc).get("field");
-      assertTrue(collate(collator, value, startPoint) < 0 || collate(collator, value, endPoint) > 0);
+  private void doTestRanges(IndexSearcher is, String startPoint, String endPoint, BytesRef startBR, BytesRef endBR, Collator collator) throws Exception { 
+    SortedDocValues dvs = MultiDocValues.getSortedValues(is.getIndexReader(), "collated");
+    for(int docID=0;docID<is.getIndexReader().maxDoc();docID++) {
+      Document doc = is.doc(docID);
+      String s = doc.getField("field").stringValue();
+      boolean collatorAccepts = collator.compare(s, startPoint) >= 0 && collator.compare(s, endPoint) <= 0;
+      BytesRef br = dvs.get(docID);
+      boolean luceneAccepts = br.compareTo(startBR) >= 0 && br.compareTo(endBR) <= 0;
+      assertEquals(collatorAccepts, luceneAccepts);
     }
   }
 }

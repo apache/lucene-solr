@@ -41,6 +41,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/** Base class to test range queries. */
 public class BaseTestRangeFilter extends LuceneTestCase {
   
   public static final boolean F = false;

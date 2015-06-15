@@ -63,6 +63,8 @@ import org.apache.lucene.util.NumericUtils;
  * that create a correct instance for different data types.
  *
  * @deprecated Use {@link DocValuesRangeQuery} instead
+ *
+ * @lucene.experimental
  */
 // TODO: use docsWithField to handle empty properly
 @Deprecated

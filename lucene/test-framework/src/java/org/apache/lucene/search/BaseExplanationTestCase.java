@@ -112,19 +112,14 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   }
   
   /** 
-   * Convenience subclass of FieldCacheTermsFilter
+   * Convenience subclass of TermsQuery
    */
-  public static class ItemizedQuery extends DocValuesTermsQuery {
-    private static String[] int2str(int [] terms) {
-      String [] out = new String[terms.length];
-      for (int i = 0; i < terms.length; i++) {
-        out[i] = ""+terms[i];
-      }
-      return out;
+  protected Query matchTheseItems(int[] terms) {
+    BooleanQuery query = new BooleanQuery();
+    for(int term : terms) {
+      query.add(new BooleanClause(new TermQuery(new Term(KEY, ""+term)), BooleanClause.Occur.SHOULD));
     }
-    public ItemizedQuery(int [] keys) {
-      super(KEY, int2str(keys));
-    }
+    return query;
   }
 
   /** helper for generating MultiPhraseQueries */
