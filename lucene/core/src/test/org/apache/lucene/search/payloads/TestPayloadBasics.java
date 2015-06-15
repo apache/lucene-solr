@@ -17,6 +17,13 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimplePayloadFilter;
@@ -40,13 +47,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 /** basic test of payload-spans */
 public class TestPayloadBasics extends LuceneTestCase {
@@ -114,7 +114,7 @@ public class TestPayloadBasics extends LuceneTestCase {
     list = new ArrayList<>();
     list.add(pay.bytes);
     list.add(pay2.bytes);
-    query = new SpanNearPayloadCheckQuery(snq, list);
+    query = new SpanPayloadCheckQuery(snq, list);
     checkHits(query, new int[]
       {500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599});
     clauses = new SpanQuery[3];
@@ -129,7 +129,7 @@ public class TestPayloadBasics extends LuceneTestCase {
     list.add(pay.bytes);
     list.add(pay2.bytes);
     list.add(pay3.bytes);
-    query = new SpanNearPayloadCheckQuery(snq, list);
+    query = new SpanPayloadCheckQuery(snq, list);
     checkHits(query, new int[]
       {505});
   }
@@ -161,7 +161,7 @@ public class TestPayloadBasics extends LuceneTestCase {
     payloads.add(pay2.bytes);
     payloads.add(pay3.bytes);
     payloads.add(pay4.bytes);
-    query = new SpanNearPayloadCheckQuery(oneThousHunThree, payloads);
+    query = new SpanPayloadCheckQuery(oneThousHunThree, payloads);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
   }
