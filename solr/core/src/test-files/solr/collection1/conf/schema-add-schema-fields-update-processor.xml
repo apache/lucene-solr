@@ -36,6 +36,7 @@
   <fields>
     <field name="id"           type="string"  indexed="true" stored="true" multiValued="false" required="true"/>
     <field name="_version_"    type="long"    indexed="true" stored="true"/>
+    <field name="_root_"       type="string"  indexed="true" stored="true" multiValued="false"/>
     
     <dynamicField name="*_t"   type="text"    indexed="true" stored="true"/>
     <dynamicField name="*_ti"  type="tint"    indexed="true" stored="true"/>

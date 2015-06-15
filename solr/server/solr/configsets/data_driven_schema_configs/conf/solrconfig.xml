@@ -503,6 +503,14 @@
                    initialSize="512"
                    autowarmCount="0"/>
 
+    <!-- custom cache currently used by block join -->
+    <cache name="perSegFilter"
+           class="solr.search.LRUCache"
+           size="10"
+           initialSize="0"
+           autowarmCount="10"
+           regenerator="solr.NoOpRegenerator" />
+
     <!-- Field Value Cache
          
          Cache used to hold field values that are quickly accessible

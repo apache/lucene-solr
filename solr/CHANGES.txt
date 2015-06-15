@@ -148,6 +148,9 @@ Bug Fixes
 
 * SOLR-7635: Limit lsof port check in bin/solr to just listening ports
   (Upayavira, Ramkumar Aiyengar)
+  
+* SOLR-7091: Nested documents with unknown fields don't work in schemaless mode. 
+  (Steve Rowe)
 
 Optimizations
 ----------------------
