@@ -73,11 +73,11 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
           Occur.SHOULD);
 
     Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                                new QueryWrapperFilter(new ItemizedQuery(new int[] {1,3})));
+                                new QueryWrapperFilter(matchTheseItems(new int[] {1,3})));
     t.setBoost(1000);
     q.add(t, Occur.SHOULD);
     
-    t = new ConstantScoreQuery(new ItemizedQuery(new int[] {0,2}));
+    t = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
     t.setBoost(30);
     q.add(t, Occur.SHOULD);
     
@@ -136,11 +136,11 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
           Occur.SHOULD);
     
     Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                                new QueryWrapperFilter(new ItemizedQuery(new int[] {1,3})));
+                                new QueryWrapperFilter(matchTheseItems(new int[] {1,3})));
     t.setBoost(1000);
     q.add(t, Occur.SHOULD);
     
-    t = new ConstantScoreQuery(new ItemizedQuery(new int[] {0,2}));
+    t = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
     t.setBoost(-20.0f);
     q.add(t, Occur.SHOULD);
     
@@ -207,11 +207,11 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
   public void testFQ5() throws Exception {
     TermQuery query = new TermQuery(new Term(FIELD, "xx"));
     query.setBoost(0);
-    bqtest(new FilteredQuery(query, new QueryWrapperFilter(new ItemizedQuery(new int[] {1,3}))), new int[] {3});
+    bqtest(new FilteredQuery(query, new QueryWrapperFilter(matchTheseItems(new int[] {1,3}))), new int[] {3});
   }
   
   public void testCSQ4() throws Exception {
-    Query q = new ConstantScoreQuery(new ItemizedQuery(new int[] {3}));
+    Query q = new ConstantScoreQuery(matchTheseItems(new int[] {3}));
     q.setBoost(0);
     bqtest(q, new int[] {3});
   }

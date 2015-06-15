@@ -75,6 +75,13 @@ New Features
 * LUCENE-6504: Add Lucene53Codec, with norms implemented directly
   via the Directory's RandomAccessInput api. (Robert Muir)
 
+* LUCENE-6539: Add new DocValuesNumbersQuery, to match any document
+  containing one of the specified long values.  This change also
+  moves the existing DocValuesTermsQuery and DocValuesRangeQuery
+  to Lucene's sandbox module, since in general these queries are
+  quite slow and are only fast in specific cases.  (Adrien Grand,
+  Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

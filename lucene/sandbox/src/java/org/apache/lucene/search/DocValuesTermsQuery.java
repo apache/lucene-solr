@@ -45,6 +45,11 @@ import org.apache.lucene.util.LongBitSet;
  * characteristics, as described below.
  *
  * <p>
+ * <b>NOTE</b>: be very careful using this query: it is
+ * typically much slower than using {@code TermsQuery},
+ * but in certain specialized cases may be faster.
+ *
+ * <p>
  * With each search, this query translates the specified
  * set of Terms into a private {@link LongBitSet} keyed by
  * term number per unique {@link IndexReader} (normally one
@@ -82,6 +87,8 @@ import org.apache.lucene.util.LongBitSet;
  *
  * <p>
  * Which query is best is very application dependent.
+ *
+ * @lucene.experimental
  */
 public class DocValuesTermsQuery extends Query {
 
