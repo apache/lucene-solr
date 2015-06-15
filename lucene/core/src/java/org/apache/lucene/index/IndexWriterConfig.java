@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.SleepingLockWrapper;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SetOnce;
@@ -86,13 +85,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    * approximately 16 MB RAM).
    */
   public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
-
-  /**
-   * Default value for the write lock timeout (0 ms: no sleeping).
-   * @deprecated Use {@link SleepingLockWrapper} if you want sleeping.
-   */
-  @Deprecated
-  public static final long WRITE_LOCK_TIMEOUT = 0;
 
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
@@ -243,24 +235,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   public MergeScheduler getMergeScheduler() {
     return mergeScheduler;
-  }
-
-  /**
-   * Sets the maximum time to wait for a write lock (in milliseconds) for this
-   * instance. Note that the value can be zero, for no sleep/retry behavior.
-   *
-   * <p>Only takes effect when IndexWriter is first created.
-   * @deprecated Use {@link SleepingLockWrapper} if you want sleeping.
-   */
-  @Deprecated
-  public IndexWriterConfig setWriteLockTimeout(long writeLockTimeout) {
-    this.writeLockTimeout = writeLockTimeout;
-    return this;
-  }
-
-  @Override
-  public long getWriteLockTimeout() {
-    return writeLockTimeout;
   }
 
   /**

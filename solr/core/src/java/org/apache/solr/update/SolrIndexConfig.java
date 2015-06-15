@@ -209,9 +209,6 @@ public class SolrIndexConfig implements MapSerializable {
     if (ramBufferSizeMB != -1)
       iwc.setRAMBufferSizeMB(ramBufferSizeMB);
 
-    if (writeLockTimeout != -1)
-      iwc.setWriteLockTimeout(writeLockTimeout);
-
     iwc.setSimilarity(schema.getSimilarity());
     iwc.setMergePolicy(buildMergePolicy(schema));
     iwc.setMergeScheduler(buildMergeScheduler(schema));
