@@ -19,20 +19,19 @@ package org.apache.solr.cloud.rule;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,12 +83,45 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
       CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
               .setCollectionName(rulesColl)
               .setShardName("shard2");
-      rsp = createShard.process(client);
+      rsp = addReplica.process(client);
       assertEquals(0, rsp.getStatus());
       assertTrue(rsp.isSuccess());
     }
 
 
+  }
+
+  @Test
+  public void testPortRule() throws Exception {
+    String rulesColl = "portRuleColl";
+    String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
+    String port = "-1";
+    Matcher hostAndPortMatcher = Pattern.compile("(?:https?://)?([^:]+):(\\d+)").matcher(baseUrl);
+    if (hostAndPortMatcher.find()) {
+      port = hostAndPortMatcher.group(2);
+    }
+    try (SolrClient client = createNewSolrClient("", baseUrl)) {
+      CollectionAdminResponse rsp;
+      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
+      create.setCollectionName(rulesColl);
+      create.setShards("shard1");
+      create.setRouterName(ImplicitDocRouter.NAME);
+      create.setReplicationFactor(2);
+      create.setRule("port:" + port);
+      create.setSnitch("class:ImplicitSnitch");
+      rsp = create.process(client);
+      assertEquals(0, rsp.getStatus());
+      assertTrue(rsp.isSuccess());
+
+    }
+
+    DocCollection rulesCollection = cloudClient.getZkStateReader().getClusterState().getCollection(rulesColl);
+    List list = (List) rulesCollection.get("rule");
+    assertEquals(1, list.size());
+    assertEquals(port, ((Map) list.get(0)).get("port"));
+    list = (List) rulesCollection.get("snitch");
+    assertEquals(1, list.size());
+    assertEquals ( "ImplicitSnitch", ((Map)list.get(0)).get("class"));
   }
 
   @Test
@@ -138,7 +170,4 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
       assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
     }
   }
-
-
-
 }

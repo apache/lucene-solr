@@ -24,6 +24,8 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable {
   static final Logger log = LoggerFactory.getLogger(ImplicitSnitch.class);
+
+  public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
 
   //well known tags
   public static final String NODE = "node";
@@ -50,7 +54,14 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
   @Override
   public void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
     if (requestedTags.contains(NODE)) ctx.getTags().put(NODE, solrNode);
-    if (requestedTags.contains(HOST)) ctx.getTags().put(HOST, solrNode.substring(0, solrNode.indexOf(':')));
+    if (requestedTags.contains(HOST)) {
+      Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+      if (hostAndPortMatcher.find()) ctx.getTags().put(HOST, hostAndPortMatcher.group(1));
+    }
+    if (requestedTags.contains(PORT)) {
+      Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+      if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
+    }
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (requestedTags.contains(CORES)) params.add(CORES, "1");
     if (requestedTags.contains(DISK)) params.add(DISK, "1");
