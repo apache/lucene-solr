@@ -122,6 +122,8 @@ New Features
     authors:{ type:terms, field:author, domain:{toParent:"type:book"} }
   (yonik)
 
+* SOLR-7668: Add 'port' tag support in replica placement rules (Adam McElwee, Noble Paul)
+
 
 Bug Fixes
 ----------------------
