@@ -158,6 +158,10 @@ Changes in Runtime Behavior
 * LUCENE-6538: Also include java.vm.version and java.runtime.version
   in per-segment diagnostics (Robert Muir, Mike McCandless)
 
+* LUCENE-6569: Optimize MultiFunction.anyExists and allExists to eliminate
+  excessive array creation in common 2 argument usage (Jacob Graves, hossman)
+
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
