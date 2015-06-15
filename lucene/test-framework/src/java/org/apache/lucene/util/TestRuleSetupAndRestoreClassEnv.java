@@ -19,11 +19,9 @@ package org.apache.lucene.util;
 
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Random;
-import java.util.Set;
 import java.util.TimeZone;
 
 import org.apache.lucene.codecs.Codec;
@@ -99,7 +97,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       } else {
         name = Thread.currentThread().getName();
       }
-      stream.println(component + " " + messageID + " [" + new Date() + "; " + name + "]: " + message);    
+      stream.println(component + " " + messageID + " [" + getTimestamp() + "; " + name + "]: " + message);    
     }
   }
 

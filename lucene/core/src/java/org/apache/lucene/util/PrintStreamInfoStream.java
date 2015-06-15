@@ -19,10 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.nio.file.attribute.FileTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -36,8 +33,6 @@ public class PrintStreamInfoStream extends InfoStream {
   private static final AtomicInteger MESSAGE_ID = new AtomicInteger();
   protected final int messageID;
 
-  private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT);
-  
   protected final PrintStream stream;
   
   public PrintStreamInfoStream(PrintStream stream) {
@@ -51,7 +46,7 @@ public class PrintStreamInfoStream extends InfoStream {
   
   @Override
   public void message(String component, String message) {
-    stream.println(component + " " + messageID + " [" + dateFormat.format(new Date()) + "; " + Thread.currentThread().getName() + "]: " + message);    
+    stream.println(component + " " + messageID + " [" + getTimestamp() + "; " + Thread.currentThread().getName() + "]: " + message);    
   }
 
   @Override
@@ -70,4 +65,11 @@ public class PrintStreamInfoStream extends InfoStream {
   public boolean isSystemStream() {
     return stream == System.out || stream == System.err;
   }
+  
+  /** Returns the current time as string for insertion into log messages. */
+  protected String getTimestamp() {
+    // We "misuse" Java 7 FileTime API here, because it returns a nice ISO-8601 string with milliseconds (UTC timezone).
+    // The alternative, SimpleDateFormat is not thread safe!
+    return FileTime.fromMillis(System.currentTimeMillis()).toString();
+  }  
 }
