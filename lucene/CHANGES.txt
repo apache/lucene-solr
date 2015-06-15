@@ -132,6 +132,11 @@ Bug fixes
 * LUCENE-6560: BKDPointInBBoxQuery now handles "dateline crossing"
   correctly (Nick Knize, Mike McCandless)
 
+* LUCENE-6564: Change PrintStreamInfoStream to use thread safe Java 8
+  ISO-8601 date formatting (in Lucene 5.x use Java 7 FileTime#toString
+  as workaround); fix output of tests to use same format.  (Uwe Schindler,
+  Ramkumar Aiyengar)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
