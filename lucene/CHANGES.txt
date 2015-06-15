@@ -161,6 +161,9 @@ Bug Fixes
 * LUCENE-6527: Queries now get a dummy Similarity when scores are not needed
   in order to not load unnecessary information like norms. (Adrien Grand)
 
+* LUCENE-6559: TimeLimitingCollector now also checks for timeout when a new
+  leaf reader is pulled ie. if we move from one segment to another even without
+  collecting a hit. (Simon Willnauer)
 
 ======================= Lucene 5.2.0 =======================
 

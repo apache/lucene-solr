@@ -136,6 +136,10 @@ public class TimeLimitingCollector implements Collector {
     if (Long.MIN_VALUE == t0) {
       setBaseline();
     }
+    final long time = clock.get();
+    if (time - timeout > 0L) {
+      throw new TimeExceededException(timeout - t0, time - t0, -1);
+    }
     return new FilterLeafCollector(collector.getLeafCollector(context)) {
       
       @Override
