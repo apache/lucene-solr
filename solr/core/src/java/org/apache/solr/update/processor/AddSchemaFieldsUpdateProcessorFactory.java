@@ -39,8 +39,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
@@ -277,11 +279,12 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         // build a selector each time through the loop b/c the schema we are
         // processing may have changed
         FieldNameSelector selector = buildSelector(oldSchema);
-        for (final String fieldName : doc.getFieldNames()) {
-          if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the current schema
-            String fieldTypeName = mapValueClassesToFieldType(doc.getField(fieldName));
-            newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
-          }
+        Map<String,List<SolrInputField>> unknownFields = new HashMap<>();
+        getUnknownFields(selector, doc, unknownFields);
+        for (final Map.Entry<String,List<SolrInputField>> entry : unknownFields.entrySet()) {
+          String fieldName = entry.getKey();
+          String fieldTypeName = mapValueClassesToFieldType(entry.getValue());
+          newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
         }
         if (newFields.isEmpty()) {
           // nothing to do - no fields will be added - exit from the retry loop
@@ -328,21 +331,52 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       super.processAdd(cmd);
     }
 
-    private String mapValueClassesToFieldType(SolrInputField field) {
-      NEXT_TYPE_MAPPING: for (TypeMapping typeMapping : typeMappings) {
-        NEXT_FIELD_VALUE: for (Object fieldValue : field.getValues()) {
-          for (Class<?> valueClass : typeMapping.valueClasses) {
-            if (valueClass.isInstance(fieldValue)) {
-              continue NEXT_FIELD_VALUE;
-            }
+    /**
+     * Recursively find unknown fields in the given doc and its child documents, if any.
+     */
+    private void getUnknownFields
+    (FieldNameSelector selector, SolrInputDocument doc, Map<String,List<SolrInputField>> unknownFields) {
+      for (final String fieldName : doc.getFieldNames()) {
+        if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the current schema
+          List<SolrInputField> solrInputFields = unknownFields.get(fieldName);
+          if (null == solrInputFields) {
+            solrInputFields = new ArrayList<>();
+            unknownFields.put(fieldName, solrInputFields);
           }
-          // This fieldValue is not an instance of any of this fieldType's valueClass-s
-          continue NEXT_TYPE_MAPPING;
+          solrInputFields.add(doc.getField(fieldName));
         }
-        // Success! Each of this field's values is an instance of one of this fieldType's valueClass-s
+      }
+      List<SolrInputDocument> childDocs = doc.getChildDocuments();
+      if (null != childDocs) {
+        for (SolrInputDocument childDoc : childDocs) {
+          getUnknownFields(selector, childDoc, unknownFields);
+        }
+      }
+    }
+
+    /**
+     * Maps all given field values' classes to a field type using the configured type mapping rules.
+     * 
+     * @param fields one or more (same-named) field values from one or more documents
+     */
+    private String mapValueClassesToFieldType(List<SolrInputField> fields) {
+      NEXT_TYPE_MAPPING: for (TypeMapping typeMapping : typeMappings) {
+        for (SolrInputField field : fields) {
+          NEXT_FIELD_VALUE: for (Object fieldValue : field.getValues()) {
+            for (Class<?> valueClass : typeMapping.valueClasses) {
+              if (valueClass.isInstance(fieldValue)) {
+                continue NEXT_FIELD_VALUE;
+              }
+            }
+            // This fieldValue is not an instance of any of the mapped valueClass-s,
+            // so mapping fails - go try the next type mapping.
+            continue NEXT_TYPE_MAPPING;
+          }
+        }
+        // Success! Each of this field's values is an instance of a mapped valueClass
         return typeMapping.fieldTypeName;
       }
-      // At least one of this field's values is not an instance of any configured fieldType's valueClass-s
+      // At least one of this field's values is not an instance of any of the mapped valueClass-s
       return defaultFieldType;
     }
 

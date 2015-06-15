@@ -46,6 +46,16 @@
     </lst>
   </requestHandler>
 
+  <query>
+    <!-- custom cache currently used by block join -->
+    <cache name="perSegFilter"
+           class="solr.search.LRUCache"
+           size="10"
+           initialSize="0"
+           autowarmCount="10"
+           regenerator="solr.NoOpRegenerator" />
+  </query>
+
   <!-- Add unknown fields to the schema
   
        An example field type guessing update processor that will
@@ -89,7 +99,7 @@
     </processor>
      
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
-      <str name="defaultFieldType">text_general</str>
+      <str name="defaultFieldType">text</str>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>
         <str name="fieldType">boolean</str>
