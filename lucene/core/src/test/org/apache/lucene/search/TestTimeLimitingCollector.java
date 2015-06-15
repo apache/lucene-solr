@@ -152,7 +152,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       e.printStackTrace();
       assertTrue("Unexpected exception: "+e, false); //==fail
     }
-    assertEquals( "Wrong number of results!", totalResults, totalTLCResults );
+    assertEquals("Wrong number of results!", totalResults, totalTLCResults);
   }
 
   private Collector createTimedCollector(MyHitCollector hc, long timeAllowed, boolean greedy) {
@@ -266,6 +266,24 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     } finally {
       counterThread.setResolution(TimerThread.DEFAULT_RESOLUTION);
     }
+  }
+
+  public void testNoHits() throws IOException {
+    MyHitCollector myHc = new MyHitCollector();
+    Collector collector = createTimedCollector(myHc, -1, random().nextBoolean());
+    // search
+    TimeExceededException timoutException = null;
+    try {
+      BooleanQuery booleanQuery = new BooleanQuery(); // won't match - we only test if we check timeout when collectors are pulled
+      booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "one")), BooleanClause.Occur.MUST);
+      booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "blueberry")), BooleanClause.Occur.MUST);
+      searcher.search(booleanQuery, collector);
+    } catch (TimeExceededException x) {
+      timoutException = x;
+    }
+    // must get exception
+    assertNotNull("Timeout expected!", timoutException);
+    assertEquals(-1, myHc.getLastDocCollected());
   }
   
   /** 
