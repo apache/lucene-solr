@@ -122,6 +122,11 @@
 
     <!-- StatsComponents percentiles Dependencies-->
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
+    <!-- SQL Parser -->
+
+    <dependency org="com.facebook.presto" name="presto-parser" rev="${/com.facebook.presto/presto-parser}"/>
+    <dependency org="org.antlr" name="antlr4-runtime" rev="${/org.antlr/antlr4-runtime}"/>
+    <dependency org="io.airlift" name="slice" rev="${/io.airlift/slice}"/>
 
     <!-- StatsComponents HLL Dependencies-->
     <dependency org="net.agkn" name="hll" rev="${/net.agkn/hll}" conf="compile->*"/>
