@@ -453,18 +453,27 @@ public class TestBKDTree extends LuceneTestCase {
                 lat1 = x;
               }
 
+              boolean crossesDateLine;
               if (lon1 < lon0) {
-                double x = lon0;
-                lon0 = lon1;
-                lon1 = x;
+                if (random().nextBoolean()) {
+                  double x = lon0;
+                  lon0 = lon1;
+                  lon1 = x;
+                  crossesDateLine = false;
+                } else {
+                  crossesDateLine = true;
+                }
+              } else {
+                crossesDateLine = false;
               }
 
               if (VERBOSE) {
-                System.out.println("\nTEST: iter=" + iter + " lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1);
+                System.out.println("\nTEST: iter=" + iter + " lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + " crossesDateLine=" + crossesDateLine);
               }
 
               Query query;
-              if (random().nextBoolean()) {
+              // TODO: get poly query working with dateline crossing too (how?)!
+              if (crossesDateLine || random().nextBoolean()) {
                 query = new BKDPointInBBoxQuery("point", lat0, lat1, lon0, lon1);
               } else {
                 double[] lats = new double[5];
@@ -523,7 +532,7 @@ public class TestBKDTree extends LuceneTestCase {
                     // The poly check quantizes slightly differently, so we allow for boundary cases to disagree
                   } else {
                     // We do exact quantized comparison so the bbox query should never disagree:
-                    fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " (bbox: lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + ") expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + " query=" + query);
+                    fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " (bbox: lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + ") expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + " query=" + query + " crossesDateLine=" + crossesDateLine);
                   }
                 }
               }
@@ -554,10 +563,18 @@ public class TestBKDTree extends LuceneTestCase {
     int pointLatEnc = BKDTreeWriter.encodeLat(pointLat);
     int pointLonEnc = BKDTreeWriter.encodeLon(pointLon);
 
-    return pointLatEnc >= rectLatMinEnc &&
-      pointLatEnc < rectLatMaxEnc &&
-      pointLonEnc >= rectLonMinEnc &&
-      pointLonEnc < rectLonMaxEnc;
+    if (rectLonMin < rectLonMax) {
+      return pointLatEnc >= rectLatMinEnc &&
+        pointLatEnc < rectLatMaxEnc &&
+        pointLonEnc >= rectLonMinEnc &&
+        pointLonEnc < rectLonMaxEnc;
+    } else {
+      // Rect crosses dateline:
+      return pointLatEnc >= rectLatMinEnc &&
+        pointLatEnc < rectLatMaxEnc &&
+        (pointLonEnc >= rectLonMinEnc ||
+         pointLonEnc < rectLonMaxEnc);
+    }
   }
 
   private static double randomLat() {
