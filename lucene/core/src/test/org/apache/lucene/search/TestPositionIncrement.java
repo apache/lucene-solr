@@ -17,6 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -45,11 +50,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-
 /**
  * Term position unit test.
  *
@@ -57,7 +57,7 @@ import java.util.Collection;
  */
 public class TestPositionIncrement extends LuceneTestCase {
 
-  final static boolean VERBOSE = true;
+  final static boolean VERBOSE = false;
 
   public void testSetPosition() throws Exception {
     Analyzer analyzer = new Analyzer() {
