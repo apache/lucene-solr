@@ -32,7 +32,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.ResponseWriterUtil;
+import org.apache.solr.response.DocsStreamer;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -140,7 +140,7 @@ class ChildDocTransformer extends TransformerWithContext {
         while(i.hasNext()) {
           Integer childDocNum = i.next();
           Document childDoc = context.searcher.doc(childDocNum);
-          SolrDocument solrChildDoc = ResponseWriterUtil.toSolrDocument(childDoc, schema);
+          SolrDocument solrChildDoc = DocsStreamer.getDoc(childDoc, schema);
 
           // TODO: future enhancement...
           // support an fl local param in the transformer, which is used to build

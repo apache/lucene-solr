@@ -79,15 +79,23 @@ public class JavaBinCodec {
 
 
   private static byte VERSION = 2;
-  private ObjectResolver resolver;
+  private final ObjectResolver resolver;
   protected FastOutputStream daos;
   private StringCache stringCache;
+  private WritableDocFields writableDocFields;
 
   public JavaBinCodec() {
+    resolver =null;
+    writableDocFields =null;
   }
 
   public JavaBinCodec(ObjectResolver resolver) {
     this(resolver, null);
+  }
+  public JavaBinCodec setWritableDocFields(WritableDocFields writableDocFields){
+    this.writableDocFields = writableDocFields;
+    return this;
+
   }
 
   public JavaBinCodec(ObjectResolver resolver, StringCache stringCache) {
@@ -272,18 +280,7 @@ public class JavaBinCodec {
     }
     if (val instanceof SolrDocument) {
       //this needs special treatment to know which fields are to be written
-      if (resolver == null) {
-        writeSolrDocument((SolrDocument) val);
-      } else {
-        Object retVal = resolver.resolve(val, this);
-        if (retVal != null) {
-          if (retVal instanceof SolrDocument) {
-            writeSolrDocument((SolrDocument) retVal);
-          } else {
-            writeVal(retVal);
-          }
-        }
-      }
+      writeSolrDocument((SolrDocument) val);
       return true;
     }
     if (val instanceof SolrInputDocument) {
@@ -344,14 +341,24 @@ public class JavaBinCodec {
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
     List<SolrDocument> children = doc.getChildDocuments();
-    int sz = doc.size() + (children==null ? 0 : children.size());
+    int fieldsCount = 0;
+    if(writableDocFields == null || writableDocFields.wantsAllFields()){
+      fieldsCount = doc.size();
+    } else {
+      for (Entry<String, Object> e : doc) {
+        if(writableDocFields.isWritable(e.getKey())) fieldsCount++;
+      }
+    }
+    int sz = fieldsCount + (children==null ? 0 : children.size());
     writeTag(SOLRDOC);
     writeTag(ORDERED_MAP, sz);
     for (Map.Entry<String, Object> entry : doc) {
       String name = entry.getKey();
-      writeExternString(name);
-      Object val = entry.getValue();
-      writeVal(val);
+      if(writableDocFields == null || writableDocFields.isWritable(name)) {
+        writeExternString(name);
+        Object val = entry.getValue();
+        writeVal(val);
+      }
     }
     if (children != null) {
       for (SolrDocument child : children) {
@@ -840,6 +847,12 @@ public class JavaBinCodec {
   public static interface ObjectResolver {
     public Object resolve(Object o, JavaBinCodec codec) throws IOException;
   }
+
+  public interface WritableDocFields {
+    public boolean isWritable(String name);
+    public boolean wantsAllFields();
+  }
+
 
   public static class StringCache {
     private final Cache<StringBytes, String> cache;

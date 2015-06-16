@@ -138,6 +138,8 @@ Other Changes
 * SOLR-7680: Use POST instead of GET when finding versions for mismatches with
   CloudInspectUtil for tests (Ramkumar Aiyengar)
 
+* SOLR-7662: Refactored response writing to consolidate the logic in  one place (Noble Paul)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -602,6 +604,8 @@ Other Changes
 
 * SOLR-7183: Fix Locale blacklisting for Minikdc based tests. (Ishan Chattopadhyaya, hossman
   via Anshum Gupta)
+
+* SOLR-7662: Refactored response writing to consolidate the logic in  one place (Noble Paul)
 
 ==================  5.1.0 ==================
 

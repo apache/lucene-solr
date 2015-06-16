@@ -19,6 +19,7 @@ package org.apache.solr.request;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.solr.common.SolrDocument;
@@ -89,7 +90,11 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
     assertNotNull("obj is null", o);
     assertTrue("obj is not doc", o instanceof SolrDocument);
 
-    SolrDocument out = (SolrDocument) o;
+    SolrDocument out = new SolrDocument();
+    for (Map.Entry<String, Object> e : in) {
+      if(r.isWritable(e.getKey())) out.put(e.getKey(),e.getValue());
+
+    }
     assertTrue("id not found", out.getFieldNames().contains("id"));
     assertTrue("ddd_s not found", out.getFieldNames().contains("ddd_s"));
     assertEquals("Wrong number of fields found", 

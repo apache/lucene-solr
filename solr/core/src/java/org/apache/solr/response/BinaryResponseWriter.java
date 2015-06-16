@@ -16,21 +16,25 @@
  */
 package org.apache.solr.response;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.response.transform.TransformContext;
-import org.apache.solr.schema.*;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -41,15 +45,13 @@ import org.slf4j.LoggerFactory;
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   private static final Logger LOG = LoggerFactory.getLogger(BinaryResponseWriter.class);
-  public static final Set<Class> KNOWN_TYPES = new HashSet<>();
 
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
     if (omitHeader != null && omitHeader) response.getValues().remove("responseHeader");
-    JavaBinCodec codec = new JavaBinCodec(resolver);
-    codec.marshal(response.getValues(), out);
+    new JavaBinCodec(resolver).setWritableDocFields(resolver).marshal(response.getValues(), out);
   }
 
   @Override
@@ -67,15 +69,11 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     /* NOOP */
   }
 
-  public static class Resolver implements JavaBinCodec.ObjectResolver {
+  public static class Resolver implements JavaBinCodec.ObjectResolver , JavaBinCodec.WritableDocFields {
     protected final SolrQueryRequest solrQueryRequest;
     protected IndexSchema schema;
     protected SolrIndexSearcher searcher;
     protected final ReturnFields returnFields;
-
-    // transmit field values using FieldType.toObject()
-    // rather than the String from FieldType.toExternal()
-    boolean useFieldObjects = true;
 
     public Resolver(SolrQueryRequest req, ReturnFields returnFields) {
       solrQueryRequest = req;
@@ -95,73 +93,35 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         return null; // null means we completely handled it
       }
       if( o instanceof IndexableField ) {
-        if(schema == null) schema = solrQueryRequest.getSchema(); 
-        
+        if(schema == null) schema = solrQueryRequest.getSchema();
+
         IndexableField f = (IndexableField)o;
         SchemaField sf = schema.getFieldOrNull(f.name());
         try {
-          o = getValue(sf, f);
-        } 
-        catch (Exception e) {
+          o = DocsStreamer.getValue(sf, f);
+        } catch (Exception e) {
           LOG.warn("Error reading a field : " + o, e);
         }
-      }
-      if (o instanceof SolrDocument) {
-        // Remove any fields that were not requested.
-        // This typically happens when distributed search adds 
-        // extra fields to an internal request
-        SolrDocument doc = (SolrDocument)o;
-        Iterator<Map.Entry<String, Object>> i = doc.iterator();
-        while ( i.hasNext() ) {
-          String fname = i.next().getKey();
-          if ( !returnFields.wantsField( fname ) ) {
-            i.remove();
-          }
-        }
-        return doc;
       }
       return o;
     }
 
-    protected void writeResultsBody( ResultContext res, JavaBinCodec codec ) throws IOException 
-    {
-      DocList ids = res.docs;
-      int sz = ids.size();
-      codec.writeTag(JavaBinCodec.ARR, sz);
-      if(searcher == null) searcher = solrQueryRequest.getSearcher();
-      if(schema == null) schema = solrQueryRequest.getSchema();
+    @Override
+    public boolean isWritable(String name) {
+      return returnFields.wantsField(name);
+    }
 
-      DocTransformer transformer = returnFields.getTransformer();
-      TransformContext context = new TransformContext();
-      context.query = res.query;
-      context.wantsScores = returnFields.wantsScore() && ids.hasScores();
-      context.req = solrQueryRequest;
-      context.searcher = searcher;
-      if( transformer != null ) {
-        transformer.setContext( context );
-      }
-      
-      Set<String> fnames = returnFields.getLuceneFieldNames();
-      boolean onlyPseudoFields = (fnames == null && !returnFields.wantsAllFields() && !returnFields.hasPatternMatching())
-          || (fnames != null && fnames.size() == 1 && SolrReturnFields.SCORE.equals(fnames.iterator().next()));
-      context.iterator = ids.iterator();
-      for (int i = 0; i < sz; i++) {
-        int id = context.iterator.nextDoc();
-        SolrDocument sdoc;
-        if (onlyPseudoFields) {
-          // no need to get stored fields of the document, see SOLR-5968
-          sdoc = new SolrDocument();
-        } else {
-          Document doc = searcher.doc(id, fnames);
-          sdoc = getDoc(doc);
-        }
-        if( transformer != null ) {
-          transformer.transform(sdoc, id);
-        }
-        codec.writeSolrDocument(sdoc);
-      }
-      if( transformer != null ) {
-        transformer.setContext( null );
+    @Override
+    public boolean wantsAllFields() {
+      return returnFields.wantsAllFields();
+    }
+
+    protected void writeResultsBody( ResultContext res, JavaBinCodec codec ) throws IOException {
+      codec.writeTag(JavaBinCodec.ARR, res.docs.size());
+      DocsStreamer docStreamer = new DocsStreamer(res.docs,res.query, solrQueryRequest, returnFields);
+      while (docStreamer.hasNext()) {
+        SolrDocument doc = docStreamer.next();
+        codec.writeSolrDocument(doc);
       }
     }
     
@@ -178,7 +138,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
       l.add(maxScore);
       codec.writeArray(l);
-      
+
       // this is a seprate function so that streaming responses can use just that part
       writeResultsBody( ctx, codec );
     }
@@ -193,7 +153,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         SchemaField sf = schema.getFieldOrNull(fieldName);
         Object val = null;
         try {
-          val = getValue(sf,f);
+          val = DocsStreamer.getValue(sf,f);
         } catch (Exception e) {
           // There is a chance of the underlying field not really matching the
           // actual field type . So ,it can throw exception
@@ -211,30 +171,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         }
       }
       return solrDoc;
-    }
-    
-    public Object getValue(SchemaField sf, IndexableField f) throws Exception {
-      FieldType ft = null;
-      if(sf != null) ft =sf.getType();
-      
-      if (ft == null) {  // handle fields not in the schema
-        BytesRef bytesRef = f.binaryValue();
-        if (bytesRef != null) {
-          if (bytesRef.offset == 0 && bytesRef.length == bytesRef.bytes.length) {
-            return bytesRef.bytes;
-          } else {
-            final byte[] bytes = new byte[bytesRef.length];
-            System.arraycopy(bytesRef.bytes, bytesRef.offset, bytes, 0, bytesRef.length);
-            return bytes;
-          }
-        } else return f.stringValue();
-      } else {
-        if (useFieldObjects && KNOWN_TYPES.contains(ft.getClass())) {
-          return ft.toObject(f);
-        } else {
-          return ft.toExternal(f);
-        }
-      }
     }
   }
 
@@ -263,18 +199,5 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     }
   }
 
-  static {
-    KNOWN_TYPES.add(BoolField.class);
-    KNOWN_TYPES.add(StrField.class);
-    KNOWN_TYPES.add(TextField.class);
-    KNOWN_TYPES.add(TrieField.class);
-    KNOWN_TYPES.add(TrieIntField.class);
-    KNOWN_TYPES.add(TrieLongField.class);
-    KNOWN_TYPES.add(TrieFloatField.class);
-    KNOWN_TYPES.add(TrieDoubleField.class);
-    KNOWN_TYPES.add(TrieDateField.class);
-    KNOWN_TYPES.add(BinaryField.class);
-    // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
-    // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
-  }
+
 }

@@ -118,7 +118,7 @@ class PHPSerializedWriter extends JSONWriter {
   }
   
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException 
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException
   {
     writeKey(idx, false);
     
@@ -126,7 +126,7 @@ class PHPSerializedWriter extends JSONWriter {
     LinkedHashMap <String,Object> multi = new LinkedHashMap<>();
 
     for (String fname : doc.getFieldNames()) {
-      if(!returnFields.wantsField(fname)){
+      if (returnFields != null && !returnFields.wantsField(fname)) {
         continue;
       }
 
