@@ -44,12 +44,12 @@ public abstract class MultiFunction extends ValueSource {
   }
 
   /**
-   * Helper utility for {@link FunctionValues} wrapping multiple {@link FunctionValues}
+   * Helper utility for {@link FunctionValues}
    *
-   * @return true if <em>all</em> of the specified <code>values</code> 
+   * @return true if <em>all</em> of the specified <code>values</code>
    *         {@link FunctionValues#exists} for the specified doc, else false.
    */
-  public static boolean allExists(int doc, FunctionValues... values) {
+  public static boolean allExists(int doc, FunctionValues[] values) {
     for (FunctionValues v : values) {
       if ( ! v.exists(doc) ) {
         return false;
@@ -57,13 +57,14 @@ public abstract class MultiFunction extends ValueSource {
     }
     return true;
   }
+  
   /**
-   * Helper utility for {@link FunctionValues} wrapping multiple {@link FunctionValues}
+   * Helper utility for {@link FunctionValues}
    *
-   * @return true if <em>any</em> of the specified <code>values</code> 
+   * @return true if <em>any</em> of the specified <code>values</code>
    *         {@link FunctionValues#exists} for the specified doc, else false.
    */
-  public static boolean anyExists(int doc, FunctionValues... values) {
+  public static boolean anyExists(int doc, FunctionValues[] values) {
     for (FunctionValues v : values) {
       if ( v.exists(doc) ) {
         return true;
@@ -71,7 +72,31 @@ public abstract class MultiFunction extends ValueSource {
     }
     return false;
   }
-
+  
+  /**
+   * Equivilent the the {@code FunctionValues[]} method with the same name, but optimized for 
+   * dealing with exactly 2 arguments.
+   *
+   * @return true if <em>both</em> of the specified <code>values</code>
+   *         {@link FunctionValues#exists} for the specified doc, else false.
+   * @see #anyExists(int,FunctionValues[])
+   */
+  public static boolean allExists(int doc, FunctionValues values1, FunctionValues values2) {
+    return values1.exists(doc) && values2.exists(doc);
+  }
+  
+  /**
+   * Equivilent the the {@code FunctionValues[]} method with the same name, but optimized for 
+   * dealing with exactly 2 arguments.
+   *
+   * @return true if <em>either</em> of the specified <code>values</code>
+   *         {@link FunctionValues#exists} for the specified doc, else false.
+   * @see #anyExists(int,FunctionValues[])
+   */
+  public static boolean anyExists(int doc, FunctionValues values1, FunctionValues values2) {
+    return values1.exists(doc) || values2.exists(doc);
+  }
+  
   public static String description(String name, List<ValueSource> sources) {
     StringBuilder sb = new StringBuilder();
     sb.append(name).append('(');

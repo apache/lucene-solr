@@ -58,6 +58,7 @@ import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
 import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
 import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
 import org.apache.lucene.queries.function.valuesource.MultiFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MultiFunction;
 import org.apache.lucene.queries.function.valuesource.NormValueSource;
 import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
 import org.apache.lucene.queries.function.valuesource.PowFloatFunction;
@@ -527,7 +528,57 @@ public class TestValueSources extends LuceneTestCase {
     assertHits(new FunctionQuery(vs), new float[] { 4f, 4f });
     assertAllExist(vs);
   }
-  
+
+  public void testMultiFunctionHelperEquivilence() throws IOException {
+    // the 2 arg versions of these methods should return the exact same results as
+    // the multi arg versions with a 2 element array
+    
+    // actual doc / index is not relevant for this test
+    final LeafReaderContext leaf = searcher.getIndexReader().leaves().get(0);
+    final Map context = ValueSource.newContext(searcher);
+
+    ALL_EXIST_VS.createWeight(context, searcher);
+    NONE_EXIST_VS.createWeight(context, searcher);
+
+    final FunctionValues ALL = ALL_EXIST_VS.getValues(context, leaf);
+    final FunctionValues NONE = NONE_EXIST_VS.getValues(context, leaf);
+
+    // quick sanity checks of explicit results
+    assertTrue(MultiFunction.allExists(1, ALL, ALL));
+    assertTrue(MultiFunction.allExists(1, new FunctionValues[] {ALL, ALL}));
+    assertTrue(MultiFunction.anyExists(1, ALL, NONE));
+    assertTrue(MultiFunction.anyExists(1, new FunctionValues[] {ALL, NONE}));
+    //
+    assertFalse(MultiFunction.allExists(1, ALL, NONE));
+    assertFalse(MultiFunction.allExists(1, new FunctionValues[] {ALL, NONE}));
+    assertFalse(MultiFunction.anyExists(1, NONE, NONE));
+    assertFalse(MultiFunction.anyExists(1, new FunctionValues[] {NONE, NONE}));
+
+
+    
+    // iterate all permutations and verify equivilence
+    for (FunctionValues firstArg : new FunctionValues[] {ALL, NONE}) {
+      for (FunctionValues secondArg : new FunctionValues[] {ALL, NONE}) {
+        assertEquals("allExists("+firstArg+","+secondArg+")",
+                     MultiFunction.allExists(1, firstArg,secondArg),
+                     MultiFunction.allExists(1, new FunctionValues[] { firstArg,secondArg}));
+        assertEquals("anyExists("+firstArg+","+secondArg+")",
+                     MultiFunction.anyExists(1, firstArg,secondArg),
+                     MultiFunction.anyExists(1, new FunctionValues[] { firstArg,secondArg}));
+        
+        // future proof against posibility of someone "optimizing" the array method
+        // if .length==2 ... redundent third arg should give same results as well...
+        assertEquals("allExists("+firstArg+","+secondArg+","+secondArg+")",
+                     MultiFunction.allExists(1, firstArg,secondArg),
+                     MultiFunction.allExists(1, new FunctionValues[] { firstArg,secondArg,secondArg}));
+        assertEquals("anyExists("+firstArg+","+secondArg+","+secondArg+")",
+                     MultiFunction.anyExists(1, firstArg,secondArg),
+                     MultiFunction.anyExists(1, new FunctionValues[] { firstArg,secondArg,secondArg}));
+        
+      }
+    }
+  }
+    
   /** 
    * Asserts that for every doc, the {@link FunctionValues#exists} value 
    * from the {@link ValueSource} is <b>true</b>.
