@@ -17,6 +17,13 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -26,13 +33,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
@@ -44,7 +44,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   protected boolean inOrder;
 
   protected String field;
-  private boolean collectPayloads;
 
   /** Construct a SpanNearQuery.  Matches spans matching a span from each
    * clause, with up to <code>slop</code> total unmatched positions between
@@ -53,15 +52,11 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
    * must be in the same order as in <code>clauses</code> and must be non-overlapping.
    * <br>When <code>inOrder</code> is false, the spans from each clause
    * need not be ordered and may overlap.
-   * @param clauses the clauses to find near each other, in the same field, at least 2.
+   * @param clausesIn the clauses to find near each other, in the same field, at least 2.
    * @param slop The slop value
    * @param inOrder true if order is important
    */
-  public SpanNearQuery(SpanQuery[] clauses, int slop, boolean inOrder) {
-    this(clauses, slop, inOrder, true);
-  }
-
-  public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder, boolean collectPayloads) {
+  public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder) {
     this.clauses = new ArrayList<>(clausesIn.length);
     for (SpanQuery clause : clausesIn) {
       if (this.field == null) {                               // check field
@@ -71,7 +66,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
       this.clauses.add(clause);
     }
-    this.collectPayloads = collectPayloads;
     this.slop = slop;
     this.inOrder = inOrder;
   }
@@ -209,7 +203,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
     return (inOrder == spanNearQuery.inOrder)
         && (slop == spanNearQuery.slop)
-        && (collectPayloads == spanNearQuery.collectPayloads)
         && clauses.equals(spanNearQuery.clauses);
   }
 
@@ -218,7 +211,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     int result = super.hashCode();
     result ^= clauses.hashCode();
     result += slop;
-    int fac = 1 + (inOrder ? 8 : 4) + (collectPayloads ? 2 : 0);
+    int fac = 1 + (inOrder ? 8 : 4);
     return fac * result;
   }
 }
