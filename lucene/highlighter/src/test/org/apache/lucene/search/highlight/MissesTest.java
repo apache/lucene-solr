@@ -58,9 +58,7 @@ public class MissesTest extends LuceneTestCase {
 
   public void testPhraseQuery() throws IOException, InvalidTokenOffsetsException {
     try (Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
-      final PhraseQuery query = new PhraseQuery();
-      query.add(new Term("test", "foo"));
-      query.add(new Term("test", "bar"));
+      final PhraseQuery query = new PhraseQuery("test", "foo", "bar");
       final Highlighter highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
       assertEquals("this is a <B>foo</B> <B>bar</B> example",
           highlighter.getBestFragment(analyzer, "test", "this is a foo bar example"));

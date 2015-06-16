@@ -45,7 +45,16 @@ public class SlopQueryNodeBuilder implements StandardQueryBuilder {
         QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
 
     if (query instanceof PhraseQuery) {
-      ((PhraseQuery) query).setSlop(phraseSlopNode.getValue());
+      PhraseQuery.Builder builder = new PhraseQuery.Builder();
+      builder.setSlop(phraseSlopNode.getValue());
+      PhraseQuery pq = (PhraseQuery) query;
+      org.apache.lucene.index.Term[] terms = pq.getTerms();
+      int[] positions = pq.getPositions();
+      for (int i = 0; i < terms.length; ++i) {
+        builder.add(terms[i], positions[i]);
+      }
+      query = builder.build();
+      query.setBoost(pq.getBoost());
 
     } else {
       ((MultiPhraseQuery) query).setSlop(phraseSlopNode.getValue());

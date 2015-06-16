@@ -13,8 +13,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -324,12 +324,14 @@ public class TestScorerPerf extends LuceneTestCase {
 
     for (int i=0; i<iter; i++) {
       int nClauses = random().nextInt(maxClauses-1)+2; // min 2 clauses
-      PhraseQuery q = new PhraseQuery();
+      PhraseQuery.Builder builder = new PhraseQuery.Builder();
       for (int j=0; j<nClauses; j++) {
         int tnum = random().nextInt(termsInIndex);
-        q.add(new Term("f",Character.toString((char)(tnum+'A'))), j);
+        builder.add(new Term("f", Character.toString((char)(tnum+'A'))));
       }
-      q.setSlop(termsInIndex);  // this could be random too
+      // slop could be random too
+      builder.setSlop(termsInIndex);
+      PhraseQuery q = builder.build();
 
       CountingHitCollector hc = new CountingHitCollector();
       s.search(q, hc);

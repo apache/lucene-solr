@@ -172,9 +172,7 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     // Deletes one of the 10 added docs, leaving 9:
-    PhraseQuery q = new PhraseQuery();
-    q.add(new Term("content", "bbb"));
-    q.add(new Term("content", "14"));
+    PhraseQuery q = new PhraseQuery("content", "bbb", "14");
     writer.deleteDocuments(q);
 
     writer.forceMerge(1);
@@ -210,9 +208,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer.addIndexes(aux);
     
     // Deletes one of the 10 added docs, leaving 9:
-    PhraseQuery q = new PhraseQuery();
-    q.add(new Term("content", "bbb"));
-    q.add(new Term("content", "14"));
+    PhraseQuery q = new PhraseQuery("content", "bbb", "14");
     writer.deleteDocuments(q);
 
     writer.forceMerge(1);
@@ -246,9 +242,7 @@ public class TestAddIndexes extends LuceneTestCase {
     }
 
     // Deletes one of the 10 added docs, leaving 9:
-    PhraseQuery q = new PhraseQuery();
-    q.add(new Term("content", "bbb"));
-    q.add(new Term("content", "14"));
+    PhraseQuery q = new PhraseQuery("content", "bbb", "14");
     writer.deleteDocuments(q);
 
     writer.addIndexes(aux);

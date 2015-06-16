@@ -308,9 +308,7 @@ public class TestOmitTf extends LuceneTestCase {
     TermQuery q3 = new TermQuery(c);
     TermQuery q4 = new TermQuery(d);
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(a);
-    pq.add(c);
+    PhraseQuery pq = new PhraseQuery(a.field(), a.bytes(), c.bytes());
     try {
       searcher.search(pq, 10);
       fail("did not hit expected exception");

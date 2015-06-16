@@ -664,7 +664,7 @@ public abstract class TFIDFSimilarity extends Similarity {
    * return larger values when the edit distance is small and smaller values
    * when it is large.
    *
-   * @see PhraseQuery#setSlop(int)
+   * @see PhraseQuery#getSlop()
    * @param distance the edit distance of this sloppy phrase match
    * @return the frequency increment for this match
    */

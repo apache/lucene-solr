@@ -18,8 +18,6 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -100,10 +98,10 @@ public class TestQueryBuilder extends LuceneTestCase {
   }
   
   public void testPhraseQueryPositionIncrements() throws Exception {
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "1"));
-    expected.add(new Term("field", "2"), 2);
-    
+    PhraseQuery.Builder pqBuilder = new PhraseQuery.Builder();
+    pqBuilder.add(new Term("field", "1"), 0);
+    pqBuilder.add(new Term("field", "2"), 2);
+    PhraseQuery expected = pqBuilder.build();
     CharacterRunAutomaton stopList = new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopList);
@@ -219,9 +217,7 @@ public class TestQueryBuilder extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
+    PhraseQuery expected = new PhraseQuery("field", "中", "国");
     
     QueryBuilder builder = new QueryBuilder(analyzer);
     assertEquals(expected, builder.createPhraseQuery("field", "中国"));
@@ -231,10 +227,7 @@ public class TestQueryBuilder extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    PhraseQuery expected = new PhraseQuery();
-    expected.setSlop(3);
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
+    PhraseQuery expected = new PhraseQuery(3, "field", "中", "国");
     
     QueryBuilder builder = new QueryBuilder(analyzer);
     assertEquals(expected, builder.createPhraseQuery("field", "中国", 3));

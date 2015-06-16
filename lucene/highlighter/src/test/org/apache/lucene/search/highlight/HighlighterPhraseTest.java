@@ -70,10 +70,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      final PhraseQuery phraseQuery = new PhraseQuery();
-      phraseQuery.add(new Term(FIELD, "fox"));
-      phraseQuery.add(new Term(FIELD, "jumped"));
-      phraseQuery.setSlop(0);
+      final PhraseQuery phraseQuery = new PhraseQuery(FIELD, "fox", "jumped");
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(1, hits.totalHits);
       final Highlighter highlighter = new Highlighter(
@@ -178,10 +175,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      final PhraseQuery phraseQuery = new PhraseQuery();
-      phraseQuery.add(new Term(FIELD, "did"));
-      phraseQuery.add(new Term(FIELD, "jump"));
-      phraseQuery.setSlop(0);
+      final PhraseQuery phraseQuery = new PhraseQuery(FIELD, "did", "jump");
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(0, hits.totalHits);
       final Highlighter highlighter = new Highlighter(
@@ -218,10 +212,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      final PhraseQuery phraseQuery = new PhraseQuery();
-      phraseQuery.add(new Term(FIELD, "did"));
-      phraseQuery.add(new Term(FIELD, "jump"));
-      phraseQuery.setSlop(1);
+      final PhraseQuery phraseQuery = new PhraseQuery(1, FIELD, "did", "jump");
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(1, hits.totalHits);
       final Highlighter highlighter = new Highlighter(

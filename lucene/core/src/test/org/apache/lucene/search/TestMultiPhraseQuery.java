@@ -496,17 +496,18 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    * PQ AND Mode - Manually creating a phrase query
    */
   public void testZeroPosIncrSloppyPqAnd() throws IOException {
-    final PhraseQuery pq = new PhraseQuery();
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
     int pos = -1;
     for (Token tap : INCR_0_QUERY_TOKENS_AND) {
       pos += tap.getPositionIncrement();
-      pq.add(new Term("field",tap.toString()), pos);
+      builder.add(new Term("field", tap.toString()), pos);
     }
-    doTestZeroPosIncrSloppy(pq, 0);
-    pq.setSlop(1);
-    doTestZeroPosIncrSloppy(pq, 0);
-    pq.setSlop(2);
-    doTestZeroPosIncrSloppy(pq, 1);
+    builder.setSlop(0);
+    doTestZeroPosIncrSloppy(builder.build(), 0);
+    builder.setSlop(1);
+    doTestZeroPosIncrSloppy(builder.build(), 0);
+    builder.setSlop(2);
+    doTestZeroPosIncrSloppy(builder.build(), 1);
   }
 
   /**

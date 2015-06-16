@@ -109,7 +109,7 @@ public class MultiFieldQueryParser extends QueryParser
               q.setBoost(boost.floatValue());
             }
           }
-          applySlop(q,slop);
+          q = applySlop(q,slop);
           clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
         }
       }
@@ -118,16 +118,26 @@ public class MultiFieldQueryParser extends QueryParser
       return getBooleanQuery(clauses, true);
     }
     Query q = super.getFieldQuery(field, queryText, true);
-    applySlop(q,slop);
+    q = applySlop(q,slop);
     return q;
   }
 
-  private void applySlop(Query q, int slop) {
+  private Query applySlop(Query q, int slop) {
     if (q instanceof PhraseQuery) {
-      ((PhraseQuery) q).setSlop(slop);
+      PhraseQuery.Builder builder = new PhraseQuery.Builder();
+      builder.setSlop(slop);
+      PhraseQuery pq = (PhraseQuery) q;
+      org.apache.lucene.index.Term[] terms = pq.getTerms();
+      int[] positions = pq.getPositions();
+      for (int i = 0; i < terms.length; ++i) {
+        builder.add(terms[i], positions[i]);
+      }
+      q = builder.build();
+      q.setBoost(pq.getBoost());
     } else if (q instanceof MultiPhraseQuery) {
       ((MultiPhraseQuery) q).setSlop(slop);
     }
+    return q;
   }
   
 

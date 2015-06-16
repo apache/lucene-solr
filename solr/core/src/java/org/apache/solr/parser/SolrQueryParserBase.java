@@ -387,7 +387,16 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (subQParser == null) {
 
       if (query instanceof PhraseQuery) {
-        ((PhraseQuery) query).setSlop(slop);
+        PhraseQuery pq = (PhraseQuery) query;
+        Term[] terms = pq.getTerms();
+        int[] positions = pq.getPositions();
+        PhraseQuery.Builder builder = new PhraseQuery.Builder();
+        for (int i = 0; i < terms.length; ++i) {
+          builder.add(terms[i], positions[i]);
+        }
+        builder.setSlop(slop);
+        query = builder.build();
+        query.setBoost(pq.getBoost());
       }
       if (query instanceof MultiPhraseQuery) {
         ((MultiPhraseQuery) query).setSlop(slop);

@@ -17,12 +17,22 @@
 
 package org.apache.solr.search;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -45,17 +55,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.SolrPluginUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.google.common.base.Function;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 
 /**
  * Query parser that generates DisjunctionMaxQueries based on user configuration.
@@ -1240,7 +1242,14 @@ public class ExtendedDismaxQParser extends QParser {
             if (query instanceof PhraseQuery) {
               PhraseQuery pq = (PhraseQuery)query;
               if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
-              ((PhraseQuery)query).setSlop(slop);
+              PhraseQuery.Builder builder = new PhraseQuery.Builder();
+              Term[] terms = pq.getTerms();
+              int[] positions = pq.getPositions();
+              for (int i = 0; i < terms.length; ++i) {
+                builder.add(terms[i], positions[i]);
+              }
+              builder.setSlop(slop);
+              query = builder.build();
             } else if (query instanceof MultiPhraseQuery) {
               MultiPhraseQuery pq = (MultiPhraseQuery)query;
               if (minClauseSize > 1 && pq.getTermArrays().size() < minClauseSize) return null;

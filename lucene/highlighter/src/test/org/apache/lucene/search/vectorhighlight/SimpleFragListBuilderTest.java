@@ -48,9 +48,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   public void testSmallerFragSizeThanPhraseQuery() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
 
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term(F, "abcdefgh"));
-    phraseQuery.add(new Term(F, "jklmnopqrs"));
+    PhraseQuery phraseQuery = new PhraseQuery(F, "abcdefgh", "jklmnopqrs");
 
     FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "abcdefgh   jklmnopqrs" ), sflb.minFragCharSize );
     assertEquals( 1, ffl.getFragInfos().size() );
@@ -120,9 +118,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   public void testPhraseQuery() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
 
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term(F, "a"));
-    phraseQuery.add(new Term(F, "b"));
+    PhraseQuery phraseQuery = new PhraseQuery(F, "a", "b");
 
     FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "c d e" ), 20 );
     assertEquals( 0, ffl.getFragInfos().size() );
@@ -138,10 +134,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   public void testPhraseQuerySlop() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
 
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(1);
-    phraseQuery.add(new Term(F, "a"));
-    phraseQuery.add(new Term(F, "b"));
+    PhraseQuery phraseQuery = new PhraseQuery(1, F, "a", "b");
 
     FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "a c b" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );

@@ -298,9 +298,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
+    PhraseQuery expected = new PhraseQuery("field", "中", "国");
     
     assertEquals(expected, getQuery("\"中国\"", analyzer));
   }
@@ -309,10 +307,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    PhraseQuery expected = new PhraseQuery();
+    PhraseQuery expected = new PhraseQuery("field", "中", "国");
     expected.setBoost(0.5f);
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
     
     assertEquals(expected, getQuery("\"中国\"^0.5", analyzer));
   }
@@ -321,10 +317,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    PhraseQuery expected = new PhraseQuery();
-    expected.setSlop(3);
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
+    PhraseQuery expected = new PhraseQuery(3, "field", "中", "国");
     
     assertEquals(expected, getQuery("\"中国\"~3", analyzer));
   }
@@ -333,9 +326,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer(); 
   
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
+    PhraseQuery expected = new PhraseQuery("field", "中", "国");
     CommonQueryParserConfiguration qp = getParserConfig(analyzer);
     setAutoGeneratePhraseQueries(qp, true);
     assertEquals(expected, getQuery("中国",qp));
@@ -1259,10 +1250,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
                          new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
     qp.setEnablePositionIncrements(true);
 
-    PhraseQuery phraseQuery = new PhraseQuery();
+    PhraseQuery.Builder phraseQuery = new PhraseQuery.Builder();
     phraseQuery.add(new Term("field", "1"));
     phraseQuery.add(new Term("field", "2"), 2);
-    assertEquals(phraseQuery, getQuery("\"1 stop 2\"",qp));
+    assertEquals(phraseQuery.build(), getQuery("\"1 stop 2\"",qp));
   }
 
   public void testMatchAllQueryParsing() throws Exception {

@@ -192,9 +192,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
 
   @Test
   public void testPhraseQuery() throws Exception {
-    PhraseQuery q = new PhraseQuery();
-    q.add(new Term("f", "b"));
-    q.add(new Term("f", "c"));
+    PhraseQuery q = new PhraseQuery("f", "b", "c");
     CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10));
     s.search(q, c);
     final int maxDocs = s.getIndexReader().maxDoc();

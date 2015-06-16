@@ -151,10 +151,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       query = TermRangeQuery.newStringRange("field", "a", "" + randomChar(), true, true);
     } else {
       // use a query with a two-phase approximation
-      PhraseQuery phrase = new PhraseQuery();
-      phrase.add(new Term("field", "" + randomChar()));
-      phrase.add(new Term("field", "" + randomChar()));
-      phrase.setSlop(100);
+      PhraseQuery phrase = new PhraseQuery(100, "field", "" + randomChar(), "" + randomChar());
       query = phrase;
     }
     

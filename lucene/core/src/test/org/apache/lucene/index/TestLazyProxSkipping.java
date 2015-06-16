@@ -111,9 +111,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     
     private ScoreDoc[] search() throws IOException {
         // create PhraseQuery "term1 term2" and search
-        PhraseQuery pq = new PhraseQuery();
-        pq.add(new Term(this.field, this.term1));
-        pq.add(new Term(this.field, this.term2));
+        PhraseQuery pq = new PhraseQuery(field, term1, term2);
         return this.searcher.search(pq, 1000).scoreDocs;        
     }
     

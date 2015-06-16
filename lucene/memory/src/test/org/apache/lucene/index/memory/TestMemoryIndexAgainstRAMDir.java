@@ -410,16 +410,14 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     LeafReader reader = (LeafReader) mindex.createSearcher().getIndexReader();
     TestUtil.checkReader(reader);
     assertEquals(7, reader.terms("field").getSumTotalTermFreq());
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "fox"));
-    query.add(new Term("field", "jumps"));
+    PhraseQuery query = new PhraseQuery("field", "fox", "jumps");
     assertTrue(mindex.search(query) > 0.1);
     mindex.reset();
     mockAnalyzer.setPositionIncrementGap(1 + random().nextInt(10));
     mindex.addField("field", "the quick brown fox", mockAnalyzer);
     mindex.addField("field", "jumps over the", mockAnalyzer);
     assertEquals(0, mindex.search(query), 0.00001f);
-    query.setSlop(10);
+    query = new PhraseQuery(10, "field", "fox", "jumps");
     assertTrue("posGap" + mockAnalyzer.getPositionIncrementGap("field") , mindex.search(query) > 0.0001);
     TestUtil.checkReader(mindex.createSearcher().getIndexReader());
   }

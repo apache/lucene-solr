@@ -55,7 +55,7 @@ public class MultiPhraseQuery extends Query {
   private int slop = 0;
 
   /** Sets the phrase slop for this query.
-   * @see PhraseQuery#setSlop(int)
+   * @see PhraseQuery#getSlop()
    */
   public void setSlop(int s) {
     if (s < 0) {
@@ -70,14 +70,11 @@ public class MultiPhraseQuery extends Query {
   public int getSlop() { return slop; }
 
   /** Add a single term at the next position in the phrase.
-   * @see PhraseQuery#add(Term)
    */
   public void add(Term term) { add(new Term[]{term}); }
 
   /** Add multiple terms at the next position in the phrase.  Any of the terms
    * may match.
-   *
-   * @see PhraseQuery#add(Term)
    */
   public void add(Term[] terms) {
     int position = 0;
@@ -89,8 +86,6 @@ public class MultiPhraseQuery extends Query {
 
   /**
    * Allows to specify the relative position of terms within the phrase.
-   * 
-   * @see PhraseQuery#add(Term, int)
    */
   public void add(Term[] terms, int position) {
     Objects.requireNonNull(terms, "Term array must not be null");

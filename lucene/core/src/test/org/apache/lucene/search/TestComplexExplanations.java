@@ -60,10 +60,7 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     
     BooleanQuery q = new BooleanQuery();
 
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(1);
-    phraseQuery.add(new Term(FIELD, "w1"));
-    phraseQuery.add(new Term(FIELD, "w2"));
+    PhraseQuery phraseQuery = new PhraseQuery(1, FIELD, "w1", "w2");
     q.add(phraseQuery, Occur.MUST);
     q.add(snear(st("w2"),
                 sor("w5","zz"),
@@ -123,10 +120,7 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     
     BooleanQuery q = new BooleanQuery();
 
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(1);
-    phraseQuery.add(new Term(FIELD, "w1"));
-    phraseQuery.add(new Term(FIELD, "w2"));
+    PhraseQuery phraseQuery = new PhraseQuery(1, FIELD, "w1", "w2");
     q.add(phraseQuery, Occur.MUST);
     q.add(snear(st("w2"),
                 sor("w5","zz"),

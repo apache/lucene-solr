@@ -493,7 +493,16 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     Query query = getFieldQuery(field, queryText, true);
 
     if (query instanceof PhraseQuery) {
-      ((PhraseQuery) query).setSlop(slop);
+      PhraseQuery.Builder builder = new PhraseQuery.Builder();
+      builder.setSlop(slop);
+      PhraseQuery pq = (PhraseQuery) query;
+      org.apache.lucene.index.Term[] terms = pq.getTerms();
+      int[] positions = pq.getPositions();
+      for (int i = 0; i < terms.length; ++i) {
+        builder.add(terms[i], positions[i]);
+      }
+      query = builder.build();
+      query.setBoost(pq.getBoost());
     }
     if (query instanceof MultiPhraseQuery) {
       ((MultiPhraseQuery) query).setSlop(slop);
