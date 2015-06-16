@@ -191,10 +191,10 @@ public class XMLWriter extends TextResponseWriter {
     incLevel();
 
     for (String fname : doc.getFieldNames()) {
-      if (!returnFields.wantsField(fname)) {
+      if (returnFields!= null && !returnFields.wantsField(fname)) {
         continue;
       }
-      
+
       Object val = doc.getFieldValue(fname);
       if( "_explain_".equals( fname ) ) {
         System.out.println( val );

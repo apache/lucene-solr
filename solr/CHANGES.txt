@@ -666,6 +666,8 @@ Other Changes
 * SOLR-7183: Fix Locale blacklisting for Minikdc based tests. (Ishan Chattopadhyaya, hossman
   via Anshum Gupta)
 
+* SOLR-7662: Refactored response writing to consolidate the logic in  one place (Noble Paul)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

@@ -19,6 +19,9 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -108,11 +111,21 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     public void transform(SolrDocument doc, int docid) throws IOException {
       str.setLength(0);
       for(String s : extra) {
-        String v = ResponseWriterUtil.getAsString(s, doc);
+        String v = getAsString(s, doc);
         str.append(v).append('#');
       }
       System.out.println( "HELLO: "+str );
       doc.setField(name, str.toString());
     }
+  }
+  public static String getAsString(String field, SolrDocument doc) {
+    Object v = doc.getFirstValue(field);
+    if(v != null) {
+      if(v instanceof StorableField) {
+        return ((StorableField)v).stringValue();
+      }
+      return v.toString();
+    }
+    return null;
   }
 }

@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.ResponseWriterUtil;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**

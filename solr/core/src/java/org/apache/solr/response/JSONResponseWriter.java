@@ -332,10 +332,10 @@ class JSONWriter extends TextResponseWriter {
 
     boolean first=true;
     for (String fname : doc.getFieldNames()) {
-      if (!returnFields.wantsField(fname)) {
+      if (returnFields!= null && !returnFields.wantsField(fname)) {
         continue;
       }
-      
+
       if (first) {
         first=false;
       }
@@ -365,9 +365,8 @@ class JSONWriter extends TextResponseWriter {
       writeKey("_childDocuments_", true);
       writeArrayOpener(doc.getChildDocumentCount());
       List<SolrDocument> childDocs = doc.getChildDocuments();
-      ReturnFields rf = new SolrReturnFields();
       for(int i=0; i<childDocs.size(); i++) {
-        writeSolrDocument(null, childDocs.get(i), rf, i);
+        writeSolrDocument(null, childDocs.get(i), null, i);
       }
       writeArrayCloser();
     }

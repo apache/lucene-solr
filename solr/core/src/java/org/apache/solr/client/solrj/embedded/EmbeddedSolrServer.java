@@ -222,7 +222,7 @@ public class EmbeddedSolrServer extends SolrClient {
               super.writeSolrDocumentList(docs);
             }
 
-          }.marshal(rsp.getValues(), out);
+          }.setWritableDocFields(resolver). marshal(rsp.getValues(), out);
 
           InputStream in = new ByteArrayInputStream(out.toByteArray());
           return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
