@@ -329,7 +329,9 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                        {'source':'NewDynamicField1*', 'dest':'NewField2'                       },\n" +
         "                        {'source':'NewDynamicField2*', 'dest':'NewField2'                       },\n" +
         "                        {'source':'NewDynamicField3*', 'dest':'NewField3'                       },\n" +
-        "                        {'source':'NewField4',         'dest':'NewField3'                       }]\n" +
+        "                        {'source':'NewField4',         'dest':'NewField3'                       },\n" +
+        "                        {'source':'NewField4',         'dest':'NewField2', maxChars: 100        },\n" +
+        "                        {'source':'NewField4',         'dest':['NewField1'], maxChars: 3333     }]\n" +
         "}\n";
 
     String response = harness.post("/schema?wt=json", json(cmds));
@@ -374,8 +376,17 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("NewField3", ((Map)list.get(0)).get("dest"));
 
     list = getSourceCopyFields(harness, "NewField4");
-    assertEquals(1, list.size());
-    assertEquals("NewField3", ((Map)list.get(0)).get("dest"));
+    assertEquals(3, list.size());
+    map.clear();
+    for (Object obj : list) { 
+      map.put(((Map)obj).get("dest"), ((Map)obj).get("maxChars"));
+    }
+    assertTrue(map.containsKey("NewField1"));
+    assertEquals(3333L, map.get("NewField1"));
+    assertTrue(map.containsKey("NewField2"));
+    assertEquals(100L, map.get("NewField2"));
+    assertTrue(map.containsKey("NewField3"));
+    assertNull(map.get("NewField3"));
 
     cmds = "{'delete-field-type' : {'name':'NewFieldType'}}";
     response = harness.post("/schema?wt=json", json(cmds));
@@ -433,8 +444,9 @@ public class TestBulkSchemaAPI extends RestTestBase {
     for (Object obj : list) {
       set.add(((Map)obj).get("source"));
     }
-    assertEquals(3, list.size());
+    assertEquals(4, list.size());
     assertTrue(set.contains("NewField1"));
+    assertTrue(set.contains("NewField4"));
     assertTrue(set.contains("NewDynamicField1*"));
     assertTrue(set.contains("NewDynamicField2*"));
 
@@ -473,11 +485,11 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue(set.contains("NewDynamicField3*"));
 
     cmds = "{\n" +
-        "  'delete-copy-field': [{'source':'NewField1',         'dest':['NewField2', 'NewDynamicField1A']},\n" +
-        "                        {'source':'NewDynamicField1*', 'dest':'NewField2'                       },\n" +
-        "                        {'source':'NewDynamicField2*', 'dest':'NewField2'                       },\n" +
-        "                        {'source':'NewDynamicField3*', 'dest':'NewField3'                       },\n" +
-        "                        {'source':'NewField4',         'dest':'NewField3'                       }]\n" +
+        "  'delete-copy-field': [{'source':'NewField1',         'dest':['NewField2', 'NewDynamicField1A']     },\n" +
+        "                        {'source':'NewDynamicField1*', 'dest':'NewField2'                            },\n" +
+        "                        {'source':'NewDynamicField2*', 'dest':'NewField2'                            },\n" +
+        "                        {'source':'NewDynamicField3*', 'dest':'NewField3'                            },\n" +
+        "                        {'source':'NewField4',         'dest':['NewField1', 'NewField2', 'NewField3']}]\n" +
         "}\n";
     response = harness.post("/schema?wt=json", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));

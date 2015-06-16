@@ -151,6 +151,8 @@ Bug Fixes
   
 * SOLR-7091: Nested documents with unknown fields don't work in schemaless mode. 
   (Steve Rowe)
+  
+* SOLR-7682: Schema API: add-copy-field should accept the maxChars parameter. (Steve Rowe)
 
 Optimizations
 ----------------------

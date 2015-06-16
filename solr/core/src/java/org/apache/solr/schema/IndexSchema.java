@@ -101,6 +101,7 @@ public class IndexSchema {
   public static final String FIELD_TYPES = FIELD_TYPE + "s";
   public static final String INTERNAL_POLY_FIELD_PREFIX = "*" + FieldType.POLY_FIELD_SEPARATOR;
   public static final String LUCENE_MATCH_VERSION_PARAM = "luceneMatchVersion";
+  public static final String MAX_CHARS = "maxChars";
   public static final String NAME = "name";
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
@@ -115,7 +116,6 @@ public class IndexSchema {
 
   private static final String AT = "@";
   private static final String DESTINATION_DYNAMIC_BASE = "destDynamicBase";
-  private static final String MAX_CHARS = "maxChars";
   private static final String SOLR_CORE_NAME = "solr.core.name";
   private static final String SOURCE_DYNAMIC_BASE = "sourceDynamicBase";
   private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
@@ -1667,11 +1667,32 @@ public class IndexSchema {
      * Requires synchronizing on the object returned by
      * {@link #getSchemaUpdateLock()}.
      *
+     * @see #addCopyFields(String,Collection,int) to limit the number of copied characters.
+     *
      * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
      * @param persist to persist the schema or not
      * @return The new Schema with the copy fields added
      */
   public IndexSchema addCopyFields(Map<String, Collection<String>> copyFields, boolean persist) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema and adds the new copy fields to the copy.
+   * 
+   * Requires synchronizing on the object returned by 
+   * {@link #getSchemaUpdateLock()}
+   * 
+   * @param source source field name
+   * @param destinations collection of target field names
+   * @param maxChars max number of characters to copy from the source to each
+   *                 of the destinations.  Use {@link CopyField#UNLIMITED}
+   *                 if you don't want to limit the number of copied chars.
+   * @return The new Schema with the copy fields added
+   */
+  public IndexSchema addCopyFields(String source, Collection<String> destinations, int maxChars) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);

@@ -48,6 +48,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 import static org.apache.solr.schema.IndexSchema.DESTINATION;
+import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
 import static org.apache.solr.schema.IndexSchema.NAME;
 import static org.apache.solr.schema.IndexSchema.SOURCE;
 import static org.apache.solr.schema.IndexSchema.TYPE;
@@ -198,15 +199,29 @@ public class SchemaManager {
       @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
         String src  = op.getStr(SOURCE);
         List<String> dests = op.getStrs(DESTINATION);
+        
+        int maxChars = CopyField.UNLIMITED; // If maxChars is not specified, there is no limit on copied chars
+        String maxCharsStr = op.getStr(MAX_CHARS, null);
+        if (null != maxCharsStr) {
+          try {
+            maxChars = Integer.parseInt(maxCharsStr);
+          } catch (NumberFormatException e) {
+            op.addError("Exception parsing " + MAX_CHARS + " '" + maxCharsStr + "': " + getErrorStr(e));
+          }
+          if (maxChars < 0) {
+            op.addError(MAX_CHARS + " '" + maxCharsStr + "' is negative.");
+          }
+        }
+
         if (op.hasError())
           return false;
-        if ( ! op.getValuesExcluding(SOURCE, DESTINATION).isEmpty()) {
-          op.addError("Only the '" + SOURCE + "' and '" + DESTINATION
+        if ( ! op.getValuesExcluding(SOURCE, DESTINATION, MAX_CHARS).isEmpty()) {
+          op.addError("Only the '" + SOURCE + "', '" + DESTINATION + "' and '" + MAX_CHARS
               + "' params are allowed with the 'add-copy-field' operation");
           return false;
         }
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.addCopyFields(singletonMap(src, dests), false);
+          mgr.managedIndexSchema = mgr.managedIndexSchema.addCopyFields(src, dests, maxChars);
           return true;
         } catch (Exception e) {
           op.addError(getErrorStr(e));

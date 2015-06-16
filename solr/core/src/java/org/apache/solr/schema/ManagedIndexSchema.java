@@ -772,6 +772,24 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
+  public ManagedIndexSchema addCopyFields(String source, Collection<String> destinations, int maxChars) {
+    ManagedIndexSchema newSchema;
+    if (isMutable) {
+      newSchema = shallowCopy(true);
+      for (String destination : destinations) {
+        newSchema.registerCopyField(source, destination, maxChars);
+      }
+      newSchema.postReadInform();
+      newSchema.refreshAnalyzers();
+    } else {
+      String msg = "This ManagedIndexSchema is not mutable.";
+      log.error(msg);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    return newSchema;
+  }
+  
+  @Override
   public ManagedIndexSchema deleteCopyFields(Map<String,Collection<String>> copyFields) {
     ManagedIndexSchema newSchema;
     if (isMutable) {
