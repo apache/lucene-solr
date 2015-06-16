@@ -32,14 +32,12 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
-
 
 /**
  * Only return those matches that have a specific payload at the given position.
@@ -98,17 +96,9 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
         protected AcceptStatus accept(Spans candidate) throws IOException {
-
           collector.reset();
           candidate.collect(collector);
-          Collection<byte[]> collected = collector.getPayloads();
-
-          if (match instanceof SpanNearQuery) {
-            return checkCompositePayloads(collected);
-          }
-          else {
-            return checkOrderedPayloads(collected);
-          }
+          return checkPayloads(collector.getPayloads());
         }
       };
     }
@@ -132,19 +122,14 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   /**
    * Check to see if the collected payloads match the required set.
    *
-   * This is called for Near span queries which collect their sub spans
-   * out-of-order, meaning that we can't rely on the order of payloads
-   * in the collection
-   *
    * @param candidate a collection of payloads from the current Spans
    * @return whether or not the payloads match
    */
-  protected AcceptStatus checkOrderedPayloads(Collection<byte[]> candidate) {
+  protected AcceptStatus checkPayloads(Collection<byte[]> candidate) {
     if (candidate.size() == payloadToMatch.size()){
       //TODO: check the byte arrays are the same
       Iterator<byte[]> toMatchIter = payloadToMatch.iterator();
       //check each of the byte arrays, in order
-      //hmm, can't rely on order here
       for (byte[] candBytes : candidate) {
         //if one is a mismatch, then return false
         if (Arrays.equals(candBytes, toMatchIter.next()) == false){
@@ -153,36 +138,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       }
       //we've verified all the bytes
       return AcceptStatus.YES;
-    } else {
-      return AcceptStatus.NO;
-    }
-  }
-
-  /**
-   * Check to see if the collected payloads match the required set.
-   * @param candidate a collection of payloads from the current Spans
-   * @return whether or not the payloads match
-   */
-  protected AcceptStatus checkCompositePayloads(Collection<byte[]> candidate) {
-    if (candidate.size() == payloadToMatch.size()) {
-      //TODO: check the byte arrays are the same
-      //hmm, can't rely on order here
-      int matches = 0;
-      for (byte[] candBytes : candidate) {
-        //Unfortunately, we can't rely on order, so we need to compare all
-        for (byte[] payBytes : payloadToMatch) {
-          if (Arrays.equals(candBytes, payBytes) == true) {
-            matches++;
-            break;
-          }
-        }
-      }
-      if (matches == payloadToMatch.size()){
-        //we've verified all the bytes
-        return AcceptStatus.YES;
-      } else {
-        return AcceptStatus.NO;
-      }
     } else {
       return AcceptStatus.NO;
     }

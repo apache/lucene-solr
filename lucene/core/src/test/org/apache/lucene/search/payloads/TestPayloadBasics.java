@@ -134,6 +134,23 @@ public class TestPayloadBasics extends LuceneTestCase {
       {505});
   }
 
+  public void testUnorderedPayloadChecks() throws Exception {
+
+    SpanTermQuery term5 = new SpanTermQuery(new Term("field", "five"));
+    SpanTermQuery term100 = new SpanTermQuery(new Term("field", "hundred"));
+    SpanTermQuery term4 = new SpanTermQuery(new Term("field", "four"));
+    SpanNearQuery nearQuery = new SpanNearQuery(new SpanQuery[]{term5, term100, term4}, 0, false);
+
+    List<byte[]> payloads = new ArrayList<>();
+    payloads.add(("pos: " + 2).getBytes(StandardCharsets.UTF_8));
+    payloads.add(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
+    payloads.add(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+
+    SpanPayloadCheckQuery payloadQuery = new SpanPayloadCheckQuery(nearQuery, payloads);
+    checkHits(payloadQuery, new int[]{ 405 });
+
+  }
+
   public void testComplexSpanChecks() throws Exception {
     SpanTermQuery one = new SpanTermQuery(new Term("field", "one"));
     SpanTermQuery thous = new SpanTermQuery(new Term("field", "thousand"));
