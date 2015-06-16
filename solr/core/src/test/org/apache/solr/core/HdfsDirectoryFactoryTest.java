@@ -194,12 +194,15 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     SolrInfoMBean localityBean = it.next(); // brittle, but it's ok
     
     // Make sure we have the right bean.
-    assertEquals("hdfs-locality", localityBean.getName());
+    assertEquals("Got the wrong bean: " + localityBean.getName(), "hdfs-locality", localityBean.getName());
     
     // We haven't done anything, so there should be no data
     NamedList<?> statistics = localityBean.getStatistics();
-    assertEquals(0l, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
-    assertEquals(0, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_RATIO));
+    assertEquals("Saw bytes that were not written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL), 0l,
+        statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
+    assertEquals(
+        "Counted bytes as local when none written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_RATIO), 0,
+        statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_RATIO));
     
     // create a directory and a file
     String path = HdfsTestUtil.getURI(dfsCluster) + "/solr3/";
@@ -211,16 +214,24 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     final long long_bytes = Long.SIZE / Byte.SIZE;
     
     // no locality because hostname not set
+    factory.setHost("bogus");
     statistics = localityBean.getStatistics();
-    assertEquals(long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
-    assertEquals(1, statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_TOTAL));
-    assertEquals(0, statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_LOCAL));
-    
+    assertEquals("Wrong number of total bytes counted: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL),
+        long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
+    assertEquals("Wrong number of total blocks counted: " + statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_TOTAL),
+        1, statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_TOTAL));
+    assertEquals(
+        "Counted block as local when bad hostname set: " + statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_LOCAL),
+        0, statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_LOCAL));
+        
     // set hostname and check again
     factory.setHost("127.0.0.1");
     statistics = localityBean.getStatistics();
-    assertEquals(long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_LOCAL));
-    
+    assertEquals(
+        "Did not count block as local after setting hostname: "
+            + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_LOCAL),
+        long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_LOCAL));
+        
     factory.close();
   }
 }
