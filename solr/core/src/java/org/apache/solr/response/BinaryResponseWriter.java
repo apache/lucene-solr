@@ -143,35 +143,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       writeResultsBody( ctx, codec );
     }
 
-    public SolrDocument getDoc(Document doc) {
-      SolrDocument solrDoc = new SolrDocument();
-      for (IndexableField f : doc) {
-        String fieldName = f.name();
-        if( !returnFields.wantsField(fieldName) )
-          continue;
-
-        SchemaField sf = schema.getFieldOrNull(fieldName);
-        Object val = null;
-        try {
-          val = DocsStreamer.getValue(sf,f);
-        } catch (Exception e) {
-          // There is a chance of the underlying field not really matching the
-          // actual field type . So ,it can throw exception
-          LOG.warn("Error reading a field from document : " + solrDoc, e);
-          //if it happens log it and continue
-          continue;
-        }
-          
-        if(sf != null && sf.multiValued() && !solrDoc.containsKey(fieldName)){
-          ArrayList l = new ArrayList();
-          l.add(val);
-          solrDoc.addField(fieldName, l);
-        } else {
-          solrDoc.addField(fieldName, val);
-        }
-      }
-      return solrDoc;
-    }
   }
 
 
