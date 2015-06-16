@@ -167,6 +167,9 @@ Build
 * LUCENE-6518: Don't report false thread leaks from IBM J9
   ClassCache Reaper in test framework. (Dawid Weiss)
 
+* LUCENE-6567: Simplify payload checking in SpanPayloadCheckQuery (Alan
+  Woodward)
+
 ======================= Lucene 5.2.1 =======================
 
 Bug Fixes
