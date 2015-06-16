@@ -197,7 +197,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     // greediness affect last doc collected
     int exceptionDoc = timoutException.getLastDocCollected();
     int lastCollected = myHc.getLastDocCollected(); 
-    assertTrue( "doc collected at timeout must be > 0!", exceptionDoc > 0 );
+    assertTrue( "doc collected at timeout must be > 0! or == -1 but was: " + exceptionDoc, exceptionDoc == -1 || exceptionDoc > 0);
     if (greedy) {
       assertTrue("greedy="+greedy+" exceptionDoc="+exceptionDoc+" != lastCollected="+lastCollected, exceptionDoc==lastCollected);
       assertTrue("greedy, but no hits found!", myHc.hitCount() > 0 );
