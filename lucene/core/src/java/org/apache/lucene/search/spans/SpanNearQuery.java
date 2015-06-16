@@ -44,7 +44,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   protected boolean inOrder;
 
   protected String field;
-  private boolean collectPayloads;
 
   /** Construct a SpanNearQuery.  Matches spans matching a span from each
    * clause, with up to <code>slop</code> total unmatched positions between
@@ -61,6 +60,10 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     this(clauses, slop, inOrder, true);
   }
 
+  /**
+   * @deprecated Use {@link #SpanNearQuery(SpanQuery[], int, boolean)}
+   */
+  @Deprecated
   public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder, boolean collectPayloads) {
     this.clauses = new ArrayList<>(clausesIn.length);
     for (SpanQuery clause : clausesIn) {
@@ -71,7 +74,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
       this.clauses.add(clause);
     }
-    this.collectPayloads = collectPayloads;
     this.slop = slop;
     this.inOrder = inOrder;
   }
@@ -209,7 +211,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
     return (inOrder == spanNearQuery.inOrder)
         && (slop == spanNearQuery.slop)
-        && (collectPayloads == spanNearQuery.collectPayloads)
         && clauses.equals(spanNearQuery.clauses);
   }
 
@@ -218,7 +219,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     int result = super.hashCode();
     result ^= clauses.hashCode();
     result += slop;
-    int fac = 1 + (inOrder ? 8 : 4) + (collectPayloads ? 2 : 0);
+    int fac = 1 + (inOrder ? 8 : 4);
     return fac * result;
   }
 }
