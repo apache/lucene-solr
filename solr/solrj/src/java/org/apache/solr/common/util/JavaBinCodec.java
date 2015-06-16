@@ -338,15 +338,18 @@ public class JavaBinCodec {
     dis.readFully(arr);
     return arr;
   }
+  //use this to ignore the writable interface because , child docs will ignore the fl flag
+  // is it a good design?
+  private boolean ignoreWritable =false;
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
     List<SolrDocument> children = doc.getChildDocuments();
     int fieldsCount = 0;
-    if(writableDocFields == null || writableDocFields.wantsAllFields()){
+    if(writableDocFields == null || writableDocFields.wantsAllFields() || ignoreWritable){
       fieldsCount = doc.size();
     } else {
       for (Entry<String, Object> e : doc) {
-        if(writableDocFields.isWritable(e.getKey())) fieldsCount++;
+        if(toWrite(e.getKey())) fieldsCount++;
       }
     }
     int sz = fieldsCount + (children==null ? 0 : children.size());
@@ -354,17 +357,27 @@ public class JavaBinCodec {
     writeTag(ORDERED_MAP, sz);
     for (Map.Entry<String, Object> entry : doc) {
       String name = entry.getKey();
-      if(writableDocFields == null || writableDocFields.isWritable(name)) {
+      if(toWrite(name)) {
         writeExternString(name);
         Object val = entry.getValue();
         writeVal(val);
       }
     }
-    if (children != null) {
-      for (SolrDocument child : children) {
-        writeSolrDocument(child);
+      if (children != null) {
+        try {
+          ignoreWritable = true;
+          for (SolrDocument child : children) {
+            writeSolrDocument(child);
+          }
+        } finally {
+          ignoreWritable = false;
+        }
       }
-    }
+
+  }
+
+  protected boolean toWrite(String key) {
+    return writableDocFields == null || ignoreWritable || writableDocFields.isWritable(key);
   }
 
   public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {
