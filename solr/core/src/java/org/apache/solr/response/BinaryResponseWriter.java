@@ -160,7 +160,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
-      new JavaBinCodec(resolver).marshal(rsp.getValues(), out);
+      new JavaBinCodec(resolver).setWritableDocFields(resolver).marshal(rsp.getValues(), out);
 
       InputStream in = new ByteArrayInputStream(out.toByteArray());
       return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
