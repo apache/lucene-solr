@@ -30,7 +30,6 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Properties;
 
@@ -168,6 +167,68 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     } finally {
       cc.shutdown();
+    }
+  }
+
+
+
+  // Insure that if the number of transient cores that are loaded on startup is greater than the cache size that Solr
+  // "does the right thing". Which means
+  // 1> stop loading cores after transient cache size is reached, in this case that magic number is 3
+  //    one non-transient and two transient.
+  // 2> still loads cores as time passes.
+  //
+  // This seems like a silly test, but it hangs forever on 4.10 so let's guard against it in future. The behavior
+  // has gone away with the removal of the complexity around the old-style solr.xml files.
+  //
+  // NOTE: The order that cores are loaded depends upon how the core discovery is traversed. I don't think we can
+  //       make the test depend on that order, so after load just insure that the cores counts are correct.
+
+  @Test
+  public void testTooManyTransientCores() throws Exception {
+
+    setMeUp();
+
+    // name, isLazy, loadOnStartup
+    addCoreWithProps("coreLOS", makeCorePropFile("coreLOS", false, true, "dataDir=coreLOS"));
+    addCoreWithProps("coreT1", makeCorePropFile("coreT1", true, true, "dataDir=coreT1"));
+    addCoreWithProps("coreT2", makeCorePropFile("coreT2", true, true, "dataDir=coreT2"));
+    addCoreWithProps("coreT3", makeCorePropFile("coreT3", true, true, "dataDir=coreT3"));
+    addCoreWithProps("coreT4", makeCorePropFile("coreT4", true, true, "dataDir=coreT4"));
+    addCoreWithProps("coreT5", makeCorePropFile("coreT5", true, true, "dataDir=coreT5"));
+    addCoreWithProps("coreT6", makeCorePropFile("coreT6", true, true, "dataDir=coreT6"));
+
+    // Do this specially since we need to search.
+    final CoreContainer cc = new CoreContainer(solrHomeDirectory.getPath().toString());
+    try {
+      cc.load();
+      // Just check that the proper number of cores are loaded since making the test depend on order would be fragile
+      assertEquals("There should only be 3 cores loaded, coreLOS and two coreT? cores",
+          3, cc.getCoreNames().size());
+
+      SolrCore c1 = cc.getCore("coreT1");
+      assertNotNull("Core T1 should NOT BE NULL", c1);
+      SolrCore c2 = cc.getCore("coreT2");
+      assertNotNull("Core T2 should NOT BE NULL", c2);
+      SolrCore c3 = cc.getCore("coreT3");
+      assertNotNull("Core T3 should NOT BE NULL", c3);
+      SolrCore c4 = cc.getCore("coreT4");
+      assertNotNull("Core T4 should NOT BE NULL", c4);
+      SolrCore c5 = cc.getCore("coreT5");
+      assertNotNull("Core T5 should NOT BE NULL", c5);
+      SolrCore c6 = cc.getCore("coreT6");
+      assertNotNull("Core T6 should NOT BE NULL", c6);
+
+      c1.close();
+      c2.close();
+      c3.close();
+      c4.close();
+      c5.close();
+      c6.close();
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
     }
   }
 
