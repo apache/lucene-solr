@@ -139,6 +139,9 @@ Other Changes
 * SOLR-7619: Fix SegmentsInfoRequestHandlerTest when more than one segment is created.
   (Ramkumar Aiyengar, Steve Rowe)
 
+* SOLR-7678: Switch RTimer to use nanoTime (improves accuracy of QTime, and other times
+  returned by Solr handlers) (Ramkumar Aiyengar)
+
 * SOLR-7680: Use POST instead of GET when finding versions for mismatches with
   CloudInspectUtil for tests (Ramkumar Aiyengar)
 

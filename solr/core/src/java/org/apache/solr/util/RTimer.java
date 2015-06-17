@@ -17,12 +17,11 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-
-import java.lang.System;
-import java.lang.Thread;
-import java.util.*;
 
 /** A recursive timer.
  * 
@@ -39,31 +38,49 @@ public class RTimer {
   public static final int PAUSED = 2;
 
   protected int state;
-  protected double startTime;
+  protected TimerImpl timerImpl;
   protected double time;
   protected double culmTime;
   protected SimpleOrderedMap<RTimer> children;
+
+  protected interface TimerImpl {
+    void start();
+    double elapsed();
+  }
+
+  private class NanoTimeTimerImpl implements TimerImpl {
+    private long start;
+    public void start() {
+      start = System.nanoTime();
+    }
+    public double elapsed() {
+      return TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+    }
+  }
+
+  protected TimerImpl newTimerImpl() {
+    return new NanoTimeTimerImpl();
+  }
+
+  protected RTimer newTimer() {
+    return new RTimer();
+  }
 
   public RTimer() {
     time = 0;
     culmTime = 0;
     children = new SimpleOrderedMap<>();
-    startTime = now();
+    timerImpl = newTimerImpl();
+    timerImpl.start();
     state = STARTED;
   }
-
-  /** Get current time
-   *
-   * May override to implement a different timer (CPU time, etc).
-   */
-  protected double now() { return System.currentTimeMillis(); }
 
   /** Recursively stop timer and sub timers */
   public double stop() {
     assert state == STARTED || state == PAUSED;
     time = culmTime;
     if(state == STARTED) 
-      time += now() - startTime;
+      time += timerImpl.elapsed();
     state = STOPPED;
     
     for( Map.Entry<String,RTimer> entry : children ) {
@@ -76,7 +93,7 @@ public class RTimer {
 
   public void pause() {
     assert state == STARTED;
-    culmTime += now() - startTime;
+    culmTime += timerImpl.elapsed();
     state = PAUSED;
   }
   
@@ -85,7 +102,7 @@ public class RTimer {
       return;
     assert state == PAUSED;
     state = STARTED;
-    startTime = now();
+    timerImpl.start();
   }
 
   /** Get total elapsed time for this timer. */
@@ -94,7 +111,7 @@ public class RTimer {
     else if (state == PAUSED) return culmTime;
     else {
       assert state == STARTED;
-      return culmTime + (now() - startTime);
+      return culmTime + timerImpl.elapsed();
     }
  }
 
@@ -105,7 +122,7 @@ public class RTimer {
   public RTimer sub(String desc) {
     RTimer child = children.get( desc );
     if( child == null ) {
-      child = new RTimer();
+      child = newTimer();
       children.add(desc, child);
     }
     return child;
@@ -133,26 +150,5 @@ public class RTimer {
   public SimpleOrderedMap<RTimer> getChildren()
   {
     return children;
-  }
-
-  /*************** Testing *******/
-  public static void main(String []argv) throws InterruptedException {
-    RTimer rt = new RTimer(), subt, st;
-    Thread.sleep(100);
-
-    subt = rt.sub("sub1");
-    Thread.sleep(50);
-    st = subt.sub("sub1.1");
-    st.resume();
-    Thread.sleep(10);
-    st.pause();
-    Thread.sleep(50);
-    st.resume();
-    Thread.sleep(10);
-    st.pause();
-    subt.stop();
-    rt.stop();
-
-    System.out.println( rt.toString());
   }
 }
