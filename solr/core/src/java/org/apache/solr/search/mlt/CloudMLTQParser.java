@@ -53,21 +53,29 @@ public class CloudMLTQParser extends QParser {
     // Do a Real Time Get for the document
     SolrDocument doc = getDocument(id);
     if(doc == null) {
-      new SolrException(
+      throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request. Could not fetch " +
           "document with id [" + id + "]");
     }
     
     MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
-    // TODO: Are the mintf and mindf defaults ok at 1/0 ?
     
-    mlt.setMinTermFreq(localParams.getInt("mintf", 1));
+    if(localParams.getInt("mintf") != null)
+      mlt.setMinTermFreq(localParams.getInt("mintf"));
+
     mlt.setMinDocFreq(localParams.getInt("mindf", 0));
+
     if(localParams.get("minwl") != null)
       mlt.setMinWordLen(localParams.getInt("minwl"));
-    
+
     if(localParams.get("maxwl") != null)
       mlt.setMaxWordLen(localParams.getInt("maxwl"));
+
+    if(localParams.get("maxqt") != null)
+      mlt.setMaxWordLen(localParams.getInt("maxqt"));
+
+    if(localParams.get("maxntp") != null)
+      mlt.setMaxWordLen(localParams.getInt("maxntp"));
 
     mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 

@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
@@ -99,7 +100,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     params.set(CommonParams.Q, "{!mlt qf=lowerfilt}17");
     QueryResponse queryResponse = cloudClient.query(params);
     SolrDocumentList solrDocuments = queryResponse.getResults();
-    int[] expectedIds = new int[]{17, 13, 14, 20, 22, 15, 16, 24, 18, 23};
+    int[] expectedIds = new int[]{17, 7, 13, 14, 15, 16, 20, 22, 24, 9};
     int[] actualIds = new int[10];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
@@ -108,32 +109,19 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     assertArrayEquals(expectedIds, actualIds);
     
     params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}3");
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=0 mintf=1}3");
+    params.set(CommonParams.DEBUG, "true");
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();
     expectedIds = new int[]{3, 27, 26, 28};
-    actualIds = new int[4];
+    actualIds = new int[solrDocuments.size()];
     i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
       actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}20");
-    params.set("debug" , "query");
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{18, 23, 13, 14, 20, 22, 19, 21, 15, 16};
-    actualIds = new int[10];
-    i = 0;
-    for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
-    }
-    assertArrayEquals(expectedIds, actualIds);
-
-    String expectedQueryString = "lowerfilt:over lowerfilt:fox lowerfilt:lazy lowerfilt:brown "
-        + "lowerfilt:jumped lowerfilt:red lowerfilt:dogs. lowerfilt:quote lowerfilt:the";
+    String expectedQueryString = "lowerfilt:bmw lowerfilt:usa";
     
     ArrayList<String> actualParsedQueries = (ArrayList<String>) queryResponse
         .getDebugMap().get("parsedquery");
@@ -143,7 +131,31 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
           compareParsedQueryStrings(expectedQueryString,
               actualParsedQueries.get(counter)));
     }
-  
+
+    params = new ModifiableSolrParams();
+    // Test out a high value of df and make sure nothing matches.
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=20 mintf=1}3");
+    params.set(CommonParams.DEBUG, "true");
+    queryResponse = queryServer(params);
+    solrDocuments = queryResponse.getResults();
+    assertEquals("Expected to match 0 documents with a mindf of 20 but found more", solrDocuments.size(), 0);
+
+    params = new ModifiableSolrParams();
+    // Test out a high value of wl and make sure nothing matches.
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=4 mintf=1}3");
+    params.set(CommonParams.DEBUG, "true");
+    queryResponse = queryServer(params);
+    solrDocuments = queryResponse.getResults();
+    assertEquals("Expected to match 0 documents with a minwl of 4 but found more", solrDocuments.size(), 0);
+
+    params = new ModifiableSolrParams();
+    // Test out a low enough value of minwl and make sure we get the expected matches.
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=3 mintf=1}3");
+    params.set(CommonParams.DEBUG, "true");
+    queryResponse = queryServer(params);
+    solrDocuments = queryResponse.getResults();
+    assertEquals("Expected to match 4 documents with a minwl of 3 but found more", solrDocuments.size(), 4);
+
     // Assert that {!mlt}id does not throw an exception i.e. implicitly, only fields that are stored + have explicit
     // analyzer are used for MLT Query construction.
     params = new ModifiableSolrParams();
@@ -151,7 +163,8 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
 
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{18, 23, 13, 14, 20, 22, 19, 21, 15, 16};
+    actualIds = new int[solrDocuments.size()];
+    expectedIds = new int[]{13, 14, 15, 16, 20, 22, 24, 18, 19, 21};
     i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
       actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
@@ -159,10 +172,10 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     assertArrayEquals(expectedIds, actualIds);
   }
   
-  @Test
+  @Test(expected=SolrException.class)
   public void testInvalidDocument() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}nonexistentdocid");
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}999999");
     try {
       cloudClient.query(params);
       fail("The above query is supposed to throw an exception.");
