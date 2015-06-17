@@ -109,7 +109,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       assertEquals(NUM_SERVERS - 1, miniCluster.getJettySolrRunners().size());
 
       // create a server
-      JettySolrRunner startedServer = miniCluster.startJettySolrRunner(null, null, null);
+      JettySolrRunner startedServer = miniCluster.startJettySolrRunner();
       assertTrue(startedServer.isRunning());
       assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
 
@@ -176,7 +176,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         // now restore the original state so that this function could be called multiple times
         
         // re-create a server (to restore original NUM_SERVERS count)
-        startedServer = miniCluster.startJettySolrRunner(null, null, null);
+        startedServer = miniCluster.startJettySolrRunner();
         assertTrue(startedServer.isRunning());
         assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
         Thread.sleep(15000);
@@ -255,6 +255,16 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       assertEquals("Fake IOException on shutdown!", e.getSuppressed()[0].getMessage());
     }
 
+  }
+
+  @Test
+  public void testExraFilters() throws Exception {
+    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
+    Builder jettyConfig = JettyConfig.builder();
+    jettyConfig.waitForLoadingCoresToFinish(null);
+    jettyConfig.withFilter(JettySolrRunner.DebugFilter.class, "*");
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir().toFile(), solrXml, jettyConfig.build());
+    cluster.shutdown();
   }
 
 }
