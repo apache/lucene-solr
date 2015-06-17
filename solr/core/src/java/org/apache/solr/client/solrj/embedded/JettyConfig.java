@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.embedded;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 import javax.servlet.Filter;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -68,7 +69,7 @@ public class JettyConfig {
     String context = "/solr";
     boolean stopAtShutdown = true;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
-    Map<Class<? extends Filter>, String> extraFilters = new TreeMap<>();
+    Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
     SSLConfig sslConfig = null;
 
     public Builder setPort(int port) {
@@ -86,8 +87,8 @@ public class JettyConfig {
       return this;
     }
 
-    public Builder withServlet(ServletHolder servlet, String servletName) {
-      extraServlets.put(servlet, servletName);
+    public Builder withServlet(ServletHolder servlet, String pathSpec) {
+      extraServlets.put(servlet, pathSpec);
       return this;
     }
 
@@ -97,8 +98,8 @@ public class JettyConfig {
       return this;
     }
 
-    public Builder withFilter(Class<? extends Filter> filterClass, String filterName) {
-      extraFilters.put(filterClass, filterName);
+    public Builder withFilter(Class<? extends Filter> filterClass, String pathSpec) {
+      extraFilters.put(filterClass, pathSpec);
       return this;
     }
 

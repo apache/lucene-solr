@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettyConfig.Builder;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -104,7 +105,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       assertEquals(NUM_SERVERS - 1, miniCluster.getJettySolrRunners().size());
 
       // create a server
-      JettySolrRunner startedServer = miniCluster.startJettySolrRunner(null, null, null);
+      JettySolrRunner startedServer = miniCluster.startJettySolrRunner();
       assertTrue(startedServer.isRunning());
       assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
 
@@ -171,7 +172,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         // now restore the original state so that this function could be called multiple times
         
         // re-create a server (to restore original NUM_SERVERS count)
-        startedServer = miniCluster.startJettySolrRunner(null, null, null);
+        startedServer = miniCluster.startJettySolrRunner();
         assertTrue(startedServer.isRunning());
         assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
 
@@ -240,6 +241,15 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       assertEquals("Fake IOException on shutdown!", e.getSuppressed()[0].getMessage());
     }
 
+  }
+
+  @Test
+  public void testExraFilters() throws Exception {
+    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
+    Builder jettyConfig = JettyConfig.builder();
+    jettyConfig.withFilter(JettySolrRunner.DebugFilter.class, "*");
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir().toFile(), solrXml, jettyConfig.build());
+    cluster.shutdown();
   }
 
 }
