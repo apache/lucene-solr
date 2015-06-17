@@ -17,26 +17,23 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.SolrRequest;
+import java.io.IOException;
+import java.util.Random;
+
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatus;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests the Multi threaded Collections API.
@@ -254,38 +251,6 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     index("id", id);
     // todo - target diff servers and use cloud clients as well as non-cloud clients
   }
-
-  private String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
-      throws IOException, SolrServerException {
-    String state = null;
-    long maxWait = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
-
-    while (System.nanoTime() < maxWait)  {
-      state = getRequestState(requestId, client);
-      if(state.equals("completed") || state.equals("failed"))
-        return state;
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-      }
-    }
-
-    return state;
-  }
-
-  private String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
-    return getRequestState(String.valueOf(requestId), client);
-  }
-
-  private String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
-    RequestStatus requestStatusRequest = new RequestStatus();
-    requestStatusRequest.setRequestId(requestId);
-    CollectionAdminResponse response = requestStatusRequest.process(client);
-
-    NamedList innerResponse = (NamedList) response.getResponse().get("status");
-    return (String) innerResponse.get("state");
-  }
-
 }
 
 

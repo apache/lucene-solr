@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.params.CoreConnectionPNames;
@@ -45,6 +46,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -1871,4 +1873,37 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     return cs;
   }
+
+
+  protected String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
+      throws IOException, SolrServerException {
+    String state = null;
+    long maxWait = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
+
+    while (System.nanoTime() < maxWait)  {
+      state = getRequestState(requestId, client);
+      if(state.equals("completed") || state.equals("failed"))
+        return state;
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+      }
+    }
+
+    return state;
+  }
+
+  protected String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
+    return getRequestState(String.valueOf(requestId), client);
+  }
+
+  protected String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
+    CollectionAdminRequest.RequestStatus requestStatusRequest = new CollectionAdminRequest.RequestStatus();
+    requestStatusRequest.setRequestId(requestId);
+    CollectionAdminResponse response = requestStatusRequest.process(client);
+
+    NamedList innerResponse = (NamedList) response.getResponse().get("status");
+    return (String) innerResponse.get("state");
+  }
+
 }

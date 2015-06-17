@@ -78,9 +78,11 @@ public class Overseer implements Closeable {
 
   public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
+  public static final int NUM_RESPONSES_TO_STORE = 10000;
+  
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
 
-  static enum LeaderStatus {DONT_KNOW, NO, YES}
+  enum LeaderStatus {DONT_KNOW, NO, YES}
 
   private class ClusterStateUpdater implements Runnable, Closeable {
     
@@ -900,16 +902,16 @@ public class Overseer implements Closeable {
     return new DistributedMap(zkClient, "/overseer/collection-map-running", null);
   }
 
-  /* Internal map for successfully completed tasks, not to be used outside of the Overseer */
+  /* Size-limited map for successfully completed tasks*/
   static DistributedMap getCompletedMap(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new DistributedMap(zkClient, "/overseer/collection-map-completed", null);
+    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-completed", null, NUM_RESPONSES_TO_STORE);
   }
 
-  /* Internal map for failed tasks, not to be used outside of the Overseer */
+  /* Map for failed tasks, not to be used outside of the Overseer */
   static DistributedMap getFailureMap(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
-    return new DistributedMap(zkClient, "/overseer/collection-map-failure", null);
+    return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", null, NUM_RESPONSES_TO_STORE);
   }
   
   /* Collection creation queue */

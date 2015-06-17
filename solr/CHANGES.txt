@@ -126,6 +126,9 @@ New Features
 
 * SOLR-7668: Add 'port' tag support in replica placement rules (Adam McElwee, Noble Paul)
 
+* SOLR-5886: Response for an async call is now stored in zk so that it can be returned by the REQUESTSTATUS API.
+  Also, the number of stored (failed and successful) responses are now restricted to 10,000 each as a safety net.
+  (Anshum Gupta)
 
 Bug Fixes
 ----------------------
