@@ -207,6 +207,9 @@ Other Changes
 
 * SOLR-7665: deprecate the class TransformerWithContext (noble)
 
+* SOLR-7629: Have RulesTest consider disk space limitations of where the test is
+  being run (Christine Poerschke via Ramkumar Aiyengar)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
