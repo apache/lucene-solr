@@ -70,8 +70,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
     return new ExplainAugmenter( field, style );
   }
 
-  static class ExplainAugmenter extends TransformerWithContext
-  {
+  static class ExplainAugmenter extends DocTransformer {
     final String name;
     final Style style;
 
@@ -89,9 +88,9 @@ public class ExplainAugmenterFactory extends TransformerFactory
 
     @Override
     public void transform(SolrDocument doc, int docid) {
-      if( context != null && context.query != null ) {
+      if( context != null && context.getQuery() != null ) {
         try {
-          Explanation exp = context.searcher.explain(context.query, docid);
+          Explanation exp = context.getSearcher().explain(context.getQuery(), docid);
           if( style == Style.nl ) {
             doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
           }
