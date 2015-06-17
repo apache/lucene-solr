@@ -27,11 +27,30 @@ import org.apache.solr.search.SolrIndexSearcher;
  *
  * @since solr 4.0
  */
-public class TransformContext
-{
+public class TransformContext {
   public Query query;
   public boolean wantsScores = false;
   public DocIterator iterator;
   public SolrIndexSearcher searcher;
   public SolrQueryRequest req;
+
+  public Query getQuery() {
+    return query;
+  }
+
+  public boolean wantsScores() {
+    return wantsScores;
+  }
+
+  public DocIterator getDocIterator() {
+    return iterator;
+  }
+
+  public SolrIndexSearcher getSearcher() {
+    return searcher;
+  }
+
+  public SolrQueryRequest getRequest() {
+    return req;
+  }
 }

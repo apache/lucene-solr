@@ -41,6 +41,8 @@ Upgrading from Solr 5.2
 * The zkCredientialsProvider element in solrcloud section of solr.xml is now deprecated.
   Use the correct spelling (zkCredentialsProvider) instead.
 
+* class TransformerWithContext is deprecated . Use DocTransformer directly
+
 Detailed Change List
 ----------------------
 
@@ -141,6 +143,8 @@ Other Changes
   CloudInspectUtil for tests (Ramkumar Aiyengar)
 
 * SOLR-7662: Refactored response writing to consolidate the logic in  one place (Noble Paul)
+
+* SOLR-7665: deprecate the class TransformerWithContext (noble)
 
 ==================  5.2.1 ==================
 

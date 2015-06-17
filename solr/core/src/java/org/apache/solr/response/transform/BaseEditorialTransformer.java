@@ -28,7 +28,7 @@ import java.util.Set;
  *
  *
  **/
-public abstract class BaseEditorialTransformer extends TransformerWithContext {
+public abstract class BaseEditorialTransformer extends DocTransformer {
 
   final String name;
   final String idFieldName;

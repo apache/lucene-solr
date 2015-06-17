@@ -40,8 +40,7 @@ public class ElevatedMarkerFactory extends TransformerFactory
   }
 }
 
-class MarkTransformer extends BaseEditorialTransformer
-{
+class MarkTransformer extends BaseEditorialTransformer {
 
   MarkTransformer(String name, String idFieldName, FieldType ft) {
     super(name, idFieldName, ft);

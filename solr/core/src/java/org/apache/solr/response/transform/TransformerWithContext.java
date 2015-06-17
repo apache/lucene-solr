@@ -21,10 +21,9 @@ package org.apache.solr.response.transform;
  *
  * @since solr 4.0
  */
+@Deprecated
 public abstract class TransformerWithContext extends DocTransformer
 {
-  protected TransformContext context = null;
-
   @Override
   public void setContext( TransformContext context ) {
     this.context = context;

@@ -25,8 +25,7 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  * @since solr 4.0
  */
-public class ScoreAugmenter extends TransformerWithContext
-{
+public class ScoreAugmenter extends DocTransformer {
   final String name;
 
   public ScoreAugmenter( String display )
@@ -42,9 +41,9 @@ public class ScoreAugmenter extends TransformerWithContext
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    if( context != null && context.wantsScores ) {
-      if( context.iterator != null ) {
-        doc.setField( name, context.iterator.score() );
+    if( context != null && context.wantsScores() ) {
+      if( context.getDocIterator() != null ) {
+        doc.setField( name, context.getDocIterator().score() );
       }
     }
   }
