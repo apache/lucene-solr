@@ -128,7 +128,7 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 public class OverseerCollectionProcessor implements Runnable, Closeable {
 
   public static final String NUM_SLICES = "numShards";
-
+  
   static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
   public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
   public static final String CREATE_NODE_SET = "createNodeSet";
@@ -2848,11 +2848,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         }
 
         if(asyncId != null) {
-          if (response != null && (response.getResponse().get("failure") != null || response.getResponse().get("exception") != null)) {
-            failureMap.put(asyncId, null);
+          if (response != null && (response.getResponse().get("failure") != null 
+              || response.getResponse().get("exception") != null)) {
+            failureMap.put(asyncId, SolrResponse.serializable(response));
             log.debug("Updated failed map for task with zkid:[{}]", head.getId());
           } else {
-            completedMap.put(asyncId, null);
+            completedMap.put(asyncId, SolrResponse.serializable(response));
             log.debug("Updated completed map for task with zkid:[{}]", head.getId());
           }
         } else {

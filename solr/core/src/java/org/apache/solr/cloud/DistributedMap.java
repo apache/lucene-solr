@@ -42,15 +42,15 @@ public class DistributedMap {
   private static final Logger LOG = LoggerFactory
       .getLogger(DistributedMap.class);
 
-  private static long DEFAULT_TIMEOUT = 5*60*1000;
+  protected static long DEFAULT_TIMEOUT = 5*60*1000;
 
-  private final String dir;
+  protected final String dir;
 
-  private SolrZkClient zookeeper;
+  protected SolrZkClient zookeeper;
 
-  private final String prefix = "mn-";
+  protected final String prefix = "mn-";
 
-  private final String response_prefix = "mnr-" ;
+  protected final String response_prefix = "mnr-" ;
 
   public DistributedMap(SolrZkClient zookeeper, String dir, List<ACL> acl) {
     this.dir = dir;
@@ -68,7 +68,7 @@ public class DistributedMap {
     this.zookeeper = zookeeper;
   }
 
-  private class LatchChildWatcher implements Watcher {
+  protected class LatchChildWatcher implements Watcher {
 
     Object lock = new Object();
     private WatchedEvent event = null;
@@ -105,7 +105,7 @@ public class DistributedMap {
    *
    * @return true if data was successfully added
    */
-  private String createData(String path, byte[] data, CreateMode mode)
+  protected String createData(String path, byte[] data, CreateMode mode)
       throws KeeperException, InterruptedException {
       for (;;) {
       try {
