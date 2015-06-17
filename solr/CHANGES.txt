@@ -130,6 +130,9 @@ New Features
   Also, the number of stored (failed and successful) responses are now restricted to 10,000 each as a safety net.
   (Anshum Gupta)
 
+* SOLR-7639: MoreLikeThis QParser now supports all options provided by the MLT Handler i.e. mintf, mindf,
+  minwl, maxwl, maxqt, and maxntp.
+
 Bug Fixes
 ----------------------
 

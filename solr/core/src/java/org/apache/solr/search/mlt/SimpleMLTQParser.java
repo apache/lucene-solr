@@ -59,15 +59,25 @@ public class SimpleMLTQParser extends QParser {
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
       MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
-      // TODO: Are the mintf and mindf defaults ok at '1' ?
-      mlt.setMinTermFreq(localParams.getInt("mintf", 1));
-      mlt.setMinDocFreq(localParams.getInt("mindf", 1));
+      
+      if(localParams.getInt("mintf") != null)
+        mlt.setMinTermFreq(localParams.getInt("mintf"));
+      
+      if(localParams.getInt("mindf") != null)
+      mlt.setMinDocFreq(localParams.getInt("mindf"));
+      
       if(localParams.get("minwl") != null)
         mlt.setMinWordLen(localParams.getInt("minwl"));
 
       if(localParams.get("maxwl") != null)
         mlt.setMaxWordLen(localParams.getInt("maxwl"));
 
+      if(localParams.get("maxqt") != null)
+        mlt.setMaxWordLen(localParams.getInt("maxqt"));
+
+      if(localParams.get("maxntp") != null)
+        mlt.setMaxWordLen(localParams.getInt("maxntp"));
+      
       ArrayList<String> fields = new ArrayList();
 
       if (qf != null) {
