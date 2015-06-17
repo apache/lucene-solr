@@ -1416,19 +1416,21 @@ function launch_solr() {
           else
             echo -e "Still not seeing Solr listening on $SOLR_PORT after 30 seconds!"
             tail -30 "$SOLR_LOGS_DIR/solr.log"
-            exit
+            exit # subshell!
           fi
         else
           SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
           echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
-          exit
+          exit # subshell!
         fi
       done) &
       spinner $!
     else
+      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
+      sleep 10
       SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
       echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
-      exit;
+      return;
     fi
   fi
 }
