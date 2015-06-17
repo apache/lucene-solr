@@ -85,6 +85,9 @@ New Features
   quite slow and are only fast in specific cases.  (Adrien Grand,
   Robert Muir, Mike McCandless)
 
+* LUCENE-6577: Give earlier and better error message for invalid CRC.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

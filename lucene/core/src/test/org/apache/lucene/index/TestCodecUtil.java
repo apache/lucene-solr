@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -251,5 +254,87 @@ public class TestCodecUtil extends LuceneTestCase {
     } catch (IllegalArgumentException expected) {
       // expected
     }
+  }
+  
+  public void testReadBogusCRC() throws Exception {
+    RAMFile file = new RAMFile();
+    IndexOutput output = new RAMOutputStream(file, false);
+    output.writeLong(-1L); // bad
+    output.writeLong(1L << 32); // bad
+    output.writeLong(-(1L << 32)); // bad
+    output.writeLong((1L << 32) - 1); // ok
+    output.close();
+    IndexInput input = new RAMInputStream("file", file);
+    // read 3 bogus values
+    for (int i = 0; i < 3; i++) {
+      try {
+        CodecUtil.readCRC(input);
+        fail("didn't get expected exception");
+      } catch (CorruptIndexException expected) {
+        // expected
+      }
+    }
+    // good value
+    CodecUtil.readCRC(input);
+  }
+  
+  public void testWriteBogusCRC() throws Exception {
+    RAMFile file = new RAMFile();
+    final IndexOutput output = new RAMOutputStream(file, false);
+    AtomicLong fakeChecksum = new AtomicLong();
+    // wrap the index input where we control the checksum for mocking
+    IndexOutput fakeOutput = new IndexOutput("fake") {
+      @Override
+      public void close() throws IOException {
+        output.close();
+      }
+
+      @Override
+      public long getFilePointer() {
+        return output.getFilePointer();
+      }
+
+      @Override
+      public long getChecksum() throws IOException {
+        return fakeChecksum.get();
+      }
+
+      @Override
+      public void writeByte(byte b) throws IOException {
+        output.writeByte(b);
+      }
+
+      @Override
+      public void writeBytes(byte[] b, int offset, int length) throws IOException {
+        output.writeBytes(b, offset, length);
+      }
+    };
+    
+    fakeChecksum.set(-1L); // bad
+    try {
+      CodecUtil.writeCRC(fakeOutput);
+      fail("didn't get expected exception");
+    } catch (IllegalStateException expected) {
+      // expected exception
+    }
+    
+    fakeChecksum.set(1L << 32); // bad
+    try {
+      CodecUtil.writeCRC(fakeOutput);
+      fail("didn't get expected exception");
+    } catch (IllegalStateException expected) {
+      // expected exception
+    }
+    
+    fakeChecksum.set(-(1L << 32)); // bad
+    try {
+      CodecUtil.writeCRC(fakeOutput);
+      fail("didn't get expected exception");
+    } catch (IllegalStateException expected) {
+      // expected exception
+    }
+    
+    fakeChecksum.set((1L << 32) - 1); // ok
+    CodecUtil.writeCRC(fakeOutput);
   }
 }

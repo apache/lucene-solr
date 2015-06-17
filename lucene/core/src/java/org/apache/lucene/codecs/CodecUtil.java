@@ -307,7 +307,7 @@ public final class CodecUtil {
   public static void writeFooter(IndexOutput out) throws IOException {
     out.writeInt(FOOTER_MAGIC);
     out.writeInt(0);
-    out.writeLong(out.getChecksum());
+    writeCRC(out);
   }
   
   /**
@@ -330,7 +330,7 @@ public final class CodecUtil {
   public static long checkFooter(ChecksumIndexInput in) throws IOException {
     validateFooter(in);
     long actualChecksum = in.getChecksum();
-    long expectedChecksum = in.readLong();
+    long expectedChecksum = readCRC(in);
     if (expectedChecksum != actualChecksum) {
       throw new CorruptIndexException("checksum failed (hardware problem?) : expected=" + Long.toHexString(expectedChecksum) +  
                                                        " actual=" + Long.toHexString(actualChecksum), in);
@@ -399,7 +399,7 @@ public final class CodecUtil {
   public static long retrieveChecksum(IndexInput in) throws IOException {
     in.seek(in.length() - footerLength());
     validateFooter(in);
-    return in.readLong();
+    return readCRC(in);
   }
   
   private static void validateFooter(IndexInput in) throws IOException {
@@ -435,5 +435,31 @@ public final class CodecUtil {
     assert in.getFilePointer() == 0;
     in.seek(in.length() - footerLength());
     return checkFooter(in);
+  }
+  
+  /**
+   * Reads CRC32 value as a 64-bit long from the input.
+   * @throws CorruptIndexException if CRC is formatted incorrectly (wrong bits set)
+   * @throws IOException if an i/o error occurs
+   */
+  public static long readCRC(IndexInput input) throws IOException {
+    long value = input.readLong();
+    if ((value & 0xFFFFFFFF00000000L) != 0) {
+      throw new CorruptIndexException("Illegal CRC-32 checksum: " + value, input);
+    }
+    return value;
+  }
+  
+  /**
+   * Writes CRC32 value as a 64-bit long to the output.
+   * @throws IllegalStateException if CRC is formatted incorrectly (wrong bits set)
+   * @throws IOException if an i/o error occurs
+   */
+  public static void writeCRC(IndexOutput output) throws IOException {
+    long value = output.getChecksum();
+    if ((value & 0xFFFFFFFF00000000L) != 0) {
+      throw new IllegalStateException("Illegal CRC-32 checksum: " + value + " (resource=" + output + ")");
+    }
+    output.writeLong(value);
   }
 }
