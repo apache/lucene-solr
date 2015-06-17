@@ -159,6 +159,10 @@ Bug Fixes
   
 * SOLR-7682: Schema API: add-copy-field should accept the maxChars parameter. (Steve Rowe)
 
+* SOLR-7693: Fix the bin/solr -e cloud example to work if lsof is not installed
+  on the local machine by waiting for 10 seconds before starting the second node. 
+  (hossman, Timothy Potter)
+
 Optimizations
 ----------------------
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
