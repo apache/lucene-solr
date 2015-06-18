@@ -168,6 +168,9 @@ Bug Fixes
 
 * SOLR-7689: ReRankQuery rewrite method can change the QueryResultKey causing cache misses.
   (Emad Nashed, Yonik Seeley, Joel Bernstein)
+  
+* SOLR-7697: Schema API doesn't take class or luceneMatchVersion attributes into
+  account for the analyzer when adding a new field type. (Marius Grama, Steve Rowe)
 
 Optimizations
 ----------------------

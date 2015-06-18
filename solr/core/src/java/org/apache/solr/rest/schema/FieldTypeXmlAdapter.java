@@ -83,33 +83,45 @@ public class FieldTypeXmlAdapter {
   }
   
   @SuppressWarnings("unchecked")
-  protected static Element createAnalyzerElement(Document doc, String type, Map<String,?> json) {
-    Element analyzer = doc.createElement("analyzer");
+  protected static Element createAnalyzerElement(Document doc, String type, Map<String,?> analyzer) {
+    Element analyzerElem = appendAttrs(doc.createElement("analyzer"), analyzer);
     if (type != null)
-      analyzer.setAttribute("type", type);
+      analyzerElem.setAttribute("type", type);
+
+    List<Map<String,?>> charFilters = (List<Map<String,?>>)analyzer.get("charFilters");
+    Map<String,?> tokenizer = (Map<String,?>)analyzer.get("tokenizer");
+    List<Map<String,?>> filters = (List<Map<String,?>>)analyzer.get("filters");
+
+    if (analyzer.get("class") == null) {
+      if (charFilters != null)
+        appendFilterElements(doc, analyzerElem, "charFilter", charFilters);
+
+      if (tokenizer == null)
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Analyzer must define a tokenizer!");
+
+      if (tokenizer.get("class") == null)
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Every tokenizer must define a class property!");
+
+      analyzerElem.appendChild(appendAttrs(doc.createElement("tokenizer"), tokenizer));
+
+      if (filters != null)
+        appendFilterElements(doc, analyzerElem, "filter", filters);
+
+    } else { // When analyzer class is specified: char filters, tokenizers, and filters are disallowed
+      if (charFilters != null)
+        throw new SolrException
+            (ErrorCode.BAD_REQUEST, "An analyzer with a class property may not define any char filters!");
+
+      if (tokenizer != null)
+        throw new SolrException
+            (ErrorCode.BAD_REQUEST, "An analyzer with a class property may not define a tokenizer!");
+
+      if (filters != null)
+        throw new SolrException
+            (ErrorCode.BAD_REQUEST, "An analyzer with a class property may not define any filters!");
+    }
     
-    // charFilter(s)
-    List<Map<String,?>> charFilters = (List<Map<String,?>>)json.get("charFilters");
-    if (charFilters != null)
-      appendFilterElements(doc, analyzer, "charFilter", charFilters);
-    
-    // tokenizer
-    Map<String,?> tokenizerJson = (Map<String,?>)json.get("tokenizer");
-    if (tokenizerJson == null)
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Analyzer must define a tokenizer!");
-    
-    String tokClass = (String)tokenizerJson.get("class");
-    if (tokClass == null)
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Every tokenizer must define a class property!");
-    
-    analyzer.appendChild(appendAttrs(doc.createElement("tokenizer"), tokenizerJson));
-    
-    // filter(s)
-    List<Map<String,?>> filters = (List<Map<String,?>>)json.get("filters");
-    if (filters != null)
-      appendFilterElements(doc, analyzer, "filter", filters);
-    
-    return analyzer;
+    return analyzerElem;
   }
   
   protected static void appendFilterElements(Document doc, Element analyzer, String filterName, List<Map<String,?>> filters) {
