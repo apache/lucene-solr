@@ -38,15 +38,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
@@ -165,23 +161,12 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
       }
       final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
       final RandomFilter f = new RandomFilter(random.nextLong(), random.nextFloat(), docValues);
-      int queryType = random.nextInt(3);
+      int queryType = random.nextInt(2);
       if (queryType == 0) {
-        // force out of order
-        BooleanQuery.Builder bq = new BooleanQuery.Builder();
-        // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
-        // which delegates to BS if there are no mandatory clauses.
-        bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-        // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
-        // the clause instead of BQ.
-        bq.setMinimumNumberShouldMatch(1);
-        hits = s.search(new FilteredQuery(bq.build(), f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
-      } else if (queryType == 1) {
         hits = s.search(new ConstantScoreQuery(f),
                         hitCount, sort, random.nextBoolean(), random.nextBoolean());
       } else {
-        hits = s.search(new FilteredQuery(new MatchAllDocsQuery(),
-                        f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
       }
 
       if (VERBOSE) {

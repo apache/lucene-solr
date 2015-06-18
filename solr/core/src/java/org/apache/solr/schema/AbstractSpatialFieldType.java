@@ -38,13 +38,15 @@ import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -350,7 +352,10 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
       return functionQuery;
 
     Filter filter = strategy.makeFilter(spatialArgs);
-    return new FilteredQuery(functionQuery, filter);
+    return new BooleanQuery.Builder()
+        .add(functionQuery, Occur.MUST)
+        .add(filter, Occur.FILTER)
+        .build();
   }
 
   @Override

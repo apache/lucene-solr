@@ -30,6 +30,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -181,12 +182,20 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     Query query = new ConstantScoreQuery(filterB);
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(new FilteredQuery(query, filterB), 1).totalHits); // Query for field:b, Filter field:b
+    Query filtered = new BooleanQuery.Builder()
+        .add(query, Occur.MUST)
+        .add(filterB, Occur.FILTER)
+        .build();
+    assertEquals(1, s.search(filtered, 1).totalHits); // Query for field:b, Filter field:b
 
     Filter filterA = new FilterWrapper(new QueryWrapperFilter(new TermQuery(new Term("field", "a"))));
     query = new ConstantScoreQuery(filterA);
 
-    assertEquals(0, s.search(new FilteredQuery(query, filterB), 1).totalHits); // Query field:b, Filter field:a
+    filtered = new BooleanQuery.Builder()
+        .add(query, Occur.MUST)
+        .add(filterB, Occur.FILTER)
+        .build();
+    assertEquals(0, s.search(filtered, 1).totalHits); // Query field:b, Filter field:a
 
     r.close();
     d.close();

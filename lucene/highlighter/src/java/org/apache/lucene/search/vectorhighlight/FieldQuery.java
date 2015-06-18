@@ -34,7 +34,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -120,11 +119,6 @@ public class FieldQuery {
       }
     } else if (sourceQuery instanceof ConstantScoreQuery) {
       final Query q = ((ConstantScoreQuery) sourceQuery).getQuery();
-      if (q != null) {
-        flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
-      }
-    } else if (sourceQuery instanceof FilteredQuery) {
-      final Query q = ((FilteredQuery) sourceQuery).getQuery();
       if (q != null) {
         flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
       }

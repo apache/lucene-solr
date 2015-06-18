@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.DateTools;
@@ -83,16 +84,32 @@ public class TestDateFilter extends LuceneTestCase {
     assertEquals(1, result.length);
     
     // run queries with DateFilter
-    result = searcher.search(new FilteredQuery(query1, df1), 1000).scoreDocs;
+    Query filtered = new BooleanQuery.Builder()
+        .add(query1, Occur.MUST)
+        .add(df1, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(new FilteredQuery(query1, df2), 1000).scoreDocs;
+    filtered = new BooleanQuery.Builder()
+        .add(query1, Occur.MUST)
+        .add(df2, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(new FilteredQuery(query2, df1), 1000).scoreDocs;
+    filtered = new BooleanQuery.Builder()
+        .add(query2, Occur.MUST)
+        .add(df1, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(1, result.length);
     
-    result = searcher.search(new FilteredQuery(query2, df2), 1000).scoreDocs;
+    filtered = new BooleanQuery.Builder()
+        .add(query2, Occur.MUST)
+        .add(df2, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(0, result.length);
     reader.close();
     indexStore.close();
@@ -147,16 +164,32 @@ public class TestDateFilter extends LuceneTestCase {
     assertEquals(1, result.length);
     
     // run queries with DateFilter
-    result = searcher.search(new FilteredQuery(query1, df1), 1000).scoreDocs;
+    Query filtered = new BooleanQuery.Builder()
+        .add(query1, Occur.MUST)
+        .add(df1, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(new FilteredQuery(query1, df2), 1000).scoreDocs;
+    filtered = new BooleanQuery.Builder()
+        .add(query1, Occur.MUST)
+        .add(df2, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(0, result.length);
     
-    result = searcher.search(new FilteredQuery(query2, df1), 1000).scoreDocs;
+    filtered = new BooleanQuery.Builder()
+        .add(query2, Occur.MUST)
+        .add(df1, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(1, result.length);
     
-    result = searcher.search(new FilteredQuery(query2, df2), 1000).scoreDocs;
+    filtered = new BooleanQuery.Builder()
+        .add(query2, Occur.MUST)
+        .add(df2, Occur.FILTER)
+        .build();
+    result = searcher.search(filtered, 1000).scoreDocs;
     assertEquals(0, result.length);
     reader.close();
     indexStore.close();

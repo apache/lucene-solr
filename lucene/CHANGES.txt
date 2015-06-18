@@ -38,6 +38,10 @@ API Changes
 * LUCENE-6570: BooleanQuery is now immutable and can be built using the
   BooleanQuery.Builder class. (Adrien Grand)
 
+* LUCENE-6583: FilteredQuery has been removed. Instead, you can construct a
+  BooleanQuery with one MUST clause for the query, and one FILTER clause for
+  the filter. (Adrien Grand)
+
 ======================= Lucene 5.3.0 =======================
 
 New Features

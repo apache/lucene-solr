@@ -100,6 +100,7 @@ public final class LongRange extends Range {
     private final ValueSource valueSource;
 
     ValueSourceFilter(LongRange range, Filter fastMatchFilter, ValueSource valueSource) {
+      super(true);
       this.range = range;
       this.fastMatchFilter = fastMatchFilter;
       this.valueSource = valueSource;

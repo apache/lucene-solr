@@ -49,7 +49,7 @@ public class CorePlusExtensionsParser extends CoreParser {
 
   private CorePlusExtensionsParser(String defaultField, Analyzer analyzer, QueryParser parser) {
     super(defaultField, analyzer, parser);
-    filterFactory.addBuilder("DuplicateFilter", new DuplicateFilterBuilder());
+    queryFactory.addBuilder("DuplicateFilter", new DuplicateFilterBuilder());
     String fields[] = {"contents"};
     queryFactory.addBuilder("LikeThisQuery", new LikeThisQueryBuilder(analyzer, fields));
     queryFactory.addBuilder("BoostingQuery", new BoostingQueryBuilder(queryFactory));

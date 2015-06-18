@@ -69,8 +69,10 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     q.add(snear(sf("w3",2), st("w2"), st("w3"), 5, true),
           Occur.SHOULD);
 
-    Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                                new QueryWrapperFilter(matchTheseItems(new int[] {1,3})));
+    Query t = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term(FIELD, "xx")), Occur.MUST)
+        .add(matchTheseItems(new int[] {1,3}), Occur.FILTER)
+        .build();
     t.setBoost(1000);
     q.add(t, Occur.SHOULD);
     
@@ -129,8 +131,10 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     q.add(snear(sf("w3",2), st("w2"), st("w3"), 5, true),
           Occur.SHOULD);
     
-    Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                                new QueryWrapperFilter(matchTheseItems(new int[] {1,3})));
+    Query t = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term(FIELD, "xx")), Occur.MUST)
+        .add(matchTheseItems(new int[] {1,3}), Occur.FILTER)
+        .build();
     t.setBoost(1000);
     q.add(t, Occur.SHOULD);
     
@@ -202,7 +206,11 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
   public void testFQ5() throws Exception {
     TermQuery query = new TermQuery(new Term(FIELD, "xx"));
     query.setBoost(0);
-    bqtest(new FilteredQuery(query, new QueryWrapperFilter(matchTheseItems(new int[] {1,3}))), new int[] {3});
+    Query filtered = new BooleanQuery.Builder()
+        .add(query, Occur.MUST)
+        .add(matchTheseItems(new int[] {1,3}), Occur.FILTER)
+        .build();
+    bqtest(filtered, new int[] {3});
   }
   
   public void testCSQ4() throws Exception {

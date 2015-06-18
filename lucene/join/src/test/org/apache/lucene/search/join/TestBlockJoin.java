@@ -228,9 +228,8 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals("Lisa", getParentDoc(r, parentsFilter, hits.scoreDocs[0].doc).get("name"));
 
     // Test with filter on child docs:
-    assertEquals(0, s.search(new FilteredQuery(fullChildQuery.build(),
-                             new QueryWrapperFilter(new TermQuery(new Term("skill", "foosball")))),
-                             1).totalHits);
+    fullChildQuery.add(new TermQuery(new Term("skill", "foosball")), Occur.FILTER);
+    assertEquals(0, s.search(fullChildQuery.build(), 1).totalHits);
     
     r.close();
     dir.close();
@@ -336,20 +335,44 @@ public class TestBlockJoin extends LuceneTestCase {
       
     assertEquals("no filter - both passed", 2, s.search(childJoinQuery, 10).totalHits);
 
-    assertEquals("dummy filter passes everyone ", 2, s.search(new FilteredQuery(childJoinQuery, parentsFilter), 10).totalHits);
-    assertEquals("dummy filter passes everyone ", 2, s.search(new FilteredQuery(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("docType", "resume")))), 10).totalHits);
+    Query query = new BooleanQuery.Builder()
+        .add(childJoinQuery, Occur.MUST)
+        .add(parentsFilter, Occur.FILTER)
+        .build();
+    assertEquals("dummy filter passes everyone ", 2, s.search(query, 10).totalHits);
+    query = new BooleanQuery.Builder()
+        .add(childJoinQuery, Occur.MUST)
+        .add(new TermQuery(new Term("docType", "resume")), Occur.FILTER)
+        .build();
+    assertEquals("dummy filter passes everyone ", 2, s.search(query, 10).totalHits);
       
     // not found test
-    assertEquals("noone live there", 0, s.search(new FilteredQuery(childJoinQuery, new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("country", "Oz"))))), 1).totalHits);
-    assertEquals("noone live there", 0, s.search(new FilteredQuery(childJoinQuery, new QueryWrapperFilter(new TermQuery(new Term("country", "Oz")))), 1).totalHits);
+    query = new BooleanQuery.Builder()
+        .add(childJoinQuery, Occur.MUST)
+        .add(new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("country", "Oz")))), Occur.FILTER)
+        .build();
+    assertEquals("noone live there", 0, s.search(query, 1).totalHits);
+    query = new BooleanQuery.Builder()
+        .add(childJoinQuery, Occur.MUST)
+        .add(new QueryWrapperFilter(new TermQuery(new Term("country", "Oz"))), Occur.FILTER)
+        .build();
+    assertEquals("noone live there", 0, s.search(query, 1).totalHits);
       
     // apply the UK filter by the searcher
-    TopDocs ukOnly = s.search(new FilteredQuery(childJoinQuery, new QueryWrapperFilter(parentQuery)), 1);
+    query = new BooleanQuery.Builder()
+        .add(childJoinQuery, Occur.MUST)
+        .add(new QueryWrapperFilter(parentQuery), Occur.FILTER)
+        .build();
+    TopDocs ukOnly = s.search(query, 1);
     assertEquals("has filter - single passed", 1, ukOnly.totalHits);
     assertEquals( "Lisa", r.document(ukOnly.scoreDocs[0].doc).get("name"));
 
+    query = new BooleanQuery.Builder()
+        .add(childJoinQuery, Occur.MUST)
+        .add(new QueryWrapperFilter(new TermQuery(new Term("country", "United States"))), Occur.FILTER)
+        .build();
     // looking for US candidates
-    TopDocs usThen = s.search(new FilteredQuery(childJoinQuery , new QueryWrapperFilter(new TermQuery(new Term("country", "United States")))), 1);
+    TopDocs usThen = s.search(query, 1);
     assertEquals("has filter - single passed", 1, usThen.totalHits);
     assertEquals("Frank", r.document(usThen.scoreDocs[0].doc).get("name"));
     
@@ -359,14 +382,20 @@ public class TestBlockJoin extends LuceneTestCase {
         s.search(new ToChildBlockJoinQuery(us, 
                           parentsFilter), 10).totalHits );
 
-    assertEquals("java skills in US", 1, s.search(new FilteredQuery(new ToChildBlockJoinQuery(us, parentsFilter),
-        skill("java")), 10).totalHits );
+    query = new BooleanQuery.Builder()
+        .add(new ToChildBlockJoinQuery(us, parentsFilter), Occur.MUST)
+        .add(skill("java"), Occur.FILTER)
+        .build();
+    assertEquals("java skills in US", 1, s.search(query, 10).totalHits );
 
     BooleanQuery.Builder rubyPython = new BooleanQuery.Builder();
     rubyPython.add(new TermQuery(new Term("skill", "ruby")), Occur.SHOULD);
     rubyPython.add(new TermQuery(new Term("skill", "python")), Occur.SHOULD);
-    assertEquals("ruby skills in US", 1, s.search(new FilteredQuery(new ToChildBlockJoinQuery(us, parentsFilter),
-                                          new QueryWrapperFilter(rubyPython.build())), 10).totalHits );
+    query = new BooleanQuery.Builder()
+        .add(new ToChildBlockJoinQuery(us, parentsFilter), Occur.MUST)
+        .add(rubyPython.build(), Occur.FILTER)
+        .build();
+    assertEquals("ruby skills in US", 1, s.search(query, 10).totalHits );
 
     r.close();
     dir.close();
@@ -910,8 +939,10 @@ public class TestBlockJoin extends LuceneTestCase {
         if (random().nextBoolean()) { // filtered case
           childJoinQuery2 = parentJoinQuery2;
           final Filter f = new QueryWrapperFilter(new TermQuery(childTerm));
-          childJoinQuery2 = new FilteredQuery(childJoinQuery2, random().nextBoolean()
-                  ? new BitDocIdSetCachingWrapperFilter(f): f);
+          childJoinQuery2 = new BooleanQuery.Builder()
+              .add(childJoinQuery2, Occur.MUST)
+              .add(random().nextBoolean() ? new BitDocIdSetCachingWrapperFilter(f): f, Occur.FILTER)
+              .build();
         } else {
           // AND child field w/ parent query:
           final BooleanQuery.Builder bq = new BooleanQuery.Builder();
@@ -930,8 +961,10 @@ public class TestBlockJoin extends LuceneTestCase {
         if (random().nextBoolean()) { // filtered case
           childQuery2 = parentQuery2;
           final Filter f = new QueryWrapperFilter(new TermQuery(childTerm));
-          childQuery2 = new FilteredQuery(childQuery2, random().nextBoolean()
-                  ? new BitDocIdSetCachingWrapperFilter(f): f);
+          childQuery2 = new BooleanQuery.Builder()
+              .add(childQuery2, Occur.MUST)
+              .add(random().nextBoolean() ? new BitDocIdSetCachingWrapperFilter(f): f, Occur.FILTER)
+              .build();
         } else {
           final BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
           if (random().nextBoolean()) {

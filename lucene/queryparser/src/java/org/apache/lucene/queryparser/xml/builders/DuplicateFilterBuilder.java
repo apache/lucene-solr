@@ -4,8 +4,8 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.sandbox.queries.DuplicateFilter;
 import org.apache.lucene.search.Filter;
 import org.w3c.dom.Element;
@@ -30,10 +30,10 @@ import org.w3c.dom.Element;
 /**
  * Builder for {@link DuplicateFilter}
  */
-public class DuplicateFilterBuilder implements FilterBuilder {
+public class DuplicateFilterBuilder implements QueryBuilder {
 
   @Override
-  public Filter getFilter(Element e) throws ParserException {
+  public Filter getQuery(Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     DuplicateFilter df = new DuplicateFilter(fieldName);
 

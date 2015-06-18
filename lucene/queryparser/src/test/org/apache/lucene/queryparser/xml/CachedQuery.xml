@@ -15,19 +15,14 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<FilteredQuery>
-	<Query>
-		<BooleanQuery fieldName="contents">
-			<Clause occurs="should">
-				<TermQuery>merger</TermQuery>
-			</Clause>
-			<Clause occurs="mustnot">
-				<TermQuery >sumitomo</TermQuery>		
-			</Clause>
-		</BooleanQuery>
-	</Query>
-	
-	<Filter>
+<BooleanQuery fieldName="contents">
+	<Clause occurs="should">
+		<TermQuery>merger</TermQuery>
+	</Clause>
+	<Clause occurs="mustnot">
+		<TermQuery >sumitomo</TermQuery>		
+	</Clause>
+	<Clause occurs="filter">
 		<!--
 			CachedFilter elements can contain any Query or Filter. 
 			CachedFilters are cached in an LRU Cache keyed on the contained query/filter object. 
@@ -45,13 +40,12 @@
 			The CoreParser.maxNumCachedFilters property can be used to control the size
 			of the LRU Cache established during the construction of CoreParser instances.
 			-->
-		<CachedFilter>
+		<CachedQuery>
 			<!-- Example query to be cached for fast, repeated use -->
 			<TermQuery fieldName="contents">bank</TermQuery> 
 			<!-- Alternatively, a filter object can be cached ....
 				<RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
 			-->				
-		</CachedFilter>
-	</Filter>
-	
-</FilteredQuery>
+		</CachedQuery>
+	</Clause>
+</BooleanQuery>

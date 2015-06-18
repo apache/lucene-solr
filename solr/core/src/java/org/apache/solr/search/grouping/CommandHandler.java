@@ -24,9 +24,10 @@ import java.util.List;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TimeLimitingCollector;
@@ -222,7 +223,10 @@ public class CommandHandler {
     }
 
     if (filter.filter != null) {
-      query = new FilteredQuery(query, filter.filter);
+      query = new BooleanQuery.Builder()
+          .add(query, Occur.MUST)
+          .add(filter.filter, Occur.FILTER)
+          .build();
     }
     if (filter.postFilter != null) {
       filter.postFilter.setLastDelegate(collector);

@@ -36,6 +36,7 @@ import com.carrotsearch.hppc.cursors.IntObjectCursor;
 import com.carrotsearch.hppc.cursors.LongCursor;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
+
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -47,9 +48,10 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.TermsQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -381,7 +383,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if (pfilter.filter == null) {
       searcher.search(query, collector);
     } else {
-      searcher.search(new FilteredQuery(query, pfilter.filter), collector);
+      Query q = new BooleanQuery.Builder()
+          .add(query, Occur.MUST)
+          .add(pfilter.filter, Occur.FILTER)
+          .build();
+      searcher.search(q, collector);
     }
     LongObjectMap groups = ((GroupCollector)groupExpandCollector).getGroups();
     NamedList outMap = new SimpleOrderedMap();

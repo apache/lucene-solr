@@ -93,8 +93,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -1175,30 +1173,6 @@ public final class TestUtil {
       } catch (PatternSyntaxException ignored) {
         // Loop trying until we hit something that compiles.
       }
-    }
-  }
-    
-  
-  public static final FilterStrategy randomFilterStrategy(final Random random) {
-    switch(random.nextInt(6)) {
-      case 5:
-      case 4:
-        return new FilteredQuery.RandomAccessFilterStrategy() {
-          @Override
-          protected boolean useRandomAccess(Bits bits, long filterCost) {
-            return LuceneTestCase.random().nextBoolean();
-          }
-        };
-      case 3:
-        return FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY;
-      case 2:
-        return FilteredQuery.LEAP_FROG_FILTER_FIRST_STRATEGY;
-      case 1:
-        return FilteredQuery.LEAP_FROG_QUERY_FIRST_STRATEGY;
-      case 0: 
-        return FilteredQuery.QUERY_FIRST_FILTER_STRATEGY;
-      default:
-        return FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY;
     }
   }
 

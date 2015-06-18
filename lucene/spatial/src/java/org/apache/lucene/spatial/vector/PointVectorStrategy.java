@@ -31,8 +31,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -202,7 +200,7 @@ public class PointVectorStrategy extends SpatialStrategy {
         ValueSourceFilter vsf = new ValueSourceFilter(
             new QueryWrapperFilter( spatial ), valueSource, 0, circle.getRadius() );
 
-        spatial = new FilteredQuery( new MatchAllDocsQuery(), vsf );
+        spatial = vsf;
       }
     }
     else if( op == SpatialOperation.IsDisjointTo ) {

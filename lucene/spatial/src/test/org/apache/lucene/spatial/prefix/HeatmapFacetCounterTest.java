@@ -32,7 +32,6 @@ import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.spatial.StrategyTestCase;
@@ -236,7 +235,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
     Filter filter = new IntersectsPrefixTreeFilter(
         pt, strategy.getFieldName(), grid, facetLevel, grid.getMaxLevels());
     final TotalHitCountCollector collector = new TotalHitCountCollector();
-    indexSearcher.search(new FilteredQuery(new MatchAllDocsQuery(), filter), collector);
+    indexSearcher.search(filter, collector);
     cellsValidated++;
     if (collector.getTotalHits() > 0) {
       cellValidatedNonZero++;

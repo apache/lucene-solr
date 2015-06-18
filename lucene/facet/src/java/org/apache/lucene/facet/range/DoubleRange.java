@@ -108,6 +108,7 @@ public final class DoubleRange extends Range {
     private final ValueSource valueSource;
 
     ValueSourceFilter(DoubleRange range, Filter fastMatchFilter, ValueSource valueSource) {
+      super(true);
       this.range = range;
       this.fastMatchFilter = fastMatchFilter;
       this.valueSource = valueSource;

@@ -77,10 +77,9 @@ public class TestNeedsScores extends LuceneTestCase {
   
   /** when converted to a filter */
   public void testQueryWrapperFilter() throws Exception {
-    Query query = new MatchAllDocsQuery();
     Query term = new TermQuery(new Term("field", "this"));
     Filter filter = new QueryWrapperFilter(new AssertNeedsScores(term, false));
-    assertEquals(5, searcher.search(new FilteredQuery(query, filter), 5).totalHits);
+    assertEquals(5, searcher.search(filter, 5).totalHits);
   }
   
   /** when not sorting by score */

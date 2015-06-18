@@ -18,8 +18,6 @@ package org.apache.lucene.spatial.serialized;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.SpatialTestQuery;
@@ -47,8 +45,7 @@ public class SerializedStrategyTest extends StrategyTestCase {
   //called by StrategyTestCase; we can't let it call our makeQuery which will UOE ex.
   @Override
   protected Query makeQuery(SpatialTestQuery q) {
-    return new FilteredQuery(new MatchAllDocsQuery(), strategy.makeFilter(q.args),
-        FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
+    return strategy.makeFilter(q.args);
   }
 
   @Test

@@ -111,7 +111,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   }
 
   /**
-   * Returns a Filter that should be used with {@link org.apache.lucene.search.FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.
+   * Returns a Filter that should be used in a random-access fashion.
    * Use in another manner is likely to result in an {@link java.lang.UnsupportedOperationException}
    * to prevent misuse because the filter can't efficiently work via iteration.
    */
@@ -139,6 +139,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
     private final ValueSource predicateValueSource;//we call boolVal(doc)
 
     public PredicateValueSourceFilter(ValueSource predicateValueSource) {
+      super(true);
       this.predicateValueSource = predicateValueSource;
     }
 
@@ -148,7 +149,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
         @Override
         public DocIdSetIterator iterator() throws IOException {
           throw new UnsupportedOperationException(
-              "Iteration is too slow; instead try FilteredQuery.QUERY_FIRST_FILTER_STRATEGY");
+              "Iteration is too slow; consume using DocIdSet.bits() instead");
           //Note that if you're truly bent on doing this, then see FunctionValues.getRangeScorer
         }
 

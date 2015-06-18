@@ -148,21 +148,8 @@ public class TestSortRandom extends LuceneTestCase {
       }
       final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
       final RandomFilter f = new RandomFilter(random.nextLong(), random.nextFloat(), docValues);
-      int queryType = random.nextInt(2);
-      if (queryType == 0) {
-        // force out of order
-        BooleanQuery.Builder bq = new BooleanQuery.Builder();
-        // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
-        // which delegates to BS if there are no mandatory clauses.
-        bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-        // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
-        // the clause instead of BQ.
-        bq.setMinimumNumberShouldMatch(1);
-        hits = s.search(new FilteredQuery(bq.build(), f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
-      } else {
-        hits = s.search(new ConstantScoreQuery(f),
-                        hitCount, sort, random.nextBoolean(), random.nextBoolean());
-      }
+      hits = s.search(new ConstantScoreQuery(f),
+                      hitCount, sort, random.nextBoolean(), random.nextBoolean());
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);

@@ -37,7 +37,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -151,8 +150,6 @@ public class WeightedSpanTermExtractor {
       extractWeightedTerms(terms, query);
     } else if (query instanceof SpanQuery) {
       extractWeightedSpanTerms(terms, (SpanQuery) query);
-    } else if (query instanceof FilteredQuery) {
-      extract(((FilteredQuery) query).getQuery(), terms);
     } else if (query instanceof ConstantScoreQuery) {
       final Query q = ((ConstantScoreQuery) query).getQuery();
       if (q != null) {

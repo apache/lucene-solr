@@ -84,9 +84,9 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     QueryWrapperFilter qwf = new QueryWrapperFilter(termQuery);
 
     IndexSearcher searcher = newSearcher(reader);
-    TopDocs hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
+    TopDocs hits = searcher.search(qwf, 10);
     assertEquals(1, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
+    hits = searcher.search(new FilterWrapper(qwf), 10);
     assertEquals(1, hits.totalHits);
 
     // should not throw exception with complex primitive query
@@ -96,26 +96,26 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
         Occur.MUST_NOT);
     qwf = new QueryWrapperFilter(termQuery);
 
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
+    hits = searcher.search(qwf, 10);
     assertEquals(1, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
+    hits = searcher.search(new FilterWrapper(qwf), 10);
     assertEquals(1, hits.totalHits);
 
     // should not throw exception with non primitive Query (doesn't implement
     // Query#createWeight)
     qwf = new QueryWrapperFilter(new FuzzyQuery(new Term("field", "valu")));
 
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
+    hits = searcher.search(qwf, 10);
     assertEquals(1, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
+    hits = searcher.search(new FilterWrapper(qwf), 10);
     assertEquals(1, hits.totalHits);
 
     // test a query with no hits
     termQuery = new TermQuery(new Term("field", "not_exist"));
     qwf = new QueryWrapperFilter(termQuery);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
+    hits = searcher.search(qwf, 10);
     assertEquals(0, hits.totalHits);
-    hits = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), new FilterWrapper(qwf)), 10);
+    hits = searcher.search(new FilterWrapper(qwf), 10);
     assertEquals(0, hits.totalHits);
     reader.close();
     dir.close();
@@ -151,8 +151,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
     final IndexReader r = w.getReader();
     w.close();
-    final TopDocs hits = newSearcher(r).search(new FilteredQuery(new MatchAllDocsQuery(),
-                                                     new QueryWrapperFilter(new TermQuery(new Term("field", "a")))),
+    final TopDocs hits = newSearcher(r).search(new QueryWrapperFilter(new TermQuery(new Term("field", "a"))),
                                                      numDocs);
     assertEquals(aDocs.size(), hits.totalHits);
     for(ScoreDoc sd: hits.scoreDocs) {
@@ -179,7 +178,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     for (int i = 0; i < 1000; i++) {
       TermQuery termQuery = new TermQuery(new Term("field", English.intToEnglish(i)));
       QueryWrapperFilter qwf = new QueryWrapperFilter(termQuery);
-      TopDocs td = searcher.search(new FilteredQuery(new MatchAllDocsQuery(), qwf), 10);
+      TopDocs td = searcher.search(qwf, 10);
       assertEquals(1, td.totalHits);
     }
     

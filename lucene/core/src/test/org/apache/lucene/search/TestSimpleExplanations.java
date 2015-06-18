@@ -82,36 +82,6 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     qtest(phraseQuery, new int[] { 0,1,2,3 });
   }
 
-  /* some simple filtered query tests */
-  
-  public void testFQ1() throws Exception {
-    qtest(new FilteredQuery(new TermQuery(new Term(FIELD, "w1")),
-                            new QueryWrapperFilter(matchTheseItems(new int[] {0,1,2,3}))),
-          new int[] {0,1,2,3});
-  }
-  public void testFQ2() throws Exception {
-    qtest(new FilteredQuery(new TermQuery(new Term(FIELD, "w1")),
-                            new QueryWrapperFilter(matchTheseItems(new int[] {0,2,3}))),
-          new int[] {0,2,3});
-  }
-  public void testFQ3() throws Exception {
-    qtest(new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                            new QueryWrapperFilter(matchTheseItems(new int[] {1,3}))),
-          new int[] {3});
-  }
-  public void testFQ4() throws Exception {
-    TermQuery termQuery = new TermQuery(new Term(FIELD, "xx"));
-    termQuery.setBoost(1000);
-    qtest(new FilteredQuery(termQuery, new QueryWrapperFilter(matchTheseItems(new int[] {1,3}))),
-          new int[] {3});
-  }
-  public void testFQ6() throws Exception {
-    Query q = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
-                                new QueryWrapperFilter(matchTheseItems(new int[] {1,3})));
-    q.setBoost(1000);
-    qtest(q, new int[] {3});
-  }
-
   /* ConstantScoreQueries */
   
   public void testCSQ1() throws Exception {

@@ -27,10 +27,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
@@ -234,7 +231,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     BitDocIdSetFilter parentFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("__type", "parent"))));
     BitDocIdSetFilter childFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new PrefixQuery(new Term("field2"))));
     ToParentBlockJoinQuery query = new ToParentBlockJoinQuery(
-        new FilteredQuery(new MatchAllDocsQuery(), childFilter),
+        childFilter,
         new BitDocIdSetCachingWrapperFilter(parentFilter),
         ScoreMode.None
     );
@@ -299,7 +296,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     // Sort by field descending, order last, sort filter (filter_1:T)
     childFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery((new Term("filter_1", "T")))));
     query = new ToParentBlockJoinQuery(
-        new FilteredQuery(new MatchAllDocsQuery(), childFilter),
+        childFilter,
         new BitDocIdSetCachingWrapperFilter(parentFilter),
         ScoreMode.None
     );

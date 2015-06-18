@@ -25,7 +25,6 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
@@ -123,8 +122,6 @@ public final class QueryTermExtractor
     try {
       if (query instanceof BooleanQuery)
         getTermsFromBooleanQuery((BooleanQuery) query, terms, prohibited, fieldName);
-      else if (query instanceof FilteredQuery)
-        getTermsFromFilteredQuery((FilteredQuery) query, terms, prohibited, fieldName);
       else {
         HashSet<Term> nonWeightedTerms = new HashSet<>();
         try {
@@ -162,10 +159,6 @@ public final class QueryTermExtractor
       if (prohibited || clause.getOccur()!=BooleanClause.Occur.MUST_NOT)
         getTerms(clause.getQuery(), terms, prohibited, fieldName);
     }
-  }
-  private static void getTermsFromFilteredQuery(FilteredQuery query, HashSet<WeightedTerm> terms, boolean prohibited, String fieldName)
-  {
-    getTerms(query.getQuery(),terms,prohibited,fieldName);
   }
 
 }

@@ -33,7 +33,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -69,8 +68,6 @@ class MultiTermHighlighting {
           list.addAll(Arrays.asList(extractAutomata(clause.getQuery(), field)));
         }
       }
-    } else if (query instanceof FilteredQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((FilteredQuery) query).getQuery(), field)));
     } else if (query instanceof ConstantScoreQuery) {
       list.addAll(Arrays.asList(extractAutomata(((ConstantScoreQuery) query).getQuery(), field)));
     } else if (query instanceof DisjunctionMaxQuery) {

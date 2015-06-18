@@ -23,8 +23,6 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -171,7 +169,7 @@ public class PortedSolr3Test extends StrategyTestCase {
     if (random().nextBoolean()) {
       query = strategy.makeQuery(args);
     } else {
-      query = new FilteredQuery(new MatchAllDocsQuery(),strategy.makeFilter(args));
+      query = strategy.makeFilter(args);
     }
     SearchResults results = executeQuery(query, 100);
     assertEquals(""+shape,assertNumFound,results.numFound);

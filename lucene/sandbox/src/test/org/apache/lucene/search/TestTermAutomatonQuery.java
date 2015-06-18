@@ -44,6 +44,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
@@ -584,8 +585,14 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
           System.out.println("  use random filter");
         }
         RandomFilter filter = new RandomFilter(random().nextLong(), random().nextFloat());
-        q1 = new FilteredQuery(q1, filter);
-        q2 = new FilteredQuery(q2, filter);
+        q1 = new BooleanQuery.Builder()
+            .add(q1, Occur.MUST)
+            .add(filter, Occur.FILTER)
+            .build();
+        q2 = new BooleanQuery.Builder()
+            .add(q2, Occur.MUST)
+            .add(filter, Occur.FILTER)
+            .build();
       }
 
       TopDocs hits1 = s.search(q1, numDocs);

@@ -30,7 +30,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
@@ -940,7 +939,7 @@ public class FieldQueryTest extends AbstractTestCase {
   
   public void testFlattenFilteredQuery() throws Exception {
     initBoost();
-    Query query = new FilteredQuery(pqF( "A" ), new Filter() {
+    Filter filter = new Filter() {
       @Override
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
           throws IOException {
@@ -950,7 +949,11 @@ public class FieldQueryTest extends AbstractTestCase {
       public String toString(String field) {
         return "filterToBeFlattened";
       }
-    });
+    };
+    Query query = new BooleanQuery.Builder()
+        .add(pqF( "A" ), Occur.MUST)
+        .add(filter, Occur.FILTER)
+        .build();
     query.setBoost(boost);
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<>();

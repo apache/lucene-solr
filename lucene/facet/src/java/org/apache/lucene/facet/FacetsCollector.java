@@ -22,11 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
@@ -256,7 +257,10 @@ public class FacetsCollector extends SimpleCollector implements Collector {
                                   boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
 
     if (filter != null) {
-      q = new FilteredQuery(q, filter);
+      q = new BooleanQuery.Builder()
+          .add(q, Occur.MUST)
+          .add(filter, Occur.FILTER)
+          .build();
     }
 
     int limit = searcher.getIndexReader().maxDoc();

@@ -26,10 +26,11 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterCollector;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -251,7 +252,7 @@ public class SimpleFacets {
           return;
         }
         AbstractAllGroupHeadsCollector allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
-        searcher.search(new FilteredQuery(new MatchAllDocsQuery(), base.getTopFilter()), allGroupHeadsCollector);
+        searcher.search(base.getTopFilter(), allGroupHeadsCollector);
         this.docs = new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
       } else {
         this.docs = base;
@@ -350,7 +351,11 @@ public class SimpleFacets {
     
     TermAllGroupsCollector collector = new TermAllGroupsCollector(groupField);
     Filter mainQueryFilter = docs.getTopFilter(); // This returns a filter that only matches documents matching with q param and fq params
-    searcher.search(new FilteredQuery(facetQuery, mainQueryFilter), collector);
+    Query filteredFacetQuery = new BooleanQuery.Builder()
+        .add(facetQuery, Occur.MUST)
+        .add(mainQueryFilter, Occur.FILTER)
+        .build();
+    searcher.search(filteredFacetQuery, collector);
     return collector.getGroupCount();
   }
 
@@ -526,7 +531,7 @@ public class SimpleFacets {
     if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumericType() != null) {
       // it's a single-valued numeric field: we must currently create insanity :(
       // there isn't a GroupedFacetCollector that works on numerics right now...
-      searcher.search(new FilteredQuery(new MatchAllDocsQuery(), base.getTopFilter()), new FilterCollector(collector) {
+      searcher.search(base.getTopFilter(), new FilterCollector(collector) {
         @Override
         public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
           LeafReader insane = Insanity.wrapInsanity(context.reader(), groupField);
@@ -534,7 +539,7 @@ public class SimpleFacets {
         }
       });
     } else {
-      searcher.search(new FilteredQuery(new MatchAllDocsQuery(), base.getTopFilter()), collector);
+      searcher.search(base.getTopFilter(), collector);
     }
     
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);

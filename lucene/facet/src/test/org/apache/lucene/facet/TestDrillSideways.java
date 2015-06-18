@@ -45,11 +45,11 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -758,7 +758,10 @@ public class TestDrillSideways extends FacetTestCase {
       // Make sure drill down doesn't change score:
       Query q = ddq;
       if (filter != null) {
-        q = new FilteredQuery(q, filter);
+        q = new BooleanQuery.Builder()
+            .add(q, Occur.MUST)
+            .add(filter, Occur.FILTER)
+            .build();
       }
       TopDocs ddqHits = s.search(q, numDocs);
       assertEquals(expected.hits.size(), ddqHits.totalHits);

@@ -63,6 +63,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
@@ -977,7 +978,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
 
     if (pf.filter != null) {
-      search(new FilteredQuery(main, pf.filter), collector);
+      Query query = new BooleanQuery.Builder()
+          .add(main, Occur.MUST)
+          .add(pf.filter, Occur.FILTER)
+          .build();
+      search(query, collector);
     } else {
       search(main, collector);
     }
@@ -1259,12 +1264,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
 
     try {
-      if (filter == null) {
-        super.search(query, collector);
-      } else {
+      if (filter != null) {
         Filter luceneFilter = filter.getTopFilter();
-        super.search(new FilteredQuery(query, luceneFilter), collector);
+        query = new BooleanQuery.Builder()
+            .add(query, Occur.MUST)
+            .add(luceneFilter, Occur.FILTER)
+            .build();
       }
+      super.search(query, collector);
     } catch ( ExitableDirectoryReader.ExitingReaderException e) {
         log.warn("Query: " + query + "; " + e.getMessage());
     }
@@ -1628,7 +1635,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     if (pf.filter != null) {
-      query = new FilteredQuery(query, pf.filter);
+      query = new BooleanQuery.Builder()
+          .add(query, Occur.MUST)
+          .add(pf.filter, Occur.FILTER)
+          .build();
     }
 
     // handle zero case...
@@ -1726,7 +1736,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
     if (pf.filter != null) {
-      query = new FilteredQuery(query, pf.filter);
+      query = new BooleanQuery.Builder()
+          .add(query, Occur.MUST)
+          .add(pf.filter, Occur.FILTER)
+          .build();
     }
 
     // handle zero case...

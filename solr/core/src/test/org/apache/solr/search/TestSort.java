@@ -40,7 +40,6 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.FilterLeafCollector;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -296,7 +295,7 @@ public class TestSort extends SolrTestCaseJ4 {
 
         };
 
-        searcher.search(new FilteredQuery(new MatchAllDocsQuery(), filt), myCollector);
+        searcher.search(filt, myCollector);
 
         Collections.sort(collectedDocs, new Comparator<MyDoc>() {
           @Override

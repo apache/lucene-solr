@@ -22,6 +22,7 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -110,7 +111,8 @@ if (c.query instanceof TermQuery) {
       queryOut[0] = query.build(); filterOut[0] = filter;
       return null;
     } else {
-      return searcher.search(new FilteredQuery(query.build(), filter), numHits);
+      query.add(filter, Occur.FILTER);
+      return searcher.search(query.build(), numHits);
     }
 
   }

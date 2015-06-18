@@ -30,7 +30,6 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -69,7 +68,10 @@ public final class DrillDownQuery extends Query {
 
   /** Used by DrillSideways */
   DrillDownQuery(FacetsConfig config, Filter filter, DrillDownQuery other) {
-    this.baseQuery = new FilteredQuery(other.baseQuery == null ? new MatchAllDocsQuery() : other.baseQuery, filter);
+    this.baseQuery = new BooleanQuery.Builder()
+        .add(other.baseQuery == null ? new MatchAllDocsQuery() : other.baseQuery, Occur.MUST)
+        .add(filter, Occur.FILTER)
+        .build();
     this.dimQueries.addAll(other.dimQueries);
     this.drillDownDims.putAll(other.drillDownDims);
     this.config = config;

@@ -25,9 +25,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -88,7 +90,11 @@ public class DuplicateFilterTest extends LuceneTestCase {
   public void testDefaultFilter() throws Throwable {
     DuplicateFilter df = new DuplicateFilter(KEY_FIELD);
     HashSet<String> results = new HashSet<>();
-    ScoreDoc[] hits = searcher.search(new FilteredQuery(tq, df), 1000).scoreDocs;
+    Query query = new BooleanQuery.Builder()
+        .add(tq, Occur.MUST)
+        .add(df, Occur.FILTER)
+        .build();
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
 
     for (ScoreDoc hit : hits) {
       StoredDocument d = searcher.doc(hit.doc);
@@ -118,7 +124,11 @@ public class DuplicateFilterTest extends LuceneTestCase {
     DuplicateFilter df = new DuplicateFilter(KEY_FIELD);
     df.setProcessingMode(DuplicateFilter.ProcessingMode.PM_FAST_INVALIDATION);
     HashSet<String> results = new HashSet<>();
-    ScoreDoc[] hits = searcher.search(new FilteredQuery(tq, df), 1000).scoreDocs;
+    Query query = new BooleanQuery.Builder()
+        .add(tq, Occur.MUST)
+        .add(df, Occur.FILTER)
+        .build();
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertTrue("Filtered searching should have found some matches", hits.length > 0);
 
     for (ScoreDoc hit : hits) {
@@ -133,7 +143,11 @@ public class DuplicateFilterTest extends LuceneTestCase {
   public void testKeepsLastFilter() throws Throwable {
     DuplicateFilter df = new DuplicateFilter(KEY_FIELD);
     df.setKeepMode(DuplicateFilter.KeepMode.KM_USE_LAST_OCCURRENCE);
-    ScoreDoc[] hits = searcher.search(new FilteredQuery(tq, df), 1000).scoreDocs;
+    Query query = new BooleanQuery.Builder()
+        .add(tq, Occur.MUST)
+        .add(df, Occur.FILTER)
+        .build();
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertTrue("Filtered searching should have found some matches", hits.length > 0);
     for (ScoreDoc hit : hits) {
       StoredDocument d = searcher.doc(hit.doc);
@@ -157,7 +171,11 @@ public class DuplicateFilterTest extends LuceneTestCase {
   public void testKeepsFirstFilter() throws Throwable {
     DuplicateFilter df = new DuplicateFilter(KEY_FIELD);
     df.setKeepMode(DuplicateFilter.KeepMode.KM_USE_FIRST_OCCURRENCE);
-    ScoreDoc[] hits = searcher.search(new FilteredQuery(tq, df), 1000).scoreDocs;
+    Query query = new BooleanQuery.Builder()
+        .add(tq, Occur.MUST)
+        .add(df, Occur.FILTER)
+        .build();
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertTrue("Filtered searching should have found some matches", hits.length > 0);
     for (ScoreDoc hit : hits) {
       StoredDocument d = searcher.doc(hit.doc);

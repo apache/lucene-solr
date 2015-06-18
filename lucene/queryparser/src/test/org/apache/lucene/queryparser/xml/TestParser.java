@@ -182,7 +182,7 @@ public class TestParser extends LuceneTestCase {
   }
 
   public void testCachedFilterXML() throws ParserException, IOException {
-    Query q = parse("CachedFilter.xml");
+    Query q = parse("CachedQuery.xml");
     dumpResults("Cached filter", q, 5);
   }
 

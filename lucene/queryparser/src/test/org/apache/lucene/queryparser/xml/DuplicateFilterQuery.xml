@@ -15,20 +15,15 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<FilteredQuery>
-	<Query>
-		<BooleanQuery fieldName="contents">
-			<Clause occurs="should">
-				<TermQuery>money</TermQuery>
-			</Clause>
-			<Clause occurs="must">
-				<TermQuery fieldName="date">19870408</TermQuery>
-			</Clause>
-		</BooleanQuery>
-	</Query>	
-	<Filter>
+<BooleanQuery fieldName="contents">
+	<Clause occurs="should">
+		<TermQuery>money</TermQuery>
+	</Clause>
+	<Clause occurs="must">
+		<TermQuery fieldName="date">19870408</TermQuery>
+	</Clause>
+	<Clause occurs="filter">
 		<!-- Filters to last document with this date -->
 		<DuplicateFilter fieldName="date" keepMode="last"/>
-	</Filter>
-	
-</FilteredQuery>
+	</Clause>
+</BooleanQuery>	

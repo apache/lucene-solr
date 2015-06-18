@@ -29,6 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
@@ -132,8 +133,12 @@ public class TestDocIdSet extends LuceneTestCase {
         return "nullDocIdSetFilter";
       }
     };
-    
-    Assert.assertEquals(0, searcher.search(new FilteredQuery(new MatchAllDocsQuery(), f), 10).totalHits);
+
+    Query filtered = new BooleanQuery.Builder()
+        .add(new MatchAllDocsQuery(), Occur.MUST)
+        .add(f, Occur.FILTER)
+        .build();
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits);
     reader.close();
     dir.close();
   }
@@ -179,7 +184,11 @@ public class TestDocIdSet extends LuceneTestCase {
       }
     };
     
-    Assert.assertEquals(0, searcher.search(new FilteredQuery(new MatchAllDocsQuery(), f), 10).totalHits);
+    Query filtered = new BooleanQuery.Builder()
+        .add(new MatchAllDocsQuery(), Occur.MUST)
+        .add(f, Occur.FILTER)
+        .build();
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits);
     reader.close();
     dir.close();
   }

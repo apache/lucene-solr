@@ -32,10 +32,11 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -451,7 +452,10 @@ public class Grouping {
     try {
       Query q = query;
       if (luceneFilter != null) {
-        q = new FilteredQuery(q, luceneFilter);
+        q = new BooleanQuery.Builder()
+            .add(q, Occur.MUST)
+            .add(luceneFilter, Occur.FILTER)
+            .build();
       }
       searcher.search(q, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {

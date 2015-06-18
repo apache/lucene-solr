@@ -30,16 +30,15 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
@@ -471,9 +470,10 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    FilteredQuery query = new FilteredQuery(
-        new WildcardQuery(new Term("body", "te*")),
-        new QueryWrapperFilter(new TermQuery(new Term("body", "test"))));
+    Query query = new BooleanQuery.Builder()
+        .add(new WildcardQuery(new Term("body", "te*")), Occur.MUST)
+        .add(new TermQuery(new Term("body", "test")), Occur.FILTER)
+        .build();
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);

@@ -21,7 +21,6 @@ import org.apache.lucene.facet.DrillDownQuery; // javadocs
 import org.apache.lucene.facet.DrillSideways; // javadocs
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery; // javadocs
 import org.apache.lucene.search.NumericRangeQuery;
 
 /** Base class for a single labeled range.
@@ -43,9 +42,7 @@ public abstract class Range {
   /** Returns a new {@link Filter} accepting only documents
    *  in this range.  This filter is not general-purpose;
    *  you should either use it with {@link DrillSideways} by
-   *  adding it to {@link DrillDownQuery#add}, or pass it to
-   *  {@link FilteredQuery} using its {@link
-   *  FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.  If the
+   *  adding it to {@link DrillDownQuery#add}.  If the
    *  {@link ValueSource} is static, e.g. an indexed numeric
    *  field, then it may be more efficient to use {@link
    *  NumericRangeQuery}.  The provided fastMatchFilter,
@@ -57,9 +54,7 @@ public abstract class Range {
   /** Returns a new {@link Filter} accepting only documents
    *  in this range.  This filter is not general-purpose;
    *  you should either use it with {@link DrillSideways} by
-   *  adding it to {@link DrillDownQuery#add}, or pass it to
-   *  {@link FilteredQuery} using its {@link
-   *  FilteredQuery#QUERY_FIRST_FILTER_STRATEGY}.  If the
+   *  adding it to {@link DrillDownQuery#add}.  If the
    *  {@link ValueSource} is static, e.g. an indexed numeric
    *  field, then it may be more efficient to use {@link NumericRangeQuery}. */
   public Filter getFilter(ValueSource valueSource) {

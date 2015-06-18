@@ -275,13 +275,19 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
    * 
    * Both queries will be filtered by <code>filter</code>
    */
-  protected void assertSubsetOf(Query q1, Query q2, Filter filter) throws Exception {
+  protected void assertSubsetOf(Query q1, Query q2, Query filter) throws Exception {
     QueryUtils.check(q1);
     QueryUtils.check(q2);
 
     if (filter != null) {
-      q1 = new FilteredQuery(q1, filter);
-      q2 = new FilteredQuery(q2, filter);
+      q1 = new BooleanQuery.Builder()
+          .add(q1, Occur.MUST)
+          .add(filter, Occur.FILTER)
+          .build();
+      q2 = new BooleanQuery.Builder()
+          .add(q2, Occur.MUST)
+          .add(filter, Occur.FILTER)
+          .build();
     }
     // we test both INDEXORDER and RELEVANCE because we want to test needsScores=true/false
     for (Sort sort : new Sort[] { Sort.INDEXORDER, Sort.RELEVANCE }) {
@@ -323,11 +329,17 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     }
   }
 
-  protected void assertSameScores(Query q1, Query q2, Filter filter) throws Exception {
+  protected void assertSameScores(Query q1, Query q2, Query filter) throws Exception {
     // not efficient, but simple!
     if (filter != null) {
-      q1 = new FilteredQuery(q1, filter);
-      q2 = new FilteredQuery(q2, filter);
+      q1 = new BooleanQuery.Builder()
+          .add(q1, Occur.MUST)
+          .add(filter, Occur.FILTER)
+          .build();
+      q2 = new BooleanQuery.Builder()
+          .add(q2, Occur.MUST)
+          .add(filter, Occur.FILTER)
+          .build();
     }
     TopDocs td1 = s1.search(q1, reader.maxDoc());
     TopDocs td2 = s2.search(q2, reader.maxDoc());
@@ -338,8 +350,11 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     }
   }
   
-  protected Query filteredQuery(Query query, Filter filter) {
-    return new FilteredQuery(query, filter, TestUtil.randomFilterStrategy(random()));
+  protected Query filteredQuery(Query query, Query filter) {
+    return new BooleanQuery.Builder()
+        .add(query, Occur.MUST)
+        .add(filter, Occur.FILTER)
+        .build();
   }
   
   protected Query filteredBooleanQuery(Query query, Filter filter) {

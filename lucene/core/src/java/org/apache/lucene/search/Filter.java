@@ -30,6 +30,22 @@ import org.apache.lucene.util.Bits;
  */
 public abstract class Filter extends Query {
 
+  private final boolean applyLazily;
+
+  /** Filter constructor. When {@code applyLazily} is true and the produced
+   *  {@link DocIdSet}s support {@link DocIdSet#bits() random-access}, Lucene
+   *  will only apply this filter after other clauses. */
+  protected Filter(boolean applyLazily) {
+    this.applyLazily = applyLazily;
+  }
+
+  /** Default Filter constructor that will use the
+   *  {@link DocIdSet#iterator() doc id set iterator} when consumed through
+   *  the {@link Query} API. */
+  protected Filter() {
+    this(false);
+  }
+
   /**
    * Creates a {@link DocIdSet} enumerating the documents that should be
    * permitted in search results. <b>NOTE:</b> null can be
@@ -95,6 +111,17 @@ public abstract class Filter extends Query {
         final DocIdSet set = getDocIdSet(context, acceptDocs);
         if (set == null) {
           return null;
+        }
+        if (applyLazily && set.bits() != null) {
+          final Bits bits = set.bits();
+          final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
+          final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
+            @Override
+            public boolean matches() throws IOException {
+              return bits.get(approximation.docID());
+            }
+          };
+          return new ConstantScoreScorer(this, 0f, twoPhase);
         }
         final DocIdSetIterator iterator = set.iterator();
         if (iterator == null) {
