@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.spatial4j;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -31,20 +32,21 @@ import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
 import org.apache.lucene.spatial.spatial4j.geo3d.PlanetModel;
 
 /**
- * A 3D planar geometry based Spatial4j Shape implementation.
+ * A Spatial4j Shape wrapping a {@link GeoShape} ("Geo3D") -- a 3D planar geometry based Spatial4j Shape implementation.
+ * Geo3D implements shapes on the surface of a sphere or ellipsoid.
  *
  * @lucene.experimental
  */
 public class Geo3dShape implements Shape {
+  /** The required size of this adjustment depends on the actual planetary model chosen.
+   * This value is big enough to account for WGS84. */
+  protected static final double ROUNDOFF_ADJUSTMENT = 0.05;
 
   public final SpatialContext ctx;
   public final GeoShape shape;
   public final PlanetModel planetModel;
 
-  private Rectangle boundingBox = null;
-
-  public final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
-  public final static double DEGREES_PER_RADIAN = 1.0 / RADIANS_PER_DEGREE;
+  private volatile Rectangle boundingBox = null; // lazy initialized
 
   public Geo3dShape(final GeoShape shape, final SpatialContext ctx) {
     this(PlanetModel.SPHERE, shape, ctx);
@@ -72,10 +74,10 @@ public class Geo3dShape implements Shape {
   protected SpatialRelation relate(Rectangle r) {
     // Construct the right kind of GeoArea first
     GeoArea geoArea = GeoAreaFactory.makeGeoArea(planetModel,
-        r.getMaxY() * RADIANS_PER_DEGREE,
-        r.getMinY() * RADIANS_PER_DEGREE,
-        r.getMinX() * RADIANS_PER_DEGREE,
-        r.getMaxX() * RADIANS_PER_DEGREE);
+        r.getMaxY() * DistanceUtils.DEGREES_TO_RADIANS,
+        r.getMinY() * DistanceUtils.DEGREES_TO_RADIANS,
+        r.getMinX() * DistanceUtils.DEGREES_TO_RADIANS,
+        r.getMaxX() * DistanceUtils.DEGREES_TO_RADIANS);
     int relationship = geoArea.getRelationship(shape);
     if (relationship == GeoArea.WITHIN)
       return SpatialRelation.WITHIN;
@@ -91,7 +93,7 @@ public class Geo3dShape implements Shape {
 
   protected SpatialRelation relate(Point p) {
     // Create a GeoPoint
-    GeoPoint point = new GeoPoint(planetModel, p.getY()*RADIANS_PER_DEGREE, p.getX()*RADIANS_PER_DEGREE);
+    GeoPoint point = new GeoPoint(planetModel, p.getY()* DistanceUtils.DEGREES_TO_RADIANS, p.getX()* DistanceUtils.DEGREES_TO_RADIANS);
     if (shape.isWithin(point)) {
       // Point within shape
       return SpatialRelation.CONTAINS;
@@ -99,13 +101,12 @@ public class Geo3dShape implements Shape {
     return SpatialRelation.DISJOINT;
   }
 
-  // The required size of this adjustment depends on the actual planetary model chosen.
-  // This value is big enough to account for WGS84.
-  protected final double ROUNDOFF_ADJUSTMENT = 0.05;
+
   
   @Override
   public Rectangle getBoundingBox() {
-    if (boundingBox == null) {
+    Rectangle bbox = this.boundingBox;//volatile read once
+    if (bbox == null) {
       Bounds bounds = shape.getBounds(null);
       double leftLon;
       double rightLon;
@@ -113,24 +114,25 @@ public class Geo3dShape implements Shape {
         leftLon = -180.0;
         rightLon = 180.0;
       } else {
-        leftLon = bounds.getLeftLongitude().doubleValue() * DEGREES_PER_RADIAN;
-        rightLon = bounds.getRightLongitude().doubleValue() * DEGREES_PER_RADIAN;
+        leftLon = bounds.getLeftLongitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
+        rightLon = bounds.getRightLongitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
       }
       double minLat;
       if (bounds.checkNoBottomLatitudeBound()) {
         minLat = -90.0;
       } else {
-        minLat = bounds.getMinLatitude().doubleValue() * DEGREES_PER_RADIAN;
+        minLat = bounds.getMinLatitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
       }
       double maxLat;
       if (bounds.checkNoTopLatitudeBound()) {
         maxLat = 90.0;
       } else {
-        maxLat = bounds.getMaxLatitude().doubleValue() * DEGREES_PER_RADIAN;
+        maxLat = bounds.getMaxLatitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
       }
-      boundingBox = new RectangleImpl(leftLon, rightLon, minLat, maxLat, ctx).getBuffered(ROUNDOFF_ADJUSTMENT, ctx);
+      bbox = new RectangleImpl(leftLon, rightLon, minLat, maxLat, ctx).getBuffered(ROUNDOFF_ADJUSTMENT, ctx);
+      this.boundingBox = bbox;
     }
-    return boundingBox;
+    return bbox;
   }
 
   @Override
@@ -140,17 +142,17 @@ public class Geo3dShape implements Shape {
 
   @Override
   public double getArea(SpatialContext ctx) {
-    throw new RuntimeException("Unimplemented");
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public Point getCenter() {
-    throw new RuntimeException("Unimplemented");
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public Shape getBuffered(double distance, SpatialContext ctx) {
-    return this;
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -160,7 +162,7 @@ public class Geo3dShape implements Shape {
 
   @Override
   public String toString() {
-    return "Geo3dShape{planetmodel=" + planetModel+", shape="+shape + '}';
+    return "Geo3dShape{planetmodel=" + planetModel + ", shape=" + shape + '}';
   }
 
   @Override
@@ -168,7 +170,7 @@ public class Geo3dShape implements Shape {
     if (!(other instanceof Geo3dShape))
       return false;
     Geo3dShape tr = (Geo3dShape)other;
-    return tr.planetModel.equals(planetModel) && tr.shape.equals(shape);
+    return tr.ctx.equals(ctx) && tr.planetModel.equals(planetModel) && tr.shape.equals(shape);
   }
 
   @Override

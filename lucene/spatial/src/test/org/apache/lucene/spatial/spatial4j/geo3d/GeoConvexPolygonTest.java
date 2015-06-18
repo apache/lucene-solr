@@ -34,7 +34,7 @@ public class GeoConvexPolygonTest {
     c.addPoint(0.0, -0.6, false);
     c.addPoint(0.1, -0.5, false);
     c.addPoint(0.0, -0.4, false);
-    c.donePoints(false);
+    c.done(false);
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
@@ -73,7 +73,7 @@ public class GeoConvexPolygonTest {
     c.addPoint(0.0, -0.6, false);
     c.addPoint(0.1, -0.5, false);
     c.addPoint(0.0, -0.4, false);
-    c.donePoints(false);
+    c.done(false);
 
     b = c.getBounds(null);
     assertFalse(b.checkNoLongitudeBound());

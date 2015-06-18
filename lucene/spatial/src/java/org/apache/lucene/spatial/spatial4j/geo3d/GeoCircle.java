@@ -39,31 +39,40 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
       throw new IllegalArgumentException("Cutoff angle out of bounds");
     final double cosAngle = Math.cos(cutoffAngle);
     this.center = new GeoPoint(planetModel, lat, lon);
-    final double magnitude = center.magnitude();
     // In an ellipsoidal world, cutoff distances make no sense, unfortunately.  Only membership
     // can be used to make in/out determination.
     this.cutoffAngle = cutoffAngle;
-    // The plane's normal vector needs to be normalized, since we compute D on that basis
-    this.circlePlane = new SidedPlane(center, center.normalize(), -cosAngle * magnitude);
-
+    // Compute two points on the circle, with the right angle from the center.  We'll use these
+    // to obtain the perpendicular plane to the circle.
+    double upperLat = lat + cutoffAngle;
+    double upperLon = lon;
+    if (upperLat > Math.PI * 0.5) {
+      upperLon += Math.PI;
+      if (upperLon > Math.PI)
+        upperLon -= 2.0 * Math.PI;
+      upperLat = Math.PI - upperLat;
+    }
+    double lowerLat = lat - cutoffAngle;
+    double lowerLon = lon;
+    if (lowerLat < -Math.PI * 0.5) {
+      lowerLon += Math.PI;
+      if (lowerLon > Math.PI)
+        lowerLon -= 2.0 * Math.PI;
+      lowerLat = -Math.PI - lowerLat;
+    }
+    final GeoPoint upperPoint = new GeoPoint(planetModel, upperLat, upperLon);
+    final GeoPoint lowerPoint = new GeoPoint(planetModel, lowerLat, lowerLon);
+    // Construct normal plane
+    final Plane normalPlane = new Plane(upperPoint, center);
+    // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
+    this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
+    if (circlePlane == null)
+      throw new RuntimeException("Couldn't construct circle plane.  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
     // Compute a point on the circle boundary.
     if (cutoffAngle == Math.PI)
       this.edgePoints = new GeoPoint[0];
     else {
-      // We already have circle plane, which is the definitive determination of the edge of the "circle".
-      // Next, compute vertical plane going through origin and the center point (C = 0, D = 0).
-      Plane verticalPlane = Plane.constructNormalizedVerticalPlane(this.center.x, this.center.y);
-      if (verticalPlane == null) {
-        verticalPlane = new Plane(1.0,0.0);
-      }
-      // Finally, use Plane.findIntersections() to find the intersection points.
-      final GeoPoint edgePoint = this.circlePlane.getSampleIntersectionPoint(planetModel, verticalPlane);
-      if (edgePoint == null) {
-        throw new RuntimeException("Could not find edge point for circle at lat="+lat+" lon="+lon+" cutoffAngle="+cutoffAngle+" planetModel="+planetModel);
-      }
-      //if (Math.abs(circlePlane.evaluate(edgePoint)) > 1e-10)
-      //    throw new RuntimeException("Computed an edge point that does not satisfy circlePlane equation! "+circlePlane.evaluate(edgePoint));
-      this.edgePoints = new GeoPoint[]{edgePoint};
+      this.edgePoints = new GeoPoint[]{upperPoint};
     }
   }
 

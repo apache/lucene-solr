@@ -91,6 +91,8 @@ public class SidedPlane extends Plane implements Membership {
     final Vector normalVector, final Vector point1, final Vector point2) {
     final Vector pointsVector = new Vector(point1.x - point2.x, point1.y - point2.y, point1.z - point2.z);
     final Vector newNormalVector = new Vector(normalVector, pointsVector).normalize();
+    if (newNormalVector == null)
+      return null;
     // To construct the plane, we now just need D, which is simply the negative of the evaluation of the circle normal vector at one of the points.
     return new SidedPlane(insidePoint, newNormalVector, -newNormalVector.dotProduct(point1));
   }

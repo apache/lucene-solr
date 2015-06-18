@@ -53,6 +53,7 @@ public class GeoBBoxTest {
   public void testBBoxPointWithin() {
     GeoBBox box;
     GeoPoint gp;
+
     // Standard normal Rect box, not crossing dateline
     box = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, -1.0, 1.0);
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, 0.0);
@@ -65,6 +66,7 @@ public class GeoBBoxTest {
     assertFalse(box.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -1.1);
     assertFalse(box.isWithin(gp));
+
     // Standard normal Rect box, crossing dateline
     box = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, Math.PI - 1.0, -Math.PI + 1.0);
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI);
@@ -75,8 +77,9 @@ public class GeoBBoxTest {
     assertFalse(box.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI + 1.1);
     assertFalse(box.isWithin(gp));
-    gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI - 1.1);
-    assertFalse(box.isWithin(gp));
+    //bad lon: gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI - 1.1);
+    //assertFalse(box.isWithin(gp));
+
     // Latitude zone rectangle
     box = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, -Math.PI, Math.PI);
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI);
@@ -87,8 +90,9 @@ public class GeoBBoxTest {
     assertFalse(box.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI + 1.1);
     assertTrue(box.isWithin(gp));
-    gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI - 1.1);
-    assertTrue(box.isWithin(gp));
+    //bad lon: gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI - 1.1);
+    //assertTrue(box.isWithin(gp));
+
     // World
     box = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, Math.PI);
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI);
@@ -99,8 +103,8 @@ public class GeoBBoxTest {
     assertTrue(box.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI + 1.1);
     assertTrue(box.isWithin(gp));
-    gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI - 1.1);
-    assertTrue(box.isWithin(gp));
+    //bad lat: gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -Math.PI - 1.1);
+    //assertTrue(box.isWithin(gp));
 
   }
 

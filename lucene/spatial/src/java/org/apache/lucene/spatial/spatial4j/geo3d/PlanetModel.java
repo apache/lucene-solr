@@ -29,7 +29,7 @@ public class PlanetModel {
   /** Mean radius */
   public static final double WGS84_MEAN = 6371009.0;
   /** Polar radius */
-  public static final double WGS84_POLAR = 6356752.3;
+  public static final double WGS84_POLAR = 6356752.314245;
   /** Equatorial radius */
   public static final double WGS84_EQUATORIAL = 6378137.0;
   /** Planet model corresponding to WGS84 */
@@ -45,6 +45,8 @@ public class PlanetModel {
   public final double inverseC;
   public final double inverseAbSquared;
   public final double inverseCSquared;
+  public final double flattening;
+  public final double squareRatio;
   // We do NOT include radius, because all computations in geo3d are in radians, not meters.
   
   // Compute north and south pole for planet model, since these are commonly used.
@@ -56,10 +58,12 @@ public class PlanetModel {
     this.c = c;
     this.inverseAb = 1.0 / ab;
     this.inverseC = 1.0 / c;
+    this.flattening = (ab - c) * inverseAb;
+    this.squareRatio = (ab * ab - c * c) / (c * c);
     this.inverseAbSquared = inverseAb * inverseAb;
     this.inverseCSquared = inverseC * inverseC;
-    this.NORTH_POLE = new GeoPoint(c, 0.0, 0.0, 1.0);
-    this.SOUTH_POLE = new GeoPoint(c, 0.0, 0.0, -1.0);
+    this.NORTH_POLE = new GeoPoint(c, 0.0, 0.0, 1.0, Math.PI * 0.5, 0.0);
+    this.SOUTH_POLE = new GeoPoint(c, 0.0, 0.0, -1.0, -Math.PI * 0.5, 0.0);
   }
   
   /** Find the minimum magnitude of all points on the ellipsoid.
@@ -74,6 +78,67 @@ public class PlanetModel {
     return Math.max(this.ab, this.c);
   }
   
+  /** Compute surface distance between two points.
+   * @param p1 is the first point.
+   * @param p2 is the second point.
+   * @return the adjusted angle, when multiplied by the mean earth radius, yields a surface distance.  This will differ
+   * from GeoPoint.arcDistance() only when the planet model is not a sphere. @see {@link org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint#arcDistance(GeoPoint)}
+   */
+  public double surfaceDistance(final GeoPoint p1, final GeoPoint p2) {
+    final double latA = p1.getLatitude();
+    final double lonA = p1.getLongitude();
+    final double latB = p2.getLatitude();
+    final double lonB = p2.getLongitude();
+
+    final double L = lonB - lonA;
+    final double oF = 1.0 - this.flattening;
+    final double U1 = Math.atan(oF * Math.tan(latA));
+    final double U2 = Math.atan(oF * Math.tan(latB));
+    final double sU1 = Math.sin(U1);
+    final double cU1 = Math.cos(U1);
+    final double sU2 = Math.sin(U2);
+    final double cU2 = Math.cos(U2);
+
+    double sigma, sinSigma, cosSigma;
+    double cos2Alpha, cos2SigmaM;
+    
+    double lambda = L;
+    double iters = 100;
+
+    do {
+      final double sinLambda = Math.sin(lambda);
+      final double cosLambda = Math.cos(lambda);
+      sinSigma = Math.sqrt((cU2 * sinLambda) * (cU2 * sinLambda) + (cU1 * sU2 - sU1 * cU2 * cosLambda)
+          * (cU1 * sU2 - sU1 * cU2 * cosLambda));
+      if (Math.abs(sinSigma) < Vector.MINIMUM_RESOLUTION)
+        return 0.0;
+
+      cosSigma = sU1 * sU2 + cU1 * cU2 * cosLambda;
+      sigma = Math.atan2(sinSigma, cosSigma);
+      final double sinAlpha = cU1 * cU2 * sinLambda / sinSigma;
+      cos2Alpha = 1.0 - sinAlpha * sinAlpha;
+      cos2SigmaM = cosSigma - 2.0 * sU1 * sU2 / cos2Alpha;
+
+      final double c = this.flattening * 0.625 * cos2Alpha * (4.0 + this.flattening * (4.0 - 3.0 * cos2Alpha));
+      final double lambdaP = lambda;
+      lambda = L + (1.0 - c) * this.flattening * sinAlpha * (sigma + c * sinSigma * (cos2SigmaM + c * cosSigma *
+          (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM)));
+      if (Math.abs(lambda - lambdaP) < Vector.MINIMUM_RESOLUTION)
+        break;
+    } while (--iters > 0);
+
+    if (iters == 0)
+      return 0.0;
+
+    final double uSq = cos2Alpha * this.squareRatio;
+    final double A = 1.0 + uSq * 0.00006103515625 * (4096.0 + uSq * (-768.0 + uSq * (320.0 - 175.0 * uSq)));
+    final double B = uSq * 0.0009765625 * (256.0 + uSq * (-128.0 + uSq * (74.0 - 47.0 * uSq)));
+    final double deltaSigma = B * sinSigma * (cos2SigmaM + B * 0.25 * (cosSigma * (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM) - B * 0.16666666666666666666667 * cos2SigmaM
+            * (-3.0 + 4.0 * sinSigma * sinSigma) * (-3.0 + 4.0 * cos2SigmaM * cos2SigmaM)));
+
+    return this.c * A * (sigma - deltaSigma);
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (!(o instanceof PlanetModel))

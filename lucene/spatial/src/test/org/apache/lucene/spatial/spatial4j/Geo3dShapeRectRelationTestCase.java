@@ -24,6 +24,7 @@ import java.util.Random;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
 import org.apache.lucene.spatial.spatial4j.geo3d.Bounds;
 import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox;
@@ -173,17 +174,16 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       protected Geo3dShape generateRandomShape(Point nearP) {
         final Point centerPoint = randomPoint();
         final int maxDistance = random().nextInt(160) + 20;
+        final Circle pointZone = ctx.makeCircle(centerPoint, maxDistance);
         final int vertexCount = random().nextInt(3) + 3;
         while (true) {
           final List<GeoPoint> geoPoints = new ArrayList<>();
           while (geoPoints.size() < vertexCount) {
-            final Point point = randomPoint();
-            if (ctx.getDistCalc().distance(point,centerPoint) > maxDistance)
-              continue;
+            final Point point = randomPointIn(pointZone);
             final GeoPoint gPt = new GeoPoint(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
             geoPoints.add(gPt);
           }
-          final int convexPointIndex = random().nextInt(vertexCount);       //If we get this wrong, hopefully we get IllegalArgumentException
+          final int convexPointIndex = random().nextInt(vertexCount); //If we get this wrong, hopefully we get IllegalArgumentException
           try {
             final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints, convexPointIndex);
             return new Geo3dShape(planetModel, shape, ctx);
@@ -217,18 +217,15 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       protected Geo3dShape generateRandomShape(Point nearP) {
         final Point centerPoint = randomPoint();
         final int maxDistance = random().nextInt(160) + 20;
+        final Circle pointZone = ctx.makeCircle(centerPoint, maxDistance);
         final int pointCount = random().nextInt(5) + 1;
         final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
         while (true) {
           try {
             final GeoPath path = new GeoPath(planetModel, width);
-            int i = 0;
-            while (i < pointCount) {
-              final Point nextPoint = randomPoint();
-              if (ctx.getDistCalc().distance(nextPoint,centerPoint) > maxDistance)
-                continue;
+            while (path.points.size() < pointCount) {
+              final Point nextPoint = randomPointIn(pointZone);
               path.addPoint(nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
-              i++;
             }
             path.done();
             return new Geo3dShape(planetModel, path, ctx);

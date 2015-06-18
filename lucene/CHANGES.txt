@@ -95,6 +95,11 @@ New Features
 * LUCENE-6577: Give earlier and better error message for invalid CRC.
   (Robert Muir)
 
+* LUCENE-6544: Geo3D: (1) Regularize path & polygon construction, (2) add
+  PlanetModel.surfaceDistance() (ellipsoidal calculation), (3) cache lat & lon
+  in GeoPoint, (4) add thread-safety where missing -- Geo3dShape. (Karl Wright,
+  David Smiley)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

@@ -34,13 +34,14 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
   protected final BitSet isInternalEdges;
 
   protected SidedPlane[] edges = null;
-  protected boolean[] internalEdges = null;
   protected GeoPoint[][] notableEdgePoints = null;
 
   protected GeoPoint[] edgePoints = null;
 
   protected double fullDistance = 0.0;
 
+  protected boolean isDone = false;
+  
   /**
    * Create a convex polygon from a list of points.  The first point must be on the
    * external edge.
@@ -48,19 +49,20 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
   public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList) {
     super(planetModel);
     this.points = pointList;
-    this.isInternalEdges = null;
-    donePoints(false);
+    this.isInternalEdges = new BitSet();
+    done(false);
   }
 
   /**
    * Create a convex polygon from a list of points, keeping track of which boundaries
    * are internal.  This is used when creating a polygon as a building block for another shape.
    */
-  public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final BitSet internalEdgeFlags, final boolean returnEdgeInternal) {
+  public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final BitSet internalEdgeFlags,
+                          final boolean returnEdgeInternal) {
     super(planetModel);
     this.points = pointList;
     this.isInternalEdges = internalEdgeFlags;
-    donePoints(returnEdgeInternal);
+    done(returnEdgeInternal);
   }
 
   /**
@@ -69,16 +71,9 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
    */
   public GeoConvexPolygon(final PlanetModel planetModel, final double startLatitude, final double startLongitude) {
     super(planetModel);
-    points = new ArrayList<GeoPoint>();
+    points = new ArrayList<>();
     isInternalEdges = new BitSet();
-    // Argument checking
-    if (startLatitude > Math.PI * 0.5 || startLatitude < -Math.PI * 0.5)
-      throw new IllegalArgumentException("Latitude out of range");
-    if (startLongitude < -Math.PI || startLongitude > Math.PI)
-      throw new IllegalArgumentException("Longitude out of range");
-
-    final GeoPoint p = new GeoPoint(planetModel, startLatitude, startLongitude);
-    points.add(p);
+    points.add(new GeoPoint(planetModel, startLatitude, startLongitude));
   }
 
   /**
@@ -87,36 +82,39 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
    *
    * @param latitude       is the latitude of the next point.
    * @param longitude      is the longitude of the next point.
-   * @param isInternalEdge is true if the edge just added should be considered "internal", and not
+   * @param isInternalEdge is true if the edge just added with this point should be considered "internal", and not
    *                       intersected as part of the intersects() operation.
    */
   public void addPoint(final double latitude, final double longitude, final boolean isInternalEdge) {
-    // Argument checking
-    if (latitude > Math.PI * 0.5 || latitude < -Math.PI * 0.5)
-      throw new IllegalArgumentException("Latitude out of range");
-    if (longitude < -Math.PI || longitude > Math.PI)
-      throw new IllegalArgumentException("Longitude out of range");
-
-    final GeoPoint p = new GeoPoint(planetModel, latitude, longitude);
-    isInternalEdges.set(points.size(), isInternalEdge);
-    points.add(p);
+    if (isDone)
+      throw new IllegalStateException("Can't call addPoint() if done() already called");
+    if (isInternalEdge)
+      isInternalEdges.set(points.size() - 1);
+    points.add(new GeoPoint(planetModel, latitude, longitude));
   }
 
   /**
    * Finish the polygon, by connecting the last added point with the starting point.
    */
-  public void donePoints(final boolean isInternalReturnEdge) {
+  public void done(final boolean isInternalReturnEdge) {
+    if (isDone)
+      throw new IllegalStateException("Can't call done() more than once");
     // If fewer than 3 points, can't do it.
     if (points.size() < 3)
       throw new IllegalArgumentException("Polygon needs at least three points.");
+
+    if (isInternalReturnEdge)
+      isInternalEdges.set(points.size() - 1);
+
+    isDone = true;
+    
     // Time to construct the planes.  If the polygon is truly convex, then any adjacent point
     // to a segment can provide an interior measurement.
     edges = new SidedPlane[points.size()];
     notableEdgePoints = new GeoPoint[points.size()][];
-    internalEdges = new boolean[points.size()];
+
     for (int i = 0; i < points.size(); i++) {
       final GeoPoint start = points.get(i);
-      final boolean isInternalEdge = (isInternalEdges != null ? (i == isInternalEdges.size() ? isInternalReturnEdge : isInternalEdges.get(i)) : false);
       final GeoPoint end = points.get(legalIndex(i + 1));
       final double distance = start.arcDistance(end);
       if (distance > fullDistance)
@@ -126,7 +124,6 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
       //System.out.println("Created edge "+sp+" using start="+start+" end="+end+" check="+check);
       edges[i] = sp;
       notableEdgePoints[i] = new GeoPoint[]{start, end};
-      internalEdges[i] = isInternalEdge;
     }
     createCenterPoint();
   }
@@ -183,7 +180,7 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
       final SidedPlane edge = edges[edgeIndex];
       final GeoPoint[] points = this.notableEdgePoints[edgeIndex];
-      if (!internalEdges[edgeIndex]) {
+      if (!isInternalEdges.get(edgeIndex)) {
         //System.err.println(" non-internal edge "+edge);
         // Edges flagged as 'internal only' are excluded from the matching
         // Construct boundaries
@@ -250,14 +247,9 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     GeoConvexPolygon other = (GeoConvexPolygon) o;
     if (!super.equals(other))
       return false;
-    if (other.points.size() != points.size())
+    if (!other.isInternalEdges.equals(isInternalEdges))
       return false;
-
-    for (int i = 0; i < points.size(); i++) {
-      if (!other.points.get(i).equals(points.get(i)))
-        return false;
-    }
-    return true;
+    return (other.points.equals(points));
   }
 
   @Override

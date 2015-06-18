@@ -57,10 +57,10 @@ public class GeoModelTest {
     assertFalse(bounds.checkNoTopLatitudeBound());
     assertFalse(bounds.checkNoLongitudeBound());
     assertFalse(bounds.checkNoBottomLatitudeBound());
-    assertEquals(1.20, bounds.getMaxLatitude(), 0.01);
-    assertEquals(Math.PI * 0.25 - 0.01, bounds.getMinLatitude(), 0.01);
-    assertEquals(-0.36, bounds.getLeftLongitude(), 0.01);
-    assertEquals(0.36, bounds.getRightLongitude(), 0.01);
+    assertEquals(Math.PI * 0.25 + 0.01, bounds.getMaxLatitude(), 0.00001);
+    assertEquals(Math.PI * 0.25 - 0.01, bounds.getMinLatitude(), 0.00001);
+    assertEquals(-0.0125, bounds.getLeftLongitude(), 0.0001);
+    assertEquals(0.0125, bounds.getRightLongitude(), 0.0001);
 
     circle = new GeoCircle(scaledModel, Math.PI * 0.125, 0.0, 0.01);
     assertTrue(circle.isWithin(point2));
@@ -70,11 +70,11 @@ public class GeoModelTest {
     assertFalse(bounds.checkNoLongitudeBound());
     assertFalse(bounds.checkNoTopLatitudeBound());
     assertFalse(bounds.checkNoBottomLatitudeBound());
-    // Asymmetric, as expected
-    assertEquals(Math.PI * 0.125 - 0.01, bounds.getMinLatitude(), 0.01);
-    assertEquals(0.74, bounds.getMaxLatitude(), 0.01);
-    assertEquals(-0.18, bounds.getLeftLongitude(), 0.01);
-    assertEquals(0.18, bounds.getRightLongitude(), 0.01);
+    // Symmetric, as expected
+    assertEquals(Math.PI * 0.125 - 0.01, bounds.getMinLatitude(), 0.00001);
+    assertEquals(Math.PI * 0.125 + 0.01, bounds.getMaxLatitude(), 0.00001);
+    assertEquals(-0.0089, bounds.getLeftLongitude(), 0.0001);
+    assertEquals(0.0089, bounds.getRightLongitude(), 0.0001);
 
   }
 
