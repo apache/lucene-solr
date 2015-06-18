@@ -166,6 +166,9 @@ Bug Fixes
   on the local machine by waiting for 10 seconds before starting the second node. 
   (hossman, Timothy Potter)
 
+* SOLR-7689: ReRankQuery rewrite method can change the QueryResultKey causing cache misses.
+  (Emad Nashed, Yonik Seely, Joel Bernstein)
+
 Optimizations
 ----------------------
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
