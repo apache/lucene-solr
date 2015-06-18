@@ -40,7 +40,12 @@ import org.apache.lucene.util.ToStringUtils;
  * regenerating the bits every time.
  * @since   1.4
  * @see     CachingWrapperQuery
+ * @deprecated FilteredQuery will be removed in Lucene 6.0. It should
+ *             be replaced with a {@link BooleanQuery} with one
+ *             {@link Occur#MUST} clause for the query and one
+ *             {@link Occur#FILTER} clause for the filter.
  */
+@Deprecated
 public class FilteredQuery extends Query {
 
   private final Query query;
