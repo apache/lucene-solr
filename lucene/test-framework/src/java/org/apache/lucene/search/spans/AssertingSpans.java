@@ -125,6 +125,14 @@ class AssertingSpans extends Spans {
   }
 
   @Override
+  public int width() {
+    assert state == State.ITERATING;
+    final int distance = in.width();
+    assert distance >= 0;
+    return distance;
+  }
+
+  @Override
   public void collect(SpanCollector collector) throws IOException {
     assert state == State.ITERATING : "collect() called in illegal state: " + state + ": " + in;
     in.collect(collector);

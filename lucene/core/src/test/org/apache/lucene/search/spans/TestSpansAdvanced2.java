@@ -86,8 +86,8 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     final Query spanQuery = new SpanTermQuery(new Term(FIELD_TEXT, "should"));
     final String[] expectedIds = new String[] {"B", "D", "1", "2", "3", "4",
         "A"};
-    final float[] expectedScores = new float[] {0.625f, 0.45927936f,
-        0.35355338f, 0.35355338f, 0.35355338f, 0.35355338f, 0.26516503f,};
+    final float[] expectedScores = new float[] {0.8838834f, 0.64951903f,
+        0.5f, 0.5f, 0.5f, 0.5f, 0.375f,};
     assertHits(searcher2, spanQuery, "single span query", expectedIds,
         expectedScores);
   }
@@ -105,7 +105,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     final String[] expectedIds = new String[] {"D", "A"};
     // these values were pre LUCENE-413
     // final float[] expectedScores = new float[] { 0.93163157f, 0.20698164f };
-    final float[] expectedScores = new float[] {1.0191123f, 0.93163157f};
+    final float[] expectedScores = new float[] {1.44124233f, 1.31752586f};
     assertHits(searcher2, query, "multiple different span queries",
         expectedIds, expectedScores);
   }
@@ -116,6 +116,6 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
   @Override
   public void testBooleanQueryWithSpanQueries() throws IOException {
     
-    doTestBooleanQueryWithSpanQueries(searcher2, 0.73500174f);
+    doTestBooleanQueryWithSpanQueries(searcher2, 1.0394494f);
   }
 }

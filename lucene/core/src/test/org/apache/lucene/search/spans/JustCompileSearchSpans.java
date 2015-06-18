@@ -61,6 +61,11 @@ final class JustCompileSearchSpans {
     }
 
     @Override
+    public int width() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public void collect(SpanCollector collector) throws IOException {
 
     }
@@ -119,6 +124,11 @@ final class JustCompileSearchSpans {
 
     @Override
     public int endPosition() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public int width() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

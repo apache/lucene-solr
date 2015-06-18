@@ -115,6 +115,11 @@ public class NearSpansUnordered extends NearSpans {
     }
 
     @Override
+    public int width() {
+      return in.width();
+    }
+
+    @Override
     public void collect(SpanCollector collector) throws IOException {
       in.collect(collector);
     }
@@ -239,6 +244,11 @@ public class NearSpansUnordered extends NearSpans {
     return atFirstInCurrentDoc ? -1
           : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
           : maxEndPositionCell.endPosition();
+  }
+
+  @Override
+  public int width() {
+    return maxEndPositionCell.startPosition() - minPositionCell().startPosition();
   }
 
   @Override

@@ -102,6 +102,11 @@ public class TermSpans extends Spans {
   }
 
   @Override
+  public int width() {
+    return 0;
+  }
+
+  @Override
   public long cost() {
     return postings.cost();
   }

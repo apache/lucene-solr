@@ -39,7 +39,7 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   /** SpanTermQuery(A) = TermQuery(A) */
   public void testSpanTermVersusTerm() throws Exception {
     Term t1 = randomTerm();
-    assertSameSet(new TermQuery(t1), spanQuery(new SpanTermQuery(t1)));
+    assertSameScores(new TermQuery(t1), spanQuery(new SpanTermQuery(t1)));
   }
   
   /** SpanOrQuery(A) = SpanTermQuery(A) */
@@ -156,7 +156,7 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     PhraseQuery q2 = new PhraseQuery();
     q2.add(t1);
     q2.add(t2);
-    assertSameSet(q1, q2);
+    assertSameScores(q1, q2);
   }
   
   /** SpanNearQuery([A, B], ∞, false) = +A +B */

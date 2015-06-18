@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
 /** Iterates through combinations of start/end positions per-doc.
  *  Each start/end position represents a range of term positions within the current document.
@@ -48,6 +49,15 @@ public abstract class Spans extends DocIdSetIterator {
    * After the last start/end position at the current doc this returns {@link #NO_MORE_POSITIONS}.
    */
   public abstract int endPosition();
+
+  /**
+   * Return the width of the match, which is typically used to compute
+   * the {@link SimScorer#computeSlopFactor(int) slop factor}. It is only legal
+   * to call this method when the iterator is on a valid doc ID and positioned.
+   * The return value must be positive, and lower values means that the match is
+   * better.
+   */
+  public abstract int width();
 
   /**
    * Collect postings data from the leaves of the current Spans.
