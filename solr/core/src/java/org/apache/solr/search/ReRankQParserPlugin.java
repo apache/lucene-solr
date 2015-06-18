@@ -161,8 +161,18 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
-      return wrap(this.mainQuery.rewrite(reader));
+      Query q = mainQuery.rewrite(reader);
+      if(q == mainQuery) {
+        return this;
+      } else {
+        return clone().wrap(q);
+      }
+    }
 
+    public ReRankQuery clone() {
+      ReRankQuery clonedQuery =  new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, length);
+      clonedQuery.setBoost(getBoost());
+      return clonedQuery;
     }
 
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
