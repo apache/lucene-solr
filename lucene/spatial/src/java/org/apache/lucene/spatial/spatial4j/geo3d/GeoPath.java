@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,16 +32,25 @@ import java.util.List;
 public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
   
   public final double cutoffAngle;
-  public final double sinAngle;
-  public final double cosAngle;
+
+  public final double sinAngle; // sine of cutoffAngle
+  public final double cosAngle; // cosine of cutoffAngle
 
   public final List<GeoPoint> points = new ArrayList<GeoPoint>();
   
-  public final List<SegmentEndpoint> endPoints = new ArrayList<SegmentEndpoint>();
-  public final List<PathSegment> segments = new ArrayList<PathSegment>();
+  public List<SegmentEndpoint> endPoints;
+  public List<PathSegment> segments;
 
-  public GeoPoint[] edgePoints = null;
+  public GeoPoint[] edgePoints;
 
+  public boolean isDone = false;
+  
+  public GeoPath(final PlanetModel planetModel, final double maxCutoffAngle, final GeoPoint[] pathPoints) {
+    this(planetModel, maxCutoffAngle);
+    Collections.addAll(points, pathPoints);
+    done();
+  }
+  
   public GeoPath(final PlanetModel planetModel, final double maxCutoffAngle) {
     super(planetModel);
     if (maxCutoffAngle <= 0.0 || maxCutoffAngle > Math.PI * 0.5)
@@ -51,17 +61,21 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
   }
 
   public void addPoint(double lat, double lon) {
-    if (lat < -Math.PI * 0.5 || lat > Math.PI * 0.5)
-      throw new IllegalArgumentException("Latitude out of range");
-    if (lon < -Math.PI || lon > Math.PI)
-      throw new IllegalArgumentException("Longitude out of range");
+    if (isDone)
+      throw new IllegalStateException("Can't call addPoint() if done() already called");
     points.add(new GeoPoint(planetModel, lat, lon));
   }
   
   public void done() {
+    if (isDone)
+      throw new IllegalStateException("Can't call done() twice");
     if (points.size() == 0)
       throw new IllegalArgumentException("Path must have at least one point");
-    // Compute an offset to use for all segments.  This will be based on the minimum magnitude of 
+    isDone = true;
+
+    endPoints = new ArrayList<>(points.size());
+    segments = new ArrayList<>(points.size());
+    // Compute an offset to use for all segments.  This will be based on the minimum magnitude of
     // the entire ellipsoid.
     final double cutoffOffset = this.sinAngle * planetModel.getMinimumMagnitude();
     
@@ -80,21 +94,32 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     
     if (segments.size() == 0) {
       // Simple circle
-      final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(points.get(0), cutoffOffset);
+      double lat = points.get(0).getLatitude();
+      double lon = points.get(0).getLongitude();
+      // Compute two points on the circle, with the right angle from the center.  We'll use these
+      // to obtain the perpendicular plane to the circle.
+      double upperLat = lat + cutoffAngle;
+      double upperLon = lon;
+      if (upperLat > Math.PI * 0.5) {
+        upperLon += Math.PI;
+        if (upperLon > Math.PI)
+          upperLon -= 2.0 * Math.PI;
+        upperLat = Math.PI - upperLat;
+      }
+      double lowerLat = lat - cutoffAngle;
+      double lowerLon = lon;
+      if (lowerLat < -Math.PI * 0.5) {
+        lowerLon += Math.PI;
+        if (lowerLon > Math.PI)
+          lowerLon -= 2.0 * Math.PI;
+        lowerLat = -Math.PI - lowerLat;
+      }
+      final GeoPoint upperPoint = new GeoPoint(planetModel, upperLat, upperLon);
+      final GeoPoint lowerPoint = new GeoPoint(planetModel, lowerLat, lowerLon);
+
+      final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(points.get(0), upperPoint, lowerPoint);
       endPoints.add(onlyEndpoint);
-      // Find an edgepoint
-      // We already have circle plane, which is the definitive determination of the edge of the "circle".
-      // Next, compute vertical plane going through origin and the center point (C = 0, D = 0).
-      Plane verticalPlane = Plane.constructNormalizedVerticalPlane(onlyEndpoint.point.x, onlyEndpoint.point.y);
-      if (verticalPlane == null) {
-        verticalPlane = new Plane(1.0,0.0);
-      }
-      // Finally, use Plane.findIntersections() to find the intersection points.
-      final GeoPoint edgePoint = onlyEndpoint.circlePlane.getSampleIntersectionPoint(planetModel, verticalPlane);
-      if (edgePoint == null) {
-        throw new RuntimeException("Could not find edge point for path endpoint="+onlyEndpoint.point+" cutoffOffset="+cutoffOffset+" planetModel="+planetModel);
-      }
-      this.edgePoints = new GeoPoint[]{edgePoint};
+      this.edgePoints = new GeoPoint[]{upperPoint};
       return;
     }
     
@@ -386,17 +411,9 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     GeoPath p = (GeoPath) o;
     if (!super.equals(p))
       return false;
-    if (endPoints.size() != p.endPoints.size())
-      return false;
     if (cutoffAngle != p.cutoffAngle)
       return false;
-    for (int i = 0; i < endPoints.size(); i++) {
-      SegmentEndpoint point = endPoints.get(i);
-      SegmentEndpoint point2 = p.endPoints.get(i);
-      if (!point.equals(point2))
-        return false;
-    }
-    return true;
+    return points.equals(p.points);
   }
 
   @Override
@@ -404,7 +421,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     int result = super.hashCode();
     long temp = Double.doubleToLongBits(cutoffAngle);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
-    result = 31 * result + endPoints.hashCode();
+    result = 31 * result + points.hashCode();
     return result;
   }
 
@@ -443,11 +460,12 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     /** Constructor for case (1).
      * Generate a simple circle cutoff plane.
      */
-    public SegmentEndpoint(final GeoPoint point, final double cutoffOffset) {
+    public SegmentEndpoint(final GeoPoint point, final GeoPoint upperPoint, final GeoPoint lowerPoint) {
       this.point = point;
-      final double magnitude = point.magnitude();
-      // Normalize vector to make D value correct
-      this.circlePlane = new SidedPlane(point, point.normalize(), -Math.sqrt(magnitude * magnitude - cutoffOffset * cutoffOffset));
+      // Construct normal plane
+      final Plane normalPlane = new Plane(upperPoint, point);
+      // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
+      this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(point, normalPlane, upperPoint, lowerPoint);
       this.cutoffPlanes = new Membership[0];
       this.notablePoints = new GeoPoint[0];
     }
