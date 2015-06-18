@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -740,7 +741,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
   public void testUseRewrittenQueryAsCacheKey() throws IOException {
     final Query expectedCacheKey = new TermQuery(new Term("foo", "bar"));
-    final BooleanQuery query = new BooleanQuery();
+    final BooleanQuery.Builder query = new BooleanQuery.Builder();
     final Query sub = expectedCacheKey.clone();
     sub.setBoost(42);
     query.add(sub, Occur.MUST);
@@ -772,7 +773,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(policy);
-    searcher.search(query, new TotalHitCountCollector());
+    searcher.search(query.build(), new TotalHitCountCollector());
 
     reader.close();
     dir.close();
@@ -793,7 +794,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
 
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     TermQuery should = new TermQuery(new Term("foo", "baz"));
     TermQuery must = new TermQuery(new Term("foo", "bar"));
     TermQuery filter = new TermQuery(new Term("foo", "bar"));
@@ -804,20 +805,20 @@ public class TestLRUQueryCache extends LuceneTestCase {
     bq.add(mustNot, Occur.MUST_NOT);
 
     // same bq but with FILTER instead of MUST
-    BooleanQuery bq2 = new BooleanQuery();
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(should, Occur.SHOULD);
     bq2.add(must, Occur.FILTER);
     bq2.add(filter, Occur.FILTER);
     bq2.add(mustNot, Occur.MUST_NOT);
     
     assertEquals(Collections.emptySet(), new HashSet<>(queryCache.cachedQueries()));
-    searcher.search(bq, 1);
+    searcher.search(bq.build(), 1);
     assertEquals(new HashSet<>(Arrays.asList(filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
 
     queryCache.clear();
     assertEquals(Collections.emptySet(), new HashSet<>(queryCache.cachedQueries()));
-    searcher.search(new ConstantScoreQuery(bq), 1);
-    assertEquals(new HashSet<>(Arrays.asList(bq2, should, must, filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
+    searcher.search(new ConstantScoreQuery(bq.build()), 1);
+    assertEquals(new HashSet<>(Arrays.asList(bq2.build(), should, must, filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
 
     reader.close();
     dir.close();
@@ -837,7 +838,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       case 0:
         return new TermQuery(randomTerm());
       case 1:
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         final int numClauses = TestUtil.nextInt(random(), 1, 3);
         int numShould = 0;
         for (int i = 0; i < numClauses; ++i) {
@@ -848,7 +849,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           }
         }
         bq.setMinimumNumberShouldMatch(TestUtil.nextInt(random(), 0, numShould));
-        return bq;
+        return bq.build();
       case 2:
         Term t1 = randomTerm();
         Term t2 = randomTerm();

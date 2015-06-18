@@ -62,8 +62,8 @@ class LuceneQueryOptimizer {
                           )
     throws IOException {
 
-    BooleanQuery query = new BooleanQuery();
-    BooleanQuery filterQuery = null;
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    BooleanQuery.Builder filterQuery = null;
 
     for (BooleanClause c : original.clauses()) {
 
@@ -83,7 +83,7 @@ if (c.query instanceof TermQuery) {
           && (searcher.docFreq(((TermQuery)q).getTerm())
               / (float)searcher.maxDoc()) >= threshold) { // check threshold
         if (filterQuery == null)
-          filterQuery = new BooleanQuery();
+          filterQuery = new BooleanQuery.Builder();
         filterQuery.add(q, BooleanClause.Occur.MUST);    // filter it
 //System.out.println("WooHoo... qualified to be hoisted to a filter!");
       } else {
@@ -97,7 +97,7 @@ if (c.query instanceof TermQuery) {
         filter = (Filter)cache.get(filterQuery);
       }
       if (filter == null) {                       // miss
-        filter = new QueryWrapperFilter(new CachingWrapperQuery(filterQuery)); // construct new entry
+        filter = new QueryWrapperFilter(new CachingWrapperQuery(filterQuery.build())); // construct new entry
         synchronized (cache) {
           cache.put(filterQuery, filter);         // cache it
         }
@@ -107,10 +107,10 @@ if (c.query instanceof TermQuery) {
     // YCS: added code to pass out optimized query and filter
     // so they can be used with Hits
     if (queryOut != null && filterOut != null) {
-      queryOut[0] = query; filterOut[0] = filter;
+      queryOut[0] = query.build(); filterOut[0] = filter;
       return null;
     } else {
-      return searcher.search(new FilteredQuery(query, filter), numHits);
+      return searcher.search(new FilteredQuery(query.build(), filter), numHits);
     }
 
   }

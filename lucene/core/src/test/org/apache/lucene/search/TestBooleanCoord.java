@@ -128,579 +128,613 @@ public class TestBooleanCoord extends LuceneTestCase {
   // disjunctions
   
   public void testDisjunction1TermMatches() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/1f, bq);
+    assertScore(1 * 1/1f, bq.build());
   }
   
   public void testDisjunction2TermMatches() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 1/1f, bq);
+    assertScore(2 * 1/1f, bq.build());
   }
   
   public void testDisjunction1OutOf2() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq);
+    assertScore(1 * 1/2f, bq.build());
   }
   
   public void testDisjunction1OutOf2Missing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq);
+    assertScore(1 * 1/2f, bq.build());
   }
   
   public void testDisjunction1OutOf3() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testDisjunction1OutOf3MissingOne() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testDisjunction1OutOf3MissingTwo() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Y"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testDisjunction2OutOf3() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   public void testDisjunction2OutOf3Missing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   // disjunctions with coord disabled
   
   public void testDisjunction1TermMatchesCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testDisjunction2TermMatchesCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testDisjunction1OutOf2CoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testDisjunction1OutOf2MissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testDisjunction1OutOf3CoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testDisjunction1OutOf3MissingOneCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testDisjunction1OutOf3MissingTwoCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Y"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testDisjunction2OutOf3CoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testDisjunction2OutOf3MissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   // minShouldMatch
   public void testMinShouldMatch1TermMatches() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/1f, bq);
+    assertScore(1 * 1/1f, bq.build());
   }
   
   public void testMinShouldMatchn2TermMatches() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 1/1f, bq);
+    assertScore(2 * 1/1f, bq.build());
   }
   
   public void testMinShouldMatch1OutOf2() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq);
+    assertScore(1 * 1/2f, bq.build());
   }
   
   public void testMinShouldMatch1OutOf2Missing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq);
+    assertScore(1 * 1/2f, bq.build());
   }
   
   public void testMinShouldMatch1OutOf3() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testMinShouldMatch1OutOf3MissingOne() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testMinShouldMatch1OutOf3MissingTwo() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Y"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testMinShouldMatch2OutOf3() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   public void testMinShouldMatch2OutOf3Missing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   public void testMinShouldMatch2OutOf4() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/4f, bq);
+    assertScore(2 * 2/4f, bq.build());
   }
   
   public void testMinShouldMatch2OutOf4Missing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/4f, bq);
+    assertScore(2 * 2/4f, bq.build());
   }
   
   // minShouldMatch with coord disabled
   
   public void testMinShouldMatch1TermMatchesCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMinShouldMatch2TermMatchesCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMinShouldMatch1OutOf2CoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMinShouldMatch1OutOf2MissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMinShouldMatch1OutOf3CoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMinShouldMatch1OutOf3MissingOneCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMinShouldMatch1OutOf3MissingTwoCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Y"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMinShouldMatch2OutOf3CoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMinShouldMatch2OutOf3MissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMinShouldMatch2OutOf4CoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMinShouldMatch2OutOf4MissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   // conjunctions
   
   public void testConjunction1TermMatches() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
-    assertScore(1 * 1/1f, bq);
+    assertScore(1 * 1/1f, bq.build());
   }
   
   public void testConjunction1TermMatches1Prohib() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.MUST_NOT);
-    assertScore(1 * 1/1f, bq);
+    assertScore(1 * 1/1f, bq.build());
   }
   
   public void testConjunction1TermMatches2Prohib() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.MUST_NOT);
     bq.add(term("2"), BooleanClause.Occur.MUST_NOT);
-    assertScore(1 * 1/1f, bq);
+    assertScore(1 * 1/1f, bq.build());
   }
   
   public void testConjunction2TermMatches() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.MUST);
-    assertScore(2 * 1/1f, bq);
+    assertScore(2 * 1/1f, bq.build());
   }
   
   // conjunctions coord disabled
   
   public void testConjunction1TermMatchesCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testConjunction1TermMatches1ProhibCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.MUST_NOT);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testConjunction1TermMatches2ProhibCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.MUST_NOT);
     bq.add(term("2"), BooleanClause.Occur.MUST_NOT);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testConjunction2TermMatchesCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.MUST);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   // optional + mandatory mix
   public void testMix2TermMatches() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/2f, bq);
+    assertScore(2 * 2/2f, bq.build());
   }
   
   public void testMixMatch1OutOfTwo() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq);
+    assertScore(1 * 1/2f, bq.build());
   }
   
   public void testMixMatch1OutOfTwoMissing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq);
+    assertScore(1 * 1/2f, bq.build());
   }
   
   public void testMixMatch1OutOfThree() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testMixMatch1OutOfThreeOneMissing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testMixMatch2OutOfThree() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   public void testMixMatch2OutOfThreeMissing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   public void testMix2TermMatchesCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMixMatch1OutOfTwoCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMixMatch1OutOfTwoMissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMixMatch1OutOfThreeCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1, bq);
+    assertScore(1, bq.build());
   }
   
   public void testMixMatch1OutOfThreeOneMissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq);
+    assertScore(1 * 1/3f, bq.build());
   }
   
   public void testMixMatch2OutOfThreeCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMixMatch2OutOfThreeMissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   // min should match + mandatory mix
   
   public void testMixMinShouldMatch2OutOfThree() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   public void testMixMinShouldMatch2OutOfThreeMissing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq);
+    assertScore(2 * 2/3f, bq.build());
   }
   
   public void testMixMinShouldMatch3OutOfFour() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("C"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(3 * 3/4f, bq);
+    assertScore(3 * 3/4f, bq.build());
   }
   
   public void testMixMinShouldMatch3OutOfFourMissing() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("C"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(3 * 3/4f, bq);
+    assertScore(3 * 3/4f, bq.build());
   }
   
   public void testMixMinShouldMatch2OutOfThreeCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMixMinShouldMatch2OutOfThreeMissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2, bq);
+    assertScore(2, bq.build());
   }
   
   public void testMixMinShouldMatch3OutOfFourCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("C"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(3, bq);
+    assertScore(3, bq.build());
   }
   
   public void testMixMinShouldMatch3OutOfFourMissingCoordDisabled() throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq =new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.setMinimumNumberShouldMatch(2);
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("C"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(3, bq);
+    assertScore(3, bq.build());
   }
   
   /** asserts score for our single matching good doc */

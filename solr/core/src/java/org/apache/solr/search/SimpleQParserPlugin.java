@@ -185,7 +185,8 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
     @Override
     protected Query newPrefixQuery(String text) {
-      BooleanQuery bq = new BooleanQuery(true);
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
+      bq.setDisableCoord(true);
 
       for (Map.Entry<String, Float> entry : weights.entrySet()) {
         String field = entry.getKey();
@@ -208,7 +209,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
         bq.add(prefix, BooleanClause.Occur.SHOULD);
       }
 
-      return simplify(bq);
+      return simplify(bq.build());
     }
 
 

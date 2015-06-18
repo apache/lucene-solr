@@ -46,9 +46,9 @@ public class BooleanQueryBuilder implements QueryBuilder {
 
   @Override
   public Query getQuery(Element e) throws ParserException {
-    BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(DOMUtils.getAttribute(e, "disableCoord", false));
     bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));
-    bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
 
     NodeList nl = e.getChildNodes();
     for (int i = 0; i < nl.getLength(); i++) {
@@ -63,7 +63,9 @@ public class BooleanQueryBuilder implements QueryBuilder {
       }
     }
 
-    return bq;
+    BooleanQuery q = bq.build();
+    q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return q;
   }
 
   static BooleanClause.Occur getOccursValue(Element clauseElem) throws ParserException {

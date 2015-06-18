@@ -613,7 +613,7 @@ public final class MoreLikeThis {
    * Create the More like query from a PriorityQueue
    */
   private Query createQuery(PriorityQueue<ScoreTerm> q) {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     ScoreTerm scoreTerm;
     float bestScore = -1;
 
@@ -635,7 +635,7 @@ public final class MoreLikeThis {
         break;
       }
     }
-    return query;
+    return query.build();
   }
 
   /**

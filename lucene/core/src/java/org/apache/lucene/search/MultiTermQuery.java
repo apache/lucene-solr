@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -141,7 +142,7 @@ public abstract class MultiTermQuery extends Query {
    * 
    * @see #setRewriteMethod
    */
-  public static final class TopTermsScoringBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery> {
+  public static final class TopTermsScoringBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery.Builder> {
 
     /** 
      * Create a TopTermsScoringBooleanQueryRewrite for 
@@ -160,12 +161,19 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected BooleanQuery getTopLevelQuery() {
-      return new BooleanQuery(true);
+    protected BooleanQuery.Builder getTopLevelBuilder() {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
+      return builder;
     }
     
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docCount, float boost, TermContext states) {
+    protected Query build(Builder builder) {
+      return builder.build();
+    }
+    
+    @Override
+    protected void addClause(BooleanQuery.Builder topLevel, Term term, int docCount, float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
       tq.setBoost(boost);
       topLevel.add(tq, BooleanClause.Occur.SHOULD);
@@ -186,7 +194,7 @@ public abstract class MultiTermQuery extends Query {
    * @see #setRewriteMethod
    */
   public static final class TopTermsBlendedFreqScoringRewrite extends
-      TopTermsRewrite<BooleanQuery> {
+      TopTermsRewrite<BooleanQuery.Builder> {
 
     /**
      * Create a TopTermsBlendedScoringBooleanQueryRewrite for at most
@@ -205,12 +213,19 @@ public abstract class MultiTermQuery extends Query {
     }
 
     @Override
-    protected BooleanQuery getTopLevelQuery() {
-      return new BooleanQuery(true);
+    protected BooleanQuery.Builder getTopLevelBuilder() {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
+      return builder;
     }
 
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docCount,
+    protected Query build(Builder builder) {
+      return builder.build();
+    }
+
+    @Override
+    protected void addClause(BooleanQuery.Builder topLevel, Term term, int docCount,
         float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
       tq.setBoost(boost);
@@ -222,7 +237,6 @@ public abstract class MultiTermQuery extends Query {
       if (scoreTerms.length <= 1) {
         return;
       }
-      int maxDoc = reader.maxDoc();
       int maxDf = 0;
       long maxTtf = 0;
       for (ScoreTerm scoreTerm : scoreTerms) {
@@ -282,7 +296,7 @@ public abstract class MultiTermQuery extends Query {
    * 
    * @see #setRewriteMethod
    */
-  public static final class TopTermsBoostOnlyBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery> {
+  public static final class TopTermsBoostOnlyBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery.Builder> {
     
     /** 
      * Create a TopTermsBoostOnlyBooleanQueryRewrite for 
@@ -301,12 +315,19 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected BooleanQuery getTopLevelQuery() {
-      return new BooleanQuery(true);
+    protected BooleanQuery.Builder getTopLevelBuilder() {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
+      return builder;
     }
     
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost, TermContext states) {
+    protected Query build(BooleanQuery.Builder builder) {
+      return builder.build();
+    }
+    
+    @Override
+    protected void addClause(BooleanQuery.Builder topLevel, Term term, int docFreq, float boost, TermContext states) {
       final Query q = new ConstantScoreQuery(new TermQuery(term, states));
       q.setBoost(boost);
       topLevel.add(q, BooleanClause.Occur.SHOULD);

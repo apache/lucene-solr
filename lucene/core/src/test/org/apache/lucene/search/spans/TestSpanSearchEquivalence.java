@@ -60,11 +60,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
   public void testSpanOrVersusBooleanTerm() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
-    BooleanQuery q1 = new BooleanQuery();
+    BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(new TermQuery(t1), Occur.SHOULD);
     q1.add(new TermQuery(t2), Occur.SHOULD);
     SpanQuery q2 = spanQuery(new SpanOrQuery(spanQuery(new SpanTermQuery(t1)), spanQuery(new SpanTermQuery(t2))));
-    assertSameSet(q1, q2);
+    assertSameSet(q1.build(), q2);
   }
   
   /** SpanOrQuery(SpanNearQuery[A B], SpanNearQuery[C D]) = (SpanNearQuery[A B], SpanNearQuery[C D]) */
@@ -81,11 +81,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
                                                spanQuery(new SpanTermQuery(t3)), 
                                                spanQuery(new SpanTermQuery(t4)) 
                                              }, 10, random().nextBoolean()));
-    BooleanQuery q1 = new BooleanQuery();
+    BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(near1, Occur.SHOULD);
     q1.add(near2, Occur.SHOULD);
     SpanQuery q2 = spanQuery(new SpanOrQuery(near1, near2));
-    assertSameSet(q1, q2);
+    assertSameSet(q1.build(), q2);
   }
   
   /** SpanNotQuery(A, B) ⊆ SpanTermQuery(A) */
@@ -166,10 +166,10 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
                              spanQuery(new SpanTermQuery(t2)) 
                            };
     SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, Integer.MAX_VALUE, false));
-    BooleanQuery q2 = new BooleanQuery();
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.MUST);
     q2.add(new TermQuery(t2), Occur.MUST);
-    assertSameSet(q1, q2);
+    assertSameSet(q1, q2.build());
   }
   
   /** SpanNearQuery([A B], 0, false) ⊆ SpanNearQuery([A B], 1, false) */

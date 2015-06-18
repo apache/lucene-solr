@@ -53,7 +53,8 @@ public class StandardBooleanQueryNodeBuilder implements StandardQueryBuilder {
   public BooleanQuery build(QueryNode queryNode) throws QueryNodeException {
     StandardBooleanQueryNode booleanNode = (StandardBooleanQueryNode) queryNode;
 
-    BooleanQuery bQuery = new BooleanQuery(booleanNode.isDisableCoord());
+    BooleanQuery.Builder bQuery = new BooleanQuery.Builder();
+    bQuery.setDisableCoord(booleanNode.isDisableCoord());
     List<QueryNode> children = booleanNode.getChildren();
 
     if (children != null) {
@@ -81,7 +82,7 @@ public class StandardBooleanQueryNodeBuilder implements StandardQueryBuilder {
 
     }
 
-    return bQuery;
+    return bQuery.build();
 
   }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.facet;
  */
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -47,7 +48,7 @@ class DrillSidewaysQuery extends Query {
   final boolean scoreSubDocsAtOnce;
 
   DrillSidewaysQuery(Query baseQuery, Collector drillDownCollector, Collector[] drillSidewaysCollectors, Query[] drillDownQueries, boolean scoreSubDocsAtOnce) {
-    this.baseQuery = baseQuery;
+    this.baseQuery = Objects.requireNonNull(baseQuery);
     this.drillDownCollector = drillDownCollector;
     this.drillSidewaysCollectors = drillSidewaysCollectors;
     this.drillDownQueries = drillDownQueries;

@@ -137,26 +137,28 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] p1 = parseCommaSeparatedList(part1, dimension);
     String[] p2 = parseCommaSeparatedList(part2, dimension);
 
-    BooleanQuery result = new BooleanQuery(true);
+    BooleanQuery.Builder result = new BooleanQuery.Builder();
+    result.setDisableCoord(true);
     for (int i = 0; i < dimension; i++) {
       SchemaField subSF = subField(field, i, schema);
       // points must currently be ordered... should we support specifying any two opposite corner points?
       result.add(subSF.getType().getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
     }
-    return result;
+    return result.build();
   }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     String[] p1 = parseCommaSeparatedList(externalVal, dimension);
     //TODO: should we assert that p1.length == dimension?
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     for (int i = 0; i < dimension; i++) {
       SchemaField sf = subField(field, i, schema);
       Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);
       bq.add(tq, BooleanClause.Occur.MUST);
     }
-    return bq;
+    return bq.build();
   }
 
   /**
@@ -188,7 +190,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       // points must currently be ordered... should we support specifying any two opposite corner points?
       return subSF.getType().getRangeQuery(parser, subSF, lower, upper, true, true);
     } else {
-      BooleanQuery tmp = new BooleanQuery();
+      BooleanQuery.Builder tmp = new BooleanQuery.Builder();
       //TODO: Handle distance measures, as this assumes Euclidean
       double[] ur = vectorBoxCorner(point, null, options.distance, true);
       double[] ll = vectorBoxCorner(point, null, options.distance, false);
@@ -197,7 +199,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
         Query range = subSF.getType().getRangeQuery(parser, subSF, String.valueOf(ll[i]), String.valueOf(ur[i]), true, true);
         tmp.add(range, BooleanClause.Occur.MUST);
       }
-      return tmp;
+      return tmp.build();
     }
   }
 

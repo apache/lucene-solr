@@ -220,9 +220,9 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   private Query createBlockJoinQuery(Hierarchy hierarchy) {
     List<Hierarchy> elements = hierarchy.elements;
     if (elements.isEmpty()) {
-      BooleanQuery childQuery = new BooleanQuery();
+      BooleanQuery.Builder childQuery = new BooleanQuery.Builder();
       childQuery.add(new TermQuery(new Term(FIELD_ID, (String) hierarchy.elementData.get(FIELD_ID))), Occur.MUST);
-      return childQuery;
+      return childQuery.build();
     }
     
     Query childQuery = createBlockJoinQuery(elements.get(random().nextInt(elements.size())));
@@ -230,9 +230,9 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   }
 
   private ToParentBlockJoinQuery createToParentQuery(String parentType, String childField, String childFieldValue) {
-    BooleanQuery childQuery = new BooleanQuery();
+    BooleanQuery.Builder childQuery = new BooleanQuery.Builder();
     childQuery.add(new TermQuery(new Term(childField, childFieldValue)), Occur.MUST);
-    ToParentBlockJoinQuery result = createToParentQuery(parentType, childQuery);
+    ToParentBlockJoinQuery result = createToParentQuery(parentType, childQuery.build());
     
     return result;
   }
@@ -458,9 +458,9 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   private final String childEntityTemplate = "<entity " + ConfigNameConstants.CHILD + "=\"true\" name=\"{0}\" query=\"{1}\">\n {2} {3} </entity>\n";
   
   private BitDocIdSetFilter createParentFilter(String type) {
-    BooleanQuery parentQuery = new BooleanQuery();
+    BooleanQuery.Builder parentQuery = new BooleanQuery.Builder();
     parentQuery.add(new TermQuery(new Term("type_s", type)), Occur.MUST);
-    return new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(parentQuery));
+    return new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(parentQuery.build()));
   }
   
   private String nextId() {

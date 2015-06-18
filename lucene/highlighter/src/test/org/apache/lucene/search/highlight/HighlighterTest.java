@@ -364,18 +364,18 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     PhraseQuery f2ph2 = new PhraseQuery(f2, "b", "c", "g");
 
-    BooleanQuery booleanQuery = new BooleanQuery();
-    BooleanQuery leftChild = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
+    BooleanQuery.Builder leftChild = new BooleanQuery.Builder();
     leftChild.add(f1ph1, Occur.SHOULD);
     leftChild.add(f2ph1, Occur.SHOULD);
-    booleanQuery.add(leftChild, Occur.MUST);
+    booleanQuery.add(leftChild.build(), Occur.MUST);
 
-    BooleanQuery rightChild = new BooleanQuery();
+    BooleanQuery.Builder rightChild = new BooleanQuery.Builder();
     rightChild.add(f1ph2, Occur.SHOULD);
     rightChild.add(f2ph2, Occur.SHOULD);
-    booleanQuery.add(rightChild, Occur.MUST);
+    booleanQuery.add(rightChild.build(), Occur.MUST);
 
-    QueryScorer scorer = new QueryScorer(booleanQuery, f1);
+    QueryScorer scorer = new QueryScorer(booleanQuery.build(), f1);
     scorer.setExpandMultiTermQuery(false);
 
     Highlighter h = new Highlighter(this, scorer);
@@ -617,11 +617,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         new QueryWrapperFilter(
           new TermQuery(new Term(FIELD_NAME, "parent"))));
     
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new ToChildBlockJoinQuery(new TermQuery(
         new Term(FIELD_NAME, "parent")), parentFilter), Occur.MUST);
     booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "child")), Occur.MUST);
-    query = booleanQuery;
+    query = booleanQuery.build();
     
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
@@ -745,13 +745,13 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   // position sensitive query added after position insensitive query
   public void testPosTermStdTerm() throws Exception {
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "y")), Occur.SHOULD);
 
     PhraseQuery phraseQuery = new PhraseQuery(FIELD_NAME, "x", "y", "z");
     booleanQuery.add(phraseQuery, Occur.SHOULD);
 
-    doSearching(booleanQuery);
+    doSearching(booleanQuery.build());
 
     int maxNumFragmentsRequired = 2;
     
@@ -852,10 +852,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     Query query2 = new SpanNearQuery(new SpanQuery[] {
         new SpanTermQuery(new Term(FIELD_NAME, "wordy")),
         new SpanTermQuery(new Term(FIELD_NAME, "wordc")) }, 1, false);
-    BooleanQuery bquery = new BooleanQuery();
+    BooleanQuery.Builder bquery = new BooleanQuery.Builder();
     bquery.add(query1, Occur.SHOULD);
     bquery.add(query2, Occur.SHOULD);
-    doSearching(bquery);
+    doSearching(bquery.build());
     TestHighlightRunner helper = new TestHighlightRunner() {
 
       @Override
@@ -912,11 +912,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         if (random().nextBoolean()) {
-          BooleanQuery bq = new BooleanQuery();
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
           bq.add(new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(
               new Term(FIELD_NAME, "kennedy")))), Occur.MUST);
           bq.add(new ConstantScoreQuery(new TermQuery(new Term(FIELD_NAME, "kennedy"))), Occur.MUST);
-          doSearching(bq);
+          doSearching(bq.build());
         } else {
           doSearching(new ConstantScoreQuery(new TermQuery(new Term(FIELD_NAME,
               "kennedy"))));
@@ -1166,11 +1166,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         SpanQuery clauses[] = { new SpanTermQuery(new Term("contents", "john")),
             new SpanTermQuery(new Term("contents", "kennedy")), };
         SpanNearQuery snq = new SpanNearQuery(clauses, 1, true);
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         bq.add(snq, Occur.MUST);
         bq.add(TermRangeQuery.newStringRange("contents", "john", "john", true, true), Occur.FILTER);
 
-        doSearching(bq);
+        doSearching(bq.build());
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         // Currently highlights "John" and "Kennedy" separately
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -1188,11 +1188,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         PhraseQuery pq = new PhraseQuery("contents", "john", "kennedy");
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         bq.add(pq, Occur.MUST);
         bq.add(TermRangeQuery.newStringRange("contents", "john", "john", true, true), Occur.FILTER);
 
-        doSearching(bq);
+        doSearching(bq.build());
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         // Currently highlights "John" and "Kennedy" separately
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -1209,13 +1209,13 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        BooleanQuery booleanQuery = new BooleanQuery();
+        BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
         booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "john")), Occur.SHOULD);
         PrefixQuery prefixQuery = new PrefixQuery(new Term(FIELD_NAME, "kenn"));
         prefixQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
         booleanQuery.add(prefixQuery, Occur.SHOULD);
 
-        doSearching(booleanQuery);
+        doSearching(booleanQuery.build());
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
             numHighlights == 5);
@@ -1232,12 +1232,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
 
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(new TermQuery(new Term(FIELD_NAME, "jfk")), Occur.SHOULD);
         query.add(new TermQuery(new Term(FIELD_NAME, "kennedy")), Occur.SHOULD);
 
-        doSearching(query);
-        doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
+        doSearching(query.build());
+        doStandardHighlights(analyzer, searcher, hits, query.build(), HighlighterTest.this);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
             numHighlights == 5);
       }
@@ -1361,12 +1361,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         String s = "football-soccer in the euro 2004 footie competition";
 
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(new TermQuery(new Term("bookid", "football")), Occur.SHOULD);
         query.add(new TermQuery(new Term("bookid", "soccer")), Occur.SHOULD);
         query.add(new TermQuery(new Term("bookid", "footie")), Occur.SHOULD);
 
-        Highlighter highlighter = getHighlighter(query, null, HighlighterTest.this);
+        Highlighter highlighter = getHighlighter(query.build(), null, HighlighterTest.this);
 
         // Get 3 best fragments and separate with a "..."
         TokenStream tokenStream = analyzer.tokenStream(null, s);
@@ -1552,14 +1552,14 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // test to show how rewritten query can still be used
         searcher = newSearcher(reader);
 
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(new WildcardQuery(new Term(FIELD_NAME, "jf?")), Occur.SHOULD);
         query.add(new WildcardQuery(new Term(FIELD_NAME, "kenned*")), Occur.SHOULD);
 
         if (VERBOSE) System.out.println("Searching with primitive query");
         // forget to set this and...
         // query=query.rewrite(reader);
-        TopDocs hits = searcher.search(query, 1000);
+        TopDocs hits = searcher.search(query.build(), 1000);
 
         // create an instance of the highlighter with the tags used to surround
         // highlighted text
@@ -1574,7 +1574,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           final StoredDocument doc = searcher.doc(docId);
           String text = doc.get(FIELD_NAME);
           TokenStream tokenStream = getAnyTokenStream(FIELD_NAME, docId);
-          Highlighter highlighter = getHighlighter(query, FIELD_NAME, HighlighterTest.this, false);
+          Highlighter highlighter = getHighlighter(query.build(), FIELD_NAME, HighlighterTest.this, false);
 
           highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
@@ -1672,7 +1672,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         String docMainText = "fred is one of the people";
 
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(new TermQuery(new Term(FIELD_NAME, "fred")), Occur.SHOULD);
         query.add(new TermQuery(new Term("category", "people")), Occur.SHOULD);
 
@@ -1680,9 +1680,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         Scorer fieldSpecificScorer = null;
         if (mode == TestHighlightRunner.QUERY) {
-          fieldSpecificScorer = new QueryScorer(query, FIELD_NAME);
+          fieldSpecificScorer = new QueryScorer(query.build(), FIELD_NAME);
         } else if (mode == TestHighlightRunner.QUERY_TERM) {
-          fieldSpecificScorer = new QueryTermScorer(query, "contents");
+          fieldSpecificScorer = new QueryTermScorer(query.build(), "contents");
         }
         Highlighter fieldSpecificHighlighter = new Highlighter(new SimpleHTMLFormatter(),
             fieldSpecificScorer);
@@ -1693,9 +1693,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // highlighting does not respect fieldnames used in query
         Scorer fieldInSpecificScorer = null;
         if (mode == TestHighlightRunner.QUERY) {
-          fieldInSpecificScorer = new QueryScorer(query, null);
+          fieldInSpecificScorer = new QueryScorer(query.build(), null);
         } else if (mode == TestHighlightRunner.QUERY_TERM) {
-          fieldInSpecificScorer = new QueryTermScorer(query);
+          fieldInSpecificScorer = new QueryTermScorer(query.build());
         }
 
         Highlighter fieldInSpecificHighlighter = new Highlighter(new SimpleHTMLFormatter(),
@@ -1849,11 +1849,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        BooleanQuery booleanQuery = new BooleanQuery();
+        BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
         booleanQuery.add(new TermQuery(new Term("text", "hi")), Occur.SHOULD);
         booleanQuery.add(new TermQuery(new Term("text", "speed")), Occur.SHOULD);
 
-        query = booleanQuery;
+        query = booleanQuery.build();
         highlighter = getHighlighter(query, "text", HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
@@ -1885,7 +1885,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = booleanQuery;
+        query = booleanQuery.build();
         highlighter = getHighlighter(query, "text", HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);

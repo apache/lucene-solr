@@ -39,6 +39,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
@@ -157,7 +158,7 @@ public class QueryComponent extends SearchComponent
       Query q = parser.getQuery();
       if (q == null) {
         // normalize a null query to a query that matches nothing
-        q = new BooleanQuery();
+        q = new MatchNoDocsQuery();
       }
 
       rb.setQuery( q );

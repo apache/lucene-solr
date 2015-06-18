@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
@@ -55,43 +55,23 @@ public final class DrillDownQuery extends Query {
   }
 
   private final FacetsConfig config;
-  private final BooleanQuery query;
+  private final Query baseQuery;
+  private final List<BooleanQuery.Builder> dimQueries = new ArrayList<>();
   private final Map<String,Integer> drillDownDims = new LinkedHashMap<>();
 
-  /** Used by clone() */
-  DrillDownQuery(FacetsConfig config, BooleanQuery query, Map<String,Integer> drillDownDims) {
-    this.query = query.clone();
+  /** Used by clone() and DrillSideways */
+  DrillDownQuery(FacetsConfig config, Query baseQuery, List<BooleanQuery.Builder> dimQueries, Map<String,Integer> drillDownDims) {
+    this.baseQuery = baseQuery;
+    this.dimQueries.addAll(dimQueries);
     this.drillDownDims.putAll(drillDownDims);
     this.config = config;
   }
 
   /** Used by DrillSideways */
   DrillDownQuery(FacetsConfig config, Filter filter, DrillDownQuery other) {
-    query = new BooleanQuery(true); // disable coord
-
-    BooleanClause[] clauses = other.query.getClauses();
-    if (clauses.length == other.drillDownDims.size()) {
-      throw new IllegalArgumentException("cannot apply filter unless baseQuery isn't null; pass ConstantScoreQuery instead");
-    }
-    assert clauses.length == 1+other.drillDownDims.size(): clauses.length + " vs " + (1+other.drillDownDims.size());
-    drillDownDims.putAll(other.drillDownDims);
-    query.add(new FilteredQuery(clauses[0].getQuery(), filter), Occur.MUST);
-    for(int i=1;i<clauses.length;i++) {
-      query.add(clauses[i].getQuery(), Occur.MUST);
-    }
-    this.config = config;
-  }
-
-  /** Used by DrillSideways */
-  DrillDownQuery(FacetsConfig config, Query baseQuery, List<Query> clauses, Map<String,Integer> drillDownDims) {
-    query = new BooleanQuery(true);
-    if (baseQuery != null) {
-      query.add(baseQuery, Occur.MUST);      
-    }
-    for(Query clause : clauses) {
-      query.add(clause, Occur.MUST);
-    }
-    this.drillDownDims.putAll(drillDownDims);
+    this.baseQuery = new FilteredQuery(other.baseQuery == null ? new MatchAllDocsQuery() : other.baseQuery, filter);
+    this.dimQueries.addAll(other.dimQueries);
+    this.drillDownDims.putAll(other.drillDownDims);
     this.config = config;
   }
 
@@ -107,30 +87,8 @@ public final class DrillDownQuery extends Query {
    *  {@link #rewrite(IndexReader)} will be a pure browsing query, filtering on
    *  the added categories only. */
   public DrillDownQuery(FacetsConfig config, Query baseQuery) {
-    query = new BooleanQuery(true); // disable coord
-    if (baseQuery != null) {
-      query.add(baseQuery, Occur.MUST);
-    }
+    this.baseQuery = baseQuery;
     this.config = config;
-  }
-
-  /** Merges (ORs) a new path into an existing AND'd
-   *  clause. */ 
-  private void merge(String dim, String[] path) {
-    int index = drillDownDims.get(dim);
-    if (query.getClauses().length == drillDownDims.size()+1) {
-      index++;
-    }
-    ConstantScoreQuery q = (ConstantScoreQuery) query.clauses().get(index).getQuery();
-    if ((q.getQuery() instanceof BooleanQuery) == false) {
-      // App called .add(dim, customQuery) and then tried to
-      // merge a facet label in:
-      throw new RuntimeException("cannot merge with custom Query");
-    }
-    String indexedField = config.getDimConfig(dim).indexFieldName;
-
-    BooleanQuery bq = (BooleanQuery) q.getQuery();
-    bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
   }
 
   /** Adds one dimension of drill downs; if you pass the same
@@ -138,57 +96,23 @@ public final class DrillDownQuery extends Query {
    *  cofnstraints on that dimension, and all dimensions are
    *  AND'd against each other and the base query. */
   public void add(String dim, String... path) {
-
-    if (drillDownDims.containsKey(dim)) {
-      merge(dim, path);
-      return;
-    }
     String indexedField = config.getDimConfig(dim).indexFieldName;
-
-    BooleanQuery bq = new BooleanQuery(true); // disable coord
-    bq.add(new TermQuery(term(indexedField, dim, path)), Occur.SHOULD);
-
-    add(dim, bq);
+    add(dim, new TermQuery(term(indexedField, dim, path)));
   }
 
   /** Expert: add a custom drill-down subQuery.  Use this
    *  when you have a separate way to drill-down on the
    *  dimension than the indexed facet ordinals. */
   public void add(String dim, Query subQuery) {
-
-    if (drillDownDims.containsKey(dim)) {
-      throw new IllegalArgumentException("dimension \"" + dim + "\" already has a drill-down");
+    assert drillDownDims.size() == dimQueries.size();
+    if (drillDownDims.containsKey(dim) == false) {
+      drillDownDims.put(dim, drillDownDims.size());
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
+      dimQueries.add(builder);
     }
-    // TODO: we should use FilteredQuery?
-
-    // So scores of the drill-down query don't have an
-    // effect:
-    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(subQuery);
-    drillDownQuery.setBoost(0.0f);
-
-    query.add(drillDownQuery, Occur.MUST);
-
-    drillDownDims.put(dim, drillDownDims.size());
-  }
-
-  /** Expert: add a custom drill-down Filter, e.g. when
-   *  drilling down after range faceting. */
-  public void add(String dim, Filter subFilter) {
-
-    if (drillDownDims.containsKey(dim)) {
-      throw new IllegalArgumentException("dimension \"" + dim + "\" already has a drill-down");
-    }
-
-    // TODO: we should use FilteredQuery?
-
-    // So scores of the drill-down query don't have an
-    // effect:
-    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(subFilter);
-    drillDownQuery.setBoost(0.0f);
-
-    query.add(drillDownQuery, Occur.MUST);
-
-    drillDownDims.put(dim, drillDownDims.size());
+    final int index = drillDownDims.get(dim);
+    dimQueries.get(index).add(subQuery, Occur.SHOULD);
   }
 
   static Filter getFilter(Query query) {
@@ -207,97 +131,59 @@ public final class DrillDownQuery extends Query {
 
   @Override
   public DrillDownQuery clone() {
-    return new DrillDownQuery(config, query, drillDownDims);
+    return new DrillDownQuery(config, baseQuery, dimQueries, drillDownDims);
   }
   
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    return prime * result + query.hashCode();
+    return 31 * super.hashCode() + Objects.hash(baseQuery, dimQueries);
   }
   
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof DrillDownQuery)) {
+    if (super.equals(obj) == false) {
       return false;
     }
-    
     DrillDownQuery other = (DrillDownQuery) obj;
-    return query.equals(other.query) && super.equals(other);
+    return Objects.equals(baseQuery, other.baseQuery)
+        && dimQueries.equals(other.dimQueries);
   }
   
   @Override
   public Query rewrite(IndexReader r) throws IOException {
-    if (query.clauses().size() == 0) {
+    BooleanQuery rewritten = getBooleanQuery();
+    if (rewritten.clauses().isEmpty()) {
       return new MatchAllDocsQuery();
     }
-
-    List<Filter> filters = new ArrayList<>();
-    List<Query> queries = new ArrayList<>();
-    List<BooleanClause> clauses = query.clauses();
-    Query baseQuery;
-    int startIndex;
-    if (drillDownDims.size() == query.clauses().size()) {
-      baseQuery = new MatchAllDocsQuery();
-      startIndex = 0;
-    } else {
-      baseQuery = clauses.get(0).getQuery();
-      startIndex = 1;
-    }
-
-    for(int i=startIndex;i<clauses.size();i++) {
-      BooleanClause clause = clauses.get(i);
-      Query queryClause = clause.getQuery();
-      Filter filter = getFilter(queryClause);
-      if (filter != null) {
-        filters.add(filter);
-      } else {
-        queries.add(queryClause);
-      }
-    }
-
-    if (filters.isEmpty()) {
-      return query;
-    } else {
-      // Wrap all filters using FilteredQuery
-      
-      // TODO: this is hackish; we need to do it because
-      // BooleanQuery can't be trusted to handle the
-      // "expensive filter" case.  Really, each Filter should
-      // know its cost and we should take that more
-      // carefully into account when picking the right
-      // strategy/optimization:
-      Query wrapped;
-      if (queries.isEmpty()) {
-        wrapped = baseQuery;
-      } else {
-        // disable coord
-        BooleanQuery wrappedBQ = new BooleanQuery(true);
-        if ((baseQuery instanceof MatchAllDocsQuery) == false) {
-          wrappedBQ.add(baseQuery, BooleanClause.Occur.MUST);
-        }
-        for(Query q : queries) {
-          wrappedBQ.add(q, BooleanClause.Occur.MUST);
-        }
-        wrapped = wrappedBQ;
-      }
-
-      for(Filter filter : filters) {
-        wrapped = new FilteredQuery(wrapped, filter, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
-      }
-
-      return wrapped;
-    }
+    return rewritten;
   }
 
   @Override
   public String toString(String field) {
-    return query.toString(field);
+    return getBooleanQuery().toString(field);
   }
 
-  BooleanQuery getBooleanQuery() {
-    return query;
+  private BooleanQuery getBooleanQuery() {
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    if (baseQuery != null) {
+      bq.add(baseQuery, Occur.MUST);
+    }
+    for (BooleanQuery.Builder builder : dimQueries) {
+      bq.add(builder.build(), Occur.FILTER);
+    }
+    return bq.build();
+  }
+
+  Query getBaseQuery() {
+    return baseQuery;
+  }
+
+  Query[] getDrillDownQueries() {
+    Query[] dimQueries = new Query[this.dimQueries.size()];
+    for (int i = 0; i < dimQueries.length; ++i) {
+      dimQueries[i] = this.dimQueries.get(i).build();
+    }
+    return dimQueries;
   }
 
   Map<String,Integer> getDims() {

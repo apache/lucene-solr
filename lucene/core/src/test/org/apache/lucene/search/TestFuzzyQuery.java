@@ -300,7 +300,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     writer.close();
 
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     String commonSearchTerm = "michael";
     FuzzyQuery commonQuery = new FuzzyQuery(new Term("field", commonSearchTerm), 2, 1);
     query.add(commonQuery, Occur.SHOULD);
@@ -308,7 +308,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     String rareSearchTerm = "cutting";
     FuzzyQuery rareQuery = new FuzzyQuery(new Term("field", rareSearchTerm), 2, 1);
     query.add(rareQuery, Occur.SHOULD);
-    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query.build(), 1000).scoreDocs;
 
     // Matches on the rare surname should be worth more than matches on the common forename
     assertEquals(7, hits.length);

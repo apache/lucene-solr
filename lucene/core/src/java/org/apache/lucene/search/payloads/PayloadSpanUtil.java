@@ -80,11 +80,9 @@ public class PayloadSpanUtil {
   private void queryToSpanQuery(Query query, Collection<byte[]> payloads)
       throws IOException {
     if (query instanceof BooleanQuery) {
-      BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
-
-      for (int i = 0; i < queryClauses.length; i++) {
-        if (!queryClauses[i].isProhibited()) {
-          queryToSpanQuery(queryClauses[i].getQuery(), payloads);
+      for (BooleanClause clause : (BooleanQuery) query) {
+        if (!clause.isProhibited()) {
+          queryToSpanQuery(clause.getQuery(), payloads);
         }
       }
 

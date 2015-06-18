@@ -114,11 +114,11 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       final Query csq2 = new ConstantScoreQuery(csq1);
       csq2.setBoost(5.0f);
       
-      final BooleanQuery bq = new BooleanQuery();
+      final BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(csq1, BooleanClause.Occur.SHOULD);
       bq.add(csq2, BooleanClause.Occur.SHOULD);
       
-      final Query csqbq = new ConstantScoreQuery(bq);
+      final Query csqbq = new ConstantScoreQuery(bq.build());
       csqbq.setBoost(17.0f);
       
       checkHits(searcher, csq1, csq1.getBoost(), TermScorer.class);

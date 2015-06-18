@@ -414,6 +414,17 @@ public class SimpleQueryParser extends QueryBuilder {
     }
   }
 
+  private static BooleanQuery addClause(BooleanQuery bq, Query query, BooleanClause.Occur occur) {
+    BooleanQuery.Builder newBq = new BooleanQuery.Builder();
+    newBq.setDisableCoord(bq.isCoordDisabled());
+    newBq.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
+    for (BooleanClause clause : bq) {
+      newBq.add(clause);
+    }
+    newBq.add(query, occur);
+    return newBq.build();
+  }
+
   // buildQueryTree should be called after a term, phrase, or subquery
   // is consumed to be added to our existing query tree
   // this method will only add to the existing tree if the branch contained in state is not null
@@ -422,10 +433,10 @@ public class SimpleQueryParser extends QueryBuilder {
       // modify our branch to a BooleanQuery wrapper for not
       // this is necessary any time a term, phrase, or subquery is negated
       if (state.not % 2 == 1) {
-        BooleanQuery nq = new BooleanQuery();
+        BooleanQuery.Builder nq = new BooleanQuery.Builder();
         nq.add(branch, BooleanClause.Occur.MUST_NOT);
         nq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
-        branch = nq;
+        branch = nq.build();
       }
 
       // first term (or phrase or subquery) found and will begin our query tree
@@ -443,13 +454,13 @@ public class SimpleQueryParser extends QueryBuilder {
         // because the previous operation must be evaluated separately to preserve
         // the proper precedence and the current operation will take over as the top of the tree
         if (state.previousOperation != state.currentOperation) {
-          BooleanQuery bq = new BooleanQuery();
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
           bq.add(state.top, state.currentOperation);
-          state.top = bq;
+          state.top = bq.build();
         }
 
         // reset all of the state for reuse
-        ((BooleanQuery)state.top).add(branch, state.currentOperation);
+        state.top = addClause((BooleanQuery) state.top, branch, state.currentOperation);
         state.previousOperation = state.currentOperation;
       }
 
@@ -518,7 +529,8 @@ public class SimpleQueryParser extends QueryBuilder {
    * Factory method to generate a standard query (no phrase or prefix operators).
    */
   protected Query newDefaultQuery(String text) {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createBooleanQuery(entry.getKey(), text, defaultOperator);
       if (q != null) {
@@ -526,14 +538,15 @@ public class SimpleQueryParser extends QueryBuilder {
         bq.add(q, BooleanClause.Occur.SHOULD);
       }
     }
-    return simplify(bq);
+    return simplify(bq.build());
   }
 
   /**
    * Factory method to generate a fuzzy query.
    */
   protected Query newFuzzyQuery(String text, int fuzziness) {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = new FuzzyQuery(new Term(entry.getKey(), text), fuzziness);
       if (q != null) {
@@ -541,14 +554,15 @@ public class SimpleQueryParser extends QueryBuilder {
         bq.add(q, BooleanClause.Occur.SHOULD);
       }
     }
-    return simplify(bq);
+    return simplify(bq.build());
   }
 
   /**
    * Factory method to generate a phrase query with slop.
    */
   protected Query newPhraseQuery(String text, int slop) {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createPhraseQuery(entry.getKey(), text, slop);
       if (q != null) {
@@ -556,20 +570,21 @@ public class SimpleQueryParser extends QueryBuilder {
         bq.add(q, BooleanClause.Occur.SHOULD);
       }
     }
-    return simplify(bq);
+    return simplify(bq.build());
   }
 
   /**
    * Factory method to generate a prefix query.
    */
   protected Query newPrefixQuery(String text) {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       PrefixQuery prefix = new PrefixQuery(new Term(entry.getKey(), text));
       prefix.setBoost(entry.getValue());
       bq.add(prefix, BooleanClause.Occur.SHOULD);
     }
-    return simplify(bq);
+    return simplify(bq.build());
   }
 
   /**
@@ -579,7 +594,7 @@ public class SimpleQueryParser extends QueryBuilder {
     if (bq.clauses().isEmpty()) {
       return null;
     } else if (bq.clauses().size() == 1) {
-      return bq.clauses().get(0).getQuery();
+      return bq.clauses().iterator().next().getQuery();
     } else {
       return bq;
     }

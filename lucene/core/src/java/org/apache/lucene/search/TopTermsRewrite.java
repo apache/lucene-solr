@@ -37,7 +37,7 @@ import org.apache.lucene.util.BytesRefBuilder;
  * via a priority queue.
  * @lucene.internal Only public to be accessible by spans package.
  */
-public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRewrite<Q> {
+public abstract class TopTermsRewrite<B> extends TermCollectingRewrite<B> {
 
   private final int size;
   
@@ -61,7 +61,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
   protected abstract int getMaxSize();
   
   @Override
-  public final Q rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
+  public final Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
     final int maxSize = Math.min(size, getMaxSize());
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<>();
     collectTerms(reader, query, new TermCollector() {
@@ -154,7 +154,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       }
     });
     
-    final Q q = getTopLevelQuery();
+    final B b = getTopLevelBuilder();
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
     ArrayUtil.timSort(scoreTerms, scoreTermSortByTermComp);
     
@@ -162,9 +162,9 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
 
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes.toBytesRef());
-      addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
+      addClause(b, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
-    return q;
+    return build(b);
   }
 
   void adjustScoreTerms(IndexReader reader, ScoreTerm[] scoreTerms) {

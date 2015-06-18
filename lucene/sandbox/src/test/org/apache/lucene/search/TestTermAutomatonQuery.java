@@ -513,7 +513,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       // Build the (finite, no any transitions) TermAutomatonQuery and
       // also the "equivalent" BooleanQuery and make sure they match the
       // same docs:
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       int count = TestUtil.nextInt(random(), 1, 5);
       Set<BytesRef> strings = new HashSet<>();
       for(int i=0;i<count;i++) {
@@ -578,7 +578,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       }
       
       Query q1 = q;
-      Query q2 = bq;
+      Query q2 = bq.build();
       if (random().nextInt(5) == 1) {
         if (VERBOSE) {
           System.out.println("  use random filter");

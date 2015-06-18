@@ -220,17 +220,17 @@ public class PointVectorStrategy extends SpatialStrategy {
       valueSource = makeDistanceValueSource(shape.getCenter());
     }
     Query spatialRankingQuery = new FunctionQuery(valueSource);
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(spatial,BooleanClause.Occur.MUST);
     bq.add(spatialRankingQuery,BooleanClause.Occur.MUST);
-    return bq;
+    return bq.build();
   }
 
   /**
    * Constructs a query to retrieve documents that fully contain the input envelope.
    */
   private Query makeWithin(Rectangle bbox) {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     BooleanClause.Occur MUST = BooleanClause.Occur.MUST;
     if (bbox.getCrossesDateLine()) {
       //use null as performance trick since no data will be beyond the world bounds
@@ -241,7 +241,7 @@ public class PointVectorStrategy extends SpatialStrategy {
       bq.add(rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX()), MUST);
     }
     bq.add(rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY()), MUST);
-    return bq;
+    return bq.build();
   }
 
   private NumericRangeQuery<Double> rangeQuery(String fieldName, Double min, Double max) {
@@ -263,10 +263,10 @@ public class PointVectorStrategy extends SpatialStrategy {
     Query qX = rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX());
     Query qY = rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY());
 
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(qX,BooleanClause.Occur.MUST_NOT);
     bq.add(qY,BooleanClause.Occur.MUST_NOT);
-    return bq;
+    return bq.build();
   }
 
 }

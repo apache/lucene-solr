@@ -203,21 +203,21 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
       final boolean minInclusive = random().nextBoolean();
       final boolean maxInclusive = random().nextBoolean();
 
-      BooleanQuery ref = new BooleanQuery();
+      BooleanQuery.Builder ref = new BooleanQuery.Builder();
       ref.add(NumericRangeQuery.newLongRange("idx", min, max, minInclusive, maxInclusive), Occur.FILTER);
       ref.add(new TermQuery(new Term("f", "a")), Occur.MUST);
 
-      BooleanQuery bq1 = new BooleanQuery();
+      BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
       bq1.add(DocValuesRangeQuery.newLongRange("dv1", min, max, minInclusive, maxInclusive), Occur.FILTER);
       bq1.add(new TermQuery(new Term("f", "a")), Occur.MUST);
 
-      assertSameMatches(searcher, ref, bq1, true);
+      assertSameMatches(searcher, ref.build(), bq1.build(), true);
 
-      BooleanQuery bq2 = new BooleanQuery();
+      BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
       bq2.add(DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(min), toSortableBytes(max), minInclusive, maxInclusive), Occur.FILTER);
       bq2.add(new TermQuery(new Term("f", "a")), Occur.MUST);
 
-      assertSameMatches(searcher, ref, bq2, true);
+      assertSameMatches(searcher, ref.build(), bq2.build(), true);
     }
 
     reader.close();

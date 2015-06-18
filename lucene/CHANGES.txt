@@ -35,6 +35,9 @@ API Changes
 * LUCENE-6531: PhraseQuery is now immutable and can be built using the
   PhraseQuery.Builder class. (Adrien Grand)
 
+* LUCENE-6570: BooleanQuery is now immutable and can be built using the
+  BooleanQuery.Builder class. (Adrien Grand)
+
 ======================= Lucene 5.3.0 =======================
 
 New Features

@@ -157,46 +157,46 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testDMQ5() throws Exception {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
     booleanQuery.add(new TermQuery(new Term(FIELD, "QQ")), BooleanClause.Occur.MUST_NOT);
 
-    q.add(booleanQuery);
+    q.add(booleanQuery.build());
     q.add(new TermQuery(new Term(FIELD, "xx")));
     qtest(q, new int[] { 2,3 });
   }
   public void testDMQ6() throws Exception {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.MUST_NOT);
     booleanQuery.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.SHOULD);
 
-    q.add(booleanQuery);
+    q.add(booleanQuery.build());
     q.add(new TermQuery(new Term(FIELD, "xx")));
     qtest(q, new int[] { 0,1,2,3 });
   }
   public void testDMQ7() throws Exception {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.MUST_NOT);
     booleanQuery.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.SHOULD);
 
-    q.add(booleanQuery);
+    q.add(booleanQuery.build());
     q.add(new TermQuery(new Term(FIELD, "w2")));
     qtest(q, new int[] { 0,1,2,3 });
   }
   public void testDMQ8() throws Exception {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
 
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
     boostedQuery.setBoost(100);
     booleanQuery.add(boostedQuery, BooleanClause.Occur.SHOULD);
-    q.add(booleanQuery);
+    q.add(booleanQuery.build());
 
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
     xxBoostedQuery.setBoost(100000);
@@ -207,13 +207,13 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testDMQ9() throws Exception {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
 
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
     boostedQuery.setBoost(100);
     booleanQuery.add(boostedQuery, BooleanClause.Occur.SHOULD);
-    q.add(booleanQuery);
+    q.add(booleanQuery.build());
 
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
     xxBoostedQuery.setBoost(0);
@@ -266,193 +266,197 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   /* some simple tests of boolean queries containing term queries */
   
   public void testBQ1() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.MUST);
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ2() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.MUST);
-    qtest(query, new int[] { 2,3 });
+    qtest(query.build(), new int[] { 2,3 });
   }
   public void testBQ3() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.MUST);
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ4() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
     innerQuery.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ5() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.MUST);
     innerQuery.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ6() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.MUST_NOT);
     innerQuery.add(new TermQuery(new Term(FIELD, "w5")), BooleanClause.Occur.SHOULD);
-    outerQuery.add(innerQuery, BooleanClause.Occur.MUST_NOT);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.MUST_NOT);
 
-    qtest(outerQuery, new int[] { 1,2,3 });
+    qtest(outerQuery.build(), new int[] { 1,2,3 });
   }
   public void testBQ7() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.SHOULD);
     childLeft.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.MUST_NOT);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.SHOULD);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.MUST);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.MUST);
 
-    qtest(outerQuery, new int[] { 0 });
+    qtest(outerQuery.build(), new int[] { 0 });
   }
   public void testBQ8() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.SHOULD);
     childLeft.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.MUST_NOT);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.SHOULD);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ9() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
     childLeft.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.MUST_NOT);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.MUST_NOT);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ10() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
     childLeft.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.MUST_NOT);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.MUST_NOT);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.MUST);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.MUST);
 
-    qtest(outerQuery, new int[] { 1 });
+    qtest(outerQuery.build(), new int[] { 1 });
   }
   public void testBQ11() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w1"));
     boostedQuery.setBoost(1000);
     query.add(boostedQuery, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ14() throws Exception {
-    BooleanQuery q = new BooleanQuery(true);
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
     q.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
-    qtest(q, new int[] { 0,1,2,3 });
+    qtest(q.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ15() throws Exception {
-    BooleanQuery q = new BooleanQuery(true);
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.MUST_NOT);
     q.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
-    qtest(q, new int[] { 0,1,2,3 });
+    qtest(q.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ16() throws Exception {
-    BooleanQuery q = new BooleanQuery(true);
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     booleanQuery.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
 
-    q.add(booleanQuery, BooleanClause.Occur.SHOULD);
-    qtest(q, new int[] { 0,1 });
+    q.add(booleanQuery.build(), BooleanClause.Occur.SHOULD);
+    qtest(q.build(), new int[] { 0,1 });
   }
   public void testBQ17() throws Exception {
-    BooleanQuery q = new BooleanQuery(true);
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     booleanQuery.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
 
-    q.add(booleanQuery, BooleanClause.Occur.SHOULD);
-    qtest(q, new int[] { 0,1,2,3 });
+    q.add(booleanQuery.build(), BooleanClause.Occur.SHOULD);
+    qtest(q.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ19() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.MUST_NOT);
     query.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 0,1 });
+    qtest(query.build(), new int[] { 0,1 });
   }
   
   public void testBQ20() throws Exception {
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
     q.setMinimumNumberShouldMatch(2);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
     q.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
@@ -460,183 +464,183 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     q.add(new TermQuery(new Term(FIELD, "w5")), BooleanClause.Occur.SHOULD);
     q.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.SHOULD);
     
-    qtest(q, new int[] { 0,3 });
+    qtest(q.build(), new int[] { 0,3 });
     
   }
 
   public void testBQ23() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
     query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.FILTER);
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
 
   public void testBQ24() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
     query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
 
   public void testBQ25() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
     query.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.MUST);
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
 
   public void testBQ26() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.FILTER);
     query.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
-    qtest(query, new int[] { 0,1 });
+    qtest(query.build(), new int[] { 0,1 });
   }
 
   /* BQ of TQ: using alt so some fields have zero boost and some don't */
   
   public void testMultiFieldBQ1() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(ALTFIELD, "w2")), BooleanClause.Occur.MUST);
 
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
   public void testMultiFieldBQ2() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(ALTFIELD, "w3")), BooleanClause.Occur.MUST);
 
-    qtest(query, new int[] { 2,3 });
+    qtest(query.build(), new int[] { 2,3 });
   }
   public void testMultiFieldBQ3() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(ALTFIELD, "w3")), BooleanClause.Occur.MUST);
 
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
   public void testMultiFieldBQ4() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "w2")), BooleanClause.Occur.SHOULD);
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testMultiFieldBQ5() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "qq")), BooleanClause.Occur.MUST);
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "w2")), BooleanClause.Occur.SHOULD);
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testMultiFieldBQ6() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "qq")), BooleanClause.Occur.MUST_NOT);
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "w5")), BooleanClause.Occur.SHOULD);
-    outerQuery.add(innerQuery, BooleanClause.Occur.MUST_NOT);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.MUST_NOT);
 
-    qtest(outerQuery, new int[] { 1,2,3 });
+    qtest(outerQuery.build(), new int[] { 1,2,3 });
   }
   public void testMultiFieldBQ7() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(ALTFIELD, "xx")), BooleanClause.Occur.SHOULD);
     childLeft.add(new TermQuery(new Term(ALTFIELD, "w2")), BooleanClause.Occur.MUST_NOT);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(ALTFIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(ALTFIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.SHOULD);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.MUST);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.MUST);
 
-    qtest(outerQuery, new int[] { 0 });
+    qtest(outerQuery.build(), new int[] { 0 });
   }
   public void testMultiFieldBQ8() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(ALTFIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(ALTFIELD, "xx")), BooleanClause.Occur.SHOULD);
     childLeft.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.MUST_NOT);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(ALTFIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.SHOULD);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testMultiFieldBQ9() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
     childLeft.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(ALTFIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.MUST_NOT);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.MUST_NOT);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.SHOULD);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.SHOULD);
 
-    qtest(outerQuery, new int[] { 0,1,2,3 });
+    qtest(outerQuery.build(), new int[] { 0,1,2,3 });
   }
   public void testMultiFieldBQ10() throws Exception {
-    BooleanQuery outerQuery = new BooleanQuery();
+    BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
-    BooleanQuery innerQuery = new BooleanQuery();
+    BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
     innerQuery.add(new TermQuery(new Term(ALTFIELD, "qq")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childLeft = new BooleanQuery();
+    BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
     childLeft.add(new TermQuery(new Term(FIELD, "xx")), BooleanClause.Occur.MUST_NOT);
     childLeft.add(new TermQuery(new Term(ALTFIELD, "w2")), BooleanClause.Occur.SHOULD);
-    innerQuery.add(childLeft, BooleanClause.Occur.SHOULD);
+    innerQuery.add(childLeft.build(), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery childRight = new BooleanQuery();
+    BooleanQuery.Builder childRight = new BooleanQuery.Builder();
     childRight.add(new TermQuery(new Term(ALTFIELD, "w3")), BooleanClause.Occur.MUST);
     childRight.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.MUST);
-    innerQuery.add(childRight, BooleanClause.Occur.MUST_NOT);
+    innerQuery.add(childRight.build(), BooleanClause.Occur.MUST_NOT);
 
-    outerQuery.add(innerQuery, BooleanClause.Occur.MUST);
+    outerQuery.add(innerQuery.build(), BooleanClause.Occur.MUST);
 
-    qtest(outerQuery, new int[] { 1 });
+    qtest(outerQuery.build(), new int[] { 1 });
   }
 
   /* BQ of PQ: using alt so some fields have zero boost and some don't */
   
   public void testMultiFieldBQofPQ1() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
 
     PhraseQuery leftChild = new PhraseQuery(FIELD, "w1", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
@@ -644,10 +648,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     PhraseQuery rightChild = new PhraseQuery(ALTFIELD, "w1", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 0 });
+    qtest(query.build(), new int[] { 0 });
   }
   public void testMultiFieldBQofPQ2() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
 
     PhraseQuery leftChild = new PhraseQuery(FIELD, "w1", "w3");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
@@ -655,10 +659,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     PhraseQuery rightChild = new PhraseQuery(ALTFIELD, "w1", "w3");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 1,3 });
+    qtest(query.build(), new int[] { 1,3 });
   }
   public void testMultiFieldBQofPQ3() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
 
     PhraseQuery leftChild = new PhraseQuery(1, FIELD, "w1", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
@@ -666,10 +670,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w1", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 0,1,2 });
+    qtest(query.build(), new int[] { 0,1,2 });
   }
   public void testMultiFieldBQofPQ4() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
 
     PhraseQuery leftChild = new PhraseQuery(1, FIELD, "w2", "w3");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
@@ -677,10 +681,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w2", "w3");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
   public void testMultiFieldBQofPQ5() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
 
     PhraseQuery leftChild = new PhraseQuery(1, FIELD, "w3", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
@@ -688,10 +692,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w3", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 1,3 });
+    qtest(query.build(), new int[] { 1,3 });
   }
   public void testMultiFieldBQofPQ6() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
 
     PhraseQuery leftChild = new PhraseQuery(2, FIELD, "w3", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
@@ -699,10 +703,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     PhraseQuery rightChild = new PhraseQuery(2, ALTFIELD, "w3", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 0,1,3 });
+    qtest(query.build(), new int[] { 0,1,3 });
   }
   public void testMultiFieldBQofPQ7() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
 
     PhraseQuery leftChild = new PhraseQuery(3, FIELD, "w3", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
@@ -710,7 +714,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w3", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
-    qtest(query, new int[] { 0,1,2,3 });
+    qtest(query.build(), new int[] { 0,1,2,3 });
   }
 
 }

@@ -151,13 +151,13 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         final List<TermAndState> collectedTerms = new ArrayList<>();
         if (collectTerms(context, termsEnum, collectedTerms)) {
           // build a boolean query
-          BooleanQuery bq = new BooleanQuery();
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
           for (TermAndState t : collectedTerms) {
             final TermContext termContext = new TermContext(searcher.getTopReaderContext());
             termContext.register(t.state, context.ord, t.docFreq, t.totalTermFreq);
             bq.add(new TermQuery(new Term(query.field, t.term), termContext), Occur.SHOULD);
           }
-          Query q = new ConstantScoreQuery(bq);
+          Query q = new ConstantScoreQuery(bq.build());
           q.setBoost(score());
           return new WeightOrBitSet(searcher.rewrite(q).createWeight(searcher, needsScores));
         }

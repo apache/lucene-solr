@@ -310,7 +310,7 @@ public class FieldQuery {
       }
       else if (query instanceof MultiTermQuery && reader != null) {
         BooleanQuery mtqTerms = (BooleanQuery) query.rewrite(reader);
-        for (BooleanClause clause : mtqTerms.getClauses()) {
+        for (BooleanClause clause : mtqTerms) {
           termSet.add (((TermQuery) clause.getQuery()).getTerm().text());
         }
       }

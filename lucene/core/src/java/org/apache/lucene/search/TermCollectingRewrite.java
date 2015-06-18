@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -30,18 +29,21 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
-abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.RewriteMethod {
+abstract class TermCollectingRewrite<B> extends MultiTermQuery.RewriteMethod {
   
   
-  /** Return a suitable top-level Query for holding all expanded terms. */
-  protected abstract Q getTopLevelQuery() throws IOException;
-  
-  /** Add a MultiTermQuery term to the top-level query */
-  protected final void addClause(Q topLevel, Term term, int docCount, float boost) throws IOException {
+  /** Return a suitable builder for the top-level Query for holding all expanded terms. */
+  protected abstract B getTopLevelBuilder() throws IOException;
+
+  /** Finalize the creation of the query from the builder. */
+  protected abstract Query build(B builder);
+
+  /** Add a MultiTermQuery term to the top-level query builder. */
+  protected final void addClause(B topLevel, Term term, int docCount, float boost) throws IOException {
     addClause(topLevel, term, docCount, boost, null);
   }
   
-  protected abstract void addClause(Q topLevel, Term term, int docCount, float boost, TermContext states) throws IOException;
+  protected abstract void addClause(B topLevel, Term term, int docCount, float boost, TermContext states) throws IOException;
 
   
   final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {

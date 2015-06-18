@@ -349,17 +349,17 @@ public class BBoxStrategy extends SpatialStrategy {
       // docMinX > queryExtent.getMaxX() OR docMaxX < queryExtent.getMinX()
       Query qMinX = NumericRangeQuery.newDoubleRange(field_minX, getPrecisionStep(), bbox.getMaxX(), null, false, false);
       if (bbox.getMinX() == -180.0 && ctx.isGeo()) {//touches dateline; -180 == 180
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         bq.add(qMinX, BooleanClause.Occur.MUST);
         bq.add(makeNumberTermQuery(field_maxX, 180.0), BooleanClause.Occur.MUST_NOT);
-        qMinX = bq;
+        qMinX = bq.build();
       }
       Query qMaxX = NumericRangeQuery.newDoubleRange(field_maxX, getPrecisionStep(), null, bbox.getMinX(), false, false);
       if (bbox.getMaxX() == 180.0 && ctx.isGeo()) {//touches dateline; -180 == 180
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         bq.add(qMaxX, BooleanClause.Occur.MUST);
         bq.add(makeNumberTermQuery(field_minX, -180.0), BooleanClause.Occur.MUST_NOT);
-        qMaxX = bq;
+        qMaxX = bq.build();
       }
       Query qMinMax = this.makeQuery(BooleanClause.Occur.SHOULD, qMinX, qMaxX);
       Query qNonXDL = this.makeXDL(false, qMinMax);
@@ -445,7 +445,7 @@ public class BBoxStrategy extends SpatialStrategy {
       qHasEnv = this.makeXDL(false);
     }
 
-    BooleanQuery qNotDisjoint = new BooleanQuery();
+    BooleanQuery.Builder qNotDisjoint = new BooleanQuery.Builder();
     qNotDisjoint.add(qHasEnv, BooleanClause.Occur.MUST);
     Query qDisjoint = makeDisjoint(bbox);
     qNotDisjoint.add(qDisjoint, BooleanClause.Occur.MUST_NOT);
@@ -454,7 +454,7 @@ public class BBoxStrategy extends SpatialStrategy {
     //BooleanQuery qNotDisjoint = new BooleanQuery();
     //qNotDisjoint.add(new MatchAllDocsQuery(),BooleanClause.Occur.SHOULD);
     //qNotDisjoint.add(qDisjoint,BooleanClause.Occur.MUST_NOT);
-    return qNotDisjoint;
+    return qNotDisjoint.build();
   }
 
   /**
@@ -465,12 +465,12 @@ public class BBoxStrategy extends SpatialStrategy {
    * @return the query
    */
   BooleanQuery makeQuery(BooleanClause.Occur occur, Query... queries) {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Query query : queries) {
       if (query != null)
         bq.add(query, occur);
     }
-    return bq;
+    return bq.build();
   }
 
   /**
@@ -581,10 +581,10 @@ public class BBoxStrategy extends SpatialStrategy {
       assert !crossedDateLine;
       return query;
     }
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(this.makeXDL(crossedDateLine), BooleanClause.Occur.MUST);
     bq.add(query, BooleanClause.Occur.MUST);
-    return bq;
+    return bq.build();
   }
 
   private Query makeNumberTermQuery(String field, double number) {

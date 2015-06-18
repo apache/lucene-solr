@@ -26,7 +26,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 /**
  * {@link BulkScorer} that is used for pure disjunctions and disjunctions
- * that have low values of {@link BooleanQuery#setMinimumNumberShouldMatch(int)}
+ * that have low values of {@link BooleanQuery.Builder#setMinimumNumberShouldMatch(int)}
  * and dense clauses. This scorer scores documents by batches of 2048 docs.
  */
 final class BooleanScorer extends BulkScorer {

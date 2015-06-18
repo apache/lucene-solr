@@ -66,11 +66,11 @@ public class SimpleQQParser implements QualityQueryParser {
       qp = new QueryParser(indexField, new StandardAnalyzer());
       queryParser.set(qp);
     }
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (int i = 0; i < qqNames.length; i++)
       bq.add(qp.parse(QueryParserBase.escape(qq.getValue(qqNames[i]))), BooleanClause.Occur.SHOULD);
     
-    return bq;
+    return bq.build();
   }
 
 }

@@ -38,7 +38,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
 // TODO: refactor to a base class, that collects freqs from the scorer tree
@@ -48,6 +47,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
   Analyzer analyzer;
   IndexReader reader;
   IndexSearcher searcher;
+  IndexSearcher scorerSearcher;
   Directory dir;
   
   static final String F1 = "title";
@@ -69,6 +69,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     // we do not use newSearcher because the assertingXXX layers break
     // the toString representations we are relying on
     searcher = new IndexSearcher(reader);
+    scorerSearcher = new ScorerIndexSearcher(reader);
   }
   
   @Override
@@ -79,11 +80,11 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
   }
 
   public void testDisjunctions() throws IOException {
-    BooleanQuery2 bq = new BooleanQuery2();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term(F1, "lucene")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term(F2, "lucene")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term(F2, "search")), BooleanClause.Occur.SHOULD);
-    Map<Integer,Integer> tfs = getDocCounts(searcher, bq);
+    Map<Integer,Integer> tfs = getDocCounts(scorerSearcher, bq.build());
     assertEquals(3, tfs.size()); // 3 documents
     assertEquals(3, tfs.get(0).intValue()); // f1:lucene + f2:lucene + f2:search
     assertEquals(2, tfs.get(1).intValue()); // f2:search + f2:lucene
@@ -91,13 +92,13 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
   }
   
   public void testNestedDisjunctions() throws IOException {
-    BooleanQuery2 bq = new BooleanQuery2();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term(F1, "lucene")), BooleanClause.Occur.SHOULD);
-    BooleanQuery2 bq2 = new BooleanQuery2();
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(new TermQuery(new Term(F2, "lucene")), BooleanClause.Occur.SHOULD);
     bq2.add(new TermQuery(new Term(F2, "search")), BooleanClause.Occur.SHOULD);
-    bq.add(bq2, BooleanClause.Occur.SHOULD);
-    Map<Integer,Integer> tfs = getDocCounts(searcher, bq);
+    bq.add(bq2.build(), BooleanClause.Occur.SHOULD);
+    Map<Integer,Integer> tfs = getDocCounts(scorerSearcher, bq.build());
     assertEquals(3, tfs.size()); // 3 documents
     assertEquals(3, tfs.get(0).intValue()); // f1:lucene + f2:lucene + f2:search
     assertEquals(2, tfs.get(1).intValue()); // f2:search + f2:lucene
@@ -105,10 +106,10 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
   }
   
   public void testConjunctions() throws IOException {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term(F2, "lucene")), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term(F2, "is")), BooleanClause.Occur.MUST);
-    Map<Integer,Integer> tfs = getDocCounts(searcher, bq);
+    Map<Integer,Integer> tfs = getDocCounts(searcher, bq.build());
     assertEquals(3, tfs.size()); // 3 documents
     assertEquals(2, tfs.get(0).intValue()); // f2:lucene + f2:is
     assertEquals(3, tfs.get(1).intValue()); // f2:is + f2:is + f2:lucene
@@ -185,14 +186,14 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
   }
 
   public void testGetChildrenMinShouldMatchSumScorer() throws IOException {
-    final BooleanQuery query = new BooleanQuery();
+    final BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(F2, "nutch")), Occur.SHOULD);
     query.add(new TermQuery(new Term(F2, "web")), Occur.SHOULD);
     query.add(new TermQuery(new Term(F2, "crawler")), Occur.SHOULD);
     query.setMinimumNumberShouldMatch(2);
     query.add(new MatchAllDocsQuery(), Occur.MUST);
     ScorerSummarizingCollector collector = new ScorerSummarizingCollector();
-    searcher.search(query, collector);
+    searcher.search(query.build(), collector);
     assertEquals(1, collector.getNumHits());
     assertFalse(collector.getSummaries().isEmpty());
     for (String summary : collector.getSummaries()) {
@@ -208,11 +209,11 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
   }
 
   public void testGetChildrenBoosterScorer() throws IOException {
-    final BooleanQuery2 query = new BooleanQuery2();
+    final BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(F2, "nutch")), Occur.SHOULD);
     query.add(new TermQuery(new Term(F2, "miss")), Occur.SHOULD);
     ScorerSummarizingCollector collector = new ScorerSummarizingCollector();
-    searcher.search(query, collector);
+    scorerSearcher.search(query.build(), collector);
     assertEquals(1, collector.getNumHits());
     assertFalse(collector.getSummaries().isEmpty());
     for (String summary : collector.getSummaries()) {
@@ -280,21 +281,4 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
   }
 
-  static class BooleanQuery2 extends BooleanQuery {
-
-    @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new BooleanWeight(this, searcher, needsScores, false) {
-        @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-          Scorer scorer = scorer(context, acceptDocs);
-          if (scorer == null) {
-            return null;
-          }
-          return new DefaultBulkScorer(scorer);
-        }
-      };
-    }
-
-  }
 }

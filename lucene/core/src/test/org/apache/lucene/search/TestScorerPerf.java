@@ -172,7 +172,7 @@ public class TestScorerPerf extends LuceneTestCase {
     }
   }
 
-  FixedBitSet addClause(BooleanQuery bq, FixedBitSet result) {
+  FixedBitSet addClause(BooleanQuery.Builder bq, FixedBitSet result) {
     final FixedBitSet rnd = sets[random().nextInt(sets.length)];
     Query q = new ConstantScoreQuery(new BitSetFilter(rnd));
     bq.add(q, BooleanClause.Occur.MUST);
@@ -189,7 +189,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
     for (int i=0; i<iter; i++) {
       int nClauses = random().nextInt(maxClauses-1)+2; // min 2 clauses
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       FixedBitSet result=null;
       for (int j=0; j<nClauses; j++) {
         result = addClause(bq,result);
@@ -197,7 +197,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
       CountingHitCollector hc = validate ? new MatchingHitCollector(result)
                                          : new CountingHitCollector();
-      s.search(bq, hc);
+      s.search(bq.build(), hc);
       ret += hc.getSum();
 
       if (validate) assertEquals(result.cardinality(), hc.getCount());
@@ -213,23 +213,23 @@ public class TestScorerPerf extends LuceneTestCase {
 
     for (int i=0; i<iter; i++) {
       int oClauses = random().nextInt(maxOuterClauses-1)+2;
-      BooleanQuery oq = new BooleanQuery();
+      BooleanQuery.Builder oq = new BooleanQuery.Builder();
       FixedBitSet result=null;
 
       for (int o=0; o<oClauses; o++) {
 
       int nClauses = random().nextInt(maxClauses-1)+2; // min 2 clauses
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       for (int j=0; j<nClauses; j++) {
         result = addClause(bq,result);
       }
 
-      oq.add(bq, BooleanClause.Occur.MUST);
+      oq.add(bq.build(), BooleanClause.Occur.MUST);
       } // outer
 
       CountingHitCollector hc = validate ? new MatchingHitCollector(result)
                                          : new CountingHitCollector();
-      s.search(oq, hc);
+      s.search(oq.build(), hc);
       nMatches += hc.getCount();
       ret += hc.getSum();
       if (validate) assertEquals(result.cardinality(), hc.getCount());
@@ -250,7 +250,7 @@ public class TestScorerPerf extends LuceneTestCase {
     long nMatches=0;
     for (int i=0; i<iter; i++) {
       int nClauses = random().nextInt(maxClauses-1)+2; // min 2 clauses
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       BitSet termflag = new BitSet(termsInIndex);
       for (int j=0; j<nClauses; j++) {
         int tnum;
@@ -264,7 +264,7 @@ public class TestScorerPerf extends LuceneTestCase {
       }
 
       CountingHitCollector hc = new CountingHitCollector();
-      s.search(bq, hc);
+      s.search(bq.build(), hc);
       nMatches += hc.getCount();
       ret += hc.getSum();
     }
@@ -284,11 +284,11 @@ public class TestScorerPerf extends LuceneTestCase {
     long nMatches=0;
     for (int i=0; i<iter; i++) {
       int oClauses = random().nextInt(maxOuterClauses-1)+2;
-      BooleanQuery oq = new BooleanQuery();
+      BooleanQuery.Builder oq = new BooleanQuery.Builder();
       for (int o=0; o<oClauses; o++) {
 
       int nClauses = random().nextInt(maxClauses-1)+2; // min 2 clauses
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       BitSet termflag = new BitSet(termsInIndex);
       for (int j=0; j<nClauses; j++) {
         int tnum;
@@ -301,12 +301,12 @@ public class TestScorerPerf extends LuceneTestCase {
         bq.add(tq, BooleanClause.Occur.MUST);
       } // inner
 
-      oq.add(bq, BooleanClause.Occur.MUST);
+      oq.add(bq.build(), BooleanClause.Occur.MUST);
       } // outer
 
 
       CountingHitCollector hc = new CountingHitCollector();
-      s.search(oq, hc);
+      s.search(oq.build(), hc);
       nMatches += hc.getCount();     
       ret += hc.getSum();
     }

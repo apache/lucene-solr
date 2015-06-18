@@ -31,15 +31,15 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q1 = new TermQuery(t1);
     TermQuery q2 = new TermQuery(t2);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.MUST);
     bq1.add(q2, Occur.MUST);
 
-    BooleanQuery bq2 = new BooleanQuery();
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq2.add(new RandomApproximationQuery(q2, random()), Occur.MUST);
 
-    assertSameScores(bq1, bq2);
+    assertSameScores(bq1.build(), bq2.build());
   }
 
   public void testNestedConjunction() throws Exception {
@@ -50,23 +50,23 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q2 = new TermQuery(t2);
     TermQuery q3 = new TermQuery(t3);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.MUST);
     bq1.add(q2, Occur.MUST);
 
-    BooleanQuery bq2 = new BooleanQuery();
-    bq2.add(bq1, Occur.MUST);
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
+    bq2.add(bq1.build(), Occur.MUST);
     bq2.add(q3, Occur.MUST);
     
-    BooleanQuery bq3 = new BooleanQuery();
+    BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.MUST);
 
-    BooleanQuery bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.MUST);
+    BooleanQuery.Builder bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.MUST);
     bq4.add(q3, Occur.MUST);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
   }
 
   public void testDisjunction() throws Exception {
@@ -75,15 +75,15 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q1 = new TermQuery(t1);
     TermQuery q2 = new TermQuery(t2);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.SHOULD);
     bq1.add(q2, Occur.SHOULD);
 
-    BooleanQuery bq2 = new BooleanQuery();
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(new RandomApproximationQuery(q1, random()), Occur.SHOULD);
     bq2.add(new RandomApproximationQuery(q2, random()), Occur.SHOULD);
 
-    assertSameScores(bq1, bq2);
+    assertSameScores(bq1.build(), bq2.build());
   }
 
   public void testNestedDisjunction() throws Exception {
@@ -94,23 +94,23 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q2 = new TermQuery(t2);
     TermQuery q3 = new TermQuery(t3);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.SHOULD);
     bq1.add(q2, Occur.SHOULD);
 
-    BooleanQuery bq2 = new BooleanQuery();
-    bq2.add(bq1, Occur.SHOULD);
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
+    bq2.add(bq1.build(), Occur.SHOULD);
     bq2.add(q3, Occur.SHOULD);
 
-    BooleanQuery bq3 = new BooleanQuery();
+    BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.SHOULD);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.SHOULD);
 
-    BooleanQuery bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.SHOULD);
+    BooleanQuery.Builder bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.SHOULD);
     bq4.add(q3, Occur.SHOULD);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
   }
 
   public void testDisjunctionInConjunction() throws Exception {
@@ -121,23 +121,23 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q2 = new TermQuery(t2);
     TermQuery q3 = new TermQuery(t3);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.SHOULD);
     bq1.add(q2, Occur.SHOULD);
 
-    BooleanQuery bq2 = new BooleanQuery();
-    bq2.add(bq1, Occur.MUST);
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
+    bq2.add(bq1.build(), Occur.MUST);
     bq2.add(q3, Occur.MUST);
 
-    BooleanQuery bq3 = new BooleanQuery();
+    BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.SHOULD);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.SHOULD);
 
-    BooleanQuery bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.MUST);
+    BooleanQuery.Builder bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.MUST);
     bq4.add(q3, Occur.MUST);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
   }
 
   public void testConjunctionInDisjunction() throws Exception {
@@ -148,23 +148,23 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q2 = new TermQuery(t2);
     TermQuery q3 = new TermQuery(t3);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.MUST);
     bq1.add(q2, Occur.MUST);
 
-    BooleanQuery bq2 = new BooleanQuery();
-    bq2.add(bq1, Occur.SHOULD);
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
+    bq2.add(bq1.build(), Occur.SHOULD);
     bq2.add(q3, Occur.SHOULD);
 
-    BooleanQuery bq3 = new BooleanQuery();
+    BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.MUST);
 
-    BooleanQuery bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.SHOULD);
+    BooleanQuery.Builder bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.SHOULD);
     bq4.add(q3, Occur.SHOULD);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
   }
 
   public void testConstantScore() throws Exception {
@@ -173,15 +173,15 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q1 = new TermQuery(t1);
     TermQuery q2 = new TermQuery(t2);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(new ConstantScoreQuery(q1), Occur.MUST);
     bq1.add(new ConstantScoreQuery(q2), Occur.MUST);
 
-    BooleanQuery bq2 = new BooleanQuery();
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(new ConstantScoreQuery(new RandomApproximationQuery(q1, random())), Occur.MUST);
     bq2.add(new ConstantScoreQuery(new RandomApproximationQuery(q2, random())), Occur.MUST);
 
-    assertSameScores(bq1, bq2);
+    assertSameScores(bq1.build(), bq2.build());
   }
 
   public void testExclusion() throws Exception {
@@ -190,15 +190,15 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q1 = new TermQuery(t1);
     TermQuery q2 = new TermQuery(t2);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.MUST);
     bq1.add(q2, Occur.MUST_NOT);
 
-    BooleanQuery bq2 = new BooleanQuery();
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq2.add(new RandomApproximationQuery(q2, random()), Occur.MUST_NOT);
 
-    assertSameScores(bq1, bq2);
+    assertSameScores(bq1.build(), bq2.build());
   }
 
   public void testNestedExclusion() throws Exception {
@@ -209,46 +209,46 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q2 = new TermQuery(t2);
     TermQuery q3 = new TermQuery(t3);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.MUST);
     bq1.add(q2, Occur.MUST_NOT);
 
-    BooleanQuery bq2 = new BooleanQuery();
-    bq2.add(bq1, Occur.MUST);
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
+    bq2.add(bq1.build(), Occur.MUST);
     bq2.add(q3, Occur.MUST);
 
     // Both req and excl have approximations
-    BooleanQuery bq3 = new BooleanQuery();
+    BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.MUST_NOT);
 
-    BooleanQuery bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.MUST);
+    BooleanQuery.Builder bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.MUST);
     bq4.add(q3, Occur.MUST);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
 
     // Only req has an approximation
-    bq3 = new BooleanQuery();
+    bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq3.add(q2, Occur.MUST_NOT);
 
-    bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.MUST);
+    bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.MUST);
     bq4.add(q3, Occur.MUST);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
 
     // Only excl has an approximation
-    bq3 = new BooleanQuery();
+    bq3 = new BooleanQuery.Builder();
     bq3.add(q1, Occur.MUST);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.MUST_NOT);
 
-    bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.MUST);
+    bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.MUST);
     bq4.add(q3, Occur.MUST);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
   }
 
   public void testReqOpt() throws Exception {
@@ -259,23 +259,23 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     TermQuery q2 = new TermQuery(t2);
     TermQuery q3 = new TermQuery(t3);
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(q1, Occur.MUST);
     bq1.add(q2, Occur.SHOULD);
 
-    BooleanQuery bq2 = new BooleanQuery();
-    bq2.add(bq1, Occur.MUST);
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
+    bq2.add(bq1.build(), Occur.MUST);
     bq2.add(q3, Occur.MUST);
     
-    BooleanQuery bq3 = new BooleanQuery();
+    BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.SHOULD);
 
-    BooleanQuery bq4 = new BooleanQuery();
-    bq4.add(bq3, Occur.MUST);
+    BooleanQuery.Builder bq4 = new BooleanQuery.Builder();
+    bq4.add(bq3.build(), Occur.MUST);
     bq4.add(q3, Occur.MUST);
 
-    assertSameScores(bq2, bq4);
+    assertSameScores(bq2.build(), bq4.build());
   }
 
 }

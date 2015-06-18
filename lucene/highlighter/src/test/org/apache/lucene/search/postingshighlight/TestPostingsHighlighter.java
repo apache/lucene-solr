@@ -292,12 +292,12 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("title", "best")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    Map<String,String[]> snippets = highlighter.highlightFields(new String [] { "body", "title" }, query, searcher, topDocs);
+    Map<String,String[]> snippets = highlighter.highlightFields(new String [] { "body", "title" }, query.build(), searcher, topDocs);
     assertEquals(2, snippets.size());
     assertEquals("Just a test <b>highlighting</b> from postings. ", snippets.get("body")[0]);
     assertEquals("<b>Highlighting</b> the first term. ", snippets.get("body")[1]);
@@ -329,13 +329,13 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "just")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "first")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    String snippets[] = highlighter.highlight("body", query.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("<b>Just</b> a test <b>highlighting</b> from postings. ", snippets[0]);
     assertEquals("<b>Highlighting</b> the <b>first</b> term. ", snippets[1]);
@@ -503,14 +503,14 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher searcher = newSearcher(ir);
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("body", "porter")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "square")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "massachusetts")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, 10);
+    TopDocs topDocs = searcher.search(query.build(), 10);
     assertEquals(1, topDocs.totalHits);
     PostingsHighlighter highlighter = new PostingsHighlighter(Integer.MAX_VALUE-1);
-    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    String snippets[] = highlighter.highlight("body", query.build(), searcher, topDocs, 2);
     assertEquals(1, snippets.length);
     assertTrue(snippets[0].contains("<b>Square</b>"));
     assertTrue(snippets[0].contains("<b>Porter</b>"));
@@ -562,15 +562,15 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher searcher = newSearcher(ir);
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("body", "terms")), BooleanClause.Occur.SHOULD);
-    BooleanQuery query2 = new BooleanQuery();
-    query.add(query2, BooleanClause.Occur.SHOULD);
+    BooleanQuery.Builder query2 = new BooleanQuery.Builder();
+    query.add(query2.build(), BooleanClause.Occur.SHOULD);
     query2.add(new TermQuery(new Term("body", "both")), BooleanClause.Occur.MUST_NOT);
-    TopDocs topDocs = searcher.search(query, 10);
+    TopDocs topDocs = searcher.search(query.build(), 10);
     assertEquals(1, topDocs.totalHits);
     PostingsHighlighter highlighter = new PostingsHighlighter(Integer.MAX_VALUE-1);
-    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    String snippets[] = highlighter.highlight("body", query.build(), searcher, topDocs, 2);
     assertEquals(1, snippets.length);
     assertFalse(snippets[0].contains("<b>both</b>"));
     ir.close();
@@ -977,10 +977,10 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter();
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("body", "test")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("title", "test")), BooleanClause.Occur.SHOULD);
-    Map<String,String[]> snippets = highlighter.highlightFields(new String[] { "title", "body" }, query, searcher, new int[] { 0 }, new int[] { 1, 2 });
+    Map<String,String[]> snippets = highlighter.highlightFields(new String[] { "title", "body" }, query.build(), searcher, new int[] { 0 }, new int[] { 1, 2 });
     String titleHighlight = snippets.get("title")[0];
     String bodyHighlight = snippets.get("body")[0];
     assertEquals("This is a <b>test</b>. ", titleHighlight);

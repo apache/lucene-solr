@@ -135,7 +135,13 @@ public class QueryBuilder {
     Query query = createFieldQuery(analyzer, BooleanClause.Occur.SHOULD, field, queryText, false, 0);
     if (query instanceof BooleanQuery) {
       BooleanQuery bq = (BooleanQuery) query;
-      bq.setMinimumNumberShouldMatch((int) (fraction * bq.clauses().size()));
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(bq.isCoordDisabled());
+      builder.setMinimumNumberShouldMatch((int) (fraction * bq.clauses().size()));
+      for (BooleanClause clause : bq) {
+        builder.add(clause);
+      }
+      query = builder.build();
     }
     return query;
   }
@@ -276,7 +282,8 @@ public class QueryBuilder {
    * Creates simple boolean query from the cached tokenstream contents 
    */
   private Query analyzeBoolean(String field, TokenStream stream) throws IOException {
-    BooleanQuery q = newBooleanQuery(true);
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.setDisableCoord(true);
 
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     BytesRef bytes = termAtt.getBytesRef();
@@ -288,15 +295,26 @@ public class QueryBuilder {
       q.add(currentQuery, BooleanClause.Occur.SHOULD);
     }
     
-    return q;
+    return q.build();
   }
-  
+
+  private void add(BooleanQuery.Builder q, BooleanQuery current, BooleanClause.Occur operator) {
+    if (current.clauses().isEmpty()) {
+      return;
+    }
+    if (current.clauses().size() == 1) {
+      q.add(current.clauses().iterator().next().getQuery(), operator);
+    } else {
+      q.add(current, operator);
+    }
+  }
+
   /** 
    * Creates complex boolean query from the cached tokenstream contents 
    */
   private Query analyzeMultiBoolean(String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
-    BooleanQuery q = newBooleanQuery(false);
-    Query currentQuery = null;
+    BooleanQuery.Builder q = newBooleanQuery(false);
+    BooleanQuery.Builder currentQuery = newBooleanQuery(true);
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     BytesRef bytes = termAtt.getBytesRef();
@@ -306,23 +324,15 @@ public class QueryBuilder {
     stream.reset();
     while (stream.incrementToken()) {
       termAtt.fillBytesRef();
-      if (posIncrAtt.getPositionIncrement() == 0) {
-        if (!(currentQuery instanceof BooleanQuery)) {
-          Query t = currentQuery;
-          currentQuery = newBooleanQuery(true);
-          ((BooleanQuery)currentQuery).add(t, BooleanClause.Occur.SHOULD);
-        }
-        ((BooleanQuery)currentQuery).add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
-      } else {
-        if (currentQuery != null) {
-          q.add(currentQuery, operator);
-        }
-        currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
+      if (posIncrAtt.getPositionIncrement() != 0) {
+        add(q, currentQuery.build(), operator);
+        currentQuery = newBooleanQuery(true);
       }
+      currentQuery.add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
     }
-    q.add(currentQuery, operator);
+    add(q, currentQuery.build(), operator);
     
-    return q;
+    return q.build();
   }
   
   /** 
@@ -399,8 +409,10 @@ public class QueryBuilder {
    * @param disableCoord disable coord
    * @return new BooleanQuery instance
    */
-  protected BooleanQuery newBooleanQuery(boolean disableCoord) {
-    return new BooleanQuery(disableCoord);
+  protected BooleanQuery.Builder newBooleanQuery(boolean disableCoord) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    builder.setDisableCoord(disableCoord);
+    return builder;
   }
   
   /**

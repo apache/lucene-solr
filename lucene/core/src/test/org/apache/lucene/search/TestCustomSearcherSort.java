@@ -194,21 +194,21 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     @Override
     public TopFieldDocs search(Query query, int nDocs, Sort sort)
         throws IOException {
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(query, BooleanClause.Occur.MUST);
       bq.add(new TermQuery(new Term("mandant", Integer.toString(switcher))),
           BooleanClause.Occur.MUST);
-      return super.search(bq, nDocs, sort);
+      return super.search(bq.build(), nDocs, sort);
     }
     
     @Override
     public TopDocs search(Query query, int nDocs)
         throws IOException {
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(query, BooleanClause.Occur.MUST);
       bq.add(new TermQuery(new Term("mandant", Integer.toString(switcher))),
           BooleanClause.Occur.MUST);
-      return super.search(bq, nDocs);
+      return super.search(bq.build(), nDocs);
     }
   }
   

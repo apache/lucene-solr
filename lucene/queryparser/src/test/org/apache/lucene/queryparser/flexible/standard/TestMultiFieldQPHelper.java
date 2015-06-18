@@ -72,10 +72,10 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     mfqp.setAnalyzer(a);
 
     Query q = mfqp.parse(qtxt, null);
-    assertEquals(expectedRes, q.toString());
+    assertEquals(expectedRes, q.toString().trim());
 
     q = QueryParserUtil.parse(qtxt, fields, occur, a);
-    assertEquals(expectedRes, q.toString());
+    assertEquals(expectedRes, q.toString().trim());
   }
 
   public void testSimple() throws Exception {
@@ -208,7 +208,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
     String[] queries6 = { "((+stop))", "+((stop))" };
     q = QueryParserUtil.parse(queries6, fields, stopA);
-    assertEquals("", q.toString());
+    assertEquals(" ", q.toString());
 
     String[] queries7 = { "one ((+stop)) +more", "+((stop)) +two" };
     q = QueryParserUtil.parse(queries7, fields, stopA);

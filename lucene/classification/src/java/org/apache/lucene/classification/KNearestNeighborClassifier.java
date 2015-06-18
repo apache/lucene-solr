@@ -126,7 +126,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   }
 
   private TopDocs knnSearch(String text) throws IOException {
-    BooleanQuery mltQuery = new BooleanQuery();
+    BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
     for (String textFieldName : textFieldNames) {
       mltQuery.add(new BooleanClause(mlt.like(textFieldName, new StringReader(text)), BooleanClause.Occur.SHOULD));
     }
@@ -135,7 +135,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     if (query != null) {
       mltQuery.add(query, BooleanClause.Occur.MUST);
     }
-    return indexSearcher.search(mltQuery, k);
+    return indexSearcher.search(mltQuery.build(), k);
   }
 
   private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {

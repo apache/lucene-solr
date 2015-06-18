@@ -33,33 +33,35 @@ import org.apache.lucene.util.Bits;
 /**
  * Expert: the Weight for BooleanQuery, used to
  * normalize, score and explain these queries.
- *
- * @lucene.experimental
  */
-public class BooleanWeight extends Weight {
+final class BooleanWeight extends Weight {
   /** The Similarity implementation. */
-  protected Similarity similarity;
-  protected final BooleanQuery query;
-  protected ArrayList<Weight> weights;
-  protected int maxCoord;  // num optional + num required
-  private final boolean disableCoord;
-  private final boolean needsScores;
-  private final float coords[];
+  final Similarity similarity;
+  final BooleanQuery query;
+  
+  final ArrayList<Weight> weights;
+  final int maxCoord;  // num optional + num required
+  final boolean disableCoord;
+  final boolean needsScores;
+  final float coords[];
 
-  public BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores, boolean disableCoord) throws IOException {
+  BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores, boolean disableCoord) throws IOException {
     super(query);
     this.query = query;
     this.needsScores = needsScores;
     this.similarity = searcher.getSimilarity(needsScores);
-    weights = new ArrayList<>(query.clauses().size());
-    for (int i = 0 ; i < query.clauses().size(); i++) {
-      BooleanClause c = query.clauses().get(i);
+    weights = new ArrayList<>();
+    int i = 0;
+    int maxCoord = 0;
+    for (BooleanClause c : query) {
       Weight w = searcher.createWeight(c.getQuery(), needsScores && c.isScoring());
       weights.add(w);
       if (c.isScoring()) {
         maxCoord++;
       }
+      i += 1;
     }
+    this.maxCoord = maxCoord;
     
     // precompute coords (0..N, N).
     // set disableCoord when its explicit, scores are not needed, no scoring clauses, or the sim doesn't use it.
@@ -69,7 +71,7 @@ public class BooleanWeight extends Weight {
     if (maxCoord > 0 && needsScores && disableCoord == false) {
       // compute coords from the similarity, look for any actual ones.
       boolean seenActualCoord = false;
-      for (int i = 1; i < coords.length; i++) {
+      for (i = 1; i < coords.length; i++) {
         coords[i] = coord(i, maxCoord);
         seenActualCoord |= (coords[i] != 1F);
       }
@@ -82,7 +84,7 @@ public class BooleanWeight extends Weight {
   @Override
   public void extractTerms(Set<Term> terms) {
     int i = 0;
-    for (BooleanClause clause : query.clauses()) {
+    for (BooleanClause clause : query) {
       if (clause.isScoring() || (needsScores == false && clause.isProhibited() == false)) {
         weights.get(i).extractTerms(terms);
       }
@@ -93,13 +95,15 @@ public class BooleanWeight extends Weight {
   @Override
   public float getValueForNormalization() throws IOException {
     float sum = 0.0f;
-    for (int i = 0 ; i < weights.size(); i++) {
+    int i = 0;
+    for (BooleanClause clause : query) {
       // call sumOfSquaredWeights for all clauses in case of side effects
       float s = weights.get(i).getValueForNormalization();         // sum sub weights
-      if (query.clauses().get(i).isScoring()) {
+      if (clause.isScoring()) {
         // only add to sum for scoring clauses
         sum += s;
       }
+      i += 1;
     }
 
     sum *= query.getBoost() * query.getBoost();             // boost each sub-weight
@@ -141,7 +145,7 @@ public class BooleanWeight extends Weight {
     boolean fail = false;
     int matchCount = 0;
     int shouldMatchCount = 0;
-    Iterator<BooleanClause> cIter = query.clauses().iterator();
+    Iterator<BooleanClause> cIter = query.iterator();
     for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
       Weight w = wIter.next();
       BooleanClause c = cIter.next();
@@ -192,7 +196,7 @@ public class BooleanWeight extends Weight {
   // pkg-private for forcing use of BooleanScorer in tests
   BooleanScorer booleanScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
     List<BulkScorer> optional = new ArrayList<BulkScorer>();
-    Iterator<BooleanClause> cIter = query.clauses().iterator();
+    Iterator<BooleanClause> cIter = query.iterator();
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
       BulkScorer subScorer = w.bulkScorer(context, acceptDocs);
@@ -218,11 +222,11 @@ public class BooleanWeight extends Weight {
       return null;
     }
 
-    if (query.minNrShouldMatch > optional.size()) {
+    if (query.getMinimumNumberShouldMatch() > optional.size()) {
       return null;
     }
 
-    return new BooleanScorer(this, disableCoord, maxCoord, optional, Math.max(1, query.minNrShouldMatch), needsScores);
+    return new BooleanScorer(this, disableCoord, maxCoord, optional, Math.max(1, query.getMinimumNumberShouldMatch()), needsScores);
   }
 
   @Override
@@ -231,7 +235,7 @@ public class BooleanWeight extends Weight {
     if (bulkScorer != null) { // BooleanScorer is applicable
       // TODO: what is the right heuristic here?
       final long costThreshold;
-      if (query.minNrShouldMatch <= 1) {
+      if (query.getMinimumNumberShouldMatch() <= 1) {
         // when all clauses are optional, use BooleanScorer aggressively
         // TODO: is there actually a threshold under which we should rather
         // use the regular scorer?
@@ -258,14 +262,14 @@ public class BooleanWeight extends Weight {
     // initially the user provided value,
     // but if minNrShouldMatch == optional.size(),
     // we will optimize and move these to required, making this 0
-    int minShouldMatch = query.minNrShouldMatch;
+    int minShouldMatch = query.getMinimumNumberShouldMatch();
 
     List<Scorer> required = new ArrayList<>();
     // clauses that are required AND participate in scoring, subset of 'required'
     List<Scorer> requiredScoring = new ArrayList<>();
     List<Scorer> prohibited = new ArrayList<>();
     List<Scorer> optional = new ArrayList<>();
-    Iterator<BooleanClause> cIter = query.clauses().iterator();
+    Iterator<BooleanClause> cIter = query.iterator();
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
       Scorer subScorer = w.scorer(context, acceptDocs);

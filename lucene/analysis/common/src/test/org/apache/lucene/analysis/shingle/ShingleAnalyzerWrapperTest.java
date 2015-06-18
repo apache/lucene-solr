@@ -131,7 +131,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * in the right order and adjacent to each other.
    */
   public void testShingleAnalyzerWrapperBooleanQuery() throws Exception {
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
 
     try (TokenStream ts = analyzer.tokenStream("content", "test sentence")) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
@@ -145,7 +145,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
       ts.end();
     }
 
-    ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(q.build(), 1000).scoreDocs;
     int[] ranks = new int[] { 1, 2, 0 };
     compareRanks(hits, ranks);
   }

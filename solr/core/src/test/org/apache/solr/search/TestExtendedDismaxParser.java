@@ -1081,7 +1081,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   private boolean containsClause(BooleanQuery query, String field, String value, int boost, boolean fuzzy) {
-    for(BooleanClause clause:query.getClauses()) {
+    for(BooleanClause clause:query) {
       if(containsClause(clause.getQuery(), field, value, boost, fuzzy)) {
         return true;
       }

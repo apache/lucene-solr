@@ -241,11 +241,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             // SolrCore.verbose("updateDocument",updateTerm,"DONE");
             
             if (del) { // ensure id remains unique
-              BooleanQuery bq = new BooleanQuery();
+              BooleanQuery.Builder bq = new BooleanQuery.Builder();
               bq.add(new BooleanClause(new TermQuery(updateTerm),
                   Occur.MUST_NOT));
               bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
-              writer.deleteDocuments(new DeleteByQueryWrapper(bq, core.getLatestSchema()));
+              writer.deleteDocuments(new DeleteByQueryWrapper(bq.build(), core.getLatestSchema()));
             }
             
             // Add to the transaction log *after* successfully adding to the
@@ -355,14 +355,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // Make sure not to delete newer versions
       if (ulog != null && cmd.getVersion() != 0 && cmd.getVersion() != -Long.MAX_VALUE) {
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         bq.add(q, Occur.MUST);
         SchemaField sf = ulog.getVersionInfo().getVersionField();
         ValueSource vs = sf.getType().getValueSource(sf, null);
         ValueSourceRangeFilter filt = new ValueSourceRangeFilter(vs, null, Long.toString(Math.abs(cmd.getVersion())), true, true);
         FunctionRangeQuery range = new FunctionRangeQuery(filt);
         bq.add(range, Occur.MUST);
-        q = bq;
+        q = bq.build();
       }
 
       return q;

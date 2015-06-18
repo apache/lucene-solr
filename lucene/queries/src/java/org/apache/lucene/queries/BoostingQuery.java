@@ -18,9 +18,13 @@ package org.apache.lucene.queries;
  */
 
 import java.io.IOException;
+import java.util.Objects;
+import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.Bits;
 
 /**
  * The BoostingQuery class can be used to effectively demote results that match a given query. 
@@ -51,84 +55,91 @@ public class BoostingQuery extends Query {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
-      BooleanQuery result = new BooleanQuery() {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      if (needsScores == false) {
+        return match.createWeight(searcher, needsScores);
+      }
+      final Weight matchWeight = match.createWeight(searcher, needsScores);
+      final Weight contextWeight = context.createWeight(searcher, false);
+      return new Weight(this) {
+
         @Override
-        public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-          return new BooleanWeight(this, searcher, needsScores, false) {
+        public void extractTerms(Set<Term> terms) {
+          matchWeight.extractTerms(terms);
+          if (boost >= 1) {
+            contextWeight.extractTerms(terms);
+          }
+        }
 
+        @Override
+        public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+          final Explanation matchExplanation = matchWeight.explain(context, doc);
+          final Explanation contextExplanation = contextWeight.explain(context, doc);
+          if (matchExplanation.isMatch() == false || contextExplanation.isMatch() == false) {
+            return matchExplanation;
+          }
+          return Explanation.match(matchExplanation.getValue() * boost, "product of:",
+              matchExplanation,
+              Explanation.match(boost, "boost"));
+        }
+
+        @Override
+        public float getValueForNormalization() throws IOException {
+          return matchWeight.getValueForNormalization();
+        }
+
+        @Override
+        public void normalize(float norm, float topLevelBoost) {
+          matchWeight.normalize(norm, topLevelBoost);
+        }
+
+        @Override
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+          final Scorer matchScorer = matchWeight.scorer(context, acceptDocs);
+          if (matchScorer == null) {
+            return null;
+          }
+          final Scorer contextScorer = contextWeight.scorer(context, acceptDocs);
+          if (contextScorer == null) {
+            return matchScorer;
+          }
+          TwoPhaseIterator contextTwoPhase = contextScorer.asTwoPhaseIterator();
+          DocIdSetIterator contextApproximation = contextTwoPhase == null
+              ? contextScorer
+              : contextTwoPhase.approximation();
+          return new FilterScorer(matchScorer) {
             @Override
-            public float coord(int overlap, int max) {
-              switch (overlap) {
-
-              case 1:                               // matched only one clause
-                return 1.0f;                        // use the score as-is
-
-              case 2:                               // matched both clauses
-                return boost;                       // multiply by boost
-
-              default:
-                return 0.0f;
-                
+            public float score() throws IOException {
+              if (contextApproximation.docID() < docID()) {
+                contextApproximation.advance(docID());
               }
+              assert contextApproximation.docID() >= docID();
+              float score = super.score();
+              if (contextApproximation.docID() == docID()
+                  && (contextTwoPhase == null || contextTwoPhase.matches())) {
+                score *= boost;
+              }
+              return score;
             }
           };
         }
       };
-
-      result.add(match, BooleanClause.Occur.MUST);
-      result.add(context, BooleanClause.Occur.SHOULD);
-
-      return result;
     }
 
     @Override
     public int hashCode() {
-      final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result + Float.floatToIntBits(boost);
-      result = prime * result + ((context == null) ? 0 : context.hashCode());
-      result = prime * result + ((match == null) ? 0 : match.hashCode());
-      return result;
+      return 31 * super.hashCode() + Objects.hash(match, context, boost);
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (obj == null) {
+      if (super.equals(obj) == false) {
         return false;
       }
-      if (getClass() != obj.getClass()) {
-        return false;
-      }
-      
-      if (!super.equals(obj)) {
-        return false;
-      }
-
-      BoostingQuery other = (BoostingQuery) obj;
-      if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost)) {
-        return false;
-      }
-      
-      if (context == null) {
-        if (other.context != null) {
-          return false;
-        }
-      } else if (!context.equals(other.context)) {
-        return false;
-      }
-      
-      if (match == null) {
-        if (other.match != null) {
-          return false;
-        }
-      } else if (!match.equals(other.match)) {
-        return false;
-      }
-      return true;
+      BoostingQuery that = (BoostingQuery) obj;
+      return match.equals(that.match)
+          && context.equals(that.context)
+          && Float.floatToIntBits(boost) == Float.floatToIntBits(that.boost);
     }
 
     @Override

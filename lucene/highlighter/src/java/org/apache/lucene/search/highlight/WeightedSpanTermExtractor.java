@@ -106,11 +106,9 @@ public class WeightedSpanTermExtractor {
    */
   protected void extract(Query query, Map<String,WeightedSpanTerm> terms) throws IOException {
     if (query instanceof BooleanQuery) {
-      BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
-
-      for (int i = 0; i < queryClauses.length; i++) {
-        if (!queryClauses[i].isProhibited()) {
-          extract(queryClauses[i].getQuery(), terms);
+      for (BooleanClause clause : (BooleanQuery) query) {
+        if (!clause.isProhibited()) {
+          extract(clause.getQuery(), terms);
         }
       }
     } else if (query instanceof PhraseQuery) {

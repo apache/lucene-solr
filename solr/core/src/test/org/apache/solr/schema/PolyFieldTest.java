@@ -176,8 +176,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertTrue(q instanceof BooleanQuery);
     //should have two clauses, one for 35.0 and the other for -79.34
     BooleanQuery bq = (BooleanQuery) q;
-    BooleanClause[] clauses = bq.getClauses();
-    assertEquals(clauses.length, 2);
+    assertEquals(2, bq.clauses().size());
     clearIndex();
   }
 

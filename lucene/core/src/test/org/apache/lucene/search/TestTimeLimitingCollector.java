@@ -92,7 +92,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     iw.close();
     searcher = newSearcher(reader);
 
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "one")), BooleanClause.Occur.SHOULD);
     // start from 1, so that the 0th doc never matches
     for (int i = 1; i < docText.length; i++) {
@@ -102,7 +102,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       }
     }
 
-    query = booleanQuery;
+    query = booleanQuery.build();
     
     // warm the searcher
     searcher.search(query, 1000);
@@ -274,10 +274,10 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     // search
     TimeExceededException timoutException = null;
     try {
-      BooleanQuery booleanQuery = new BooleanQuery(); // won't match - we only test if we check timeout when collectors are pulled
+      BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder(); // won't match - we only test if we check timeout when collectors are pulled
       booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "one")), BooleanClause.Occur.MUST);
       booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "blueberry")), BooleanClause.Occur.MUST);
-      searcher.search(booleanQuery, collector);
+      searcher.search(booleanQuery.build(), collector);
     } catch (TimeExceededException x) {
       timoutException = x;
     }

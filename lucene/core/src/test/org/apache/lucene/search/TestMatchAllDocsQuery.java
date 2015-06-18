@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -62,16 +61,16 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     // some artificial queries to trigger the use of skipTo():
     
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-    hits = is.search(bq, 1000).scoreDocs;
+    hits = is.search(bq.build(), 1000).scoreDocs;
     assertEquals(3, hits.length);
 
-    bq = new BooleanQuery();
+    bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term("key", "three")), BooleanClause.Occur.MUST);
-    hits = is.search(bq, 1000).scoreDocs;
+    hits = is.search(bq.build(), 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     iw.deleteDocuments(new Term("key", "one"));

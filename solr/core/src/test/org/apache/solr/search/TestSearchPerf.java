@@ -190,10 +190,10 @@ public class TestSearchPerf extends AbstractSolrTestCase {
     createIndex(49999);
     doSetGen(10000, new TermQuery(new Term("foo1_s",t(0))) );
 
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("foo2_s",t(0))), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("foo2_s",t(1))), BooleanClause.Occur.SHOULD);
-    doSetGen(5000, bq); 
+    doSetGen(5000, bq.build()); 
   }
 
   /** test range query performance */

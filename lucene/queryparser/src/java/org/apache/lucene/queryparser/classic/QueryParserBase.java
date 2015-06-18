@@ -30,6 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
@@ -115,7 +116,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     try {
       // TopLevelQuery is a Query followed by the end-of-input (EOF)
       Query res = TopLevelQuery(field);
-      return res!=null ? res : newBooleanQuery(false);
+      return res!=null ? res : newBooleanQuery(false).build();
     }
     catch (ParseException | TokenMgrError tme) {
       // rethrow to include the original query:
@@ -422,7 +423,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     if (clauses.size() > 0 && conj == CONJ_AND) {
       BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
-        c.setOccur(BooleanClause.Occur.MUST);
+        clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), Occur.MUST));
     }
 
     if (clauses.size() > 0 && operator == AND_OPERATOR && conj == CONJ_OR) {
@@ -432,7 +433,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
       // this modification a OR b would parsed as +a OR b
       BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
-        c.setOccur(BooleanClause.Occur.SHOULD);
+        clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), Occur.SHOULD));
     }
 
     // We might have been passed a null query; the term might have been
@@ -712,11 +713,11 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     if (clauses.size()==0) {
       return null; // all clause words were filtered away by the analyzer.
     }
-    BooleanQuery query = newBooleanQuery(disableCoord);
+    BooleanQuery.Builder query = newBooleanQuery(disableCoord);
     for(final BooleanClause clause: clauses) {
       query.add(clause);
     }
-    return query;
+    return query.build();
   }
 
   /**

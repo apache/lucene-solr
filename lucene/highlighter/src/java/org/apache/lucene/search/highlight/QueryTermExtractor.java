@@ -157,11 +157,10 @@ public final class QueryTermExtractor
    */
   private static final void getTermsFromBooleanQuery(BooleanQuery query, HashSet<WeightedTerm> terms, boolean prohibited, String fieldName)
   {
-    BooleanClause[] queryClauses = query.getClauses();
-    for (int i = 0; i < queryClauses.length; i++)
+    for (BooleanClause clause : query)
     {
-      if (prohibited || queryClauses[i].getOccur()!=BooleanClause.Occur.MUST_NOT)
-        getTerms(queryClauses[i].getQuery(), terms, prohibited, fieldName);
+      if (prohibited || clause.getOccur()!=BooleanClause.Occur.MUST_NOT)
+        getTerms(clause.getQuery(), terms, prohibited, fieldName);
     }
   }
   private static void getTermsFromFilteredQuery(FilteredQuery query, HashSet<WeightedTerm> terms, boolean prohibited, String fieldName)

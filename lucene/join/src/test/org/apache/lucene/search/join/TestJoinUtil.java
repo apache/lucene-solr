@@ -312,17 +312,17 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Query joinQuery;
       if (from) {
-        BooleanQuery fromQuery = new BooleanQuery();
+        BooleanQuery.Builder fromQuery = new BooleanQuery.Builder();
         fromQuery.add(new TermQuery(new Term("type", "from")), BooleanClause.Occur.FILTER);
         fromQuery.add(actualQuery, BooleanClause.Occur.MUST);
         Query toQuery = new TermQuery(new Term("type", "to"));
-        joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, indexSearcher, scoreMode, context.ordinalMap);
+        joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery.build(), toQuery, indexSearcher, scoreMode, context.ordinalMap);
       } else {
-        BooleanQuery fromQuery = new BooleanQuery();
+        BooleanQuery.Builder fromQuery = new BooleanQuery.Builder();
         fromQuery.add(new TermQuery(new Term("type", "to")), BooleanClause.Occur.FILTER);
         fromQuery.add(actualQuery, BooleanClause.Occur.MUST);
         Query toQuery = new TermQuery(new Term("type", "from"));
-        joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, indexSearcher, scoreMode, context.ordinalMap);
+        joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery.build(), toQuery, indexSearcher, scoreMode, context.ordinalMap);
       }
       if (VERBOSE) {
         System.out.println("joinQuery=" + joinQuery);
@@ -435,10 +435,10 @@ public class TestJoinUtil extends LuceneTestCase {
     MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
         searcher.getIndexReader().getCoreCacheKey(), values, PackedInts.DEFAULT
     );
-    BooleanQuery fromQuery = new BooleanQuery();
+    BooleanQuery.Builder fromQuery = new BooleanQuery.Builder();
     fromQuery.add(priceQuery, BooleanClause.Occur.MUST);
     Query toQuery = new TermQuery(new Term("type", "to"));
-    Query joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, searcher, ScoreMode.Min, ordinalMap);
+    Query joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery.build(), toQuery, searcher, ScoreMode.Min, ordinalMap);
     TopDocs topDocs = searcher.search(joinQuery, numParents);
     assertEquals(numParents, topDocs.totalHits);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
@@ -447,7 +447,7 @@ public class TestJoinUtil extends LuceneTestCase {
       assertEquals(lowestScoresPerParent.get(id), scoreDoc.score, 0f);
     }
 
-    joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery, toQuery, searcher, ScoreMode.Max, ordinalMap);
+    joinQuery = JoinUtil.createJoinQuery("join_field", fromQuery.build(), toQuery, searcher, ScoreMode.Max, ordinalMap);
     topDocs = searcher.search(joinQuery, numParents);
     assertEquals(numParents, topDocs.totalHits);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
@@ -653,11 +653,11 @@ public class TestJoinUtil extends LuceneTestCase {
     Query joinQuery =
         JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("description", "random")), indexSearcher, ScoreMode.Avg);
 
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(joinQuery, BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("id", "3")), BooleanClause.Occur.SHOULD);
 
-    indexSearcher.search(bq, new SimpleCollector() {
+    indexSearcher.search(bq.build(), new SimpleCollector() {
         boolean sawFive;
         @Override
         public void collect(int docID) {

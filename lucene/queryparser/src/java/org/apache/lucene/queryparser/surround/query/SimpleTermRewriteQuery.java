@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.index.Term;
@@ -43,7 +44,7 @@ class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
         luceneSubQueries.add(qf.newTermQuery(term));
       }
     });
-    return  (luceneSubQueries.size() == 0) ? SrndQuery.theEmptyLcnQuery
+    return  (luceneSubQueries.size() == 0) ? new MatchNoDocsQuery()
     : (luceneSubQueries.size() == 1) ? luceneSubQueries.get(0)
     : SrndBooleanQuery.makeBooleanQuery(
       /* luceneSubQueries all have default weight */

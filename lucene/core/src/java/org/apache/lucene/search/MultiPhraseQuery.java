@@ -255,15 +255,17 @@ public class MultiPhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) {
     if (termArrays.isEmpty()) {
-      BooleanQuery bq = new BooleanQuery();
-      bq.setBoost(getBoost());
-      return bq;
+      MatchNoDocsQuery rewritten = new MatchNoDocsQuery();
+      rewritten.setBoost(getBoost());
+      return rewritten;
     } else if (termArrays.size() == 1) {                 // optimize one-term case
       Term[] terms = termArrays.get(0);
-      BooleanQuery boq = new BooleanQuery(true);
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
       for (int i=0; i<terms.length; i++) {
-        boq.add(new TermQuery(terms[i]), BooleanClause.Occur.SHOULD);
+        builder.add(new TermQuery(terms[i]), BooleanClause.Occur.SHOULD);
       }
+      BooleanQuery boq = builder.build();
       boq.setBoost(getBoost());
       return boq;
     } else {

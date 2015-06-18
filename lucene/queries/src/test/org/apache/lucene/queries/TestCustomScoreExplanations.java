@@ -44,9 +44,10 @@ public class TestCustomScoreExplanations extends BaseExplanationTestCase {
   public void testTopLevelBoost() throws Exception {
     Query q = new TermQuery(new Term(FIELD, "w1"));
     CustomScoreQuery csq = new CustomScoreQuery(q, new FunctionQuery(new ConstValueSource(5)));
-    BooleanQuery bq = new BooleanQuery();
-    bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-    bq.add(csq, BooleanClause.Occur.MUST);
+    BooleanQuery.Builder bqB = new BooleanQuery.Builder();
+    bqB.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+    bqB.add(csq, BooleanClause.Occur.MUST);
+    BooleanQuery bq = bqB.build();
     bq.setBoost(6);
     qtest(bq, new int[] { 0,1,2,3 });
   }

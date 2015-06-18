@@ -415,11 +415,11 @@ public class TestOmitTf extends LuceneTestCase {
         
         
         
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(q1,Occur.MUST);
     bq.add(q4,Occur.MUST);
         
-    searcher.search(bq,
+    searcher.search(bq.build(),
                     new CountingHitCollector() {
                       @Override
                       public final void collect(int doc) throws IOException {

@@ -336,10 +336,11 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     String[] fields = new String[] {"a", "b"};
     MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new MockAnalyzer(random()));
 
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(new RegexpQuery(new Term("a", "[a-z][123]")), Occur.SHOULD);
     bq.add(new RegexpQuery(new Term("b", "[a-z][123]")), Occur.SHOULD);
-    assertEquals(bq, mfqp.parse("/[a-z][123]/"));
+    assertEquals(bq.build(), mfqp.parse("/[a-z][123]/"));
   }
 
 }

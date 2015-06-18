@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -67,12 +67,12 @@ public class TestBooleanOr extends LuceneTestCase {
    * it works.
    */
   public void testFlat() throws IOException {
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
     q.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
     q.add(new BooleanClause(t2, BooleanClause.Occur.SHOULD));
     q.add(new BooleanClause(c1, BooleanClause.Occur.SHOULD));
     q.add(new BooleanClause(c2, BooleanClause.Occur.SHOULD));
-    assertEquals(1, search(q));
+    assertEquals(1, search(q.build()));
   }
 
   /**
@@ -80,16 +80,16 @@ public class TestBooleanOr extends LuceneTestCase {
    * it works.
    */
   public void testParenthesisMust() throws IOException {
-    BooleanQuery q3 = new BooleanQuery();
+    BooleanQuery.Builder q3 = new BooleanQuery.Builder();
     q3.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
     q3.add(new BooleanClause(t2, BooleanClause.Occur.SHOULD));
-    BooleanQuery q4 = new BooleanQuery();
+    BooleanQuery.Builder q4 = new BooleanQuery.Builder();
     q4.add(new BooleanClause(c1, BooleanClause.Occur.MUST));
     q4.add(new BooleanClause(c2, BooleanClause.Occur.MUST));
-    BooleanQuery q2 = new BooleanQuery();
-    q2.add(q3, BooleanClause.Occur.SHOULD);
-    q2.add(q4, BooleanClause.Occur.SHOULD);
-    assertEquals(1, search(q2));
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
+    q2.add(q3.build(), BooleanClause.Occur.SHOULD);
+    q2.add(q4.build(), BooleanClause.Occur.SHOULD);
+    assertEquals(1, search(q2.build()));
   }
 
   /**
@@ -97,16 +97,16 @@ public class TestBooleanOr extends LuceneTestCase {
    * not working. results NO HIT.
    */
   public void testParenthesisMust2() throws IOException {
-    BooleanQuery q3 = new BooleanQuery();
+    BooleanQuery.Builder q3 = new BooleanQuery.Builder();
     q3.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
     q3.add(new BooleanClause(t2, BooleanClause.Occur.SHOULD));
-    BooleanQuery q4 = new BooleanQuery();
+    BooleanQuery.Builder q4 = new BooleanQuery.Builder();
     q4.add(new BooleanClause(c1, BooleanClause.Occur.SHOULD));
     q4.add(new BooleanClause(c2, BooleanClause.Occur.SHOULD));
-    BooleanQuery q2 = new BooleanQuery();
-    q2.add(q3, BooleanClause.Occur.SHOULD);
-    q2.add(q4, BooleanClause.Occur.MUST);
-    assertEquals(1, search(q2));
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
+    q2.add(q3.build(), BooleanClause.Occur.SHOULD);
+    q2.add(q4.build(), BooleanClause.Occur.MUST);
+    assertEquals(1, search(q2.build()));
   }
 
   /**
@@ -114,16 +114,16 @@ public class TestBooleanOr extends LuceneTestCase {
    * not working. results NO HIT.
    */
   public void testParenthesisShould() throws IOException {
-    BooleanQuery q3 = new BooleanQuery();
+    BooleanQuery.Builder q3 = new BooleanQuery.Builder();
     q3.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
     q3.add(new BooleanClause(t2, BooleanClause.Occur.SHOULD));
-    BooleanQuery q4 = new BooleanQuery();
+    BooleanQuery.Builder q4 = new BooleanQuery.Builder();
     q4.add(new BooleanClause(c1, BooleanClause.Occur.SHOULD));
     q4.add(new BooleanClause(c2, BooleanClause.Occur.SHOULD));
-    BooleanQuery q2 = new BooleanQuery();
-    q2.add(q3, BooleanClause.Occur.SHOULD);
-    q2.add(q4, BooleanClause.Occur.SHOULD);
-    assertEquals(1, search(q2));
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
+    q2.add(q3.build(), BooleanClause.Occur.SHOULD);
+    q2.add(q4.build(), BooleanClause.Occur.SHOULD);
+    assertEquals(1, search(q2.build()));
   }
 
   @Override
@@ -181,11 +181,11 @@ public class TestBooleanOr extends LuceneTestCase {
     riw.close();
 
     IndexSearcher s = newSearcher(r);
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
 
-    Weight w = s.createNormalizedWeight(bq, true);
+    Weight w = s.createNormalizedWeight(bq.build(), true);
 
     assertEquals(1, s.getIndexReader().leaves().size());
     BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0), null);

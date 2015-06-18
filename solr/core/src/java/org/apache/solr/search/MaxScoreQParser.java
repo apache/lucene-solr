@@ -60,24 +60,25 @@ public class MaxScoreQParser extends LuceneQParser {
     BooleanQuery obq = (BooleanQuery)q;
     Collection<Query> should = new ArrayList<>();
     Collection<BooleanClause> prohibOrReq = new ArrayList<>();
-    BooleanQuery newq = new BooleanQuery();
+    BooleanQuery.Builder newqb = new BooleanQuery.Builder();
 
-    for (BooleanClause clause : obq.getClauses()) {
+    for (BooleanClause clause : obq) {
       if(clause.isProhibited() || clause.isRequired()) {
         prohibOrReq.add(clause);
       } else {
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         bq.add(clause);
-        should.add(bq);
+        should.add(bq.build());
       }
     }
     if (should.size() > 0) {
       DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(should, tie);
-      newq.add(dmq, BooleanClause.Occur.SHOULD);
+      newqb.add(dmq, BooleanClause.Occur.SHOULD);
     }
     for(BooleanClause c : prohibOrReq) {
-      newq.add(c);
+      newqb.add(c);
     }
+    Query newq = newqb.build();
     newq.setBoost(obq.getBoost());
     return newq;
   }

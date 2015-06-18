@@ -90,7 +90,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     assertEquals(1, hits.totalHits);
 
     // should not throw exception with complex primitive query
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(termQuery, Occur.MUST);
     booleanQuery.add(new TermQuery(new Term("field", "missing")),
         Occur.MUST_NOT);

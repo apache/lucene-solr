@@ -51,7 +51,7 @@ public class BooleanQueryNodeBuilder implements StandardQueryBuilder {
   public BooleanQuery build(QueryNode queryNode) throws QueryNodeException {
     BooleanQueryNode booleanNode = (BooleanQueryNode) queryNode;
 
-    BooleanQuery bQuery = new BooleanQuery();
+    BooleanQuery.Builder bQuery = new BooleanQuery.Builder();
     List<QueryNode> children = booleanNode.getChildren();
 
     if (children != null) {
@@ -80,7 +80,7 @@ public class BooleanQueryNodeBuilder implements StandardQueryBuilder {
 
     }
 
-    return bQuery;
+    return bQuery.build();
 
   }
 

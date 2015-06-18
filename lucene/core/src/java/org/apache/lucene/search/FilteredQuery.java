@@ -339,9 +339,10 @@ public class FilteredQuery extends Query {
       } else {
         // In that case the filter does not implement random-access anyway so
         // we want to take advantage of approximations
-        BooleanQuery rewritten = new BooleanQuery();
-        rewritten.add(queryRewritten, Occur.MUST);
-        rewritten.add(filterRewritten, Occur.FILTER);
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(queryRewritten, Occur.MUST);
+        builder.add(filterRewritten, Occur.FILTER);
+        BooleanQuery rewritten = builder.build();
         rewritten.setBoost(getBoost());
         return rewritten;
       }

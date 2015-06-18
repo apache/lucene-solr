@@ -34,10 +34,10 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     TermQuery q1 = new TermQuery(t1);
-    BooleanQuery q2 = new BooleanQuery();
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.SHOULD);
     q2.add(new TermQuery(t2), Occur.SHOULD);
-    assertSubsetOf(q1, q2);
+    assertSubsetOf(q1, q2.build());
   }
   
   /** A ⊆ (+A B) */
@@ -45,47 +45,47 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     TermQuery q1 = new TermQuery(t1);
-    BooleanQuery q2 = new BooleanQuery();
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.MUST);
     q2.add(new TermQuery(t2), Occur.SHOULD);
-    assertSubsetOf(q1, q2);
+    assertSubsetOf(q1, q2.build());
   }
   
   /** (A -B) ⊆ A */
   public void testBooleanReqExclVersusTerm() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
-    BooleanQuery q1 = new BooleanQuery();
+    BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(new TermQuery(t1), Occur.MUST);
     q1.add(new TermQuery(t2), Occur.MUST_NOT);
     TermQuery q2 = new TermQuery(t1);
-    assertSubsetOf(q1, q2);
+    assertSubsetOf(q1.build(), q2);
   }
   
   /** (+A +B) ⊆ (A B) */
   public void testBooleanAndVersusBooleanOr() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
-    BooleanQuery q1 = new BooleanQuery();
+    BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(new TermQuery(t1), Occur.SHOULD);
     q1.add(new TermQuery(t2), Occur.SHOULD);
-    BooleanQuery q2 = new BooleanQuery();
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.SHOULD);
     q2.add(new TermQuery(t2), Occur.SHOULD);
-    assertSubsetOf(q1, q2);
+    assertSubsetOf(q1.build(), q2.build());
   }
   
   /** (A B) = (A | B) */
   public void testDisjunctionSumVersusDisjunctionMax() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
-    BooleanQuery q1 = new BooleanQuery();
+    BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(new TermQuery(t1), Occur.SHOULD);
     q1.add(new TermQuery(t2), Occur.SHOULD);
     DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(0.5f);
     q2.add(new TermQuery(t1));
     q2.add(new TermQuery(t2));
-    assertSameSet(q1, q2);
+    assertSameSet(q1.build(), q2);
   }
   
   /** "A B" ⊆ (+A +B) */
@@ -93,10 +93,10 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     PhraseQuery q1 = new PhraseQuery(t1.field(), t1.bytes(), t2.bytes());
-    BooleanQuery q2 = new BooleanQuery();
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.MUST);
     q2.add(new TermQuery(t2), Occur.MUST);
-    assertSubsetOf(q1, q2);
+    assertSubsetOf(q1, q2.build());
   }
   
   /** same as above, with posincs */
@@ -107,10 +107,10 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     builder.add(t1, 0);
     builder.add(t2, 2);
     PhraseQuery q1 = builder.build();
-    BooleanQuery q2 = new BooleanQuery();
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.MUST);
     q2.add(new TermQuery(t2), Occur.MUST);
-    assertSubsetOf(q1, q2);
+    assertSubsetOf(q1, q2.build());
   }
   
   /** "A B" ⊆ "A B"~1 */
@@ -172,10 +172,10 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
       t2 = randomTerm();
     } while (t1.equals(t2));
     PhraseQuery q1 = new PhraseQuery(Integer.MAX_VALUE, t1.field(), t1.bytes(), t2.bytes());
-    BooleanQuery q2 = new BooleanQuery();
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.MUST);
     q2.add(new TermQuery(t2), Occur.MUST);
-    assertSameSet(q1, q2);
+    assertSameSet(q1, q2.build());
   }
 
   /** Phrase positions are relative. */

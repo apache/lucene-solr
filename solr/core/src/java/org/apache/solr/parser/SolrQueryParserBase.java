@@ -149,7 +149,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     try {
       // TopLevelQuery is a Query followed by the end-of-input (EOF)
       Query res = TopLevelQuery(null);  // pass null so we can tell later if an explicit field was provided or not
-      return res!=null ? res : newBooleanQuery(false);
+      return res!=null ? res : newBooleanQuery(false).build();
     }
     catch (ParseException | TokenMgrError tme) {
       throw new SyntaxError("Cannot parse '" +query+ "': " + tme.getMessage(), tme);
@@ -321,7 +321,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (clauses.size() > 0 && conj == CONJ_AND) {
       BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
-        c.setOccur(BooleanClause.Occur.MUST);
+        clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.MUST));
     }
 
     if (clauses.size() > 0 && operator == AND_OPERATOR && conj == CONJ_OR) {
@@ -331,7 +331,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       // this modification a OR b would parsed as +a OR b
       BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
-        c.setOccur(BooleanClause.Occur.SHOULD);
+        clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.SHOULD));
     }
 
     // We might have been passed a null query; the term might have been
@@ -509,11 +509,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (clauses.size()==0) {
       return null; // all clause words were filtered away by the analyzer.
     }
-    BooleanQuery query = newBooleanQuery(disableCoord);
+    BooleanQuery.Builder query = newBooleanQuery(disableCoord);
     for(final BooleanClause clause: clauses) {
       query.add(clause);
     }
-    return query;
+    return query.build();
   }
 
 

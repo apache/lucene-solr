@@ -353,17 +353,17 @@ public class TestIndexableField extends LuceneTestCase {
             assertTrue(vectors == null || vectors.terms(name) == null);
           }
 
-          BooleanQuery bq = new BooleanQuery();
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
           bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
           bq.add(new TermQuery(new Term(name, "text")), BooleanClause.Occur.MUST);
-          final TopDocs hits2 = s.search(bq, 1);
+          final TopDocs hits2 = s.search(bq.build(), 1);
           assertEquals(1, hits2.totalHits);
           assertEquals(docID, hits2.scoreDocs[0].doc);
 
-          bq = new BooleanQuery();
+          bq = new BooleanQuery.Builder();
           bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
           bq.add(new TermQuery(new Term(name, ""+counter)), BooleanClause.Occur.MUST);
-          final TopDocs hits3 = s.search(bq, 1);
+          final TopDocs hits3 = s.search(bq.build(), 1);
           assertEquals(1, hits3.totalHits);
           assertEquals(docID, hits3.scoreDocs[0].doc);
         }

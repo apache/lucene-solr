@@ -105,7 +105,8 @@ public class DisMaxQParser extends QParser {
     /* the main query we will execute.  we disable the coord because
      * this query is an artificial construct
      */
-    BooleanQuery query = new BooleanQuery(true);
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.setDisableCoord(true);
 
     boolean notBlank = addMainQuery(query, solrParams);
     if (!notBlank)
@@ -113,10 +114,10 @@ public class DisMaxQParser extends QParser {
     addBoostQuery(query, solrParams);
     addBoostFunctions(query, solrParams);
 
-    return query;
+    return query.build();
   }
 
-  protected void addBoostFunctions(BooleanQuery query, SolrParams solrParams) throws SyntaxError {
+  protected void addBoostFunctions(BooleanQuery.Builder query, SolrParams solrParams) throws SyntaxError {
     String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
     if (null != boostFuncs && 0 != boostFuncs.length) {
       for (String boostFunc : boostFuncs) {
@@ -134,7 +135,7 @@ public class DisMaxQParser extends QParser {
     }
   }
 
-  protected void addBoostQuery(BooleanQuery query, SolrParams solrParams) throws SyntaxError {
+  protected void addBoostQuery(BooleanQuery.Builder query, SolrParams solrParams) throws SyntaxError {
     boostParams = solrParams.getParams(DisMaxParams.BQ);
     //List<Query> boostQueries = SolrPluginUtils.parseQueryStrings(req, boostParams);
     boostQueries = null;
@@ -169,7 +170,7 @@ public class DisMaxQParser extends QParser {
   }
 
   /** Adds the main query to the query argument. If it's blank then false is returned. */
-  protected boolean addMainQuery(BooleanQuery query, SolrParams solrParams) throws SyntaxError {
+  protected boolean addMainQuery(BooleanQuery.Builder query, SolrParams solrParams) throws SyntaxError {
     Map<String, Float> phraseFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
     float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
@@ -240,10 +241,10 @@ public class DisMaxQParser extends QParser {
     Query query = dis;
 
     if (dis instanceof BooleanQuery) {
-      BooleanQuery t = new BooleanQuery();
+      BooleanQuery.Builder t = new BooleanQuery.Builder();
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery) dis);
       SolrPluginUtils.setMinShouldMatch(t, minShouldMatch);
-      query = t;
+      query = t.build();
     }
     return query;
   }

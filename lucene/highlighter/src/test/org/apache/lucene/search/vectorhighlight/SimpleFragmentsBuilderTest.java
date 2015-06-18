@@ -67,11 +67,11 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   }
   
   public void test3Frags() throws Exception {
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(F, "a")), BooleanClause.Occur.SHOULD);
     booleanQuery.add(new TermQuery(new Term(F, "c")), BooleanClause.Occur.SHOULD);
     
-    FieldFragList ffl = ffl(booleanQuery, "a b b b b b b b b b b b a b a b b b b b c a a b b" );
+    FieldFragList ffl = ffl(booleanQuery.build(), "a b b b b b b b b b b b a b a b b b b b c a a b b" );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     String[] f = sfb.createFragments( reader, 0, F, ffl, 3 );
     assertEquals( 3, f.length );

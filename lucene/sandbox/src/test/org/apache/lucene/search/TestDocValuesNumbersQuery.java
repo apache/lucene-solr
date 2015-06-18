@@ -90,11 +90,11 @@ public class TestDocValuesNumbersQuery extends LuceneTestCase {
           queryNumbers.add(number);
           queryNumbersX2.add(2*number);
         }
-        final BooleanQuery bq = new BooleanQuery();
+        final BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (Long number : queryNumbers) {
           bq.add(new TermQuery(new Term("text", number.toString())), Occur.SHOULD);
         }
-        Query q1 = new ConstantScoreQuery(bq);
+        Query q1 = new ConstantScoreQuery(bq.build());
         q1.setBoost(boost);
 
         Query q2 = new DocValuesNumbersQuery("long", queryNumbers);
@@ -154,24 +154,24 @@ public class TestDocValuesNumbersQuery extends LuceneTestCase {
         for (int j = 0; j < numQueryNumbers; ++j) {
           queryNumbers.add(allNumbers.get(random().nextInt(allNumbers.size())));
         }
-        final BooleanQuery bq = new BooleanQuery();
+        final BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (Long number : queryNumbers) {
           bq.add(new TermQuery(new Term("text", number.toString())), Occur.SHOULD);
         }
-        Query q1 = new ConstantScoreQuery(bq);
+        Query q1 = new ConstantScoreQuery(bq.build());
         q1.setBoost(boost);
         final Query q2 = new DocValuesNumbersQuery("long", queryNumbers);
         q2.setBoost(boost);
 
-        BooleanQuery bq1 = new BooleanQuery();
+        BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
         bq1.add(q1, Occur.MUST);
         bq1.add(new TermQuery(new Term("text", allNumbers.get(0).toString())), Occur.FILTER);
 
-        BooleanQuery bq2 = new BooleanQuery();
+        BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
         bq2.add(q2, Occur.MUST);
         bq2.add(new TermQuery(new Term("text", allNumbers.get(0).toString())), Occur.FILTER);
 
-        assertSameMatches(searcher, bq1, bq2, true);
+        assertSameMatches(searcher, bq1.build(), bq2.build(), true);
       }
 
       reader.close();

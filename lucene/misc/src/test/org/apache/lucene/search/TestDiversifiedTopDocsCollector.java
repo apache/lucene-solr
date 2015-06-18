@@ -308,7 +308,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
   }
 
   private Query getTestQuery() {
-    BooleanQuery testQuery = new BooleanQuery();
+    BooleanQuery.Builder testQuery = new BooleanQuery.Builder();
     testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1966")),
         Occur.SHOULD));
     testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1967")),
@@ -317,7 +317,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         Occur.SHOULD));
     testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1969")),
         Occur.SHOULD));
-    return testQuery;
+    return testQuery.build();
   }
 
   @Override

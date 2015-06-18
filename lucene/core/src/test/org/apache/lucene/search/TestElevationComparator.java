@@ -68,7 +68,7 @@ public class TestElevationComparator extends LuceneTestCase {
 
   private void runTest(IndexSearcher searcher, boolean reversed) throws Throwable {
 
-    BooleanQuery newq = new BooleanQuery(false);
+    BooleanQuery.Builder newq = new BooleanQuery.Builder();
     TermQuery query = new TermQuery(new Term("title", "ipod"));
 
     newq.add(query, BooleanClause.Occur.SHOULD);
@@ -80,7 +80,7 @@ public class TestElevationComparator extends LuceneTestCase {
       );
 
     TopDocsCollector<Entry> topCollector = TopFieldCollector.create(sort, 50, false, true, true);
-    searcher.search(newq, topCollector);
+    searcher.search(newq.build(), topCollector);
 
     TopDocs topDocs = topCollector.topDocs(0, 10);
     int nDocsReturned = topDocs.scoreDocs.length;
@@ -113,14 +113,15 @@ public class TestElevationComparator extends LuceneTestCase {
  }
 
  private Query getElevatedQuery(String[] vals) {
-   BooleanQuery q = new BooleanQuery(false);
-   q.setBoost(0);
+   BooleanQuery.Builder b = new BooleanQuery.Builder();
    int max = (vals.length / 2) + 5;
    for (int i = 0; i < vals.length - 1; i += 2) {
-     q.add(new TermQuery(new Term(vals[i], vals[i + 1])), BooleanClause.Occur.SHOULD);
+     b.add(new TermQuery(new Term(vals[i], vals[i + 1])), BooleanClause.Occur.SHOULD);
      priority.put(new BytesRef(vals[i + 1]), Integer.valueOf(max--));
      // System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
    }
+   BooleanQuery q = b.build();
+   q.setBoost(0);
    return q;
  }
 

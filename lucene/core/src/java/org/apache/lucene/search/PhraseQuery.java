@@ -264,9 +264,9 @@ public class PhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (terms.length == 0) {
-      BooleanQuery bq = new BooleanQuery();
-      bq.setBoost(getBoost());
-      return bq;
+      MatchNoDocsQuery q = new MatchNoDocsQuery();
+      q.setBoost(getBoost());
+      return q;
     } else if (terms.length == 1) {
       TermQuery tq = new TermQuery(terms[0]);
       tq.setBoost(getBoost());

@@ -67,13 +67,13 @@ public class TestQueryRescorer extends LuceneTestCase {
     w.close();
 
     // Do ordinary BooleanQuery:
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     IndexSearcher searcher = getSearcher(r);
     searcher.setSimilarity(new DefaultSimilarity());
 
-    TopDocs hits = searcher.search(bq, 10);
+    TopDocs hits = searcher.search(bq.build(), 10);
     assertEquals(2, hits.totalHits);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
@@ -122,13 +122,13 @@ public class TestQueryRescorer extends LuceneTestCase {
     w.close();
 
     // Do ordinary BooleanQuery:
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     IndexSearcher searcher = getSearcher(r);
     searcher.setSimilarity(new DefaultSimilarity());
 
-    TopDocs hits = searcher.search(bq, 10);
+    TopDocs hits = searcher.search(bq.build(), 10);
     assertEquals(2, hits.totalHits);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
@@ -161,12 +161,12 @@ public class TestQueryRescorer extends LuceneTestCase {
     w.close();
 
     // Do ordinary BooleanQuery:
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     IndexSearcher searcher = getSearcher(r);
 
-    TopDocs hits = searcher.search(bq, 10);
+    TopDocs hits = searcher.search(bq.build(), 10);
     assertEquals(2, hits.totalHits);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
@@ -212,12 +212,12 @@ public class TestQueryRescorer extends LuceneTestCase {
     w.close();
 
     // Do ordinary BooleanQuery:
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     IndexSearcher searcher = getSearcher(r);
 
-    TopDocs hits = searcher.search(bq, 10);
+    TopDocs hits = searcher.search(bq.build(), 10);
     assertEquals(2, hits.totalHits);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
@@ -245,7 +245,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
     int docID = hits2.scoreDocs[0].doc;
     Explanation explain = rescorer.explain(searcher,
-                                           searcher.explain(bq, docID),
+                                           searcher.explain(bq.build(), docID),
                                            docID);
     String s = explain.toString();
     assertTrue(s.contains("TestQueryRescorer$"));
@@ -256,7 +256,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
     docID = hits2.scoreDocs[1].doc;
     explain = rescorer.explain(searcher,
-                               searcher.explain(bq, docID),
+                               searcher.explain(bq.build(), docID),
                                docID);
     s = explain.toString();
     assertTrue(s.contains("TestQueryRescorer$"));
@@ -287,12 +287,12 @@ public class TestQueryRescorer extends LuceneTestCase {
     w.close();
 
     // Do ordinary BooleanQuery:
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     IndexSearcher searcher = getSearcher(r);
 
-    TopDocs hits = searcher.search(bq, 10);
+    TopDocs hits = searcher.search(bq.build(), 10);
     assertEquals(2, hits.totalHits);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
