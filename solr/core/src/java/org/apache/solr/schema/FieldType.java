@@ -52,6 +52,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -870,9 +871,9 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** 
-   * Returns a description of the given analyzer, by either reporting the Analyzer name
-   * if it's not a TokenizerChain, or if it is, querying each analysis factory for its
-   * name and args.
+   * Returns a description of the given analyzer, by either reporting the Analyzer class
+   * name (and optionally luceneMatchVersion) if it's not a TokenizerChain, or if it is,
+   * querying each analysis factory for its name and args.
    */
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<>();
@@ -950,6 +951,9 @@ public abstract class FieldType extends FieldProperties {
       }
     } else { // analyzer is not instanceof TokenizerChain
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
+      if (analyzer.getVersion() != Version.LATEST) {
+        analyzerProps.add(LUCENE_MATCH_VERSION_PARAM, analyzer.getVersion().toString());
+      }
     }
     return analyzerProps;
   }
