@@ -154,7 +154,11 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
                            };
     SpanQuery q1 = spanQuery(new SpanNearQuery(subquery, 0, true));
     PhraseQuery q2 = new PhraseQuery(t1.field(), t1.bytes(), t2.bytes());
-    assertSameScores(q1, q2);
+    if (t1.equals(t2)) {
+      assertSameSet(q1, q2);
+    } else {
+      assertSameScores(q1, q2);
+    }
   }
   
   /** SpanNearQuery([A, B], ∞, false) = +A +B */
