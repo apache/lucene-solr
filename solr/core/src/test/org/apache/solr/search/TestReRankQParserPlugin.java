@@ -20,6 +20,9 @@ package org.apache.solr.search;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -199,7 +202,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "10");
-    params.add("qt","/elevate");
+    params.add("qt", "/elevate");
     params.add("elevateIds", "1,4");
 
     assertQ(req(params), "*[count(//doc)=6]",
@@ -233,6 +236,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[6]/float[@name='id'][.='3.0']"
     );
 
+
+
+
     params = new ModifiableSolrParams();
     params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
@@ -241,7 +247,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "10");
-    params.add("qt","/elevate");
+    params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
     assertQ(req(params), "*[count(//doc)=6]",
@@ -262,7 +268,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "4");
     params.add("rows", "10");
-    params.add("qt","/elevate");
+    params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
     assertQ(req(params), "*[count(//doc)=2]",
@@ -279,7 +285,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "4");
     params.add("rows", "10");
-    params.add("qt","/elevate");
+    params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
     assertQ(req(params), "*[count(//doc)=0]");
@@ -359,7 +365,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/float[@name='id'][.='2.0']"
     );
 
+    SolrInfoMBean info  = h.getCore().getInfoRegistry().get("queryResultCache");
+    NamedList stats = info.getStatistics();
 
+    long inserts = (Long) stats.get("inserts");
+
+    assertTrue(inserts > 0);
 
     //Test range query
     params = new ModifiableSolrParams();
@@ -377,6 +388,39 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/float[@name='id'][.='2.0']",
         "//result/doc[5]/float[@name='id'][.='1.0']"
     );
+
+
+    info  = h.getCore().getInfoRegistry().get("queryResultCache");
+    stats = info.getStatistics();
+
+    long inserts1 = (Long) stats.get("inserts");
+
+    //Last query was added to the cache
+    assertTrue(inserts1 > inserts);
+
+    //Run same query and see if it was cached. This tests the query result cache hit with rewritten queries
+    params = new ModifiableSolrParams();
+    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("q", "test_ti:[0 TO 2000]");
+    params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    params.add("fl", "id,score");
+    params.add("start", "0");
+    params.add("rows", "6");
+
+    assertQ(req(params), "*[count(//doc)=5]",
+        "//result/doc[1]/float[@name='id'][.='6.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']",
+        "//result/doc[3]/float[@name='id'][.='4.0']",
+        "//result/doc[4]/float[@name='id'][.='2.0']",
+        "//result/doc[5]/float[@name='id'][.='1.0']"
+    );
+
+    info  = h.getCore().getInfoRegistry().get("queryResultCache");
+    stats = info.getStatistics();
+    long inserts2 = (Long) stats.get("inserts");
+    //Last query was NOT added to the cache
+    assertTrue(inserts1 == inserts2);
+
 
     //Test range query embedded in larger query
     params = new ModifiableSolrParams();
@@ -410,6 +454,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/float[@name='id'][.='2.0']",
         "//result/doc[2]/float[@name='id'][.='1.0']"
     );
+
 
     //Test ReRankDocs > docs returned
 
@@ -540,4 +585,5 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
       assertTrue(e.code() == SolrException.ErrorCode.BAD_REQUEST.code);
     }
   }
+
 }
