@@ -167,7 +167,7 @@ Bug Fixes
   (hossman, Timothy Potter)
 
 * SOLR-7689: ReRankQuery rewrite method can change the QueryResultKey causing cache misses.
-  (Emad Nashed, Yonik Seely, Joel Bernstein)
+  (Emad Nashed, Yonik Seeley, Joel Bernstein)
 
 Optimizations
 ----------------------
