@@ -99,7 +99,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
    */
   public void testBooleanQueryWithSpanQueries() throws IOException {
     
-    doTestBooleanQueryWithSpanQueries(searcher, 0.3884282f);
+    doTestBooleanQueryWithSpanQueries(searcher, 0.54932045f);
   }
   
   /**

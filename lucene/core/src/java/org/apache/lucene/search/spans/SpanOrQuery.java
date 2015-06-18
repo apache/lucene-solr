@@ -329,6 +329,11 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         }
 
         @Override
+        public int width() {
+          return topPositionSpans.width();
+        }
+
+        @Override
         public void collect(SpanCollector collector) throws IOException {
           if (topPositionSpans != null)
             topPositionSpans.collect(collector);

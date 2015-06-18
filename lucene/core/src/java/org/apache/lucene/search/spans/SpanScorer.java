@@ -99,8 +99,7 @@ public class SpanScorer extends Scorer {
         freq = 1;
         return;
       }
-      int matchLength = endPos - startPos;
-      freq += docScorer.computeSlopFactor(matchLength);
+      freq += docScorer.computeSlopFactor(spans.width());
       prevStartPos = startPos;
       prevEndPos = endPos;
       startPos = spans.nextStartPosition();

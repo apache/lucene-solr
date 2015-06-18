@@ -129,6 +129,11 @@ public class NearSpansOrdered extends NearSpans {
   }
 
   @Override
+  public int width() {
+    return matchWidth;
+  }
+
+  @Override
   public void collect(SpanCollector collector) throws IOException {
     for (Spans span : subSpans) {
       span.collect(collector);

@@ -111,6 +111,11 @@ public abstract class FilterSpans extends Spans {
   }
 
   @Override
+  public int width() {
+    return in.width();
+  }
+
+  @Override
   public void collect(SpanCollector collector) throws IOException {
     in.collect(collector);
   }

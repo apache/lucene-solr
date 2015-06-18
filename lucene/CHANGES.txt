@@ -179,6 +179,9 @@ Changes in Runtime Behavior
 * LUCENE-6569: Optimize MultiFunction.anyExists and allExists to eliminate
   excessive array creation in common 2 argument usage (Jacob Graves, hossman)
 
+* LUCENE-2880: Span queries now score more consistently with regular queries.
+  (Robert Muir, Adrien Grand)
+
 
 Build
 

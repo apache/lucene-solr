@@ -48,6 +48,11 @@ abstract class ContainSpans extends ConjunctionSpans {
   }
 
   @Override
+  public int width() {
+    return sourceSpans.width();
+  }
+
+  @Override
   public void collect(SpanCollector collector) throws IOException {
     sourceSpans.collect(collector);
   }
