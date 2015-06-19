@@ -122,7 +122,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       if (clauses.size() >= maxClauseCount) {
         throw new TooManyClauses();
       }
-      query = query.clone(); // be defensive
       clauses.add(new BooleanClause(query, occur));
       return this;
     }
