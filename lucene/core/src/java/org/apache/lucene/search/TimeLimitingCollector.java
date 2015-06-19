@@ -114,7 +114,8 @@ public class TimeLimitingCollector implements Collector {
    * A non greedy collector, upon a timeout, would throw a {@link TimeExceededException} 
    * without allowing the wrapped collector to collect current doc. A greedy one would 
    * first allow the wrapped hit collector to collect current doc and only then 
-   * throw a {@link TimeExceededException}.
+   * throw a {@link TimeExceededException}.  However, if the timeout is detected in
+   * {@link #getLeafCollector} then no current document is collected.
    * @see #setGreedy(boolean)
    */
   public boolean isGreedy() {
