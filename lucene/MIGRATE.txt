@@ -18,3 +18,25 @@ their ValueSources in a "DefFunction" along with a ConstValueSource of "0.0".
 
 FilteredQuery has been removed. Instead, you can construct a BooleanQuery with
 one MUST clause for the query, and one FILTER clause for the filter.
+
+## PhraseQuery and BooleanQuery made immutable (LUCENE-6531 LUCENE-6570)
+
+PhraseQuery and BooleanQuery are now immutable and have a builder API to help
+construct them. For instance a BooleanQuery that used to be constructed like
+this:
+
+  BooleanQuery bq = new BooleanQuery();
+  bq.add(q1, Occur.SHOULD);
+  bq.add(q2, Occur.SHOULD);
+  bq.add(q3, Occur.MUST);
+  bq.setMinimumNumberShouldMatch(1);
+
+can now be constructed this way using its builder:
+
+  BooleanQuery bq = new BooleanQuery.Builder()
+      .add(q1, Occur.SHOULD)
+      .add(q2, Occur.SHOULD)
+      .add(q3, Occur.SHOULD)
+      .setMinimumNumberShouldMatch(1)
+      .build();
+
