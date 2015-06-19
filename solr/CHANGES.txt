@@ -171,6 +171,9 @@ Bug Fixes
   
 * SOLR-7697: Schema API doesn't take class or luceneMatchVersion attributes into
   account for the analyzer when adding a new field type. (Marius Grama, Steve Rowe)
+  
+* SOLR-7679: Schema API doesn't take similarity attribute into account when adding
+  field types. (Marius Grama, Steve Rowe) 
 
 Optimizations
 ----------------------

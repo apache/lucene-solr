@@ -820,9 +820,6 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(getPropertyName(TOKENIZED), isTokenized());
       // The BINARY property is always false
       // namedPropertyValues.add(getPropertyName(BINARY), hasProperty(BINARY));
-      if (null != getSimilarityFactory()) {
-        namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
-      }
       if (null != getPostingsFormat()) {
         namedPropertyValues.add(POSTINGS_FORMAT, getPostingsFormat());
       }
@@ -842,6 +839,10 @@ public abstract class FieldType extends FieldProperties {
           namedPropertyValues.add(key, args.get(key));
         }
       }
+    }
+
+    if (null != getSimilarityFactory()) {
+      namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
     }
     
     if (isExplicitAnalyzer()) {

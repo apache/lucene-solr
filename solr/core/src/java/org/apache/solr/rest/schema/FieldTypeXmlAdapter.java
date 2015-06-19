@@ -65,8 +65,27 @@ public class FieldTypeXmlAdapter {
     analyzer = transformAnalyzer(doc, json, "multiTermAnalyzer", "multiterm");
     if (analyzer != null)
       fieldType.appendChild(analyzer);
+
+    Element similarity = transformSimilarity(doc, json, "similarity");
+    if (similarity != null)
+      fieldType.appendChild(similarity);
         
     return fieldType;
+  }
+
+  @SuppressWarnings("unchecked")
+  protected static Element transformSimilarity(Document doc, Map<String,?> json, String jsonFieldName) {
+    Object jsonField = json.get(jsonFieldName);
+    if (jsonField == null)
+      return null; // it's ok for this field to not exist in the JSON map
+
+    if (!(jsonField instanceof Map))
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid fieldType definition! Expected JSON object for "+
+          jsonFieldName+" not a "+jsonField.getClass().getName());
+
+    Element similarity = doc.createElement("similarity");
+    appendAttrs(similarity, (Map<String,?>)jsonField);
+    return similarity;
   }
   
   @SuppressWarnings("unchecked")
