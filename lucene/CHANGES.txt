@@ -158,6 +158,9 @@ Bug fixes
 * LUCENE-6593: Fixed ToChildBlockJoinQuery's scorer to not refuse to advance
   to a document that belongs to the parent space. (Adrien Grand)
 
+* LUCENE-6591: Never write a negative vLong (Robert Muir, Ryan Ernst,
+  Adrien Grand, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
