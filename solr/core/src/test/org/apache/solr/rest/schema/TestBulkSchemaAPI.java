@@ -263,6 +263,18 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                       'type': 'myWhitespaceTxtField',\n" +
         "                       'stored':true\n" +
         "                       },\n" +
+        "          'add-field-type' : {" +
+        "                       'name' : 'mySimField',\n" +
+        "                       'class':'solr.TextField',\n" +
+        "                       'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" +
+        "                       'similarity' : {'class':'org.apache.lucene.misc.SweetSpotSimilarity'}\n" +
+        "                       },\n"+
+        "          'add-field' : {\n" +
+        "                       'name':'a4',\n" +
+        "                       'type': 'mySimField',\n" +
+        "                       'stored':true,\n" +
+        "                       'indexed':true\n" +
+        "                       },\n" +
         "          'delete-field' : {'name':'wdf_nocase'},\n" +
         "          'delete-field-type' : {'name':'wdf_nocase'},\n" +
         "          'delete-dynamic-field' : {'name':'*_tt'},\n" +
@@ -339,6 +351,16 @@ public class TestBulkSchemaAPI extends RestTestBase {
     m = getObj(harness, "a3", "fields");
     assertNotNull("field a3 not created", m);
     assertEquals("myNewTxtField", m.get("type"));
+
+    m = getObj(harness, "mySimField", "fieldTypes");
+    assertNotNull(m);
+    m = (Map)m.get("similarity");
+    assertNotNull(m);
+    assertEquals("org.apache.lucene.misc.SweetSpotSimilarity", m.get("class"));
+
+    m = getObj(harness, "a4", "fields");
+    assertNotNull("field a4 not created", m);
+    assertEquals("mySimField", m.get("type"));
 
     m = getObj(harness, "myWhitespaceTxtField", "fieldTypes");
     assertNotNull(m);
