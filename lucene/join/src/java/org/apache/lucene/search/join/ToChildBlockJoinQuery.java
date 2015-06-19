@@ -159,7 +159,7 @@ public class ToChildBlockJoinQuery extends Query {
     private int parentFreq = 1;
 
     private int childDoc = -1;
-    private int parentDoc;
+    private int parentDoc = 0;
 
     public ToChildBlockJoinScorer(Weight weight, Scorer parentScorer, BitSet parentBits, boolean doScores, Bits acceptDocs) {
       super(weight);
@@ -268,40 +268,41 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public int advance(int childTarget) throws IOException {
-      
-      //System.out.println("Q.advance childTarget=" + childTarget);
-      if (childTarget == NO_MORE_DOCS) {
-        //System.out.println("  END");
-        return childDoc = parentDoc = NO_MORE_DOCS;
-      }
-
-      if (parentBits.get(childTarget)) {
-        throw new IllegalStateException(ILLEGAL_ADVANCE_ON_PARENT + childTarget);
-      }
-
-      assert childDoc == -1 || childTarget != parentDoc: "childTarget=" + childTarget;
-      if (childDoc == -1 || childTarget > parentDoc) {
-        // Advance to new parent:
-        parentDoc = parentScorer.advance(childTarget);
+      if (childTarget >= parentDoc) {
+        if (childTarget == NO_MORE_DOCS) {
+          return childDoc = parentDoc = NO_MORE_DOCS;
+        }
+        parentDoc = parentScorer.advance(childTarget + 1);
         validateParentDoc();
-        //System.out.println("  advance to parentDoc=" + parentDoc);
-        assert parentDoc > childTarget;
+
         if (parentDoc == NO_MORE_DOCS) {
-          //System.out.println("  END");
           return childDoc = NO_MORE_DOCS;
         }
+
+        // scan to the first parent that has children
+        while (true) {
+          final int firstChild = parentBits.prevSetBit(parentDoc-1) + 1;
+          if (firstChild != parentDoc) {
+            // this parent has children
+            childTarget = Math.max(childTarget, firstChild);
+            break;
+          }
+          // parent with no children, move to the next one
+          parentDoc = parentScorer.nextDoc();
+          validateParentDoc();
+          if (parentDoc == NO_MORE_DOCS) {
+            return childDoc = NO_MORE_DOCS;
+          }
+        }
+
         if (doScores) {
           parentScore = parentScorer.score();
           parentFreq = parentScorer.freq();
         }
-        final int firstChild = parentBits.prevSetBit(parentDoc-1);
-        //System.out.println("  firstChild=" + firstChild);
-        childTarget = Math.max(childTarget, firstChild);
       }
 
       assert childTarget < parentDoc;
-
-      // Advance within children of current parent:
+      assert !parentBits.get(childTarget);
       childDoc = childTarget;
       //System.out.println("  " + childDoc);
       if (acceptDocs != null && !acceptDocs.get(childDoc)) {

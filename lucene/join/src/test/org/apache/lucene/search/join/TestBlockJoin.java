@@ -17,13 +17,22 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -36,8 +45,28 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.RandomApproximationQuery;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
@@ -48,13 +77,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
 
 public class TestBlockJoin extends LuceneTestCase {
 
@@ -1514,6 +1536,47 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals(1, topdocs.totalHits);
     
     r.close();
+    dir.close();
+  }
+
+  public void testIntersectionWithRandomApproximation() throws IOException {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final int numBlocks = atLeast(100);
+    for (int i = 0; i < numBlocks; ++i) {
+      List<Document> docs = new ArrayList<>();
+      final int numChildren = random().nextInt(3);
+      for (int j = 0; j < numChildren; ++j) {
+        Document child = new Document();
+        child.add(new StringField("foo_child", random().nextBoolean() ? "bar" : "baz", Store.NO));
+        docs.add(child);
+      }
+      Document parent = new Document();
+      parent.add(new StringField("parent", "true", Store.NO));
+      parent.add(new StringField("foo_parent", random().nextBoolean() ? "bar" : "baz", Store.NO));
+      docs.add(parent);
+      w.addDocuments(docs);
+    }
+    final IndexReader reader = w.getReader();
+    final IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCache(null); // to have real advance() calls
+
+    final BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
+    final Query toChild = new ToChildBlockJoinQuery(new TermQuery(new Term("foo_parent", "bar")), parentsFilter);
+    final Query childQuery = new TermQuery(new Term("foo_child", "baz"));
+
+    BooleanQuery bq1 = new BooleanQuery();
+    bq1.add(toChild, Occur.MUST);
+    bq1.add(childQuery, Occur.MUST);
+    BooleanQuery bq2 = new BooleanQuery();
+    bq2.add(toChild, Occur.MUST);
+    bq2.add(new RandomApproximationQuery(childQuery, random()), Occur.MUST);
+
+    assertEquals(searcher.count(bq1), searcher.count(bq2));
+
+    searcher.getIndexReader().close();
+    w.close();
     dir.close();
   }
 }
