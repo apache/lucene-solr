@@ -155,6 +155,9 @@ Bug fixes
   as workaround); fix output of tests to use same format.  (Uwe Schindler,
   Ramkumar Aiyengar)
 
+* LUCENE-6593: Fixed ToChildBlockJoinQuery's scorer to not refuse to advance
+  to a document that belongs to the parent space. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
