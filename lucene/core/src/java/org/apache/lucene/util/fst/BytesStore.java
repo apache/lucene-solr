@@ -100,6 +100,8 @@ class BytesStore extends DataOutput implements Accountable {
     while (len > 0) {
       int chunk = blockSize - nextWrite;
       if (len <= chunk) {
+        assert b != null;
+        assert current != null;
         System.arraycopy(b, offset, current, nextWrite, len);
         nextWrite += len;
         break;
