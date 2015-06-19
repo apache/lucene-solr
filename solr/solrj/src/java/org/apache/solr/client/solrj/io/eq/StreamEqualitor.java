@@ -15,57 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.comp;
+package org.apache.solr.client.solrj.io.eq;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Comparator;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-
 /**
- *  Wraps multiple Comparators to provide sub-sorting.
+ *  An equality field Equalitor which compares a field of two Tuples and determines if they are equal.
  **/
-
-public class MultiComp implements Comparator<Tuple>, Expressible, Serializable {
+public class StreamEqualitor implements Equalitor<Tuple>, Expressible, Serializable {
 
   private static final long serialVersionUID = 1;
-
-  private Comparator<Tuple>[] comps;
-
-  public MultiComp(Comparator<Tuple>... comps) {
-    this.comps = comps;
+  
+  private String leftFieldName;
+  private String rightFieldName;
+  private StreamComparator comparator;
+  
+  public StreamEqualitor(String fieldName) {
+    init(fieldName, fieldName);
   }
-
-  public int compare(Tuple t1, Tuple t2) {
-    for(Comparator<Tuple> comp : comps) {
-      int i = comp.compare(t1, t2);
-      if(i != 0) {
-        return i;
-      }
-    }
-
-    return 0;
+  public StreamEqualitor(String leftFieldName, String rightFieldName){
+    init(leftFieldName, rightFieldName);
   }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+  
+  private void init(String leftFieldName, String rightFieldName){
+    this.leftFieldName = leftFieldName;
+    this.rightFieldName = rightFieldName;
+    this.comparator = new StreamComparator(leftFieldName, rightFieldName, ComparatorOrder.ASCENDING);
+  }
+  
+  public StreamExpressionParameter toExpression(StreamFactory factory){
     StringBuilder sb = new StringBuilder();
-    for(Comparator<Tuple> comp : comps){
-      if(comp instanceof Expressible){
-        if(sb.length() > 0){ sb.append(","); }
-        sb.append(((Expressible)comp).toExpression(factory));
-      }
-      else{
-        throw new IOException("This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");
-      }
+    
+    sb.append(leftFieldName);
+    
+    if(!leftFieldName.equals(rightFieldName)){
+      sb.append("=");
+      sb.append(rightFieldName); 
     }
     
     return new StreamExpressionValue(sb.toString());
+  }
+  
+  public boolean test(Tuple leftTuple, Tuple rightTuple) {
+    return 0 == comparator.compare(leftTuple, rightTuple); 
   }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.comp;
+package org.apache.solr.client.solrj.io.eq;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -29,40 +29,39 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 
 /**
- *  Wraps multiple Comparators to provide sub-sorting.
+ *  Wraps multiple Equalitors.
  **/
 
-public class MultiComp implements Comparator<Tuple>, Expressible, Serializable {
+public class MultiEqualitor implements Equalitor<Tuple>, Expressible, Serializable {
 
   private static final long serialVersionUID = 1;
 
-  private Comparator<Tuple>[] comps;
+  private Equalitor<Tuple>[] eqs;
 
-  public MultiComp(Comparator<Tuple>... comps) {
-    this.comps = comps;
+  public MultiEqualitor(Equalitor<Tuple>... eqs) {
+    this.eqs = eqs;
   }
 
-  public int compare(Tuple t1, Tuple t2) {
-    for(Comparator<Tuple> comp : comps) {
-      int i = comp.compare(t1, t2);
-      if(i != 0) {
-        return i;
+  public boolean test(Tuple t1, Tuple t2) {
+    for(Equalitor<Tuple> eq : eqs) {
+      if(!eq.test(t1, t2)){
+        return false;
       }
     }
 
-    return 0;
+    return true;
   }
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StringBuilder sb = new StringBuilder();
-    for(Comparator<Tuple> comp : comps){
-      if(comp instanceof Expressible){
+    for(Equalitor<Tuple> eq : eqs){
+      if(eq instanceof Expressible){
         if(sb.length() > 0){ sb.append(","); }
-        sb.append(((Expressible)comp).toExpression(factory));
+        sb.append(((Expressible)eq).toExpression(factory));
       }
       else{
-        throw new IOException("This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");
+        throw new IOException("This MultiEqualitor contains a non-expressible equalitor - it cannot be converted to an expression");
       }
     }
     

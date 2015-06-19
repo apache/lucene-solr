@@ -1,9 +1,5 @@
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eq;
 
-import java.io.IOException;
-
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,8 +19,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  */
 
 /**
- * Defines a stream that can be expressed in an expression
+ * Interface defining a way to determine if two items are equal
+ * 
+ * This borrows from Java 8's BiPredicate interface but to keep Java 7 compatible 
+ * we will not use that interface directory. We will use the test method, however,
+ * so that future refactoring for Java 8 is simplified.
  */
-public interface ExpressibleStream {
-  StreamExpressionParameter toExpression(StreamFactory factory) throws IOException;
+public interface Equalitor<T> {
+  public boolean test(T left, T right);
 }
