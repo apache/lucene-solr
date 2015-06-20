@@ -133,6 +133,9 @@ New Features
 * SOLR-7639: MoreLikeThis QParser now supports all options provided by the MLT Handler i.e. mintf, mindf,
   minwl, maxwl, maxqt, and maxntp.
 
+* SOLR-7182: Make the Schema-API a first class citizen of SolrJ. The new SchemaRequest and its inner
+  classes can be used to make requests to the Schema API. (Sven Windisch, Marius Grama via shalin)
+
 Bug Fixes
 ----------------------
 
