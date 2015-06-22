@@ -100,6 +100,9 @@ Upgrading from Solr 5.2
 
 * class TransformerWithContext is deprecated . Use DocTransformer directly
 
+* The "name" parameter in ADDREPLICA Collections API call has be deprecated. One cannot specify
+  the core name for a replica. See SOLR-7499 for more info.
+
 Detailed Change List
 ----------------------
 
@@ -231,6 +234,9 @@ Other Changes
 
 * SOLR-7629: Have RulesTest consider disk space limitations of where the test is
   being run (Christine Poerschke via Ramkumar Aiyengar)
+
+* The "name" parameter in ADDREPLICA Collections API call has be deprecated. One cannot specify
+  the core name for a replica. See SOLR-7499 for more info. (Varun Thacker, noble, Erick Erickson)
 
 ==================  5.2.1 ==================
 

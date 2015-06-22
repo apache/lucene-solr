@@ -2520,7 +2520,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         String replicaName = collection + "_" + shard + "_replica" + replicaNum;
         boolean exists = false;
         for (Replica replica : slice.getReplicas()) {
-          if (replicaName.equals(replica.getStr("core"))) {
+          if (replicaName.equals(replica.getStr(CORE_NAME_PROP))) {
             exists = true;
             break;
           }
@@ -2529,6 +2529,17 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         else break;
       }
       coreName = collection + "_" + shard + "_replica" + replicaNum;
+    } else {
+      //Validate that the core name is unique in that collection
+      for (Slice slice : coll.getSlices()) {
+        for (Replica replica : slice.getReplicas()) {
+          String replicaCoreName = replica.getStr(CORE_NAME_PROP);
+          if (coreName.equals(replicaCoreName)) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Another replica with the same core name already exists" +
+                " for this collection");
+          }
+        }
+      }
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
     
