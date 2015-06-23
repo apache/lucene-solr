@@ -87,10 +87,10 @@ final class SegmentTermsEnumFrame {
   final BlockTermState state;
 
   // metadata buffer, holding monotonic values
-  public long[] longs;
+  final long[] longs;
   // metadata buffer, holding general values
-  public byte[] bytes;
-  ByteArrayDataInput bytesReader;
+  byte[] bytes = new byte[32];
+  final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
 
   private final SegmentTermsEnum ste;
 
@@ -100,7 +100,7 @@ final class SegmentTermsEnumFrame {
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
     this.longs = new long[ste.fr.longsSize];
-    this.versionAutoPrefix = ste.fr.parent.version >= BlockTreeTermsReader.VERSION_AUTO_PREFIX_TERMS;
+    this.versionAutoPrefix = ste.fr.parent.anyAutoPrefixTerms;
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -201,15 +201,11 @@ final class SegmentTermsEnumFrame {
     // that's rare so won't help much
     // metadata
     numBytes = ste.in.readVInt();
-    if (bytes == null) {
-      bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      bytesReader = new ByteArrayDataInput();
-    } else if (bytes.length < numBytes) {
+    if (bytes.length < numBytes) {
       bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
     ste.in.readBytes(bytes, 0, numBytes);
     bytesReader.reset(bytes, 0, numBytes);
-
 
     // Sub-blocks of a single floor block are always
     // written one after another -- tail recurse:
@@ -308,14 +304,10 @@ final class SegmentTermsEnumFrame {
       final int code = suffixesReader.readVInt();
       if (versionAutoPrefix == false) {
         suffix = code >>> 1;
-      } else {
-        suffix = code >>> 2;
-      }
-      startBytePos = suffixesReader.getPosition();
-      ste.term.setLength(prefix + suffix);
-      ste.term.grow(ste.term.length());
-      suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
-      if (versionAutoPrefix == false) {
+        startBytePos = suffixesReader.getPosition();
+        ste.term.setLength(prefix + suffix);
+        ste.term.grow(ste.term.length());
+        suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
         if ((code & 1) == 0) {
           // A normal term
           ste.termExists = true;
@@ -333,6 +325,11 @@ final class SegmentTermsEnumFrame {
           return true;
         }
       } else {
+        suffix = code >>> 2;
+        startBytePos = suffixesReader.getPosition();
+        ste.term.setLength(prefix + suffix);
+        ste.term.grow(ste.term.length());
+        suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
 
         switch(code & 3) {
         case 0:

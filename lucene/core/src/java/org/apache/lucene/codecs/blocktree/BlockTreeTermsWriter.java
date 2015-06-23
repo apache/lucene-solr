@@ -124,7 +124,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * and decoding the Postings Metadata and Term Metadata sections.</p>
  *
  * <ul>
- *    <li>TermsDict (.tim) --&gt; Header, <i>PostingsHeader</i>, NodeBlock<sup>NumBlocks</sup>,
+ *    <li>TermsDict (.tim) --&gt; Header, HasAutoPrefixTerms, <i>PostingsHeader</i>, NodeBlock<sup>NumBlocks</sup>,
  *                               FieldSummary, DirOffset, Footer</li>
  *    <li>NodeBlock --&gt; (OuterNode | InnerNode)</li>
  *    <li>OuterNode --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata</i>&gt;<sup>EntryCount</sup></li>
@@ -145,6 +145,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <ul>
  *    <li>Header is a {@link CodecUtil#writeHeader CodecHeader} storing the version information
  *        for the BlockTree implementation.</li>
+ *    <li>HasAutoPrefixTerms is a single byte; 1 means there may be auto-prefix terms and 0 means there are none.
  *    <li>DirOffset is a pointer to the FieldSummary section.</li>
  *    <li>DocFreq is the count of documents which contain the term.</li>
  *    <li>TotalTermFreq is the total number of occurrences of the term. This is encoded
@@ -330,6 +331,13 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     try {
       CodecUtil.writeIndexHeader(termsOut, BlockTreeTermsReader.TERMS_CODEC_NAME, BlockTreeTermsReader.VERSION_CURRENT,
                                  state.segmentInfo.getId(), state.segmentSuffix);
+
+      // So at read time we know, globally, that there will be no auto-prefix terms:
+      if (minItemsInAutoPrefix == 0) {
+        termsOut.writeByte((byte) 0);
+      } else {
+        termsOut.writeByte((byte) 1);
+      }
 
       final String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockTreeTermsReader.TERMS_INDEX_EXTENSION);
       indexOut = state.directory.createOutput(indexName, state.context);
@@ -891,27 +899,34 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             // if entry is term or sub-block, and 1 bit to record if
             // it's a prefix term.  Terms cannot be larger than ~32 KB
             // so we won't run out of bits:
-            code = suffix<<2;
-            int floorLeadEnd = -1;
-            if (term.prefixTerm != null) {
-              sawAutoPrefixTerm = true;
-              PrefixTerm prefixTerm = term.prefixTerm;
-              floorLeadEnd = prefixTerm.floorLeadEnd;
-              assert floorLeadEnd != -1;
 
-              if (prefixTerm.floorLeadStart == -2) {
-                // Starts with empty string
-                code |= 2;
-              } else {
-                code |= 3;
+            if (minItemsInAutoPrefix == 0) {
+              suffixWriter.writeVInt(suffix << 1);
+              suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
+            } else {
+              code = suffix<<2;
+              int floorLeadEnd = -1;
+              if (term.prefixTerm != null) {
+                assert minItemsInAutoPrefix > 0;
+                sawAutoPrefixTerm = true;
+                PrefixTerm prefixTerm = term.prefixTerm;
+                floorLeadEnd = prefixTerm.floorLeadEnd;
+                assert floorLeadEnd != -1;
+
+                if (prefixTerm.floorLeadStart == -2) {
+                  // Starts with empty string
+                  code |= 2;
+                } else {
+                  code |= 3;
+                }
               }
+              suffixWriter.writeVInt(code);
+              suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
+              if (floorLeadEnd != -1) {
+                suffixWriter.writeByte((byte) floorLeadEnd);
+              }
+              assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
             }
-            suffixWriter.writeVInt(code);
-            suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
-            if (floorLeadEnd != -1) {
-              suffixWriter.writeByte((byte) floorLeadEnd);
-            }
-            assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
             // Write term stats, to separate byte[] blob:
             statsWriter.writeVInt(state.docFreq);
@@ -948,7 +963,11 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block, and 1 bit (unset here) to
             // record if it's a prefix term:
-            suffixWriter.writeVInt((suffix<<2)|1);
+            if (minItemsInAutoPrefix == 0) {
+              suffixWriter.writeVInt((suffix<<1)|1);
+            } else {
+              suffixWriter.writeVInt((suffix<<2)|1);
+            }
             suffixWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
 
             //if (DEBUG2) {
