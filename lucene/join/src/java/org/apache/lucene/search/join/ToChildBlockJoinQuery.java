@@ -20,6 +20,7 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -142,10 +143,17 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public Explanation explain(LeafReaderContext reader, int doc) throws IOException {
-      // TODO
-      throw new UnsupportedOperationException(getClass().getName() +
-                                              " cannot explain match on parent document");
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+      ToChildBlockJoinScorer scorer = (ToChildBlockJoinScorer) scorer(context, context.reader().getLiveDocs());
+      if (scorer != null && scorer.advance(doc) == doc) {
+        int parentDoc = scorer.getParentDoc();
+        return Explanation.match(
+          scorer.score(), 
+          String.format(Locale.ROOT, "Score based on parent document %d", parentDoc + context.docBase), 
+          parentWeight.explain(context, parentDoc)
+        );
+      }
+      return Explanation.noMatch("Not a match");
     }
   }
 
@@ -217,7 +225,17 @@ public class ToChildBlockJoinQuery extends Query {
             }
 
             if (acceptDocs != null && !acceptDocs.get(childDoc)) {
-              continue nextChildDoc;
+              // find the first child that is accepted
+              while (true) {
+                if (childDoc+1 < parentDoc) {
+                  childDoc++;
+                  if (acceptDocs.get(childDoc))
+                    break;
+                } else {
+                  // no child for this parent doc matches acceptDocs
+                  continue nextChildDoc;
+                }
+              }
             }
 
             if (childDoc < parentDoc) {
@@ -314,6 +332,10 @@ public class ToChildBlockJoinQuery extends Query {
     @Override
     public long cost() {
       return parentScorer.cost();
+    }
+    
+    int getParentDoc() {
+      return parentDoc;
     }
   }
 
