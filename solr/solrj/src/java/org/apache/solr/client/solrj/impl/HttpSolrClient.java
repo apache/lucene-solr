@@ -73,7 +73,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
@@ -490,7 +489,7 @@ public class HttpSolrClient extends SolrClient {
           }
           break;
         default:
-          if (processor == null) {
+          if (processor == null || "".equals(contentType)) {
             throw new RemoteSolrException(baseUrl, httpStatus, "non ok status: " + httpStatus
                 + ", message:" + response.getStatusLine().getReasonPhrase(),
                 null);
@@ -552,9 +551,10 @@ public class HttpSolrClient extends SolrClient {
         } catch (Exception ex) {}
         if (reason == null) {
           StringBuilder msg = new StringBuilder();
-          msg.append(response.getStatusLine().getReasonPhrase());
-          msg.append("\n\n");
-          msg.append("request: " + method.getURI());
+          msg.append(response.getStatusLine().getReasonPhrase())
+            .append("\n\n")
+            .append("request: ")
+            .append(method.getURI());
           reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
         }
         RemoteSolrException rss = new RemoteSolrException(baseUrl, httpStatus, reason, null);
