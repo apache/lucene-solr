@@ -73,10 +73,14 @@ public class SimpleMLTQParser extends QParser {
         mlt.setMaxWordLen(localParams.getInt("maxwl"));
 
       if(localParams.get("maxqt") != null)
-        mlt.setMaxWordLen(localParams.getInt("maxqt"));
+        mlt.setMaxQueryTerms(localParams.getInt("maxqt"));
 
       if(localParams.get("maxntp") != null)
-        mlt.setMaxWordLen(localParams.getInt("maxntp"));
+        mlt.setMaxNumTokensParsed(localParams.getInt("maxntp"));
+
+      if(localParams.get("maxdf") != null) {
+        mlt.setMaxDocFreq(localParams.getInt("maxdf"));
+      }
       
       ArrayList<String> fields = new ArrayList();
 
