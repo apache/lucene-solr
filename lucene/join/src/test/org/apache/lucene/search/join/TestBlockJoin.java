@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -58,6 +57,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -1614,6 +1614,83 @@ public class TestBlockJoin extends LuceneTestCase {
 
     searcher.getIndexReader().close();
     w.close();
+    dir.close();
+  }
+  
+  //LUCENE-6588
+  // delete documents to simulate FilteredQuery applying a filter as acceptDocs
+  public void testParentScoringBug() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final List<Document> docs = new ArrayList<>();
+    docs.add(makeJob("java", 2007));
+    docs.add(makeJob("python", 2010));
+    docs.add(makeResume("Lisa", "United Kingdom"));
+    w.addDocuments(docs);
+
+    docs.clear();
+    docs.add(makeJob("java", 2006));
+    docs.add(makeJob("ruby", 2005));
+    docs.add(makeResume("Frank", "United States"));
+    w.addDocuments(docs);
+    w.deleteDocuments(new Term("skill", "java")); // delete the first child of every parent
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+
+    // Create a filter that defines "parent" documents in the index - in this case resumes
+    BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+    Query parentQuery = new PrefixQuery(new Term("country", "United"));
+    
+    ToChildBlockJoinQuery toChildQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter);
+    
+    TopDocs hits = s.search(toChildQuery, 10);
+    assertEquals(hits.scoreDocs.length, 2);
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      if (hits.scoreDocs[i].score == 0.0)
+        fail("Failed to calculate score for hit #"+i);
+    }
+    
+    r.close();
+    dir.close();
+  }
+  
+  public void testToChildBlockJoinQueryExplain() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final List<Document> docs = new ArrayList<>();
+    docs.add(makeJob("java", 2007));
+    docs.add(makeJob("python", 2010));
+    docs.add(makeResume("Lisa", "United Kingdom"));
+    w.addDocuments(docs);
+
+    docs.clear();
+    docs.add(makeJob("java", 2006));
+    docs.add(makeJob("ruby", 2005));
+    docs.add(makeResume("Frank", "United States"));
+    w.addDocuments(docs);
+    w.deleteDocuments(new Term("skill", "java")); // delete the first child of every parent
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+
+    // Create a filter that defines "parent" documents in the index - in this case resumes
+    BitDocIdSetFilter parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+    Query parentQuery = new PrefixQuery(new Term("country", "United"));
+    
+    ToChildBlockJoinQuery toChildQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter);
+    
+    TopDocs hits = s.search(toChildQuery, 10);
+    assertEquals(hits.scoreDocs.length, 2);
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      assertEquals(hits.scoreDocs[i].score, s.explain(toChildQuery, hits.scoreDocs[i].doc).getValue(), 0.01);
+    }
+    
+    r.close();
     dir.close();
   }
 }

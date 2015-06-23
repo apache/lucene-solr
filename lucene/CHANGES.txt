@@ -161,6 +161,9 @@ Bug fixes
 * LUCENE-6591: Never write a negative vLong (Robert Muir, Ryan Ernst,
   Adrien Grand, Mike McCandless)
 
+* LUCENE-6588: Fix how ToChildBlockJoinQuery deals with acceptDocs.
+  (Christoph Kaser via Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
