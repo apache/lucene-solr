@@ -39,7 +39,7 @@ public class MockShardHandlerFactory extends ShardHandlerFactory implements Plug
   public ShardHandler getShardHandler() {
     return new ShardHandler() {
       @Override
-      public void checkDistributed(ResponseBuilder rb) {}
+      public void prepDistributed(ResponseBuilder rb) {}
 
       @Override
       public void submit(ShardRequest sreq, String shard,
