@@ -122,10 +122,17 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     assertArrayEquals(expectedIds, actualIds);
 
     String expectedQueryString = "lowerfilt:bmw lowerfilt:usa";
-    
-    ArrayList<String> actualParsedQueries = (ArrayList<String>) queryResponse
-        .getDebugMap().get("parsedquery");
 
+    ArrayList<String> actualParsedQueries;
+    
+    if(queryResponse.getDebugMap().get("parsedquery") instanceof  String) {
+      actualParsedQueries = new ArrayList();
+      actualParsedQueries.add((String) queryResponse.getDebugMap().get("parsedquery"));
+    } else {
+      actualParsedQueries = (ArrayList<String>) queryResponse
+          .getDebugMap().get("parsedquery");
+    }
+      
     for (int counter = 0; counter < actualParsedQueries.size(); counter++) {
       assertTrue("Parsed queries aren't equal",
           compareParsedQueryStrings(expectedQueryString,
