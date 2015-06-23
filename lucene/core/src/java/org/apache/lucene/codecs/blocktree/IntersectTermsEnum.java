@@ -63,6 +63,7 @@ final class IntersectTermsEnum extends TermsEnum {
   final BytesRef commonSuffix;
 
   private IntersectTermsEnumFrame currentFrame;
+  private Transition currentTransition;
 
   private final BytesRef term = new BytesRef();
 
@@ -83,14 +84,12 @@ final class IntersectTermsEnum extends TermsEnum {
   // TODO: in some cases we can filter by length?  eg
   // regexp foo*bar must be at least length 6 bytes
   public IntersectTermsEnum(FieldReader fr, Automaton automaton, RunAutomaton runAutomaton, BytesRef commonSuffix, BytesRef startTerm, int sinkState) throws IOException {
-    //if (DEBUG) System.out.println("\nintEnum.init seg=" + fr.parent.segment + " commonSuffix=" + commonSuffix);
     this.fr = fr;
     this.sinkState = sinkState;
 
     assert automaton != null;
     assert runAutomaton != null;
 
-    //if (DEBUG) System.out.println("sinkState=" + sinkState + " AUTOMATON:\n" + automaton.toDot());
     this.runAutomaton = runAutomaton;
     this.allowAutoPrefixTerms = sinkState != -1;
     this.automaton = automaton;
@@ -138,6 +137,7 @@ final class IntersectTermsEnum extends TermsEnum {
     if (startTerm != null) {
       seekToStartTerm(startTerm);
     }
+    currentTransition = currentFrame.transition;
   }
 
   // only for assert:
@@ -179,11 +179,12 @@ final class IntersectTermsEnum extends TermsEnum {
   }
 
   private IntersectTermsEnumFrame pushFrame(int state) throws IOException {
+    assert currentFrame != null;
+
     final IntersectTermsEnumFrame f = getFrame(currentFrame == null ? 0 : 1+currentFrame.ord);
         
     f.fp = f.fpOrig = currentFrame.lastSubFP;
     f.prefix = currentFrame.prefix + currentFrame.suffix;
-    //if (DEBUG) System.out.println("    pushFrame state=" + state + " prefix=" + f.prefix);
     f.setState(state);
 
     // Walk the arc through the index -- we only
@@ -219,9 +220,7 @@ final class IntersectTermsEnum extends TermsEnum {
 
   @Override
   public int docFreq() throws IOException {
-    //if (DEBUG) System.out.println("BTIR.docFreq");
     currentFrame.decodeMetaData();
-    //if (DEBUG) System.out.println("  return " + currentFrame.termState.docFreq);
     return currentFrame.termState.docFreq;
   }
 
@@ -251,7 +250,6 @@ final class IntersectTermsEnum extends TermsEnum {
   // arbitrary seekExact/Ceil.  Note that this is a
   // seekFloor!
   private void seekToStartTerm(BytesRef target) throws IOException {
-    //if (DEBUG) System.out.println("seek to startTerm=" + target.utf8ToString() + " length=" + target.length);
     assert currentFrame.ord == 0;
     if (term.length < target.length) {
       term.bytes = ArrayUtil.grow(term.bytes, target.length);
@@ -260,7 +258,6 @@ final class IntersectTermsEnum extends TermsEnum {
     assert arc == currentFrame.arc;
 
     for(int idx=0;idx<=target.length;idx++) {
-      //if (DEBUG) System.out.println("cycle idx=" + idx);
 
       while (true) {
         final int savNextEnt = currentFrame.nextEnt;
@@ -271,8 +268,6 @@ final class IntersectTermsEnum extends TermsEnum {
         final int saveTermBlockOrd = currentFrame.termState.termBlockOrd;
         final boolean saveIsAutoPrefixTerm = currentFrame.isAutoPrefixTerm;
 
-        //if (DEBUG) System.out.println("    cycle isAutoPrefix=" + saveIsAutoPrefixTerm + " ent=" + currentFrame.nextEnt + " (of " + currentFrame.entCount + ") prefix=" + currentFrame.prefix + " suffix=" + currentFrame.suffix + " firstLabel=" + (currentFrame.suffix == 0 ? "" : (currentFrame.suffixBytes[currentFrame.startBytePos])&0xff));
-
         final boolean isSubBlock = currentFrame.next();
 
         term.length = currentFrame.prefix + currentFrame.suffix;
@@ -281,25 +276,19 @@ final class IntersectTermsEnum extends TermsEnum {
         }
         System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
 
-        //if (DEBUG) System.out.println("      isSubBlock=" + isSubBlock + " term/prefix=" + brToString(term) + " saveIsAutoPrefixTerm=" + saveIsAutoPrefixTerm + " allowAutoPrefixTerms=" + allowAutoPrefixTerms);
-
         if (isSubBlock && StringHelper.startsWith(target, term)) {
           // Recurse
-          //if (DEBUG) System.out.println("      recurse!");
           currentFrame = pushFrame(getState());
           break;
         } else {
           final int cmp = term.compareTo(target);
-          //if (DEBUG) System.out.println("      cmp=" + cmp);
           if (cmp < 0) {
             if (currentFrame.nextEnt == currentFrame.entCount) {
               if (!currentFrame.isLastInFloor) {
                 // Advance to next floor block
-                //if (DEBUG) System.out.println("  load floorBlock");
                 currentFrame.loadNextFloorBlock();
                 continue;
               } else {
-                //if (DEBUG) System.out.println("  return term=" + brToString(term));
                 return;
               }
             }
@@ -308,14 +297,12 @@ final class IntersectTermsEnum extends TermsEnum {
             if (allowAutoPrefixTerms == false && currentFrame.isAutoPrefixTerm) {
               continue;
             }
-            //if (DEBUG) System.out.println("  return term=" + brToString(term));
             return;
           } else if (allowAutoPrefixTerms || currentFrame.isAutoPrefixTerm == false) {
             // Fallback to prior entry: the semantics of
             // this method is that the first call to
             // next() will return the term after the
             // requested term
-            //if (DEBUG) System.out.println("    fallback prior entry");
             currentFrame.nextEnt = savNextEnt;
             currentFrame.lastSubFP = saveLastSubFP;
             currentFrame.startBytePos = saveStartBytePos;
@@ -338,321 +325,348 @@ final class IntersectTermsEnum extends TermsEnum {
     assert false;
   }
 
+  private boolean popPushNext() throws IOException {
+    // Pop finished frames
+    while (currentFrame.nextEnt == currentFrame.entCount) {
+      if (!currentFrame.isLastInFloor) {
+        // Advance to next floor block
+        currentFrame.loadNextFloorBlock();
+        break;
+      } else {
+        if (currentFrame.ord == 0) {
+          throw NoMoreTermsException.INSTANCE;
+        }
+        final long lastFP = currentFrame.fpOrig;
+        currentFrame = stack[currentFrame.ord-1];
+        currentTransition = currentFrame.transition;
+        assert currentFrame.lastSubFP == lastFP;
+      }
+    }
+
+    return currentFrame.next();
+  }
+
+  private boolean skipPastLastAutoPrefixTerm() throws IOException {
+    assert currentFrame.isAutoPrefixTerm;
+    useAutoPrefixTerm = false;
+    currentFrame.termState.isRealTerm = true;
+
+    // If we last returned an auto-prefix term, we must now skip all
+    // actual terms sharing that prefix.  At most, that skipping
+    // requires popping one frame, but it can also require simply
+    // scanning ahead within the current frame.  This scanning will
+    // skip sub-blocks that contain many terms, which is why the
+    // optimization "works":
+    int floorSuffixLeadEnd = currentFrame.floorSuffixLeadEnd;
+
+    boolean isSubBlock;
+
+    if (floorSuffixLeadEnd == -1) {
+      // An ordinary prefix, e.g. foo*
+      int prefix = currentFrame.prefix;
+      int suffix = currentFrame.suffix;
+      if (suffix == 0) {
+
+        // Easy case: the prefix term's suffix is the empty string,
+        // meaning the prefix corresponds to all terms in the
+        // current block, so we just pop this entire block:
+        if (currentFrame.ord == 0) {
+          throw NoMoreTermsException.INSTANCE;
+        }
+        currentFrame = stack[currentFrame.ord-1];
+        currentTransition = currentFrame.transition;
+
+        return popPushNext();
+
+      } else {
+
+        // Just next() until we hit an entry that doesn't share this
+        // prefix.  The first next should be a sub-block sharing the
+        // same prefix, because if there are enough terms matching a
+        // given prefix to warrant an auto-prefix term, then there
+        // must also be enough to make a sub-block (assuming
+        // minItemsInPrefix > minItemsInBlock):
+        scanPrefix:
+        while (true) {
+          if (currentFrame.nextEnt == currentFrame.entCount) {
+            if (currentFrame.isLastInFloor == false) {
+              currentFrame.loadNextFloorBlock();
+            } else if (currentFrame.ord == 0) {
+              throw NoMoreTermsException.INSTANCE;
+            } else {
+              // Pop frame, which also means we've moved beyond this
+              // auto-prefix term:
+              currentFrame = stack[currentFrame.ord-1];
+              currentTransition = currentFrame.transition;
+
+              return popPushNext();
+            }
+          }
+          isSubBlock = currentFrame.next();
+          for(int i=0;i<suffix;i++) {
+            if (term.bytes[prefix+i] != currentFrame.suffixBytes[currentFrame.startBytePos+i]) {
+              break scanPrefix;
+            }
+          }
+        }
+      }
+    } else {
+      // Floor'd auto-prefix term; in this case we must skip all
+      // terms e.g. matching foo[a-m]*.  We are currently "on" fooa,
+      // which the automaton accepted (fooa* through foom*), and
+      // floorSuffixLeadEnd is m, so we must now scan to foon:
+      int prefix = currentFrame.prefix;
+      int suffix = currentFrame.suffix;
+
+      if (currentFrame.floorSuffixLeadStart == -1) {
+        suffix++;
+      }
+
+      if (suffix == 0) {
+
+        // This means current frame is fooa*, so we have to first
+        // pop the current frame, then scan in parent frame:
+        if (currentFrame.ord == 0) {
+          throw NoMoreTermsException.INSTANCE;
+        }
+        currentFrame = stack[currentFrame.ord-1];
+        currentTransition = currentFrame.transition;
+
+        // Current (parent) frame is now foo*, so now we just scan
+        // until the lead suffix byte is > floorSuffixLeadEnd
+        //assert currentFrame.prefix == prefix-1;
+        //prefix = currentFrame.prefix;
+
+        // In case when we pop, and the parent block is not just prefix-1, e.g. in block 417* on
+        // its first term = floor prefix term 41[7-9], popping to block 4*:
+        prefix = currentFrame.prefix;
+
+        suffix = term.length - currentFrame.prefix;
+      } else {
+        // No need to pop; just scan in currentFrame:
+      }
+
+      // Now we scan until the lead suffix byte is > floorSuffixLeadEnd
+      scanFloor:
+      while (true) {
+        if (currentFrame.nextEnt == currentFrame.entCount) {
+          if (currentFrame.isLastInFloor == false) {
+            currentFrame.loadNextFloorBlock();
+          } else if (currentFrame.ord == 0) {
+            throw NoMoreTermsException.INSTANCE;
+          } else {
+            // Pop frame, which also means we've moved beyond this
+            // auto-prefix term:
+            currentFrame = stack[currentFrame.ord-1];
+            currentTransition = currentFrame.transition;
+
+            return popPushNext();
+          }
+        }
+        isSubBlock = currentFrame.next();
+        for(int i=0;i<suffix-1;i++) {
+          if (term.bytes[prefix+i] != currentFrame.suffixBytes[currentFrame.startBytePos+i]) {
+            break scanFloor;
+          }
+        }
+        if (currentFrame.suffix >= suffix && (currentFrame.suffixBytes[currentFrame.startBytePos+suffix-1]&0xff) > floorSuffixLeadEnd) {
+          // Done scanning: we are now on the first term after all
+          // terms matched by this auto-prefix term
+          break;
+        }
+      }
+    }
+
+    return isSubBlock;
+  }
+
+  // Only used internally when there are no more terms in next():
+  private static final class NoMoreTermsException extends RuntimeException {
+
+    // Only used internally when there are no more terms in next():
+    public static final NoMoreTermsException INSTANCE = new NoMoreTermsException();
+
+    private NoMoreTermsException() {
+    }
+
+    @Override
+    public Throwable fillInStackTrace() {
+      // Do nothing:
+      return this;
+    }    
+  }
+
   @Override
   public BytesRef next() throws IOException {
+    try {
+      return _next();
+    } catch (NoMoreTermsException eoi) {
+      // Provoke NPE if we are (illegally!) called again:
+      currentFrame = null;
+      return null;
+    }
+  }
 
-    //if (DEBUG) {
-    //  System.out.println("\nintEnum.next seg=" + fr.parent.segment);
-    //  System.out.println("  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " outputPrefix=" + currentFrame.outputPrefix + " trans: " + currentFrame.transition + " useAutoPrefix=" + useAutoPrefixTerm);
-    //}
+  private BytesRef _next() throws IOException {
+
+    boolean isSubBlock;
+
+    if (useAutoPrefixTerm) {
+      // If the current term was an auto-prefix term, we have to skip past it:
+      isSubBlock = skipPastLastAutoPrefixTerm();
+      assert useAutoPrefixTerm == false;
+    } else {
+      isSubBlock = popPushNext();
+    }
 
     nextTerm:
+
     while (true) {
+      assert currentFrame.transition == currentTransition;
 
-      boolean isSubBlock;
+      int state;
+      int lastState;
 
-      if (useAutoPrefixTerm) {
-
-        assert currentFrame.isAutoPrefixTerm;
-        useAutoPrefixTerm = false;
-        currentFrame.termState.isRealTerm = true;
-
-        //if (DEBUG) {
-        //  System.out.println("    now scan beyond auto-prefix term=" + brToString(term) + " floorSuffixLeadEnd=" + Integer.toHexString(currentFrame.floorSuffixLeadEnd));
-        //}
-        // If we last returned an auto-prefix term, we must now skip all
-        // actual terms sharing that prefix.  At most, that skipping
-        // requires popping one frame, but it can also require simply
-        // scanning ahead within the current frame.  This scanning will
-        // skip sub-blocks that contain many terms, which is why the
-        // optimization "works":
-        int floorSuffixLeadEnd = currentFrame.floorSuffixLeadEnd;
-        if (floorSuffixLeadEnd == -1) {
-          // An ordinary prefix, e.g. foo*
-          int prefix = currentFrame.prefix;
-          int suffix = currentFrame.suffix;
-          //if (DEBUG) System.out.println("    prefix=" + prefix + " suffix=" + suffix);
-          if (suffix == 0) {
-            //if (DEBUG) System.out.println("    pop frame & nextTerm");
-
-            // Easy case: the prefix term's suffix is the empty string,
-            // meaning the prefix corresponds to all terms in the
-            // current block, so we just pop this entire block:
-            if (currentFrame.ord == 0) {
-              //if (DEBUG) System.out.println("  return null");
-              return null;
-            }
-            currentFrame = stack[currentFrame.ord-1];
-            continue nextTerm;
-          } else {
-
-            // Just next() until we hit an entry that doesn't share this
-            // prefix.  The first next should be a sub-block sharing the
-            // same prefix, because if there are enough terms matching a
-            // given prefix to warrant an auto-prefix term, then there
-            // must also be enough to make a sub-block (assuming
-            // minItemsInPrefix > minItemsInBlock):
-            scanPrefix:
-            while (true) {
-              //if (DEBUG) System.out.println("    scan next");
-              if (currentFrame.nextEnt == currentFrame.entCount) {
-                if (currentFrame.isLastInFloor == false) {
-                  currentFrame.loadNextFloorBlock();
-                } else if (currentFrame.ord == 0) {
-                  //if (DEBUG) System.out.println("  return null0");
-                  return null;
-                } else {
-                  // Pop frame, which also means we've moved beyond this
-                  // auto-prefix term:
-                  //if (DEBUG) System.out.println("  pop; nextTerm");
-                  currentFrame = stack[currentFrame.ord-1];
-                  continue nextTerm;
-                }
-              }
-              isSubBlock = currentFrame.next();
-              //if (DEBUG) {
-              //  BytesRef suffixBytes = new BytesRef(currentFrame.suffix);
-              //  System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, suffixBytes.bytes, 0, currentFrame.suffix);
-              //  suffixBytes.length = currentFrame.suffix;
-              //  System.out.println("      currentFrame.suffix=" + brToString(suffixBytes));
-              //}
-              for(int i=0;i<suffix;i++) {
-                if (term.bytes[prefix+i] != currentFrame.suffixBytes[currentFrame.startBytePos+i]) {
-                  //if (DEBUG) System.out.println("      done; now stop scan");
-                  break scanPrefix;
-                }
-              }
-            }
-          }
-        } else {
-          // Floor'd auto-prefix term; in this case we must skip all
-          // terms e.g. matching foo[a-m]*.  We are currently "on" fooa,
-          // which the automaton accepted (fooa* through foom*), and
-          // floorSuffixLeadEnd is m, so we must now scan to foon:
-          int prefix = currentFrame.prefix;
-          int suffix = currentFrame.suffix;
-
-          if (currentFrame.floorSuffixLeadStart == -1) {
-            suffix++;
-          }
-
-          //if (DEBUG) System.out.println("      prefix=" + prefix + " suffix=" + suffix);
-
-          if (suffix == 0) {
-
-            //if (DEBUG) System.out.println("  pop frame");
-
-            // This means current frame is fooa*, so we have to first
-            // pop the current frame, then scan in parent frame:
-            if (currentFrame.ord == 0) {
-              //if (DEBUG) System.out.println("  return null");
-              return null;
-            }
-            currentFrame = stack[currentFrame.ord-1];
-
-            // Current (parent) frame is now foo*, so now we just scan
-            // until the lead suffix byte is > floorSuffixLeadEnd
-            //assert currentFrame.prefix == prefix-1;
-            //prefix = currentFrame.prefix;
-
-            // In case when we pop, and the parent block is not just prefix-1, e.g. in block 417* on
-            // its first term = floor prefix term 41[7-9], popping to block 4*:
-            prefix = currentFrame.prefix;
-
-            suffix = term.length - currentFrame.prefix;
-          } else {
-            // No need to pop; just scan in currentFrame:
-          }
-
-          //if (DEBUG) System.out.println("    start scan: prefix=" + prefix + " suffix=" + suffix);
-
-          // Now we scan until the lead suffix byte is > floorSuffixLeadEnd
-          scanFloor:
-          while (true) {
-            //if (DEBUG) System.out.println("      scan next");
-            if (currentFrame.nextEnt == currentFrame.entCount) {
-              if (currentFrame.isLastInFloor == false) {
-                //if (DEBUG) System.out.println("      next floor block");
-                currentFrame.loadNextFloorBlock();
-              } else if (currentFrame.ord == 0) {
-                //if (DEBUG) System.out.println("  return null");
-                return null;
-              } else {
-                // Pop frame, which also means we've moved beyond this
-                // auto-prefix term:
-                currentFrame = stack[currentFrame.ord-1];
-                //if (DEBUG) System.out.println("      pop, now curFrame.prefix=" + currentFrame.prefix);
-                continue nextTerm;
-              }
-            }
-            isSubBlock = currentFrame.next();
-            //if (DEBUG) {
-            //  BytesRef suffixBytes = new BytesRef(currentFrame.suffix);
-            //  System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, suffixBytes.bytes, 0, currentFrame.suffix);
-            //  suffixBytes.length = currentFrame.suffix;
-            //  System.out.println("      currentFrame.suffix=" + brToString(suffixBytes));
-            //}
-            for(int i=0;i<suffix-1;i++) {
-              if (term.bytes[prefix+i] != currentFrame.suffixBytes[currentFrame.startBytePos+i]) {
-                //if (DEBUG) System.out.println("      done; now stop scan");
-                break scanFloor;
-              }
-            }
-            //if (DEBUG) {
-            //  if (currentFrame.suffix >= suffix) {
-            //    System.out.println("      cmp label=" + Integer.toHexString(currentFrame.suffixBytes[currentFrame.startBytePos+suffix-1]) + " vs " + floorSuffixLeadEnd);
-            //  }
-            //}
-            if (currentFrame.suffix >= suffix && (currentFrame.suffixBytes[currentFrame.startBytePos+suffix-1]&0xff) > floorSuffixLeadEnd) {
-              // Done scanning: we are now on the first term after all
-              // terms matched by this auto-prefix term
-              //if (DEBUG) System.out.println("      done; now stop scan");
-              break;
-            }
-          }
-        }
-      } else {
-        // Pop finished frames
-        while (currentFrame.nextEnt == currentFrame.entCount) {
-          if (!currentFrame.isLastInFloor) {
-            //if (DEBUG) System.out.println("    next-floor-block: trans: " + currentFrame.transition);
-            // Advance to next floor block
-            currentFrame.loadNextFloorBlock();
-            //if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " outputPrefix=" + currentFrame.outputPrefix);
-            break;
-          } else {
-            //if (DEBUG) System.out.println("  pop frame");
-            if (currentFrame.ord == 0) {
-              //if (DEBUG) System.out.println("  return null");
-              return null;
-            }
-            final long lastFP = currentFrame.fpOrig;
-            currentFrame = stack[currentFrame.ord-1];
-            assert currentFrame.lastSubFP == lastFP;
-            //if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " outputPrefix=" + currentFrame.outputPrefix);
-          }
-        }
-
-        isSubBlock = currentFrame.next();
-      }
-
-      //if (DEBUG) {
-      //  final BytesRef suffixRef = new BytesRef();
-      //  suffixRef.bytes = currentFrame.suffixBytes;
-      //  suffixRef.offset = currentFrame.startBytePos;
-      //  suffixRef.length = currentFrame.suffix;
-      //  System.out.println("    " + (isSubBlock ? "sub-block" : "term") + " " + currentFrame.nextEnt + " (of " + currentFrame.entCount + ") suffix=" + brToString(suffixRef));
-      //}
-
+      // NOTE: suffix == 0 can only happen on the first term in a block, when
+      // there is a term exactly matching a prefix in the index.  If we
+      // could somehow re-org the code so we only checked this case immediately
+      // after pushing a frame...
       if (currentFrame.suffix != 0) {
-        // Advance where we are in the automaton to match what terms
-        // dict next'd to:
-        final int label = currentFrame.suffixBytes[currentFrame.startBytePos] & 0xff;
-        //if (DEBUG) {
-        //  System.out.println("    move automaton to label=" + label + " vs curMax=" + currentFrame.curTransitionMax);
-        // }
-        while (label > currentFrame.curTransitionMax) {
-          if (currentFrame.transitionIndex >= currentFrame.transitionCount-1) {
-            // Pop this frame: no further matches are possible because
-            // we've moved beyond what the max transition will allow
-            //if (DEBUG) System.out.println("      break: trans");
-            if (currentFrame.ord == 0) {
-              //if (DEBUG) System.out.println("  return null");
-              return null;
-            }
-            currentFrame = stack[currentFrame.ord-1];
-            continue nextTerm;
-          }
-          currentFrame.transitionIndex++;
-          automaton.getNextTransition(currentFrame.transition);
-          currentFrame.curTransitionMax = currentFrame.transition.max;
-          //if (DEBUG) System.out.println("      next trans");
-        }
-      }
-
-      // First test the common suffix, if set:
-      if (commonSuffix != null && !isSubBlock) {
-        final int termLen = currentFrame.prefix + currentFrame.suffix;
-        if (termLen < commonSuffix.length) {
-          // No match
-          //if (DEBUG) System.out.println("      skip: common suffix length");
-          continue nextTerm;
-        }
 
         final byte[] suffixBytes = currentFrame.suffixBytes;
-        final byte[] commonSuffixBytes = commonSuffix.bytes;
 
-        final int lenInPrefix = commonSuffix.length - currentFrame.suffix;
-        assert commonSuffix.offset == 0;
-        int suffixBytesPos;
-        int commonSuffixBytesPos = 0;
+        // This is the first byte of the suffix of the term we are now on:
+        final int label = suffixBytes[currentFrame.startBytePos] & 0xff;
 
-        if (lenInPrefix > 0) {
-          // A prefix of the common suffix overlaps with
-          // the suffix of the block prefix so we first
-          // test whether the prefix part matches:
-          final byte[] termBytes = term.bytes;
-          int termBytesPos = currentFrame.prefix - lenInPrefix;
-          assert termBytesPos >= 0;
-          final int termBytesPosEnd = currentFrame.prefix;
-          while (termBytesPos < termBytesPosEnd) {
-            if (termBytes[termBytesPos++] != commonSuffixBytes[commonSuffixBytesPos++]) {
-              //if (DEBUG) System.out.println("      skip: common suffix mismatch (in prefix)");
+        if (label < currentTransition.min) {
+          // Common case: we are scanning terms in this block to "catch up" to
+          // current transition in the automaton:
+          int minTrans = currentTransition.min;
+          while (currentFrame.nextEnt < currentFrame.entCount) {
+            isSubBlock = currentFrame.next();
+            if ((suffixBytes[currentFrame.startBytePos] & 0xff) >= minTrans) {
               continue nextTerm;
             }
           }
-          suffixBytesPos = currentFrame.startBytePos;
-        } else {
-          suffixBytesPos = currentFrame.startBytePos + currentFrame.suffix - commonSuffix.length;
+
+          // End of frame:
+          isSubBlock = popPushNext();
+          continue nextTerm;
         }
 
-        // Test overlapping suffix part:
-        final int commonSuffixBytesPosEnd = commonSuffix.length;
-        while (commonSuffixBytesPos < commonSuffixBytesPosEnd) {
-          if (suffixBytes[suffixBytesPos++] != commonSuffixBytes[commonSuffixBytesPos++]) {
-            //if (DEBUG) System.out.println("      skip: common suffix mismatch");
+        // Advance where we are in the automaton to match this label:
+
+        while (label > currentTransition.max) {
+          if (currentFrame.transitionIndex >= currentFrame.transitionCount-1) {
+            // Pop this frame: no further matches are possible because
+            // we've moved beyond what the max transition will allow
+            if (currentFrame.ord == 0) {
+              // Provoke NPE if we are (illegally!) called again:
+              currentFrame = null;
+              return null;
+            }
+            currentFrame = stack[currentFrame.ord-1];
+            currentTransition = currentFrame.transition;
+            isSubBlock = popPushNext();
+            continue nextTerm;
+          }
+          currentFrame.transitionIndex++;
+          automaton.getNextTransition(currentTransition);
+
+          if (label < currentTransition.min) {
+            int minTrans = currentTransition.min;
+            while (currentFrame.nextEnt < currentFrame.entCount) {
+              isSubBlock = currentFrame.next();
+              if ((suffixBytes[currentFrame.startBytePos] & 0xff) >= minTrans) {
+                continue nextTerm;
+              }
+            }
+
+            // End of frame:
+            isSubBlock = popPushNext();
             continue nextTerm;
           }
         }
-      }
 
-      // TODO: maybe we should do the same linear test
-      // that AutomatonTermsEnum does, so that if we
-      // reach a part of the automaton where .* is
-      // "temporarily" accepted, we just blindly .next()
-      // until the limit
+        if (commonSuffix != null && !isSubBlock) {
+          final int termLen = currentFrame.prefix + currentFrame.suffix;
+          if (termLen < commonSuffix.length) {
+            // No match
+            isSubBlock = popPushNext();
+            continue nextTerm;
+          }
 
-      // TODO: for first iter of this loop can't we just use the current trans?  we already advanced it and confirmed it matches lead
-      // byte of the suffix
+          final byte[] commonSuffixBytes = commonSuffix.bytes;
 
-      // See if the term suffix matches the automaton:
-      int state = currentFrame.state;
-      int lastState = currentFrame.lastState;
-      //if (DEBUG) {
-      //  System.out.println("  a state=" + state + " curFrame.suffix.len=" + currentFrame.suffix + " curFrame.prefix=" + currentFrame.prefix);
-      // }
-      for (int idx=0;idx<currentFrame.suffix;idx++) {
-        lastState = state;
-        //if (DEBUG) System.out.println("    step label=" + (char) (currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff));
-        state = runAutomaton.step(state, currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff);
-        if (state == -1) {
-          // No match
-          //System.out.println("    no s=" + state);
-          continue nextTerm;
-        } else {
-          //System.out.println("    c s=" + state);
+          final int lenInPrefix = commonSuffix.length - currentFrame.suffix;
+          assert commonSuffix.offset == 0;
+          int suffixBytesPos;
+          int commonSuffixBytesPos = 0;
+
+          if (lenInPrefix > 0) {
+            // A prefix of the common suffix overlaps with
+            // the suffix of the block prefix so we first
+            // test whether the prefix part matches:
+            final byte[] termBytes = term.bytes;
+            int termBytesPos = currentFrame.prefix - lenInPrefix;
+            assert termBytesPos >= 0;
+            final int termBytesPosEnd = currentFrame.prefix;
+            while (termBytesPos < termBytesPosEnd) {
+              if (termBytes[termBytesPos++] != commonSuffixBytes[commonSuffixBytesPos++]) {
+                isSubBlock = popPushNext();
+                continue nextTerm;
+              }
+            }
+            suffixBytesPos = currentFrame.startBytePos;
+          } else {
+            suffixBytesPos = currentFrame.startBytePos + currentFrame.suffix - commonSuffix.length;
+          }
+
+          // Test overlapping suffix part:
+          final int commonSuffixBytesPosEnd = commonSuffix.length;
+          while (commonSuffixBytesPos < commonSuffixBytesPosEnd) {
+            if (suffixBytes[suffixBytesPos++] != commonSuffixBytes[commonSuffixBytesPos++]) {
+              isSubBlock = popPushNext();
+              continue nextTerm;
+            }
+          }
         }
-      }
 
-      //if (DEBUG) System.out.println("    after suffix: state=" + state + " lastState=" + lastState);
+        // TODO: maybe we should do the same linear test
+        // that AutomatonTermsEnum does, so that if we
+        // reach a part of the automaton where .* is
+        // "temporarily" accepted, we just blindly .next()
+        // until the limit
+
+        // See if the term suffix matches the automaton:
+
+        // We know from above that the first byte in our suffix (label) matches
+        // the current transition, so we step from the 2nd byte
+        // in the suffix:
+        lastState = currentFrame.state;
+        state = currentTransition.dest;
+
+        int end = currentFrame.startBytePos + currentFrame.suffix;
+        for (int idx=currentFrame.startBytePos+1;idx<end;idx++) {
+          lastState = state;
+          state = runAutomaton.step(state, suffixBytes[idx] & 0xff);
+          if (state == -1) {
+            // No match
+            isSubBlock = popPushNext();
+            continue nextTerm;
+          }
+        }
+      } else {
+        state = currentFrame.state;
+        lastState = currentFrame.lastState;
+      }
 
       if (isSubBlock) {
         // Match!  Recurse:
-        //if (DEBUG) System.out.println("      sub-block match to state=" + state + "; recurse fp=" + currentFrame.lastSubFP);
         copyTerm();
         currentFrame = pushFrame(state);
+        currentTransition = currentFrame.transition;
         currentFrame.lastState = lastState;
-        //xif (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
       } else if (currentFrame.isAutoPrefixTerm) {
         // We are on an auto-prefix term, meaning this term was compiled
         // at indexing time, matching all terms sharing this prefix (or,
@@ -671,7 +685,6 @@ final class IntersectTermsEnum extends TermsEnum {
             if (currentFrame.floorSuffixLeadStart == -1) {
               // Must also accept the empty string in this case
               if (automaton.isAccept(state)) {
-                //if (DEBUG) System.out.println("      state is accept");
                 useAutoPrefixTerm = acceptsSuffixRange(state, 0, currentFrame.floorSuffixLeadEnd);
               }
             } else {
@@ -679,12 +692,10 @@ final class IntersectTermsEnum extends TermsEnum {
             }
           }
 
-          //if (DEBUG) System.out.println("  useAutoPrefixTerm=" + useAutoPrefixTerm);
-
           if (useAutoPrefixTerm) {
+            // All suffixes of this auto-prefix term are accepted by the automaton, so we can use it:
             copyTerm();
             currentFrame.termState.isRealTerm = false;
-            //if (DEBUG) System.out.println("  return auto prefix term: " + brToString(term));
             return term;
           } else {
             // We move onto the next term
@@ -694,31 +705,27 @@ final class IntersectTermsEnum extends TermsEnum {
         }
       } else if (runAutomaton.isAccept(state)) {
         copyTerm();
-        //if (DEBUG) System.out.println("      term match to state=" + state);
         assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
-        //if (DEBUG) System.out.println("      return term=" + brToString(term));
         return term;
       } else {
-        //System.out.println("    no s=" + state);
+        // This term is a prefix of a term accepted by the automaton, but is not itself acceptd
       }
+
+      isSubBlock = popPushNext();
     }
   }
 
-  private final Transition transition = new Transition();
+  private final Transition scratchTransition = new Transition();
 
   /** Returns true if, from this state, the automaton accepts any suffix
    *  starting with a label between start and end, inclusive.  We just
    *  look for a transition, matching this range, to the sink state.  */
   private boolean acceptsSuffixRange(int state, int start, int end) {
 
-    //xif (DEBUG) System.out.println("    acceptsSuffixRange state=" + state + " start=" + start + " end=" + end);
-
-    int count = automaton.initTransition(state, transition);
-    //xif (DEBUG) System.out.println("      transCount=" + count);
-    //xif (DEBUG) System.out.println("      trans=" + transition);
+    int count = automaton.initTransition(state, scratchTransition);
     for(int i=0;i<count;i++) {
-      automaton.getNextTransition(transition);
-      if (start >= transition.min && end <= transition.max && transition.dest == sinkState) {
+      automaton.getNextTransition(scratchTransition);
+      if (start >= scratchTransition.min && end <= scratchTransition.max && scratchTransition.dest == sinkState) {
         return true;
       }
     }
@@ -740,7 +747,6 @@ final class IntersectTermsEnum extends TermsEnum {
   }
 
   private void copyTerm() {
-    //System.out.println("      copyTerm cur.prefix=" + currentFrame.prefix + " cur.suffix=" + currentFrame.suffix + " first=" + (char) currentFrame.suffixBytes[currentFrame.startBytePos]);
     final int len = currentFrame.prefix + currentFrame.suffix;
     if (term.bytes.length < len) {
       term.bytes = ArrayUtil.grow(term.bytes, len);

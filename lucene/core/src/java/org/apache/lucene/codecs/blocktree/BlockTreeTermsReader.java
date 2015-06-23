@@ -103,8 +103,12 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** Auto-prefix terms. */
   public static final int VERSION_AUTO_PREFIX_TERMS = 1;
 
+  /** Conditional auto-prefix terms: we record at write time whether
+   *  this field did write any auto-prefix terms. */
+  public static final int VERSION_AUTO_PREFIX_TERMS_COND = 2;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_AUTO_PREFIX_TERMS;
+  public static final int VERSION_CURRENT = VERSION_AUTO_PREFIX_TERMS_COND;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -131,6 +135,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   
   final int version;
 
+  final boolean anyAutoPrefixTerms;
+
   /** Sole constructor. */
   public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
     boolean success = false;
@@ -143,7 +149,26 @@ public final class BlockTreeTermsReader extends FieldsProducer {
     try {
       termsIn = state.directory.openInput(termsName, state.context);
       version = CodecUtil.checkIndexHeader(termsIn, TERMS_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
-      
+
+      if (version < VERSION_AUTO_PREFIX_TERMS) {
+        // Old (pre-5.2.0) index, no auto-prefix terms:
+        this.anyAutoPrefixTerms = false;
+      } else if (version == VERSION_AUTO_PREFIX_TERMS) {
+        // 5.2.x index, might have auto-prefix terms:
+        this.anyAutoPrefixTerms = true;
+      } else {
+        // 5.3.x index, we record up front if we may have written any auto-prefix terms:
+        assert version >= VERSION_AUTO_PREFIX_TERMS_COND;
+        byte b = termsIn.readByte();
+        if (b == 0) {
+          this.anyAutoPrefixTerms = false;
+        } else if (b == 1) {
+          this.anyAutoPrefixTerms = true;
+        } else {
+          throw new CorruptIndexException("invalid anyAutoPrefixTerms: expected 0 or 1 but got " + b, termsIn);
+        }
+      }
+
       String indexName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_INDEX_EXTENSION);
       indexIn = state.directory.openInput(indexName, state.context);
       CodecUtil.checkIndexHeader(indexIn, TERMS_INDEX_CODEC_NAME, version, version, state.segmentInfo.getId(), state.segmentSuffix);
