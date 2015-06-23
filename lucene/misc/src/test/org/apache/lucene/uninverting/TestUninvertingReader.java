@@ -30,6 +30,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
@@ -273,7 +274,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     for (LeafReaderContext rc : ir.leaves()) {
       final LeafReader ar = rc.reader();
       for (String f : UNINVERT_MAP.keySet()) {
-        final SortedSetDocValues v = ar.getSortedSetDocValues(f);
+        final SortedSetDocValues v = DocValues.getSortedSet(ar, f);
         final long valSetSize = v.getValueCount();
         assertTrue(f + ": Expected no more then " + EXPECTED_VALSET_SIZE + " values per segment, got " +
                    valSetSize + " from: " + ar.toString(),
