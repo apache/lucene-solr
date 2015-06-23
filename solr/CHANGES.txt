@@ -181,6 +181,9 @@ Bug Fixes
 * SOLR-7679: Schema API doesn't take similarity attribute into account when adding
   field types. (Marius Grama, Steve Rowe) 
 
+* SOLR-7664: Throw correct exception (RemoteSolrException) on receiving a HTTP 413.
+  (Ramkumar Aiyengar, Eirik Lygre)
+
 Optimizations
 ----------------------
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
