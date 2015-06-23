@@ -84,6 +84,7 @@ import org.junit.Test;
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -1143,8 +1144,23 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getStr("core"));
       String instanceDirStr = (String) coreStatus.get("instanceDir");
       assertEquals(Paths.get(instanceDirStr).toString(), instancePathStr);
-    }
 
+      //Test to make sure we can't create another replica with an existing core_name of that collection
+      String coreName = newReplica.getStr(CORE_NAME_PROP);
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", "addreplica");
+      params.set("collection", collectionName);
+      params.set("shard", "shard1");
+      params.set("name", coreName);
+      QueryRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      try {
+        client.request(request);
+        fail("AddReplica call should not have been successful");
+      } catch (SolrException e) {
+        assertTrue(e.getMessage().contains("Another replica with the same core name already exists for this collection"));
+      }
+    }
   }
 
   @Override
