@@ -186,7 +186,12 @@ Bug Fixes
 
 Optimizations
 ----------------------
+
 * SOLR-7660: Avoid redundant 'exists' calls made to ZK while fetching cluster state updates. (shalin)
+
+* SOLR-7714: Reduce SearchHandler's use of ShardHandler objects across shards in a search,
+  from one for each shard and the federator, to just one for the federator.
+  (Christine Poerschke via Ramkumar Aiyengar)
 
 Other Changes
 ----------------------

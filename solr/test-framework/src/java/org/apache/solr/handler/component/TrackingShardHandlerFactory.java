@@ -88,8 +88,8 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
     final ShardHandler wrapped = super.getShardHandler();
     return new ShardHandler() {
       @Override
-      public void checkDistributed(ResponseBuilder rb) {
-        wrapped.checkDistributed(rb);
+      public void prepDistributed(ResponseBuilder rb) {
+        wrapped.prepDistributed(rb);
       }
 
       @Override
