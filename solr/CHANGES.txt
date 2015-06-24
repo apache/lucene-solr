@@ -246,6 +246,9 @@ Other Changes
 * The "name" parameter in ADDREPLICA Collections API call has be deprecated. One cannot specify
   the core name for a replica. See SOLR-7499 for more info. (Varun Thacker, noble, Erick Erickson)
 
+* SOLR-7711: Correct initial capacity for the list that holds the default components for the SearchHandler
+  (Christine Poerschke via Varun Thacker)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
