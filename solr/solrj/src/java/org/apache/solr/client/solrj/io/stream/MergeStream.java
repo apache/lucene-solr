@@ -19,11 +19,11 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -43,12 +43,10 @@ public class MergeStream extends TupleStream implements Expressible {
 
   private PushBackStream streamA;
   private PushBackStream streamB;
-  private Comparator<Tuple> comp;
+  private StreamComparator comp;
 
-  public MergeStream(TupleStream streamA, TupleStream streamB, Comparator<Tuple> comp) {
-    this.streamA = new PushBackStream(streamA);
-    this.streamB = new PushBackStream(streamB);
-    this.comp = comp;
+  public MergeStream(TupleStream streamA, TupleStream streamB, StreamComparator comp) throws IOException {
+    init(streamA, streamB, comp);
   }
   
   public MergeStream(StreamExpression expression,StreamFactory factory) throws IOException {
@@ -64,15 +62,26 @@ public class MergeStream extends TupleStream implements Expressible {
     if(2 != streamExpressions.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two streams but found %d (must be PushBackStream types)",expression, streamExpressions.size()));
     }
-    this.streamA = new PushBackStream(factory.constructStream(streamExpressions.get(0)));
-    this.streamB = new PushBackStream(factory.constructStream(streamExpressions.get(1)));
-    
+
     if(null == onExpression || !(onExpression.getParameter() instanceof StreamExpressionValue)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting single 'on' parameter listing fields to merge on but didn't find one",expression));
     }
     
-    // Merge is always done over equality, so always use an EqualTo comparator
-    this.comp = factory.constructComparator(((StreamExpressionValue)onExpression.getParameter()).getValue(), StreamComparator.class);
+    init( factory.constructStream(streamExpressions.get(0)),
+          factory.constructStream(streamExpressions.get(1)),
+          factory.constructComparator(((StreamExpressionValue)onExpression.getParameter()).getValue(), FieldComparator.class)
+        );
+  }
+  
+  private void init(TupleStream streamA, TupleStream streamB, StreamComparator comp) throws IOException {
+    this.streamA = new PushBackStream(streamA);
+    this.streamB = new PushBackStream(streamB);
+    this.comp = comp;
+
+    // streamA and streamB must both be sorted so that comp can be derived from
+    if(!comp.isDerivedFrom(streamA.getStreamSort()) || !comp.isDerivedFrom(streamB.getStreamSort())){
+      throw new IOException("Invalid MergeStream - both substream comparators (sort) must be a superset of this stream's comparator.");
+    }
   }
   
   @Override
@@ -85,12 +94,7 @@ public class MergeStream extends TupleStream implements Expressible {
     expression.addParameter(streamB.toExpression(factory));
     
     // on
-    if(comp instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("on",((Expressible)comp).toExpression(factory)));
-    }
-    else{
-      throw new IOException("This MergeStream contains a non-expressible comparator - it cannot be converted to an expression");
-    }
+    expression.addParameter(new StreamExpressionNamedParameter("on",comp.toExpression(factory)));
     
     return expression;   
   }
@@ -145,6 +149,12 @@ public class MergeStream extends TupleStream implements Expressible {
       return b;
     }
   }
+  
+  /** Return the stream sort - ie, the order in which records are returned */
+  public StreamComparator getStreamSort(){
+    return comp;
+  }
+
 
   public int getCost() {
     return 0;

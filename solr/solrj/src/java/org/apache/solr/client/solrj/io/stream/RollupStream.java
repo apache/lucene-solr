@@ -26,6 +26,7 @@ import java.util.ArrayList;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.HashKey;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 
@@ -64,6 +65,10 @@ public class RollupStream extends TupleStream {
 
   public void close() throws IOException {
     tupleStream.close();
+  }
+
+  public StreamComparator getStreamSort(){
+    return tupleStream.getStreamSort();
   }
 
   public Tuple read() throws IOException {

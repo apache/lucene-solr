@@ -38,7 +38,8 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.MultiComp;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -69,7 +70,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected String collection;
   protected Map<String,String> params;
   private Map<String, String> fieldMappings;
-  protected Comparator<Tuple> comp;
+  protected StreamComparator comp;
   private int zkConnectTimeout = 10000;
   private int zkClientTimeout = 10000;
   private int numWorkers;
@@ -242,7 +243,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return solrStreams;
   }
 
-  private Comparator<Tuple> parseComp(String sort, String fl) throws IOException {
+  private StreamComparator parseComp(String sort, String fl) throws IOException {
 
     String[] fls = fl.split(",");
     HashSet fieldSet = new HashSet();
@@ -251,7 +252,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     String[] sorts = sort.split(",");
-    Comparator[] comps = new Comparator[sorts.length];
+    StreamComparator[] comps = new StreamComparator[sorts.length];
     for(int i=0; i<sorts.length; i++) {
       String s = sorts[i];
 
@@ -269,11 +270,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         fieldName = fieldMappings.get(fieldName);
       }
       
-      comps[i] = new StreamComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
+      comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
     }
 
     if(comps.length > 1) {
-      return new MultiComp(comps);
+      return new MultipleFieldComparator(comps);
     } else {
       return comps[0];
     }
@@ -350,6 +351,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     if(cache == null) {
       cloudSolrClient.close();
     }
+  }
+  
+  /** Return the stream sort - ie, the order in which records are returned */
+  public StreamComparator getStreamSort(){
+    return comp;
   }
 
   public Tuple read() throws IOException {
