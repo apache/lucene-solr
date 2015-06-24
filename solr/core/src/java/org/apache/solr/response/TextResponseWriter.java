@@ -68,7 +68,7 @@ public abstract class TextResponseWriter {
 
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    this.writer = FastWriter.wrap(writer);
+    this.writer = writer == null ? null: FastWriter.wrap(writer);
     this.schema = req.getSchema();
     this.req = req;
     this.rsp = rsp;
@@ -81,7 +81,7 @@ public abstract class TextResponseWriter {
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
   public void close() throws IOException {
-    writer.flushBuffer();
+    if(writer != null) writer.flushBuffer();
   }
 
   /** returns the Writer that the response is being written to */
@@ -132,26 +132,9 @@ public abstract class TextResponseWriter {
         writeStr(name, f.stringValue(), true);
       }
     } else if (val instanceof Number) {
-      if (val instanceof Integer) {
-        writeInt(name, val.toString());
-      } else if (val instanceof Long) {
-        writeLong(name, val.toString());
-      } else if (val instanceof Float) {
-        // we pass the float instead of using toString() because
-        // it may need special formatting. same for double.
-        writeFloat(name, ((Float)val).floatValue());
-      } else if (val instanceof Double) {
-        writeDouble(name, ((Double)val).doubleValue());        
-      } else if (val instanceof Short) {
-        writeInt(name, val.toString());
-      } else if (val instanceof Byte) {
-        writeInt(name, val.toString());
-      } else {
-        // default... for debugging only
-        writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
-      }
+      writeNumber(name, (Number)val);
     } else if (val instanceof Boolean) {
-      writeBool(name, val.toString());
+      writeBool(name, (Boolean)val);
     } else if (val instanceof Date) {
       writeDate(name,(Date)val);
     } else if (val instanceof Document) {
@@ -196,6 +179,31 @@ public abstract class TextResponseWriter {
       writeStr(name, val.toString(), true);
     } else if (val instanceof WriteableValue) {
       ((WriteableValue)val).write(name, this);
+    } else {
+      // default... for debugging only
+      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
+    }
+  }
+
+  protected void writeBool(String name , Boolean val) throws IOException {
+    writeBool(name, val.toString());
+  }
+
+  protected void writeNumber(String name, Number val) throws IOException {
+    if (val instanceof Integer) {
+      writeInt(name, val.toString());
+    } else if (val instanceof Long) {
+      writeLong(name, val.toString());
+    } else if (val instanceof Float) {
+      // we pass the float instead of using toString() because
+      // it may need special formatting. same for double.
+      writeFloat(name, ((Float)val).floatValue());
+    } else if (val instanceof Double) {
+      writeDouble(name, ((Double)val).doubleValue());
+    } else if (val instanceof Short) {
+      writeInt(name, val.toString());
+    } else if (val instanceof Byte) {
+      writeInt(name, val.toString());
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);

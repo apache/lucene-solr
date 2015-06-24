@@ -310,16 +310,6 @@ class JSONWriter extends TextResponseWriter {
   }
 
 
-  protected static class MultiValueField {
-    final SchemaField sfield;
-    final ArrayList<IndexableField> fields;
-    MultiValueField(SchemaField sfield, IndexableField firstVal) {
-      this.sfield = sfield;
-      this.fields = new ArrayList<>(4);
-      this.fields.add(firstVal);
-    }
-  }
-
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException {
     if( idx > 0 ) {

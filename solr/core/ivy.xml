@@ -53,6 +53,12 @@
     <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
 
+    <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="${/com.fasterxml.jackson.core/jackson-core}" conf="compile"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="test"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="test"/>
+    <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-smile" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-smile}" conf="compile"/>
+
+
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop"/>
     <!--
       hadoop-hdfs, hadoop-annotations and hadoop-auth are runtime dependencies,
