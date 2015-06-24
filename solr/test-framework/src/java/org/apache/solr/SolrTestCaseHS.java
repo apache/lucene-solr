@@ -61,7 +61,7 @@ import java.util.Set;
 
 
 @SolrTestCaseJ4.SuppressSSL
-@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
+//@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
 public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
   @SafeVarargs
@@ -247,6 +247,13 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   public static class Client {
     ClientProvider provider;
     ModifiableSolrParams queryDefaults;
+    public Tester tester = new Tester();
+
+    public static class Tester {
+      public  void assertJQ(SolrClient client, SolrParams args, String... tests) throws Exception {
+        SolrTestCaseHS.assertJQ(client, args, tests);
+      }
+    }
 
     public static Client localClient = new Client(null, 1);
     public static Client localClient() {
@@ -285,7 +292,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         args = newParams;
       }
       SolrClient client = provider==null ? null : provider.client(null, args);
-      SolrTestCaseHS.assertJQ(client, args, tests);
+      tester.assertJQ(client, args, tests);
     }
 
     public Long add(SolrInputDocument sdoc, ModifiableSolrParams params) throws Exception {

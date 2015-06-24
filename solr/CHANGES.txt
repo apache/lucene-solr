@@ -139,6 +139,8 @@ New Features
 * SOLR-7182: Make the Schema-API a first class citizen of SolrJ. The new SchemaRequest and its inner
   classes can be used to make requests to the Schema API. (Sven Windisch, Marius Grama via shalin)
 
+* SOLR-7651: New response format added wt=smile (noble)
+
 Bug Fixes
 ----------------------
 
