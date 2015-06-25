@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -97,11 +98,14 @@ public abstract class Weight {
   public abstract void normalize(float norm, float topLevelBoost);
 
   /**
-   * Returns a {@link Scorer} which scores documents in/out-of order according
-   * to <code>scoreDocsInOrder</code>.
+   * Returns a {@link Scorer} which can iterate in order over all matching
+   * documents and assign them a score.
    * <p>
    * <b>NOTE:</b> null can be returned if no documents will be scored by this
    * query.
+   * <p>
+   * <b>NOTE</b>: The returned {@link Scorer} does not have
+   * {@link LeafReader#getLiveDocs()} applied, they need to be checked on top.
    * 
    * @param context
    *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
@@ -117,7 +121,7 @@ public abstract class Weight {
    * Only queries that have a different top-level approach
    * need to override this; the default implementation
    * pulls a normal {@link Scorer} and iterates and
-   * collects the resulting hits.
+   * collects the resulting hits which are not marked as deleted.
    *
    * @param context
    *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
