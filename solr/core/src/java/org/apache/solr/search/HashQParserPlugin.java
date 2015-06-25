@@ -148,7 +148,7 @@ public class HashQParserPlugin extends QParserPlugin {
       }
 
       ConstantScoreQuery constantScoreQuery = new ConstantScoreQuery(new BitsFilter(fixedBitSets));
-      return constantScoreQuery.createWeight(searcher, false);
+      return searcher.rewrite(constantScoreQuery).createWeight(searcher, false);
     }
 
     public class BitsFilter extends Filter {
