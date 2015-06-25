@@ -514,6 +514,14 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("B"), BooleanClause.Occur.MUST);
     assertScore(2 * 2/(2f + 1), bq.build());
   }
+
+  public void testConjunction3TermMatches() throws Exception {
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.add(term("A"), BooleanClause.Occur.MUST);
+    bq.add(term("B"), BooleanClause.Occur.MUST);
+    bq.add(term("C"), BooleanClause.Occur.MUST);
+    assertScore(3 * 3/(3f + 1), bq.build());
+  }
   
   // conjunctions coord disabled
   

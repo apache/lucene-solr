@@ -196,6 +196,11 @@ Optimizations
 * LUCENE-6548: Some optimizations for BlockTree's intersect with very
   finite automata (Mike McCandless)
 
+* LUCENE-6585: Flatten conjunctions and conjunction approximations into
+  parent conjunctions. For example a sloppy phrase query of "foo bar"~5
+  with a filter of "baz" will internally leapfrog foo,bar,baz as one
+  conjunction. (Ryan Ernst, Robert Muir, Adrien Grande)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
