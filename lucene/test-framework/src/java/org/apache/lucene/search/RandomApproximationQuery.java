@@ -113,8 +113,8 @@ public class RandomApproximationQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      final Scorer scorer = weight.scorer(context, acceptDocs);
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      final Scorer scorer = weight.scorer(context);
       if (scorer == null) {
         return null;
       }

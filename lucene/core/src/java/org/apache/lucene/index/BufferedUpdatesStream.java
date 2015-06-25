@@ -34,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
@@ -555,7 +556,8 @@ class BufferedUpdatesStream implements Accountable {
         if (state.delGen < delGen) {
 
           // we don't need term frequencies for this
-          state.postingsEnum = state.termsEnum.postings(state.rld.getLiveDocs(), state.postingsEnum, PostingsEnum.NONE);
+          final Bits acceptDocs = state.rld.getLiveDocs();
+          state.postingsEnum = state.termsEnum.postings(state.postingsEnum, PostingsEnum.NONE);
 
           assert state.postingsEnum != null;
 
@@ -563,6 +565,9 @@ class BufferedUpdatesStream implements Accountable {
             final int docID = state.postingsEnum.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
+            }
+            if (acceptDocs != null && acceptDocs.get(docID) == false) {
+              continue;
             }
             if (!state.any) {
               state.rld.initWritableLiveDocs();
@@ -651,7 +656,8 @@ class BufferedUpdatesStream implements Accountable {
 
       if (termsEnum.seekExact(term.bytes())) {
         // we don't need term frequencies for this
-        postingsEnum = termsEnum.postings(segState.rld.getLiveDocs(), postingsEnum, PostingsEnum.NONE);
+        final Bits acceptDocs = segState.rld.getLiveDocs();
+        postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
 
         DocValuesFieldUpdates dvUpdates = dvUpdatesContainer.getUpdates(update.field, update.type);
         if (dvUpdates == null) {
@@ -661,6 +667,9 @@ class BufferedUpdatesStream implements Accountable {
         while ((doc = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           if (doc >= limit) {
             break; // no more docs that can be updated for this term
+          }
+          if (acceptDocs != null && acceptDocs.get(doc) == false) {
+            continue;
           }
           dvUpdates.add(doc, update.value);
         }

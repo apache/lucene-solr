@@ -80,7 +80,7 @@ public class TestTermScorer extends LuceneTestCase {
     Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext)indexSearcher.getTopReaderContext();
-    BulkScorer ts = weight.bulkScorer(context, context.reader().getLiveDocs());
+    BulkScorer ts = weight.bulkScorer(context);
     // we have 2 documents with the term all in them, one document for all the
     // other values
     final List<TestHit> docs = new ArrayList<>();
@@ -114,7 +114,7 @@ public class TestTermScorer extends LuceneTestCase {
       public boolean needsScores() {
         return true;
       }
-    });
+    }, null);
     assertTrue("docs Size: " + docs.size() + " is not: " + 2, docs.size() == 2);
     TestHit doc0 = docs.get(0);
     TestHit doc5 = docs.get(1);
@@ -142,7 +142,7 @@ public class TestTermScorer extends LuceneTestCase {
     Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext) indexSearcher.getTopReaderContext();
-    Scorer ts = weight.scorer(context, context.reader().getLiveDocs());
+    Scorer ts = weight.scorer(context);
     assertTrue("next did not return a doc",
         ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertTrue("score is not correct", ts.score() == 1.6931472f);
@@ -161,7 +161,7 @@ public class TestTermScorer extends LuceneTestCase {
     Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext) indexSearcher.getTopReaderContext();
-    Scorer ts = weight.scorer(context, context.reader().getLiveDocs());
+    Scorer ts = weight.scorer(context);
     assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     // The next doc should be doc 5
     assertTrue("doc should be number 5", ts.docID() == 5);
@@ -199,7 +199,7 @@ public class TestTermScorer extends LuceneTestCase {
     
     Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
     try {
-      weight.scorer(forbiddenNorms.getContext(), null).nextDoc();
+      weight.scorer(forbiddenNorms.getContext()).nextDoc();
       fail("Should load norms");
     } catch (AssertionError e) {
       // ok
@@ -207,6 +207,6 @@ public class TestTermScorer extends LuceneTestCase {
     
     weight = indexSearcher.createNormalizedWeight(termQuery, false);
     // should not fail this time since norms are not necessary
-    weight.scorer(forbiddenNorms.getContext(), null).nextDoc();
+    weight.scorer(forbiddenNorms.getContext()).nextDoc();
   }
 }

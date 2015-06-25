@@ -36,7 +36,7 @@ import org.apache.lucene.util.Bits;
  * {@link org.apache.lucene.index.LeafReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)})
+ * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -51,7 +51,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(org.apache.lucene.index.LeafReaderContext, Bits)}.
+ * {@link #scorer(org.apache.lucene.index.LeafReaderContext)}.
  * </ol>
  * 
  * @since 2.9
@@ -105,14 +105,11 @@ public abstract class Weight {
    * 
    * @param context
    *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
-   * @param acceptDocs
-   *          Bits that represent the allowable docs to match (typically deleted docs
-   *          but possibly filtering other documents)
    *          
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract Scorer scorer(LeafReaderContext context) throws IOException;
 
   /**
    * Optional method, to return a {@link BulkScorer} to
@@ -124,17 +121,14 @@ public abstract class Weight {
    *
    * @param context
    *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
-   * @param acceptDocs
-   *          Bits that represent the allowable docs to match (typically deleted docs
-   *          but possibly filtering other documents)
    *
    * @return a {@link BulkScorer} which scores documents and
    * passes them to a collector.
    * @throws IOException if there is a low-level I/O error
    */
-  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
 
-    Scorer scorer = scorer(context, acceptDocs);
+    Scorer scorer = scorer(context);
     if (scorer == null) {
       // No docs match
       return null;
@@ -164,23 +158,22 @@ public abstract class Weight {
     }
 
     @Override
-    public int score(LeafCollector collector, int min, int max) throws IOException {
-      // TODO: this may be sort of weird, when we are
-      // embedded in a BooleanScorer, because we are
-      // called for every chunk of 2048 documents.  But,
-      // then, scorer is a FakeScorer in that case, so any
-      // Collector doing something "interesting" in
-      // setScorer will be forced to use BS2 anyways:
+    public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
+      final TwoPhaseIterator twoPhase = scorer.asTwoPhaseIterator();
       if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
-        scoreAll(collector, scorer);
+        scoreAll(collector, scorer, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
         if (doc < min) {
-          doc = scorer.advance(min);
+          if (twoPhase == null) {
+            doc = scorer.advance(min);
+          } else {
+            doc = twoPhase.approximation().advance(min);
+          }
         }
-        return scoreRange(collector, scorer, doc, max);
+        return scoreRange(collector, scorer, twoPhase, acceptDocs, doc, max);
       }
     }
 
@@ -188,21 +181,47 @@ public abstract class Weight {
      *  separate this from {@link #scoreAll} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static int scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
-      while (currentDoc < end) {
-        collector.collect(currentDoc);
-        currentDoc = scorer.nextDoc();
+    static int scoreRange(LeafCollector collector, Scorer scorer, TwoPhaseIterator twoPhase,
+        Bits acceptDocs, int currentDoc, int end) throws IOException {
+      if (twoPhase == null) {
+        while (currentDoc < end) {
+          if (acceptDocs == null || acceptDocs.get(currentDoc)) {
+            collector.collect(currentDoc);
+          }
+          currentDoc = scorer.nextDoc();
+        }
+        return currentDoc;
+      } else {
+        final DocIdSetIterator approximation = twoPhase.approximation();
+        while (currentDoc < end) {
+          if ((acceptDocs == null || acceptDocs.get(currentDoc)) && twoPhase.matches()) {
+            collector.collect(currentDoc);
+          }
+          currentDoc = approximation.nextDoc();
+        }
+        return currentDoc;
       }
-      return currentDoc;
     }
     
     /** Specialized method to bulk-score all hits; we
      *  separate this from {@link #scoreRange} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static void scoreAll(LeafCollector collector, Scorer scorer) throws IOException {
-      for (int doc = scorer.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = scorer.nextDoc()) {
-        collector.collect(doc);
+    static void scoreAll(LeafCollector collector, Scorer scorer, TwoPhaseIterator twoPhase, Bits acceptDocs) throws IOException {
+      if (twoPhase == null) {
+        for (int doc = scorer.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = scorer.nextDoc()) {
+          if (acceptDocs == null || acceptDocs.get(doc)) {
+            collector.collect(doc);
+          }
+        }
+      } else {
+        // The scorer has an approximation, so run the approximation first, then check acceptDocs, then confirm
+        final DocIdSetIterator approximation = twoPhase.approximation();
+        for (int doc = approximation.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = approximation.nextDoc()) {
+          if ((acceptDocs == null || acceptDocs.get(doc)) && twoPhase.matches()) {
+            collector.collect(doc);
+          }
+        }
       }
     }
   }

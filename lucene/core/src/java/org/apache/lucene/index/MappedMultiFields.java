@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.Bits;
-
 import static org.apache.lucene.index.FilterLeafReader.FilterFields;
 import static org.apache.lucene.index.FilterLeafReader.FilterTerms;
 import static org.apache.lucene.index.FilterLeafReader.FilterTermsEnum;
@@ -107,11 +105,7 @@ public class MappedMultiFields extends FilterFields {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-      if (liveDocs != null) {
-        throw new IllegalArgumentException("liveDocs must be null");
-      }
-
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       MappingMultiPostingsEnum mappingDocsAndPositionsEnum;
       if (reuse instanceof MappingMultiPostingsEnum) {
         MappingMultiPostingsEnum postings = (MappingMultiPostingsEnum) reuse;
@@ -124,7 +118,7 @@ public class MappedMultiFields extends FilterFields {
         mappingDocsAndPositionsEnum = new MappingMultiPostingsEnum(field, mergeState);
       }
 
-      MultiPostingsEnum docsAndPositionsEnum = (MultiPostingsEnum) in.postings(liveDocs, mappingDocsAndPositionsEnum.multiDocsAndPositionsEnum, flags);
+      MultiPostingsEnum docsAndPositionsEnum = (MultiPostingsEnum) in.postings(mappingDocsAndPositionsEnum.multiDocsAndPositionsEnum, flags);
       mappingDocsAndPositionsEnum.reset(docsAndPositionsEnum);
       return mappingDocsAndPositionsEnum;
     }

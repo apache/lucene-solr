@@ -66,7 +66,7 @@ public abstract class ConstantScoreWeight extends Weight {
 
   @Override
   public final Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    final Scorer s = scorer(context, context.reader().getLiveDocs());
+    final Scorer s = scorer(context);
     final boolean exists;
     if (s == null) {
       exists = false;

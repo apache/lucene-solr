@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
@@ -327,7 +326,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     MultiPostingsEnum docsEnum;
 
     // Can only reuse if incoming enum is also a MultiDocsEnum
@@ -340,13 +339,6 @@ public final class MultiTermsEnum extends TermsEnum {
     } else {
       docsEnum = new MultiPostingsEnum(this, subs.length);
     }
-    
-    final MultiBits multiLiveDocs;
-    if (liveDocs instanceof MultiBits) {
-      multiLiveDocs = (MultiBits) liveDocs;
-    } else {
-      multiLiveDocs = null;
-    }
 
     int upto = 0;
 
@@ -354,31 +346,8 @@ public final class MultiTermsEnum extends TermsEnum {
 
       final TermsEnumWithSlice entry = top[i];
 
-      final Bits b;
-
-      if (multiLiveDocs != null) {
-        // optimize for common case: requested skip docs is a
-        // congruent sub-slice of MultiBits: in this case, we
-        // just pull the liveDocs from the sub reader, rather
-        // than making the inefficient
-        // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiLiveDocs.getMatchingSub(entry.subSlice);
-        if (sub.matches) {
-          b = sub.result;
-        } else {
-          // custom case: requested skip docs is foreign:
-          // must slice it on every access
-          b = new BitsSlice(liveDocs, entry.subSlice);
-        }
-      } else if (liveDocs != null) {
-        b = new BitsSlice(liveDocs, entry.subSlice);
-      } else {
-        // no deletions
-        b = null;
-      }
-
       assert entry.index < docsEnum.subPostingsEnums.length: entry.index + " vs " + docsEnum.subPostingsEnums.length + "; " + subs.length;
-      final PostingsEnum subPostingsEnum = entry.terms.postings(b, docsEnum.subPostingsEnums[entry.index], flags);
+      final PostingsEnum subPostingsEnum = entry.terms.postings(docsEnum.subPostingsEnums[entry.index], flags);
       assert subPostingsEnum != null;
       docsEnum.subPostingsEnums[entry.index] = subPostingsEnum;
       subDocs[upto].postingsEnum = subPostingsEnum;

@@ -1083,7 +1083,7 @@ public final class TestUtil {
   // Returns a DocsEnum, but randomly sometimes uses a
   // DocsAndFreqsEnum, DocsAndPositionsEnum.  Returns null
   // if field/term doesn't exist:
-  public static PostingsEnum docs(Random random, IndexReader r, String field, BytesRef term, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public static PostingsEnum docs(Random random, IndexReader r, String field, BytesRef term, PostingsEnum reuse, int flags) throws IOException {
     final Terms terms = MultiFields.getTerms(r, field);
     if (terms == null) {
       return null;
@@ -1092,11 +1092,11 @@ public final class TestUtil {
     if (!termsEnum.seekExact(term)) {
       return null;
     }
-    return docs(random, termsEnum, liveDocs, reuse, flags);
+    return docs(random, termsEnum, reuse, flags);
   }
 
   // Returns a PostingsEnum with random features available
-  public static PostingsEnum docs(Random random, TermsEnum termsEnum, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public static PostingsEnum docs(Random random, TermsEnum termsEnum, PostingsEnum reuse, int flags) throws IOException {
     // TODO: simplify this method? it would be easier to randomly either use the flags passed, or do the random selection,
     // FREQS should be part fo the random selection instead of outside on its own?
     if (random.nextBoolean()) {
@@ -1108,11 +1108,11 @@ public final class TestUtil {
           case 2: posFlags = PostingsEnum.PAYLOADS; break;
           default: posFlags = PostingsEnum.ALL; break;
         }
-        return termsEnum.postings(liveDocs, null, posFlags);
+        return termsEnum.postings(null, posFlags);
       }
       flags |= PostingsEnum.FREQS;
     }
-    return termsEnum.postings(liveDocs, reuse, flags);
+    return termsEnum.postings(reuse, flags);
   }
   
   public static CharSequence stringToCharSequence(String string, Random random) {

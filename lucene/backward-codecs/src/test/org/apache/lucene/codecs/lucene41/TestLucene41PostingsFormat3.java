@@ -282,7 +282,6 @@ public class TestLucene41PostingsFormat3 extends LuceneTestCase {
    */
   public void assertTermsEnum(TermsEnum leftTermsEnum, TermsEnum rightTermsEnum, boolean deep, boolean hasPositions) throws Exception {
     BytesRef term;
-    Bits randomBits = new RandomBits(MAXDOC, random().nextDouble(), random());
     PostingsEnum leftPositions = null;
     PostingsEnum rightPositions = null;
     PostingsEnum leftDocs = null;
@@ -294,84 +293,54 @@ public class TestLucene41PostingsFormat3 extends LuceneTestCase {
       if (deep) {
         if (hasPositions) {
           // with payloads + off
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.ALL),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.ALL));
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.ALL),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.ALL));
+          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.ALL),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.ALL));
           
           assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.POSITIONS),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.POSITIONS));
-          assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.POSITIONS),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.POSITIONS));
+              leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.POSITIONS),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.POSITIONS));
           // with payloads only
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.PAYLOADS),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.PAYLOADS));
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.PAYLOADS),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.PAYLOADS));
+          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.PAYLOADS),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.PAYLOADS));
           
           assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.PAYLOADS),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.PAYLOADS));
-          assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.PAYLOADS),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.PAYLOADS));
+              leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.PAYLOADS),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.PAYLOADS));
           
           // with offsets only
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.OFFSETS),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.OFFSETS));
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.OFFSETS),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.OFFSETS));
+          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.OFFSETS),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.OFFSETS));
           
           assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.OFFSETS),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.OFFSETS));
-          assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.OFFSETS),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.OFFSETS));
+              leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.OFFSETS),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.OFFSETS));
           
           // with positions only
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.POSITIONS),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.POSITIONS));
-          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.POSITIONS),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.POSITIONS));
+          assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.POSITIONS),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.POSITIONS));
           
           assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.POSITIONS),
-              rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.POSITIONS));
-          assertPositionsSkipping(leftTermsEnum.docFreq(), 
-              leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.POSITIONS),
-              rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.POSITIONS));
+              leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.POSITIONS),
+              rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.POSITIONS));
         }
         
         // with freqs:
-        assertDocsEnum(leftDocs = leftTermsEnum.postings(null, leftDocs),
-            rightDocs = rightTermsEnum.postings(null, rightDocs));
-        assertDocsEnum(leftDocs = leftTermsEnum.postings(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs));
+        assertDocsEnum(leftDocs = leftTermsEnum.postings(leftDocs),
+            rightDocs = rightTermsEnum.postings(rightDocs));
 
         // w/o freqs:
-        assertDocsEnum(leftDocs = leftTermsEnum.postings(null, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(null, rightDocs, PostingsEnum.NONE));
-        assertDocsEnum(leftDocs = leftTermsEnum.postings(randomBits, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs, PostingsEnum.NONE));
+        assertDocsEnum(leftDocs = leftTermsEnum.postings(leftDocs, PostingsEnum.NONE),
+            rightDocs = rightTermsEnum.postings(rightDocs, PostingsEnum.NONE));
         
         // with freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(null, leftDocs),
-            rightDocs = rightTermsEnum.postings(null, rightDocs));
-        assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs));
+            leftDocs = leftTermsEnum.postings(leftDocs),
+            rightDocs = rightTermsEnum.postings(rightDocs));
 
         // w/o freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(null, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(null, rightDocs, PostingsEnum.NONE));
-        assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(randomBits, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs, PostingsEnum.NONE));
+            leftDocs = leftTermsEnum.postings(leftDocs, PostingsEnum.NONE),
+            rightDocs = rightTermsEnum.postings(rightDocs, PostingsEnum.NONE));
       }
     }
     assertNull(rightTermsEnum.next());
@@ -490,29 +459,6 @@ public class TestLucene41PostingsFormat3 extends LuceneTestCase {
         assertEquals(leftDocs.nextPosition(), rightDocs.nextPosition());
         // we don't compare the payloads, its allowed that one is empty etc
       }
-    }
-  }
-  
-  private static class RandomBits implements Bits {
-    FixedBitSet bits;
-    
-    RandomBits(int maxDoc, double pctLive, Random random) {
-      bits = new FixedBitSet(maxDoc);
-      for (int i = 0; i < maxDoc; i++) {
-        if (random.nextDouble() <= pctLive) {        
-          bits.set(i);
-        }
-      }
-    }
-    
-    @Override
-    public boolean get(int index) {
-      return bits.get(index);
-    }
-
-    @Override
-    public int length() {
-      return bits.length();
     }
   }
 }

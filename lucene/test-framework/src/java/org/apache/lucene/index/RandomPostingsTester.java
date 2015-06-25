@@ -40,9 +40,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -98,8 +96,6 @@ public class RandomPostingsTester {
   private Map<String,SortedMap<BytesRef,SeedAndOrd>> fields;
 
   private FieldInfos fieldInfos;
-
-  private FixedBitSet globalLiveDocs;
 
   List<FieldAndTerm> allTerms;
   private int maxDoc;
@@ -169,7 +165,7 @@ public class RandomPostingsTester {
 
         // NOTE: sort of silly: we enum all the docs just to
         // get the maxDoc
-        PostingsEnum postingsEnum = getSeedPostings(term, termSeed, false, globalLiveDocs, IndexOptions.DOCS, true);
+        PostingsEnum postingsEnum = getSeedPostings(term, termSeed, IndexOptions.DOCS, true);
         int doc;
         int lastDoc = 0;
         while((doc = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
@@ -190,14 +186,6 @@ public class RandomPostingsTester {
     // It's the count, not the last docID:
     maxDoc++;
 
-    globalLiveDocs = new FixedBitSet(maxDoc);
-    double liveRatio = random.nextDouble();
-    for(int i=0;i<maxDoc;i++) {
-      if (random.nextDouble() <= liveRatio) {
-        globalLiveDocs.set(i);
-      }
-    }
-
     allTerms = new ArrayList<>();
     for(Map.Entry<String,SortedMap<BytesRef,SeedAndOrd>> fieldEnt : fields.entrySet()) {
       String field = fieldEnt.getKey();
@@ -212,7 +200,7 @@ public class RandomPostingsTester {
     }
   }
 
-  public static SeedPostings getSeedPostings(String term, long seed, boolean withLiveDocs, Bits globalLiveDocs, IndexOptions options, boolean allowPayloads) {
+  public static SeedPostings getSeedPostings(String term, long seed, IndexOptions options, boolean allowPayloads) {
     int minDocFreq, maxDocFreq;
     if (term.startsWith("big_")) {
       minDocFreq = LuceneTestCase.RANDOM_MULTIPLIER * 50000;
@@ -228,7 +216,7 @@ public class RandomPostingsTester {
       maxDocFreq = 3;
     }
 
-    return new SeedPostings(seed, minDocFreq, maxDocFreq, withLiveDocs ? globalLiveDocs : null, options, allowPayloads);
+    return new SeedPostings(seed, minDocFreq, maxDocFreq, options, allowPayloads);
   }
 
   /** Given the same random seed this always enumerates the
@@ -242,9 +230,7 @@ public class RandomPostingsTester {
     private final int maxDocSpacing;
     private final int payloadSize;
     private final boolean fixedPayloads;
-    private final Bits liveDocs;
     private final BytesRef payload;
-    private final IndexOptions options;
     private final boolean doPositions;
     private final boolean allowPayloads;
 
@@ -259,11 +245,10 @@ public class RandomPostingsTester {
     private int posSpacing;
     private int posUpto;
 
-    public SeedPostings(long seed, int minDocFreq, int maxDocFreq, Bits liveDocs, IndexOptions options, boolean allowPayloads) {
+    public SeedPostings(long seed, int minDocFreq, int maxDocFreq, IndexOptions options, boolean allowPayloads) {
       random = new Random(seed);
       docRandom = new Random(random.nextLong());
       docFreq = TestUtil.nextInt(random, minDocFreq, maxDocFreq);
-      this.liveDocs = liveDocs;
       this.allowPayloads = allowPayloads;
 
       // TODO: more realistic to inversely tie this to numDocs:
@@ -279,7 +264,6 @@ public class RandomPostingsTester {
       fixedPayloads = random.nextBoolean();
       byte[] payloadBytes = new byte[payloadSize];
       payload = new BytesRef(payloadBytes);
-      this.options = options;
       doPositions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS.compareTo(options) <= 0;
     }
 
@@ -287,9 +271,7 @@ public class RandomPostingsTester {
     public int nextDoc() {
       while(true) {
         _nextDoc();
-        if (liveDocs == null || docID == NO_MORE_DOCS || liveDocs.get(docID)) {
-          return docID;
-        }
+        return docID;
       }
     }
 
@@ -601,10 +583,7 @@ public class RandomPostingsTester {
     }
 
     @Override
-    public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-      if (liveDocs != null) {
-        throw new IllegalArgumentException("liveDocs must be null");
-      }
+    public final PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         if (maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           return null;
@@ -619,7 +598,7 @@ public class RandomPostingsTester {
       if (PostingsEnum.featureRequested(flags, PostingsEnum.FREQS) && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
         return null;
       }
-      return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, false, null, maxAllowed, allowPayloads);
+      return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, maxAllowed, allowPayloads);
     }
   }
 
@@ -723,28 +702,11 @@ public class RandomPostingsTester {
     // expected term:
     assertEquals(term, termsEnum.term());
 
-    // 50% of the time time pass liveDocs:
-    boolean useLiveDocs = options.contains(Option.LIVE_DOCS) && random.nextBoolean();
-    Bits liveDocs;
-    if (useLiveDocs) {
-      liveDocs = globalLiveDocs;
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("  use liveDocs: " + globalLiveDocs.length());
-      }
-    } else {
-      liveDocs = null;
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("  no liveDocs");
-      }
-    }
-
     FieldInfo fieldInfo = currentFieldInfos.fieldInfo(field);
 
     // NOTE: can be empty list if we are using liveDocs:
     SeedPostings expected = getSeedPostings(term.utf8ToString(), 
                                             fields.get(field).get(term).seed,
-                                            useLiveDocs,
-                                            globalLiveDocs,
                                             maxIndexOptions,
                                             true);
     assertEquals(expected.docFreq, termsEnum.docFreq());
@@ -787,7 +749,7 @@ public class RandomPostingsTester {
           System.out.println("  get DocsEnum (but we won't check positions) flags=" + flags);
         }
 
-        threadState.reusePostingsEnum = termsEnum.postings(liveDocs, prevPostingsEnum, flags);
+        threadState.reusePostingsEnum = termsEnum.postings(prevPostingsEnum, flags);
         postingsEnum = threadState.reusePostingsEnum;
       } else {
         if (LuceneTestCase.VERBOSE) {
@@ -796,7 +758,7 @@ public class RandomPostingsTester {
         if (options.contains(Option.REUSE_ENUMS) && random.nextInt(10) < 9) {
           prevPostingsEnum = threadState.reusePostingsEnum;
         }
-        threadState.reusePostingsEnum = termsEnum.postings(liveDocs, prevPostingsEnum, doCheckFreqs ? PostingsEnum.FREQS : PostingsEnum.NONE);
+        threadState.reusePostingsEnum = termsEnum.postings(prevPostingsEnum, doCheckFreqs ? PostingsEnum.FREQS : PostingsEnum.NONE);
         postingsEnum = threadState.reusePostingsEnum;
       }
     } else {
@@ -816,7 +778,7 @@ public class RandomPostingsTester {
         System.out.println("  get DocsEnum flags=" + flags);
       }
 
-      threadState.reusePostingsEnum = termsEnum.postings(liveDocs, prevPostingsEnum, flags);
+      threadState.reusePostingsEnum = termsEnum.postings(prevPostingsEnum, flags);
       postingsEnum = threadState.reusePostingsEnum;
     }
 

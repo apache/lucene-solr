@@ -228,14 +228,14 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Scorer subQueryScorer = subQueryWeight.scorer(context, acceptDocs);
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      Scorer subQueryScorer = subQueryWeight.scorer(context);
       if (subQueryScorer == null) {
         return null;
       }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(context, acceptDocs);
+         valSrcScorers[i] = valSrcWeights[i].scorer(context);
       }
       return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, queryWeight, subQueryScorer, valSrcScorers);
     }

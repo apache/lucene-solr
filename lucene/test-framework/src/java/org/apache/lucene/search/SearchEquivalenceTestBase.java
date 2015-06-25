@@ -193,7 +193,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       return new DocIdSet() {
         @Override
         public DocIdSetIterator iterator() throws IOException {
-          return weight.scorer(privateContext, acceptDocs);
+          return weight.scorer(privateContext);
         }
 
         @Override

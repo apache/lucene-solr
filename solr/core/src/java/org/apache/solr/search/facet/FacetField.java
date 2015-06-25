@@ -744,7 +744,7 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
             }
           }
           // iterate over TermDocs to calculate the intersection
-          postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
+          postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
 
           if (postingsEnum instanceof MultiPostingsEnum) {
             MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();

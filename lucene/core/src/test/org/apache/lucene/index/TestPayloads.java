@@ -193,7 +193,6 @@ public class TestPayloads extends LuceneTestCase {
     PostingsEnum[] tps = new PostingsEnum[numTerms];
     for (int i = 0; i < numTerms; i++) {
       tps[i] = MultiFields.getTermPositionsEnum(reader,
-                                                MultiFields.getLiveDocs(reader),
                                                 terms[i].field(),
                                                 new BytesRef(terms[i].text()));
     }
@@ -222,7 +221,6 @@ public class TestPayloads extends LuceneTestCase {
      *  test lazy skipping
      */        
     PostingsEnum tp = MultiFields.getTermPositionsEnum(reader,
-                                                               MultiFields.getLiveDocs(reader),
                                                                terms[0].field(),
                                                                new BytesRef(terms[0].text()));
     tp.nextDoc();
@@ -249,7 +247,6 @@ public class TestPayloads extends LuceneTestCase {
      * Test different lengths at skip points
      */
     tp = MultiFields.getTermPositionsEnum(reader,
-                                          MultiFields.getLiveDocs(reader),
                                           terms[1].field(),
                                           new BytesRef(terms[1].text()));
     tp.nextDoc();
@@ -287,7 +284,6 @@ public class TestPayloads extends LuceneTestCase {
         
     reader = DirectoryReader.open(dir);
     tp = MultiFields.getTermPositionsEnum(reader,
-                                          MultiFields.getLiveDocs(reader),
                                           fieldName,
                                           new BytesRef(singleTerm));
     tp.nextDoc();
@@ -485,11 +481,10 @@ public class TestPayloads extends LuceneTestCase {
     writer.close();
     IndexReader reader = DirectoryReader.open(dir);
     TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator();
-    Bits liveDocs = MultiFields.getLiveDocs(reader);
     PostingsEnum tp = null;
     while (terms.next() != null) {
       String termText = terms.term().utf8ToString();
-      tp = terms.postings(liveDocs, tp, PostingsEnum.PAYLOADS);
+      tp = terms.postings(tp, PostingsEnum.PAYLOADS);
       while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         int freq = tp.freq();
         for (int i = 0; i < freq; i++) {

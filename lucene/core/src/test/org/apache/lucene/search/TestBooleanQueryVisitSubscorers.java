@@ -38,7 +38,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
 // TODO: refactor to a base class, that collects freqs from the scorer tree
@@ -286,8 +285,8 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       return new BooleanWeight(this, searcher, needsScores, false) {
         @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-          Scorer scorer = scorer(context, acceptDocs);
+        public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+          Scorer scorer = scorer(context);
           if (scorer == null) {
             return null;
           }

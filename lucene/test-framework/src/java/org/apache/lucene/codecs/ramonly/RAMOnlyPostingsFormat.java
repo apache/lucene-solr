@@ -47,7 +47,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
@@ -299,7 +298,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
             break;
           }
           RAMPostingsWriterImpl postingsWriter = termsConsumer.startTerm(term);
-          postingsEnum = termsEnum.postings(null, postingsEnum, enumFlags);
+          postingsEnum = termsEnum.postings(postingsEnum, enumFlags);
 
           int docFreq = 0;
           long totalTermFreq = 0;
@@ -485,22 +484,20 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
-      return new RAMDocsEnum(ramField.termToDocs.get(current), liveDocs);
+    public PostingsEnum postings(PostingsEnum reuse, int flags) {
+      return new RAMDocsEnum(ramField.termToDocs.get(current));
     }
 
   }
 
   private static class RAMDocsEnum extends PostingsEnum {
     private final RAMTerm ramTerm;
-    private final Bits liveDocs;
     private RAMDoc current;
     int upto = -1;
     int posUpto = 0;
 
-    public RAMDocsEnum(RAMTerm ramTerm, Bits liveDocs) {
+    public RAMDocsEnum(RAMTerm ramTerm) {
       this.ramTerm = ramTerm;
-      this.liveDocs = liveDocs;
     }
 
     @Override
@@ -511,17 +508,13 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     // TODO: override bulk read, for better perf
     @Override
     public int nextDoc() {
-      while(true) {
-        upto++;
-        if (upto < ramTerm.docs.size()) {
-          current = ramTerm.docs.get(upto);
-          if (liveDocs == null || liveDocs.get(current.docID)) {
-            posUpto = 0;
-            return current.docID;
-          }
-        } else {
-          return NO_MORE_DOCS;
-        }
+      upto++;
+      if (upto < ramTerm.docs.size()) {
+        current = ramTerm.docs.get(upto);
+        posUpto = 0;
+        return current.docID;
+      } else {
+        return NO_MORE_DOCS;
       }
     }
 

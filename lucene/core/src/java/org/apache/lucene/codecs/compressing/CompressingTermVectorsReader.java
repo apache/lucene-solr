@@ -46,7 +46,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
@@ -932,7 +931,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    public final PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
         if (positions == null && startOffsets == null) {
           // Positions nor offsets were indexed:
@@ -947,7 +946,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         docsEnum = new TVPostingsEnum();
       }
 
-      docsEnum.reset(liveDocs, termFreqs[ord], positionIndex[ord], positions, startOffsets, lengths, payloads, payloadIndex);
+      docsEnum.reset(termFreqs[ord], positionIndex[ord], positions, startOffsets, lengths, payloads, payloadIndex);
       return docsEnum;
     }
 
@@ -955,7 +954,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
   private static class TVPostingsEnum extends PostingsEnum {
 
-    private Bits liveDocs;
     private int doc = -1;
     private int termFreq;
     private int positionIndex;
@@ -971,10 +969,9 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       payload = new BytesRef();
     }
 
-    public void reset(Bits liveDocs, int freq, int positionIndex, int[] positions,
+    public void reset(int freq, int positionIndex, int[] positions,
         int[] startOffsets, int[] lengths, BytesRef payloads,
         int[] payloadIndex) {
-      this.liveDocs = liveDocs;
       this.termFreq = freq;
       this.positionIndex = positionIndex;
       this.positions = positions;
@@ -1070,7 +1067,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     @Override
     public int nextDoc() throws IOException {
-      if (doc == -1 && (liveDocs == null || liveDocs.get(0))) {
+      if (doc == -1) {
         return (doc = 0);
       } else {
         return (doc = NO_MORE_DOCS);

@@ -369,9 +369,9 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags)
+      public PostingsEnum postings(PostingsEnum reuse, int flags)
           throws IOException {
-        return delegate().postings(liveDocs, reuse, flags);
+        return delegate().postings(reuse, flags);
       }
 
     }
@@ -455,7 +455,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
             bloomFilters.put(fieldInfo, bloomFilter);
           }
           // Make sure there's at least one doc for this term:
-          postingsEnum = termsEnum.postings(null, postingsEnum, 0);
+          postingsEnum = termsEnum.postings(postingsEnum, 0);
           if (postingsEnum.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
             bloomFilter.addValue(term);
           }

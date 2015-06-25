@@ -93,15 +93,15 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
+        public Scorer scorer(LeafReaderContext context) {
           throw new UnsupportedOperationException();
         }
 
         @Override
-        public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) {
+        public BulkScorer bulkScorer(LeafReaderContext context) {
           return new BulkScorer() {
             @Override
-            public int score(LeafCollector collector, int min, int max) throws IOException {
+            public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
               assert min == 0;
               collector.setScorer(new FakeScorer());
               collector.collect(0);

@@ -65,7 +65,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seekExact(indexedBytes)) {
-            docs = termsEnum.postings(null, null);
+            docs = termsEnum.postings(null);
           } else {
             docs = null;
           }

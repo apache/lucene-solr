@@ -119,7 +119,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   @Override
   public final BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen) throws IOException {
     startTerm();
-    postingsEnum = termsEnum.postings(null, postingsEnum, enumFlags);
+    postingsEnum = termsEnum.postings(postingsEnum, enumFlags);
     assert postingsEnum != null;
 
     int docFreq = 0;

@@ -77,8 +77,8 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
   /** 
    * Wraps a PostingsEnum with a legacy DocsAndPositionsEnum.
    */
-  static DocsAndPositionsEnum wrap(final PostingsEnum postings) {
-    return new DocsAndPositionsEnumWrapper(postings);
+  static DocsAndPositionsEnum wrap(final PostingsEnum postings, Bits liveDocs) {
+    return new DocsAndPositionsEnumWrapper(postings, liveDocs);
   }
   
   /**
@@ -94,12 +94,34 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
       throw new AssertionError();
     }
   }
-  
+
+  /**
+   * Return the live docs that are being applied to this {@link DocsEnum}.
+   */
+  static Bits unwrapliveDocs(final DocsEnum docs) {
+    if (docs instanceof DocsAndPositionsEnumWrapper) {
+      return ((DocsAndPositionsEnumWrapper)docs).liveDocs;
+    } else if (docs == null) {
+      return null; // e.g. user is not reusing
+    } else {
+      throw new AssertionError();
+    }
+  }
+
   static class DocsAndPositionsEnumWrapper extends DocsAndPositionsEnum {
     final PostingsEnum in;
+    final Bits liveDocs;
     
-    DocsAndPositionsEnumWrapper(PostingsEnum in) {
+    DocsAndPositionsEnumWrapper(PostingsEnum in, Bits liveDocs) {
       this.in = Objects.requireNonNull(in);
+      this.liveDocs = liveDocs;
+    }
+
+    private int doNext(int doc) throws IOException {
+      while (doc != NO_MORE_DOCS && liveDocs != null && liveDocs.get(doc) == false) {
+        doc = in.nextDoc();
+      }
+      return doc;
     }
 
     @Override
@@ -139,12 +161,12 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
 
     @Override
     public int nextDoc() throws IOException {
-      return in.nextDoc();
+      return doNext(in.nextDoc());
     }
 
     @Override
     public int advance(int target) throws IOException {
-      return in.advance(target);
+      return doNext(in.advance(target));
     }
 
     @Override

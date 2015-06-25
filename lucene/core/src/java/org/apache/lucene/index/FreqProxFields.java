@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
@@ -226,11 +225,7 @@ class FreqProxFields extends Fields {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
-      if (liveDocs != null) {
-        throw new IllegalArgumentException("liveDocs must be null");
-      }
-
+    public PostingsEnum postings(PostingsEnum reuse, int flags) {
       if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         FreqProxPostingsEnum posEnum;
 

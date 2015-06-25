@@ -129,7 +129,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
     // it's ok to use MultiFields because we only iterate on one posting list.
     // breaking it to loop over the leaves() only complicates code for no
     // apparent gain.
-    PostingsEnum positions = MultiFields.getTermPositionsEnum(reader, null,
+    PostingsEnum positions = MultiFields.getTermPositionsEnum(reader,
         Consts.FIELD_PAYLOADS, Consts.PAYLOAD_PARENT_BYTES_REF,
         PostingsEnum.PAYLOADS);
 

@@ -78,9 +78,10 @@ public class PerThreadPKLookup {
   public int lookup(BytesRef id) throws IOException {
     for(int seg=0;seg<numSegs;seg++) {
       if (termsEnums[seg].seekExact(id)) {
-        postingsEnums[seg] = termsEnums[seg].postings(liveDocs[seg], postingsEnums[seg], 0);
+        postingsEnums[seg] = termsEnums[seg].postings(postingsEnums[seg], 0);
         int docID = postingsEnums[seg].nextDoc();
-        if (docID != PostingsEnum.NO_MORE_DOCS) {
+        if (docID != PostingsEnum.NO_MORE_DOCS
+            && (liveDocs[seg] == null || liveDocs[seg].get(docID))) {
           return docBases[seg] + docID;
         }
         assert hasDeletions;

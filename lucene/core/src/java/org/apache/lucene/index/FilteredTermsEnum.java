@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Bits;
 
 /**
  * Abstract class for enumerating a subset of all terms. 
@@ -179,8 +178,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   @Override
-  public PostingsEnum postings(Bits bits, PostingsEnum reuse, int flags) throws IOException {
-    return tenum.postings(bits, reuse, flags);
+  public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
+    return tenum.postings(reuse, flags);
   }
   
   /** This enum does not support seeking!

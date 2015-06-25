@@ -245,7 +245,7 @@ public class TestCodecs extends LuceneTestCase {
       // make sure it properly fully resets (rewinds) its
       // internal state:
       for(int iter=0;iter<2;iter++) {
-        postingsEnum = TestUtil.docs(random(), termsEnum, null, postingsEnum, PostingsEnum.NONE);
+        postingsEnum = TestUtil.docs(random(), termsEnum, postingsEnum, PostingsEnum.NONE);
         assertEquals(terms[i].docs[0], postingsEnum.nextDoc());
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, postingsEnum.nextDoc());
       }
@@ -382,9 +382,9 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
         if (field.omitTF) {
-          this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.NONE), false);
+          this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, PostingsEnum.NONE), false);
         } else {
-          this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, null, PostingsEnum.ALL), true);
+          this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, PostingsEnum.ALL), true);
         }
 
         // Test random seek by ord:
@@ -402,9 +402,9 @@ public class TestCodecs extends LuceneTestCase {
           assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
           assertEquals(term.docs.length, termsEnum.docFreq());
           if (field.omitTF) {
-            this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.NONE), false);
+            this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, PostingsEnum.NONE), false);
           } else {
-            this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, null, PostingsEnum.ALL), true);
+            this.verifyDocs(term.docs, term.positions, termsEnum.postings(null, PostingsEnum.ALL), true);
           }
         }
 
@@ -456,9 +456,9 @@ public class TestCodecs extends LuceneTestCase {
             if (!field.omitTF) {
               // TODO: we should randomize which postings features are available, but
               // need to coordinate this with the checks below that rely on such features
-              postings = termsEnum.postings(null, null, PostingsEnum.ALL);
+              postings = termsEnum.postings(null, PostingsEnum.ALL);
             } else {
-              postings = TestUtil.docs(random(), termsEnum, null, null, PostingsEnum.FREQS);
+              postings = TestUtil.docs(random(), termsEnum, null, PostingsEnum.FREQS);
             }
             assertNotNull(postings);
             int upto2 = -1;
@@ -677,8 +677,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
-      assert liveDocs == null;
+    public PostingsEnum postings(PostingsEnum reuse, int flags) {
       return new DataPostingsEnum(fieldData.terms[upto]);
     }
 

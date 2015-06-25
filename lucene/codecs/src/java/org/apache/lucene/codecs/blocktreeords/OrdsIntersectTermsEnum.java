@@ -203,7 +203,7 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
   }
 
   @Override
-  public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     
     if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
       if (fr.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
@@ -213,7 +213,7 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
     }
 
     currentFrame.decodeMetaData();
-    return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.termState, skipDocs, reuse, flags);
+    return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.termState, reuse, flags);
   }
 
   private int getState() {

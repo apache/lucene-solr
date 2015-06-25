@@ -474,7 +474,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     while (prefixTermsEnum.next() != null) {
       //System.out.println("    got term=" + prefixTermsEnum.term().utf8ToString());
       //termCount++;
-      prefixDocsEnum = prefixTermsEnum.postings(null, prefixDocsEnum, 0);
+      prefixDocsEnum = prefixTermsEnum.postings(prefixDocsEnum, 0);
       //System.out.println("      " + prefixDocsEnum + " doc=" + prefixDocsEnum.docID());
       prefixDocs.or(prefixDocsEnum);
     }

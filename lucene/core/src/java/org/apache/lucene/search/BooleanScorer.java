@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.lucene.search.BooleanWeight;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -41,7 +41,7 @@ final class BooleanScorer extends BulkScorer {
     return new BulkScorer() {
 
       @Override
-      public int score(final LeafCollector collector, int min, int max) throws IOException {
+      public int score(final LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
         final LeafCollector noScoreCollector = new LeafCollector() {
           FakeScorer fake = new FakeScorer();
 
@@ -56,7 +56,7 @@ final class BooleanScorer extends BulkScorer {
             collector.collect(doc);
           }
         };
-        return scorer.score(noScoreCollector, min, max);
+        return scorer.score(noScoreCollector, acceptDocs, min, max);
       }
 
       @Override
@@ -83,11 +83,11 @@ final class BooleanScorer extends BulkScorer {
     }
 
     void advance(int min) throws IOException {
-      score(min, min);
+      score(null, min, min);
     }
 
-    void score(int min, int max) throws IOException {
-      next = scorer.score(orCollector, min, max);
+    void score(Bits acceptDocs, int min, int max) throws IOException {
+      next = scorer.score(orCollector, acceptDocs, min, max);
     }
   }
 
@@ -237,12 +237,12 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
-  private void scoreWindow(LeafCollector collector, int base, int min, int max,
+  private void scoreWindow(LeafCollector collector, Bits acceptDocs, int base, int min, int max,
       BulkScorerAndDoc[] scorers, int numScorers) throws IOException {
     for (int i = 0; i < numScorers; ++i) {
       final BulkScorerAndDoc scorer = scorers[i];
       assert scorer.next < max;
-      scorer.score(min, max);
+      scorer.score(acceptDocs, min, max);
     }
 
     scoreMatches(collector, base);
@@ -270,7 +270,7 @@ final class BooleanScorer extends BulkScorer {
     return headTop;
   }
 
-  private void scoreWindow(LeafCollector collector, int windowBase, int windowMin, int windowMax) throws IOException {
+  private void scoreWindow(LeafCollector collector, Bits acceptDocs, int windowBase, int windowMin, int windowMax) throws IOException {
     // Fill 'leads' with all scorers from 'head' that are in the right window
     leads[0] = head.pop();
     int maxFreq = 1;
@@ -296,7 +296,7 @@ final class BooleanScorer extends BulkScorer {
       }
       tail.clear();
 
-      scoreWindow(collector, windowBase, windowMin, windowMax, leads, maxFreq);
+      scoreWindow(collector, acceptDocs, windowBase, windowMin, windowMax, leads, maxFreq);
     }
 
     // Push back scorers into head and tail
@@ -309,7 +309,7 @@ final class BooleanScorer extends BulkScorer {
   }
 
   @Override
-  public int score(LeafCollector collector, int min, int max) throws IOException {
+  public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
     fakeScorer.doc = -1;
     collector.setScorer(fakeScorer);
 
@@ -321,7 +321,7 @@ final class BooleanScorer extends BulkScorer {
       final int windowMax = Math.min(max, windowBase + SIZE);
 
       // general case
-      scoreWindow(collector, windowBase, windowMin, windowMax);
+      scoreWindow(collector, acceptDocs, windowBase, windowMin, windowMax);
       top = head.top();
     }
 

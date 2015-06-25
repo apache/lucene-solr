@@ -105,7 +105,6 @@ public class TestPositionIncrement extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     PostingsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
-                                                                MultiFields.getLiveDocs(searcher.getIndexReader()),
                                                                 "field",
                                                                 new BytesRef("1"));
     pos.nextDoc();
@@ -113,7 +112,6 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(0, pos.nextPosition());
     
     pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
-                                           MultiFields.getLiveDocs(searcher.getIndexReader()),
                                            "field",
                                            new BytesRef("2"));
     pos.nextDoc();

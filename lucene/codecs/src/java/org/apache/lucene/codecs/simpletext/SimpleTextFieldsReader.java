@@ -208,7 +208,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       
       if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
         if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
@@ -226,7 +226,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         } else {
           docsAndPositionsEnum = new SimpleTextPostingsEnum();
         }
-        return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions, docFreq);
+        return docsAndPositionsEnum.reset(docsStart, indexOptions, docFreq);
 
       }
 
@@ -236,7 +236,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         docsEnum = new SimpleTextDocsEnum();
       }
-      return docsEnum.reset(docsStart, liveDocs, indexOptions == IndexOptions.DOCS, docFreq);
+      return docsEnum.reset(docsStart, indexOptions == IndexOptions.DOCS, docFreq);
     }
 
   }
@@ -247,7 +247,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private boolean omitTF;
     private int docID = -1;
     private int tf;
-    private Bits liveDocs;
     private final BytesRefBuilder scratch = new BytesRefBuilder();
     private final CharsRefBuilder scratchUTF16 = new CharsRefBuilder();
     private int cost;
@@ -261,8 +260,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsEnum reset(long fp, Bits liveDocs, boolean omitTF, int docFreq) throws IOException {
-      this.liveDocs = liveDocs;
+    public SimpleTextDocsEnum reset(long fp, boolean omitTF, int docFreq) throws IOException {
       in.seek(fp);
       this.omitTF = omitTF;
       docID = -1;
@@ -312,7 +310,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         final long lineStart = in.getFilePointer();
         SimpleTextUtil.readLine(in, scratch);
         if (StringHelper.startsWith(scratch.get(), DOC)) {
-          if (!first && (liveDocs == null || liveDocs.get(docID))) {
+          if (!first) {
             in.seek(lineStart);
             if (!omitTF) {
               tf = termFreq;
@@ -336,7 +334,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           // skip
         } else {
           assert StringHelper.startsWith(scratch.get(), TERM) || StringHelper.startsWith(scratch.get(), FIELD) || StringHelper.startsWith(scratch.get(), END): "scratch=" + scratch.get().utf8ToString();
-          if (!first && (liveDocs == null || liveDocs.get(docID))) {
+          if (!first) {
             in.seek(lineStart);
             if (!omitTF) {
               tf = termFreq;
@@ -365,7 +363,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final IndexInput in;
     private int docID = -1;
     private int tf;
-    private Bits liveDocs;
     private final BytesRefBuilder scratch = new BytesRefBuilder();
     private final BytesRefBuilder scratch2 = new BytesRefBuilder();
     private final CharsRefBuilder scratchUTF16 = new CharsRefBuilder();
@@ -388,8 +385,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextPostingsEnum reset(long fp, Bits liveDocs, IndexOptions indexOptions, int docFreq) {
-      this.liveDocs = liveDocs;
+    public SimpleTextPostingsEnum reset(long fp, IndexOptions indexOptions, int docFreq) {
       nextDocStart = fp;
       docID = -1;
       readPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -422,7 +418,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         SimpleTextUtil.readLine(in, scratch);
         //System.out.println("NEXT DOC: " + scratch.utf8ToString());
         if (StringHelper.startsWith(scratch.get(), DOC)) {
-          if (!first && (liveDocs == null || liveDocs.get(docID))) {
+          if (!first) {
             nextDocStart = lineStart;
             in.seek(posStart);
             return docID;
@@ -445,7 +441,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           // skip
         } else {
           assert StringHelper.startsWith(scratch.get(), TERM) || StringHelper.startsWith(scratch.get(), FIELD) || StringHelper.startsWith(scratch.get(), END);
-          if (!first && (liveDocs == null || liveDocs.get(docID))) {
+          if (!first) {
             nextDocStart = lineStart;
             in.seek(posStart);
             return docID;

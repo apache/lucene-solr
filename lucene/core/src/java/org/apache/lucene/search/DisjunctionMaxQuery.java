@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.Bits;
 
 /**
  * A query that generates the union of documents produced by its subqueries, and that scores each document with the maximum
@@ -161,11 +160,11 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       List<Scorer> scorers = new ArrayList<>();
       for (Weight w : weights) {
         // we will advance() subscorers
-        Scorer subScorer = w.scorer(context, acceptDocs);
+        Scorer subScorer = w.scorer(context);
         if (subScorer != null) {
           scorers.add(subScorer);
         }

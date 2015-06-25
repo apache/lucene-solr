@@ -33,7 +33,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
-import org.apache.lucene.util.Bits;
 
 /**
  * Just like {@link ToParentBlockJoinQuery}, except this
@@ -122,9 +121,9 @@ public class ToChildBlockJoinQuery extends Query {
     // NOTE: acceptDocs applies (and is checked) only in the
     // child document space
     @Override
-    public Scorer scorer(LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext readerContext) throws IOException {
 
-      final Scorer parentScorer = parentWeight.scorer(readerContext, null);
+      final Scorer parentScorer = parentWeight.scorer(readerContext);
 
       if (parentScorer == null) {
         // No matches
@@ -139,12 +138,12 @@ public class ToChildBlockJoinQuery extends Query {
         return null;
       }
 
-      return new ToChildBlockJoinScorer(this, parentScorer, parents.bits(), doScores, acceptDocs);
+      return new ToChildBlockJoinScorer(this, parentScorer, parents.bits(), doScores);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      ToChildBlockJoinScorer scorer = (ToChildBlockJoinScorer) scorer(context, context.reader().getLiveDocs());
+      ToChildBlockJoinScorer scorer = (ToChildBlockJoinScorer) scorer(context);
       if (scorer != null && scorer.advance(doc) == doc) {
         int parentDoc = scorer.getParentDoc();
         return Explanation.match(
@@ -161,7 +160,6 @@ public class ToChildBlockJoinQuery extends Query {
     private final Scorer parentScorer;
     private final BitSet parentBits;
     private final boolean doScores;
-    private final Bits acceptDocs;
 
     private float parentScore;
     private int parentFreq = 1;
@@ -169,12 +167,11 @@ public class ToChildBlockJoinQuery extends Query {
     private int childDoc = -1;
     private int parentDoc = 0;
 
-    public ToChildBlockJoinScorer(Weight weight, Scorer parentScorer, BitSet parentBits, boolean doScores, Bits acceptDocs) {
+    public ToChildBlockJoinScorer(Weight weight, Scorer parentScorer, BitSet parentBits, boolean doScores) {
       super(weight);
       this.doScores = doScores;
       this.parentBits = parentBits;
       this.parentScorer = parentScorer;
-      this.acceptDocs = acceptDocs;
     }
 
     @Override
@@ -186,8 +183,6 @@ public class ToChildBlockJoinQuery extends Query {
     public int nextDoc() throws IOException {
       //System.out.println("Q.nextDoc() parentDoc=" + parentDoc + " childDoc=" + childDoc);
 
-      // Loop until we hit a childDoc that's accepted
-      nextChildDoc:
       while (true) {
         if (childDoc+1 == parentDoc) {
           // OK, we are done iterating through all children
@@ -224,20 +219,6 @@ public class ToChildBlockJoinQuery extends Query {
               continue;
             }
 
-            if (acceptDocs != null && !acceptDocs.get(childDoc)) {
-              // find the first child that is accepted
-              while (true) {
-                if (childDoc+1 < parentDoc) {
-                  childDoc++;
-                  if (acceptDocs.get(childDoc))
-                    break;
-                } else {
-                  // no child for this parent doc matches acceptDocs
-                  continue nextChildDoc;
-                }
-              }
-            }
-
             if (childDoc < parentDoc) {
               if (doScores) {
                 parentScore = parentScorer.score();
@@ -252,9 +233,6 @@ public class ToChildBlockJoinQuery extends Query {
         } else {
           assert childDoc < parentDoc: "childDoc=" + childDoc + " parentDoc=" + parentDoc;
           childDoc++;
-          if (acceptDocs != null && !acceptDocs.get(childDoc)) {
-            continue;
-          }
           //System.out.println("  " + childDoc);
           return childDoc;
         }
@@ -323,9 +301,6 @@ public class ToChildBlockJoinQuery extends Query {
       assert !parentBits.get(childTarget);
       childDoc = childTarget;
       //System.out.println("  " + childDoc);
-      if (acceptDocs != null && !acceptDocs.get(childDoc)) {
-        nextDoc();
-      }
       return childDoc;
     }
 

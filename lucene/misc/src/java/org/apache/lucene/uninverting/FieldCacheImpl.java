@@ -288,7 +288,7 @@ class FieldCacheImpl implements FieldCache {
             break;
           }
           visitTerm(term);
-          docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
+          docs = termsEnum.postings(docs, PostingsEnum.NONE);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
@@ -424,7 +424,7 @@ class FieldCacheImpl implements FieldCache {
             res = new FixedBitSet(maxDoc);
           }
 
-          docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
+          docs = termsEnum.postings(docs, PostingsEnum.NONE);
           // TODO: use bulk API
           while (true) {
             final int docID = docs.nextDoc();
@@ -708,7 +708,7 @@ class FieldCacheImpl implements FieldCache {
           }
 
           termOrdToBytesOffset.add(bytes.copyUsingLengthPrefix(term));
-          docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
+          docs = termsEnum.postings(docs, PostingsEnum.NONE);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
@@ -860,7 +860,7 @@ class FieldCacheImpl implements FieldCache {
             break;
           }
           final long pointer = bytes.copyUsingLengthPrefix(term);
-          docs = termsEnum.postings(null, docs, PostingsEnum.NONE);
+          docs = termsEnum.postings(docs, PostingsEnum.NONE);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {

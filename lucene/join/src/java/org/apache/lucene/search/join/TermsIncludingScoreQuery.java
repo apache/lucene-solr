@@ -133,7 +133,7 @@ class TermsIncludingScoreQuery extends Query {
           PostingsEnum postingsEnum = null;
           for (int i = 0; i < TermsIncludingScoreQuery.this.terms.size(); i++) {
             if (segmentTermsEnum.seekExact(TermsIncludingScoreQuery.this.terms.get(ords[i], spare))) {
-              postingsEnum = segmentTermsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
+              postingsEnum = segmentTermsEnum.postings(postingsEnum, PostingsEnum.NONE);
               if (postingsEnum.advance(doc) == doc) {
                 final float score = TermsIncludingScoreQuery.this.scores[ords[i]];
                 return Explanation.match(score, "Score based on join value " + segmentTermsEnum.term().utf8ToString());
@@ -155,7 +155,7 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         Terms terms = context.reader().terms(field);
         if (terms == null) {
           return null;
@@ -166,9 +166,9 @@ class TermsIncludingScoreQuery extends Query {
 
         TermsEnum segmentTermsEnum = terms.iterator();
         if (multipleValuesPerDocument) {
-          return new MVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
+          return new MVInOrderScorer(this, segmentTermsEnum, context.reader().maxDoc(), cost);
         } else {
-          return new SVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
+          return new SVInOrderScorer(this, segmentTermsEnum, context.reader().maxDoc(), cost);
         }
       }
 
@@ -183,21 +183,21 @@ class TermsIncludingScoreQuery extends Query {
 
     int currentDoc = -1;
 
-    SVInOrderScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
+    SVInOrderScorer(Weight weight, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
       super(weight);
       FixedBitSet matchingDocs = new FixedBitSet(maxDoc);
       this.scores = new float[maxDoc];
-      fillDocsAndScores(matchingDocs, acceptDocs, termsEnum);
+      fillDocsAndScores(matchingDocs, termsEnum);
       this.matchingDocsIterator = new BitSetIterator(matchingDocs, cost);
       this.cost = cost;
     }
 
-    protected void fillDocsAndScores(FixedBitSet matchingDocs, Bits acceptDocs, TermsEnum termsEnum) throws IOException {
+    protected void fillDocsAndScores(FixedBitSet matchingDocs, TermsEnum termsEnum) throws IOException {
       BytesRef spare = new BytesRef();
       PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
-          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
+          postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
             matchingDocs.set(doc);
@@ -243,17 +243,17 @@ class TermsIncludingScoreQuery extends Query {
   // This scorer deals with the fact that a document can have more than one score from multiple related documents.
   class MVInOrderScorer extends SVInOrderScorer {
 
-    MVInOrderScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
-      super(weight, acceptDocs, termsEnum, maxDoc, cost);
+    MVInOrderScorer(Weight weight, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
+      super(weight, termsEnum, maxDoc, cost);
     }
 
     @Override
-    protected void fillDocsAndScores(FixedBitSet matchingDocs, Bits acceptDocs, TermsEnum termsEnum) throws IOException {
+    protected void fillDocsAndScores(FixedBitSet matchingDocs, TermsEnum termsEnum) throws IOException {
       BytesRef spare = new BytesRef();
       PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
-          postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
+          postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
             // I prefer this:

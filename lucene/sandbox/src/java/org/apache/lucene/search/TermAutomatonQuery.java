@@ -381,7 +381,7 @@ public class TermAutomatonQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
 
       // Initialize the enums; null for a given slot means that term didn't appear in this reader
       EnumAndScorer[] enums = new EnumAndScorer[idToTerm.size()];
@@ -395,7 +395,7 @@ public class TermAutomatonQuery extends Query {
 
           TermsEnum termsEnum = context.reader().terms(field).iterator();
           termsEnum.seekExact(term, state);
-          enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(acceptDocs, null, PostingsEnum.POSITIONS));
+          enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(null, PostingsEnum.POSITIONS));
         }
       }
 

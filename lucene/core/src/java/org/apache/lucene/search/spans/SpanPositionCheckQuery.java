@@ -29,7 +29,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-import org.apache.lucene.util.Bits;
 
 
 /**
@@ -94,8 +93,8 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
-      Spans matchSpans = matchWeight.getSpans(context, acceptDocs, requiredPostings);
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
+      Spans matchSpans = matchWeight.getSpans(context, requiredPostings);
       return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
         protected AcceptStatus accept(Spans candidate) throws IOException {

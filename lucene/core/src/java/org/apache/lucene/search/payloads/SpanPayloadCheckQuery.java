@@ -36,7 +36,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -90,9 +89,9 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
       final PayloadSpanCollector collector = new PayloadSpanCollector();
-      Spans matchSpans = matchWeight.getSpans(context, acceptDocs, requiredPostings.atLeast(Postings.PAYLOADS));
+      Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
       return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
         protected AcceptStatus accept(Spans candidate) throws IOException {
@@ -104,7 +103,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       if (field == null)
         return null;
 
@@ -113,7 +112,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
       }
 
-      Spans spans = getSpans(context, acceptDocs, Postings.PAYLOADS);
+      Spans spans = getSpans(context, Postings.PAYLOADS);
       Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
       return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
     }

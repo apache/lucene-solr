@@ -241,7 +241,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
       Weight weight = s.createNormalizedWeight(q, true);
 
-      Scorer scorer = weight.scorer(s.leafContexts.get(0), null);
+      Scorer scorer = weight.scorer(s.leafContexts.get(0));
 
       // First pass: just use .nextDoc() to gather all hits
       final List<ScoreDoc> hits = new ArrayList<>();
@@ -258,7 +258,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       for(int iter2=0;iter2<10;iter2++) {
 
         weight = s.createNormalizedWeight(q, true);
-        scorer = weight.scorer(s.leafContexts.get(0), null);
+        scorer = weight.scorer(s.leafContexts.get(0));
 
         if (VERBOSE) {
           System.out.println("  iter2=" + iter2);
@@ -585,7 +585,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     query2.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
     query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
     final Weight weight = searcher.createNormalizedWeight(query2, true);
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertEquals(0, scorer.nextDoc());
     assertTrue(scorer.getClass().getName(), scorer instanceof FilterScorer);
     assertEquals(0f, scorer.score(), 0f);
@@ -619,7 +619,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "c")), Occur.FILTER);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0), null);
+    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertTrue(scorer instanceof ConjunctionScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
@@ -650,7 +650,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "c")), Occur.SHOULD);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof DisjunctionScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
@@ -683,7 +683,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "d")), Occur.SHOULD);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0), null);
+    final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertTrue(scorer instanceof BoostedScorer || scorer instanceof ExactPhraseScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
@@ -714,7 +714,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "c")), Occur.MUST_NOT);
 
     final Weight weight = searcher.createNormalizedWeight(q, random().nextBoolean());
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqExclScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 
@@ -745,7 +745,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(new TermQuery(new Term("field", "c")), Occur.SHOULD);
 
     final Weight weight = searcher.createNormalizedWeight(q, true);
-    final Scorer scorer = weight.scorer(reader.leaves().get(0), null);
+    final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqOptSumScorer);
     assertNotNull(scorer.asTwoPhaseIterator());
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -31,9 +32,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 public class TestBooleanOr extends LuceneTestCase {
 
@@ -188,7 +192,7 @@ public class TestBooleanOr extends LuceneTestCase {
     Weight w = s.createNormalizedWeight(bq, true);
 
     assertEquals(1, s.getIndexReader().leaves().size());
-    BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0), null);
+    BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0));
 
     final FixedBitSet hits = new FixedBitSet(docCount);
     final AtomicInteger end = new AtomicInteger();
@@ -210,7 +214,7 @@ public class TestBooleanOr extends LuceneTestCase {
       final int min = end.intValue();
       final int inc = TestUtil.nextInt(random(), 1, 1000);
       final int max = end.addAndGet(inc);
-      scorer.score(c, min, max);
+      scorer.score(c, null, min, max);
     }
 
     assertEquals(docCount, hits.cardinality());
@@ -223,14 +227,16 @@ public class TestBooleanOr extends LuceneTestCase {
       final FakeScorer scorer = new FakeScorer();
       int i = 0;
       @Override
-      public int score(LeafCollector collector, int min, int max) throws IOException {
+      public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
         collector.setScorer(scorer);
         while (i < matches.length && matches[i] < min) {
           i += 1;
         }
         while (i < matches.length && matches[i] < max) {
           scorer.doc = matches[i];
-          collector.collect(scorer.doc);
+          if (acceptDocs == null || acceptDocs.get(scorer.doc)) {
+            collector.collect(scorer.doc);
+          }
           i += 1;
         }
         if (i == matches.length) {
@@ -266,7 +272,7 @@ public class TestBooleanOr extends LuceneTestCase {
         matches.add(doc);
       }
       
-    });
+    }, null);
     assertEquals(Arrays.asList(4000, 5000, 100000, 1000001, 1000051, 9999998, 9999999), matches);
   }
 }

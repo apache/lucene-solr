@@ -298,7 +298,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) {
+    public Scorer scorer(LeafReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

@@ -68,7 +68,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     // Token "" occurred once
     assertEquals(1, termsEnum.totalTermFreq());
 
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
@@ -77,7 +77,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
     // Token "abcd" occurred three times
     assertEquals(new BytesRef("abcd"), termsEnum.next());
-    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.ALL);
+    dpEnum = termsEnum.postings(dpEnum, PostingsEnum.ALL);
     assertEquals(3, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -117,7 +117,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
     assertNotNull(termsEnum.next());
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -152,7 +152,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
     assertNotNull(termsEnum.next());
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -190,7 +190,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
     assertNotNull(termsEnum.next());
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -225,7 +225,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
     assertNotNull(termsEnum.next());
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(2, termsEnum.totalTermFreq());
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -261,7 +261,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
     assertNotNull(termsEnum.next());
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
 
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
@@ -269,14 +269,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(4, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.ALL);
+    dpEnum = termsEnum.postings(dpEnum, PostingsEnum.ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(11, dpEnum.startOffset());
     assertEquals(17, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.ALL);
+    dpEnum = termsEnum.postings(dpEnum, PostingsEnum.ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(18, dpEnum.startOffset());
@@ -305,7 +305,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
     assertNotNull(termsEnum.next());
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
 
     assertEquals(1, (int) termsEnum.totalTermFreq());
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -314,7 +314,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(7, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.ALL);
+    dpEnum = termsEnum.postings(dpEnum, PostingsEnum.ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(8, dpEnum.startOffset());
@@ -347,7 +347,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator();
     assertNotNull(termsEnum.next());
-    PostingsEnum dpEnum = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
 
     assertEquals(1, (int) termsEnum.totalTermFreq());
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -356,7 +356,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(4, dpEnum.endOffset());
 
     assertNotNull(termsEnum.next());
-    dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.ALL);
+    dpEnum = termsEnum.postings(dpEnum, PostingsEnum.ALL);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     dpEnum.nextPosition();
     assertEquals(6, dpEnum.startOffset());

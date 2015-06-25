@@ -37,7 +37,6 @@ import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -98,8 +97,8 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     @Override
-    public PayloadTermSpanScorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Spans spans = super.getSpans(context, acceptDocs, Postings.PAYLOADS);
+    public PayloadTermSpanScorer scorer(LeafReaderContext context) throws IOException {
+      Spans spans = super.getSpans(context, Postings.PAYLOADS);
       Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
       return (spans == null)
               ? null
@@ -186,7 +185,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      PayloadTermSpanScorer scorer = scorer(context, context.reader().getLiveDocs());
+      PayloadTermSpanScorer scorer = scorer(context);
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

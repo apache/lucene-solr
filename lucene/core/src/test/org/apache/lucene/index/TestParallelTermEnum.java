@@ -72,7 +72,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
     super.tearDown();
   }
   
-  private void checkTerms(Terms terms, Bits liveDocs, String... termsList) throws IOException {
+  private void checkTerms(Terms terms, String... termsList) throws IOException {
     assertNotNull(terms);
     final TermsEnum te = terms.iterator();
     
@@ -80,7 +80,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
       BytesRef b = te.next();
       assertNotNull(b);
       assertEquals(t, b.utf8ToString());
-      PostingsEnum td = TestUtil.docs(random(), te, liveDocs, null, PostingsEnum.NONE);
+      PostingsEnum td = TestUtil.docs(random(), te, null, PostingsEnum.NONE);
       assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(0, td.docID());
       assertEquals(td.nextDoc(), DocIdSetIterator.NO_MORE_DOCS);
@@ -91,22 +91,20 @@ public class TestParallelTermEnum extends LuceneTestCase {
   public void test1() throws IOException {
     ParallelLeafReader pr = new ParallelLeafReader(ir1, ir2);
 
-    Bits liveDocs = pr.getLiveDocs();
-
     Fields fields = pr.fields();
     Iterator<String> fe = fields.iterator();
 
     String f = fe.next();
     assertEquals("field1", f);
-    checkTerms(fields.terms(f), liveDocs, "brown", "fox", "jumps", "quick", "the");
+    checkTerms(fields.terms(f), "brown", "fox", "jumps", "quick", "the");
 
     f = fe.next();
     assertEquals("field2", f);
-    checkTerms(fields.terms(f), liveDocs, "brown", "fox", "jumps", "quick", "the");
+    checkTerms(fields.terms(f), "brown", "fox", "jumps", "quick", "the");
 
     f = fe.next();
     assertEquals("field3", f);
-    checkTerms(fields.terms(f), liveDocs, "dog", "fox", "jumps", "lazy", "over", "the");
+    checkTerms(fields.terms(f), "dog", "fox", "jumps", "lazy", "over", "the");
 
     assertFalse(fe.hasNext());
   }

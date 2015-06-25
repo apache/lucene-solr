@@ -247,7 +247,6 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       PostingsEnum tdocs = TestUtil.docs(random(), reader,
           "field",
           new BytesRef("aaa"),
-          MultiFields.getLiveDocs(reader),
           null,
           0);
       int count = 0;

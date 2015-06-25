@@ -196,42 +196,35 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, PostingsEnum reuse, int flags) throws IOException {
     boolean hasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) && hasPositions) {
-      return fullPostings(fieldInfo, termState, liveDocs, reuse, flags);
+      return fullPostings(fieldInfo, termState, reuse, flags);
     }
 
-    if (canReuse(reuse, liveDocs)) {
+    if (canReuse(reuse)) {
       // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
       return ((SegmentDocsEnumBase) reuse).reset(fieldInfo, (StandardTermState)termState);
     }
-    return newDocsEnum(liveDocs, fieldInfo, (StandardTermState)termState);
+    return newDocsEnum(fieldInfo, (StandardTermState)termState);
   }
   
-  private boolean canReuse(PostingsEnum reuse, Bits liveDocs) {
+  private boolean canReuse(PostingsEnum reuse) {
     if (reuse != null && (reuse instanceof SegmentDocsEnumBase)) {
       SegmentDocsEnumBase docsEnum = (SegmentDocsEnumBase) reuse;
       // If you are using ParellelReader, and pass in a
       // reused DocsEnum, it could have come from another
       // reader also using standard codec
-      if (docsEnum.startFreqIn == freqIn) {
-        // we only reuse if the the actual the incoming enum has the same liveDocs as the given liveDocs
-        return liveDocs == docsEnum.liveDocs;
-      }
+      return docsEnum.startFreqIn == freqIn;
     }
     return false;
   }
   
-  private PostingsEnum newDocsEnum(Bits liveDocs, FieldInfo fieldInfo, StandardTermState termState) throws IOException {
-    if (liveDocs == null) {
-      return new AllDocsSegmentDocsEnum(freqIn).reset(fieldInfo, termState);
-    } else {
-      return new LiveDocsSegmentDocsEnum(freqIn, liveDocs).reset(fieldInfo, termState);
-    }
+  private PostingsEnum newDocsEnum(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
+    return new AllDocsSegmentDocsEnum(freqIn).reset(fieldInfo, termState);
   }
 
-  protected PostingsEnum fullPostings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
+  protected PostingsEnum fullPostings(FieldInfo fieldInfo, BlockTermState termState,
                                                PostingsEnum reuse, int flags)
     throws IOException {
 
@@ -254,7 +247,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
           docsEnum = new SegmentFullPositionsEnum(freqIn, proxIn);
         }
       }
-      return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
+      return docsEnum.reset(fieldInfo, (StandardTermState) termState);
     } else {
       SegmentDocsAndPositionsEnum docsEnum;
       if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsEnum)) {
@@ -268,7 +261,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
           docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
         }
       }
-      return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
+      return docsEnum.reset(fieldInfo, (StandardTermState) termState);
     }
   }
 
@@ -587,102 +580,6 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     
   }
   
-  private final class LiveDocsSegmentDocsEnum extends SegmentDocsEnumBase {
-
-    LiveDocsSegmentDocsEnum(IndexInput startFreqIn, Bits liveDocs) {
-      super(startFreqIn, liveDocs);
-      assert liveDocs != null;
-    }
-    
-    @Override
-    public final int nextDoc() throws IOException {
-      final Bits liveDocs = this.liveDocs;
-      for (int i = start+1; i < count; i++) {
-        int d = docs[i];
-        if (liveDocs.get(d)) {
-          start = i;
-          freq = freqs[i];
-          return doc = d;
-        }
-      }
-      start = count;
-      return doc = refill();
-    }
-
-    @Override
-    protected final int linearScan(int scanTo) throws IOException {
-      final int[] docs = this.docs;
-      final int upTo = count;
-      final Bits liveDocs = this.liveDocs;
-      for (int i = start; i < upTo; i++) {
-        int d = docs[i];
-        if (scanTo <= d && liveDocs.get(d)) {
-          start = i;
-          freq = freqs[i];
-          return doc = docs[i];
-        }
-      }
-      return doc = refill();
-    }
-    
-    @Override
-    protected int scanTo(int target) throws IOException { 
-      int docAcc = accum;
-      int frq = 1;
-      final IndexInput freqIn = this.freqIn;
-      final boolean omitTF = indexOmitsTF;
-      final int loopLimit = limit;
-      final Bits liveDocs = this.liveDocs;
-      for (int i = ord; i < loopLimit; i++) {
-        int code = freqIn.readVInt();
-        if (omitTF) {
-          docAcc += code;
-        } else {
-          docAcc += code >>> 1; // shift off low bit
-          frq = readFreq(freqIn, code);
-        }
-        if (docAcc >= target && liveDocs.get(docAcc)) {
-          freq = frq;
-          ord = i + 1;
-          return accum = docAcc;
-        }
-      }
-      ord = limit;
-      freq = frq;
-      accum = docAcc;
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    protected final int nextUnreadDoc() throws IOException {
-      int docAcc = accum;
-      int frq = 1;
-      final IndexInput freqIn = this.freqIn;
-      final boolean omitTF = indexOmitsTF;
-      final int loopLimit = limit;
-      final Bits liveDocs = this.liveDocs;
-      for (int i = ord; i < loopLimit; i++) {
-        int code = freqIn.readVInt();
-        if (omitTF) {
-          docAcc += code;
-        } else {
-          docAcc += code >>> 1; // shift off low bit
-          frq = readFreq(freqIn, code);
-        }
-        if (liveDocs.get(docAcc)) {
-          freq = frq;
-          ord = i + 1;
-          return accum = docAcc;
-        }
-      }
-      ord = limit;
-      freq = frq;
-      accum = docAcc;
-      return NO_MORE_DOCS;
-      
-    }
-  }
-  
   // TODO specialize DocsAndPosEnum too
   
   // Decodes docs & positions. payloads nor offsets are present.
@@ -696,8 +593,6 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     int accum;                                    // accumulator for doc deltas
     int freq;                                     // freq we last read
     int position;
-
-    Bits liveDocs;
 
     long freqOffset;
     long skipOffset;
@@ -715,11 +610,9 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
       this.proxIn = proxIn.clone();
     }
 
-    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
+    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
       assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       assert !fieldInfo.hasPayloads();
-
-      this.liveDocs = liveDocs;
 
       // TODO: for full enum case (eg segment merging) this
       // seek is unnecessary; maybe we can avoid in such
@@ -749,29 +642,23 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     @Override
     public int nextDoc() throws IOException {
       // if (DEBUG) System.out.println("SPR.nextDoc seg=" + segment + " freqIn.fp=" + freqIn.getFilePointer());
-      while(true) {
-        if (ord == limit) {
-          // if (DEBUG) System.out.println("  return END");
-          return doc = NO_MORE_DOCS;
-        }
-
-        ord++;
-
-        // Decode next doc/freq pair
-        final int code = freqIn.readVInt();
-
-        accum += code >>> 1;              // shift off low bit
-        if ((code & 1) != 0) {          // if low bit is set
-          freq = 1;                     // freq is one
-        } else {
-          freq = freqIn.readVInt();     // else read freq
-        }
-        posPendingCount += freq;
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          break;
-        }
+      if (ord == limit) {
+        // if (DEBUG) System.out.println("  return END");
+        return doc = NO_MORE_DOCS;
       }
+
+      ord++;
+
+      // Decode next doc/freq pair
+      final int code = freqIn.readVInt();
+
+      accum += code >>> 1;              // shift off low bit
+      if ((code & 1) != 0) {          // if low bit is set
+        freq = 1;                     // freq is one
+      } else {
+        freq = freqIn.readVInt();     // else read freq
+      }
+      posPendingCount += freq;
 
       position = 0;
 
@@ -901,8 +788,6 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
     int freq;                                     // freq we last read
     int position;
 
-    Bits liveDocs;
-
     long freqOffset;
     long skipOffset;
     long proxOffset;
@@ -928,7 +813,7 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
       this.proxIn = proxIn.clone();
     }
 
-    public SegmentFullPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
+    public SegmentFullPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState) throws IOException {
       storeOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       storePayloads = fieldInfo.hasPayloads();
       assert fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -936,8 +821,6 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
       if (payload == null) {
         payload = new BytesRefBuilder();
       }
-
-      this.liveDocs = liveDocs;
 
       // TODO: for full enum case (eg segment merging) this
       // seek is unnecessary; maybe we can avoid in such
@@ -966,29 +849,23 @@ final class Lucene40PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      while(true) {
-        if (ord == limit) {
-          //System.out.println("StandardR.D&PE seg=" + segment + " nextDoc return doc=END");
-          return doc = NO_MORE_DOCS;
-        }
-
-        ord++;
-
-        // Decode next doc/freq pair
-        final int code = freqIn.readVInt();
-
-        accum += code >>> 1; // shift off low bit
-        if ((code & 1) != 0) { // if low bit is set
-          freq = 1; // freq is one
-        } else {
-          freq = freqIn.readVInt(); // else read freq
-        }
-        posPendingCount += freq;
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          break;
-        }
+      if (ord == limit) {
+        //System.out.println("StandardR.D&PE seg=" + segment + " nextDoc return doc=END");
+        return doc = NO_MORE_DOCS;
       }
+
+      ord++;
+
+      // Decode next doc/freq pair
+      final int code = freqIn.readVInt();
+
+      accum += code >>> 1; // shift off low bit
+      if ((code & 1) != 0) { // if low bit is set
+        freq = 1; // freq is one
+      } else {
+        freq = freqIn.readVInt(); // else read freq
+      }
+      posPendingCount += freq;
 
       position = 0;
       startOffset = 0;

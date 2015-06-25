@@ -370,8 +370,8 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-            Scorer fieldScorer = fieldWeight.scorer(context, acceptDocs);
+          public Scorer scorer(LeafReaderContext context) throws IOException {
+            Scorer fieldScorer = fieldWeight.scorer(context);
             final NumericDocValues price = context.reader().getNumericDocValues(priceField);
             return new FilterScorer(fieldScorer, this) {
               @Override
@@ -1096,7 +1096,7 @@ public class TestJoinUtil extends LuceneTestCase {
           for (BytesRef joinValue : joinValues) {
             TermsEnum termsEnum = terms.iterator();
             if (termsEnum.seekExact(joinValue)) {
-              postingsEnum = termsEnum.postings(slowCompositeReader.getLiveDocs(), postingsEnum, PostingsEnum.NONE);
+              postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
               JoinScore joinScore = joinValueToJoinScores.get(joinValue);
 
               for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
@@ -1219,7 +1219,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         for (RandomDoc otherSideDoc : otherMatchingDocs) {
-          PostingsEnum postingsEnum = MultiFields.getTermDocsEnum(topLevelReader, MultiFields.getLiveDocs(topLevelReader), "id", new BytesRef(otherSideDoc.id), 0);
+          PostingsEnum postingsEnum = MultiFields.getTermDocsEnum(topLevelReader, "id", new BytesRef(otherSideDoc.id), 0);
           assert postingsEnum != null;
           int doc = postingsEnum.nextDoc();
           expectedResult.set(doc);

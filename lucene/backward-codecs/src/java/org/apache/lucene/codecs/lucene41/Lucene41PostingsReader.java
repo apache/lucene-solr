@@ -38,7 +38,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -243,10 +242,10 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, PostingsEnum reuse, int flags) throws IOException {
     boolean hasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) && hasPositions)
-      return fullPostings(fieldInfo, termState, liveDocs, reuse, flags);
+      return fullPostings(fieldInfo, termState, reuse, flags);
 
     BlockDocsEnum docsEnum;
     if (reuse instanceof BlockDocsEnum) {
@@ -257,12 +256,12 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     } else {
       docsEnum = new BlockDocsEnum(fieldInfo);
     }
-    return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
+    return docsEnum.reset((IntBlockTermState) termState, flags);
   }
 
   // TODO: specialize to liveDocs vs not
 
-  private PostingsEnum fullPostings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
+  private PostingsEnum fullPostings(FieldInfo fieldInfo, BlockTermState termState,
                                                PostingsEnum reuse, int flags)
     throws IOException {
 
@@ -280,7 +279,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       } else {
         docsAndPositionsEnum = new BlockPostingsEnum(fieldInfo);
       }
-      return docsAndPositionsEnum.reset(liveDocs, (IntBlockTermState) termState);
+      return docsAndPositionsEnum.reset((IntBlockTermState) termState);
     } else {
       EverythingEnum everythingEnum;
       if (reuse instanceof EverythingEnum) {
@@ -291,7 +290,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       } else {
         everythingEnum = new EverythingEnum(fieldInfo);
       }
-      return everythingEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
+      return everythingEnum.reset((IntBlockTermState) termState, flags);
     }
   }
 
@@ -332,8 +331,6 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     // docID for next skip point, we won't use skipper if 
     // target docID is not larger than this
     private int nextSkipDoc;
-
-    private Bits liveDocs;
     
     private boolean needsFreq; // true if the caller actually needs frequencies
     private int singletonDocID; // docid when there is a single pulsed posting, otherwise -1
@@ -355,8 +352,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public PostingsEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
-      this.liveDocs = liveDocs;
+    public PostingsEnum reset(IntBlockTermState termState, int flags) throws IOException {
       // if (DEBUG) {
       //   System.out.println("  FPR.reset: termState=" + termState);
       // }
@@ -434,41 +430,30 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       // if (DEBUG) {
       //   System.out.println("\nFPR.nextDoc");
       // }
-      while (true) {
-        // if (DEBUG) {
-        //   System.out.println("  docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
-        // }
 
-        if (docUpto == docFreq) {
-          // if (DEBUG) {
-          //   System.out.println("  return doc=END");
-          // }
-          return doc = NO_MORE_DOCS;
-        }
-        if (docBufferUpto == BLOCK_SIZE) {
-          refillDocs();
-        }
-
+      if (docUpto == docFreq) {
         // if (DEBUG) {
-        //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
+        //   System.out.println("  return doc=END");
         // }
-        accum += docDeltaBuffer[docBufferUpto];
-        docUpto++;
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          doc = accum;
-          freq = freqBuffer[docBufferUpto];
-          docBufferUpto++;
-          // if (DEBUG) {
-          //   System.out.println("  return doc=" + doc + " freq=" + freq);
-          // }
-          return doc;
-        }
-        // if (DEBUG) {
-        //   System.out.println("  doc=" + accum + " is deleted; try next doc");
-        // }
-        docBufferUpto++;
+        return doc = NO_MORE_DOCS;
       }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
+
+      // if (DEBUG) {
+      //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
+      // }
+      accum += docDeltaBuffer[docBufferUpto];
+      docUpto++;
+
+      doc = accum;
+      freq = freqBuffer[docBufferUpto];
+      docBufferUpto++;
+      // if (DEBUG) {
+      //   System.out.println("  return doc=" + doc + " freq=" + freq);
+      // }
+      return doc;
     }
 
     @Override
@@ -550,20 +535,12 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         }
       }
 
-      if (liveDocs == null || liveDocs.get(accum)) {
-        // if (DEBUG) {
-        //   System.out.println("  return doc=" + accum);
-        // }
-        freq = freqBuffer[docBufferUpto];
-        docBufferUpto++;
-        return doc = accum;
-      } else {
-        // if (DEBUG) {
-        //   System.out.println("  now do nextDoc()");
-        // }
-        docBufferUpto++;
-        return nextDoc();
-      }
+      // if (DEBUG) {
+      //   System.out.println("  return doc=" + accum);
+      // }
+      freq = freqBuffer[docBufferUpto];
+      docBufferUpto++;
+      return doc = accum;
     }
     
     @Override
@@ -653,7 +630,6 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
 
     private int nextSkipDoc;
 
-    private Bits liveDocs;
     private int singletonDocID; // docid when there is a single pulsed posting, otherwise -1
     
     public BlockPostingsEnum(FieldInfo fieldInfo) throws IOException {
@@ -671,8 +647,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public PostingsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
-      this.liveDocs = liveDocs;
+    public PostingsEnum reset(IntBlockTermState termState) throws IOException {
       // if (DEBUG) {
       //   System.out.println("  FPR.reset: termState=" + termState);
       // }
@@ -792,37 +767,31 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       // if (DEBUG) {
       //   System.out.println("  FPR.nextDoc");
       // }
-      while (true) {
-        // if (DEBUG) {
-        //   System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
-        // }
-        if (docUpto == docFreq) {
-          return doc = NO_MORE_DOCS;
-        }
-        if (docBufferUpto == BLOCK_SIZE) {
-          refillDocs();
-        }
-        // if (DEBUG) {
-        //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
-        // }
-        accum += docDeltaBuffer[docBufferUpto];
-        freq = freqBuffer[docBufferUpto];
-        posPendingCount += freq;
-        docBufferUpto++;
-        docUpto++;
 
-        if (liveDocs == null || liveDocs.get(accum)) {
-          doc = accum;
-          position = 0;
-          // if (DEBUG) {
-          //   System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
-          // }
-          return doc;
-        }
-        // if (DEBUG) {
-        //   System.out.println("    doc=" + accum + " is deleted; try next doc");
-        // }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
       }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
+      // if (DEBUG) {
+      //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
+      // }
+      accum += docDeltaBuffer[docBufferUpto];
+      freq = freqBuffer[docBufferUpto];
+      posPendingCount += freq;
+      docBufferUpto++;
+      docUpto++;
+
+      doc = accum;
+      position = 0;
+      // if (DEBUG) {
+      //   System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
+      // }
+      return doc;
+      // if (DEBUG) {
+      //   System.out.println("    doc=" + accum + " is deleted; try next doc");
+      // }
     }
     
     @Override
@@ -907,18 +876,11 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         }
       }
 
-      if (liveDocs == null || liveDocs.get(accum)) {
-        // if (DEBUG) {
-        //   System.out.println("  return doc=" + accum);
-        // }
-        position = 0;
-        return doc = accum;
-      } else {
-        // if (DEBUG) {
-        //   System.out.println("  now do nextDoc()");
-        // }
-        return nextDoc();
-      }
+      // if (DEBUG) {
+      //   System.out.println("  return doc=" + accum);
+      // }
+      position = 0;
+      return doc = accum;
     }
 
     // TODO: in theory we could avoid loading frq block
@@ -1090,8 +1052,6 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     private long skipOffset;
 
     private int nextSkipDoc;
-
-    private Bits liveDocs;
     
     private boolean needsOffsets; // true if we actually need offsets
     private boolean needsPayloads; // true if we actually need payloads
@@ -1132,8 +1092,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public EverythingEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
-      this.liveDocs = liveDocs;
+    public EverythingEnum reset(IntBlockTermState termState, int flags) throws IOException {
       // if (DEBUG) {
       //   System.out.println("  FPR.reset: termState=" + termState);
       // }
@@ -1314,39 +1273,28 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       // if (DEBUG) {
       //   System.out.println("  FPR.nextDoc");
       // }
-      while (true) {
-        // if (DEBUG) {
-        //   System.out.println("    docUpto=" + docUpto + " (of df=" + docFreq + ") docBufferUpto=" + docBufferUpto);
-        // }
-        if (docUpto == docFreq) {
-          return doc = NO_MORE_DOCS;
-        }
-        if (docBufferUpto == BLOCK_SIZE) {
-          refillDocs();
-        }
-        // if (DEBUG) {
-        //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
-        // }
-        accum += docDeltaBuffer[docBufferUpto];
-        freq = freqBuffer[docBufferUpto];
-        posPendingCount += freq;
-        docBufferUpto++;
-        docUpto++;
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          doc = accum;
-          // if (DEBUG) {
-          //   System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
-          // }
-          position = 0;
-          lastStartOffset = 0;
-          return doc;
-        }
-
-        // if (DEBUG) {
-        //   System.out.println("    doc=" + accum + " is deleted; try next doc");
-        // }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
       }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
+      // if (DEBUG) {
+      //   System.out.println("    accum=" + accum + " docDeltaBuffer[" + docBufferUpto + "]=" + docDeltaBuffer[docBufferUpto]);
+      // }
+      accum += docDeltaBuffer[docBufferUpto];
+      freq = freqBuffer[docBufferUpto];
+      posPendingCount += freq;
+      docBufferUpto++;
+      docUpto++;
+
+      doc = accum;
+      // if (DEBUG) {
+      //   System.out.println("    return doc=" + doc + " freq=" + freq + " posPendingCount=" + posPendingCount);
+      // }
+      position = 0;
+      lastStartOffset = 0;
+      return doc;
     }
     
     @Override
@@ -1434,19 +1382,12 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         }
       }
 
-      if (liveDocs == null || liveDocs.get(accum)) {
-        // if (DEBUG) {
-        //   System.out.println("  return doc=" + accum);
-        // }
-        position = 0;
-        lastStartOffset = 0;
-        return doc = accum;
-      } else {
-        // if (DEBUG) {
-        //   System.out.println("  now do nextDoc()");
-        // }
-        return nextDoc();
-      }
+      // if (DEBUG) {
+      //   System.out.println("  return doc=" + accum);
+      // }
+      position = 0;
+      lastStartOffset = 0;
+      return doc = accum;
     }
 
     // TODO: in theory we could avoid loading frq block

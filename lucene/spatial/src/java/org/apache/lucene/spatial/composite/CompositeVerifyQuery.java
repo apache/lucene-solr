@@ -94,9 +94,9 @@ public class CompositeVerifyQuery extends Query {
     return new ConstantScoreWeight(this) {
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
 
-        final Scorer indexQueryScorer = indexQueryWeight.scorer(context, acceptDocs);//pass acceptDocs through
+        final Scorer indexQueryScorer = indexQueryWeight.scorer(context);
         if (indexQueryScorer == null) {
           return null;
         }

@@ -28,7 +28,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.Bits;
 
 /**
  * Expert: the Weight for BooleanQuery, used to
@@ -190,12 +189,12 @@ public class BooleanWeight extends Weight {
   /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
    *  cannot be used. */
   // pkg-private for forcing use of BooleanScorer in tests
-  BooleanScorer booleanScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  BooleanScorer booleanScorer(LeafReaderContext context) throws IOException {
     List<BulkScorer> optional = new ArrayList<BulkScorer>();
     Iterator<BooleanClause> cIter = query.clauses().iterator();
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
-      BulkScorer subScorer = w.bulkScorer(context, acceptDocs);
+      BulkScorer subScorer = w.bulkScorer(context);
       
       if (subScorer == null) {
         if (c.isRequired()) {
@@ -226,8 +225,8 @@ public class BooleanWeight extends Weight {
   }
 
   @Override
-  public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    final BooleanScorer bulkScorer = booleanScorer(context, acceptDocs);
+  public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+    final BooleanScorer bulkScorer = booleanScorer(context);
     if (bulkScorer != null) { // BooleanScorer is applicable
       // TODO: what is the right heuristic here?
       final long costThreshold;
@@ -250,11 +249,11 @@ public class BooleanWeight extends Weight {
         return bulkScorer;
       }
     }
-    return super.bulkScorer(context, acceptDocs);
+    return super.bulkScorer(context);
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context) throws IOException {
     // initially the user provided value,
     // but if minNrShouldMatch == optional.size(),
     // we will optimize and move these to required, making this 0
@@ -268,7 +267,7 @@ public class BooleanWeight extends Weight {
     Iterator<BooleanClause> cIter = query.clauses().iterator();
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
-      Scorer subScorer = w.scorer(context, acceptDocs);
+      Scorer subScorer = w.scorer(context);
       if (subScorer == null) {
         if (c.isRequired()) {
           return null;

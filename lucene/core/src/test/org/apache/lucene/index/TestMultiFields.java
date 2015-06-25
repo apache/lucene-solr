@@ -135,13 +135,11 @@ public class TestMultiFields extends LuceneTestCase {
           System.out.println("TEST: seek term="+ UnicodeUtil.toHexString(term.utf8ToString()) + " " + term);
         }
         
-        PostingsEnum postingsEnum = TestUtil.docs(random(), reader, "field", term, liveDocs, null, PostingsEnum.NONE);
+        PostingsEnum postingsEnum = TestUtil.docs(random(), reader, "field", term, null, PostingsEnum.NONE);
         assertNotNull(postingsEnum);
 
         for(int docID : docs.get(term)) {
-          if (!deleted.contains(docID)) {
-            assertEquals(docID, postingsEnum.nextDoc());
-          }
+          assertEquals(docID, postingsEnum.nextDoc());
         }
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, postingsEnum.nextDoc());
       }
@@ -176,8 +174,8 @@ public class TestMultiFields extends LuceneTestCase {
     w.addDocument(d);
     IndexReader r = w.getReader();
     w.close();
-    PostingsEnum d1 = TestUtil.docs(random(), r, "f", new BytesRef("j"), null, null, PostingsEnum.NONE);
-    PostingsEnum d2 = TestUtil.docs(random(), r, "f", new BytesRef("j"), null, null, PostingsEnum.NONE);
+    PostingsEnum d1 = TestUtil.docs(random(), r, "f", new BytesRef("j"), null, PostingsEnum.NONE);
+    PostingsEnum d2 = TestUtil.docs(random(), r, "f", new BytesRef("j"), null, PostingsEnum.NONE);
     assertEquals(0, d1.nextDoc());
     assertEquals(0, d2.nextDoc());
     r.close();
@@ -194,7 +192,7 @@ public class TestMultiFields extends LuceneTestCase {
     w.addDocument(d);
     IndexReader r = w.getReader();
     w.close();
-    PostingsEnum de = MultiFields.getTermDocsEnum(r, null, "f", new BytesRef("j"));
+    PostingsEnum de = MultiFields.getTermDocsEnum(r, "f", new BytesRef("j"));
     assertEquals(0, de.nextDoc());
     assertEquals(1, de.nextDoc());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());

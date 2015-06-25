@@ -702,7 +702,7 @@ final class Lucene42DocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       throw new UnsupportedOperationException();
     }
 

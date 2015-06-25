@@ -357,7 +357,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       //payloads require offsets
       dpEnumFlags |= (fieldOptions.offsets || fieldOptions.payloads) ? PostingsEnum.OFFSETS : 0;
       dpEnumFlags |= fieldOptions.payloads ? PostingsEnum.PAYLOADS : 0;
-      dpEnum = termsEnum.postings(null, dpEnum, dpEnumFlags);
+      dpEnum = termsEnum.postings(dpEnum, dpEnumFlags);
 
       boolean atNextDoc = false;
       if (dpEnum != null) {

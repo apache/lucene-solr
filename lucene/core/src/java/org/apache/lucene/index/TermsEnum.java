@@ -142,18 +142,19 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  call this when the enum is unpositioned.  This method
    *  will not return null.
    *  <p>
+   *  <b>NOTE</b>: the returned iterator may return deleted documents, so
+   *  deleted documents have to be checked on top of the {@link PostingsEnum}.
+   *  <p>
    *  Use this method if you only require documents and frequencies,
    *  and do not need any proximity data.
    *  This method is equivalent to 
-   *  {@link #postings(Bits, PostingsEnum, int) postings(liveDocs, reuse, PostingsEnum.FREQS)}
-   *  
-   * @param liveDocs unset bits are documents that should not
-   * be returned
+   *  {@link #postings(PostingsEnum, int) postings(reuse, PostingsEnum.FREQS)}
+   *
    * @param reuse pass a prior PostingsEnum for possible reuse 
-   * @see #postings(Bits, PostingsEnum, int)
+   * @see #postings(PostingsEnum, int)
    */
-  public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse) throws IOException {
-    return postings(liveDocs, reuse, PostingsEnum.FREQS);
+  public final PostingsEnum postings(PostingsEnum reuse) throws IOException {
+    return postings(reuse, PostingsEnum.FREQS);
   }
 
   /** Get {@link PostingsEnum} for the current term, with
@@ -161,14 +162,15 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  are required.  Do not call this when the enum is
    *  unpositioned.  This method may return null if the postings
    *  information required is not available from the index
-   *  
-   * @param liveDocs unset bits are documents that should not
-   * be returned
+   *  <p>
+   *  <b>NOTE</b>: the returned iterator may return deleted documents, so
+   *  deleted documents have to be checked on top of the {@link PostingsEnum}.
+   *
    * @param reuse pass a prior PostingsEnum for possible reuse
    * @param flags specifies which optional per-document values
    *        you require; see {@link PostingsEnum#FREQS}
    */
-  public abstract PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException;
+  public abstract PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException;
 
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
@@ -225,7 +227,7 @@ public abstract class TermsEnum implements BytesRefIterator {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
+    public PostingsEnum postings(PostingsEnum reuse, int flags) {
       throw new IllegalStateException("this method should never be called");
     }
       
@@ -258,7 +260,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    * @param liveDocs unset bits are documents that should not
    * be returned
    * @param reuse pass a prior DocsEnum for possible reuse 
-   * @deprecated Use {@link #postings(Bits, PostingsEnum)} instead */
+   * @deprecated Use {@link #postings(PostingsEnum)} instead */
   @Deprecated
   public final DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
     return docs(liveDocs, reuse, DocsEnum.FLAG_FREQS);
@@ -275,7 +277,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    * @param flags specifies which optional per-document values
    *        you require; see {@link DocsEnum#FLAG_FREQS} 
    * @see #docs(Bits, DocsEnum, int) 
-   * @deprecated Use {@link #postings(Bits, PostingsEnum, int)} instead */
+   * @deprecated Use {@link #postings(PostingsEnum, int)} instead */
   @Deprecated
   public final DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     final int newFlags;
@@ -287,13 +289,14 @@ public abstract class TermsEnum implements BytesRefIterator {
       throw new IllegalArgumentException("Invalid legacy docs flags: " + flags);
     }
     PostingsEnum actualReuse = DocsAndPositionsEnum.unwrap(reuse);
-    PostingsEnum postings = postings(liveDocs, actualReuse, newFlags);
+    PostingsEnum postings = postings(actualReuse, newFlags);
     if (postings == null) {
       throw new AssertionError();
-    } else if (postings == actualReuse) {
+    } else if (postings == actualReuse
+        && liveDocs == DocsAndPositionsEnum.unwrapliveDocs(reuse)) {
       return reuse;
     } else {
-      return DocsAndPositionsEnum.wrap(postings);
+      return DocsAndPositionsEnum.wrap(postings, liveDocs);
     }
   };
 
@@ -306,7 +309,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  be returned
    *  @param reuse pass a prior DocsAndPositionsEnum for possible reuse
    *  @see #docsAndPositions(Bits, DocsAndPositionsEnum, int)
-   *  @deprecated Use {@link #postings(Bits, PostingsEnum, int)} instead */
+   *  @deprecated Use {@link #postings(PostingsEnum, int)} instead */
   @Deprecated
   public final DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     return docsAndPositions(liveDocs, reuse, DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS);
@@ -325,7 +328,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  @param flags specifies which optional per-position values you
    *         require; see {@link DocsAndPositionsEnum#FLAG_OFFSETS} and 
    *         {@link DocsAndPositionsEnum#FLAG_PAYLOADS}. 
-   *  @deprecated Use {@link #postings(Bits, PostingsEnum, int)} instead */
+   *  @deprecated Use {@link #postings(PostingsEnum, int)} instead */
   @Deprecated
   public final DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
     final int newFlags;
@@ -341,13 +344,14 @@ public abstract class TermsEnum implements BytesRefIterator {
       throw new IllegalArgumentException("Invalid legacy docsAndPositions flags: " + flags);
     }
     PostingsEnum actualReuse = DocsAndPositionsEnum.unwrap(reuse);
-    PostingsEnum postings = postings(liveDocs, actualReuse, newFlags | DocsAndPositionsEnum.OLD_NULL_SEMANTICS);
+    PostingsEnum postings = postings(actualReuse, newFlags | DocsAndPositionsEnum.OLD_NULL_SEMANTICS);
     if (postings == null) {
       return null; // if no positions were indexed
-    } else if (postings == actualReuse) {
+    } else if (postings == actualReuse
+        && liveDocs == DocsAndPositionsEnum.unwrapliveDocs(reuse)) {
       return reuse;
     } else {
-      return DocsAndPositionsEnum.wrap(postings);
+      return DocsAndPositionsEnum.wrap(postings, liveDocs);
     }
   }
 }

@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.Bits;
+
 /** This class is used to score a range of documents at
  *  once, and is returned by {@link Weight#bulkScorer}.  Only
  *  queries that have a more optimized means of scoring
@@ -30,9 +32,11 @@ public abstract class BulkScorer {
 
   /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed.
+   * @param acceptDocs {@link Bits} that represents the allowed documents to match, or
+   *                   {@code null} if they are all allowed to match.
    */
-  public void score(LeafCollector collector) throws IOException {
-    final int next = score(collector, 0, DocIdSetIterator.NO_MORE_DOCS);
+  public void score(LeafCollector collector, Bits acceptDocs) throws IOException {
+    final int next = score(collector, acceptDocs, 0, DocIdSetIterator.NO_MORE_DOCS);
     assert next == DocIdSetIterator.NO_MORE_DOCS;
   }
 
@@ -54,14 +58,16 @@ public abstract class BulkScorer {
    * <pre class="prettyprint">
    * private final Scorer scorer; // set via constructor
    *
-   * public int score(LeafCollector collector, int min, int max) throws IOException {
+   * public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
    *   collector.setScorer(scorer);
    *   int doc = scorer.docID();
    *   if (doc &lt; min) {
    *     doc = scorer.advance(min);
    *   }
    *   while (doc &lt; max) {
-   *     collector.collect(doc);
+   *     if (acceptDocs == null || acceptDocs.get(doc)) {
+   *       collector.collect(doc);
+   *     }
    *     doc = scorer.nextDoc();
    *   }
    *   return doc;
@@ -69,11 +75,13 @@ public abstract class BulkScorer {
    * </pre>
    *
    * @param  collector The collector to which all matching documents are passed.
+   * @param acceptDocs {@link Bits} that represents the allowed documents to match, or
+   *                   {@code null} if they are all allowed to match.
    * @param  min Score starting at, including, this document 
    * @param  max Score up to, but not including, this doc
    * @return an under-estimation of the next matching doc after max
    */
-  public abstract int score(LeafCollector collector, int min, int max) throws IOException;
+  public abstract int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException;
 
   /**
    * Same as {@link Scorer#cost()} for bulk scorers.

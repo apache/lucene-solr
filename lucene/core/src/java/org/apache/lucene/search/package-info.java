@@ -470,7 +470,7 @@
  *         abstract method:
  *         <ol>
  *             <li>
- *                 {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector,int,int) score(LeafCollector,int,int)} &mdash;
+ *                 {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector,org.apache.lucene.util.Bits,int,int) score(LeafCollector,Bits,int,int)} &mdash;
  *     Score all documents up to but not including the specified max document.
  *       </li>
  *         </ol>
@@ -522,7 +522,7 @@
  * <p>If a Filter is being used, some initial setup is done to determine which docs to include. 
  *    Otherwise, we ask the Weight for a {@link org.apache.lucene.search.Scorer Scorer} for each
  *    {@link org.apache.lucene.index.IndexReader IndexReader} segment and proceed by calling
- *    {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector) BulkScorer.score(LeafCollector)}.
+ *    {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector,org.apache.lucene.util.Bits) BulkScorer.score(LeafCollector,Bits)}.
  * <p>At last, we are actually going to score some documents. The score method takes in the Collector
  *    (most likely the TopScoreDocCollector or TopFieldCollector) and does its business.Of course, here 
  *    is where things get involved. The {@link org.apache.lucene.search.Scorer Scorer} that is returned

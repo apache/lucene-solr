@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
@@ -201,7 +202,8 @@ public class SolrIndexSplitter {
         hash = hashRouter.sliceHash(idString, null, null, null);
       }
 
-      postingsEnum = termsEnum.postings(liveDocs, postingsEnum, PostingsEnum.NONE);
+      postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
+      postingsEnum = BitsFilteredPostingsEnum.wrap(postingsEnum, liveDocs);
       for (;;) {
         int doc = postingsEnum.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) break;

@@ -482,7 +482,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
 
       if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         if (storePositions || storeOffsets) {
@@ -492,7 +492,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
           } else {
             docsAndPositionsEnum = new TVPostingsEnum();
           }
-          docsAndPositionsEnum.reset(liveDocs, positions, startOffsets, endOffsets, payloadOffsets, payloadData);
+          docsAndPositionsEnum.reset(positions, startOffsets, endOffsets, payloadOffsets, payloadData);
           return docsAndPositionsEnum;
         } else if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
           return null;
@@ -505,7 +505,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
       } else {
         docsEnum = new TVDocsEnum();
       }
-      docsEnum.reset(liveDocs, freq);
+      docsEnum.reset(freq);
       return docsEnum;
     }
 
@@ -517,7 +517,6 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
     private boolean didNext;
     private int doc = -1;
     private int freq;
-    private Bits liveDocs;
 
     @Override
     public int freq() throws IOException {
@@ -531,7 +530,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
 
     @Override
     public int nextDoc() {
-      if (!didNext && (liveDocs == null || liveDocs.get(0))) {
+      if (!didNext) {
         didNext = true;
         return (doc = 0);
       } else {
@@ -544,8 +543,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
       return slowAdvance(target);
     }
 
-    public void reset(Bits liveDocs, int freq) {
-      this.liveDocs = liveDocs;
+    public void reset(int freq) {
       this.freq = freq;
       this.doc = -1;
       didNext = false;
@@ -581,7 +579,6 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
     private boolean didNext;
     private int doc = -1;
     private int nextPos;
-    private Bits liveDocs;
     private int[] positions;
     private int[] startOffsets;
     private int[] endOffsets;
@@ -606,7 +603,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
 
     @Override
     public int nextDoc() {
-      if (!didNext && (liveDocs == null || liveDocs.get(0))) {
+      if (!didNext) {
         didNext = true;
         return (doc = 0);
       } else {
@@ -619,8 +616,7 @@ final class Lucene40TermVectorsReader extends TermVectorsReader implements Close
       return slowAdvance(target);
     }
 
-    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, int[] payloadLengths, byte[] payloadBytes) {
-      this.liveDocs = liveDocs;
+    public void reset(int[] positions, int[] startOffsets, int[] endOffsets, int[] payloadLengths, byte[] payloadBytes) {
       this.positions = positions;
       this.startOffsets = startOffsets;
       this.endOffsets = endOffsets;

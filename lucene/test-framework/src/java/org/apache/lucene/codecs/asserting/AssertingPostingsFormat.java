@@ -187,7 +187,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
             if (hasFreqs) {
               flags = flags | PostingsEnum.FREQS;
             }
-            postingsEnum = termsEnum.postings(null, postingsEnum, flags);
+            postingsEnum = termsEnum.postings(postingsEnum, flags);
           } else {
             flags = PostingsEnum.POSITIONS;
             if (hasPayloads) {
@@ -196,7 +196,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
             if (hasOffsets) {
               flags = flags | PostingsEnum.OFFSETS;
             }
-            postingsEnum = termsEnum.postings(null, postingsEnum, flags);
+            postingsEnum = termsEnum.postings(postingsEnum, flags);
           }
 
           assert postingsEnum != null : "termsEnum=" + termsEnum + " hasPositions=" + hasPositions;

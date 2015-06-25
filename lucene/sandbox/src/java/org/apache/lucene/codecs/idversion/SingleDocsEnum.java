@@ -20,25 +20,22 @@ package org.apache.lucene.codecs.idversion;
 import java.io.IOException;
 
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 class SingleDocsEnum extends PostingsEnum {
 
   private int doc;
   private int singleDocID;
-  private Bits liveDocs;
 
   /** For reuse */
-  public void reset(int singleDocID, Bits liveDocs) {
+  public void reset(int singleDocID) {
     doc = -1;
-    this.liveDocs = liveDocs;
     this.singleDocID = singleDocID;
   }
 
   @Override
   public int nextDoc() {
-    if (doc == -1 && (liveDocs == null || liveDocs.get(singleDocID))) {
+    if (doc == -1) {
       doc = singleDocID;
     } else {
       doc = NO_MORE_DOCS;
@@ -54,7 +51,7 @@ class SingleDocsEnum extends PostingsEnum {
 
   @Override
   public int advance(int target) {
-    if (doc == -1 && target <= singleDocID && (liveDocs == null || liveDocs.get(singleDocID))) {
+    if (doc == -1 && target <= singleDocID) {
       doc = singleDocID;
     } else {
       doc = NO_MORE_DOCS;

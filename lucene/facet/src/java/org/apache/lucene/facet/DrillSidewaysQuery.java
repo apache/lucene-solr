@@ -112,17 +112,17 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         // We can only run as a top scorer:
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
 
         // TODO: it could be better if we take acceptDocs
         // into account instead of baseScorer?
-        Scorer baseScorer = baseWeight.scorer(context, acceptDocs);
+        Scorer baseScorer = baseWeight.scorer(context);
 
         DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDowns.length];
         int nullCount = 0;
@@ -167,7 +167,7 @@ class DrillSidewaysQuery extends Query {
               dims[dim].disi = disi;
             }
           } else {
-            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, null);
+            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context);
             if (disi == null) {
               nullCount++;
               continue;

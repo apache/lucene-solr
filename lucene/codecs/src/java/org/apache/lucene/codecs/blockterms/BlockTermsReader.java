@@ -657,7 +657,7 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+      public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
         
         if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
           if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
@@ -669,7 +669,7 @@ public class BlockTermsReader extends FieldsProducer {
         //System.out.println("BTR.docs this=" + this);
         decodeMetaData();
         //System.out.println("BTR.docs:  state.docFreq=" + state.docFreq);
-        return postingsReader.postings(fieldInfo, state, liveDocs, reuse, flags);
+        return postingsReader.postings(fieldInfo, state, reuse, flags);
       }
 
       @Override

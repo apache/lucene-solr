@@ -278,7 +278,7 @@ public class FilteredQuery extends Query {
 
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-          final Scorer s = scorer(context, context.reader().getLiveDocs());
+          final Scorer s = scorer(context);
           final boolean match;
           if (s == null) {
             match = false;
@@ -299,8 +299,8 @@ public class FilteredQuery extends Query {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-          final DocIdSet set = filter.getDocIdSet(context, acceptDocs);
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          final DocIdSet set = filter.getDocIdSet(context, null);
           if (set == null) {
             return null;
           }

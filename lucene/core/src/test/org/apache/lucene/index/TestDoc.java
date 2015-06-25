@@ -44,6 +44,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -262,9 +263,13 @@ public class TestDoc extends LuceneTestCase {
         out.print("  term=" + field + ":" + tis.term());
         out.println("    DF=" + tis.docFreq());
 
-        PostingsEnum positions = tis.postings(reader.getLiveDocs(), null, PostingsEnum.POSITIONS);
+        PostingsEnum positions = tis.postings(null, PostingsEnum.POSITIONS);
 
+        final Bits liveDocs = reader.getLiveDocs();
         while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+          if (liveDocs != null && liveDocs.get(positions.docID()) == false) {
+            continue;
+          }
           out.print(" doc=" + positions.docID());
           out.print(" TF=" + positions.freq());
           out.print(" pos=");

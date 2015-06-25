@@ -46,7 +46,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -290,9 +289,9 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       @Override
-      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+      public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
         decodeMetaData();
-        return postingsReader.postings(fieldInfo, state, liveDocs, reuse, flags);
+        return postingsReader.postings(fieldInfo, state, reuse, flags);
       }
 
       @Override

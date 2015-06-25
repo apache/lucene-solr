@@ -92,9 +92,9 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
     PostingsEnum docs = null;
     while (termsEnum.next() != null) {
-      docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE);
+      docs = termsEnum.postings(docs, PostingsEnum.NONE);
       builder.or(docs);
     }
-    return builder.build();
+    return BitsFilteredDocIdSet.wrap(builder.build(), acceptDocs);
   }
 }

@@ -104,7 +104,7 @@ public class FieldTermStack {
       if (!termSet.contains(term)) {
         continue;
       }
-      dpEnum = termsEnum.postings(null, dpEnum, PostingsEnum.POSITIONS);
+      dpEnum = termsEnum.postings(dpEnum, PostingsEnum.POSITIONS);
       dpEnum.nextDoc();
       
       // For weight look here: http://lucene.apache.org/core/3_6_0/api/core/org/apache/lucene/search/DefaultSimilarity.html

@@ -218,9 +218,12 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
     private SmallDocSet collectDocs(Bits acceptContains) throws IOException {
       SmallDocSet set = null;
 
-      postingsEnum = termsEnum.postings(acceptContains, postingsEnum, PostingsEnum.NONE);
+      postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
       int docid;
       while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        if (acceptContains != null && acceptContains.get(docid) == false) {
+          continue;
+        }
         if (set == null) {
           int size = termsEnum.docFreq();
           if (size <= 0)

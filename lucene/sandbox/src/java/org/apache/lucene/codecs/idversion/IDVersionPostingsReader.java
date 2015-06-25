@@ -66,7 +66,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, PostingsEnum reuse, int flags) throws IOException {
     SingleDocsEnum docsEnum;
 
     if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
@@ -78,7 +78,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
         posEnum = new SinglePostingsEnum();
       }
       IDVersionTermState _termState = (IDVersionTermState) termState;
-      posEnum.reset(_termState.docID, _termState.idVersion, liveDocs);
+      posEnum.reset(_termState.docID, _termState.idVersion);
       return posEnum;
     }
 
@@ -87,7 +87,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
     } else {
       docsEnum = new SingleDocsEnum();
     }
-    docsEnum.reset(((IDVersionTermState) termState).docID, liveDocs);
+    docsEnum.reset(((IDVersionTermState) termState).docID);
 
     return docsEnum;
   }

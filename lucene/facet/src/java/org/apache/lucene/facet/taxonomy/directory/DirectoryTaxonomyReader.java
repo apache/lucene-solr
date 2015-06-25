@@ -273,7 +273,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     // If we're still here, we have a cache miss. We need to fetch the
     // value from disk, and then also put it in the cache:
     int ret = TaxonomyReader.INVALID_ORDINAL;
-    PostingsEnum docs = MultiFields.getTermDocsEnum(indexReader, null, Consts.FULL, new BytesRef(FacetsConfig.pathToString(cp.components, cp.length)), 0);
+    PostingsEnum docs = MultiFields.getTermDocsEnum(indexReader, Consts.FULL, new BytesRef(FacetsConfig.pathToString(cp.components, cp.length)), 0);
     if (docs != null && docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       ret = docs.docID();
       

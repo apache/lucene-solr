@@ -33,7 +33,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RoaringDocIdSet;
 
 /**
@@ -124,7 +123,7 @@ public class CachingWrapperQuery extends Query implements Accountable {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, final Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         final LeafReader reader = context.reader();
         final Object key = reader.getCoreCacheKey();
 
@@ -133,7 +132,7 @@ public class CachingWrapperQuery extends Query implements Accountable {
           hitCount++;
         } else if (policy.shouldCache(query, context)) {
           missCount++;
-          final Scorer scorer = weight.scorer(context, null);
+          final Scorer scorer = weight.scorer(context);
           if (scorer == null) {
             docIdSet = DocIdSet.EMPTY;
           } else {
@@ -141,7 +140,7 @@ public class CachingWrapperQuery extends Query implements Accountable {
           }
           cache.put(key, docIdSet);
         } else {
-          return weight.scorer(context, acceptDocs);
+          return weight.scorer(context);
         }
 
         assert docIdSet != null;
@@ -153,21 +152,7 @@ public class CachingWrapperQuery extends Query implements Accountable {
           return null;
         }
 
-        // We apply acceptDocs as an approximation
-        if (acceptDocs == null) {
-          return new ConstantScoreScorer(this, 0f, disi);
-        } else {
-          final TwoPhaseIterator twoPhaseView = new TwoPhaseIterator(disi) {
-
-            @Override
-            public boolean matches() throws IOException {
-              final int doc = approximation.docID();
-              return acceptDocs.get(doc);
-            }
-
-          };
-          return new ConstantScoreScorer(this, 0f, twoPhaseView);
-        }
+        return new ConstantScoreScorer(this, 0f, disi);
       }
     };
   }

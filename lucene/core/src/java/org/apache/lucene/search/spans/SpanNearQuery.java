@@ -31,7 +31,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
@@ -139,7 +138,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
 
       Terms terms = context.reader().terms(field);
       if (terms == null) {
@@ -148,7 +147,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
       ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
       for (SpanWeight w : subWeights) {
-        Spans subSpan = w.getSpans(context, acceptDocs, requiredPostings);
+        Spans subSpan = w.getSpans(context, requiredPostings);
         if (subSpan != null) {
           subSpans.add(subSpan);
         } else {

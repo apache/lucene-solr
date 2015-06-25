@@ -24,7 +24,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Bits;
 
 /**
  *
@@ -48,6 +47,6 @@ public class MultiSpansWrapper {
 
     SpanWeight w = spanQuery.createWeight(searcher, false);
 
-    return w.getSpans(lrContext, new Bits.MatchAllBits(lr.numDocs()), requiredPostings);
+    return w.getSpans(lrContext, requiredPostings);
   }
 }

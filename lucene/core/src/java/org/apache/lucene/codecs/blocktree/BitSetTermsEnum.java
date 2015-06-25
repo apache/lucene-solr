@@ -21,7 +21,6 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BitSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /** Silly stub class, used only when writing an auto-prefix
@@ -73,13 +72,10 @@ class BitSetTermsEnum extends TermsEnum {
   }
 
   @Override
-  public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
+  public PostingsEnum postings(PostingsEnum reuse, int flags) {
     if (flags != PostingsEnum.NONE) {
       // We only work with DOCS_ONLY fields
       return null;
-    }
-    if (liveDocs != null) {
-      throw new IllegalArgumentException("cannot handle live docs");
     }
     postingsEnum.reset();
     return postingsEnum;

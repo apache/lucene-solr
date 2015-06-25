@@ -132,7 +132,7 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, final int flags) throws IOException {
+    public PostingsEnum postings( PostingsEnum reuse, final int flags) throws IOException {
 
       if (hasPositions && PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         final PostingsEnum inReuse;
@@ -147,7 +147,7 @@ public class SortingLeafReader extends FilterLeafReader {
           inReuse = reuse;
         }
 
-        final PostingsEnum inDocsAndPositions = in.postings(newToOld(liveDocs), inReuse, flags);
+        final PostingsEnum inDocsAndPositions = in.postings(inReuse, flags);
         // we ignore the fact that offsets may be stored but not asked for,
         // since this code is expected to be used during addIndexes which will
         // ask for everything. if that assumption changes in the future, we can
@@ -168,7 +168,7 @@ public class SortingLeafReader extends FilterLeafReader {
         inReuse = reuse;
       }
 
-      final PostingsEnum inDocs = in.postings(newToOld(liveDocs), inReuse, flags);
+      final PostingsEnum inDocs = in.postings(inReuse, flags);
       final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
       return new SortingDocsEnum(docMap.size(), wrapReuse, inDocs, withFreqs, docMap);
     }

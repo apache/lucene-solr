@@ -48,7 +48,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
@@ -879,7 +878,7 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
     }
 
     @Override
-    public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    public final PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
 
       if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
         if (positions == null && startOffsets == null) {
@@ -894,7 +893,7 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
         docsEnum = new TVDocsEnum();
       }
 
-      docsEnum.reset(liveDocs, termFreqs[ord], positionIndex[ord], positions, startOffsets, lengths, payloads, payloadIndex);
+      docsEnum.reset(termFreqs[ord], positionIndex[ord], positions, startOffsets, lengths, payloads, payloadIndex);
       return docsEnum;
     }
 
@@ -902,7 +901,6 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
 
   private static class TVDocsEnum extends PostingsEnum {
 
-    private Bits liveDocs;
     private int doc = -1;
     private int termFreq;
     private int positionIndex;
@@ -918,10 +916,9 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
       payload = new BytesRef();
     }
 
-    public void reset(Bits liveDocs, int freq, int positionIndex, int[] positions,
+    public void reset(int freq, int positionIndex, int[] positions,
         int[] startOffsets, int[] lengths, BytesRef payloads,
         int[] payloadIndex) {
-      this.liveDocs = liveDocs;
       this.termFreq = freq;
       this.positionIndex = positionIndex;
       this.positions = positions;
@@ -1017,7 +1014,7 @@ final class Lucene42TermVectorsReader extends TermVectorsReader implements Close
 
     @Override
     public int nextDoc() throws IOException {
-      if (doc == -1 && (liveDocs == null || liveDocs.get(0))) {
+      if (doc == -1) {
         return (doc = 0);
       } else {
         return (doc = NO_MORE_DOCS);

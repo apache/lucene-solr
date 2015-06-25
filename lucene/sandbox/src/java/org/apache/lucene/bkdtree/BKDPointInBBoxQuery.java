@@ -101,7 +101,7 @@ public class BKDPointInBBoxQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer s = scorer(context, context.reader().getLiveDocs());
+        final Scorer s = scorer(context);
         final boolean exists = s != null && s.advance(doc) == doc;
 
         if (exists) {
@@ -113,7 +113,7 @@ public class BKDPointInBBoxQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
         SortedNumericDocValues sdv = reader.getSortedNumericDocValues(field);
         if (sdv == null) {
@@ -127,7 +127,7 @@ public class BKDPointInBBoxQuery extends Query {
         BKDTreeSortedNumericDocValues treeDV = (BKDTreeSortedNumericDocValues) sdv;
         BKDTreeReader tree = treeDV.getBKDTreeReader();
 
-        DocIdSet result = tree.intersect(acceptDocs, minLat, maxLat, minLon, maxLon, treeDV.delegate);
+        DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon, treeDV.delegate);
 
         final DocIdSetIterator disi = result.iterator();
 

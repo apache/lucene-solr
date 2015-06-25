@@ -81,7 +81,7 @@ public class TestMaxPosition extends LuceneTestCase {
     // Document should be visible:
     IndexReader r = DirectoryReader.open(iw, true);
     assertEquals(1, r.numDocs());
-    PostingsEnum postings = MultiFields.getTermPositionsEnum(r, null, "foo", new BytesRef("foo"));
+    PostingsEnum postings = MultiFields.getTermPositionsEnum(r, "foo", new BytesRef("foo"));
 
     // "foo" appears in docID=0
     assertEquals(0, postings.nextDoc());

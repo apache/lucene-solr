@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
@@ -30,6 +29,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Bits;
 
 /**
  * An {@link IndexSearcher} to use in conjunction with
@@ -56,12 +56,15 @@ public class ToParentBlockJoinIndexSearcher extends IndexSearcher {
       // we force the use of Scorer (not BulkScorer) to make sure
       // that the scorer passed to LeafCollector.setScorer supports
       // Scorer.getChildren
-      Scorer scorer = weight.scorer(ctx, ctx.reader().getLiveDocs());
+      Scorer scorer = weight.scorer(ctx);
       if (scorer != null) {
         final LeafCollector leafCollector = collector.getLeafCollector(ctx);
         leafCollector.setScorer(scorer);
+        final Bits liveDocs = ctx.reader().getLiveDocs();
         for (int doc = scorer.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = scorer.nextDoc()) {
-          leafCollector.collect(doc);
+          if (liveDocs == null || liveDocs.get(doc)) {
+            leafCollector.collect(doc);
+          }
         }
       }
     }

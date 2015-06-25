@@ -132,7 +132,8 @@ public class TestRTGBase extends SolrTestCaseJ4 {
     if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }
-    PostingsEnum docs = termsEnum.postings(MultiFields.getLiveDocs(r), null, PostingsEnum.NONE);
+    PostingsEnum docs = termsEnum.postings(null, PostingsEnum.NONE);
+    docs = BitsFilteredPostingsEnum.wrap(docs, MultiFields.getLiveDocs(r));
     int id = docs.nextDoc();
     if (id != DocIdSetIterator.NO_MORE_DOCS) {
       int next = docs.nextDoc();

@@ -82,7 +82,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    PostingsEnum dp = MultiFields.getTermPositionsEnum(r, null, "content", new BytesRef("a"));
+    PostingsEnum dp = MultiFields.getTermPositionsEnum(r, "content", new BytesRef("a"));
     assertNotNull(dp);
     assertEquals(0, dp.nextDoc());
     assertEquals(2, dp.freq());
@@ -94,7 +94,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(17, dp.endOffset());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
 
-    dp = MultiFields.getTermPositionsEnum(r, null, "content", new BytesRef("b"));
+    dp = MultiFields.getTermPositionsEnum(r, "content", new BytesRef("b"));
     assertNotNull(dp);
     assertEquals(0, dp.nextDoc());
     assertEquals(1, dp.freq());
@@ -103,7 +103,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(9, dp.endOffset());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
 
-    dp = MultiFields.getTermPositionsEnum(r, null, "content", new BytesRef("c"));
+    dp = MultiFields.getTermPositionsEnum(r, "content", new BytesRef("c"));
     assertNotNull(dp);
     assertEquals(0, dp.nextDoc());
     assertEquals(1, dp.freq());
@@ -154,7 +154,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     String terms[] = { "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred" };
     
     for (String term : terms) {
-      PostingsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef(term));
+      PostingsEnum dp = MultiFields.getTermPositionsEnum(reader, "numbers", new BytesRef(term));
       int doc;
       while((doc = dp.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         String storedNumbers = reader.document(doc).get("numbers");
@@ -182,7 +182,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     
     for (int j = 0; j < numSkippingTests; j++) {
       int num = TestUtil.nextInt(random(), 100, Math.min(numDocs - 1, 999));
-      PostingsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef("hundred"));
+      PostingsEnum dp = MultiFields.getTermPositionsEnum(reader, "numbers", new BytesRef("hundred"));
       int doc = dp.advance(num);
       assertEquals(num, doc);
       int freq = dp.freq();
@@ -207,7 +207,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     // check that other fields (without offsets) work correctly
     
     for (int i = 0; i < numDocs; i++) {
-      PostingsEnum dp = MultiFields.getTermDocsEnum(reader, null, "id", new BytesRef("" + i), 0);
+      PostingsEnum dp = MultiFields.getTermDocsEnum(reader, "id", new BytesRef("" + i), 0);
       assertEquals(i, dp.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
     }
@@ -301,7 +301,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       for(String term : terms) {
         //System.out.println("  term=" + term);
         if (termsEnum.seekExact(new BytesRef(term))) {
-          docs = termsEnum.postings(null, docs);
+          docs = termsEnum.postings(docs);
           assertNotNull(docs);
           int doc;
           //System.out.println("    doc/freq");
@@ -313,7 +313,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
           }
 
           // explicitly exclude offsets here
-          docsAndPositions = termsEnum.postings(null, docsAndPositions, PostingsEnum.ALL);
+          docsAndPositions = termsEnum.postings(docsAndPositions, PostingsEnum.ALL);
           assertNotNull(docsAndPositions);
           //System.out.println("    doc/freq/pos");
           while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -328,7 +328,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
             }
           }
 
-          docsAndPositionsAndOffsets = termsEnum.postings(null, docsAndPositions, PostingsEnum.ALL);
+          docsAndPositionsAndOffsets = termsEnum.postings(docsAndPositions, PostingsEnum.ALL);
           assertNotNull(docsAndPositionsAndOffsets);
           //System.out.println("    doc/freq/pos/offs");
           while((doc = docsAndPositionsAndOffsets.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {

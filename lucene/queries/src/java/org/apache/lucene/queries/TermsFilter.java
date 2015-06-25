@@ -32,6 +32,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -216,13 +217,13 @@ public final class TermsFilter extends Filter implements Accountable {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare)) {
-            docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE); // no freq since we don't need them
+            docs = termsEnum.postings(docs, PostingsEnum.NONE); // no freq since we don't need them
             builder.or(docs);
           }
         }
       }
     }
-    return builder.build();
+    return BitsFilteredDocIdSet.wrap(builder.build(), acceptDocs);
   }
 
   @Override

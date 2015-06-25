@@ -391,14 +391,14 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       
       if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         SimpleTVPostings postings = current.getValue();
         if (postings.positions != null || postings.startOffsets != null) {
           // TODO: reuse
           SimpleTVPostingsEnum e = new SimpleTVPostingsEnum();
-          e.reset(liveDocs, postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
+          e.reset(postings.positions, postings.startOffsets, postings.endOffsets, postings.payloads);
           return e;
         } else if (PostingsEnum.featureRequested(flags, DocsAndPositionsEnum.OLD_NULL_SEMANTICS)) {
           return null;
@@ -407,7 +407,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
       // TODO: reuse
       SimpleTVDocsEnum e = new SimpleTVDocsEnum();
-      e.reset(liveDocs, PostingsEnum.featureRequested(flags, PostingsEnum.FREQS) == false ? 1 : current.getValue().freq);
+      e.reset(PostingsEnum.featureRequested(flags, PostingsEnum.FREQS) == false ? 1 : current.getValue().freq);
       return e;
     }
 
@@ -418,7 +418,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private boolean didNext;
     private int doc = -1;
     private int freq;
-    private Bits liveDocs;
 
     @Override
     public int freq() throws IOException {
@@ -453,7 +452,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int nextDoc() {
-      if (!didNext && (liveDocs == null || liveDocs.get(0))) {
+      if (!didNext) {
         didNext = true;
         return (doc = 0);
       } else {
@@ -466,8 +465,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       return slowAdvance(target);
     }
 
-    public void reset(Bits liveDocs, int freq) {
-      this.liveDocs = liveDocs;
+    public void reset(int freq) {
       this.freq = freq;
       this.doc = -1;
       didNext = false;
@@ -483,7 +481,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private boolean didNext;
     private int doc = -1;
     private int nextPos;
-    private Bits liveDocs;
     private int[] positions;
     private BytesRef[] payloads;
     private int[] startOffsets;
@@ -506,7 +503,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int nextDoc() {
-      if (!didNext && (liveDocs == null || liveDocs.get(0))) {
+      if (!didNext) {
         didNext = true;
         return (doc = 0);
       } else {
@@ -519,8 +516,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       return slowAdvance(target);
     }
 
-    public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, BytesRef payloads[]) {
-      this.liveDocs = liveDocs;
+    public void reset(int[] positions, int[] startOffsets, int[] endOffsets, BytesRef payloads[]) {
       this.positions = positions;
       this.startOffsets = startOffsets;
       this.endOffsets = endOffsets;
