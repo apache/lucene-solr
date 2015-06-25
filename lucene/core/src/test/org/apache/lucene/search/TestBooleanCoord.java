@@ -710,6 +710,68 @@ public class TestBooleanCoord extends LuceneTestCase {
     assertScore(3, bq);
   }
   
+  // nested cases, make sure conjunctions propagate scoring
+  
+  public void testConjunctionNested() throws Exception {
+    BooleanQuery inner = new BooleanQuery();
+    inner.add(term("A"), BooleanClause.Occur.MUST);
+    inner.add(term("B"), BooleanClause.Occur.MUST);
+    BooleanQuery outer = new BooleanQuery();
+    outer.add(inner, BooleanClause.Occur.MUST);
+    outer.add(term("C"), BooleanClause.Occur.MUST);
+    float innerScore = (1 + 1) * 2/(2f+1);
+    float outerScore = (innerScore + 1) * 2/(2f+1);
+    assertScore(outerScore, outer);
+  }
+  
+  public void testConjunctionNestedOuterCoordDisabled() throws Exception {
+    BooleanQuery inner = new BooleanQuery();
+    inner.add(term("A"), BooleanClause.Occur.MUST);
+    inner.add(term("B"), BooleanClause.Occur.MUST);
+    BooleanQuery outer = new BooleanQuery(true);
+    outer.add(inner, BooleanClause.Occur.MUST);
+    outer.add(term("C"), BooleanClause.Occur.MUST);
+    float innerScore = (1 + 1) * 2/(2f+1);
+    float outerScore = (innerScore + 1);
+    assertScore(outerScore, outer);
+  }
+  
+  public void testConjunctionNestedInnerCoordDisabled() throws Exception {
+    BooleanQuery inner = new BooleanQuery(true);
+    inner.add(term("A"), BooleanClause.Occur.MUST);
+    inner.add(term("B"), BooleanClause.Occur.MUST);
+    BooleanQuery outer = new BooleanQuery();
+    outer.add(inner, BooleanClause.Occur.MUST);
+    outer.add(term("C"), BooleanClause.Occur.MUST);
+    float innerScore = (1 + 1);
+    float outerScore = (innerScore + 1) * 2/(2f+1);
+    assertScore(outerScore, outer);
+  }
+  
+  public void testConjunctionNestedCoordDisabledEverywhere() throws Exception {
+    BooleanQuery inner = new BooleanQuery(true);
+    inner.add(term("A"), BooleanClause.Occur.MUST);
+    inner.add(term("B"), BooleanClause.Occur.MUST);
+    BooleanQuery outer = new BooleanQuery(true);
+    outer.add(inner, BooleanClause.Occur.MUST);
+    outer.add(term("C"), BooleanClause.Occur.MUST);
+    float innerScore = (1 + 1);
+    float outerScore = (innerScore + 1);
+    assertScore(outerScore, outer);
+  }
+  
+  public void testConjunctionNestedSingle() throws Exception {
+    BooleanQuery inner = new BooleanQuery();
+    inner.add(term("A"), BooleanClause.Occur.MUST);
+    inner.add(term("B"), BooleanClause.Occur.MUST);
+    BooleanQuery outer = new BooleanQuery();
+    outer.add(inner, BooleanClause.Occur.MUST);
+    float innerScore = (1 + 1) * 2/(2f+1);
+    // LUCENE-4300: coord(1,1) is always treated as 1
+    float outerScore = innerScore * 1;
+    assertScore(outerScore, outer);
+  }
+  
   /** asserts score for our single matching good doc */
   private void assertScore(final float expected, Query query) throws Exception {
     // test in-order
