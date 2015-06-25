@@ -181,7 +181,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       if (q != query) {
         return new SlowWrapperFilter(q, useBits);
       } else {
-        return this;
+        return super.rewrite(reader);
       }
     }
 

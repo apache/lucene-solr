@@ -45,15 +45,18 @@ public class TestScorerPerf extends LuceneTestCase {
   Directory d;
 
   // TODO: this should be setUp()....
-  public void createDummySearcher() throws Exception {
+  public void createDummySearcher(int maxDoc) throws Exception {
       // Create a dummy index with nothing in it.
     // This could possibly fail if Lucene starts checking for docid ranges...
     d = newDirectory();
     IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
-    iw.addDocument(new Document());
-    iw.close();
-    r = DirectoryReader.open(d);
+    for (int i = 0; i < maxDoc; ++i) {
+      iw.addDocument(new Document());
+    }
+    iw.forceMerge(1);
+    r = DirectoryReader.open(iw, false);
     s = newSearcher(r);
+    iw.close();
   }
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
@@ -150,6 +153,7 @@ public class TestScorerPerf extends LuceneTestCase {
     @Override
     public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
       assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
+      assertEquals(context.reader().maxDoc(), docs.length());
       return new BitDocIdSet(docs);
     }
 
@@ -174,7 +178,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
   FixedBitSet addClause(BooleanQuery bq, FixedBitSet result) {
     final FixedBitSet rnd = sets[random().nextInt(sets.length)];
-    Query q = new ConstantScoreQuery(new BitSetFilter(rnd));
+    Query q = new BitSetFilter(rnd);
     bq.add(q, BooleanClause.Occur.MUST);
     if (validate) {
       if (result==null) result = rnd.clone();
@@ -342,9 +346,10 @@ public class TestScorerPerf extends LuceneTestCase {
 
   public void testConjunctions() throws Exception {
     // test many small sets... the bugs will be found on boundary conditions
-    createDummySearcher();
     validate=true;
-    sets=randBitSets(atLeast(1000), atLeast(10));
+    final int maxDoc = atLeast(10);
+    createDummySearcher(maxDoc);
+    sets=randBitSets(atLeast(1000), maxDoc);
     doConjunctions(atLeast(10000), atLeast(5));
     doNestedConjunctions(atLeast(10000), atLeast(3), atLeast(3));
     r.close();

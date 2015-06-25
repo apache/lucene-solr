@@ -320,7 +320,14 @@ public class TestFilteredQuery extends LuceneTestCase {
     public String toString(String field) {
       return in.toString(field);
     }
-    
+
+    @Override
+    public boolean equals(Object obj) {
+      if (super.equals(obj) == false) {
+        return false;
+      }
+      return in.equals(((FilterWrapper) obj).in);
+    }
   }
   
   private void tChainedFilters(final boolean useRandomAccess) throws Exception {
@@ -384,37 +391,6 @@ public class TestFilteredQuery extends LuceneTestCase {
     return randomFilterStrategy(random(), true);
   }
   
-  private void assertRewrite(FilteredQuery fq, Class<? extends Query> clazz) throws Exception {
-    // assign crazy boost to FQ
-    final float boost = random().nextFloat() * 100.f;
-    fq.setBoost(boost);
-    
-    
-    // assign crazy boost to inner
-    final float innerBoost = random().nextFloat() * 100.f;
-    fq.getQuery().setBoost(innerBoost);
-    
-    // check the class and boosts of rewritten query
-    final Query rewritten = searcher.rewrite(fq);
-    assertTrue("is not instance of " + clazz.getName(), clazz.isInstance(rewritten));
-    if (rewritten instanceof FilteredQuery) {
-      assertEquals(boost, rewritten.getBoost(), 1.E-5f);
-      assertEquals(innerBoost, ((FilteredQuery) rewritten).getQuery().getBoost(), 1.E-5f);
-      assertEquals(fq.getFilterStrategy(), ((FilteredQuery) rewritten).getFilterStrategy());
-    } else {
-      assertEquals(boost * innerBoost, rewritten.getBoost(), 1.E-5f);
-    }
-    
-    // check that the original query was not modified
-    assertEquals(boost, fq.getBoost(), 1.E-5f);
-    assertEquals(innerBoost, fq.getQuery().getBoost(), 1.E-5f);
-  }
-
-  public void testRewrite() throws Exception {
-    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new FilterWrapper(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
-    assertRewrite(new FilteredQuery(new PrefixQuery(new Term("field", "one")), new FilterWrapper(new QueryWrapperFilter(new PrefixQuery(new Term("field", "o")))), randomFilterStrategy()), FilteredQuery.class);
-  }
-  
   public void testGetFilterStrategy() {
     FilterStrategy randomFilterStrategy = randomFilterStrategy();
     FilteredQuery filteredQuery = new FilteredQuery(new TermQuery(new Term("field", "one")), new QueryWrapperFilter(new PrefixQuery(new Term("field", "o"))), randomFilterStrategy);
@@ -456,6 +432,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.close();
     
     IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCache(null); // needed otherwise the iterator may be used
     Query query = new FilteredQuery(new TermQuery(new Term("field", "0")),
         new Filter() {
           @Override
@@ -519,95 +496,6 @@ public class TestFilteredQuery extends LuceneTestCase {
     
     TopDocs search = searcher.search(query, 10);
     assertEquals(totalDocsWithZero, search.totalHits);  
-    IOUtils.close(reader, directory);
-  }
-  
-  /*
-   * Test if the leapfrog strategy works correctly in terms
-   * of advancing / next the right thing first
-   */
-  public void testLeapFrogStrategy() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter (random(), directory, newIndexWriterConfig(new MockAnalyzer(random())));
-    int numDocs = atLeast(50);
-    int totalDocsWithZero = 0;
-    for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      int num = random().nextInt(10);
-      if (num == 0) {
-        totalDocsWithZero++;
-      }
-      doc.add (newTextField("field", ""+num, Field.Store.YES));
-      writer.addDocument (doc);  
-    }
-    IndexReader reader = writer.getReader();
-    writer.close();
-    final boolean queryFirst = random().nextBoolean();
-    IndexSearcher searcher = newSearcher(reader);
-    Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {
-      @Override
-      public DocIdSet getDocIdSet(final LeafReaderContext context, Bits acceptDocs)
-          throws IOException {
-        return new DocIdSet() {
-
-          @Override
-          public long ramBytesUsed() {
-            return 0L;
-          }
-
-          @Override
-          public Bits bits() throws IOException {
-             return null;
-          }
-          @Override
-          public DocIdSetIterator iterator() throws IOException {
-            final PostingsEnum termPostingsEnum = context.reader().postings(new Term("field", "0"));
-            if (termPostingsEnum == null) {
-              return null;
-            }
-            return new DocIdSetIterator() {
-              boolean nextCalled;
-              boolean advanceCalled;
-              @Override
-              public int nextDoc() throws IOException {
-                assertTrue("queryFirst: "+ queryFirst + " advanced: " + advanceCalled + " next: "+ nextCalled, nextCalled || advanceCalled ^ !queryFirst);  
-                nextCalled = true;
-                return termPostingsEnum.nextDoc();
-              }
-              
-              @Override
-              public int docID() {
-                return termPostingsEnum.docID();
-              }
-              
-              @Override
-              public int advance(int target) throws IOException {
-                assertTrue("queryFirst: "+ queryFirst + " advanced: " + advanceCalled + " next: "+ nextCalled, advanceCalled || nextCalled ^ queryFirst);  
-                advanceCalled = true;
-                return termPostingsEnum.advance(target);
-              }
-              
-              @Override
-              public long cost() {
-                return termPostingsEnum.cost();
-              } 
-            };
-          }
-          
-          
-        };
-        
-      }
-      @Override
-      public String toString(String field) {
-        return "filterField0";
-      }
-        }, queryFirst ? FilteredQuery.LEAP_FROG_QUERY_FIRST_STRATEGY : random()
-            .nextBoolean() ? FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY
-            : FilteredQuery.LEAP_FROG_FILTER_FIRST_STRATEGY);  // if filterFirst, we can use random here since bits are null
-    
-    TopDocs search = searcher.search(query, 10);
-    assertEquals(totalDocsWithZero, search.totalHits);
     IOUtils.close(reader, directory);
   }
 

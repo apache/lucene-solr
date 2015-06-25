@@ -18,10 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -64,45 +63,7 @@ public abstract class Filter extends Query {
   //
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new Weight(this) {
-
-      @Override
-      public void extractTerms(Set<Term> terms) {}
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        return 0f;
-      }
-
-      @Override
-      public void normalize(float norm, float topLevelBoost) {}
-
-      @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer scorer = scorer(context, context.reader().getLiveDocs());
-        final boolean match = (scorer != null && scorer.advance(doc) == doc);
-        if (match) {
-          assert scorer.score() == 0f;
-          return Explanation.match(0f, "Match on id " + doc);
-        } else {
-          return Explanation.match(0f, "No match on id " + doc);
-        }
-      }
-
-      @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        final DocIdSet set = getDocIdSet(context, acceptDocs);
-        if (set == null) {
-          return null;
-        }
-        final DocIdSetIterator iterator = set.iterator();
-        if (iterator == null) {
-          return null;
-        }
-        return new ConstantScoreScorer(this, 0f, iterator);
-      }
-
-    };
+  public Query rewrite(IndexReader reader) throws IOException {
+    return FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY.rewrite(this);
   }
 }
