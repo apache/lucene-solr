@@ -204,8 +204,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return mainWeight.getValueForNormalization();
     }
 
-    public Scorer scorer(LeafReaderContext context, Bits bits) throws IOException {
-      return mainWeight.scorer(context, bits);
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      return mainWeight.scorer(context);
     }
 
     public void normalize(float norm, float topLevelBoost) {

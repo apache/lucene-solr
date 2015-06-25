@@ -58,7 +58,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator();
     terms.seekCeil(new BytesRef("field"));
-    PostingsEnum termDocs = TestUtil.docs(random(), terms, reader.getLiveDocs(), null, PostingsEnum.FREQS);
+    PostingsEnum termDocs = TestUtil.docs(random(), terms, null, PostingsEnum.FREQS);
     if (termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)    {
       int docId = termDocs.docID();
       assertTrue(docId == 0);
@@ -76,7 +76,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       PostingsEnum termDocs = TestUtil.docs(random(), reader,
           "textField2",
           new BytesRef("bad"),
-          reader.getLiveDocs(),
           null,
           0);
 
@@ -90,7 +89,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       PostingsEnum termDocs = TestUtil.docs(random(), reader,
           "junk",
           new BytesRef("bad"),
-          reader.getLiveDocs(),
           null,
           0);
       assertNull(termDocs);
@@ -124,7 +122,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     PostingsEnum tdocs = TestUtil.docs(random(), reader,
         ta.field(),
         new BytesRef(ta.text()),
-        MultiFields.getLiveDocs(reader),
         null,
         PostingsEnum.FREQS);
     
@@ -149,7 +146,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     tdocs = TestUtil.docs(random(), reader,
         ta.field(),
         new BytesRef(ta.text()),
-        MultiFields.getLiveDocs(reader),
         null,
         0);
     
@@ -167,7 +163,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     tdocs = TestUtil.docs(random(), reader,
         tb.field(),
         new BytesRef(tb.text()),
-        MultiFields.getLiveDocs(reader),
         null,
         PostingsEnum.FREQS);
 
@@ -191,7 +186,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     tdocs = TestUtil.docs(random(), reader,
         tb.field(),
         new BytesRef(tb.text()),
-        MultiFields.getLiveDocs(reader),
         null,
         PostingsEnum.FREQS);
     
@@ -211,7 +205,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     tdocs = TestUtil.docs(random(), reader,
         tc.field(),
         new BytesRef(tc.text()),
-        MultiFields.getLiveDocs(reader),
         null,
         PostingsEnum.FREQS);
 
@@ -237,7 +230,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     tdocs = TestUtil.docs(random(), reader,
         tc.field(),
         new BytesRef(tc.text()),
-        MultiFields.getLiveDocs(reader),
         null,
         0);
     assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);

@@ -216,8 +216,8 @@ public class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-      return in.postings(liveDocs, reuse, flags);
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
+      return in.postings(reuse, flags);
     }
 
   }

@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -76,8 +75,8 @@ public class TestFilterLeafReader extends LuceneTestCase {
       }
 
       @Override
-      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
-        return new TestPositions(super.postings(liveDocs, reuse == null ? null : ((FilterPostingsEnum) reuse).in, flags));
+      public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
+        return new TestPositions(super.postings(reuse == null ? null : ((FilterPostingsEnum) reuse).in, flags));
       }
     }
 
@@ -151,7 +150,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
-    PostingsEnum positions = terms.postings(MultiFields.getLiveDocs(reader), null, PostingsEnum.ALL);
+    PostingsEnum positions = terms.postings(null, PostingsEnum.ALL);
     while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
     }

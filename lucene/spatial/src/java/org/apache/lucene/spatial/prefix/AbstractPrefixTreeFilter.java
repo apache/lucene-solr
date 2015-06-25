@@ -20,11 +20,14 @@ package org.apache.lucene.spatial.prefix;
 import java.io.IOException;
 
 import com.spatial4j.core.shape.Shape;
+
+import org.apache.lucene.index.FilterLeafReader.FilterPostingsEnum;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.BitDocIdSet;
@@ -96,15 +99,51 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
 
     protected void collectDocs(BitSet bitSet) throws IOException {
       assert termsEnum != null;
-      postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
-      bitSet.or(postingsEnum);
+      postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
+      bitSet.or(wrap(postingsEnum, acceptDocs));
     }
 
     protected void collectDocs(BitDocIdSet.Builder bitSetBuilder) throws IOException {
       assert termsEnum != null;
-      postingsEnum = termsEnum.postings(acceptDocs, postingsEnum, PostingsEnum.NONE);
-      bitSetBuilder.or(postingsEnum);
+      postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
+      bitSetBuilder.or(wrap(postingsEnum, acceptDocs));
     }
   }
 
+  /** Filter the given {@link PostingsEnum} with the given {@link Bits}. */
+  private static PostingsEnum wrap(PostingsEnum iterator, Bits acceptDocs) {
+    if (iterator == null || acceptDocs == null) {
+      return iterator;
+    }
+    return new BitsFilteredPostingsEnum(iterator, acceptDocs);
+  }
+
+  /** A {@link PostingsEnum} which is filtered by some random-access bits. */
+  private static class BitsFilteredPostingsEnum extends FilterPostingsEnum {
+
+    private final Bits bits;
+
+    private BitsFilteredPostingsEnum(PostingsEnum in, Bits bits) {
+      super(in);
+      this.bits = bits;
+    }
+
+    private int doNext(int doc) throws IOException {
+      while (doc != NO_MORE_DOCS && bits.get(doc) == false) {
+        doc = in.nextDoc();
+      }
+      return doc;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return doNext(in.nextDoc());
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return doNext(in.advance(target));
+    }
+
+  }
 }

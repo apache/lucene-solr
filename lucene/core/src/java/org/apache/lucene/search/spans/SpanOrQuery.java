@@ -27,7 +27,6 @@ import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -170,13 +169,13 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings)
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings)
         throws IOException {
 
       ArrayList<Spans> subSpans = new ArrayList<>(clauses.size());
 
       for (SpanWeight w : subWeights) {
-        Spans spans = w.getSpans(context, acceptDocs, requiredPostings);
+        Spans spans = w.getSpans(context, requiredPostings);
         if (spans != null) {
           subSpans.add(spans);
         }

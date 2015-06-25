@@ -96,7 +96,7 @@ public abstract class Filter extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer scorer = scorer(context, context.reader().getLiveDocs());
+        final Scorer scorer = scorer(context);
         final boolean match = (scorer != null && scorer.advance(doc) == doc);
         if (match) {
           assert scorer.score() == 0f;
@@ -107,8 +107,8 @@ public abstract class Filter extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        final DocIdSet set = getDocIdSet(context, acceptDocs);
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        final DocIdSet set = getDocIdSet(context, null);
         if (set == null) {
           return null;
         }

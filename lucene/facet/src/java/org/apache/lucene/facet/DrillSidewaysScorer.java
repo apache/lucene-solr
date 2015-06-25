@@ -26,6 +26,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -69,12 +70,25 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   @Override
-  public int score(LeafCollector collector, int min, int maxDoc) throws IOException {
+  public int score(LeafCollector originalCollector, Bits acceptDocs, int min, int maxDoc) throws IOException {
     if (min != 0) {
       throw new IllegalArgumentException("min must be 0, got " + min);
     }
     if (maxDoc != Integer.MAX_VALUE) {
       throw new IllegalArgumentException("maxDoc must be Integer.MAX_VALUE");
+    }
+    final LeafCollector collector;
+    if (acceptDocs == null) {
+      collector = originalCollector;
+    } else {
+      collector = new FilterLeafCollector(originalCollector) {
+        @Override
+        public void collect(int doc) throws IOException {
+          if (acceptDocs.get(doc)) {
+            super.collect(doc);
+          }
+        }
+      };
     }
     //if (DEBUG) {
     //  System.out.println("\nscore: reader=" + context.reader());

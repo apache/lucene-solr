@@ -66,7 +66,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
         PostingsEnum docsAndPosEnum = getDocsAndPositions(
-            leafReaderContext.reader(), bytes, null);
+            leafReaderContext.reader(), bytes);
         assertNotNull(docsAndPosEnum);
         if (leafReaderContext.reader().maxDoc() == 0) {
           continue;
@@ -91,12 +91,12 @@ public class TestDocsAndPositions extends LuceneTestCase {
   }
 
   public PostingsEnum getDocsAndPositions(LeafReader reader,
-      BytesRef bytes, Bits liveDocs) throws IOException {
+      BytesRef bytes) throws IOException {
     Terms terms = reader.terms(fieldName);
     if (terms != null) {
       TermsEnum te = terms.iterator();
       if (te.seekExact(bytes)) {
-        return te.postings(liveDocs, null, PostingsEnum.ALL);
+        return te.postings(null, PostingsEnum.ALL);
       }
     }
     return null;
@@ -149,7 +149,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
         PostingsEnum docsAndPosEnum = getDocsAndPositions(
-            leafReaderContext.reader(), bytes, null);
+            leafReaderContext.reader(), bytes);
         assertNotNull(docsAndPosEnum);
         int initDoc = 0;
         int maxDoc = leafReaderContext.reader().maxDoc();
@@ -226,7 +226,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext context : topReaderContext.leaves()) {
         int maxDoc = context.reader().maxDoc();
-        PostingsEnum postingsEnum = TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, PostingsEnum.FREQS);
+        PostingsEnum postingsEnum = TestUtil.docs(random(), context.reader(), fieldName, bytes, null, PostingsEnum.FREQS);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
           assertNull(postingsEnum);
           continue;
@@ -304,7 +304,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
         PostingsEnum docsAndPosEnum = getDocsAndPositions(
-            leafReaderContext.reader(), bytes, null);
+            leafReaderContext.reader(), bytes);
         assertNotNull(docsAndPosEnum);
 
         int initDoc = 0;
@@ -336,7 +336,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader r = getOnlySegmentReader(reader);
-    PostingsEnum disi = TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, null, PostingsEnum.NONE);
+    PostingsEnum disi = TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, PostingsEnum.NONE);
     int docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -344,7 +344,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator();
     assertTrue(te.seekExact(new BytesRef("bar")));
-    disi = TestUtil.docs(random(), te, null, disi, PostingsEnum.NONE);
+    disi = TestUtil.docs(random(), te, disi, PostingsEnum.NONE);
     docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -369,7 +369,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator();
     assertTrue(te.seekExact(new BytesRef("bar")));
-    disi = te.postings(null, disi, PostingsEnum.ALL);
+    disi = te.postings(disi, PostingsEnum.ALL);
     docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

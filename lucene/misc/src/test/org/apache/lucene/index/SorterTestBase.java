@@ -235,7 +235,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   public void testDocsAndPositionsEnum() throws Exception {
     TermsEnum termsEnum = sortedReader.terms(DOC_POSITIONS_FIELD).iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
-    PostingsEnum sortedPositions = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum sortedPositions = termsEnum.postings(null, PostingsEnum.ALL);
     int doc;
     
     // test nextDoc()
@@ -252,7 +252,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     
     // test advance()
     final PostingsEnum reuse = sortedPositions;
-    sortedPositions = termsEnum.postings(null, reuse, PostingsEnum.ALL);
+    sortedPositions = termsEnum.postings(reuse, PostingsEnum.ALL);
     if (sortedPositions instanceof SortingDocsEnum) {
       assertTrue(((SortingDocsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
     }
@@ -293,40 +293,25 @@ public abstract class SorterTestBase extends LuceneTestCase {
 
   @Test
   public void testDocsEnum() throws Exception {
-    Bits mappedLiveDocs = randomLiveDocs(sortedReader.maxDoc());
     TermsEnum termsEnum = sortedReader.terms(DOCS_ENUM_FIELD).iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOCS_ENUM_TERM)));
-    PostingsEnum docs = termsEnum.postings(mappedLiveDocs, null);
+    PostingsEnum docs = termsEnum.postings(null);
 
     int doc;
     int prev = -1;
     while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      assertTrue("document " + doc + " marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(doc));
       assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).get(ID_FIELD)));
-      while (++prev < doc) {
-        assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
-      }
-    }
-    while (++prev < sortedReader.maxDoc()) {
-      assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
     }
 
     PostingsEnum reuse = docs;
-    docs = termsEnum.postings(mappedLiveDocs, reuse);
+    docs = termsEnum.postings(reuse);
     if (docs instanceof SortingDocsEnum) {
       assertTrue(((SortingDocsEnum) docs).reused(reuse)); // make sure reuse worked
     }
     doc = -1;
     prev = -1;
     while ((doc = docs.advance(doc + 1)) != DocIdSetIterator.NO_MORE_DOCS) {
-      assertTrue("document " + doc + " marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(doc));
       assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).get(ID_FIELD)));
-      while (++prev < doc) {
-        assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
-      }
-    }
-    while (++prev < sortedReader.maxDoc()) {
-      assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
     }
   }
   

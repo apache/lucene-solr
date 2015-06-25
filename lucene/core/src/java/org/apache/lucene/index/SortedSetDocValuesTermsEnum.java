@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
@@ -106,7 +105,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     throw new UnsupportedOperationException();
   }
 

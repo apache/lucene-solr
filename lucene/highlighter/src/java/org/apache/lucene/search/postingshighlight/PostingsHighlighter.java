@@ -566,7 +566,7 @@ public class PostingsHighlighter {
         if (!termsEnum.seekExact(terms[i])) {
           continue; // term not found
         }
-        de = postings[i] = termsEnum.postings(null, null, PostingsEnum.OFFSETS);
+        de = postings[i] = termsEnum.postings(null, PostingsEnum.OFFSETS);
         assert de != null;
         pDoc = de.advance(doc);
       } else {

@@ -923,7 +923,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
   }
 
   @Override
-  public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     assert !eof;
     //if (DEBUG) {
     //System.out.println("BTTR.docs seg=" + segment);
@@ -932,7 +932,7 @@ public final class OrdsSegmentTermsEnum extends TermsEnum {
     //if (DEBUG) {
     //System.out.println("  state=" + currentFrame.state);
     //}
-    return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.state, skipDocs, reuse, flags);
+    return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.state, reuse, flags);
   }
 
   @Override

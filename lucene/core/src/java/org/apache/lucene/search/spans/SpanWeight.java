@@ -114,11 +114,10 @@ public abstract class SpanWeight extends Weight {
   /**
    * Expert: Return a Spans object iterating over matches from this Weight
    * @param ctx a LeafReaderContext for this Spans
-   * @param acceptDocs a bitset of documents to check
    * @return a Spans
    * @throws IOException on error
    */
-  public abstract Spans getSpans(LeafReaderContext ctx, Bits acceptDocs, Postings requiredPostings) throws IOException;
+  public abstract Spans getSpans(LeafReaderContext ctx, Postings requiredPostings) throws IOException;
 
   @Override
   public float getValueForNormalization() throws IOException {
@@ -133,7 +132,7 @@ public abstract class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context) throws IOException {
     if (field == null) {
       return null;
     }
@@ -141,14 +140,14 @@ public abstract class SpanWeight extends Weight {
     if (terms != null && terms.hasPositions() == false) {
       throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
     }
-    Spans spans = getSpans(context, acceptDocs, Postings.POSITIONS);
+    Spans spans = getSpans(context, Postings.POSITIONS);
     Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
     return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
   }
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    SpanScorer scorer = (SpanScorer) scorer(context, context.reader().getLiveDocs());
+    SpanScorer scorer = (SpanScorer) scorer(context);
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

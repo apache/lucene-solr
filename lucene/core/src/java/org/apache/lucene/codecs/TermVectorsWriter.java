@@ -267,7 +267,7 @@ public abstract class TermVectorsWriter implements Closeable {
         startTerm(termsEnum.term(), freq);
 
         if (hasPositions || hasOffsets) {
-          docsAndPositionsEnum = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);
+          docsAndPositionsEnum = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);
           assert docsAndPositionsEnum != null;
           
           final int docID = docsAndPositionsEnum.nextDoc();

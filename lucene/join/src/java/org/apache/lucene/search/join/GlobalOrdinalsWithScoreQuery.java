@@ -155,13 +155,13 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       SortedDocValues values = DocValues.getSorted(context.reader(), joinField);
       if (values == null) {
         return null;
       }
 
-      Scorer approximationScorer = approximationWeight.scorer(context, acceptDocs);
+      Scorer approximationScorer = approximationWeight.scorer(context);
       if (approximationScorer == null) {
         return null;
       } else if (globalOrds != null) {

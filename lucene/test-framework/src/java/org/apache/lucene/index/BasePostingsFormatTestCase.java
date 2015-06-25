@@ -176,8 +176,8 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   }
 
   protected static void checkReuse(TermsEnum termsEnum, int firstFlags, int secondFlags, boolean shouldReuse) throws IOException {
-    PostingsEnum postings1 = termsEnum.postings(null, null, firstFlags);
-    PostingsEnum postings2 = termsEnum.postings(null, postings1, secondFlags);
+    PostingsEnum postings1 = termsEnum.postings(null, firstFlags);
+    PostingsEnum postings2 = termsEnum.postings(postings1, secondFlags);
     if (shouldReuse)
       assertSame("Expected PostingsEnum " + postings1.getClass().getName() + " to be reused", postings1, postings2);
     else
@@ -247,7 +247,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     LeafReader ar = getOnlySegmentReader(ir);
     TermsEnum termsEnum = ar.terms("field").iterator();
     assertTrue(termsEnum.seekExact(new BytesRef("value")));
-    PostingsEnum docsEnum = termsEnum.postings(null, null, PostingsEnum.NONE);
+    PostingsEnum docsEnum = termsEnum.postings(null, PostingsEnum.NONE);
     assertEquals(0, docsEnum.nextDoc());
     assertEquals(1, docsEnum.freq());
     assertEquals(1, docsEnum.nextDoc());
@@ -270,7 +270,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     LeafReader ar = getOnlySegmentReader(ir);
     TermsEnum termsEnum = ar.terms("field").iterator();
     assertTrue(termsEnum.seekExact(new BytesRef("value")));
-    PostingsEnum docsEnum = termsEnum.postings(null, null, PostingsEnum.POSITIONS);
+    PostingsEnum docsEnum = termsEnum.postings(null, PostingsEnum.POSITIONS);
     assertEquals(0, docsEnum.nextDoc());
     assertEquals(1, docsEnum.freq());
     assertEquals(1, docsEnum.nextDoc());
@@ -306,7 +306,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       TermsEnum termsEnum = terms.iterator();
       BytesRef term = termsEnum.next();
       if (term != null) {
-        PostingsEnum postingsEnum = termsEnum.postings(null, null);
+        PostingsEnum postingsEnum = termsEnum.postings(null);
         assertTrue(postingsEnum.nextDoc() == PostingsEnum.NO_MORE_DOCS);
       }
     }
@@ -398,9 +398,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                       // TODO: also sometimes ask for payloads/offsets?
                       boolean noPositions = random().nextBoolean();
                       if (noPositions) {
-                        docs = termsEnum.postings(null, docs, PostingsEnum.FREQS);
+                        docs = termsEnum.postings(docs, PostingsEnum.FREQS);
                       } else {
-                        docs = termsEnum.postings(null, null, PostingsEnum.POSITIONS);
+                        docs = termsEnum.postings(null, PostingsEnum.POSITIONS);
                       }
                       int docFreq = 0;
                       long totalTermFreq = 0;
@@ -447,9 +447,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                         // TODO: also sometimes ask for payloads/offsets?
                         boolean noPositions = random().nextBoolean();
                         if (noPositions) {
-                          docs = termsEnum.postings(null, docs, PostingsEnum.FREQS);
+                          docs = termsEnum.postings(docs, PostingsEnum.FREQS);
                         } else {
-                          docs = termsEnum.postings(null, null, PostingsEnum.POSITIONS);
+                          docs = termsEnum.postings(null, PostingsEnum.POSITIONS);
                         }
 
                         int docFreq = 0;
@@ -579,7 +579,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // termsenum reuse (FREQS)
     TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
-    PostingsEnum postings2 = termsEnum.postings(null, postings);
+    PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
     assertReused("foo", postings, postings2);
     // and it had better work
@@ -590,13 +590,13 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     
     // asking for any flags: ok
     for (int flag : new int[] { NONE, FREQS, POSITIONS, PAYLOADS, OFFSETS, ALL }) {
-      postings = termsEnum.postings(null, null, flag);
+      postings = termsEnum.postings(null, flag);
       assertEquals(-1, postings.docID());
       assertEquals(0, postings.nextDoc());
       assertEquals(1, postings.freq());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
       // reuse that too
-      postings2 = termsEnum.postings(null, postings, flag);
+      postings2 = termsEnum.postings(postings, flag);
       assertNotNull(postings2);
       assertReused("foo", postings, postings2);
       // and it had better work
@@ -637,7 +637,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // termsenum reuse (FREQS)
     TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
-    PostingsEnum postings2 = termsEnum.postings(null, postings);
+    PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
     assertReused("foo", postings, postings2);
     // and it had better work
@@ -647,14 +647,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
-    PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
+    PostingsEnum docsOnly = termsEnum.postings(null, PostingsEnum.NONE);
     assertEquals(-1, docsOnly.docID());
     assertEquals(0, docsOnly.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
     assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly.nextDoc());
     // reuse that too
-    PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
+    PostingsEnum docsOnly2 = termsEnum.postings(docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
     assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
@@ -666,7 +666,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     
     // asking for any flags: ok
     for (int flag : new int[] { NONE, FREQS, POSITIONS, PAYLOADS, OFFSETS, ALL }) {
-      postings = termsEnum.postings(null, null, flag);
+      postings = termsEnum.postings(null, flag);
       assertEquals(-1, postings.docID());
       assertEquals(0, postings.nextDoc());
       if (flag != NONE) {
@@ -674,7 +674,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       }
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
       // reuse that too
-      postings2 = termsEnum.postings(null, postings, flag);
+      postings2 = termsEnum.postings(postings, flag);
       assertNotNull(postings2);
       assertReused("foo", postings, postings2);
       // and it had better work
@@ -715,7 +715,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // termsenum reuse (FREQS)
     TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
-    PostingsEnum postings2 = termsEnum.postings(null, postings);
+    PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
     assertReused("foo", postings, postings2);
     // and it had better work
@@ -725,14 +725,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
-    PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
+    PostingsEnum docsOnly = termsEnum.postings(null, PostingsEnum.NONE);
     assertEquals(-1, docsOnly.docID());
     assertEquals(0, docsOnly.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
     assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly.nextDoc());
     // reuse that too
-    PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
+    PostingsEnum docsOnly2 = termsEnum.postings(docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
     assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
@@ -758,7 +758,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     
     // now reuse the positions
-    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.POSITIONS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -790,7 +790,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.PAYLOADS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -820,7 +820,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.OFFSETS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -849,7 +849,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(-1, docsAndPositionsEnum.endOffset());
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.ALL);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -895,7 +895,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // termsenum reuse (FREQS)
     TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
-    PostingsEnum postings2 = termsEnum.postings(null, postings);
+    PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
     assertReused("foo", postings, postings2);
     // and it had better work
@@ -905,14 +905,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
-    PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
+    PostingsEnum docsOnly = termsEnum.postings(null, PostingsEnum.NONE);
     assertEquals(-1, docsOnly.docID());
     assertEquals(0, docsOnly.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
     assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly.nextDoc());
     // reuse that too
-    PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
+    PostingsEnum docsOnly2 = termsEnum.postings(docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
     assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
@@ -940,7 +940,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     
     // now reuse the positions
-    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.POSITIONS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -976,7 +976,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.PAYLOADS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1008,7 +1008,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.OFFSETS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1037,7 +1037,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(7, docsAndPositionsEnum.endOffset());
     assertNull(docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.ALL);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1080,7 +1080,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // termsenum reuse (FREQS)
     TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
-    PostingsEnum postings2 = termsEnum.postings(null, postings);
+    PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
     assertReused("foo", postings, postings2);
     // and it had better work
@@ -1090,14 +1090,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
-    PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
+    PostingsEnum docsOnly = termsEnum.postings(null, PostingsEnum.NONE);
     assertEquals(-1, docsOnly.docID());
     assertEquals(0, docsOnly.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
     assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly.nextDoc());
     // reuse that too
-    PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
+    PostingsEnum docsOnly2 = termsEnum.postings(docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
     assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
@@ -1125,7 +1125,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     
     // now reuse the positions
-    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.POSITIONS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1158,7 +1158,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.PAYLOADS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1190,7 +1190,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum.getPayload()));
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.OFFSETS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1221,7 +1221,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(-1, docsAndPositionsEnum.endOffset());
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.ALL);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1266,7 +1266,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // termsenum reuse (FREQS)
     TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
-    PostingsEnum postings2 = termsEnum.postings(null, postings);
+    PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
     assertReused("foo", postings, postings2);
     // and it had better work
@@ -1276,14 +1276,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings2.nextDoc());
     
     // asking for docs only: ok
-    PostingsEnum docsOnly = termsEnum.postings(null, null, PostingsEnum.NONE);
+    PostingsEnum docsOnly = termsEnum.postings(null, PostingsEnum.NONE);
     assertEquals(-1, docsOnly.docID());
     assertEquals(0, docsOnly.nextDoc());
     // we don't define what it is, but if its something else, we should look into it?
     assertTrue(docsOnly.freq() == 1 || docsOnly.freq() == 2);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly.nextDoc());
     // reuse that too
-    PostingsEnum docsOnly2 = termsEnum.postings(null, docsOnly, PostingsEnum.NONE);
+    PostingsEnum docsOnly2 = termsEnum.postings(docsOnly, PostingsEnum.NONE);
     assertNotNull(docsOnly2);
     assertReused("foo", docsOnly, docsOnly2);
     // and it had better work
@@ -1313,7 +1313,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     
     // now reuse the positions
-    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.POSITIONS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1350,7 +1350,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.PAYLOADS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1384,7 +1384,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertTrue(docsAndPositionsEnum.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum.getPayload()));
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
     // reuse
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.OFFSETS);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.OFFSETS);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());
@@ -1415,7 +1415,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(7, docsAndPositionsEnum.endOffset());
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
-    docsAndPositionsEnum2 = termsEnum.postings(null, docsAndPositionsEnum, PostingsEnum.ALL);
+    docsAndPositionsEnum2 = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.ALL);
     assertReused("foo", docsAndPositionsEnum, docsAndPositionsEnum2);
     assertEquals(-1, docsAndPositionsEnum2.docID());
     assertEquals(0, docsAndPositionsEnum2.nextDoc());

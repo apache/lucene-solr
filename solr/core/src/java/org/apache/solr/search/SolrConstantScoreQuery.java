@@ -103,8 +103,8 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(this.context, context, acceptDocs) : filter.getDocIdSet(context, acceptDocs);
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(this.context, context, null) : filter.getDocIdSet(context, null);
       if (docIdSet == null) {
         return null;
       }

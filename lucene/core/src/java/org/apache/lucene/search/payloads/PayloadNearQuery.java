@@ -144,15 +144,15 @@ public class PayloadNearQuery extends SpanNearQuery {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Spans spans = super.getSpans(context, acceptDocs, Postings.PAYLOADS);
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      Spans spans = super.getSpans(context, Postings.PAYLOADS);
       Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
       return (spans == null) ? null : new PayloadNearSpanScorer(spans, this, simScorer);
     }
     
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      PayloadNearSpanScorer scorer = (PayloadNearSpanScorer) scorer(context, context.reader().getLiveDocs());
+      PayloadNearSpanScorer scorer = (PayloadNearSpanScorer) scorer(context);
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

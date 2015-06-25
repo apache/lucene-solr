@@ -21,7 +21,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -71,8 +70,8 @@ public class SpanWithinQuery extends SpanContainQuery {
      * The payload is from the spans of <code>little</code>.
      */
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings) throws IOException {
-      ArrayList<Spans> containerContained = prepareConjunction(context, acceptDocs, requiredPostings);
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
+      ArrayList<Spans> containerContained = prepareConjunction(context, requiredPostings);
       if (containerContained == null) {
         return null;
       }

@@ -39,13 +39,14 @@ public class AssertingScorer extends Scorer {
   final boolean needsScores;
 
   IteratorState state = IteratorState.START;
-  int doc = -1;
+  int doc;
 
   private AssertingScorer(Random random, Scorer in, boolean needsScores) {
     super(in.weight);
     this.random = random;
     this.in = in;
     this.needsScores = needsScores;
+    this.doc = in.docID();
   }
 
   public Scorer getIn() {
@@ -90,7 +91,6 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public int docID() {
-    assert state != IteratorState.APPROXIMATING : "calling docId() on the Scorer while the match has not been confirmed";
     return in.docID();
   }
 
@@ -159,7 +159,7 @@ public class AssertingScorer extends Scorer {
           state = IteratorState.APPROXIMATING;
         }
         assert inApproximation.docID() == nextDoc;
-        return nextDoc;
+        return doc = nextDoc;
       }
 
       @Override
@@ -174,7 +174,7 @@ public class AssertingScorer extends Scorer {
           state = IteratorState.APPROXIMATING;
         }
         assert inApproximation.docID() == advanced;
-        return advanced;
+        return doc = advanced;
       }
 
       @Override

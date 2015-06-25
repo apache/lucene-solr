@@ -42,6 +42,7 @@ API Changes
   BooleanQuery with one MUST clause for the query, and one FILTER clause for
   the filter. (Adrien Grand)
 
+
 ======================= Lucene 5.3.0 =======================
 
 New Features
@@ -131,6 +132,10 @@ API Changes
 * LUCENE-6583: FilteredQuery is deprecated and will be removed in 6.0. It should
   be replaced with a BooleanQuery which handle the query as a MUST clause and
   the filter as a FILTER clause. (Adrien Grand)
+
+* LUCENE-6553: The postings, spans and scorer APIs no longer take an acceptDocs
+  parameter. Live docs are now always checked on top of these APIs.
+  (Adrien Grand)
 
 Bug fixes
 
@@ -224,6 +229,12 @@ Build
 
 * LUCENE-6567: Simplify payload checking in SpanPayloadCheckQuery (Alan
   Woodward)
+
+Changes in Backwards Compatibility Policy
+
+* LUCENE-6553: The iterator returned by the LeafReader.postings method now
+  always includes deleted docs, so you have to check for deleted documents on
+  top of the iterator. (Adrien Grand)
 
 ======================= Lucene 5.2.1 =======================
 

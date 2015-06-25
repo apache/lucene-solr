@@ -110,7 +110,6 @@ public class TestSegmentMerger extends LuceneTestCase {
     PostingsEnum termDocs = TestUtil.docs(random(), mergedReader,
         DocHelper.TEXT_FIELD_2_KEY,
         new BytesRef("field"),
-        MultiFields.getLiveDocs(mergedReader),
         null,
         0);
     assertTrue(termDocs != null);

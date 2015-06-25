@@ -54,6 +54,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
@@ -417,8 +418,12 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (text == null) { // Ran off the end of the terms enum without finding any live docs with that field in them.
         return null;
       }
-      postingsEnum = termsEnum.postings(reader.getLiveDocs(), postingsEnum, PostingsEnum.NONE);
+      postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
+      final Bits liveDocs = reader.getLiveDocs();
       if (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        if (liveDocs != null && liveDocs.get(postingsEnum.docID())) {
+          continue;
+        }
         return reader.document(postingsEnum.docID());
       }
     }

@@ -139,15 +139,15 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
     CachingWrapperQuery cacher = new CachingWrapperQuery(filter, QueryCachingPolicy.ALWAYS_CACHE);
 
     // first time, nested filter is called
-    cacher.createWeight(searcher, false).scorer(context, context.reader().getLiveDocs());
+    cacher.createWeight(searcher, false).scorer(context);
     assertTrue("first time", filter.wasCalled());
 
     // make sure no exception if cache is holding the wrong docIdSet
-    cacher.createWeight(searcher, false).scorer(context, context.reader().getLiveDocs());
+    cacher.createWeight(searcher, false).scorer(context);
 
     // second time, nested filter should not be called
     filter.clear();
-    cacher.createWeight(searcher, false).scorer(context, context.reader().getLiveDocs());
+    cacher.createWeight(searcher, false).scorer(context);
     assertFalse("second time", filter.wasCalled());
 
     reader.close();

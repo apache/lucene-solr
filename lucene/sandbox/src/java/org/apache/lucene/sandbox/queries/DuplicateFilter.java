@@ -24,6 +24,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -106,7 +107,7 @@ public class DuplicateFilter extends Filter {
         if (currTerm == null) {
           break;
         } else {
-          docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE);
+          docs = termsEnum.postings(docs, PostingsEnum.NONE);
           int doc = docs.nextDoc();
           if (doc != DocIdSetIterator.NO_MORE_DOCS) {
             if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {
@@ -126,7 +127,7 @@ public class DuplicateFilter extends Filter {
         }
       }
     }
-    return new BitDocIdSet(bits, bits.approximateCardinality());
+    return BitsFilteredDocIdSet.wrap(new BitDocIdSet(bits, bits.approximateCardinality()), acceptDocs);
   }
 
   private DocIdSet fastBits(LeafReader reader, Bits acceptDocs) throws IOException {
@@ -144,7 +145,7 @@ public class DuplicateFilter extends Filter {
         } else {
           if (termsEnum.docFreq() > 1) {
             // unset potential duplicates
-            docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE);
+            docs = termsEnum.postings(docs, PostingsEnum.NONE);
             int doc = docs.nextDoc();
             if (doc != DocIdSetIterator.NO_MORE_DOCS) {
               if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {
@@ -171,7 +172,7 @@ public class DuplicateFilter extends Filter {
       }
     }
 
-    return new BitDocIdSet(bits);
+    return BitsFilteredDocIdSet.wrap(new BitDocIdSet(bits), acceptDocs);
   }
 
   public String getFieldName() {

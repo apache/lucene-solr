@@ -70,7 +70,7 @@ public class CompletionWeight extends Weight {
   }
 
   @Override
-  public BulkScorer bulkScorer(final LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(final LeafReaderContext context) throws IOException {
     final LeafReader reader = context.reader();
     final Terms terms;
     final NRTSuggester suggester;
@@ -91,7 +91,7 @@ public class CompletionWeight extends Weight {
     DocIdSet docIdSet = null;
     Filter filter = completionQuery.getFilter();
     if (filter != null) {
-      docIdSet = filter.getDocIdSet(context, acceptDocs);
+      docIdSet = filter.getDocIdSet(context, null);
       if (docIdSet == null || docIdSet.iterator() == null) {
         // filter matches no docs in current leave
         return null;
@@ -99,7 +99,7 @@ public class CompletionWeight extends Weight {
         throw new IllegalArgumentException("DocIDSet does not provide random access interface");
       }
     }
-    Bits acceptDocBits = (docIdSet != null) ? docIdSet.bits() : acceptDocs;
+    Bits acceptDocBits = (docIdSet != null) ? docIdSet.bits() : null;
     return new CompletionScorer(this, suggester, reader, acceptDocBits, filter != null, automaton);
   }
 
@@ -134,7 +134,7 @@ public class CompletionWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  public Scorer scorer(LeafReaderContext context) throws IOException {
     throw new UnsupportedOperationException();
   }
 

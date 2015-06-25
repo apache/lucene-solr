@@ -94,12 +94,12 @@ public class BoostingQuery extends Query {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-          final Scorer matchScorer = matchWeight.scorer(context, acceptDocs);
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          final Scorer matchScorer = matchWeight.scorer(context);
           if (matchScorer == null) {
             return null;
           }
-          final Scorer contextScorer = contextWeight.scorer(context, acceptDocs);
+          final Scorer contextScorer = contextWeight.scorer(context);
           if (contextScorer == null) {
             return matchScorer;
           }

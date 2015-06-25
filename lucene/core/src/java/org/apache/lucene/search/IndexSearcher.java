@@ -46,6 +46,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -614,10 +615,10 @@ public class IndexSearcher {
         // continue with the following leaf
         continue;
       }
-      BulkScorer scorer = weight.bulkScorer(ctx, ctx.reader().getLiveDocs());
+      BulkScorer scorer = weight.bulkScorer(ctx);
       if (scorer != null) {
         try {
-          scorer.score(leafCollector);
+          scorer.score(leafCollector, ctx.reader().getLiveDocs());
         } catch (CollectionTerminatedException e) {
           // collection was terminated prematurely
           // continue with the following leaf
@@ -667,7 +668,10 @@ public class IndexSearcher {
     int n = ReaderUtil.subIndex(doc, leafContexts);
     final LeafReaderContext ctx = leafContexts.get(n);
     int deBasedDoc = doc - ctx.docBase;
-    
+    final Bits liveDocs = ctx.reader().getLiveDocs();
+    if (liveDocs != null && liveDocs.get(deBasedDoc) == false) {
+      return Explanation.noMatch("Document " + doc + " is deleted");
+    }
     return weight.explain(ctx, deBasedDoc);
   }
 

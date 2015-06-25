@@ -23,7 +23,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -71,12 +70,12 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
       littleWeight.extractTerms(terms);
     }
 
-    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, final Bits acceptDocs, Postings postings) throws IOException {
-      Spans bigSpans = bigWeight.getSpans(context, acceptDocs, postings);
+    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, Postings postings) throws IOException {
+      Spans bigSpans = bigWeight.getSpans(context, postings);
       if (bigSpans == null) {
         return null;
       }
-      Spans littleSpans = littleWeight.getSpans(context, acceptDocs, postings);
+      Spans littleSpans = littleWeight.getSpans(context, postings);
       if (littleSpans == null) {
         return null;
       }

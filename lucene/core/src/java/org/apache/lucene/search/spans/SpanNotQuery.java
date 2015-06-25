@@ -25,7 +25,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -128,13 +127,13 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, final Bits acceptDocs, Postings requiredPostings) throws IOException {
-      Spans includeSpans = includeWeight.getSpans(context, acceptDocs, requiredPostings);
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
+      Spans includeSpans = includeWeight.getSpans(context, requiredPostings);
       if (includeSpans == null) {
         return null;
       }
 
-      Spans excludeSpans = excludeWeight.getSpans(context, acceptDocs, requiredPostings);
+      Spans excludeSpans = excludeWeight.getSpans(context, requiredPostings);
       if (excludeSpans == null) {
         return includeSpans;
       }

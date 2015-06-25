@@ -277,7 +277,7 @@ class JoinQuery extends Query {
 
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       if (filter == null) {
         boolean debug = rb != null && rb.isDebug();
         long start = debug ? System.currentTimeMillis() : 0;
@@ -309,7 +309,7 @@ class JoinQuery extends Query {
       }
 
       // Although this set only includes live docs, other filters can be pushed down to queries.
-      DocIdSet readerSet = filter.getDocIdSet(context, acceptDocs);
+      DocIdSet readerSet = filter.getDocIdSet(context, null);
       if (readerSet == null) {
         return null;
       }
@@ -409,7 +409,7 @@ class JoinQuery extends Query {
         if (freq < minDocFreqFrom) {
           fromTermDirectCount++;
           // OK to skip liveDocs, since we check for intersection with docs matching query
-          fromDeState.postingsEnum = fromDeState.termsEnum.postings(null, fromDeState.postingsEnum, PostingsEnum.NONE);
+          fromDeState.postingsEnum = fromDeState.termsEnum.postings(fromDeState.postingsEnum, PostingsEnum.NONE);
           PostingsEnum postingsEnum = fromDeState.postingsEnum;
 
           if (postingsEnum instanceof MultiPostingsEnum) {
@@ -474,7 +474,8 @@ class JoinQuery extends Query {
               toTermDirectCount++;
 
               // need to use liveDocs here so we don't map to any deleted ones
-              toDeState.postingsEnum = toDeState.termsEnum.postings(toDeState.liveDocs, toDeState.postingsEnum, PostingsEnum.NONE);
+              toDeState.postingsEnum = toDeState.termsEnum.postings(toDeState.postingsEnum, PostingsEnum.NONE);
+              toDeState.postingsEnum = BitsFilteredPostingsEnum.wrap(toDeState.postingsEnum, toDeState.liveDocs);
               PostingsEnum postingsEnum = toDeState.postingsEnum;
 
               if (postingsEnum instanceof MultiPostingsEnum) {

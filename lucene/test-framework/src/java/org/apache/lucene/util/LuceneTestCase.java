@@ -2025,7 +2025,6 @@ public abstract class LuceneTestCase extends Assert {
    */
   public void assertTermsEnumEquals(String info, IndexReader leftReader, TermsEnum leftTermsEnum, TermsEnum rightTermsEnum, boolean deep) throws IOException {
     BytesRef term;
-    Bits randomBits = new RandomBits(leftReader.maxDoc(), random().nextDouble(), random());
     PostingsEnum leftPositions = null;
     PostingsEnum rightPositions = null;
     PostingsEnum leftDocs = null;
@@ -2035,52 +2034,36 @@ public abstract class LuceneTestCase extends Assert {
       assertEquals(info, term, rightTermsEnum.next());
       assertTermStatsEquals(info, leftTermsEnum, rightTermsEnum);
       if (deep) {
-        assertDocsAndPositionsEnumEquals(info, leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.ALL),
-                                   rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.ALL));
-        assertDocsAndPositionsEnumEquals(info, leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.ALL),
-                                   rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.ALL));
+        assertDocsAndPositionsEnumEquals(info, leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.ALL),
+                                   rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.ALL));
 
         assertPositionsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
-                                leftPositions = leftTermsEnum.postings(null, leftPositions, PostingsEnum.ALL),
-                                rightPositions = rightTermsEnum.postings(null, rightPositions, PostingsEnum.ALL));
-        assertPositionsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
-                                leftPositions = leftTermsEnum.postings(randomBits, leftPositions, PostingsEnum.ALL),
-            rightPositions = rightTermsEnum.postings(randomBits, rightPositions, PostingsEnum.ALL));
+                                leftPositions = leftTermsEnum.postings(leftPositions, PostingsEnum.ALL),
+                                rightPositions = rightTermsEnum.postings(rightPositions, PostingsEnum.ALL));
+
 
         // with freqs:
-        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.postings(null, leftDocs),
-            rightDocs = rightTermsEnum.postings(null, rightDocs),
-            true);
-        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.postings(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs),
+        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.postings(leftDocs),
+            rightDocs = rightTermsEnum.postings(rightDocs),
             true);
 
+
         // w/o freqs:
-        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.postings(null, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(null, rightDocs, PostingsEnum.NONE),
+        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.postings(leftDocs, PostingsEnum.NONE),
+            rightDocs = rightTermsEnum.postings(rightDocs, PostingsEnum.NONE),
             false);
-        assertDocsEnumEquals(info, leftDocs = leftTermsEnum.postings(randomBits, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs, PostingsEnum.NONE),
-            false);
+
         
         // with freqs:
         assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(null, leftDocs),
-            rightDocs = rightTermsEnum.postings(null, rightDocs),
-            true);
-        assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs),
+            leftDocs = leftTermsEnum.postings(leftDocs),
+            rightDocs = rightTermsEnum.postings(rightDocs),
             true);
 
         // w/o freqs:
         assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(null, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(null, rightDocs, PostingsEnum.NONE),
-            false);
-        assertDocsSkippingEquals(info, leftReader, leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.postings(randomBits, leftDocs, PostingsEnum.NONE),
-            rightDocs = rightTermsEnum.postings(randomBits, rightDocs, PostingsEnum.NONE),
+            leftDocs = leftTermsEnum.postings(leftDocs, PostingsEnum.NONE),
+            rightDocs = rightTermsEnum.postings(rightDocs, PostingsEnum.NONE),
             false);
       }
     }

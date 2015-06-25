@@ -95,11 +95,11 @@ final class BKDTreeReader implements Accountable {
     }
   }
 
-  public DocIdSet intersect(Bits acceptDocs, double latMin, double latMax, double lonMin, double lonMax, SortedNumericDocValues sndv) throws IOException {
-    return intersect(acceptDocs, latMin, latMax, lonMin, lonMax, null, sndv);
+  public DocIdSet intersect(double latMin, double latMax, double lonMin, double lonMax, SortedNumericDocValues sndv) throws IOException {
+    return intersect(latMin, latMax, lonMin, lonMax, null, sndv);
   }
 
-  public DocIdSet intersect(Bits acceptDocs, double latMin, double latMax, double lonMin, double lonMax, LatLonFilter filter, SortedNumericDocValues sndv) throws IOException {
+  public DocIdSet intersect(double latMin, double latMax, double lonMin, double lonMax, LatLonFilter filter, SortedNumericDocValues sndv) throws IOException {
     if (BKDTreeWriter.validLat(latMin) == false) {
       throw new IllegalArgumentException("invalid latMin: " + latMin);
     }
@@ -128,7 +128,7 @@ final class BKDTreeReader implements Accountable {
                                       filter,
                                       sndv);
 
-    int hitCount = intersect(acceptDocs, state, 1,
+    int hitCount = intersect(state, 1,
                              BKDTreeWriter.encodeLat(-90.0),
                              BKDTreeWriter.encodeLat(Math.nextAfter(90.0, Double.POSITIVE_INFINITY)),
                              BKDTreeWriter.encodeLon(-180.0),
@@ -139,7 +139,7 @@ final class BKDTreeReader implements Accountable {
   }
 
   /** Fast path: this is called when the query rect fully encompasses all cells under this node. */
-  private int addAll(Bits acceptDocs, QueryState state, int nodeID) throws IOException {
+  private int addAll(QueryState state, int nodeID) throws IOException {
 
     //long latRange = (long) cellLatMaxEnc - (long) cellLatMinEnc;
     //long lonRange = (long) cellLonMaxEnc - (long) cellLonMinEnc;
@@ -167,18 +167,9 @@ final class BKDTreeReader implements Accountable {
       //System.out.println("    seek to leafFP=" + fp);
       // How many points are stored in this leaf cell:
       int count = state.in.readVInt();
-      if (acceptDocs != null) {
-        for(int i=0;i<count;i++) {
-          int docID = state.in.readInt();
-          if (acceptDocs.get(docID)) {
-            state.bits.set(docID);
-          }
-        }
-      } else {
-        for(int i=0;i<count;i++) {
-          int docID = state.in.readInt();
-          state.bits.set(docID);
-        }
+      for(int i=0;i<count;i++) {
+        int docID = state.in.readInt();
+        state.bits.set(docID);
       }
 
       //bits.or(allLeafDISI);
@@ -195,14 +186,14 @@ final class BKDTreeReader implements Accountable {
       //System.out.println("  splitValue=" + splitValue);
 
       //System.out.println("  addAll: inner");
-      int count = addAll(acceptDocs, state, 2*nodeID);
-      count += addAll(acceptDocs, state, 2*nodeID+1);
+      int count = addAll(state, 2*nodeID);
+      count += addAll(state, 2*nodeID+1);
       //System.out.println("  addAll: return count=" + count);
       return count;
     }
   }
 
-  private int intersect(Bits acceptDocs, QueryState state,
+  private int intersect(QueryState state,
                         int nodeID,
                         int cellLatMinEnc, int cellLatMaxEnc, int cellLonMinEnc, int cellLonMaxEnc)
     throws IOException {
@@ -223,7 +214,7 @@ final class BKDTreeReader implements Accountable {
           return 0;
         } else if (r == Relation.INSIDE) {
           // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
-          return addAll(acceptDocs, state, nodeID);
+          return addAll(state, nodeID);
         } else {
           // The cell crosses the shape boundary, so we fall through and do full filtering
         }
@@ -231,7 +222,7 @@ final class BKDTreeReader implements Accountable {
     } else if (state.latMinEnc <= cellLatMinEnc && state.latMaxEnc >= cellLatMaxEnc && state.lonMinEnc <= cellLonMinEnc && state.lonMaxEnc >= cellLonMaxEnc) {
       // Optimize the case when the query fully contains this cell: we can
       // recursively add all points without checking if they match the query:
-      return addAll(acceptDocs, state, nodeID);
+      return addAll(state, nodeID);
     }
 
     long latRange = (long) cellLatMaxEnc - (long) cellLatMinEnc;
@@ -273,28 +264,26 @@ final class BKDTreeReader implements Accountable {
 
       for(int i=0;i<count;i++) {
         int docID = state.in.readInt();
-        if (acceptDocs == null || acceptDocs.get(docID)) {
-          state.sndv.setDocument(docID);
-          // How many values this doc has:
-          int docValueCount = state.sndv.count();
-          for(int j=0;j<docValueCount;j++) {
-            long enc = state.sndv.valueAt(j);
+        state.sndv.setDocument(docID);
+        // How many values this doc has:
+        int docValueCount = state.sndv.count();
+        for(int j=0;j<docValueCount;j++) {
+          long enc = state.sndv.valueAt(j);
 
-            int latEnc = (int) ((enc>>32) & 0xffffffffL);
-            int lonEnc = (int) (enc & 0xffffffffL);
+          int latEnc = (int) ((enc>>32) & 0xffffffffL);
+          int lonEnc = (int) (enc & 0xffffffffL);
 
-            if (latEnc >= state.latMinEnc &&
-                latEnc < state.latMaxEnc &&
-                lonEnc >= state.lonMinEnc &&
-                lonEnc < state.lonMaxEnc &&
-                (state.latLonFilter == null ||
-                 state.latLonFilter.accept(BKDTreeWriter.decodeLat(latEnc), BKDTreeWriter.decodeLon(lonEnc)))) {
-              state.bits.set(docID);
-              hitCount++;
+          if (latEnc >= state.latMinEnc &&
+              latEnc < state.latMaxEnc &&
+              lonEnc >= state.lonMinEnc &&
+              lonEnc < state.lonMaxEnc &&
+              (state.latLonFilter == null ||
+               state.latLonFilter.accept(BKDTreeWriter.decodeLat(latEnc), BKDTreeWriter.decodeLon(lonEnc)))) {
+            state.bits.set(docID);
+            hitCount++;
 
-              // Stop processing values for this doc:
-              break;
-            }
+            // Stop processing values for this doc:
+            break;
           }
         }
       }
@@ -330,7 +319,7 @@ final class BKDTreeReader implements Accountable {
         // Left node:
         if (state.latMinEnc < splitValue) {
           //System.out.println("  recurse left");
-          count += intersect(acceptDocs, state,
+          count += intersect(state,
                              2*nodeID,
                              cellLatMinEnc, splitValue, cellLonMinEnc, cellLonMaxEnc);
         }
@@ -338,7 +327,7 @@ final class BKDTreeReader implements Accountable {
         // Right node:
         if (state.latMaxEnc >= splitValue) {
           //System.out.println("  recurse right");
-          count += intersect(acceptDocs, state,
+          count += intersect(state,
                              2*nodeID+1,
                              splitValue, cellLatMaxEnc, cellLonMinEnc, cellLonMaxEnc);
         }
@@ -352,7 +341,7 @@ final class BKDTreeReader implements Accountable {
         // Left node:
         if (state.lonMinEnc < splitValue) {
           // System.out.println("  recurse left");
-          count += intersect(acceptDocs, state,
+          count += intersect(state,
                              2*nodeID,
                              cellLatMinEnc, cellLatMaxEnc, cellLonMinEnc, splitValue);
         }
@@ -360,7 +349,7 @@ final class BKDTreeReader implements Accountable {
         // Right node:
         if (state.lonMaxEnc >= splitValue) {
           // System.out.println("  recurse right");
-          count += intersect(acceptDocs, state,
+          count += intersect(state,
                              2*nodeID+1,
                              cellLatMinEnc, cellLatMaxEnc, splitValue, cellLonMaxEnc);
         }

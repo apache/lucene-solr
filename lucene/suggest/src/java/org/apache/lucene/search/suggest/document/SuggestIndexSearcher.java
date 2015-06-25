@@ -70,10 +70,10 @@ public class SuggestIndexSearcher extends IndexSearcher {
     query = (CompletionQuery) query.rewrite(getIndexReader());
     Weight weight = query.createWeight(this, collector.needsScores());
     for (LeafReaderContext context : getIndexReader().leaves()) {
-      BulkScorer scorer = weight.bulkScorer(context, context.reader().getLiveDocs());
+      BulkScorer scorer = weight.bulkScorer(context);
       if (scorer != null) {
         try {
-          scorer.score(collector.getLeafCollector(context));
+          scorer.score(collector.getLeafCollector(context), context.reader().getLiveDocs());
         } catch (CollectionTerminatedException e) {
           // collection was terminated prematurely
           // continue with the following leaf

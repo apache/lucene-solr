@@ -80,7 +80,6 @@ public class QueryValueSource extends ValueSource {
 
 class QueryDocValues extends FloatDocValues {
   final LeafReaderContext readerContext;
-  final Bits acceptDocs;
   final Weight weight;
   final float defVal;
   final Map fcontext;
@@ -99,7 +98,6 @@ class QueryDocValues extends FloatDocValues {
     super(vs);
 
     this.readerContext = readerContext;
-    this.acceptDocs = readerContext.reader().getLiveDocs();
     this.defVal = vs.defVal;
     this.q = vs.q;
     this.fcontext = fcontext;
@@ -126,7 +124,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return defVal;
-        scorer = weight.scorer(readerContext, acceptDocs);
+        scorer = weight.scorer(readerContext);
         if (scorer==null) {
           noMatches = true;
           return defVal;
@@ -157,7 +155,7 @@ class QueryDocValues extends FloatDocValues {
     try {
       if (doc < lastDocRequested) {
         if (noMatches) return false;
-        scorer = weight.scorer(readerContext, acceptDocs);
+        scorer = weight.scorer(readerContext);
         scorerDoc = -1;
         if (scorer==null) {
           noMatches = true;
@@ -215,7 +213,7 @@ class QueryDocValues extends FloatDocValues {
             mval.exists = false;
             return;
           }
-          scorer = weight.scorer(readerContext, acceptDocs);
+          scorer = weight.scorer(readerContext);
           scorerDoc = -1;
           if (scorer==null) {
             noMatches = true;

@@ -528,9 +528,8 @@ public class CheckIndex implements Closeable {
       result.cantOpenSegments = true;
       return result;
     }
-    int format = 0;
     try {
-      format = input.readInt();
+      /*int format =*/ input.readInt();
     } catch (Throwable t) {
       if (failFast) {
         IOUtils.reThrow(t);
@@ -959,7 +958,7 @@ public class CheckIndex implements Closeable {
         }
       }
 
-      postingsEnum = termsEnum.postings(null, postingsEnum, 0);
+      postingsEnum = termsEnum.postings(postingsEnum, 0);
 
       int lastDoc = -1;
       while (true) {
@@ -1203,7 +1202,6 @@ public class CheckIndex implements Closeable {
       
       long sumTotalTermFreq = 0;
       long sumDocFreq = 0;
-      long upto = 0;
       FixedBitSet visitedDocs = new FixedBitSet(maxDoc);
       while(true) {
         
@@ -1249,7 +1247,7 @@ public class CheckIndex implements Closeable {
         }
         sumDocFreq += docFreq;
 
-        postings = termsEnum.postings(liveDocs, postings, PostingsEnum.ALL);
+        postings = termsEnum.postings(postings, PostingsEnum.ALL);
 
         if (hasFreqs == false) {
           if (termsEnum.totalTermFreq() != -1) {
@@ -1275,13 +1273,13 @@ public class CheckIndex implements Closeable {
         
         int lastDoc = -1;
         int docCount = 0;
+        boolean hasNonDeletedDocs = false;
         long totalTermFreq = 0;
         while(true) {
           final int doc = postings.nextDoc();
           if (doc == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
-          status.totFreq++;
           visitedDocs.set(doc);
           int freq = -1;
           if (hasFreqs) {
@@ -1289,7 +1287,6 @@ public class CheckIndex implements Closeable {
             if (freq <= 0) {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
             }
-            status.totPos += freq;
             totalTermFreq += freq;
           } else {
             // When a field didn't index freq, it must
@@ -1297,6 +1294,13 @@ public class CheckIndex implements Closeable {
             // 1:
             if (postings.freq() != 1) {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
+            }
+          }
+          if (liveDocs == null || liveDocs.get(doc)) {
+            hasNonDeletedDocs = true;
+            status.totFreq++;
+            if (freq >= 0) {
+              status.totPos += freq;
             }
           }
           docCount++;
@@ -1358,7 +1362,7 @@ public class CheckIndex implements Closeable {
           }
         }
         
-        if (docCount != 0) {
+        if (hasNonDeletedDocs) {
           status.termCount++;
         } else {
           status.delTermCount++;
@@ -1366,28 +1370,6 @@ public class CheckIndex implements Closeable {
         
         final long totalTermFreq2 = termsEnum.totalTermFreq();
         final boolean hasTotalTermFreq = hasFreqs && totalTermFreq2 != -1;
-        
-        // Re-count if there are deleted docs:
-        if (liveDocs != null) {
-          if (hasFreqs) {
-            postings = termsEnum.postings(null, postings);
-            docCount = 0;
-            totalTermFreq = 0;
-            while(postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              visitedDocs.set(postings.docID());
-              docCount++;
-              totalTermFreq += postings.freq();
-            }
-          } else {
-            postings = termsEnum.postings(null, postings, PostingsEnum.NONE);
-            docCount = 0;
-            totalTermFreq = -1;
-            while(postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              visitedDocs.set(postings.docID());
-              docCount++;
-            }
-          }
-        }
         
         if (docCount != docFreq) {
           throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
@@ -1406,7 +1388,7 @@ public class CheckIndex implements Closeable {
         if (hasPositions) {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            postings = termsEnum.postings(liveDocs, postings, PostingsEnum.ALL);
+            postings = termsEnum.postings(postings, PostingsEnum.ALL);
             final int docID = postings.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -1470,7 +1452,7 @@ public class CheckIndex implements Closeable {
         } else {
           for(int idx=0;idx<7;idx++) {
             final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-            postings = termsEnum.postings(liveDocs, postings, PostingsEnum.NONE);
+            postings = termsEnum.postings(postings, PostingsEnum.NONE);
             final int docID = postings.advance(skipDocID);
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
@@ -1552,7 +1534,7 @@ public class CheckIndex implements Closeable {
           }
           
           int expectedDocFreq = termsEnum.docFreq();
-          PostingsEnum d = termsEnum.postings(null, null, PostingsEnum.NONE);
+          PostingsEnum d = termsEnum.postings(null, PostingsEnum.NONE);
           int docFreq = 0;
           while (d.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             docFreq++;
@@ -1591,7 +1573,6 @@ public class CheckIndex implements Closeable {
             }
             
             // Seek by term
-            long totDocCount = 0;
             for(int i=seekCount-1;i>=0;i--) {
               if (termsEnum.seekCeil(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
@@ -1600,40 +1581,10 @@ public class CheckIndex implements Closeable {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " returned FOUND but seeked to the wrong term " + termsEnum.term());
               }
               
-              postings = termsEnum.postings(liveDocs, postings, PostingsEnum.NONE);
+              postings = termsEnum.postings(postings, PostingsEnum.NONE);
               if (postings == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
-
-              while (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-                totDocCount++;
-              }
-            }
-            
-            long totDocCountNoDeletes = 0;
-            long totDocFreq = 0;
-            for(int i=0;i<seekCount;i++) {
-              if (!termsEnum.seekExact(seekTerms[i])) {
-                throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
-              }
-              
-              totDocFreq += termsEnum.docFreq();
-              postings = termsEnum.postings(null, postings, PostingsEnum.NONE);
-              if (postings == null) {
-                throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
-              }
-              
-              while(postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-                totDocCountNoDeletes++;
-              }
-            }
-            
-            if (totDocCount > totDocCountNoDeletes) {
-              throw new RuntimeException("more postings with deletes=" + totDocCount + " than without=" + totDocCountNoDeletes);
-            }
-            
-            if (totDocCountNoDeletes != totDocFreq) {
-              throw new RuntimeException("docfreqs=" + totDocFreq + " != recomputed docfreqs=" + totDocCountNoDeletes);
             }
           }
         }
@@ -1685,7 +1636,6 @@ public class CheckIndex implements Closeable {
 
     Status.TermIndexStatus status;
     final int maxDoc = reader.maxDoc();
-    final Bits liveDocs = reader.getLiveDocs();
 
     try {
       if (infoStream != null) {
@@ -1694,13 +1644,7 @@ public class CheckIndex implements Closeable {
 
       final Fields fields = reader.getPostingsReader().getMergeInstance();
       final FieldInfos fieldInfos = reader.getFieldInfos();
-      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true, false, infoStream, verbose);
-      if (liveDocs != null) {
-        if (infoStream != null) {
-          infoStream.print("    test (ignoring deletes): terms, freq, prox...");
-        }
-        checkFields(fields, null, maxDoc, fieldInfos, true, false, infoStream, verbose);
-      }
+      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose);
     } catch (Throwable e) {
       if (failFast) {
         IOUtils.reThrow(e);
@@ -2015,7 +1959,6 @@ public class CheckIndex implements Closeable {
     long startNS = System.nanoTime();
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     final FieldInfos fieldInfos = reader.getFieldInfos();
-    final Bits onlyDocIsDeleted = new FixedBitSet(1);
     
     try {
       if (infoStream != null) {
@@ -2026,7 +1969,6 @@ public class CheckIndex implements Closeable {
 
       // Only used if crossCheckTermVectors is true:
       PostingsEnum postingsDocs = null;
-      PostingsEnum postingsDocs2 = null;
 
       final Bits liveDocs = reader.getLiveDocs();
 
@@ -2054,12 +1996,6 @@ public class CheckIndex implements Closeable {
           if (tfv != null) {
             // First run with no deletions:
             checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose);
-            
-            if (j == 0) {
-              // Also test with the 1 doc deleted; we only do this for first doc because this really is just looking for a [slightly] buggy
-              // TermVectors impl that fails to respect the incoming live docs:
-              checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
-            }
             
             // Only agg stats if the doc is live:
             final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -2097,7 +2033,7 @@ public class CheckIndex implements Closeable {
                 while ((term = termsEnum.next()) != null) {
 
                   // This is the term vectors:
-                  postings = termsEnum.postings(null, postings, PostingsEnum.ALL);
+                  postings = termsEnum.postings(postings, PostingsEnum.ALL);
                   assert postings != null;
 
                   if (!postingsTermsEnum.seekExact(term)) {
@@ -2105,11 +2041,11 @@ public class CheckIndex implements Closeable {
                   }
 
                   // This is the inverted index ("real" postings):
-                  postingsDocs2 = postingsTermsEnum.postings(null, postingsDocs2, PostingsEnum.ALL);
-                  assert postingsDocs2 != null;
+                  postingsDocs = postingsTermsEnum.postings(postingsDocs, PostingsEnum.ALL);
+                  assert postingsDocs != null;
 
                   
-                  final int advanceDoc = postingsDocs2.advance(j);
+                  final int advanceDoc = postingsDocs.advance(j);
                   if (advanceDoc != j) {
                     throw new RuntimeException("vector term=" + term + " field=" + field + ": doc=" + j + " was not found in postings (got: " + advanceDoc + ")");
                   }
@@ -2122,8 +2058,8 @@ public class CheckIndex implements Closeable {
                   
                   if (postingsHasFreq) {
                     final int tf = postings.freq();
-                    if (postingsHasFreq && postingsDocs2.freq() != tf) {
-                      throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs2.freq());
+                    if (postingsHasFreq && postingsDocs.freq() != tf) {
+                      throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": freq=" + tf + " differs from postings freq=" + postingsDocs.freq());
                     }
 
                     // Term vectors has prox?
@@ -2131,7 +2067,7 @@ public class CheckIndex implements Closeable {
                       for (int i = 0; i < tf; i++) {
                         int pos = postings.nextPosition();
                         if (postingsTerms.hasPositions()) {
-                          int postingsPos = postingsDocs2.nextPosition();
+                          int postingsPos = postingsDocs.nextPosition();
                           if (terms.hasPositions() && pos != postingsPos) {
                             throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": pos=" + pos + " differs from postings pos=" + postingsPos);
                           }
@@ -2153,8 +2089,8 @@ public class CheckIndex implements Closeable {
                          */
 
                         if (startOffset != -1 && endOffset != -1 && postingsTerms.hasOffsets()) {
-                          int postingsStartOffset = postingsDocs2.startOffset();
-                          int postingsEndOffset = postingsDocs2.endOffset();
+                          int postingsStartOffset = postingsDocs.startOffset();
+                          int postingsEndOffset = postingsDocs.endOffset();
                           if (startOffset != postingsStartOffset) {
                             throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + ": startOffset=" + startOffset + " differs from postings startOffset=" + postingsStartOffset);
                           }
@@ -2174,16 +2110,16 @@ public class CheckIndex implements Closeable {
                           if (payload == null) {
                             // we have payloads, but not at this position. 
                             // postings has payloads too, it should not have one at this position
-                            if (postingsDocs2.getPayload() != null) {
-                              throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has no payload but postings does: " + postingsDocs2.getPayload());
+                            if (postingsDocs.getPayload() != null) {
+                              throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has no payload but postings does: " + postingsDocs.getPayload());
                             }
                           } else {
                             // we have payloads, and one at this position
                             // postings should also have one at this position, with the same bytes.
-                            if (postingsDocs2.getPayload() == null) {
+                            if (postingsDocs.getPayload() == null) {
                               throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but postings does not.");
                             }
-                            BytesRef postingsPayload = postingsDocs2.getPayload();
+                            BytesRef postingsPayload = postingsDocs.getPayload();
                             if (!payload.equals(postingsPayload)) {
                               throw new RuntimeException("vector term=" + term + " field=" + field + " doc=" + j + " has payload=" + payload + " but differs from postings payload=" + postingsPayload);
                             }

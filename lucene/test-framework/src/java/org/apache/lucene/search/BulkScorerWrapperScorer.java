@@ -63,7 +63,7 @@ public class BulkScorerWrapperScorer extends Scorer {
           scores[bufferLength] = scorer.score();
           bufferLength += 1;
         }
-      }, min, max);
+      }, null, min, max);
     }
     i = -1;
   }

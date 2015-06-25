@@ -72,7 +72,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     assert terms != null;
     TermsEnum termsEnum = terms.iterator();
     assertTrue(termsEnum.seekExact(new BytesRef("withPayload")));
-    PostingsEnum de = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum de = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(0, de.nextDoc());
     assertEquals(0, de.nextPosition());
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -114,7 +114,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     assert terms != null;
     TermsEnum termsEnum = terms.iterator();
     assertTrue(termsEnum.seekExact(new BytesRef("withPayload")));
-    PostingsEnum de = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum de = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(0, de.nextDoc());
     assertEquals(3, de.nextPosition());
     assertEquals(new BytesRef("test"), de.getPayload());

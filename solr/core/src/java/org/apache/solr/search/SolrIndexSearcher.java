@@ -807,7 +807,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }
-    PostingsEnum docs = termsEnum.postings(leafReader.getLiveDocs(), null, PostingsEnum.NONE);
+    PostingsEnum docs = termsEnum.postings(null, PostingsEnum.NONE);
+    docs = BitsFilteredPostingsEnum.wrap(docs, leafReader.getLiveDocs());
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
   }
@@ -828,7 +829,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       
       TermsEnum te = terms.iterator();
       if (te.seekExact(idBytes)) {
-        PostingsEnum docs = te.postings(reader.getLiveDocs(), null, PostingsEnum.NONE);
+        PostingsEnum docs = te.postings(null, PostingsEnum.NONE);
+        docs = BitsFilteredPostingsEnum.wrap(docs, reader.getLiveDocs());
         int id = docs.nextDoc();
         if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
         assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
@@ -1200,7 +1202,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     int bitsSet = 0;
     FixedBitSet fbs = null;
 
-    PostingsEnum postingsEnum = deState.termsEnum.postings(deState.liveDocs, deState.postingsEnum, PostingsEnum.NONE);
+    PostingsEnum postingsEnum = deState.termsEnum.postings(deState.postingsEnum, PostingsEnum.NONE);
+    postingsEnum = BitsFilteredPostingsEnum.wrap(postingsEnum, deState.liveDocs);
     if (deState.postingsEnum == null) {
       deState.postingsEnum = postingsEnum;
     }
@@ -2526,7 +2529,7 @@ class FilterImpl extends Filter {
         iterators.add(iter);
       }
       for (Weight w : weights) {
-        Scorer scorer = w.scorer(context, context.reader().getLiveDocs());
+        Scorer scorer = w.scorer(context);
         if (scorer == null) return null;
         iterators.add(scorer);
       }

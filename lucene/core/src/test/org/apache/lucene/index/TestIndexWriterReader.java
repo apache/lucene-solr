@@ -38,6 +38,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -55,14 +56,16 @@ public class TestIndexWriterReader extends LuceneTestCase {
     int count = 0;
     PostingsEnum td = TestUtil.docs(random(), r,
         t.field(), new BytesRef(t.text()),
-        MultiFields.getLiveDocs(r),
         null,
         0);
 
     if (td != null) {
+      final Bits liveDocs = MultiFields.getLiveDocs(r);
       while (td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         td.docID();
-        count++;
+        if (liveDocs == null || liveDocs.get(td.docID())) {
+          count++;
+        }
       }
     }
     return count;

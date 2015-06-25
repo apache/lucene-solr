@@ -575,8 +575,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         while(it.hasNext()) {
           BytesRef ref = it.next();
           if(termsEnum.seekExact(ref)) {
-            postingsEnum = termsEnum.postings(liveDocs, postingsEnum);
+            postingsEnum = termsEnum.postings(postingsEnum);
             int doc = postingsEnum.nextDoc();
+            while (doc != PostingsEnum.NO_MORE_DOCS && liveDocs != null && liveDocs.get(doc) == false) {
+              doc = postingsEnum.nextDoc();
+            }
             if(doc != PostingsEnum.NO_MORE_DOCS) {
               //Found the document.
               int p = boosted.get(ref);
@@ -692,8 +695,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         for (String id : elevations.ids) {
           term.copyChars(id);
           if (seen.contains(id) == false  && termsEnum.seekExact(term.get())) {
-            postingsEnum = termsEnum.postings(liveDocs, postingsEnum, PostingsEnum.NONE);
+            postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
             int docId = postingsEnum.nextDoc();
+            while (docId != DocIdSetIterator.NO_MORE_DOCS && liveDocs != null && liveDocs.get(docId) == false) {
+              docId = postingsEnum.nextDoc();
+            }
             if (docId == DocIdSetIterator.NO_MORE_DOCS ) continue;  // must have been deleted
             termValues[ordSet.put(docId)] = term.toBytesRef();
             seen.add(id);

@@ -27,7 +27,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -99,7 +98,7 @@ public class SpanTermQuery extends SpanQuery {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Bits acceptDocs, Postings requiredPostings) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
 
       assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
 
@@ -118,7 +117,7 @@ public class SpanTermQuery extends SpanQuery {
       final TermsEnum termsEnum = terms.iterator();
       termsEnum.seekExact(term.bytes(), state);
 
-      final PostingsEnum postings = termsEnum.postings(acceptDocs, null, requiredPostings.getRequiredPostings());
+      final PostingsEnum postings = termsEnum.postings(null, requiredPostings.getRequiredPostings());
       return new TermSpans(postings, term);
     }
   }

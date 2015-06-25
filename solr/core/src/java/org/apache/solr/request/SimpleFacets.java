@@ -821,7 +821,7 @@ public class SimpleFacets {
               // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
               // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
               // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
-              postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
+              postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
               c = 0;
 
               if (postingsEnum instanceof MultiPostingsEnum) {

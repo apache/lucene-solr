@@ -96,13 +96,12 @@ public class TestDirectoryReader extends LuceneTestCase {
     PostingsEnum td = TestUtil.docs(random(), mr2,
         "body",
         te2.term(),
-        MultiFields.getLiveDocs(mr2),
         null,
         0);
 
     TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator();
     te3.seekCeil(new BytesRef("wow"));
-    td = TestUtil.docs(random(), te3, MultiFields.getLiveDocs(mr3),
+    td = TestUtil.docs(random(), te3,
         td,
         0);
     
@@ -351,7 +350,6 @@ void assertTermDocsCount(String msg,
   PostingsEnum tdocs = TestUtil.docs(random(), reader,
       term.field(),
       new BytesRef(term.text()),
-      MultiFields.getLiveDocs(reader),
       null,
       0);
   int count = 0;
@@ -617,7 +615,6 @@ public void testFilesOpenClose() throws IOException {
     Fields fields1 = MultiFields.getFields(index1);
     Fields fields2 = MultiFields.getFields(index2);
     Iterator<String> fenum2 = fields2.iterator();
-    Bits liveDocs = MultiFields.getLiveDocs(index1);
     for (String field1 : fields1) {
       assertEquals("Different fields", field1, fenum2.next());
       Terms terms1 = fields1.terms(field1);
@@ -633,8 +630,8 @@ public void testFilesOpenClose() throws IOException {
 
       while(enum1.next() != null) {
         assertEquals("Different terms", enum1.term(), enum2.next());
-        PostingsEnum tp1 = enum1.postings(liveDocs, null, PostingsEnum.ALL);
-        PostingsEnum tp2 = enum2.postings(liveDocs, null, PostingsEnum.ALL);
+        PostingsEnum tp1 = enum1.postings(null, PostingsEnum.ALL);
+        PostingsEnum tp2 = enum2.postings(null, PostingsEnum.ALL);
 
         while(tp1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           assertTrue(tp2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

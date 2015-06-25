@@ -37,7 +37,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -396,10 +395,9 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       assert terms.length > 0;
       final LeafReader reader = context.reader();
-      final Bits liveDocs = acceptDocs;
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.length];
 
       final Terms fieldTerms = reader.terms(field);
@@ -422,7 +420,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        PostingsEnum postingsEnum = te.postings(liveDocs, null, PostingsEnum.POSITIONS);
+        PostingsEnum postingsEnum = te.postings(null, PostingsEnum.POSITIONS);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
       }
 
@@ -445,7 +443,7 @@ public class PhraseQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context);
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

@@ -191,7 +191,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     Weight w = searcher.createNormalizedWeight(q, true);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
     LeafReaderContext leave = topReaderContext.leaves().get(0);
-    Scorer s = w.scorer(leave, leave.reader().getLiveDocs());
+    Scorer s = w.scorer(leave);
     assertEquals(1, s.advance(1));
   }
 

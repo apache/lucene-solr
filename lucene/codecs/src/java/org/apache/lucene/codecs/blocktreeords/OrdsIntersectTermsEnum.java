@@ -202,9 +202,9 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
   }
 
   @Override
-  public PostingsEnum postings(Bits skipDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     currentFrame.decodeMetaData();
-    return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.termState, skipDocs, reuse, flags);
+    return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.termState, reuse, flags);
   }
 
   private int getState() {

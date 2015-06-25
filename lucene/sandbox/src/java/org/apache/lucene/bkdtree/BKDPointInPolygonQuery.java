@@ -132,7 +132,7 @@ public class BKDPointInPolygonQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer s = scorer(context, context.reader().getLiveDocs());
+        final Scorer s = scorer(context);
         final boolean exists = s != null && s.advance(doc) == doc;
 
         if (exists) {
@@ -144,7 +144,7 @@ public class BKDPointInPolygonQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
         SortedNumericDocValues sdv = reader.getSortedNumericDocValues(field);
         if (sdv == null) {
@@ -160,7 +160,7 @@ public class BKDPointInPolygonQuery extends Query {
         
         // TODO: make this more efficient: as we recurse the BKD tree we should check whether the
         // bbox we are recursing into intersects our shape; Apache SIS may have (non-GPL!) code to do this?
-        DocIdSet result = tree.intersect(acceptDocs, minLat, maxLat, minLon, maxLon,
+        DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon,
                                          new BKDTreeReader.LatLonFilter() {
                                            @Override
                                            public boolean accept(double lat, double lon) {

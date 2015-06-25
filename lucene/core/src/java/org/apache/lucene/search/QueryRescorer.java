@@ -82,7 +82,7 @@ public abstract class QueryRescorer extends Rescorer {
       if (readerContext != null) {
         // We advanced to another segment:
         docBase = readerContext.docBase;
-        scorer = weight.scorer(readerContext, null);
+        scorer = weight.scorer(readerContext);
       }
 
       if(scorer != null) {

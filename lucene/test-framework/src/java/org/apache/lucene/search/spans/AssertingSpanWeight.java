@@ -23,7 +23,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Map;
@@ -52,8 +51,8 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public Spans getSpans(LeafReaderContext context, Bits liveDocs, Postings requiredPostings) throws IOException {
-    Spans spans = in.getSpans(context, liveDocs, requiredPostings);
+  public Spans getSpans(LeafReaderContext context, Postings requiredPostings) throws IOException {
+    Spans spans = in.getSpans(context, requiredPostings);
     if (spans == null)
       return null;
     return new AssertingSpans(spans);
@@ -75,8 +74,8 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    return in.scorer(context, acceptDocs);
+  public Scorer scorer(LeafReaderContext context) throws IOException {
+    return in.scorer(context);
   }
 
   @Override

@@ -321,7 +321,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     final Terms terms = fields.terms("f");
     final TermsEnum te = terms.iterator();
     assertEquals(new BytesRef("a"), te.next());
-    final PostingsEnum dpe = te.postings(null, null, PostingsEnum.ALL);
+    final PostingsEnum dpe = te.postings(null, PostingsEnum.ALL);
     assertEquals(0, dpe.nextDoc());
     assertEquals(2, dpe.freq());
     assertEquals(0, dpe.nextPosition());

@@ -389,7 +389,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
           TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seekExact(catTerm)) {
             // liveDocs=null because the taxonomy has no deletes
-            docs = termsEnum.postings(null, docs, 0 /* freqs not required */);
+            docs = termsEnum.postings(docs, 0 /* freqs not required */);
             // if the term was found, we know it has exactly one document.
             doc = docs.nextDoc() + ctx.docBase;
             break;
@@ -689,7 +689,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               // is sufficient to call next(), and then doc(), exactly once with no
               // 'validation' checks.
               FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(t.utf8ToString()));
-              postingsEnum = termsEnum.postings(null, postingsEnum, PostingsEnum.NONE);
+              postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
               boolean res = cache.put(cp, postingsEnum.nextDoc() + ctx.docBase);
               assert !res : "entries should not have been evicted from the cache";
             } else {
@@ -779,7 +779,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         while (te.next() != null) {
           FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(te.term().utf8ToString()));
           final int ordinal = addCategory(cp);
-          docs = te.postings(null, docs, PostingsEnum.NONE);
+          docs = te.postings(docs, PostingsEnum.NONE);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);
         }
         base += ar.maxDoc(); // no deletions, so we're ok

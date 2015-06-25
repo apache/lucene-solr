@@ -299,13 +299,16 @@ public class WeightedSpanTermExtractor {
       LeafReaderContext context = getLeafContext();
       SpanWeight w = (SpanWeight) searcher.createNormalizedWeight(q, false);
       Bits acceptDocs = context.reader().getLiveDocs();
-      final Spans spans = w.getSpans(context, acceptDocs, SpanWeight.Postings.POSITIONS);
+      final Spans spans = w.getSpans(context, SpanWeight.Postings.POSITIONS);
       if (spans == null) {
         return;
       }
 
       // collect span positions
       while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
+        if (acceptDocs != null && acceptDocs.get(spans.docID()) == false) {
+          continue;
+        }
         while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
           spanPositions.add(new PositionSpan(spans.startPosition(), spans.endPosition() - 1));
         }

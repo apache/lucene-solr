@@ -651,11 +651,11 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+      public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
         //System.out.println("BTR.docs this=" + this);
         decodeMetaData();
         //System.out.println("BTR.docs:  state.docFreq=" + state.docFreq);
-        return postingsReader.postings(fieldInfo, state, liveDocs, reuse, flags);
+        return postingsReader.postings(fieldInfo, state, reuse, flags);
       }
 
       @Override

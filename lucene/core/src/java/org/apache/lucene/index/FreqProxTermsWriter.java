@@ -56,7 +56,7 @@ final class FreqProxTermsWriter extends TermsHash {
         }
 
         if (termsEnum != null && termsEnum.seekExact(deleteTerm.bytes())) {
-          postingsEnum = termsEnum.postings(null, postingsEnum, 0);
+          postingsEnum = termsEnum.postings(postingsEnum, 0);
           int delDocLimit = segDeletes.get(deleteTerm);
           assert delDocLimit < PostingsEnum.NO_MORE_DOCS;
           while (true) {

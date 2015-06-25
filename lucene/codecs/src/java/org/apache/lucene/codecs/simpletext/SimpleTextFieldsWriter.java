@@ -101,7 +101,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
           break;
         }
 
-        postingsEnum = termsEnum.postings(null, postingsEnum, flags);
+        postingsEnum = termsEnum.postings(postingsEnum, flags);
 
         assert postingsEnum != null: "termsEnum=" + termsEnum + " hasPos=" + hasPositions + " flags=" + flags;
 

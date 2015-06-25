@@ -111,7 +111,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     TermsEnum termsEnum = vector.iterator();
     termsEnum.next();
     assertEquals(2, termsEnum.totalTermFreq());
-    PostingsEnum positions = termsEnum.postings(null, null, PostingsEnum.ALL);
+    PostingsEnum positions = termsEnum.postings(null, PostingsEnum.ALL);
     assertTrue(positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, positions.freq());
     positions.nextPosition();

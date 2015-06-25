@@ -28,6 +28,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
@@ -44,7 +45,7 @@ import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProc
  * <p>
  * NRTSuggester executes Top N search on a weighted FST specified by a {@link CompletionScorer}
  * <p>
- * See {@link #lookup(CompletionScorer, TopSuggestDocsCollector)} for more implementation
+ * See {@link #lookup(CompletionScorer, Bits, TopSuggestDocsCollector)} for more implementation
  * details.
  * <p>
  * FST Format:
@@ -56,7 +57,7 @@ import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProc
  * NOTE:
  * <ul>
  *   <li>having too many deletions or using a very restrictive filter can make the search inadmissible due to
- *     over-pruning of potential paths. See {@link CompletionScorer#accept(int)}</li>
+ *     over-pruning of potential paths. See {@link CompletionScorer#accept(int, Bits)}</li>
  *   <li>when matched documents are arbitrarily filtered ({@link CompletionScorer#filtered} set to <code>true</code>,
  *     it is assumed that the filter will roughly filter out half the number of documents that match
  *     the provided automaton</li>
@@ -120,12 +121,12 @@ public final class NRTSuggester implements Accountable {
    * The {@link CompletionScorer#automaton} is intersected with the {@link #fst}.
    * {@link CompletionScorer#weight} is used to compute boosts and/or extract context
    * for each matched partial paths. A top N search is executed on {@link #fst} seeded with
-   * the matched partial paths. Upon reaching a completed path, {@link CompletionScorer#accept(int)}
+   * the matched partial paths. Upon reaching a completed path, {@link CompletionScorer#accept(int, Bits)}
    * and {@link CompletionScorer#score(float, float)} is used on the document id, index weight
    * and query boost to filter and score the entry, before being collected via
    * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}
    */
-  public void lookup(final CompletionScorer scorer, final TopSuggestDocsCollector collector) throws IOException {
+  public void lookup(final CompletionScorer scorer, Bits acceptDocs, final TopSuggestDocsCollector collector) throws IOException {
     final double liveDocsRatio = calculateLiveDocRatio(scorer.reader.numDocs(), scorer.reader.maxDoc());
     if (liveDocsRatio == -1) {
       return;
@@ -143,7 +144,7 @@ public final class NRTSuggester implements Accountable {
       protected boolean acceptResult(Util.FSTPath<Pair<Long, BytesRef>> path) {
         int payloadSepIndex = parseSurfaceForm(path.cost.output2, payloadSep, spare);
         int docID = parseDocID(path.cost.output2, payloadSepIndex);
-        if (!scorer.accept(docID)) {
+        if (!scorer.accept(docID, acceptDocs)) {
           return false;
         }
         try {

@@ -130,7 +130,6 @@ public class TestSegmentReader extends LuceneTestCase {
     PostingsEnum termDocs = TestUtil.docs(random(), reader,
         DocHelper.TEXT_FIELD_1_KEY,
         new BytesRef("field"),
-        MultiFields.getLiveDocs(reader),
         null,
         0);
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -138,7 +137,6 @@ public class TestSegmentReader extends LuceneTestCase {
     termDocs = TestUtil.docs(random(), reader,
         DocHelper.NO_NORMS_KEY,
         new BytesRef(DocHelper.NO_NORMS_TEXT),
-        MultiFields.getLiveDocs(reader),
         null,
         0);
 
@@ -146,7 +144,6 @@ public class TestSegmentReader extends LuceneTestCase {
 
     
     PostingsEnum positions = MultiFields.getTermPositionsEnum(reader,
-                                                                      MultiFields.getLiveDocs(reader),
                                                                       DocHelper.TEXT_FIELD_1_KEY,
                                                                       new BytesRef("field"));
     // NOTE: prior rev of this test was failing to first

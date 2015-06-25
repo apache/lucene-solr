@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
@@ -142,18 +141,19 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  call this when the enum is unpositioned.  This method
    *  will not return null.
    *  <p>
+   *  <b>NOTE</b>: the returned iterator may return deleted documents, so
+   *  deleted documents have to be checked on top of the {@link PostingsEnum}.
+   *  <p>
    *  Use this method if you only require documents and frequencies,
    *  and do not need any proximity data.
    *  This method is equivalent to 
-   *  {@link #postings(Bits, PostingsEnum, int) postings(liveDocs, reuse, PostingsEnum.FREQS)}
-   *  
-   * @param liveDocs unset bits are documents that should not
-   * be returned
+   *  {@link #postings(PostingsEnum, int) postings(reuse, PostingsEnum.FREQS)}
+   *
    * @param reuse pass a prior PostingsEnum for possible reuse 
-   * @see #postings(Bits, PostingsEnum, int)
+   * @see #postings(PostingsEnum, int)
    */
-  public final PostingsEnum postings(Bits liveDocs, PostingsEnum reuse) throws IOException {
-    return postings(liveDocs, reuse, PostingsEnum.FREQS);
+  public final PostingsEnum postings(PostingsEnum reuse) throws IOException {
+    return postings(reuse, PostingsEnum.FREQS);
   }
 
   /** Get {@link PostingsEnum} for the current term, with
@@ -161,14 +161,15 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  are required.  Do not call this when the enum is
    *  unpositioned.  This method may return null if the postings
    *  information required is not available from the index
-   *  
-   * @param liveDocs unset bits are documents that should not
-   * be returned
+   *  <p>
+   *  <b>NOTE</b>: the returned iterator may return deleted documents, so
+   *  deleted documents have to be checked on top of the {@link PostingsEnum}.
+   *
    * @param reuse pass a prior PostingsEnum for possible reuse
    * @param flags specifies which optional per-document values
    *        you require; see {@link PostingsEnum#FREQS}
    */
-  public abstract PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException;
+  public abstract PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException;
 
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
@@ -225,7 +226,7 @@ public abstract class TermsEnum implements BytesRefIterator {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) {
+    public PostingsEnum postings(PostingsEnum reuse, int flags) {
       throw new IllegalStateException("this method should never be called");
     }
       

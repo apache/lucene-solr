@@ -123,7 +123,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     final Random random = new Random(random().nextLong());
     for (int i=0; i<iter; i++) {
       tenum.seekCeil(new BytesRef("val"));
-      tdocs = TestUtil.docs(random, tenum, MultiFields.getLiveDocs(reader), tdocs, PostingsEnum.NONE);
+      tdocs = TestUtil.docs(random, tenum, tdocs, PostingsEnum.NONE);
       while (tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         ret += tdocs.docID();
       }

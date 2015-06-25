@@ -23,8 +23,10 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -82,8 +84,26 @@ public class IgnoreAcceptDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      return w.scorer(context, null);
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      return w.scorer(context);
+    }
+
+    @Override
+    public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+      final BulkScorer in = w.bulkScorer(context);
+      return new BulkScorer() {
+
+        @Override
+        public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+          return in.score(collector, null, min, max);
+        }
+
+        @Override
+        public long cost() {
+          return in.cost();
+        }
+        
+      };
     }
   }
 

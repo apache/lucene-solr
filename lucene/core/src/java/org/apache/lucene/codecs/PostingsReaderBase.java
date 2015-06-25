@@ -26,7 +26,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Bits;
 
 /** The core terms dictionaries (BlockTermsReader,
  *  BlockTreeTermsReader) interact with a single instance
@@ -65,7 +64,7 @@ public abstract class PostingsReaderBase implements Closeable, Accountable {
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract PostingsEnum postings(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, PostingsEnum reuse, int flags) throws IOException;
+  public abstract PostingsEnum postings(FieldInfo fieldInfo, BlockTermState state, PostingsEnum reuse, int flags) throws IOException;
   
   /** 
    * Checks consistency of this reader.

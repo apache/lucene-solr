@@ -55,7 +55,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.Directory;
@@ -169,7 +168,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
           System.out.println("  got term=" + te.term().utf8ToString());
         }
         verifier.sawTerm(te.term());
-        postingsEnum = te.postings(null, postingsEnum);
+        postingsEnum = te.postings(postingsEnum);
         int docID;
         while ((docID = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
           long v = docValues.get(docID);
@@ -296,7 +295,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
           System.out.println("  got term=" + te.term() + " docFreq=" + te.docFreq());
         }
         verifier.sawTerm(te.term());        
-        postingsEnum = te.postings(null, postingsEnum);
+        postingsEnum = te.postings(postingsEnum);
         int docID;
         while ((docID = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
           long v = docValues.get(docID);
@@ -415,7 +414,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
           System.out.println("TEST: got term=" + te.term().utf8ToString() + " docFreq=" + te.docFreq());
         }
         verifier.sawTerm(te.term());        
-        postingsEnum = te.postings(null, postingsEnum);
+        postingsEnum = te.postings(postingsEnum);
         int docID;
         while ((docID = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
           assertTrue("prefixBR=" + prefixBR + " docBR=" + docValues.get(docID), StringHelper.startsWith(docValues.get(docID), prefixBR));
@@ -491,7 +490,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     //TermsEnum te = terms.intersect(new CompiledAutomaton(a, true, false), null);
     while (te.next() != null) {
       verifier.sawTerm(te.term());
-      postingsEnum = te.postings(null, postingsEnum);
+      postingsEnum = te.postings(postingsEnum);
       int docID;
       while ((docID = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
         // The auto-prefix terms should never "overlap" one another, so we should only ever see a given docID one time:

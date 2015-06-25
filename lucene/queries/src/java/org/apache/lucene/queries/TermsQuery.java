@@ -252,7 +252,7 @@ public class TermsQuery extends Query implements Accountable {
        * On the given leaf context, try to either rewrite to a disjunction if
        * there are few matching terms, or build a bitset containing matching docs.
        */
-      private WeightOrBitSet rewrite(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      private WeightOrBitSet rewrite(LeafReaderContext context) throws IOException {
         final LeafReader reader = context.reader();
 
         // We will first try to collect up to 'threshold' terms into 'matchingTerms'
@@ -282,18 +282,18 @@ public class TermsQuery extends Query implements Accountable {
           }
           if (termsEnum != null && termsEnum.seekExact(term)) {
             if (matchingTerms == null) {
-              docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE);
+              docs = termsEnum.postings(docs, PostingsEnum.NONE);
               builder.or(docs);
             } else if (matchingTerms.size() < threshold) {
               matchingTerms.add(new TermAndState(field, termsEnum));
             } else {
               assert matchingTerms.size() == threshold;
               builder = new BitDocIdSet.Builder(reader.maxDoc());
-              docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE);
+              docs = termsEnum.postings(docs, PostingsEnum.NONE);
               builder.or(docs);
               for (TermAndState t : matchingTerms) {
                 t.termsEnum.seekExact(t.term, t.state);
-                docs = t.termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE);
+                docs = t.termsEnum.postings(docs, PostingsEnum.NONE);
                 builder.or(docs);
               }
               matchingTerms = null;
@@ -329,10 +329,10 @@ public class TermsQuery extends Query implements Accountable {
       }
 
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        final WeightOrBitSet weightOrBitSet = rewrite(context, acceptDocs);
+      public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+        final WeightOrBitSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet.weight != null) {
-          return weightOrBitSet.weight.bulkScorer(context, acceptDocs);
+          return weightOrBitSet.weight.bulkScorer(context);
         } else {
           final Scorer scorer = scorer(weightOrBitSet.bitset);
           if (scorer == null) {
@@ -343,10 +343,10 @@ public class TermsQuery extends Query implements Accountable {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        final WeightOrBitSet weightOrBitSet = rewrite(context, acceptDocs);
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        final WeightOrBitSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet.weight != null) {
-          return weightOrBitSet.weight.scorer(context, acceptDocs);
+          return weightOrBitSet.weight.scorer(context);
         } else {
           return scorer(weightOrBitSet.bitset);
         }

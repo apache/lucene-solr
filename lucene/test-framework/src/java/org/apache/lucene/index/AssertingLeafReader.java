@@ -143,7 +143,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+    public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
 
@@ -154,7 +154,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       } else {
         actualReuse = null;
       }
-      PostingsEnum docs = super.postings(liveDocs, actualReuse, flags);
+      PostingsEnum docs = super.postings(actualReuse, flags);
       assert docs != null;
       if (docs == actualReuse) {
         // codec reused, reset asserting state

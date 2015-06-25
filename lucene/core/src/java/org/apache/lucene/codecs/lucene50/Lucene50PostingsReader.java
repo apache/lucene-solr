@@ -32,7 +32,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -192,7 +191,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, PostingsEnum reuse, int flags) throws IOException {
     
     boolean indexHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
@@ -208,7 +207,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       } else {
         docsEnum = new BlockDocsEnum(fieldInfo);
       }
-      return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
+      return docsEnum.reset((IntBlockTermState) termState, flags);
     } else if ((indexHasOffsets == false || PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) == false) &&
                (indexHasPayloads == false || PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS) == false)) {
       BlockPostingsEnum docsAndPositionsEnum;
@@ -220,7 +219,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       } else {
         docsAndPositionsEnum = new BlockPostingsEnum(fieldInfo);
       }
-      return docsAndPositionsEnum.reset(liveDocs, (IntBlockTermState) termState);
+      return docsAndPositionsEnum.reset((IntBlockTermState) termState);
     } else {
       EverythingEnum everythingEnum;
       if (reuse instanceof EverythingEnum) {
@@ -231,7 +230,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       } else {
         everythingEnum = new EverythingEnum(fieldInfo);
       }
-      return everythingEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
+      return everythingEnum.reset((IntBlockTermState) termState, flags);
     }
   }
 
@@ -272,8 +271,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     // docID for next skip point, we won't use skipper if 
     // target docID is not larger than this
     private int nextSkipDoc;
-
-    private Bits liveDocs;
     
     private boolean needsFreq; // true if the caller actually needs frequencies
     private int singletonDocID; // docid when there is a single pulsed posting, otherwise -1
@@ -295,9 +292,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public PostingsEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
-      this.liveDocs = liveDocs;
-
+    public PostingsEnum reset(IntBlockTermState termState, int flags) throws IOException {
       docFreq = termState.docFreq;
       totalTermFreq = indexHasFreq ? termState.totalTermFreq : docFreq;
       docTermStartFP = termState.docStartFP;
@@ -380,26 +375,20 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      while (true) {
-
-        if (docUpto == docFreq) {
-          return doc = NO_MORE_DOCS;
-        }
-        if (docBufferUpto == BLOCK_SIZE) {
-          refillDocs();
-        }
-
-        accum += docDeltaBuffer[docBufferUpto];
-        docUpto++;
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          doc = accum;
-          freq = freqBuffer[docBufferUpto];
-          docBufferUpto++;
-          return doc;
-        }
-        docBufferUpto++;
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
       }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
+
+      accum += docDeltaBuffer[docBufferUpto];
+      docUpto++;
+
+      doc = accum;
+      freq = freqBuffer[docBufferUpto];
+      docBufferUpto++;
+      return doc;
     }
 
     @Override
@@ -467,14 +456,9 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         }
       }
 
-      if (liveDocs == null || liveDocs.get(accum)) {
-        freq = freqBuffer[docBufferUpto];
-        docBufferUpto++;
-        return doc = accum;
-      } else {
-        docBufferUpto++;
-        return nextDoc();
-      }
+      freq = freqBuffer[docBufferUpto];
+      docBufferUpto++;
+      return doc = accum;
     }
     
     @Override
@@ -544,7 +528,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     private int nextSkipDoc;
 
-    private Bits liveDocs;
     private int singletonDocID; // docid when there is a single pulsed posting, otherwise -1
     
     public BlockPostingsEnum(FieldInfo fieldInfo) throws IOException {
@@ -562,9 +545,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public PostingsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
-      this.liveDocs = liveDocs;
-
+    public PostingsEnum reset(IntBlockTermState termState) throws IOException {
       docFreq = termState.docFreq;
       docTermStartFP = termState.docStartFP;
       posTermStartFP = termState.posStartFP;
@@ -660,26 +641,22 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      while (true) {
-        if (docUpto == docFreq) {
-          return doc = NO_MORE_DOCS;
-        }
-        if (docBufferUpto == BLOCK_SIZE) {
-          refillDocs();
-        }
-
-        accum += docDeltaBuffer[docBufferUpto];
-        freq = freqBuffer[docBufferUpto];
-        posPendingCount += freq;
-        docBufferUpto++;
-        docUpto++;
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          doc = accum;
-          position = 0;
-          return doc;
-        }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
       }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
+
+      accum += docDeltaBuffer[docBufferUpto];
+      freq = freqBuffer[docBufferUpto];
+      posPendingCount += freq;
+      docBufferUpto++;
+      docUpto++;
+
+      doc = accum;
+      position = 0;
+      return doc;
     }
     
     @Override
@@ -745,12 +722,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         }
       }
 
-      if (liveDocs == null || liveDocs.get(accum)) {
-        position = 0;
-        return doc = accum;
-      } else {
-        return nextDoc();
-      }
+      position = 0;
+      return doc = accum;
     }
 
     // TODO: in theory we could avoid loading frq block
@@ -904,8 +877,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     private long skipOffset;
 
     private int nextSkipDoc;
-
-    private Bits liveDocs;
     
     private boolean needsOffsets; // true if we actually need offsets
     private boolean needsPayloads; // true if we actually need payloads
@@ -946,9 +917,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public EverythingEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
-      this.liveDocs = liveDocs;
-
+    public EverythingEnum reset(IntBlockTermState termState, int flags) throws IOException {
       docFreq = termState.docFreq;
       docTermStartFP = termState.docStartFP;
       posTermStartFP = termState.posStartFP;
@@ -1087,27 +1056,23 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      while (true) {
-        if (docUpto == docFreq) {
-          return doc = NO_MORE_DOCS;
-        }
-        if (docBufferUpto == BLOCK_SIZE) {
-          refillDocs();
-        }
-
-        accum += docDeltaBuffer[docBufferUpto];
-        freq = freqBuffer[docBufferUpto];
-        posPendingCount += freq;
-        docBufferUpto++;
-        docUpto++;
-
-        if (liveDocs == null || liveDocs.get(accum)) {
-          doc = accum;
-          position = 0;
-          lastStartOffset = 0;
-          return doc;
-        }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
       }
+      if (docBufferUpto == BLOCK_SIZE) {
+        refillDocs();
+      }
+
+      accum += docDeltaBuffer[docBufferUpto];
+      freq = freqBuffer[docBufferUpto];
+      posPendingCount += freq;
+      docBufferUpto++;
+      docUpto++;
+
+      doc = accum;
+      position = 0;
+      lastStartOffset = 0;
+      return doc;
     }
     
     @Override
@@ -1174,13 +1139,9 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         }
       }
 
-      if (liveDocs == null || liveDocs.get(accum)) {
-        position = 0;
-        lastStartOffset = 0;
-        return doc = accum;
-      } else {
-        return nextDoc();
-      }
+      position = 0;
+      lastStartOffset = 0;
+      return doc = accum;
     }
 
     // TODO: in theory we could avoid loading frq block

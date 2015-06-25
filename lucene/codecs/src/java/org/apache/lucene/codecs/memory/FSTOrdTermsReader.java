@@ -427,9 +427,9 @@ public class FSTOrdTermsReader extends FieldsProducer {
       }
 
       @Override
-      public PostingsEnum postings(Bits liveDocs, PostingsEnum reuse, int flags) throws IOException {
+      public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
         decodeMetaData();
-        return postingsReader.postings(fieldInfo, state, liveDocs, reuse, flags);
+        return postingsReader.postings(fieldInfo, state, reuse, flags);
       }
 
       // TODO: this can be achieved by making use of Util.getByOutput()

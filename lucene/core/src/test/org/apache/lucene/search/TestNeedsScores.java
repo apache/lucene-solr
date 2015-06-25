@@ -132,9 +132,9 @@ public class TestNeedsScores extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+        public Scorer scorer(LeafReaderContext context) throws IOException {
           assertEquals("query=" + in, value, needsScores);
-          return w.scorer(context, acceptDocs);
+          return w.scorer(context);
         }
       };
     }

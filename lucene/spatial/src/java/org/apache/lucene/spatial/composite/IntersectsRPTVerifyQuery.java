@@ -90,10 +90,10 @@ public class IntersectsRPTVerifyQuery extends Query {
 
     return new ConstantScoreWeight(this) {
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         // Compute approx & exact
         final IntersectsDifferentiatingFilter.IntersectsDifferentiatingVisitor result =
-            intersectsDiffFilter.compute(context, acceptDocs);
+            intersectsDiffFilter.compute(context, null);
         if (result.approxDocIdSet == null) {
           return null;
         }

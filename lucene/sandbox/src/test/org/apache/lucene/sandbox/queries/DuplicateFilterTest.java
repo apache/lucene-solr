@@ -155,7 +155,6 @@ public class DuplicateFilterTest extends LuceneTestCase {
       PostingsEnum td = TestUtil.docs(random(), reader,
           KEY_FIELD,
           new BytesRef(url),
-          MultiFields.getLiveDocs(reader),
           null,
           0);
 
@@ -183,7 +182,6 @@ public class DuplicateFilterTest extends LuceneTestCase {
       PostingsEnum td = TestUtil.docs(random(), reader,
           KEY_FIELD,
           new BytesRef(url),
-          MultiFields.getLiveDocs(reader),
           null,
           0);
 

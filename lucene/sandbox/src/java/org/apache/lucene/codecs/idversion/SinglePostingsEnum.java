@@ -18,14 +18,12 @@ package org.apache.lucene.codecs.idversion;
  */
 
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 class SinglePostingsEnum extends PostingsEnum {
   private int doc;
   private int pos;
   private int singleDocID;
-  private Bits liveDocs;
   private long version;
   private final BytesRef payload;
 
@@ -35,16 +33,15 @@ class SinglePostingsEnum extends PostingsEnum {
   }
 
   /** For reuse */
-  public void reset(int singleDocID, long version, Bits liveDocs) {
+  public void reset(int singleDocID, long version) {
     doc = -1;
-    this.liveDocs = liveDocs;
     this.singleDocID = singleDocID;
     this.version = version;
   }
 
   @Override
   public int nextDoc() {
-    if (doc == -1 && (liveDocs == null || liveDocs.get(singleDocID))) {
+    if (doc == -1) {
       doc = singleDocID;
     } else {
       doc = NO_MORE_DOCS;
@@ -61,7 +58,7 @@ class SinglePostingsEnum extends PostingsEnum {
 
   @Override
   public int advance(int target) {
-    if (doc == -1 && target <= singleDocID && (liveDocs == null || liveDocs.get(singleDocID))) {
+    if (doc == -1 && target <= singleDocID) {
       doc = singleDocID;
       pos = -1;
     } else {

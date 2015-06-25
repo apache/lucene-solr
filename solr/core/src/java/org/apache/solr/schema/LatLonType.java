@@ -340,13 +340,13 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      return new SpatialScorer(context, acceptDocs, this, queryWeight);
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      return new SpatialScorer(context, this, queryWeight);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((SpatialScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
+      return ((SpatialScorer)scorer(context)).explain(doc);
     }
   }
 
@@ -358,7 +358,6 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     int doc=-1;
     final FunctionValues latVals;
     final FunctionValues lonVals;
-    final Bits acceptDocs;
 
 
     final double lonMin, lonMax, lon2Min, lon2Max, latMin, latMax;
@@ -374,13 +373,12 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     int lastDistDoc;
     double lastDist;
 
-    public SpatialScorer(LeafReaderContext readerContext, Bits acceptDocs, SpatialWeight w, float qWeight) throws IOException {
+    public SpatialScorer(LeafReaderContext readerContext, SpatialWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;
       this.qWeight = qWeight;
       this.reader = readerContext.reader();
       this.maxDoc = reader.maxDoc();
-      this.acceptDocs = acceptDocs;
       latVals = latSource.getValues(weight.latContext, readerContext);
       lonVals = lonSource.getValues(weight.lonContext, readerContext);
 
@@ -458,7 +456,6 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (acceptDocs != null && !acceptDocs.get(doc)) continue;
         if (!match()) continue;
         return doc;
       }
@@ -538,7 +535,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
-      spatialScorer = new SpatialScorer(context, null, weight, 1.0f);
+      spatialScorer = new SpatialScorer(context, weight, 1.0f);
     }
   }
 

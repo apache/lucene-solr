@@ -31,7 +31,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -136,7 +135,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
        * On the given leaf context, try to either rewrite to a disjunction if
        * there are few terms, or build a bitset containing matching docs.
        */
-      private WeightOrBitSet rewrite(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      private WeightOrBitSet rewrite(LeafReaderContext context) throws IOException {
         final Terms terms = context.reader().terms(query.field);
         if (terms == null) {
           // field does not exist
@@ -168,14 +167,14 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
           TermsEnum termsEnum2 = terms.iterator();
           for (TermAndState t : collectedTerms) {
             termsEnum2.seekExact(t.term, t.state);
-            docs = termsEnum2.postings(acceptDocs, docs, PostingsEnum.NONE);
+            docs = termsEnum2.postings(docs, PostingsEnum.NONE);
             builder.or(docs);
           }
         }
 
         // Then keep filling the bit set with remaining terms
         do {
-          docs = termsEnum.postings(acceptDocs, docs, PostingsEnum.NONE);
+          docs = termsEnum.postings(docs, PostingsEnum.NONE);
           builder.or(docs);
         } while (termsEnum.next() != null);
 
@@ -194,10 +193,10 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
       }
 
       @Override
-      public BulkScorer bulkScorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        final WeightOrBitSet weightOrBitSet = rewrite(context, acceptDocs);
+      public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+        final WeightOrBitSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet.weight != null) {
-          return weightOrBitSet.weight.bulkScorer(context, acceptDocs);
+          return weightOrBitSet.weight.bulkScorer(context);
         } else {
           final Scorer scorer = scorer(weightOrBitSet.bitset);
           if (scorer == null) {
@@ -208,10 +207,10 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        final WeightOrBitSet weightOrBitSet = rewrite(context, acceptDocs);
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        final WeightOrBitSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet.weight != null) {
-          return weightOrBitSet.weight.scorer(context, acceptDocs);
+          return weightOrBitSet.weight.scorer(context);
         } else {
           return scorer(weightOrBitSet.bitset);
         }

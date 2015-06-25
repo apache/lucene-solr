@@ -531,13 +531,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     PostingsEnum tdocs = TestUtil.docs(random(), reader,
         t.field(),
         new BytesRef(t.text()),
-        MultiFields.getLiveDocs(reader),
         null,
         0);
 
+    final Bits liveDocs = MultiFields.getLiveDocs(reader);
     int count = 0;
     while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-      count++;
+      if (liveDocs == null || liveDocs.get(tdocs.docID())) {
+        count++;
+      }
     }
     assertEquals(2, count);
 

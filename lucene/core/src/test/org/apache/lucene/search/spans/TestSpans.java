@@ -298,7 +298,7 @@ public class TestSpans extends LuceneTestCase {
       try {
         searcher.setSimilarity(sim);
         SpanQuery snq = spanNearOrderedQuery(field, 1, "t1", "t2");
-        spanScorer = searcher.createNormalizedWeight(snq, true).scorer(ctx, ctx.reader().getLiveDocs());
+        spanScorer = searcher.createNormalizedWeight(snq, true).scorer(ctx);
       } finally {
         searcher.setSimilarity(oldSim);
       }

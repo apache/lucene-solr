@@ -48,7 +48,7 @@ public abstract class RandomAccessWeight extends ConstantScoreWeight {
   protected abstract Bits getMatchingDocs(LeafReaderContext context) throws IOException;
 
   @Override
-  public final Scorer scorer(LeafReaderContext context, final Bits acceptDocs) throws IOException {
+  public final Scorer scorer(LeafReaderContext context) throws IOException {
     final Bits matchingDocs = getMatchingDocs(context);
     if (matchingDocs == null || matchingDocs instanceof MatchNoBits) {
       return null;
@@ -59,10 +59,6 @@ public abstract class RandomAccessWeight extends ConstantScoreWeight {
       @Override
       public boolean matches() throws IOException {
         final int doc = approximation.docID();
-
-        if (acceptDocs != null && acceptDocs.get(doc) == false) {
-          return false;
-        }
 
         return matchingDocs.get(doc);
       }

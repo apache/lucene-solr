@@ -326,7 +326,7 @@ public class TestTermsEnum extends LuceneTestCase {
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
-          postingsEnum = TestUtil.docs(random(), te, null, postingsEnum, PostingsEnum.NONE);
+          postingsEnum = TestUtil.docs(random(), te, postingsEnum, PostingsEnum.NONE);
           final int docID = postingsEnum.nextDoc();
           assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
           assertEquals(docIDToID.get(docID), termToID.get(expected).intValue());
@@ -740,25 +740,25 @@ public class TestTermsEnum extends LuceneTestCase {
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
     assertEquals("aaa", te.next().utf8ToString());
-    assertEquals(0, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(0, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(1, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(2, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertNull(te.next());
 
     te = terms.intersect(ca, new BytesRef("abc"));
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(1, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(2, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertNull(te.next());
 
     te = terms.intersect(ca, new BytesRef("aaa"));
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(1, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(2, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertNull(te.next());
 
     r.close();
@@ -798,17 +798,17 @@ public class TestTermsEnum extends LuceneTestCase {
     // should seek to startTerm
     te = terms.intersect(ca, new BytesRef("aad"));
     assertEquals("abd", te.next().utf8ToString());
-    assertEquals(1, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(1, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertEquals("acd", te.next().utf8ToString());
-    assertEquals(2, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(2, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertEquals("bcd", te.next().utf8ToString());
-    assertEquals(3, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(3, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertNull(te.next());
 
     // should fail to find ceil label on second arc, rewind 
     te = terms.intersect(ca, new BytesRef("add"));
     assertEquals("bcd", te.next().utf8ToString());
-    assertEquals(3, te.postings(null, null, PostingsEnum.NONE).nextDoc());
+    assertEquals(3, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertNull(te.next());
 
     // should reach end
@@ -852,12 +852,12 @@ public class TestTermsEnum extends LuceneTestCase {
     PostingsEnum de;
 
     assertEquals("", te.next().utf8ToString());
-    de = te.postings(null, null, PostingsEnum.NONE);
+    de = te.postings(null, PostingsEnum.NONE);
     assertEquals(0, de.nextDoc());
     assertEquals(1, de.nextDoc());
 
     assertEquals("abc", te.next().utf8ToString());
-    de = te.postings(null, null, PostingsEnum.NONE);
+    de = te.postings(null, PostingsEnum.NONE);
     assertEquals(0, de.nextDoc());
     assertEquals(1, de.nextDoc());
 
@@ -867,7 +867,7 @@ public class TestTermsEnum extends LuceneTestCase {
     te = terms.intersect(ca, new BytesRef(""));
 
     assertEquals("abc", te.next().utf8ToString());
-    de = te.postings(null, null, PostingsEnum.NONE);
+    de = te.postings(null, PostingsEnum.NONE);
     assertEquals(0, de.nextDoc());
     assertEquals(1, de.nextDoc());
 
@@ -929,7 +929,7 @@ public class TestTermsEnum extends LuceneTestCase {
       boolean actualResult = termsEnum.seekExact(termBytesRef);
       assertEquals(shouldExist, actualResult);
       if (shouldExist) {
-        postingsEnum = termsEnum.postings(null, postingsEnum, 0);
+        postingsEnum = termsEnum.postings(postingsEnum, 0);
         int docID = postingsEnum.nextDoc();
         assertTrue(docID != PostingsEnum.NO_MORE_DOCS);
         assertEquals(docID, pkLookup.lookup(termBytesRef));

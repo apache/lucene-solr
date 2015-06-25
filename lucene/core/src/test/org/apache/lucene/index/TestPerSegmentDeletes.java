@@ -226,7 +226,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     Terms cterms = fields.terms(term.field);
     TermsEnum ctermsEnum = cterms.iterator();
     if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
-      PostingsEnum postingsEnum = TestUtil.docs(random(), ctermsEnum, bits, null, PostingsEnum.NONE);
+      PostingsEnum postingsEnum = TestUtil.docs(random(), ctermsEnum, null, PostingsEnum.NONE);
       return toArray(postingsEnum);
     }
     return null;
