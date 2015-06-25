@@ -188,9 +188,59 @@ public final class Lucene50DocValuesFormat extends DocValuesFormat {
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
+  
+  // indicates docvalues type
   static final byte NUMERIC = 0;
   static final byte BINARY = 1;
   static final byte SORTED = 2;
   static final byte SORTED_SET = 3;
   static final byte SORTED_NUMERIC = 4;
+  
+  // address terms in blocks of 16 terms
+  static final int INTERVAL_SHIFT = 4;
+  static final int INTERVAL_COUNT = 1 << INTERVAL_SHIFT;
+  static final int INTERVAL_MASK = INTERVAL_COUNT - 1;
+  
+  // build reverse index from every 1024th term
+  static final int REVERSE_INTERVAL_SHIFT = 10;
+  static final int REVERSE_INTERVAL_COUNT = 1 << REVERSE_INTERVAL_SHIFT;
+  static final int REVERSE_INTERVAL_MASK = REVERSE_INTERVAL_COUNT - 1;
+  
+  // for conversion from reverse index to block
+  static final int BLOCK_INTERVAL_SHIFT = REVERSE_INTERVAL_SHIFT - INTERVAL_SHIFT;
+  static final int BLOCK_INTERVAL_COUNT = 1 << BLOCK_INTERVAL_SHIFT;
+  static final int BLOCK_INTERVAL_MASK = BLOCK_INTERVAL_COUNT - 1;
+
+  /** Compressed using packed blocks of ints. */
+  static final int DELTA_COMPRESSED = 0;
+  /** Compressed by computing the GCD. */
+  static final int GCD_COMPRESSED = 1;
+  /** Compressed by giving IDs to unique values. */
+  static final int TABLE_COMPRESSED = 2;
+  /** Compressed with monotonically increasing values */
+  static final int MONOTONIC_COMPRESSED = 3;
+  /** Compressed with constant value (uses only missing bitset) */
+  static final int CONST_COMPRESSED = 4;
+  
+  /** Uncompressed binary, written directly (fixed length). */
+  static final int BINARY_FIXED_UNCOMPRESSED = 0;
+  /** Uncompressed binary, written directly (variable length). */
+  static final int BINARY_VARIABLE_UNCOMPRESSED = 1;
+  /** Compressed binary with shared prefixes */
+  static final int BINARY_PREFIX_COMPRESSED = 2;
+
+  /** Standard storage for sorted set values with 1 level of indirection:
+   *  {@code docId -> address -> ord}. */
+  static final int SORTED_WITH_ADDRESSES = 0;
+  /** Single-valued sorted set values, encoded as sorted values, so no level
+   *  of indirection: {@code docId -> ord}. */
+  static final int SORTED_SINGLE_VALUED = 1;
+  
+  /** placeholder for missing offset that means there are no missing values */
+  static final int ALL_LIVE = -1;
+  /** placeholder for missing offset that means all values are missing */
+  static final int ALL_MISSING = -2;
+  
+  // addressing uses 16k blocks
+  static final int MONOTONIC_BLOCK_SIZE = 16384;
 }
