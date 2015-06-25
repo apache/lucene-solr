@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -34,23 +35,43 @@ public class ConjunctionDISI extends DocIdSetIterator {
   /** Create a conjunction over the provided iterators, taking advantage of
    *  {@link TwoPhaseIterator}. */
   public static ConjunctionDISI intersect(List<? extends DocIdSetIterator> iterators) {
-    assert iterators.size() >= 2;
+    if (iterators.size() < 2) {
+      throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
+    }
     final List<DocIdSetIterator> allIterators = new ArrayList<>();
     final List<TwoPhaseIterator> twoPhaseIterators = new ArrayList<>();
     for (DocIdSetIterator iter : iterators) {
-      TwoPhaseIterator twoPhaseIter = TwoPhaseIterator.asTwoPhaseIterator(iter);
-      if (twoPhaseIter != null) {
-        allIterators.add(twoPhaseIter.approximation());
-        twoPhaseIterators.add(twoPhaseIter);
-      } else { // no approximation support, use the iterator as-is
-        allIterators.add(iter);
-      }
+      addIterator(iter, allIterators, twoPhaseIterators);
     }
 
     if (twoPhaseIterators.isEmpty()) {
       return new ConjunctionDISI(allIterators);
     } else {
       return new TwoPhase(allIterators, twoPhaseIterators);
+    }
+  }
+
+  /** Adds the iterator, possibly splitting up into two phases or collapsing if it is another conjunction */
+  private static void addIterator(DocIdSetIterator disi, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
+    // Check for exactly this class for collapsing. Subclasses can do their own optimizations.
+    if (disi.getClass() == ConjunctionDISI.class || disi.getClass() == TwoPhase.class) {
+      ConjunctionDISI conjunction = (ConjunctionDISI) disi;
+      // subconjuctions have already split themselves into two phase iterators and others, so we can take those
+      // iterators as they are and move them up to this conjunction
+      allIterators.add(conjunction.lead);
+      Collections.addAll(allIterators, conjunction.others);
+      if (conjunction.getClass() == TwoPhase.class) {
+        TwoPhase twoPhase = (TwoPhase) conjunction;
+        Collections.addAll(twoPhaseIterators, twoPhase.twoPhaseView.twoPhaseIterators);
+      }
+    } else {
+      TwoPhaseIterator twoPhaseIter = TwoPhaseIterator.asTwoPhaseIterator(disi);
+      if (twoPhaseIter != null) {
+        allIterators.add(twoPhaseIter.approximation());
+        twoPhaseIterators.add(twoPhaseIter);
+      } else { // no approximation support, use the iterator as-is
+        allIterators.add(disi);
+      }
     }
   }
 

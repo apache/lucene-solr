@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
@@ -241,6 +243,51 @@ public class TestConjunctionDISI extends LuceneTestCase {
       } else {
         assertEquals(intersect(sets), toBitSet(maxDoc, conjunction));
       }
+    }
+  }
+
+  public void testCollapseSubConjunctions() throws IOException {
+    final int iters = atLeast(100);
+    for (int iter = 0; iter < iters; ++iter) {
+      final int maxDoc = TestUtil.nextInt(random(), 100, 10000);
+      final int numIterators = TestUtil.nextInt(random(), 5, 10);
+      final FixedBitSet[] sets = new FixedBitSet[numIterators];
+      final List<DocIdSetIterator> iterators = new LinkedList<>();
+      for (int i = 0; i < numIterators; ++i) {
+        final FixedBitSet set = randomSet(maxDoc);
+        if (random().nextBoolean()) {
+          // simple iterator
+          sets[i] = set;
+          iterators.add(new BitDocIdSet(set).iterator());
+        } else {
+          // scorer with approximation
+          final FixedBitSet confirmed = clearRandomBits(set);
+          sets[i] = confirmed;
+          final TwoPhaseIterator approximation = approximation(new BitDocIdSet(set).iterator(), confirmed);
+          iterators.add(scorer(approximation));
+        }
+      }
+
+      // make some sub sequences into sub conjunctions
+      final int subIters = atLeast(3);
+      for (int subIter = 0; subIter < subIters && iterators.size() > 3; ++subIter) {
+        final int subSeqStart = TestUtil.nextInt(random(), 0, iterators.size() - 2);
+        final int subSeqEnd = TestUtil.nextInt(random(), subSeqStart + 2, iterators.size());
+        final ConjunctionDISI subConjunction = ConjunctionDISI.intersect(iterators.subList(subSeqStart, subSeqEnd));
+        iterators.set(subSeqStart, subConjunction);
+        int toRemove = subSeqEnd - subSeqStart - 1;
+        while (toRemove-- > 0) {
+          iterators.remove(subSeqStart + 1);
+        }
+      }
+      if (iterators.size() == 1) {
+        // ConjunctionDISI needs two iterators
+        iterators.add(DocIdSetIterator.all(maxDoc));
+      }
+
+
+      final ConjunctionDISI conjunction = ConjunctionDISI.intersect(iterators);
+      assertEquals(intersect(sets), toBitSet(maxDoc, conjunction));
     }
   }
 
