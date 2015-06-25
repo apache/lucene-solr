@@ -164,6 +164,9 @@ Bug fixes
 * LUCENE-6588: Fix how ToChildBlockJoinQuery deals with acceptDocs.
   (Christoph Kaser via Adrien Grand)
 
+* LUCENE-6597: Geo3D's GeoCircle now supports a world-globe diameter.
+  (Karl Wright via David Smiley)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

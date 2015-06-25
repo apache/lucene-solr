@@ -46,6 +46,29 @@ public class GeoCircleTest {
   }
 
   @Test
+  public void testCircleFullWorld() {
+    GeoCircle c;
+    GeoPoint gp;
+    c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, Math.PI);
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.55);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
+    assertTrue(c.isWithin(gp));
+    Bounds b = c.getBounds(null);
+    assertTrue(b.checkNoLongitudeBound());
+    assertTrue(b.checkNoTopLatitudeBound());
+    assertTrue(b.checkNoBottomLatitudeBound());
+  }
+
+  @Test
   public void testCirclePointWithin() {
     GeoCircle c;
     GeoPoint gp;
