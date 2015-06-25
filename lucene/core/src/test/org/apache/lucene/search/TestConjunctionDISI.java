@@ -273,7 +273,6 @@ public class TestConjunctionDISI extends LuceneTestCase {
       for (int subIter = 0; subIter < subIters && iterators.size() > 3; ++subIter) {
         final int subSeqStart = TestUtil.nextInt(random(), 0, iterators.size() - 2);
         final int subSeqEnd = TestUtil.nextInt(random(), subSeqStart + 2, iterators.size());
-        System.out.println("cutting [" + subSeqStart + ":" + subSeqEnd + ") from iterators of size " + iterators.size());
         final ConjunctionDISI subConjunction = ConjunctionDISI.intersect(iterators.subList(subSeqStart, subSeqEnd));
         iterators.set(subSeqStart, subConjunction);
         int toRemove = subSeqEnd - subSeqStart - 1;
