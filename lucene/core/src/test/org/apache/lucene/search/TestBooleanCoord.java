@@ -73,7 +73,9 @@ public class TestBooleanCoord extends LuceneTestCase {
     searcher.setSimilarity(new Similarity() {
       @Override
       public float coord(int overlap, int maxOverlap) {
-        return overlap / (float)maxOverlap;
+        // we use a rather bogus/complex coord, because today coord() can really return anything.
+        // note in the case of overlap == maxOverlap == 1: BooleanWeight always applies 1, (see LUCENE-4300).
+        return overlap / (float)(maxOverlap + 1);
       }
 
       @Override
@@ -130,28 +132,29 @@ public class TestBooleanCoord extends LuceneTestCase {
   public void testDisjunction1TermMatches() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/1f, bq.build());
+    // LUCENE-4300: coord(1,1) is always treated as 1
+    assertScore(1 * 1, bq.build());
   }
   
   public void testDisjunction2TermMatches() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 1/1f, bq.build());
+    assertScore(2 * 2/(2f + 1), bq.build());
   }
   
   public void testDisjunction1OutOf2() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq.build());
+    assertScore(1 * 1/(2f + 1), bq.build());
   }
   
   public void testDisjunction1OutOf2Missing() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq.build());
+    assertScore(1 * 1/(2f + 1), bq.build());
   }
   
   public void testDisjunction1OutOf3() throws Exception {
@@ -159,7 +162,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testDisjunction1OutOf3MissingOne() throws Exception {
@@ -167,7 +170,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testDisjunction1OutOf3MissingTwo() throws Exception {
@@ -175,7 +178,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Y"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testDisjunction2OutOf3() throws Exception {
@@ -183,7 +186,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   public void testDisjunction2OutOf3Missing() throws Exception {
@@ -191,7 +194,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   // disjunctions with coord disabled
@@ -277,7 +280,8 @@ public class TestBooleanCoord extends LuceneTestCase {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/1f, bq.build());
+    // LUCENE-4300: coord(1,1) is always treated as 1
+    assertScore(1 * 1, bq.build());
   }
   
   public void testMinShouldMatchn2TermMatches() throws Exception {
@@ -285,7 +289,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 1/1f, bq.build());
+    assertScore(2 * 2/(2f + 1), bq.build());
   }
   
   public void testMinShouldMatch1OutOf2() throws Exception {
@@ -293,7 +297,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq.build());
+    assertScore(1 * 1/(2f + 1), bq.build());
   }
   
   public void testMinShouldMatch1OutOf2Missing() throws Exception {
@@ -301,7 +305,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.setMinimumNumberShouldMatch(1);
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq.build());
+    assertScore(1 * 1/(2f + 1), bq.build());
   }
   
   public void testMinShouldMatch1OutOf3() throws Exception {
@@ -310,7 +314,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testMinShouldMatch1OutOf3MissingOne() throws Exception {
@@ -319,7 +323,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testMinShouldMatch1OutOf3MissingTwo() throws Exception {
@@ -328,7 +332,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("Y"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testMinShouldMatch2OutOf3() throws Exception {
@@ -337,7 +341,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   public void testMinShouldMatch2OutOf3Missing() throws Exception {
@@ -346,7 +350,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.SHOULD);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   public void testMinShouldMatch2OutOf4() throws Exception {
@@ -356,7 +360,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/4f, bq.build());
+    assertScore(2 * 2/(4f + 1), bq.build());
   }
   
   public void testMinShouldMatch2OutOf4Missing() throws Exception {
@@ -366,7 +370,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/4f, bq.build());
+    assertScore(2 * 2/(4f + 1), bq.build());
   }
   
   // minShouldMatch with coord disabled
@@ -483,14 +487,16 @@ public class TestBooleanCoord extends LuceneTestCase {
   public void testConjunction1TermMatches() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
-    assertScore(1 * 1/1f, bq.build());
+    // LUCENE-4300: coord(1,1) is always treated as 1
+    assertScore(1 * 1, bq.build());
   }
   
   public void testConjunction1TermMatches1Prohib() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.MUST_NOT);
-    assertScore(1 * 1/1f, bq.build());
+    // LUCENE-4300: coord(1,1) is always treated as 1
+    assertScore(1 * 1, bq.build());
   }
   
   public void testConjunction1TermMatches2Prohib() throws Exception {
@@ -498,14 +504,15 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.MUST_NOT);
     bq.add(term("2"), BooleanClause.Occur.MUST_NOT);
-    assertScore(1 * 1/1f, bq.build());
+    // LUCENE-4300: coord(1,1) is always treated as 1
+    assertScore(1 * 1, bq.build());
   }
   
   public void testConjunction2TermMatches() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.MUST);
-    assertScore(2 * 1/1f, bq.build());
+    assertScore(2 * 2/(2f + 1), bq.build());
   }
   
   // conjunctions coord disabled
@@ -547,21 +554,21 @@ public class TestBooleanCoord extends LuceneTestCase {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/2f, bq.build());
+    assertScore(2 * 2/(2f + 1), bq.build());
   }
   
   public void testMixMatch1OutOfTwo() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq.build());
+    assertScore(1 * 1/(2f + 1), bq.build());
   }
   
   public void testMixMatch1OutOfTwoMissing() throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/2f, bq.build());
+    assertScore(1 * 1/(2f + 1), bq.build());
   }
   
   public void testMixMatch1OutOfThree() throws Exception {
@@ -569,7 +576,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("2"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testMixMatch1OutOfThreeOneMissing() throws Exception {
@@ -577,7 +584,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testMixMatch2OutOfThree() throws Exception {
@@ -585,7 +592,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   public void testMixMatch2OutOfThreeMissing() throws Exception {
@@ -593,7 +600,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   public void testMix2TermMatchesCoordDisabled() throws Exception {
@@ -634,7 +641,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(1 * 1/3f, bq.build());
+    assertScore(1 * 1/(3f + 1), bq.build());
   }
   
   public void testMixMatch2OutOfThreeCoordDisabled() throws Exception {
@@ -663,7 +670,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   public void testMixMinShouldMatch2OutOfThreeMissing() throws Exception {
@@ -672,7 +679,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("A"), BooleanClause.Occur.MUST);
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(2 * 2/3f, bq.build());
+    assertScore(2 * 2/(3f + 1), bq.build());
   }
   
   public void testMixMinShouldMatch3OutOfFour() throws Exception {
@@ -682,7 +689,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("C"), BooleanClause.Occur.SHOULD);
     bq.add(term("1"), BooleanClause.Occur.SHOULD);
-    assertScore(3 * 3/4f, bq.build());
+    assertScore(3 * 3/(4f + 1), bq.build());
   }
   
   public void testMixMinShouldMatch3OutOfFourMissing() throws Exception {
@@ -692,7 +699,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     bq.add(term("B"), BooleanClause.Occur.SHOULD);
     bq.add(term("C"), BooleanClause.Occur.SHOULD);
     bq.add(term("Z"), BooleanClause.Occur.SHOULD);
-    assertScore(3 * 3/4f, bq.build());
+    assertScore(3 * 3/(4f + 1), bq.build());
   }
   
   public void testMixMinShouldMatch2OutOfThreeCoordDisabled() throws Exception {
