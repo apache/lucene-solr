@@ -65,7 +65,11 @@ class BigramDictionary extends AbstractDictionary {
         singleInstance.load();
       } catch (IOException e) {
         String dictRoot = AnalyzerProfile.ANALYSIS_DATA_DIR;
-        singleInstance.load(dictRoot);
+        try {
+          singleInstance.load(dictRoot);
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
       } catch (ClassNotFoundException e) {
         throw new RuntimeException(e);
       }
@@ -84,23 +88,19 @@ class BigramDictionary extends AbstractDictionary {
 
   private void loadFromInputStream(InputStream serialObjectInputStream)
       throws IOException, ClassNotFoundException {
-    ObjectInputStream input = new ObjectInputStream(serialObjectInputStream);
-    bigramHashTable = (long[]) input.readObject();
-    frequencyTable = (int[]) input.readObject();
-    // log.info("load bigram dict from serialization.");
-    input.close();
+    try (ObjectInputStream input = new ObjectInputStream(serialObjectInputStream)) {
+      bigramHashTable = (long[]) input.readObject();
+      frequencyTable = (int[]) input.readObject();
+      // log.info("load bigram dict from serialization.");
+    }
   }
 
-  private void saveToObj(Path serialObj) {
-    try {
-      ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(
-          serialObj));
+  private void saveToObj(Path serialObj) throws IOException {
+    try (ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(
+        serialObj))) {
       output.writeObject(bigramHashTable);
       output.writeObject(frequencyTable);
-      output.close();
       // log.info("serialize bigram dict.");
-    } catch (Exception e) {
-      // log.warn(e.getMessage());
     }
   }
 
@@ -109,7 +109,7 @@ class BigramDictionary extends AbstractDictionary {
     loadFromInputStream(input);
   }
 
-  private void load(String dictRoot) {
+  private void load(String dictRoot) throws IOException {
     String bigramDictPath = dictRoot + "/bigramdict.dct";
 
     Path serialObj = Paths.get(dictRoot + "/bigramdict.mem");

@@ -176,6 +176,9 @@ Bug fixes
 * LUCENE-6597: Geo3D's GeoCircle now supports a world-globe diameter.
   (Karl Wright via David Smiley)
 
+* LUCENE-6608: Fix potential resource leak in BigramDictionary.
+  (Rishabh Patel via Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
