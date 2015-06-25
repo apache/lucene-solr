@@ -128,6 +128,10 @@ API Changes
 * LUCENE-6525: Deprecate IndexWriterConfig's writeLockTimeout.
   (Robert Muir)
 
+* LUCENE-6583: FilteredQuery is deprecated and will be removed in 6.0. It should
+  be replaced with a BooleanQuery which handle the query as a MUST clause and
+  the filter as a FILTER clause. (Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
@@ -193,6 +197,15 @@ Changes in Runtime Behavior
 
 * LUCENE-2880: Span queries now score more consistently with regular queries.
   (Robert Muir, Adrien Grand)
+
+* LUCENE-6601: FilteredQuery now always rewrites to a BooleanQuery which handles
+  the query as a MUST clause and the filter as a FILTER clause.
+  LEAP_FROG_QUERY_FIRST_STRATEGY and LEAP_FROG_FILTER_FIRST_STRATEGY do not
+  guarantee anymore which iterator will be advanced first, it will depend on the
+  respective costs of the iterators. QUERY_FIRST_FILTER_STRATEGY and
+  RANDOM_ACCESS_FILTER_STRATEGY still consume the filter using its random-access
+  API, however the returned bits may be called on different documents compared
+  to before. (Adrien Grand)
 
 Optimizations
 
