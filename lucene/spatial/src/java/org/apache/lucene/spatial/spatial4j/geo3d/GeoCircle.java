@@ -37,7 +37,6 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
       throw new IllegalArgumentException("Longitude out of bounds");
     if (cutoffAngle <= 0.0 || cutoffAngle > Math.PI)
       throw new IllegalArgumentException("Cutoff angle out of bounds");
-    final double cosAngle = Math.cos(cutoffAngle);
     this.center = new GeoPoint(planetModel, lat, lon);
     // In an ellipsoidal world, cutoff distances make no sense, unfortunately.  Only membership
     // can be used to make in/out determination.
@@ -62,16 +61,17 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     }
     final GeoPoint upperPoint = new GeoPoint(planetModel, upperLat, upperLon);
     final GeoPoint lowerPoint = new GeoPoint(planetModel, lowerLat, lowerLon);
-    // Construct normal plane
-    final Plane normalPlane = new Plane(upperPoint, center);
-    // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
-    this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
-    if (circlePlane == null)
-      throw new RuntimeException("Couldn't construct circle plane.  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
-    // Compute a point on the circle boundary.
-    if (cutoffAngle == Math.PI)
+    if (Math.abs(cutoffAngle - Math.PI) < Vector.MINIMUM_RESOLUTION) {
+      // Circle is the whole world
+      this.circlePlane = null;
       this.edgePoints = new GeoPoint[0];
-    else {
+    } else {
+      // Construct normal plane
+      final Plane normalPlane = new Plane(upperPoint, center);
+      // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
+      this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
+      if (circlePlane == null)
+        throw new RuntimeException("Couldn't construct circle plane.  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
       this.edgePoints = new GeoPoint[]{upperPoint};
     }
   }
@@ -194,12 +194,18 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
 
   @Override
   public boolean isWithin(final Vector point) {
+    if (circlePlane == null) {
+      return true;
+    }
     // Fastest way of determining membership
     return circlePlane.isWithin(point);
   }
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
+    if (circlePlane == null) {
+      return true;
+    }
     // Fastest way of determining membership
     return circlePlane.isWithin(x, y, z);
   }
@@ -211,6 +217,9 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+    if (circlePlane == null) {
+      return false;
+    }
     return circlePlane.intersects(planetModel, p, notablePoints, circlePoints, bounds);
   }
 
@@ -226,6 +235,11 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
   @Override
   public Bounds getBounds(Bounds bounds) {
     bounds = super.getBounds(bounds);
+    if (circlePlane == null) {
+      // Entire world
+      bounds.noTopLatitudeBound().noBottomLatitudeBound().noLongitudeBound();
+      return bounds;
+    }
     bounds.addPoint(center);
     circlePlane.recordBounds(planetModel, bounds);
     return bounds;

@@ -108,19 +108,11 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
       @Override
       protected Geo3dShape generateRandomShape(Point nearP) {
-        while (true) {
-          final int circleRadius = random().nextInt(179) + 1;//no 0-radius
-          final Point point = nearP;
-          try {
-            final GeoShape shape = new GeoCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
-                circleRadius * DEGREES_TO_RADIANS);
-            return new Geo3dShape(planetModel, shape, ctx);
-          } catch (IllegalArgumentException e) {
-            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
-            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
-            continue;
-          }
-        }
+        final int circleRadius = 180 - random().nextInt(180);//no 0-radius
+        final Point point = nearP;
+        final GeoShape shape = new GeoCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
+            circleRadius * DEGREES_TO_RADIANS);
+        return new Geo3dShape(planetModel, shape, ctx);
       }
 
       @Override
