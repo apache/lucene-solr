@@ -19,7 +19,7 @@ limitations under the License.
         <li ng-class="{odd:$odd}" ng-repeat="prop in props | orderObjectBy:'name'">
           <dl class="clearfix">
             <dt ng-bind-html="prop.name | unsafe"></dt>
-            <dd ng-class="{odd:$odd, multi:props.length&gt;1}" ng-repeat="value in prop.values">{{value}}</dd>
+            <dd ng-class="{odd:$odd, multi:props.length&gt;1}" ng-repeat="value in prop.values">{{value.value}}</dd>
           </dl>
         </li>
       </ul>

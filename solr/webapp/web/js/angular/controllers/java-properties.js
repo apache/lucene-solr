@@ -27,7 +27,12 @@ solrAdminApp.controller('JavaPropertiesController',
           var value = sysprops[key];
           var key = key.replace(/\./g, '.&#8203;');
           if (key.indexOf(".path")!=-1 || key.indexOf(".dirs")) {
-            props.push({name: key, values: value.split(sep)});
+            var values = [];
+            var parts = value.split(sep);
+            for (var i in parts) {
+              values.push({pos:i, value:parts[i]})
+            }
+            props.push({name: key, values: values});
           } else {
             props.push({name: key, values: [value]});
           }
