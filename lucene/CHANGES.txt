@@ -225,6 +225,10 @@ Optimizations
   with a filter of "baz" will internally leapfrog foo,bar,baz as one
   conjunction. (Ryan Ernst, Robert Muir, Adrien Grande)
 
+* LUCENE-6325: Reduce RAM usage of FieldInfos, and speed up lookup by
+  number, by using an array instead of TreeMap except in very sparse
+  cases (Robert Muir, Mike McCandless)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
