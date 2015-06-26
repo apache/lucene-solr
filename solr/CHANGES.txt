@@ -186,6 +186,9 @@ Bug Fixes
 * SOLR-7664: Throw correct exception (RemoteSolrException) on receiving a HTTP 413.
   (Ramkumar Aiyengar, Eirik Lygre)
 
+* SOLR-6686: facet.threads can return wrong results when using facet.prefix multiple
+  times on same field. (Michael Ryan, Tim Underwood via shalin)
+
 Optimizations
 ----------------------
 

@@ -107,7 +107,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   static void indexSimpleFacetCounts() {
-    add_doc("id", "42", 
+    add_doc("id", "42",
             "range_facet_f", "35.3",
             "range_facet_f1", "35.3",
             "trait_s", "Tool", "trait_s", "Obnoxious",
@@ -127,7 +127,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "range_facet_mv_f", "7.5",
             "range_facet_mv_f", "12.0"
     );
-    add_doc("id", "44", 
+    add_doc("id", "44",
             "range_facet_f", "15.97",
             "range_facet_f1", "15.97",
             "trait_s", "Tool",
@@ -137,7 +137,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "range_facet_mv_f", "5",
             "range_facet_mv_f", "74"
     );
-    add_doc("id", "45", 
+    add_doc("id", "45",
             "range_facet_f", "30.0",
             "range_facet_f1", "30.0",
             "trait_s", "Chauvinist",
@@ -148,7 +148,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "range_facet_mv_f", "32.77",
             "range_facet_mv_f", "0.123"
     );
-    add_doc("id", "46", 
+    add_doc("id", "46",
             "range_facet_f", "20.0",
             "range_facet_f1", "20.0",
             "trait_s", "Obnoxious",
@@ -159,14 +159,16 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "range_facet_mv_f", "7.3",
             "range_facet_mv_f", "0.123"
     );
-    add_doc("id", "47", 
-            "range_facet_f", "28.62", 
-            "range_facet_f1", "28.62", 
+    add_doc("id", "47",
+            "range_facet_f", "28.62",
+            "range_facet_f1", "28.62",
             "trait_s", "Pig",
             "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!",
             "zerolen_s","",
             "foo_s","A", "foo_s","B", "foo_s","C"
     );
+    add_doc("id", "101", "myfield_s", "foo");
+    add_doc("id", "102", "myfield_s", "bar");
   }
 
   static void indexSimpleGroupedFacetCounts() {
@@ -388,7 +390,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.facet", "true",
              "group.field", "hotel_s1",
              "facet", "true",
-             "facet.limit", facetLimit, 
+             "facet.limit", facetLimit,
              "facet.field", "airport_s1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
@@ -405,8 +407,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.facet", "true",
              "group.field", "hotel_s1",
              "facet", "true",
-             "facet.offset", "1", 
-             "facet.limit", facetLimit, 
+             "facet.offset", "1",
+             "facet.limit", facetLimit,
              "facet.field", "airport_s1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
@@ -423,7 +425,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.facet", "true",
              "group.field", "hotel_s1",
              "facet", "true",
-             "facet.limit", facetLimit, 
+             "facet.limit", facetLimit,
              "facet.field", "airport_s1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
@@ -441,7 +443,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.field", "hotel_s1",
              "facet", "true",
              "facet.field", "airport_s1",
-             "facet.limit", facetLimit, 
+             "facet.limit", facetLimit,
              "facet.prefix", "a"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
@@ -2882,6 +2884,19 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     
   }
 
+  public void testFacetPrefixWithFacetThreads() throws Exception  {
+    assertQ("Test facet.prefix with facet.thread",
+        req("q", "id:[101 TO 102]"
+            ,"facet","true"
+            ,"facet.field", "{!key=key1 facet.prefix=foo}myfield_s"
+            ,"facet.field", "{!key=key2 facet.prefix=bar}myfield_s"
+            ,"facet.threads", "1"
+        )
+        ,"*[count(//lst[@name='facet_fields']/lst[@name='key1']/int[@name='foo'])=1]"
+        ,"*[count(//lst[@name='facet_fields']/lst[@name='key2']/int[@name='bar'])=1]"
+    );
+
+  }
 
   private String getRandomQuery() {
     if (rarely()) {

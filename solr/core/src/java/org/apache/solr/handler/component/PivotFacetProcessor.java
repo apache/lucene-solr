@@ -76,13 +76,14 @@ public class PivotFacetProcessor extends SimpleFacets
 
     SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<>();
     for (String pivotList : pivots) {
+      final ParsedParams parsed;
+      
       try {
-        // NOTE: this sets localParams (SimpleFacets is stateful)
-        this.parseParams(FacetParams.FACET_PIVOT, pivotList);
+        parsed = this.parseParams(FacetParams.FACET_PIVOT, pivotList);
       } catch (SyntaxError e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
-      List<String> pivotFields = StrUtils.splitSmart(facetValue, ",", true);
+      List<String> pivotFields = StrUtils.splitSmart(parsed.facetValue, ",", true);
       if( pivotFields.size() < 1 ) {
         throw new SolrException( ErrorCode.BAD_REQUEST,
                                  "Pivot Facet needs at least one field name: " + pivotList);
@@ -101,11 +102,11 @@ public class PivotFacetProcessor extends SimpleFacets
       String refineKey = null; // no local => no refinement
       List<StatsField> statsFields = Collections.emptyList(); // no local => no stats
       
-      if (null != localParams) {
+      if (null != parsed.localParams) {
         // we might be refining..
-        refineKey = localParams.get(PivotFacet.REFINE_PARAM);
+        refineKey = parsed.localParams.get(PivotFacet.REFINE_PARAM);
         
-        String statsLocalParam = localParams.get(StatsParams.STATS);
+        String statsLocalParam = parsed.localParams.get(StatsParams.STATS);
         if (null != refineKey
             && null != statsLocalParam
             && null == statsInfo) {
@@ -123,10 +124,10 @@ public class PivotFacetProcessor extends SimpleFacets
           = params.getParams(PivotFacet.REFINE_PARAM + refineKey);
 
         for(String refinements : refinementValuesByField){
-          pivotResponse.addAll(processSingle(pivotFields, refinements, statsFields));
+          pivotResponse.addAll(processSingle(pivotFields, refinements, statsFields, parsed));
         }
       } else{
-        pivotResponse.addAll(processSingle(pivotFields, null, statsFields));
+        pivotResponse.addAll(processSingle(pivotFields, null, statsFields, parsed));
       }
     }
     return pivotResponse;
@@ -141,7 +142,8 @@ public class PivotFacetProcessor extends SimpleFacets
   private SimpleOrderedMap<List<NamedList<Object>>> processSingle
     (List<String> pivotFields,
      String refinements,
-     List<StatsField> statsFields) throws IOException {
+     List<StatsField> statsFields,
+     final ParsedParams parsed) throws IOException {
 
     SolrIndexSearcher searcher = rb.req.getSearcher();
     SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<>();
@@ -170,18 +172,18 @@ public class PivotFacetProcessor extends SimpleFacets
 
       facetCounts = new NamedList<>();
       facetCounts.add(firstFieldsValues,
-                      getSubsetSize(this.docs, sfield, firstFieldsValues));
+                      getSubsetSize(parsed.docs, sfield, firstFieldsValues));
     } else {
       // no refinements needed
-      facetCounts = this.getTermCountsForPivots(field, this.docs);
+      facetCounts = this.getTermCountsForPivots(field, parsed);
     }
     
     if(pivotFields.size() > 1) {
       String subField = pivotFields.get(1);
-      pivotResponse.add(key,
-                        doPivots(facetCounts, field, subField, fnames, vnames, this.docs, statsFields));
+      pivotResponse.add(parsed.key,
+                        doPivots(facetCounts, field, subField, fnames, vnames, parsed, statsFields));
     } else {
-      pivotResponse.add(key, doPivots(facetCounts, field, null, fnames, vnames, this.docs, statsFields));
+      pivotResponse.add(parsed.key, doPivots(facetCounts, field, null, fnames, vnames, parsed, statsFields));
     }
     return pivotResponse;
   }
@@ -223,7 +225,7 @@ public class PivotFacetProcessor extends SimpleFacets
   protected List<NamedList<Object>> doPivots(NamedList<Integer> superFacets,
                                              String field, String subField, 
                                              Deque<String> fnames, Deque<String> vnames, 
-                                             DocSet docs, List<StatsField> statsFields) 
+                                             ParsedParams parsed, List<StatsField> statsFields) 
     throws IOException {
 
     boolean isShard = rb.req.getParams().getBool(ShardParams.IS_SHARD, false);
@@ -255,7 +257,7 @@ public class PivotFacetProcessor extends SimpleFacets
         }
         pivot.add( "count", pivotCount );
 
-        DocSet subset = getSubset(docs, sfield, fieldValue);
+        final DocSet subset = getSubset(parsed.docs, sfield, fieldValue);
         
         if( subField != null )  {
           NamedList<Integer> facetCounts;
@@ -266,11 +268,11 @@ public class PivotFacetProcessor extends SimpleFacets
                                                searcher.getSchema().getField(subField),
                                                val));
           } else {
-            facetCounts = this.getTermCountsForPivots(subField, subset);
+            facetCounts = this.getTermCountsForPivots(subField, parsed.withDocs(subset));
           }
 
           if (facetCounts.size() >= 1) {
-            pivot.add( "pivot", doPivots( facetCounts, subField, nextField, fnames, vnames, subset, statsFields ) );
+            pivot.add( "pivot", doPivots( facetCounts, subField, nextField, fnames, vnames, parsed.withDocs(subset), statsFields ) );
           }
         }
         if ((isShard || 0 < pivotCount) && ! statsFields.isEmpty()) {
