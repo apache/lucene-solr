@@ -30,7 +30,7 @@ limitations under the License.
          ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
       <button id="optimize" class="requires-core" ng-click="optimizeCore()" ng-show="core.hasDeletions"><span>Optimize</span></button>
 
-      <div class="action add" data-rel="add" ng-show="showAdd">
+      <div class="action add" data-rel="add" ng-show="showAdd" style="display:block;left:0px;">
 
         <form>
 
@@ -41,7 +41,7 @@ limitations under the License.
           <input type="text" name="instanceDir" id="add_instanceDir" ng-model="newCore.instanceDir"></p>
 
           <p class="clearfix"><label for="add_dataDir">dataDir:</label>
-          <input type="text" name="dataDir" id="dataDir" ng-model="newCore.dataDir"></p>
+          <input type="text" name="dataDir" id="add_dataDir" ng-model="newCore.dataDir"></p>
 
           <p class="clearfix"><label for="add_config">config:</label>
           <input type="text" name="config" id="add_config" ng-model="newCore.config"></p>
@@ -55,7 +55,7 @@ limitations under the License.
             <input type="text" name="collection" id="add_collection" ng-model="newCore.collection"></p>
 
             <p class="clearfix"><label for="add_shard">shard:</label>
-            <input type="text" name="shard" id="shard" ng-model="newCore.shard"></p>
+            <input type="text" name="add_shard" id="add_shard" ng-model="newCore.shard"></p>
 
           </div>
 
