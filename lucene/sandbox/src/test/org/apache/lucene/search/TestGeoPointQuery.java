@@ -257,6 +257,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
     Directory dir;
     if (lats.length > 100000) {
       dir = newFSDirectory(createTempDir("TestGeoPointQuery"));
+      iwc.setCodec(TestUtil.getDefaultCodec());
     } else {
       dir = newDirectory();
     }
