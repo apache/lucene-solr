@@ -1655,7 +1655,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     private int upto;
     private int freq;
 
-    public LowFreqDocsEnum(int posMult) {System.out.println("NEW");
+    public LowFreqDocsEnum(int posMult) {
       this.posMult = posMult;
       // if (DEBUG) {
       //   System.out.println("LowFreqDE: posMult=" + posMult);
