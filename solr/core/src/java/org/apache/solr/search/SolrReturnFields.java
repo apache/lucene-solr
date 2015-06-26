@@ -265,7 +265,7 @@ public class SolrReturnFields extends ReturnFields {
             DocTransformer t = factory.create(disp, augmenterParams, req);
             if(t!=null) {
               if(!_wantsAllFields) {
-                Set<String> extra = t.getExtraRequestFields();
+                String[] extra = t.getExtraRequestFields();
                 if(extra!=null) {
                   for(String f : extra) {
                     fields.add(f); // also request this field from IndexSearcher

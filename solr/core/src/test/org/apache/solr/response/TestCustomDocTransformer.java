@@ -18,11 +18,7 @@ package org.apache.solr.response;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
@@ -78,10 +74,10 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
   public static class CustomTransformerFactory extends TransformerFactory {
     @Override
     public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
-      Set<String> extra = null;
+      String[] extra = null;
       String ext = params.get("extra");
       if(ext!=null) {
-        extra = new HashSet<>(Arrays.asList(Strings.split(ext,',')));
+        extra = Strings.split(ext, ',');
       }
       return new CustomTransformer(field, extra);
     }
@@ -89,10 +85,10 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
   
   public static class CustomTransformer extends DocTransformer {
     final String name;
-    final Set<String> extra;
+    final String[] extra;
     final StringBuilder str = new StringBuilder();
     
-    public CustomTransformer(String name, Set<String> extra) {
+    public CustomTransformer(String name, String[] extra) {
       this.name = name;
       this.extra = extra;
     }
@@ -103,7 +99,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public Set<String> getExtraRequestFields() {
+    public String[] getExtraRequestFields() {
       return extra;
     }
 
