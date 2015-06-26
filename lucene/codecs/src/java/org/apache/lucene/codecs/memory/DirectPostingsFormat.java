@@ -655,9 +655,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsEnum iterator() {
-      DirectTermsEnum termsEnum = new DirectTermsEnum();
-      termsEnum.reset();
-      return termsEnum;
+      return new DirectTermsEnum();
     }
 
     @Override
@@ -710,8 +708,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
       private final BytesRef scratch = new BytesRef();
       private int termOrd;
 
-      boolean canReuse(TermAndSkip[] other) {
-        return DirectField.this.terms == other;
+      private DirectTermsEnum() {
+        termOrd = -1;
       }
 
       private BytesRef setTerm() {
@@ -719,10 +717,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
         scratch.offset = termOffsets[termOrd];
         scratch.length = termOffsets[termOrd+1] - termOffsets[termOrd];
         return scratch;
-      }
-
-      public void reset() {
-        termOrd = -1;
       }
 
       @Override
@@ -905,8 +899,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
               LowFreqDocsEnum docsEnum;
               if (reuse instanceof LowFreqDocsEnum) {
                 docsEnum = (LowFreqDocsEnum) reuse;
+                if (!docsEnum.canReuse(posLen)) {
+                  docsEnum = new LowFreqDocsEnum(posLen);
+                }
               } else {
-                docsEnum = new LowFreqDocsEnum( posLen);
+                docsEnum = new LowFreqDocsEnum(posLen);
               }
 
               return docsEnum.reset(postings);
@@ -1658,11 +1655,15 @@ public final class DirectPostingsFormat extends PostingsFormat {
     private int upto;
     private int freq;
 
-    public LowFreqDocsEnum(int posMult) {
+    public LowFreqDocsEnum(int posMult) {System.out.println("NEW");
       this.posMult = posMult;
       // if (DEBUG) {
       //   System.out.println("LowFreqDE: posMult=" + posMult);
       // }
+    }
+
+    public boolean canReuse(int posMult) {
+      return this.posMult == posMult;
     }
 
     public PostingsEnum reset(int[] postings) {
