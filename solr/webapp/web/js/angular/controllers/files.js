@@ -16,7 +16,7 @@
 */
 
 var contentTypeMap = { xml : 'text/xml', html : 'text/html', js : 'text/javascript', json : 'application/json', 'css' : 'text/css' };
-var languages = {js: "javascript", xml:"xml", xsl:"xml", html: "xml", json: "text", css: "css"};
+var languages = {js: "javascript", xml:"xml", xsl:"xml", vm: "xml", html: "xml", json: "text", css: "css"};
 
 solrAdminApp.controller('FilesController',
     function($scope, $rootScope, $routeParams, $location, Files) {
@@ -30,8 +30,14 @@ solrAdminApp.controller('FilesController',
         $scope.refresh = function () {
 
             var process = function (path, tree) {
+                var params = {core: $routeParams.core};
+                if (path.slice(-1) == '/') {
+                    params.file = path.slice(0, -1);
+                } else if (path!='') {
+                    params.file = path;
+                }
 
-                Files.list({core: $routeParams.core, file: path}, function (data) {
+                Files.list(params, function (data) {
                     for (var file in data.files) {
                         var filedata = data.files[file];
                         var state = undefined;
@@ -68,7 +74,11 @@ solrAdminApp.controller('FilesController',
                 Files.get({core: $routeParams.core, file: $scope.file, contentType: contentType}, function(data) {
                     $scope.content = data.data;
                     $scope.url = $scope.baseurl + data.config.url + "?" + $.param(data.config.params);
-                    $scope.lang = languages[extension] || "text";
+                    if (contentType.indexOf("text/plain") && data.data.indexOf("<?xml") || data.data.indexOf("<!--")) {
+                        $scope.lang = "xml";
+                    } else {
+                        $scope.lang = languages[extension] || "text";
+                    }
                 });
             }
         };
