@@ -200,7 +200,7 @@ public class GermanStemmer
           {
             buffer.setCharAt( c, '$' );
             buffer.delete( c + 1, c + 3 );
-            substCount =+ 2;
+            substCount += 2;
           }
           else if ( buffer.charAt( c ) == 'c' && buffer.charAt( c + 1 ) == 'h' ) {
             buffer.setCharAt( c, '§' );
