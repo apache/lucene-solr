@@ -173,12 +173,13 @@ public final class SegmentInfo {
   /** Used for debugging.  Format may suddenly change.
    *
    *  <p>Current format looks like
-   *  <code>_a(3.1):c45/4</code>, which means the segment's
-   *  name is <code>_a</code>; it was created with Lucene 3.1 (or
+   *  <code>_a(3.1):c45/4:[sorter=&lt;long: "timestamp"&gt;!]</code>, which means
+   *  the segment's name is <code>_a</code>; it was created with Lucene 3.1 (or
    *  '?' if it's unknown); it's using compound file
    *  format (would be <code>C</code> if not compound); it
    *  has 45 documents; it has 4 deletions (this part is
-   *  left off when there are no deletions).</p>
+   *  left off when there are no deletions); it is sorted by the timestamp field
+   *  in descending order (this part is omitted for unsorted segments).</p>
    */
   public String toString(int delCount) {
     StringBuilder s = new StringBuilder();
@@ -190,6 +191,16 @@ public final class SegmentInfo {
 
     if (delCount != 0) {
       s.append('/').append(delCount);
+    }
+
+    final String sorter_key = "sorter"; // SortingMergePolicy.SORTER_ID_PROP; // TODO: use this once we can import SortingMergePolicy (currently located in 'misc' instead of 'core')
+    final String sorter_val = diagnostics.get(sorter_key);
+    if (sorter_val != null) {
+      s.append(":[");
+      s.append(sorter_key);
+      s.append('=');
+      s.append(sorter_val);
+      s.append(']');
     }
 
     // TODO: we could append toString of attributes() here?

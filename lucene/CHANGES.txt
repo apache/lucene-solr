@@ -101,6 +101,10 @@ New Features
   in GeoPoint, (4) add thread-safety where missing -- Geo3dShape. (Karl Wright,
   David Smiley)
 
+* LUCENE-6606: SegmentInfo.toString now confesses how the documents
+  were sorted, when SortingMergePolicy was used (Christine Poerschke
+  via Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
