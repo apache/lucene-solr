@@ -38,6 +38,9 @@ grant {
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
+  
+  // needed by SSD detection tests in TestIOUtils (creates symlinks)
+  permission java.nio.file.LinkPermission "symbolic";
 
   // needed by gson serialization of junit4 runner: TODO clean that up
   permission java.lang.RuntimePermission "accessDeclaredMembers";

@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -501,23 +502,28 @@ public final class IOUtils {
     // /devices/XXX -> sda0
     devName = path.getRoot().resolve(devName).toRealPath().getFileName().toString();
   
-    // now read:
-    Path sysinfo = path.getRoot().resolve("sys/block");
-    Path devinfo = sysinfo.resolve(devName);
-    
-    // tear away partition numbers until we find it.
-    while (!Files.exists(devinfo)) {
-      if (!devName.isEmpty() && Character.isDigit(devName.charAt(devName.length()-1))) {
-        devName = devName.substring(0, devName.length()-1);
-      } else {
-        break; // give up
+    // now try to find the longest matching device folder in /sys/block
+    // (that starts with our dev name):
+    Path sysinfo = path.getRoot().resolve("sys").resolve("block");
+    Path devsysinfo = null;
+    int matchlen = 0;
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(sysinfo)) {
+      for (Path device : stream) {
+        String name = device.getFileName().toString();
+        if (name.length() > matchlen && devName.startsWith(name)) {
+          devsysinfo = device;
+          matchlen = name.length();
+        }
       }
-      devinfo = sysinfo.resolve(devName);
+    }
+    
+    if (devsysinfo == null) {
+      return true; // give up
     }
     
     // read first byte from rotational, it's a 1 if it spins.
-    Path info = devinfo.resolve("queue/rotational");
-    try (InputStream stream = Files.newInputStream(info)) {
+    Path rotational = devsysinfo.resolve("queue").resolve("rotational");
+    try (InputStream stream = Files.newInputStream(rotational)) {
       return stream.read() == '1'; 
     }
   }
