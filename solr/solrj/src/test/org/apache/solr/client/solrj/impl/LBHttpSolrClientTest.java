@@ -1,18 +1,3 @@
-/**
- * 
- */
-package org.apache.solr.client.solrj.impl;
-
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.Test;
-
-import java.io.IOException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,6 +14,18 @@ import static org.junit.Assert.assertNull;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.client.solrj.impl;
+
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Test;
+
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Test the LBHttpSolrClient.
