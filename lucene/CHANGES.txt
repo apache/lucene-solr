@@ -179,6 +179,9 @@ Bug fixes
 * LUCENE-6608: Fix potential resource leak in BigramDictionary.
   (Rishabh Patel via Uwe Schindler)
 
+* LUCENE-6614: Improve partition detection in IOUtils#spins() so it
+  works with NVMe drives.  (Uwe Schindler, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

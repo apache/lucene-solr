@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.FilterFileSystemProvider;
@@ -353,6 +355,34 @@ public class TestIOUtils extends LuceneTestCase {
     assertFalse(IOUtils.spinsLinux(mockPath));
   }
   
+  public void testNVME() throws Exception {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+    Path dir = createTempDir();
+    dir = FilterPath.unwrap(dir).toRealPath();
+    
+    // fake ssd
+    FileStore root = new MockFileStore(dir.toString() + " (/dev/nvme0n1p1)", "btrfs", "/dev/nvme0n1p1");
+    // make a fake /dev/nvme0n1p1 for it
+    Path devdir = dir.resolve("dev");
+    Files.createDirectories(devdir);
+    Files.createFile(devdir.resolve("nvme0n1p1"));
+    // make a fake /sys/block/nvme0n1/queue/rotational file for it
+    Path sysdir = dir.resolve("sys").resolve("block").resolve("nvme0n1").resolve("queue");
+    Files.createDirectories(sysdir);
+    try (OutputStream o = Files.newOutputStream(sysdir.resolve("rotational"))) {
+      o.write("0\n".getBytes(StandardCharsets.US_ASCII));
+    }
+    // As test for the longest path match, add some other devices (that have no queue/rotational), too:
+    Files.createFile(dir.resolve("sys").resolve("block").resolve("nvme0"));
+    Files.createFile(dir.resolve("sys").resolve("block").resolve("dummy"));
+    Files.createFile(dir.resolve("sys").resolve("block").resolve("nvm"));
+    Map<String,FileStore> mappings = Collections.singletonMap(dir.toString(), root);
+    FileSystem mockLinux = new MockLinuxFileSystemProvider(dir.getFileSystem(), mappings, dir).getFileSystem(null);
+    
+    Path mockPath = mockLinux.getPath(dir.toString());
+    assertFalse(IOUtils.spinsLinux(mockPath));
+  }
+  
   public void testRotatingPlatters() throws Exception {
     assumeFalse("windows is not supported", Constants.WINDOWS);
     Path dir = createTempDir();
@@ -390,6 +420,41 @@ public class TestIOUtils extends LuceneTestCase {
     Files.createFile(devdir.resolve("zzz12"));
     // make a fake /sys/block/zzz/queue/rotational file for it
     Path sysdir = dir.resolve("sys").resolve("block").resolve("zzz").resolve("queue");
+    Files.createDirectories(sysdir);
+    try (OutputStream o = Files.newOutputStream(sysdir.resolve("rotational"))) {
+      o.write("0\n".getBytes(StandardCharsets.US_ASCII));
+    }
+    Map<String,FileStore> mappings = Collections.singletonMap(dir.toString(), root);
+    FileSystem mockLinux = new MockLinuxFileSystemProvider(dir.getFileSystem(), mappings, dir).getFileSystem(null);
+    
+    Path mockPath = mockLinux.getPath(dir.toString());
+    assertFalse(IOUtils.spinsLinux(mockPath));
+  }
+  
+  public void testSymlinkSSD() throws Exception {
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+    Path dir = createTempDir();
+    dir = FilterPath.unwrap(dir).toRealPath();
+    
+    // fake SSD with a symlink mount (Ubuntu-like):
+    Random rnd = random();
+    String partitionUUID = new UUID(rnd.nextLong(), rnd.nextLong()).toString();
+    FileStore root = new MockFileStore(dir.toString() + " (/dev/disk/by-uuid/"+partitionUUID+")", "btrfs", "/dev/disk/by-uuid/"+partitionUUID);
+    // make a fake /dev/sda1 for it
+    Path devdir = dir.resolve("dev");
+    Files.createDirectories(devdir);
+    Path deviceFile = devdir.resolve("sda1");
+    Files.createFile(deviceFile);
+    // create a symlink to the above device file
+    Path symlinkdir = devdir.resolve("disk").resolve("by-uuid");
+    Files.createDirectories(symlinkdir);
+    try {
+      Files.createSymbolicLink(symlinkdir.resolve(partitionUUID), deviceFile);
+    } catch (UnsupportedOperationException | IOException e) {
+      assumeNoException("test requires filesystem that supports symbolic links", e);
+    }
+    // make a fake /sys/block/sda/queue/rotational file for it
+    Path sysdir = dir.resolve("sys").resolve("block").resolve("sda").resolve("queue");
     Files.createDirectories(sysdir);
     try (OutputStream o = Files.newOutputStream(sysdir.resolve("rotational"))) {
       o.write("0\n".getBytes(StandardCharsets.US_ASCII));
