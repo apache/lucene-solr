@@ -423,7 +423,7 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
 
     ModifiableSolrParams qParams = new ModifiableSolrParams();
     qParams.add("preferLocalShards", Boolean.toString(preferLocalShards));
-    qParams.add("shards.info", "true");
+    qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);
 
     // CloudSolrClient sends the request to some node.
@@ -432,8 +432,8 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     // local shards only
     QueryResponse qResponse = cloudClient.query (qRequest);
 
-    Object shardsInfo = qResponse.getResponse().get("shards.info");
-    assertNotNull("Unable to obtain shards.info", shardsInfo);
+    Object shardsInfo = qResponse.getResponse().get(ShardParams.SHARDS_INFO);
+    assertNotNull("Unable to obtain "+ShardParams.SHARDS_INFO, shardsInfo);
 
     // Iterate over shards-info and check what cores responded
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
@@ -441,9 +441,9 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     List<String> shardAddresses = new ArrayList<String>();
     while (itr.hasNext()) {
       Map.Entry<String, ?> e = itr.next();
-      assertTrue("Did not find map-type value in shards.info", e.getValue() instanceof Map);
+      assertTrue("Did not find map-type value in "+ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
       String shardAddress = (String)((Map)e.getValue()).get("shardAddress");
-      assertNotNull("shards.info did not return 'shardAddress' parameter", shardAddress);
+      assertNotNull(ShardParams.SHARDS_INFO+" did not return 'shardAddress' parameter", shardAddress);
       shardAddresses.add(shardAddress);
     }
     log.info("Shards giving the response: " + Arrays.toString(shardAddresses.toArray()));
