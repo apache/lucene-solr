@@ -82,9 +82,22 @@ class ReadersAndUpdates {
   private final Map<String,DocValuesFieldUpdates> mergingDVUpdates = new HashMap<>();
   
   public ReadersAndUpdates(IndexWriter writer, SegmentCommitInfo info) {
-    this.info = info;
     this.writer = writer;
+    this.info = info;
     liveDocsShared = true;
+  }
+
+  /** Init from a previously opened SegmentReader.
+   *
+   * <p>NOTE: steals incoming ref from reader. */
+  public ReadersAndUpdates(IndexWriter writer, SegmentReader reader) {
+    this.writer = writer;
+    this.reader = reader;
+    info = reader.getSegmentInfo();
+    liveDocs = reader.getLiveDocs();
+    liveDocsShared = true;
+    pendingDeleteCount = reader.numDeletedDocs() - info.getDelCount();
+    assert pendingDeleteCount >= 0: "got " + pendingDeleteCount + " reader.numDeletedDocs()=" + reader.numDeletedDocs() + " info.getDelCount()=" + info.getDelCount() + " maxDoc=" + reader.maxDoc() + " numDocs=" + reader.numDocs();
   }
 
   public void incRef() {

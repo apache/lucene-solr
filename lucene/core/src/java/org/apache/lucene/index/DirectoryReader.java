@@ -228,7 +228,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
     SegmentInfos latest = SegmentInfos.readLatestCommit(dir);
     final long currentGen = latest.getGeneration();
 
-    commits.add(new StandardDirectoryReader.ReaderCommit(latest, dir));
+    commits.add(new StandardDirectoryReader.ReaderCommit(null, latest, dir));
 
     for(int i=0;i<files.length;i++) {
 
@@ -253,8 +253,9 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
           // as if the file does not exist
         }
 
-        if (sis != null)
-          commits.add(new StandardDirectoryReader.ReaderCommit(sis, dir));
+        if (sis != null) {
+          commits.add(new StandardDirectoryReader.ReaderCommit(null, sis, dir));
+        }
       }
     }
 

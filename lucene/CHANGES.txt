@@ -105,6 +105,10 @@ New Features
   were sorted, when SortingMergePolicy was used (Christine Poerschke
   via Mike McCandless)
 
+* LUCENE-6524: IndexWriter can now be initialized from an already open
+  near-real-time or non-NRT reader.  (Boaz Leskes, Robert Muir, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

@@ -755,7 +755,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     infoStream = config.getInfoStream();
-    
+
     // obtain the write.lock. If the user configured a timeout,
     // we wrap with a sleeper and this might take some time.
     writeLock = d.obtainLock(WRITE_LOCK_NAME);
@@ -792,8 +792,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // IndexFormatTooOldException.
 
       boolean initialIndexExists = true;
+      boolean fromReader = false;
+
+      // Set up our initial SegmentInfos:
+      IndexCommit commit = config.getIndexCommit();
+
+      // Set up our initial SegmentInfos:
+      StandardDirectoryReader reader;
+      if (commit == null) {
+        reader = null;
+      } else {
+        reader = commit.getReader();
+      }
 
       if (create) {
+
+        if (config.getIndexCommit() != null) {
+          // We cannot both open from a commit point and create:
+          if (mode == OpenMode.CREATE) {
+            throw new IllegalArgumentException("cannot use IndexWriterConfig.setIndexCommit() with OpenMode.CREATE");
+          } else {
+            throw new IllegalArgumentException("cannot use IndexWriterConfig.setIndexCommit() when index has no commit");
+          }
+        }
+
         // Try to read first.  This is to allow create
         // against an index that's currently open for
         // searching.  In this case we write the next
@@ -810,10 +832,58 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         
         segmentInfos = sis;
 
+        rollbackSegments = segmentInfos.createBackupSegmentInfos();
+
         // Record that we have a change (zero out all
         // segments) pending:
         changed();
+
+      } else if (reader != null) {
+        // Init from an existing already opened NRT or non-NRT reader:
+      
+        if (reader.directory() != commit.getDirectory()) {
+          throw new IllegalArgumentException("IndexCommit's reader must have the same directory as the IndexCommit");
+        }
+
+        if (reader.directory() != directoryOrig) {
+          throw new IllegalArgumentException("IndexCommit's reader must have the same directory passed to IndexWriter");
+        }
+
+        if (reader.segmentInfos.getLastGeneration() == 0) {  
+          // TODO: maybe we could allow this?  It's tricky...
+          throw new IllegalArgumentException("index must already have an initial commit to open from reader");
+        }
+
+        // Must clone because we don't want the incoming NRT reader to "see" any changes this writer now makes:
+        segmentInfos = reader.segmentInfos.clone();
+
+        SegmentInfos lastCommit;
+        try {
+          lastCommit = SegmentInfos.readCommit(directoryOrig, segmentInfos.getSegmentsFileName());
+        } catch (IOException ioe) {
+          throw new IllegalArgumentException("the provided reader is stale: its prior commit file \"" + segmentInfos.getSegmentsFileName() + "\" is missing from index");
+        }
+
+        if (reader.writer != null) {
+
+          // The old writer better be closed (we have the write lock now!):
+          assert reader.writer.closed;
+
+          // In case the old writer wrote further segments (which we are now dropping),
+          // update SIS metadata so we remain write-once:
+          segmentInfos.updateGenerationVersionAndCounter(reader.writer.segmentInfos);
+          lastCommit.updateGenerationVersionAndCounter(reader.writer.segmentInfos);
+        }
+
+        rollbackSegments = lastCommit.createBackupSegmentInfos();
+
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "init from reader " + reader);
+          messageState();
+        }
       } else {
+        // Init from either the latest commit point, or an explicit prior commit point:
+
         String[] files = directory.listAll();
         String lastSegmentsFile = SegmentInfos.getLastCommitSegmentsFileName(files);
         if (lastSegmentsFile == null) {
@@ -824,29 +894,34 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // retrying it does is not necessary here (we hold the write lock):
         segmentInfos = SegmentInfos.readCommit(directoryOrig, lastSegmentsFile);
 
-        IndexCommit commit = config.getIndexCommit();
         if (commit != null) {
           // Swap out all segments, but, keep metadata in
           // SegmentInfos, like version & generation, to
           // preserve write-once.  This is important if
           // readers are open against the future commit
           // points.
-          if (commit.getDirectory() != directoryOrig)
+          if (commit.getDirectory() != directoryOrig) {
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory, expected=" + directoryOrig + ", got=" + commit.getDirectory());
+          }
+          
           SegmentInfos oldInfos = SegmentInfos.readCommit(directoryOrig, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changed();
+
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
           }
         }
+
+        rollbackSegments = segmentInfos.createBackupSegmentInfos();
       }
 
-      rollbackSegments = segmentInfos.createBackupSegmentInfos();
       pendingNumDocs.set(segmentInfos.totalMaxDoc());
 
       // start with previous field numbers, but new FieldInfos
+      // NOTE: this is correct even for an NRT reader because we'll pull FieldInfos even for the un-committed segments:
       globalFieldNumberMap = getFieldNumberMap();
+
       config.getFlushPolicy().init(config);
       docWriter = new DocumentsWriter(this, config, directoryOrig, directory);
       eventQueue = docWriter.eventQueue();
@@ -857,7 +932,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         deleter = new IndexFileDeleter(directoryOrig, directory,
                                        config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this,
-                                       initialIndexExists);
+                                       initialIndexExists, reader != null);
+
+        // We incRef all files when we return an NRT reader from IW, so all files must exist even in the NRT case:
+        assert create || filesExist(segmentInfos);
       }
 
       if (deleter.startingCommitDeleted) {
@@ -865,6 +943,25 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // We have to mark ourself as changed so that if we
         // are closed w/o any further changes we write a new
         // segments_N file.
+        changed();
+      }
+
+      if (reader != null) {
+        // Pre-enroll all segment readers into the reader pool; this is necessary so
+        // any in-memory NRT live docs are correctly carried over, and so NRT readers
+        // pulled from this IW share the same segment reader:
+        List<LeafReaderContext> leaves = reader.leaves();
+        assert segmentInfos.size() == leaves.size();
+
+        for (int i=0;i<leaves.size();i++) {
+          LeafReaderContext leaf = leaves.get(i);
+          SegmentReader segReader = (SegmentReader) leaf.reader();
+          SegmentReader newReader = new SegmentReader(segmentInfos.info(i), segReader, segReader.getLiveDocs(), segReader.numDocs());
+          readerPool.readerMap.put(newReader.getSegmentInfo(), new ReadersAndUpdates(this, newReader));
+        }
+
+        // We always assume we are carrying over incoming changes when opening from reader:
+        segmentInfos.changed();
         changed();
       }
 
@@ -885,7 +982,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
   }
-  
+
   // reads latest field infos for the commit
   // this is used on IW init and addIndexes(Dir) to create/update the global field map.
   // TODO: fix tests abusing this method!
