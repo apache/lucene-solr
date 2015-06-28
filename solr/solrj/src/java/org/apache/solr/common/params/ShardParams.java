@@ -19,6 +19,10 @@ package org.apache.solr.common.params;
 
 /**
  * Parameters used for distributed search.
+ * 
+ * When adding a new parameter here, please also add the corresponding
+ * one-line test case in the ShardParamsTest class.
+ * 
  */
 public interface ShardParams {
   /** the shards to use (distributed configuration) */
