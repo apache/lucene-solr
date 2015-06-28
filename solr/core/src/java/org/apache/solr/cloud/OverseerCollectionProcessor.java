@@ -121,6 +121,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
@@ -136,8 +137,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   public static final String ROUTER = "router";
 
   public static final String SHARDS_PROP = "shards";
-
-  public static final String ASYNC = "async";
 
   public static final String REQUESTID = "requestid";
 
@@ -327,7 +326,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
             String collectionName = message.containsKey(COLLECTION_PROP) ?
                 message.getStr(COLLECTION_PROP) : message.getStr(NAME);
-            String asyncId = message.getStr(ASYNC);
+            final String asyncId = message.getStr(ASYNC);
             if (hasLeftOverItems) {
               if (head.getId().equals(oldestItemInWorkQueue))
                 hasLeftOverItems = false;
@@ -1494,7 +1493,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       // the only side effect of this is that the sub shard may end up having more replicas than we want
       collectShardResponses(results, false, null, shardHandler);
       
-      String asyncId = message.getStr(ASYNC);
+      final String asyncId = message.getStr(ASYNC);
       HashMap<String,String> requestMap = new HashMap<String,String>();
       
       for (int i = 0; i < subRanges.size(); i++) {
@@ -2260,8 +2259,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       int repFactor = message.getInt(REPLICATION_FACTOR, 1);
 
       ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
-      String async = null;
-      async = message.getStr("async");
+      final String async = message.getStr(ASYNC);
 
       Integer numSlices = message.getInt(NUM_SLICES, null);
       String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
@@ -2490,7 +2488,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
     
-    String asyncId = message.getStr("async");
+    final String asyncId = message.getStr(ASYNC);
     
     DocCollection coll = clusterState.getCollection(collection);
     if (coll == null) {
@@ -2845,7 +2843,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       final TimerContext timerContext = stats.time("collection_" + operation);
 
       boolean success = false;
-      String asyncId = message.getStr(ASYNC);
+      final String asyncId = message.getStr(ASYNC);
       String collectionName = message.containsKey(COLLECTION_PROP) ?
           message.getStr(COLLECTION_PROP) : message.getStr(NAME);
 

@@ -21,6 +21,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -62,7 +63,7 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4{
             CoreAdminParams.CoreAdminAction.CREATE.toString(),
             CoreAdminParams.INSTANCE_DIR, instPropFile.getAbsolutePath(),
             CoreAdminParams.NAME, "dummycore",
-            "async", "42"),
+            CommonAdminParams.ASYNC, "42"),
             resp);
     assertNull("Exception on create", resp.getException());
 

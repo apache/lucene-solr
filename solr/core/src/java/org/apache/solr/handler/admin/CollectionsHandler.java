@@ -70,7 +70,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.ASYNC;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
@@ -94,6 +93,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
@@ -252,7 +252,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
   private boolean overseerCollectionQueueContains(String asyncId) throws KeeperException, InterruptedException {
     DistributedQueue collectionQueue = coreContainer.getZkController().getOverseerCollectionQueue();
-    return collectionQueue.containsTaskWithRequestId(asyncId);
+    return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 
   private static Map<String, Object> copyPropertiesWithPrefix(SolrParams params, Map<String, Object> props, String prefix) {

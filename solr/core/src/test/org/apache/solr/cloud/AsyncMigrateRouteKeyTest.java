@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
@@ -68,7 +69,7 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
     params.set("target.collection", targetCollection);
     params.set("split.key", splitKey);
     params.set("forward.timeout", 45);
-    params.set("async", asyncId);
+    params.set(CommonAdminParams.ASYNC, asyncId);
 
     invoke(params);
 

@@ -257,6 +257,9 @@ Other Changes
 * SOLR-7485: Replace shards.info occurrences with ShardParams.SHARDS_INFO
   (Christine Poerschke via Ramkumar Aiyengar)
 
+* SOLR-7710: Replace async occurrences with CommonAdminParams.ASYNC
+  (Christine Poerschke, Ramkumar Aiyengar)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

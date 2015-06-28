@@ -114,7 +114,7 @@ public class DistributedQueue {
   /**
    * Returns true if the queue contains a task with the specified async id.
    */
-  public boolean containsTaskWithRequestId(String requestId)
+  public boolean containsTaskWithRequestId(String requestIdKey, String requestId)
       throws KeeperException, InterruptedException {
 
     List<String> childNames = zookeeper.getChildren(dir, null, true);
@@ -125,9 +125,9 @@ public class DistributedQueue {
           byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
-            if (message.containsKey(OverseerCollectionProcessor.ASYNC)) {
-              LOG.debug(">>>> {}", message.get(OverseerCollectionProcessor.ASYNC));
-              if(message.get(OverseerCollectionProcessor.ASYNC).equals(requestId)) return true;
+            if (message.containsKey(requestIdKey)) {
+              LOG.debug(">>>> {}", message.get(requestIdKey));
+              if(message.get(requestIdKey).equals(requestId)) return true;
             }
           }
         } catch (KeeperException.NoNodeException e) {
