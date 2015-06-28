@@ -54,6 +54,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -165,7 +166,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
               "Core container instance missing");
     }
     //boolean doPersist = false;
-    String taskId = req.getParams().get("async");
+    final String taskId = req.getParams().get(CommonAdminParams.ASYNC);
     TaskObject taskObject = new TaskObject(taskId);
 
     if(taskId != null) {

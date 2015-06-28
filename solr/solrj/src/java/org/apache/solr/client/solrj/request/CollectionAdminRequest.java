@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -266,7 +267,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       if (replicationFactor != null) {
         params.set( "replicationFactor", replicationFactor);
       }
-      params.set("async", asyncId);
+      params.set(CommonAdminParams.ASYNC, asyncId);
       if (autoAddReplicas != null) {
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
       }
@@ -412,7 +413,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
         addProperties(params, properties);
       }
       
-      params.set("async", asyncId);
+      params.set(CommonAdminParams.ASYNC, asyncId);
       return params;
     }
 
@@ -609,7 +610,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
         params.add(ShardParams._ROUTE_, routeKey);
       }
       if (asyncId != null) {
-        params.set("async", asyncId);
+        params.set(CommonAdminParams.ASYNC, asyncId);
       }
       if (node != null) {
         params.add("node", node);
@@ -794,7 +795,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       if (forwardTimeout != null) {
         params.set("forward.timeout", forwardTimeout);
       }
-      params.set("async", asyncId);
+      params.set(CommonAdminParams.ASYNC, asyncId);
       
       if (properties != null) {
         addProperties(params, properties);
