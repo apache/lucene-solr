@@ -251,6 +251,9 @@ Build
 * LUCENE-6567: Simplify payload checking in SpanPayloadCheckQuery (Alan
   Woodward)
 
+* LUCENE-6568: Make rat invocation depend on ivy configuration being set up
+  (Ramkumar Aiyengar)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-6553: The iterator returned by the LeafReader.postings method now

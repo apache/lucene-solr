@@ -1811,7 +1811,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </ant>
   </target>
 
-  <target name="rat-sources-typedef" unless="rat.loaded">
+  <target name="rat-sources-typedef" unless="rat.loaded" depends="ivy-availability-check,ivy-configure">
     <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.11" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
     <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:org.apache.rat.anttasks" classpathref="rat.classpath"/>
     <property name="rat.loaded" value="true"/>
