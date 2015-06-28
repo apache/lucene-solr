@@ -128,7 +128,8 @@ final class IndexFileDeleter implements Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public IndexFileDeleter(Directory directoryOrig, Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
-                          InfoStream infoStream, IndexWriter writer, boolean initialIndexExists) throws IOException {
+                          InfoStream infoStream, IndexWriter writer, boolean initialIndexExists,
+                          boolean isReaderInit) throws IOException {
     Objects.requireNonNull(writer);
     this.infoStream = infoStream;
     this.writer = writer;
@@ -229,6 +230,11 @@ final class IndexFileDeleter implements Closeable {
       incRef(sis, true);
     }
 
+    if (isReaderInit) {
+      // Incoming SegmentInfos may have NRT changes not yet visible in the latest commit, so we have to protect its files from deletion too:
+      checkpoint(segmentInfos, false);
+    }
+
     // We keep commits list in sorted order (oldest to newest):
     CollectionUtil.timSort(commits);
 
@@ -257,7 +263,11 @@ final class IndexFileDeleter implements Closeable {
     // sometime it may not be the most recent commit
     checkpoint(segmentInfos, false);
 
-    startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
+    if (currentCommitPoint == null) {
+      startingCommitDeleted = false;
+    } else {
+      startingCommitDeleted = currentCommitPoint.isDeleted();
+    }
 
     deleteCommits();
   }
@@ -312,7 +322,7 @@ final class IndexFileDeleter implements Closeable {
     }
 
     // Generation is advanced before write:
-    infos.setGeneration(Math.max(infos.getGeneration(), maxSegmentGen));
+    infos.setNextWriteGeneration(Math.max(infos.getGeneration(), maxSegmentGen));
     if (infos.counter < 1+maxSegmentName) {
       if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "init: inflate infos.counter to " + (1+maxSegmentName) + " vs current=" + infos.counter);

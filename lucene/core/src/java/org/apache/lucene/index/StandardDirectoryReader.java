@@ -32,8 +32,8 @@ import org.apache.lucene.util.IOUtils;
 
 final class StandardDirectoryReader extends DirectoryReader {
 
-  private final IndexWriter writer;
-  private final SegmentInfos segmentInfos;
+  final IndexWriter writer;
+  final SegmentInfos segmentInfos;
   private final boolean applyAllDeletes;
   
   /** called only from static open() methods */
@@ -383,7 +383,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   @Override
   public IndexCommit getIndexCommit() throws IOException {
     ensureOpen();
-    return new ReaderCommit(segmentInfos, directory);
+    return new ReaderCommit(this, segmentInfos, directory);
   }
 
   static final class ReaderCommit extends IndexCommit {
@@ -393,14 +393,18 @@ final class StandardDirectoryReader extends DirectoryReader {
     long generation;
     final Map<String,String> userData;
     private final int segmentCount;
+    private final StandardDirectoryReader reader;
 
-    ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
+    ReaderCommit(StandardDirectoryReader reader, SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getSegmentsFileName();
       this.dir = dir;
       userData = infos.getUserData();
       files = Collections.unmodifiableCollection(infos.files(true));
       generation = infos.getGeneration();
       segmentCount = infos.size();
+
+      // NOTE: we intentionally do not incRef this!  Else we'd need to make IndexCommit Closeable...
+      this.reader = reader;
     }
 
     @Override
@@ -446,6 +450,11 @@ final class StandardDirectoryReader extends DirectoryReader {
     @Override
     public void delete() {
       throw new UnsupportedOperationException("This IndexCommit does not support deletions");
+    }
+
+    @Override
+    StandardDirectoryReader getReader() {
+      return reader;
     }
   }
 }

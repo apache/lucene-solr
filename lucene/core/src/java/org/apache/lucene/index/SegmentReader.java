@@ -107,6 +107,12 @@ public final class SegmentReader extends CodecReader {
    *  liveDocs.  Used by IndexWriter to provide a new NRT
    *  reader */
   SegmentReader(SegmentCommitInfo si, SegmentReader sr, Bits liveDocs, int numDocs) throws IOException {
+    if (numDocs > si.info.maxDoc()) {
+      throw new IllegalArgumentException("numDocs=" + numDocs + " but maxDoc=" + si.info.maxDoc());
+    }
+    if (liveDocs != null && liveDocs.length() != si.info.maxDoc()) {
+      throw new IllegalArgumentException("maxDoc=" + si.info.maxDoc() + " but liveDocs.size()=" + liveDocs.length());
+    }
     this.si = si;
     this.liveDocs = liveDocs;
     this.numDocs = numDocs;

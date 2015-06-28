@@ -247,7 +247,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
     
-    IndexWriter writer  = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(analyzer)
+    IndexWriter writer  = RandomIndexWriter.mockIndexWriter(random(), dir, newIndexWriterConfig(analyzer)
                                                                    .setRAMBufferSizeMB(0.1)
                                                                    .setMergeScheduler(new ConcurrentMergeScheduler()), new TestPoint1());
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
@@ -291,7 +291,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Directory dir = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-    IndexWriter writer  = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(analyzer)
+    IndexWriter writer  = RandomIndexWriter.mockIndexWriter(random(), dir, newIndexWriterConfig(analyzer)
                                                  .setRAMBufferSizeMB(0.2)
                                                  .setMergeScheduler(new ConcurrentMergeScheduler()), new TestPoint1());
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
@@ -373,7 +373,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionDocumentsWriterInit() throws IOException {
     Directory dir = newDirectory();
     TestPoint2 testPoint = new TestPoint2();
-    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())), testPoint);
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())), testPoint);
     Document doc = new Document();
     doc.add(newTextField("field", "a field", Field.Store.YES));
     w.addDocument(doc);
@@ -407,7 +407,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
     };
 
-    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, 
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(random(), dir, 
                                                       newIndexWriterConfig(analyzer)
                                                         .setMaxBufferedDocs(2), 
                                                       new TestPoint1());
@@ -453,7 +453,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     conf.setMergeScheduler(cms);
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(2);
     TestPoint3 testPoint = new TestPoint3();
-    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, conf, testPoint);
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(random(), dir, conf, testPoint);
     testPoint.doFail = true;
     Document doc = new Document();
     doc.add(newTextField("field", "a field", Field.Store.YES));
@@ -1103,7 +1103,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testRollbackExceptionHang() throws Throwable {
     Directory dir = newDirectory();
     TestPoint4 testPoint = new TestPoint4();
-    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())), testPoint);
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())), testPoint);
     
 
     addDoc(w);

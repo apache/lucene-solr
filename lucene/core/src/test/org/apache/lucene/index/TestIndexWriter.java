@@ -2346,7 +2346,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     final SetOnce<IndexWriter> iwRef = new SetOnce<>();
-    IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(dir, iwc, new RandomIndexWriter.TestPoint() {
+    IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(random(), dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if ("startCommitMerge".equals(message)) {
@@ -2516,7 +2516,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     // use an infostream that "takes a long time" to commit
-    final IndexWriter iw = RandomIndexWriter.mockIndexWriter(dir, iwc, new RandomIndexWriter.TestPoint() {
+    final IndexWriter iw = RandomIndexWriter.mockIndexWriter(random(), dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if (message.equals("finishStartCommit")) {

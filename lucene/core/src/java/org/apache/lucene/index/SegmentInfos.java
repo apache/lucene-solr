@@ -764,9 +764,16 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     generation = other.generation;
   }
 
-  void setGeneration(long generation) {
+  // Carry over generation numbers, and version/counter, from another SegmentInfos
+  void updateGenerationVersionAndCounter(SegmentInfos other) {
+    updateGeneration(other);
+    this.version = other.version;
+    this.counter = other.counter;
+  }
+
+  void setNextWriteGeneration(long generation) {
+    assert generation >= this.generation;
     this.generation = generation;
-    this.lastGeneration = generation;
   }
 
   final void rollbackCommit(Directory dir) {

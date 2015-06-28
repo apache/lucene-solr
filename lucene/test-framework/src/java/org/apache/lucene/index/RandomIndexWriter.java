@@ -56,7 +56,7 @@ public class RandomIndexWriter implements Closeable {
   public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, Random r) throws IOException {
     // Randomly calls Thread.yield so we mixup thread scheduling
     final Random random = new Random(r.nextLong());
-    return mockIndexWriter(dir, conf, new TestPoint() {
+    return mockIndexWriter(r, dir, conf, new TestPoint() {
       @Override
       public void apply(String message) {
         if (random.nextInt(4) == 2)
@@ -66,9 +66,31 @@ public class RandomIndexWriter implements Closeable {
   }
   
   /** Returns an indexwriter that enables the specified test point */
-  public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, TestPoint testPoint) throws IOException {
+  public static IndexWriter mockIndexWriter(Random r, Directory dir, IndexWriterConfig conf, TestPoint testPoint) throws IOException {
     conf.setInfoStream(new TestPointInfoStream(conf.getInfoStream(), testPoint));
-    IndexWriter iw = new IndexWriter(dir, conf);
+    DirectoryReader reader = null;
+    if (r.nextBoolean() && DirectoryReader.indexExists(dir) && conf.getOpenMode() != IndexWriterConfig.OpenMode.CREATE) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("RIW: open writer from reader");
+      }
+      reader = DirectoryReader.open(dir);
+      conf.setIndexCommit(reader.getIndexCommit());
+    }
+
+    IndexWriter iw;
+    boolean success = false;
+    try {
+      iw = new IndexWriter(dir, conf);
+      success = true;
+    } finally {
+      if (reader != null) {
+        if (success) {
+          IOUtils.close(reader);
+        } else {
+          IOUtils.closeWhileHandlingException(reader);
+        }
+      }
+    }
     iw.enableTestPoints = true;
     return iw;
   }
@@ -418,7 +440,7 @@ public class RandomIndexWriter implements Closeable {
   
   /**
    * Simple interface that is executed for each <tt>TP</tt> {@link InfoStream} component
-   * message. See also {@link RandomIndexWriter#mockIndexWriter(Directory, IndexWriterConfig, TestPoint)}
+   * message. See also {@link RandomIndexWriter#mockIndexWriter(Random, Directory, IndexWriterConfig, TestPoint)}
    */
   public static interface TestPoint {
     public abstract void apply(String message);

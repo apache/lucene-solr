@@ -114,7 +114,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: iter=" + iter + ": success");
         }
-      } catch (IOException ioe) {
+      } catch (AssertionError | IOException ioe) {
         if (VERBOSE) {
           System.out.println("TEST: iter=" + iter + ": exception");
           ioe.printStackTrace();

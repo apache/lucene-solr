@@ -41,6 +41,8 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
 */
 
+// TODO: this is now a poor name, because this class also represents a
+// point-in-time view from an NRT reader
 public abstract class IndexCommit implements Comparable<IndexCommit> {
 
   /**
@@ -120,5 +122,10 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
     long gen = getGeneration();
     long comgen = commit.getGeneration();
     return Long.compare(gen, comgen);
+  }
+
+  /** Package-private API for IndexWriter to init from a commit-point pulled from an NRT or non-NRT reader. */
+  StandardDirectoryReader getReader() {
+    return null;
   }
 }
