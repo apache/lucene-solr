@@ -254,6 +254,9 @@ Other Changes
 * SOLR-7711: Correct initial capacity for the list that holds the default components for the SearchHandler
   (Christine Poerschke via Varun Thacker)
 
+* SOLR-7485: Replace shards.info occurrences with ShardParams.SHARDS_INFO
+  (Christine Poerschke via Ramkumar Aiyengar)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
