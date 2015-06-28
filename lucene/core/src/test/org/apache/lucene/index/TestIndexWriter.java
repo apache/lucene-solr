@@ -1638,7 +1638,10 @@ public class TestIndexWriter extends LuceneTestCase {
     Field contentField = new Field("content", "", customType);
     doc.add(contentField);
 
-    w = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(TestUtil.getDefaultCodec());
+
+    w = new RandomIndexWriter(random(), dir, iwc);
 
     contentField.setStringValue("other");
     w.addDocument(doc);
