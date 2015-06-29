@@ -253,7 +253,6 @@ solrAdminApp.config([
   var activeRequests = 0;
 
   var started = function(config) {
-    console.log("start HTTP for " + config.url);
     if (activeRequests == 0) {
       $rootScope.$broadcast('loadingStatusActive');
     }
@@ -267,7 +266,6 @@ solrAdminApp.config([
     if (activeRequests == 0) {
       $rootScope.$broadcast('loadingStatusInactive');
     }
-    console.log("ended");
     if ($rootScope.retryCount>0) {
       $rootScope.connectionRecovered = true;
       $rootScope.retryCount=0;
@@ -280,14 +278,13 @@ solrAdminApp.config([
   };
 
   var failed = function(rejection) {
-    if (rejection.config.params.doNotIntercept) {
-        return rejection;
-    }
     activeRequests--;
     if (activeRequests == 0) {
       $rootScope.$broadcast('loadingStatusInactive');
     }
-    console.log("ERROR " + rejection.status + ": " + rejection.config.url);
+    if (rejection.config.params.doNotIntercept) {
+        return rejection;
+    }
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
