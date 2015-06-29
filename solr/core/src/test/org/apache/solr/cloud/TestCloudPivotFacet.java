@@ -103,7 +103,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   @Test
   public void test() throws Exception {
 
-    sanityCheckAssertDoubles();
+    sanityCheckAssertNumerics();
 
     waitForThingsToLevelOut(30000); // TODO: why whould we have to wait?
     // 
@@ -377,16 +377,19 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
         assert actualStats != null;
         String msg = " of " + statsKey + " => " + message;
-        
-        assertEquals("Min" + msg, pivotStats.getMin(), actualStats.getMin());
-        assertEquals("Max" + msg, pivotStats.getMax(), actualStats.getMax());
-        assertEquals("Mean" + msg, pivotStats.getMean(), actualStats.getMean());
-        assertEquals("Sum" + msg, pivotStats.getSum(), actualStats.getSum());
+
+        // no wiggle room, these should always be exactly equals, regardless of field type
         assertEquals("Count" + msg, pivotStats.getCount(), actualStats.getCount());
         assertEquals("Missing" + msg, pivotStats.getMissing(), actualStats.getMissing());
-        
-        assertDoubles("Stddev" + msg, pivotStats.getStddev(), actualStats.getStddev());
-        assertDoubles("SumOfSquares" + msg, 
+        assertEquals("Min" + msg, pivotStats.getMin(), actualStats.getMin());
+        assertEquals("Max" + msg, pivotStats.getMax(), actualStats.getMax());
+
+        // precision loss can affect these in some field types depending on shards used
+        // and the order that values are accumulated
+        assertNumerics("Sum" + msg, pivotStats.getSum(), actualStats.getSum());
+        assertNumerics("Mean" + msg, pivotStats.getMean(), actualStats.getMean());
+        assertNumerics("Stddev" + msg, pivotStats.getStddev(), actualStats.getStddev());
+        assertNumerics("SumOfSquares" + msg, 
                       pivotStats.getSumOfSquares(), actualStats.getSumOfSquares());
       }
     }
@@ -678,68 +681,129 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Given two objects, asserts that they are either both null, or both Numbers
-   * with double values that are equally-ish with a "small" epsilon (relative to the 
-   * scale of the expected value)
+   * Given two objects returned as stat values asserts that they are they are either both <code>null</code> 
+   * or all of the following are true:
+   * <ul>
+   *  <li>They have the exact same class</li>
+   *  <li>They are both Numbers or they are both Dates -- in the later case, their millisecond's 
+   *      since epoch are used for all subsequent comparisons
+   *  </li>
+   *  <li>Either:
+   *   <ul>
+   *    <li>They are Integer or Long objects with the exact same <code>longValue()</code></li>
+   *    <li>They are Float or Double objects and their <code>doubleValue()</code>s
+   *        are equally-ish with a "small" epsilon (relative to the scale of the expected value)
+   *    </li>
+   *   </ul>
+   *  </li>
+   * <ul>
    *
+   * @see Date#getTime
    * @see Number#doubleValue
+   * @see Number#longValue
+   * @see #assertEquals(String,double,double,double)
    */
-  private void assertDoubles(String msg, Object expected, Object actual) {
+  private void assertNumerics(String msg, Object expected, Object actual) {
     if (null == expected || null == actual) {
       assertEquals(msg, expected, actual);
-    } else {
-      assertTrue(msg + " ... expected not a double: " + 
-                 expected + "=>" + expected.getClass(),
-                 expected instanceof Number);
-      assertTrue(msg + " ... actual not a double: " + 
-                 actual + "=>" + actual.getClass(),
-                 actual instanceof Number);
+      return;
+    }
+    
+    assertEquals(msg + " ... values do not have the same type: " + expected + " vs " + actual,
+                 expected.getClass(), actual.getClass());
 
+    if (expected instanceof Date) {
+      expected = ((Date)expected).getTime();
+      actual = ((Date)actual).getTime();
+      msg = msg + " (w/dates converted to ms)";
+    }
+    
+    assertTrue(msg + " ... expected is not a Number: " + 
+               expected + "=>" + expected.getClass(),
+               expected instanceof Number);
+        
+    if (expected instanceof Long || expected instanceof Integer) {
+      assertEquals(msg, ((Number)expected).longValue(), ((Number)actual).longValue());
+      
+    } else if (expected instanceof Float || expected instanceof Double) {
       // compute an epsilon relative to the size of the expected value
       double expect = ((Number)expected).doubleValue();
       double epsilon = expect * 0.1E-7D;
 
       assertEquals(msg, expect, ((Number)actual).doubleValue(), epsilon);
-                   
+      
+    } else {
+      fail(msg + " ... where did this come from: " + expected.getClass());
     }
   }
 
   /**
    * test the test
    */
-  private void sanityCheckAssertDoubles() {
-    assertDoubles("Null?", null, null);
-    assertDoubles("big", 
-                  new Double(2.3005390038169265E9), 
-                  new Double(2.300539003816927E9));
-    assertDoubles("small", 
-                  new Double(2.3005390038169265E-9), 
-                  new Double(2.300539003816927E-9));
+  private void sanityCheckAssertNumerics() {
+    assertNumerics("Null?", null, null);
+    assertNumerics("big", 
+                   new Double(2.3005390038169265E9), 
+                   new Double(2.300539003816927E9));
+    assertNumerics("small", 
+                   new Double(2.3005390038169265E-9), 
+                   new Double(2.300539003816927E-9));
+    assertNumerics("small", 
+                   new Double(2.3005390038169265E-9), 
+                   new Double(2.300539003816927E-9));
+    
+    assertNumerics("high long", Long.MAX_VALUE, Long.MAX_VALUE);
+    assertNumerics("high int", Integer.MAX_VALUE, Integer.MAX_VALUE);
+    assertNumerics("low long", Long.MIN_VALUE, Long.MIN_VALUE);
+    assertNumerics("low int", Integer.MIN_VALUE, Integer.MIN_VALUE);
+
+    for (Object num : new Object[] { new Date(42), 42, 42L, 42.0F }) {
+      try {
+        assertNumerics("non-null", null, num);
+        fail("expected was null");
+      } catch (AssertionError e) {}
+      
+      try {
+        assertNumerics("non-null", num, null);
+        fail("actual was null");
+      } catch (AssertionError e) {}
+    }
+  
     try {
-      assertDoubles("non-null", null, 42);
-      fail("expected was null");
+      assertNumerics("non-number", "foo", 42);
+      fail("expected was non-number");
     } catch (AssertionError e) {}
+
     try {
-      assertDoubles("non-null", 42, null);
-      fail("actual was null");
-    } catch (AssertionError e) {}
-    try {
-      assertDoubles("non-number", 42, "foo");
+      assertNumerics("non-number", 42, "foo");
       fail("actual was non-number");
     } catch (AssertionError e) {}
+  
     try {
-      assertDoubles("diff", 
-                    new Double(2.3005390038169265E9), 
-                    new Double(2.267272520100462E9));
+      assertNumerics("diff", 
+                     new Double(2.3005390038169265E9), 
+                     new Double(2.267272520100462E9));
       fail("big & diff");
     } catch (AssertionError e) {}
     try {
-      assertDoubles("diff", 
-                    new Double(2.3005390038169265E-9), 
-                    new Double(2.267272520100462E-9));
+      assertNumerics("diff", 
+                     new Double(2.3005390038169265E-9), 
+                     new Double(2.267272520100462E-9));
       fail("small & diff");
     } catch (AssertionError e) {}
-
+  
+    try {
+      assertNumerics("diff long", Long.MAX_VALUE, Long.MAX_VALUE-1);
+      fail("diff long");
+    } catch (AssertionError e) {}
+    try {
+      assertNumerics("diff int", Integer.MAX_VALUE, Integer.MAX_VALUE-1);
+      fail("diff int");
+    } catch (AssertionError e) {}
+    try {
+      assertNumerics("diff date", new Date(42), new Date(43));
+      fail("diff date");
+    } catch (AssertionError e) {}
 
   }
 
