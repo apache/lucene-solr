@@ -18,10 +18,9 @@ package org.apache.lucene.util.fst;
  */
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -321,10 +320,11 @@ public class FSTTester<T> {
     }
 
     if (LuceneTestCase.VERBOSE && pairs.size() <= 20 && fst != null) {
-      Writer w = Files.newBufferedWriter(Paths.get("out.dot"), StandardCharsets.UTF_8);
+      System.out.println("Printing FST as dot file to stdout:");
+      final Writer w = new OutputStreamWriter(System.out, Charset.defaultCharset());
       Util.toDot(fst, w, false, false);
-      w.close();
-      System.out.println("SAVED out.dot");
+      w.flush();
+      System.out.println("END dot file");
     }
 
     if (LuceneTestCase.VERBOSE) {

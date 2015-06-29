@@ -254,6 +254,11 @@ Build
 * LUCENE-6568: Make rat invocation depend on ivy configuration being set up
   (Ramkumar Aiyengar)
 
+Test Framework
+
+* LUCENE-6637: Fix FSTTester to not violate file permissions on
+  -Dtests.verbose=true.  (Mesbah M. Alam, Uwe Schindler)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-6553: The iterator returned by the LeafReader.postings method now
