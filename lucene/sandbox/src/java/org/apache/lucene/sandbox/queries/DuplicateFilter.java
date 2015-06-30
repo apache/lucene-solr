@@ -42,7 +42,11 @@ import org.apache.lucene.util.SparseFixedBitSet;
  * index segments.
  * 
  * @see SlowCompositeReaderWrapper
+ * @deprecated This class will be removed in Lucene 6.0. DiversifiedTopDocsCollector
+ *             should be used instead with a maximum number of hits per key
+ *             equal to 1.
  */
+@Deprecated
 public class DuplicateFilter extends Filter {
   // TODO: make duplicate filter aware of ReaderContext such that we can
   // filter duplicates across segments
