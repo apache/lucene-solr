@@ -17,6 +17,18 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
@@ -30,20 +42,9 @@ import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -120,16 +121,34 @@ public class Assign {
     return returnShardId;
   }
 
-  static   class Node {
-    public  final String nodeName;
-    public int thisCollectionNodes=0;
-    public int totalNodes=0;
+  static String buildCoreName(DocCollection collection, String shard) {
+    Slice slice = collection.getSlice(shard);
+    int replicaNum = slice.getReplicas().size();
+    for (;;) {
+      String replicaName = collection.getName() + "_" + shard + "_replica" + replicaNum;
+      boolean exists = false;
+      for (Replica replica : slice.getReplicas()) {
+        if (replicaName.equals(replica.getStr(CORE_NAME_PROP))) {
+          exists = true;
+          break;
+        }
+      }
+      if (exists) replicaNum++;
+      else break;
+    }
+    return collection.getName() + "_" + shard + "_replica" + replicaNum;
+  }
+
+  static class Node {
+    public final String nodeName;
+    public int thisCollectionNodes = 0;
+    public int totalNodes = 0;
 
     Node(String nodeName) {
       this.nodeName = nodeName;
     }
 
-    public int weight(){
+    public int weight() {
       return (thisCollectionNodes * 100) + totalNodes;
     }
   }
