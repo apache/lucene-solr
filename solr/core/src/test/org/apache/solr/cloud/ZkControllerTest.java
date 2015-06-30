@@ -309,7 +309,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6665")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7736")
   public void testPublishAndWaitForDownStates() throws Exception  {
     String zkDir = createTempDir("testPublishAndWaitForDownStates").toFile().getAbsolutePath();
     CoreContainer cc = null;
