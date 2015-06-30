@@ -268,6 +268,10 @@ Changes in Backwards Compatibility Policy
   always includes deleted docs, so you have to check for deleted documents on
   top of the iterator. (Adrien Grand)
 
+* LUCENE-6633: DuplicateFilter has been deprecated and will be removed in 6.0.
+  DiversifiedTopDocsCollector can be used instead with a maximum number of hits
+  per key equal to 1. (Adrien Grand)
+
 ======================= Lucene 5.2.1 =======================
 
 Bug Fixes

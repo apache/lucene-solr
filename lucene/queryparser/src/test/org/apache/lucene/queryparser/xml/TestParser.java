@@ -186,14 +186,6 @@ public class TestParser extends LuceneTestCase {
     dumpResults("Cached filter", q, 5);
   }
 
-  public void testDuplicateFilterQueryXML() throws ParserException, IOException {
-    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
-    Assume.assumeTrue(leaves.size() == 1);
-    Query q = parse("DuplicateFilterQuery.xml");
-    int h = searcher.search(q, 1000).totalHits;
-    assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);
-  }
-
   public void testNumericRangeQueryQueryXML() throws ParserException, IOException {
     Query q = parse("NumericRangeQueryQuery.xml");
     dumpResults("NumericRangeQuery", q, 5);
