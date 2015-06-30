@@ -109,6 +109,9 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-7724: SolrJ now supports parsing the output of the clustering component. 
+  (Alessandro Benedetti via Dawid Weiss)
+
 * SOLR-6273: Cross Data Center Replication. Active/passive replication for separate
   SolrClouds hosted on separate data centers. (Renaud Delbru, Yonik Seeley via Erick Erickson)
 
