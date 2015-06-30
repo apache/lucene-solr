@@ -48,6 +48,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _debugInfo = null;
   private NamedList<Object> _highlightingInfo = null;
   private NamedList<Object> _spellInfo = null;
+  private List<NamedList<Object>> _clusterInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Number>> _termsInfo = null;
   private String _cursorMarkNext = null;
@@ -74,6 +75,9 @@ public class QueryResponse extends SolrResponseBase
   // SpellCheck Response
   private SpellCheckResponse _spellResponse = null;
 
+  // Clustering Response
+  private ClusteringResponse _clusterResponse = null;
+
   // Terms Response
   private TermsResponse _termsResponse = null;
   
@@ -87,7 +91,7 @@ public class QueryResponse extends SolrResponseBase
   // utility variable used for automatic binding -- it should not be serialized
   private transient final SolrClient solrClient;
 
-  public QueryResponse(){
+  public QueryResponse() {
     solrClient = null;
   }
   
@@ -145,6 +149,10 @@ public class QueryResponse extends SolrResponseBase
         _spellInfo = (NamedList<Object>) res.getVal( i );
         extractSpellCheckInfo( _spellInfo );
       }
+      else if ("clusters".equals(n)) {
+        _clusterInfo = (ArrayList<NamedList<Object>>) res.getVal(i);
+        extractClusteringInfo(_clusterInfo);
+      }
       else if ( "stats".equals( n ) )  {
         _statsInfo = (NamedList<Object>) res.getVal( i );
         extractStatsInfo( _statsInfo );
@@ -162,6 +170,10 @@ public class QueryResponse extends SolrResponseBase
 
   private void extractSpellCheckInfo(NamedList<Object> spellInfo) {
     _spellResponse = new SpellCheckResponse(spellInfo);
+  }
+
+  private void extractClusteringInfo(List<NamedList<Object>> clusterInfo) {
+    _clusterResponse = new ClusteringResponse(clusterInfo);
   }
 
   private void extractTermsInfo(NamedList<NamedList<Number>> termsInfo) {
@@ -512,6 +524,10 @@ public class QueryResponse extends SolrResponseBase
 
   public SpellCheckResponse getSpellCheckResponse() {
     return _spellResponse;
+  }
+
+  public ClusteringResponse getClusteringResponse() {
+    return _clusterResponse;
   }
 
   public TermsResponse getTermsResponse() {

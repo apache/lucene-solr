@@ -52,6 +52,9 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-7724: SolrJ now supports parsing the output of the clustering component. 
+  (Alessandro Benedetti via Dawid Weiss)
+
 * SOLR-7389: Expose znodeVersion property for each of the collections returned for the clusterstatus
   operation in the collections API (Marius Grama via shalin)
 
