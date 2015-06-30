@@ -52,7 +52,7 @@ import org.apache.lucene.util.packed.PackedInts;
 
 public class Builder<T> {
   private final NodeHash<T> dedupHash;
-  private final FST<T> fst;
+  final FST<T> fst;
   private final T NO_OUTPUT;
 
   // private static final boolean DEBUG = true;
@@ -80,6 +80,22 @@ public class Builder<T> {
   // left this as an array:
   // current "frontier"
   private UnCompiledNode<T>[] frontier;
+
+  // Used for the BIT_TARGET_NEXT optimization (whereby
+  // instead of storing the address of the target node for
+  // a given arc, we mark a single bit noting that the next
+  // node in the byte[] is the target node):
+  long lastFrozenNode;
+
+  // Reused temporarily while building the FST:
+  int[] reusedBytesPerArc = new int[4];
+
+  long arcCount;
+  long nodeCount;
+
+  boolean allowArrayArcs;
+
+  BytesStore bytes;
 
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
@@ -152,9 +168,12 @@ public class Builder<T> {
     this.shareMaxTailLength = shareMaxTailLength;
     this.doPackFST = doPackFST;
     this.acceptableOverheadRatio = acceptableOverheadRatio;
-    fst = new FST<>(inputType, outputs, doPackFST, acceptableOverheadRatio, allowArrayArcs, bytesPageBits);
+    this.allowArrayArcs = allowArrayArcs;
+    fst = new FST<>(inputType, outputs, doPackFST, acceptableOverheadRatio, bytesPageBits);
+    bytes = fst.bytes;
+    assert bytes != null;
     if (doShareSuffix) {
-      dedupHash = new NodeHash<>(fst, fst.bytes.getReverseReader(false));
+      dedupHash = new NodeHash<>(fst, bytes.getReverseReader(false));
     } else {
       dedupHash = null;
     }
@@ -168,30 +187,44 @@ public class Builder<T> {
     }
   }
 
-  public long getTotStateCount() {
-    return fst.nodeCount;
-  }
-
   public long getTermCount() {
     return frontier[0].inputCount;
   }
 
+  public long getNodeCount() {
+    // 1+ in order to count the -1 implicit final node
+    return 1+nodeCount;
+  }
+  
+  public long getArcCount() {
+    return arcCount;
+  }
+
   public long getMappedStateCount() {
-    return dedupHash == null ? 0 : fst.nodeCount;
+    return dedupHash == null ? 0 : nodeCount;
   }
 
   private CompiledNode compileNode(UnCompiledNode<T> nodeIn, int tailLength) throws IOException {
     final long node;
+    long bytesPosStart = bytes.getPosition();
     if (dedupHash != null && (doShareNonSingletonNodes || nodeIn.numArcs <= 1) && tailLength <= shareMaxTailLength) {
       if (nodeIn.numArcs == 0) {
-        node = fst.addNode(nodeIn);
+        node = fst.addNode(this, nodeIn);
+        lastFrozenNode = node;
       } else {
-        node = dedupHash.add(nodeIn);
+        node = dedupHash.add(this, nodeIn);
       }
     } else {
-      node = fst.addNode(nodeIn);
+      node = fst.addNode(this, nodeIn);
     }
     assert node != -2;
+
+    long bytesPosEnd = bytes.getPosition();
+    if (bytesPosEnd != bytesPosStart) {
+      // The FST added a new node:
+      assert bytesPosEnd > bytesPosStart;
+      lastFrozenNode = node;
+    }
 
     nodeIn.clear();
 
@@ -464,7 +497,7 @@ public class Builder<T> {
     fst.finish(compileNode(root, lastInput.length()).node);
 
     if (doPackFST) {
-      return fst.pack(3, Math.max(10, (int) (fst.getNodeCount()/4)), acceptableOverheadRatio);
+      return fst.pack(this, 3, Math.max(10, (int) (getNodeCount()/4)), acceptableOverheadRatio);
     } else {
       return fst;
     }
