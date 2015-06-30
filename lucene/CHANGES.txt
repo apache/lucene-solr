@@ -145,6 +145,9 @@ API Changes
   parameter. Live docs are now always checked on top of these APIs.
   (Adrien Grand)
 
+* LUCENE-6634: PKIndexSplitter now takes a Query instead of a Filter to decide
+  how to split an index. (Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
