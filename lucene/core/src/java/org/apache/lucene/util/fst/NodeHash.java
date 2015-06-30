@@ -114,7 +114,7 @@ final class NodeHash<T> {
     return h & Long.MAX_VALUE;
   }
 
-  public long add(Builder.UnCompiledNode<T> nodeIn) throws IOException {
+  public long add(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn) throws IOException {
     //System.out.println("hash: add count=" + count + " vs " + table.size() + " mask=" + mask);
     final long h = hash(nodeIn);
     long pos = h & mask;
@@ -123,7 +123,7 @@ final class NodeHash<T> {
       final long v = table.get(pos);
       if (v == 0) {
         // freeze & add
-        final long node = fst.addNode(nodeIn);
+        final long node = fst.addNode(builder, nodeIn);
         //System.out.println("  now freeze node=" + node);
         assert hash(node) == h : "frozenHash=" + hash(node) + " vs h=" + h;
         count++;

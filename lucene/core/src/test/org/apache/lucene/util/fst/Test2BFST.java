@@ -69,9 +69,9 @@ public class Test2BFST extends LuceneTestCase {
           b.add(input2, NO_OUTPUT);
           count++;
           if (count % 100000 == 0) {
-            System.out.println(count + ": " + b.fstRamBytesUsed() + " bytes; " + b.getTotStateCount() + " nodes");
+            System.out.println(count + ": " + b.fstRamBytesUsed() + " bytes; " + b.getNodeCount() + " nodes");
           }
-          if (b.getTotStateCount() > Integer.MAX_VALUE + 100L * 1024 * 1024) {
+          if (b.getNodeCount() > Integer.MAX_VALUE + 100L * 1024 * 1024) {
             break;
           }
           nextInput(r, ints2);
@@ -80,7 +80,7 @@ public class Test2BFST extends LuceneTestCase {
         FST<Object> fst = b.finish();
 
         for(int verify=0;verify<2;verify++) {
-          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
+          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + b.getNodeCount() + "; arcCount=" + b.getArcCount() + "]");
 
           Arrays.fill(ints2, 0);
           r = new Random(seed);
@@ -161,7 +161,7 @@ public class Test2BFST extends LuceneTestCase {
         FST<BytesRef> fst = b.finish();
         for(int verify=0;verify<2;verify++) {
 
-          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
+          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + b.getNodeCount() + "; arcCount=" + b.getArcCount() + "]");
 
           r = new Random(seed);
           Arrays.fill(ints, 0);
@@ -239,7 +239,7 @@ public class Test2BFST extends LuceneTestCase {
 
         for(int verify=0;verify<2;verify++) {
 
-          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
+          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + b.getNodeCount() + "; arcCount=" + b.getArcCount() + "]");
 
           Arrays.fill(ints, 0);
 

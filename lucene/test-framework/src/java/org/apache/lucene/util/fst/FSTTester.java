@@ -58,6 +58,8 @@ public class FSTTester<T> {
   final Outputs<T> outputs;
   final Directory dir;
   final boolean doReverseLookup;
+  long nodeCount;
+  long arcCount;
 
   public FSTTester(Random random, Directory dir, int inputMode, List<InputOutput<T>> pairs, Outputs<T> outputs, boolean doReverseLookup) {
     this.random = random;
@@ -331,7 +333,7 @@ public class FSTTester<T> {
       if (fst == null) {
         System.out.println("  fst has 0 nodes (fully pruned)");
       } else {
-        System.out.println("  fst has " + fst.getNodeCount() + " nodes and " + fst.getArcCount() + " arcs");
+        System.out.println("  fst has " + builder.getNodeCount() + " nodes and " + builder.getArcCount() + " arcs");
       }
     }
 
@@ -340,6 +342,9 @@ public class FSTTester<T> {
     } else {
       verifyPruned(inputMode, fst, prune1, prune2);
     }
+
+    nodeCount = builder.getNodeCount();
+    arcCount = builder.getArcCount();
 
     return fst;
   }

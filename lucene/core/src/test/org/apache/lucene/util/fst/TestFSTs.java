@@ -133,10 +133,11 @@ public class TestFSTs extends LuceneTestCase {
         for(IntsRef term : terms2) {
           pairs.add(new FSTTester.InputOutput<>(term, NO_OUTPUT));
         }
-        FST<Object> fst = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
+        FSTTester<Object> tester = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false);
+        FST<Object> fst = tester.doTest(0, 0, false);
         assertNotNull(fst);
-        assertEquals(22, fst.getNodeCount());
-        assertEquals(27, fst.getArcCount());
+        assertEquals(22, tester.nodeCount);
+        assertEquals(27, tester.arcCount);
       }
 
       // FST ord pos int
@@ -146,10 +147,11 @@ public class TestFSTs extends LuceneTestCase {
         for(int idx=0;idx<terms2.length;idx++) {
           pairs.add(new FSTTester.InputOutput<>(terms2[idx], (long) idx));
         }
-        final FST<Long> fst = new FSTTester<>(random(), dir, inputMode, pairs, outputs, true).doTest(0, 0, false);
+        FSTTester<Long> tester = new FSTTester<>(random(), dir, inputMode, pairs, outputs, true);
+        final FST<Long> fst = tester.doTest(0, 0, false);
         assertNotNull(fst);
-        assertEquals(22, fst.getNodeCount());
-        assertEquals(27, fst.getArcCount());
+        assertEquals(22, tester.nodeCount);
+        assertEquals(27, tester.arcCount);
       }
 
       // FST byte sequence ord
@@ -161,10 +163,11 @@ public class TestFSTs extends LuceneTestCase {
           final BytesRef output = random().nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
           pairs.add(new FSTTester.InputOutput<>(terms2[idx], output));
         }
-        final FST<BytesRef> fst = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
+        FSTTester<BytesRef> tester = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false);
+        final FST<BytesRef> fst = tester.doTest(0, 0, false);
         assertNotNull(fst);
-        assertEquals(24, fst.getNodeCount());
-        assertEquals(30, fst.getArcCount());
+        assertEquals(24, tester.nodeCount);
+        assertEquals(30, tester.arcCount);
       }
     }
   }
@@ -383,7 +386,7 @@ public class TestFSTs extends LuceneTestCase {
       }
       FST<Long> fst = builder.finish();
       if (VERBOSE) {
-        System.out.println("FST: " + docCount + " docs; " + ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs;" + " " + fst.ramBytesUsed() + " bytes");
+        System.out.println("FST: " + docCount + " docs; " + ord + " terms; " + builder.getNodeCount() + " nodes; " + builder.getArcCount() + " arcs;" + " " + fst.ramBytesUsed() + " bytes");
       }
 
       if (ord > 0) {
@@ -520,8 +523,8 @@ public class TestFSTs extends LuceneTestCase {
           return;
         }
 
-        System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.ramBytesUsed());
-        if (fst.getNodeCount() < 100) {
+        System.out.println(ord + " terms; " + builder.getNodeCount() + " nodes; " + builder.getArcCount() + " arcs; tot size " + fst.ramBytesUsed());
+        if (builder.getNodeCount() < 100) {
           Writer w = Files.newBufferedWriter(Paths.get("out.dot"), StandardCharsets.UTF_8);
           Util.toDot(fst, w, false, false);
           w.close();
@@ -1155,7 +1158,8 @@ public class TestFSTs extends LuceneTestCase {
     final Long nothing = outputs.getNoOutput();
     final Builder<Long> b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
-    final FST<Long> fst = new FST<>(FST.INPUT_TYPE.BYTE1, outputs, false, PackedInts.COMPACT, true, 15);
+    //final FST<Long> fst = new FST<>(FST.INPUT_TYPE.BYTE1, outputs, false, PackedInts.COMPACT, 15);
+    final FST<Long> fst = b.fst;
 
     final Builder.UnCompiledNode<Long> rootNode = new Builder.UnCompiledNode<>(b, 0);
 
@@ -1165,7 +1169,7 @@ public class TestFSTs extends LuceneTestCase {
       node.isFinal = true;
       rootNode.addArc('a', node);
       final Builder.CompiledNode frozen = new Builder.CompiledNode();
-      frozen.node = fst.addNode(node);
+      frozen.node = fst.addNode(b, node);
       rootNode.arcs[0].nextFinalOutput = 17L;
       rootNode.arcs[0].isFinal = true;
       rootNode.arcs[0].output = nothing;
@@ -1177,13 +1181,13 @@ public class TestFSTs extends LuceneTestCase {
       final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<>(b, 0);
       rootNode.addArc('b', node);
       final Builder.CompiledNode frozen = new Builder.CompiledNode();
-      frozen.node = fst.addNode(node);
+      frozen.node = fst.addNode(b, node);
       rootNode.arcs[1].nextFinalOutput = nothing;
       rootNode.arcs[1].output = 42L;
       rootNode.arcs[1].target = frozen;
     }
 
-    fst.finish(fst.addNode(rootNode));
+    fst.finish(fst.addNode(b, rootNode));
 
     StringWriter w = new StringWriter();
     //Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp3/out.dot"));

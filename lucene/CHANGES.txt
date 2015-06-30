@@ -246,6 +246,8 @@ Optimizations
   number, by using an array instead of TreeMap except in very sparse
   cases (Robert Muir, Mike McCandless)
 
+* LUCENE-6617: Reduce heap usage for small FSTs (Mike McCandless)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9

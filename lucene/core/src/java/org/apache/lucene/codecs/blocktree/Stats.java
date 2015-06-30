@@ -33,12 +33,6 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.internal
  */
 public class Stats {
-  /** How many nodes in the index FST. */
-  public long indexNodeCount;
-
-  /** How many arcs in the index FST. */
-  public long indexArcCount;
-
   /** Byte size of the index. */
   public long indexNumBytes;
 
@@ -163,8 +157,6 @@ public class Stats {
     }
       
     out.println("  index FST:");
-    out.println("    " + indexNodeCount + " nodes");
-    out.println("    " + indexArcCount + " arcs");
     out.println("    " + indexNumBytes + " bytes");
     out.println("  terms:");
     out.println("    " + totalTermCount + " terms");
