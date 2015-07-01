@@ -51,14 +51,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.CachingCollector;
-import org.apache.lucene.search.CachingWrapperQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -798,7 +795,7 @@ public class TestGrouping extends LuceneTestCase {
       // group, so we can use single pass collector
       dirBlocks = newDirectory();
       rBlocks = getDocBlockReader(dirBlocks, groupDocs);
-      final Filter lastDocInBlock = new QueryWrapperFilter(new TermQuery(new Term("groupend", "x")));
+      final Query lastDocInBlock = new TermQuery(new Term("groupend", "x"));
       final NumericDocValues docIDToIDBlocks = MultiDocValues.getNumericValues(rBlocks, "id");
       assertNotNull(docIDToIDBlocks);
       
@@ -1054,7 +1051,7 @@ public class TestGrouping extends LuceneTestCase {
         }
         
         final boolean needsScores = getScores || getMaxScores || docSort == null;
-        final BlockGroupingCollector c3 = new BlockGroupingCollector(groupSort, groupOffset+topNGroups, needsScores, lastDocInBlock);
+        final BlockGroupingCollector c3 = new BlockGroupingCollector(groupSort, groupOffset+topNGroups, needsScores, sBlocks.createNormalizedWeight(lastDocInBlock, false));
         final TermAllGroupsCollector allGroupsCollector2;
         final Collector c4;
         if (doAllGroups) {

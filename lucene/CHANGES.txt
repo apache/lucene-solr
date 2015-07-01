@@ -152,6 +152,9 @@ API Changes
 * LUCENE-6634: PKIndexSplitter now takes a Query instead of a Filter to decide
   how to split an index. (Adrien Grand)
 
+* LUCENE-6643: GroupingSearch from lucene/grouping was changed to take a Query
+  object to define groups instead of a Filter. (Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
