@@ -20,12 +20,12 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
 import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
@@ -55,7 +55,7 @@ public class GroupingSearch {
   private final String groupField;
   private final ValueSource groupFunction;
   private final Map<?, ?> valueSourceContext;
-  private final Filter groupEndDocs;
+  private final Query groupEndDocs;
 
   private Sort groupSort = Sort.RELEVANCE;
   private Sort sortWithinGroup;
@@ -101,13 +101,13 @@ public class GroupingSearch {
    * Constructor for grouping documents by doc block.
    * This constructor can only be used when documents belonging in a group are indexed in one block.
    *
-   * @param groupEndDocs The filter that marks the last document in all doc blocks
+   * @param groupEndDocs The query that marks the last document in all doc blocks
    */
-  public GroupingSearch(Filter groupEndDocs) {
+  public GroupingSearch(Query groupEndDocs) {
     this(null, null, null, groupEndDocs);
   }
 
-  private GroupingSearch(String groupField, ValueSource groupFunction, Map<?, ?> valueSourceContext, Filter groupEndDocs) {
+  private GroupingSearch(String groupField, ValueSource groupFunction, Map<?, ?> valueSourceContext, Query groupEndDocs) {
     this.groupField = groupField;
     this.groupFunction = groupFunction;
     this.valueSourceContext = valueSourceContext;
@@ -233,6 +233,7 @@ public class GroupingSearch {
 
   protected TopGroups<?> groupByDocBlock(IndexSearcher searcher, Query query, int groupOffset, int groupLimit) throws IOException {
     int topN = groupOffset + groupLimit;
+    final Weight groupEndDocs = searcher.createNormalizedWeight(this.groupEndDocs, false);
     BlockGroupingCollector c = new BlockGroupingCollector(groupSort, topN, includeScores, groupEndDocs);
     searcher.search(query, c);
     int topNInsideGroup = groupDocsOffset + groupDocsLimit;

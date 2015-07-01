@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
@@ -34,6 +33,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -73,7 +73,7 @@ public class BlockGroupingCollector extends SimpleCollector {
 
   private final Sort groupSort;
   private final int topNGroups;
-  private final Filter lastDocPerGroup;
+  private final Weight lastDocPerGroup;
 
   // TODO: specialize into 2 classes, static "create" method:
   private final boolean needsScores;
@@ -214,10 +214,10 @@ public class BlockGroupingCollector extends SimpleCollector {
    *    in the withinGroupSort or because you plan to pass true
    *    for either getSscores or getMaxScores to {@link
    *    #getTopGroups}
-   *  @param lastDocPerGroup a {@link Filter} that marks the
+   *  @param lastDocPerGroup a {@link Weight} that marks the
    *    last document in each group.
    */
-  public BlockGroupingCollector(Sort groupSort, int topNGroups, boolean needsScores, Filter lastDocPerGroup) throws IOException {
+  public BlockGroupingCollector(Sort groupSort, int topNGroups, boolean needsScores, Weight lastDocPerGroup) throws IOException {
 
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
@@ -480,7 +480,7 @@ public class BlockGroupingCollector extends SimpleCollector {
     subDocUpto = 0;
     docBase = readerContext.docBase;
     //System.out.println("setNextReader base=" + docBase + " r=" + readerContext.reader);
-    lastDocPerGroupBits = lastDocPerGroup.getDocIdSet(readerContext, readerContext.reader().getLiveDocs()).iterator();
+    lastDocPerGroupBits = lastDocPerGroup.scorer(readerContext);
     groupEndDocID = -1;
 
     currentReaderContext = readerContext;
