@@ -161,6 +161,9 @@ API Changes
   than a string or numeric field would require to implement a custom selector.
   (Adrien Grand)
 
+* LUCENE-6648: All lucene/facet APIs now take Query objects where they used to
+  take Filter objects. (Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

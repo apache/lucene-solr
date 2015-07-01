@@ -18,10 +18,9 @@ package org.apache.lucene.facet.range;
  */
 
 import org.apache.lucene.facet.DrillDownQuery; // javadocs
-import org.apache.lucene.facet.DrillSideways; // javadocs
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
 
 /** Base class for a single labeled range.
  *
@@ -39,26 +38,31 @@ public abstract class Range {
     this.label = label;
   }
 
-  /** Returns a new {@link Filter} accepting only documents
-   *  in this range.  This filter is not general-purpose;
-   *  you should either use it with {@link DrillSideways} by
-   *  adding it to {@link DrillDownQuery#add}.  If the
-   *  {@link ValueSource} is static, e.g. an indexed numeric
-   *  field, then it may be more efficient to use {@link
-   *  NumericRangeQuery}.  The provided fastMatchFilter,
+  /** Returns a new {@link Query} accepting only documents
+   *  in this range.  This query might not be very efficient
+   *  when run on its own since it is optimized towards
+   *  random-access, so it is best used either with
+   *  {@link DrillDownQuery#add(String, Query) DrillDownQuery}
+   *  or when intersected with another query that can lead the
+   *  iteration.  If the {@link ValueSource} is static, e.g. an
+   *  indexed numeric field, then it may be more efficient to use
+   *  {@link NumericRangeQuery}. The provided fastMatchQuery,
    *  if non-null, will first be consulted, and only if
    *  that is set for each document will the range then be
    *  checked. */
-  public abstract Filter getFilter(Filter fastMatchFilter, ValueSource valueSource);
+  public abstract Query getQuery(Query fastMatchQuery, ValueSource valueSource);
 
-  /** Returns a new {@link Filter} accepting only documents
-   *  in this range.  This filter is not general-purpose;
-   *  you should either use it with {@link DrillSideways} by
-   *  adding it to {@link DrillDownQuery#add}.  If the
-   *  {@link ValueSource} is static, e.g. an indexed numeric
-   *  field, then it may be more efficient to use {@link NumericRangeQuery}. */
-  public Filter getFilter(ValueSource valueSource) {
-    return getFilter(null, valueSource);
+  /** Returns a new {@link Query} accepting only documents
+   *  in this range.  This query might not be very efficient
+   *  when run on its own since it is optimized towards
+   *  random-access, so it is best used either with
+   *  {@link DrillDownQuery#add(String, Query) DrillDownQuery}
+   *  or when intersected with another query that can lead the
+   *  iteration.  If the {@link ValueSource} is static, e.g. an
+   *  indexed numeric field, then it may be more efficient to
+   *  use {@link NumericRangeQuery}. */
+  public Query getQuery(ValueSource valueSource) {
+    return getQuery(null, valueSource);
   }
 
   /** Invoke this for a useless range. */

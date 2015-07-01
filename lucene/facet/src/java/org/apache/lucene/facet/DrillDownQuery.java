@@ -29,7 +29,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -67,7 +66,7 @@ public final class DrillDownQuery extends Query {
   }
 
   /** Used by DrillSideways */
-  DrillDownQuery(FacetsConfig config, Filter filter, DrillDownQuery other) {
+  DrillDownQuery(FacetsConfig config, Query filter, DrillDownQuery other) {
     this.baseQuery = new BooleanQuery.Builder()
         .add(other.baseQuery == null ? new MatchAllDocsQuery() : other.baseQuery, Occur.MUST)
         .add(filter, Occur.FILTER)
@@ -115,20 +114,6 @@ public final class DrillDownQuery extends Query {
     }
     final int index = drillDownDims.get(dim);
     dimQueries.get(index).add(subQuery, Occur.SHOULD);
-  }
-
-  static Filter getFilter(Query query) {
-    if (query instanceof ConstantScoreQuery) {
-      ConstantScoreQuery csq = (ConstantScoreQuery) query;
-      Query sub = csq.getQuery();
-      if (sub instanceof Filter) {
-        return (Filter) sub;
-      } else {
-        return getFilter(sub);
-      }
-    } else {
-      return null;
-    }
   }
 
   @Override
