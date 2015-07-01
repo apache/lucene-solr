@@ -810,7 +810,7 @@ public class TestAutomaton extends LuceneTestCase {
               assertTrue(removed);
             }
             Automaton a2 = unionTerms(toRemove);
-            a = Operations.minus(a, a2, DEFAULT_MAX_DETERMINIZED_STATES);
+            a = Operations.minus(a, a2, Integer.MAX_VALUE);
           }
         }
         break;
