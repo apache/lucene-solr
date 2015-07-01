@@ -23,9 +23,9 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.suggest.BitsProducer;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automata;
@@ -88,7 +88,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   private final int maxDeterminizedStates;
 
   /**
-   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, Filter)}
+   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, BitsProducer)}
    * with no filter
    */
   public FuzzyCompletionQuery(Analyzer analyzer, Term term) {
@@ -96,7 +96,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   }
 
   /**
-   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, Filter,
+   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, BitsProducer,
    * int, boolean, int, int, boolean, int)}
    * with defaults for <code>maxEdits</code>, <code>transpositions</code>,
    * <code>nonFuzzyPrefix</code>, <code>minFuzzyLength</code>,
@@ -107,7 +107,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
    * {@link #DEFAULT_UNICODE_AWARE} and {@link Operations#DEFAULT_MAX_DETERMINIZED_STATES}
    * for defaults
    */
-  public FuzzyCompletionQuery(Analyzer analyzer, Term term, Filter filter) {
+  public FuzzyCompletionQuery(Analyzer analyzer, Term term, BitsProducer filter) {
     this(analyzer, term, filter, DEFAULT_MAX_EDITS, DEFAULT_TRANSPOSITIONS, DEFAULT_NON_FUZZY_PREFIX,
         DEFAULT_MIN_FUZZY_LENGTH, DEFAULT_UNICODE_AWARE, Operations.DEFAULT_MAX_DETERMINIZED_STATES
     );
@@ -127,7 +127,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
    * @param unicodeAware treat prefix as unicode rather than bytes
    * @param maxDeterminizedStates maximum automaton states allowed for {@link LevenshteinAutomata}
    */
-  public FuzzyCompletionQuery(Analyzer analyzer, Term term, Filter filter, int maxEdits,
+  public FuzzyCompletionQuery(Analyzer analyzer, Term term, BitsProducer filter, int maxEdits,
                               boolean transpositions, int nonFuzzyPrefix, int minFuzzyLength,
                               boolean unicodeAware, int maxDeterminizedStates) {
     super(analyzer, term, filter);
@@ -208,7 +208,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
     if (getFilter() != null) {
       buffer.append(",");
       buffer.append("filter");
-      buffer.append(getFilter().toString(field));
+      buffer.append(getFilter().toString());
     }
     return buffer.toString();
   }

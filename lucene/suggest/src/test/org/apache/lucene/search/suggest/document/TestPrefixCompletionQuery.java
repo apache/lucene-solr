@@ -18,27 +18,23 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.suggest.BitsProducer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -50,6 +46,68 @@ import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWith
 import static org.hamcrest.core.IsEqual.equalTo;
 
 public class TestPrefixCompletionQuery extends LuceneTestCase {
+
+  private static class NumericRangeBitsProducer extends BitsProducer {
+
+    private final String field;
+    private final long min, max;
+
+    public NumericRangeBitsProducer(String field, long min, long max) {
+      this.field = field;
+      this.min = min;
+      this.max = max;
+    }
+
+    @Override
+    public String toString() {
+      return field + "[" + min + ".." + max + "]";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      NumericRangeBitsProducer that = (NumericRangeBitsProducer) obj;
+      return field.equals(that.field)
+          && min == that.min
+          && max == that.max;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(getClass(), field, min, max);
+    }
+
+    @Override
+    public Bits getBits(final LeafReaderContext context) throws IOException {
+      final int maxDoc = context.reader().maxDoc();
+      final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
+      return new Bits() {
+
+        @Override
+        public boolean get(int doc) {
+          values.setDocument(doc);
+          final int count = values.count();
+          for (int i = 0; i < count; ++i) {
+            final long v = values.valueAt(i);
+            if (v >= min && v <= max) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        @Override
+        public int length() {
+          return maxDoc;
+        }
+        
+      };
+    }
+
+  }
+
   public Directory dir;
 
   @Before
@@ -98,7 +156,7 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
-      document.add(new IntField("filter_int_fld", i, Field.Store.NO));
+      document.add(new NumericDocValuesField("filter_int_fld", i));
       iw.addDocument(document);
 
       if (usually()) {
@@ -110,8 +168,7 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
 
     int topScore = num/2;
-    QueryWrapperFilter filterWrapper = new QueryWrapperFilter(NumericRangeQuery.newIntRange("filter_int_fld", 0, topScore, true, true));
-    Filter filter = randomAccessFilter(filterWrapper);
+    BitsProducer filter = new NumericRangeBitsProducer("filter_int_fld", 0, topScore);
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"), filter);
     // if at most half of the top scoring documents have been filtered out
     // the search should be admissible for a single segment
@@ -120,16 +177,14 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     assertThat(suggest.scoreLookupDocs()[0].key.toString(), equalTo("abc_" + topScore));
     assertThat(suggest.scoreLookupDocs()[0].score, equalTo((float) topScore));
 
-    filterWrapper = new QueryWrapperFilter(NumericRangeQuery.newIntRange("filter_int_fld", 0, 0, true, true));
-    filter = randomAccessFilter(filterWrapper);
+    filter = new NumericRangeBitsProducer("filter_int_fld", 0, 0);
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"), filter);
     // if more than half of the top scoring documents have been filtered out
     // search is not admissible, so # of suggestions requested is num instead of 1
     suggest = indexSearcher.suggest(query, num);
     assertSuggestions(suggest, new Entry("abc_0", 0));
 
-    filterWrapper = new QueryWrapperFilter(NumericRangeQuery.newIntRange("filter_int_fld", num - 1, num - 1, true, true));
-    filter = randomAccessFilter(filterWrapper);
+    filter = new NumericRangeBitsProducer("filter_int_fld", num - 1, num - 1);
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"), filter);
     // if only lower scoring documents are filtered out
     // search is admissible
@@ -146,17 +201,17 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
 
     Document document = new Document();
-    document.add(new IntField("filter_int_fld", 9, Field.Store.NO));
+    document.add(new NumericDocValuesField("filter_int_fld", 9));
     document.add(new SuggestField("suggest_field", "apples", 3));
     iw.addDocument(document);
 
     document = new Document();
-    document.add(new IntField("filter_int_fld", 10, Field.Store.NO));
+    document.add(new NumericDocValuesField("filter_int_fld", 10));
     document.add(new SuggestField("suggest_field", "applle", 4));
     iw.addDocument(document);
 
     document = new Document();
-    document.add(new IntField("filter_int_fld", 4, Field.Store.NO));
+    document.add(new NumericDocValuesField("filter_int_fld", 4));
     document.add(new SuggestField("suggest_field", "apple", 5));
     iw.addDocument(document);
 
@@ -173,8 +228,7 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     assertSuggestions(suggest, new Entry("apple", 5), new Entry("applle", 4), new Entry("apples", 3));
 
     // suggest with filter
-    QueryWrapperFilter filterWrapper = new QueryWrapperFilter(NumericRangeQuery.newIntRange("filter_int_fld", 5, 12, true, true));
-    Filter filter = randomAccessFilter(filterWrapper);
+    BitsProducer filter = new NumericRangeBitsProducer("filter_int_fld", 5, 12);
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "app"), filter);
     suggest = indexSearcher.suggest(query, 3);
     assertSuggestions(suggest, new Entry("applle", 4), new Entry("apples", 3));
@@ -253,47 +307,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     assertSuggestions(suggest, new Entry("the foo bar", 10), new Entry("foo bar", 8), new Entry("foobar", 7));
     reader.close();
     iw.close();
-  }
-
-  private static class RandomAccessFilter extends Filter {
-    private final Filter in;
-
-    private RandomAccessFilter(Filter in) {
-      this.in = in;
-    }
-
-    @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      DocIdSet docIdSet = in.getDocIdSet(context, acceptDocs);
-      DocIdSetIterator iterator = docIdSet.iterator();
-      FixedBitSet bits = new FixedBitSet(context.reader().maxDoc());
-      if (iterator != null) {
-        bits.or(iterator);
-      }
-      return new BitDocIdSet(bits);
-    }
-
-    @Override
-    public String toString(String field) {
-      return in.toString(field);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      return in.equals(((RandomAccessFilter) obj).in);
-    }
-
-    @Override
-    public int hashCode() {
-      return 31 * super.hashCode() + in.hashCode();
-    }
-  }
-
-  private static Filter randomAccessFilter(Filter filter) {
-    return new RandomAccessFilter(filter);
   }
 
 }
