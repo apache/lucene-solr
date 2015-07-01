@@ -26,14 +26,17 @@ import org.apache.lucene.document.FloatDocValuesField; // javadocs
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource; // javadocs
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.NumericUtils;
 
 /** {@link Facets} implementation that computes counts for
@@ -68,12 +71,12 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
   }
 
   /** Create {@code RangeFacetCounts}, using the provided
-   *  {@link ValueSource}, and using the provided Filter as
+   *  {@link ValueSource}, and using the provided Query as
    *  a fastmatch: only documents passing the filter are
    *  checked for the matching ranges.  The filter must be
    *  random access (implement {@link DocIdSet#bits}). */
-  public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, Filter fastMatchFilter, DoubleRange... ranges) throws IOException {
-    super(field, ranges, fastMatchFilter);
+  public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, Query fastMatchQuery, DoubleRange... ranges) throws IOException {
+    super(field, ranges, fastMatchQuery);
     count(valueSource, hits.getMatchingDocs());
   }
 
@@ -97,13 +100,15 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
       
       totCount += hits.totalHits;
       final DocIdSetIterator fastMatchDocs;
-      if (fastMatchFilter != null) {
-        DocIdSet dis = fastMatchFilter.getDocIdSet(hits.context, null);
-        if (dis == null) {
-          // No documents match
+      if (fastMatchQuery != null) {
+        final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(hits.context);
+        final IndexSearcher searcher = new IndexSearcher(topLevelContext);
+        searcher.setQueryCache(null);
+        final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, false);
+        fastMatchDocs = fastMatchWeight.scorer(hits.context);
+        if (fastMatchDocs == null) {
           continue;
         }
-        fastMatchDocs = dis.iterator();
       } else {
         fastMatchDocs = null;
       }

@@ -20,6 +20,7 @@ package org.apache.lucene.facet.range;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.document.Document;
@@ -48,6 +49,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
@@ -55,11 +57,13 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
@@ -472,18 +476,18 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
       FacetsCollector sfc = new FacetsCollector();
       s.search(new MatchAllDocsQuery(), sfc);
-      Filter fastMatchFilter;
+      Query fastMatchQuery;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newLongRange("field", minValue, maxValue, true, true));
+          fastMatchQuery = NumericRangeQuery.newLongRange("field", minValue, maxValue, true, true);
         } else {
-          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newLongRange("field", minAcceptedValue, maxAcceptedValue, true, true));
+          fastMatchQuery = NumericRangeQuery.newLongRange("field", minAcceptedValue, maxAcceptedValue, true, true);
         }
       } else {
-        fastMatchFilter = null;
+        fastMatchQuery = null;
       }
       ValueSource vs = new LongFieldSource("field");
-      Facets facets = new LongRangeFacetCounts("field", vs, sfc, fastMatchFilter, ranges);
+      Facets facets = new LongRangeFacetCounts("field", vs, sfc, fastMatchQuery, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
       for(int rangeID=0;rangeID<numRange;rangeID++) {
@@ -501,7 +505,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         if (random().nextBoolean()) {
           ddq.add("field", NumericRangeQuery.newLongRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
         } else {
-          ddq.add("field", range.getFilter(fastMatchFilter, vs));
+          ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
         assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits);
       }
@@ -627,18 +631,18 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
       FacetsCollector sfc = new FacetsCollector();
       s.search(new MatchAllDocsQuery(), sfc);
-      Filter fastMatchFilter;
+      Query fastMatchQuery;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newFloatRange("field", minValue, maxValue, true, true));
+          fastMatchQuery = NumericRangeQuery.newFloatRange("field", minValue, maxValue, true, true);
         } else {
-          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newFloatRange("field", minAcceptedValue, maxAcceptedValue, true, true));
+          fastMatchQuery = NumericRangeQuery.newFloatRange("field", minAcceptedValue, maxAcceptedValue, true, true);
         }
       } else {
-        fastMatchFilter = null;
+        fastMatchQuery = null;
       }
       ValueSource vs = new FloatFieldSource("field");
-      Facets facets = new DoubleRangeFacetCounts("field", vs, sfc, fastMatchFilter, ranges);
+      Facets facets = new DoubleRangeFacetCounts("field", vs, sfc, fastMatchQuery, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
       for(int rangeID=0;rangeID<numRange;rangeID++) {
@@ -656,7 +660,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         if (random().nextBoolean()) {
           ddq.add("field", NumericRangeQuery.newFloatRange("field", (float) range.min, (float) range.max, range.minInclusive, range.maxInclusive));
         } else {
-          ddq.add("field", range.getFilter(fastMatchFilter, vs));
+          ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
         assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits);
       }
@@ -766,12 +770,12 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
       FacetsCollector sfc = new FacetsCollector();
       s.search(new MatchAllDocsQuery(), sfc);
-      Filter fastMatchFilter;
+      Query fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newDoubleRange("field", minValue, maxValue, true, true));
+          fastMatchFilter = NumericRangeQuery.newDoubleRange("field", minValue, maxValue, true, true);
         } else {
-          fastMatchFilter = new QueryWrapperFilter(NumericRangeQuery.newDoubleRange("field", minAcceptedValue, maxAcceptedValue, true, true));
+          fastMatchFilter = NumericRangeQuery.newDoubleRange("field", minAcceptedValue, maxAcceptedValue, true, true);
         }
       } else {
         fastMatchFilter = null;
@@ -795,7 +799,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         if (random().nextBoolean()) {
           ddq.add("field", NumericRangeQuery.newDoubleRange("field", range.min, range.max, range.minInclusive, range.maxInclusive));
         } else {
-          ddq.add("field", range.getFilter(fastMatchFilter, vs));
+          ddq.add("field", range.getQuery(fastMatchFilter, vs));
         }
 
         assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits);
@@ -843,40 +847,80 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IOUtils.close(r, d);
   }
 
-  private static class UsedFilter extends Filter {
-    
+  private static class UsedQuery extends Query {
+
     private final AtomicBoolean used;
-    private final Filter in;
-    
-    UsedFilter(Filter in, AtomicBoolean used) {
+    private final Query in;
+
+    UsedQuery(Query in, AtomicBoolean used) {
       this.in = in;
       this.used = used;
     }
 
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
-        throws IOException {
-      used.set(true);
-      return in.getDocIdSet(context, acceptDocs);
-    }
-
-    @Override
-    public String toString(String field) {
-      return in.toString(field);
-    }
-    
-    @Override
     public boolean equals(Object obj) {
       if (super.equals(obj) == false) {
         return false;
       }
-      return in.equals(((UsedFilter) obj).in);
+      UsedQuery that = (UsedQuery) obj;
+      return in.equals(that.in);
     }
 
     @Override
     public int hashCode() {
       return 31 * super.hashCode() + in.hashCode();
     }
+
+    @Override
+    public Query rewrite(IndexReader reader) throws IOException {
+      final Query inRewritten = in.rewrite(reader);
+      if (in != inRewritten) {
+        Query rewritten = new UsedQuery(inRewritten, used);
+        rewritten.setBoost(getBoost());
+        return rewritten;
+      }
+      return super.rewrite(reader);
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      final Weight in = this.in.createWeight(searcher, needsScores);
+      return new Weight(in.getQuery()) {
+
+        @Override
+        public void extractTerms(Set<Term> terms) {
+          in.extractTerms(terms);
+        }
+
+        @Override
+        public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+          return in.explain(context, doc);
+        }
+
+        @Override
+        public float getValueForNormalization() throws IOException {
+          return in.getValueForNormalization();
+        }
+
+        @Override
+        public void normalize(float norm, float topLevelBoost) {
+          in.normalize(norm, topLevelBoost);
+        }
+
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          used.set(true);
+          return in.scorer(context);
+        }
+        
+      };
+    }
+
+    @Override
+    public String toString(String field) {
+      return "UsedQuery(" + in + ")";
+    }
+
   }
 
   public void testCustomDoublesValueSource() throws Exception {
@@ -935,12 +979,12 @@ public class TestRangeFacetCounts extends FacetTestCase {
         new DoubleRange("< 20", 0.0, true, 20.0, false),
         new DoubleRange("< 50", 0.0, true, 50.0, false)};
 
-    final Filter fastMatchFilter;
+    final Query fastMatchFilter;
     final AtomicBoolean filterWasUsed = new AtomicBoolean();
     if (random().nextBoolean()) {
       // Sort of silly:
-      final Filter in = new QueryWrapperFilter(new MatchAllDocsQuery());
-      fastMatchFilter = new UsedFilter(in, filterWasUsed);
+      final Query in = new MatchAllDocsQuery();
+      fastMatchFilter = new UsedQuery(in, filterWasUsed);
     } else {
       fastMatchFilter = null;
     }
@@ -955,7 +999,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     assertTrue(fastMatchFilter == null || filterWasUsed.get());
 
     DrillDownQuery ddq = new DrillDownQuery(config);
-    ddq.add("field", ranges[1].getFilter(fastMatchFilter, vs));
+    ddq.add("field", ranges[1].getQuery(fastMatchFilter, vs));
 
     // Test simple drill-down:
     assertEquals(1, s.search(ddq, 10).totalHits);

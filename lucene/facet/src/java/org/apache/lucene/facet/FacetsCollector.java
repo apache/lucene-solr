@@ -25,7 +25,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
@@ -195,69 +194,53 @@ public class FacetsCollector extends SimpleCollector implements Collector {
   /** Utility method, to search and also collect all hits
    *  into the provided {@link Collector}. */
   public static TopDocs search(IndexSearcher searcher, Query q, int n, Collector fc) throws IOException {
-    return doSearch(searcher, null, q, null, n, null, false, false, fc);
+    return doSearch(searcher, null, q, n, null, false, false, fc);
   }
 
   /** Utility method, to search and also collect all hits
    *  into the provided {@link Collector}. */
-  public static TopDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Collector fc) throws IOException {
-    return doSearch(searcher, null, q, filter, n, null, false, false, fc);
-  }
-
-  /** Utility method, to search and also collect all hits
-   *  into the provided {@link Collector}. */
-  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Sort sort, Collector fc) throws IOException {
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, int n, Sort sort, Collector fc) throws IOException {
     if (sort == null) {
       throw new IllegalArgumentException("sort must not be null");
     }
-    return (TopFieldDocs) doSearch(searcher, null, q, filter, n, sort, false, false, fc);
+    return (TopFieldDocs) doSearch(searcher, null, q, n, sort, false, false, fc);
   }
 
   /** Utility method, to search and also collect all hits
    *  into the provided {@link Collector}. */
-  public static TopFieldDocs search(IndexSearcher searcher, Query q, Filter filter, int n, Sort sort, boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
+  public static TopFieldDocs search(IndexSearcher searcher, Query q, int n, Sort sort, boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
     if (sort == null) {
       throw new IllegalArgumentException("sort must not be null");
     }
-    return (TopFieldDocs) doSearch(searcher, null, q, filter, n, sort, doDocScores, doMaxScore, fc);
+    return (TopFieldDocs) doSearch(searcher, null, q, n, sort, doDocScores, doMaxScore, fc);
   }
 
   /** Utility method, to search and also collect all hits
    *  into the provided {@link Collector}. */
-  public TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, int n, Collector fc) throws IOException {
-    return doSearch(searcher, after, q, null, n, null, false, false, fc);
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, int n, Collector fc) throws IOException {
+    return doSearch(searcher, after, q, n, null, false, false, fc);
   }
 
   /** Utility method, to search and also collect all hits
    *  into the provided {@link Collector}. */
-  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Collector fc) throws IOException {
-    return doSearch(searcher, after, q, filter, n, null, false, false, fc);
-  }
-
-  /** Utility method, to search and also collect all hits
-   *  into the provided {@link Collector}. */
-  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort, Collector fc) throws IOException {
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, int n, Sort sort, Collector fc) throws IOException {
     if (sort == null) {
       throw new IllegalArgumentException("sort must not be null");
     }
-    return doSearch(searcher, after, q, filter, n, sort, false, false, fc);
+    return doSearch(searcher, after, q, n, sort, false, false, fc);
   }
 
   /** Utility method, to search and also collect all hits
    *  into the provided {@link Collector}. */
-  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort, boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
+  public static TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query q, int n, Sort sort, boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
     if (sort == null) {
       throw new IllegalArgumentException("sort must not be null");
     }
-    return doSearch(searcher, after, q, filter, n, sort, doDocScores, doMaxScore, fc);
+    return doSearch(searcher, after, q, n, sort, doDocScores, doMaxScore, fc);
   }
 
-  private static TopDocs doSearch(IndexSearcher searcher, ScoreDoc after, Query q, Filter filter, int n, Sort sort,
+  private static TopDocs doSearch(IndexSearcher searcher, ScoreDoc after, Query q, int n, Sort sort,
                                   boolean doDocScores, boolean doMaxScore, Collector fc) throws IOException {
-
-    if (filter != null) {
-      q = new FilteredQuery(q, filter);
-    }
 
     int limit = searcher.getIndexReader().maxDoc();
     if (limit == 0) {

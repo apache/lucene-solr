@@ -21,14 +21,18 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Objects;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredDocIdSet;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 
 /** Represents a range over long values.
  *
@@ -94,14 +98,14 @@ public final class LongRange extends Range {
     return "LongRange(" + minIncl + " to " + maxIncl + ")";
   }
 
-  private static class ValueSourceFilter extends Filter {
+  private static class ValueSourceQuery extends Query {
     private final LongRange range;
-    private final Filter fastMatchFilter;
+    private final Query fastMatchQuery;
     private final ValueSource valueSource;
 
-    ValueSourceFilter(LongRange range, Filter fastMatchFilter, ValueSource valueSource) {
+    ValueSourceQuery(LongRange range, Query fastMatchQuery, ValueSource valueSource) {
       this.range = range;
-      this.fastMatchFilter = fastMatchFilter;
+      this.fastMatchQuery = fastMatchQuery;
       this.valueSource = valueSource;
     }
 
@@ -110,15 +114,15 @@ public final class LongRange extends Range {
       if (super.equals(obj) == false) {
         return false;
       }
-      ValueSourceFilter other = (ValueSourceFilter) obj;
+      ValueSourceQuery other = (ValueSourceQuery) obj;
       return range.equals(other.range)
-          && Objects.equals(fastMatchFilter, other.fastMatchFilter)
+          && Objects.equals(fastMatchQuery, other.fastMatchQuery)
           && valueSource.equals(other.valueSource);
     }
 
     @Override
     public int hashCode() {
-      return 31 * Objects.hash(range, fastMatchFilter, valueSource) + super.hashCode();
+      return 31 * Objects.hash(range, fastMatchQuery, valueSource) + super.hashCode();
     }
 
     @Override
@@ -127,51 +131,55 @@ public final class LongRange extends Range {
     }
 
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
-
-      // TODO: this is just like ValueSourceScorer,
-      // ValueSourceFilter (spatial),
-      // ValueSourceRangeFilter (solr); also,
-      // https://issues.apache.org/jira/browse/LUCENE-4251
-
-      final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);
-
-      final int maxDoc = context.reader().maxDoc();
-
-      final DocIdSet fastMatchDocs;
-      if (fastMatchFilter != null) {
-        fastMatchDocs = fastMatchFilter.getDocIdSet(context, null);
-        if (fastMatchDocs == null) {
-          // No documents match
-          return null;
+    public Query rewrite(IndexReader reader) throws IOException {
+      if (fastMatchQuery != null) {
+        final Query fastMatchRewritten = fastMatchQuery.rewrite(reader);
+        if (fastMatchRewritten != fastMatchQuery) {
+          Query rewritten = new ValueSourceQuery(range, fastMatchRewritten, valueSource);
+          rewritten.setBoost(getBoost());
+          return rewritten;
         }
-      } else {
-        fastMatchDocs = new DocIdSet() {
-          @Override
-          public long ramBytesUsed() {
-            return 0;
-          }
-          @Override
-          public DocIdSetIterator iterator() throws IOException {
-            return DocIdSetIterator.all(maxDoc);
-          }
-        };
       }
+      return super.rewrite(reader);
+    }
 
-      return new FilteredDocIdSet(fastMatchDocs) {
+    @Override
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      final Weight fastMatchWeight = fastMatchQuery == null
+          ? null
+          : searcher.createWeight(fastMatchQuery, false);
+
+      return new ConstantScoreWeight(this) {
         @Override
-        protected boolean match(int docID) {
-          if (acceptDocs != null && acceptDocs.get(docID) == false) {
-            return false;
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          final int maxDoc = context.reader().maxDoc();
+
+          final DocIdSetIterator approximation;
+          if (fastMatchWeight == null) {
+            approximation = DocIdSetIterator.all(maxDoc);
+          } else {
+            approximation = fastMatchWeight.scorer(context);
+            if (approximation == null) {
+              return null;
+            }
           }
-          return range.accept(values.longVal(docID));
+
+          final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);
+          final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
+            @Override
+            public boolean matches() throws IOException {
+              return range.accept(values.longVal(approximation.docID()));
+            }
+          };
+          return new ConstantScoreScorer(this, score(), twoPhase);
         }
       };
     }
+
   }
 
   @Override
-  public Filter getFilter(final Filter fastMatchFilter, final ValueSource valueSource) {
-    return new ValueSourceFilter(this, fastMatchFilter, valueSource);
+  public Query getQuery(final Query fastMatchQuery, final ValueSource valueSource) {
+    return new ValueSourceQuery(this, fastMatchQuery, valueSource);
   }
 }

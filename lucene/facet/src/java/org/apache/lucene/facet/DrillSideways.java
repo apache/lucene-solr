@@ -32,7 +32,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
@@ -194,7 +193,7 @@ public class DrillSideways {
    * drill down and sideways counts.
    */
   public DrillSidewaysResult search(DrillDownQuery query,
-                                    Filter filter, FieldDoc after, int topN, Sort sort, boolean doDocScores,
+                                    Query filter, FieldDoc after, int topN, Sort sort, boolean doDocScores,
                                     boolean doMaxScore) throws IOException {
     if (filter != null) {
       query = new DrillDownQuery(config, filter, query);
