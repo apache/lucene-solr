@@ -34,6 +34,14 @@ import java.lang.reflect.Method;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.Permission;
+import java.security.PermissionCollection;
+import java.security.Permissions;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,6 +109,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
+
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -2603,6 +2612,25 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static Path createTempFile() throws IOException {
     return createTempFile("tempFile", ".tmp");
+  }
+  
+  /** 
+   * Runs a code part with restricted permissions (be sure to add all required permissions,
+   * because it would start with empty permissions). You cannot grant more permissions than
+   * our policy file allows, but you may restrict writing to several dirs...
+   * <p><em>Note:</em> This assumes a {@link SecurityManager} enabled, otherwise it
+   * stops test execution.
+   */
+  public static <T> T runWithRestrictedPermissions(PrivilegedExceptionAction<T> action, Permission... permissions) throws Exception {
+    assumeTrue("runWithRestrictedPermissions requires a SecurityManager enabled", System.getSecurityManager() != null);
+    final PermissionCollection perms = new Permissions();
+    Arrays.stream(permissions).forEach(perms::add);
+    final AccessControlContext ctx = new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, perms) });
+    try {
+      return AccessController.doPrivileged(action, ctx);
+    } catch (PrivilegedActionException e) {
+      throw e.getException();
+    }
   }
 
   /** True if assertions (-ea) are enabled (at least for this class). */

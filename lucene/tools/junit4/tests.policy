@@ -110,4 +110,7 @@ grant {
   // SSL related properties for jetty
   permission java.security.SecurityPermission "getProperty.ssl.KeyManagerFactory.algorithm";
   permission java.security.SecurityPermission "getProperty.ssl.TrustManagerFactory.algorithm";
+  
+  // allows LuceneTestCase#runWithRestrictedPermissions to execute with lower (or no) permission
+  permission java.security.SecurityPermission "createAccessControlContext";
 };

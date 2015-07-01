@@ -232,6 +232,9 @@ Changes in Runtime Behavior
   API, however the returned bits may be called on different documents compared
   to before. (Adrien Grand)
 
+* LUCENE-6542: FSDirectory's ctor now works with security policies or file systems
+  that restrict write access.  (Trejkaz, hossman, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-6548: Some optimizations for BlockTree's intersect with very
@@ -263,6 +266,11 @@ Test Framework
 
 * LUCENE-6637: Fix FSTTester to not violate file permissions on
   -Dtests.verbose=true.  (Mesbah M. Alam, Uwe Schindler)
+
+* LUCENE-6542: LuceneTestCase now has runWithRestrictedPermissions() to run
+  an action with reduced permissions. This can be used to simulate special
+  environments (e.g., read-only dirs). If tests are running without a security
+  manager, an assume cancels test execution automatically.  (Uwe Schindler)
 
 Changes in Backwards Compatibility Policy
 
