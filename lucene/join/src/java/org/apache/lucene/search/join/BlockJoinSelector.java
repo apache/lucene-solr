@@ -33,10 +33,15 @@ import org.apache.lucene.util.BytesRef;
  *  @lucene.internal */
 public class BlockJoinSelector {
 
+  private BlockJoinSelector() {}
+
   /** Type of selection to perform. If none of the documents in the block have
    *  a value then no value will be selected. */
   public enum Type {
-    MIN, MAX;
+    /** Only consider the minimum value from the block when sorting. */
+    MIN,
+    /** Only consider the maximum value from the block when sorting. */
+    MAX;
   }
 
   /** Return a {@link Bits} instance that returns true if, and only if, any of
@@ -157,6 +162,9 @@ public class BlockJoinSelector {
     return wrap(values, DocValues.docsWithValue(sortedNumerics, parents.length()), selection, parents, children);
   }
 
+  /** Wraps the provided {@link NumericDocValues} in order to only select
+   *  one value per parent among its {@code children} using the configured
+   *  {@code selection} type. */
   public static NumericDocValues wrap(final NumericDocValues values, Bits docsWithValue, Type selection, BitSet parents, BitSet children) {
     return new NumericDocValues() {
 
