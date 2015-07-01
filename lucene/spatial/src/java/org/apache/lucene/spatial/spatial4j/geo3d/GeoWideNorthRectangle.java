@@ -125,14 +125,6 @@ public class GeoWideNorthRectangle extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return
-        bottomPlane.isWithin(point) &&
-            (leftPlane.isWithin(point) ||
-                rightPlane.isWithin(point));
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return
         bottomPlane.isWithin(x, y, z) &&
@@ -150,11 +142,6 @@ public class GeoWideNorthRectangle extends GeoBaseBBox {
     return Math.max(centerAngle, bottomAngle);
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return centerPoint;
@@ -175,15 +162,6 @@ public class GeoWideNorthRectangle extends GeoBaseBBox {
             p.intersects(planetModel, rightPlane, notablePoints, rightPlanePoints, bounds, bottomPlane);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -229,6 +207,24 @@ public class GeoWideNorthRectangle extends GeoBaseBBox {
 
     //System.err.println(" disjoint");
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double bottomDistance = distanceStyle.computeDistance(planetModel, bottomPlane, x,y,z, eitherBound);
+    // Because the rectangle exceeds 180 degrees, it is safe to compute the horizontally 
+    // unbounded distance to both the left and the right and only take the minimum of the two.
+    final double leftDistance = distanceStyle.computeDistance(planetModel, leftPlane, x,y,z, bottomPlane);
+    final double rightDistance = distanceStyle.computeDistance(planetModel, rightPlane, x,y,z, bottomPlane);
+    
+    final double LRHCDistance = distanceStyle.computeDistance(LRHC, x,y,z);
+    final double LLHCDistance = distanceStyle.computeDistance(LLHC, x,y,z);
+    
+    return Math.min(
+      Math.min(
+        bottomDistance,
+        Math.min(leftDistance, rightDistance)),
+      Math.min(LRHCDistance, LLHCDistance));
   }
 
   @Override

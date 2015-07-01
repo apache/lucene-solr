@@ -64,8 +64,4 @@ public interface GeoShape extends Membership {
    */
   public Bounds getBounds(final Bounds bounds);
 
-  /**
-   * Equals
-   */
-  public boolean equals(Object o);
 }

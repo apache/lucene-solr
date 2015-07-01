@@ -52,7 +52,8 @@ public class Vector {
   /**
    * Construct a vector that is perpendicular to
    * two other (non-zero) vectors.  If the vectors are parallel,
-   * the result vector will have magnitude 0.
+   * IllegalArgumentException will be thrown.
+   * Produces a normalized final vector.
    *
    * @param A is the first vector
    * @param B is the second
@@ -61,12 +62,25 @@ public class Vector {
     // x = u2v3 - u3v2
     // y = u3v1 - u1v3
     // z = u1v2 - u2v1
-
-    this(A.y * B.z - A.z * B.y,
-        A.z * B.x - A.x * B.z,
-        A.x * B.y - A.y * B.x);
+    final double thisX = A.y * B.z - A.z * B.y;
+    final double thisY = A.z * B.x - A.x * B.z;
+    final double thisZ = A.x * B.y - A.y * B.x;
+    final double magnitude = magnitude(thisX, thisY, thisZ);
+    if (Math.abs(magnitude) < MINIMUM_RESOLUTION) {
+      throw new IllegalArgumentException("Degenerate/parallel vector constructed");
+    }
+    final double inverseMagnitude = 1.0 / magnitude;
+    this.x = thisX * inverseMagnitude;
+    this.y = thisY * inverseMagnitude;
+    this.z = thisZ * inverseMagnitude;
   }
 
+  /** Compute a magnitude of an x,y,z value.
+   */
+  public static double magnitude(final double x, final double y, final double z) {
+    return Math.sqrt(x*x + y*y + z*z);
+  }
+  
   /**
    * Compute a normalized unit vector based on the current vector.
    *
@@ -304,7 +318,7 @@ public class Vector {
    * @return the magnitude.
    */
   public double magnitude() {
-    return Math.sqrt(x * x + y * y + z * z);
+    return magnitude(x,y,z);
   }
 
   /** Compute the desired magnitude of a unit vector projected to a given

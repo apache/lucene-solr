@@ -112,13 +112,6 @@ public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return plane.evaluateIsZero(point) &&
-        leftPlane.isWithin(point) &&
-        rightPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return plane.evaluateIsZero(x, y, z) &&
         leftPlane.isWithin(x, y, z) &&
@@ -132,11 +125,6 @@ public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
     return Math.max(topAngle, bottomAngle);
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return centerPoint;
@@ -152,15 +140,6 @@ public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
     return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, leftPlane, rightPlane);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -184,6 +163,18 @@ public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
 
     //System.err.println(" disjoint");
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double distance = distanceStyle.computeDistance(planetModel, plane, x,y,z, leftPlane, rightPlane);
+    
+    final double LHCDistance = distanceStyle.computeDistance(LHC, x,y,z);
+    final double RHCDistance = distanceStyle.computeDistance(RHC, x,y,z);
+    
+    return Math.min(
+      distance,
+      Math.min(LHCDistance, RHCDistance));
   }
 
   @Override

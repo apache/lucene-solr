@@ -90,48 +90,29 @@ public class SidedPlane extends Plane implements Membership {
   public static SidedPlane constructNormalizedPerpendicularSidedPlane(final Vector insidePoint,
     final Vector normalVector, final Vector point1, final Vector point2) {
     final Vector pointsVector = new Vector(point1.x - point2.x, point1.y - point2.y, point1.z - point2.z);
-    final Vector newNormalVector = new Vector(normalVector, pointsVector).normalize();
-    if (newNormalVector == null)
+    final Vector newNormalVector = new Vector(normalVector, pointsVector);
+    try {
+      // To construct the plane, we now just need D, which is simply the negative of the evaluation of the circle normal vector at one of the points.
+      return new SidedPlane(insidePoint, newNormalVector, -newNormalVector.dotProduct(point1));
+    } catch (IllegalArgumentException e) {
       return null;
-    // To construct the plane, we now just need D, which is simply the negative of the evaluation of the circle normal vector at one of the points.
-    return new SidedPlane(insidePoint, newNormalVector, -newNormalVector.dotProduct(point1));
+    }
   }
   
   /** Construct a sided plane from three points.
    */
   public static SidedPlane constructNormalizedThreePointSidedPlane(final Vector insidePoint,
     final Vector point1, final Vector point2, final Vector point3) {
-    final Vector planeNormal = new Vector(
-      new Vector(point1.x - point2.x, point1.y - point2.y, point1.z - point2.z),
-      new Vector(point2.x - point3.x, point2.y - point3.y, point2.z - point3.z)).normalize();
-    if (planeNormal == null)
+    try {
+      final Vector planeNormal = new Vector(
+        new Vector(point1.x - point2.x, point1.y - point2.y, point1.z - point2.z),
+        new Vector(point2.x - point3.x, point2.y - point3.y, point2.z - point3.z));
+      return new SidedPlane(insidePoint, planeNormal, -planeNormal.dotProduct(point2));
+    } catch (IllegalArgumentException e) {
       return null;
-    return new SidedPlane(insidePoint, planeNormal, -planeNormal.dotProduct(point2));
+    }
   }
 
-  /**
-   * Check if a point is within this shape.
-   *
-   * @param point is the point to check.
-   * @return true if the point is within this shape
-   */
-  @Override
-  public boolean isWithin(Vector point) {
-    double evalResult = evaluate(point);
-    if (Math.abs(evalResult) < MINIMUM_RESOLUTION)
-      return true;
-    double sigNum = Math.signum(evalResult);
-    return sigNum == this.sigNum;
-  }
-
-  /**
-   * Check if a point is within this shape.
-   *
-   * @param x is x coordinate of point to check.
-   * @param y is y coordinate of point to check.
-   * @param z is z coordinate of point to check.
-   * @return true if the point is within this shape
-   */
   @Override
   public boolean isWithin(double x, double y, double z) {
     double evalResult = evaluate(x, y, z);
@@ -141,6 +122,26 @@ public class SidedPlane extends Plane implements Membership {
     return sigNum == this.sigNum;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof SidedPlane)) return false;
+    if (!super.equals(o)) return false;
+
+    SidedPlane that = (SidedPlane) o;
+
+    return Double.compare(that.sigNum, sigNum) == 0;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    long temp;
+    temp = Double.doubleToLongBits(sigNum);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
+  }
 
   @Override
   public String toString() {

@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 /**
- * Interface describing 3d shape membership methods.
+ * Implemented by Geo3D shapes that can calculate if a point is within it or not.
  *
  * @lucene.experimental
  */
@@ -30,7 +30,9 @@ public interface Membership {
    * @param point is the point to check.
    * @return true if the point is within this shape
    */
-  public boolean isWithin(final Vector point);
+  public default boolean isWithin(final Vector point) {
+    return isWithin(point.x, point.y, point.z);
+  }
 
   /**
    * Check if a point is within this shape.

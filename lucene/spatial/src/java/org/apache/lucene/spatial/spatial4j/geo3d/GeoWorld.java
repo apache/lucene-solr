@@ -41,20 +41,10 @@ public class GeoWorld extends GeoBaseBBox {
     return Math.PI;
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     // Totally arbitrary
     return originPoint;
-  }
-
-  @Override
-  public boolean isWithin(final Vector point) {
-    return true;
   }
 
   @Override
@@ -72,15 +62,6 @@ public class GeoWorld extends GeoBaseBBox {
     return false;
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -96,6 +77,11 @@ public class GeoWorld extends GeoBaseBBox {
       return WITHIN;
 
     return OVERLAPS;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return 0.0;
   }
 
   @Override

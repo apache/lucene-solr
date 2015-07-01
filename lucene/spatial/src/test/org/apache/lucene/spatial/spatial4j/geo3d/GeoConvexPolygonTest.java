@@ -46,9 +46,12 @@ public class GeoConvexPolygonTest {
     assertTrue(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, 0.05, -0.5);
     assertTrue(c.isWithin(gp));
-    // Sample some nearby points outside
+    // Sample some nearby points outside, and compute distance-to-shape for them as well
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
     assertFalse(c.isWithin(gp));
+    assertEquals(0.05,c.computeOutsideDistance(DistanceStyle.ARC,gp),1e-12);
+    assertEquals(0.05,c.computeOutsideDistance(DistanceStyle.NORMAL,gp),1e-3);
+    assertEquals(0.05,c.computeOutsideDistance(DistanceStyle.LINEAR,gp),1e-3);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
     assertFalse(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);

@@ -32,17 +32,17 @@ public class GeoCircleTest {
     GeoPoint gp;
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeArcDistance(gp), 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeLinearDistance(gp), 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeNormalDistance(gp), 0.0);
+    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.ARC,gp), 0.0);
+    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
+    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
-    assertEquals(0.0, c.computeArcDistance(gp), 0.000001);
-    assertEquals(0.0, c.computeLinearDistance(gp), 0.000001);
-    assertEquals(0.0, c.computeNormalDistance(gp), 0.000001);
+    assertEquals(0.0, c.computeDistance(DistanceStyle.ARC,gp), 0.000001);
+    assertEquals(0.0, c.computeDistance(DistanceStyle.NORMAL,gp), 0.000001);
+    assertEquals(0.0, c.computeDistance(DistanceStyle.NORMAL,gp), 0.000001);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.05, -0.5);
-    assertEquals(0.05, c.computeArcDistance(gp), 0.000001);
-    assertEquals(0.049995, c.computeLinearDistance(gp), 0.000001);
-    assertEquals(0.049979, c.computeNormalDistance(gp), 0.000001);
+    assertEquals(0.05, c.computeDistance(DistanceStyle.ARC,gp), 0.000001);
+    assertEquals(0.049995, c.computeDistance(DistanceStyle.LINEAR,gp), 0.000001);
+    assertEquals(0.049979, c.computeDistance(DistanceStyle.NORMAL,gp), 0.000001);
   }
 
   @Test
@@ -75,6 +75,9 @@ public class GeoCircleTest {
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
     assertFalse(c.isWithin(gp));
+    assertEquals(0.4,c.computeOutsideDistance(DistanceStyle.ARC,gp),1e-12);
+    assertEquals(0.12,c.computeOutsideDistance(DistanceStyle.NORMAL,gp),0.01);
+    assertEquals(0.4,c.computeOutsideDistance(DistanceStyle.LINEAR,gp),0.01);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.55);

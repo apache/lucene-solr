@@ -109,6 +109,10 @@ New Features
   near-real-time or non-NRT reader.  (Boaz Leskes, Robert Muir, Mike
   McCandless)
 
+* LUCENE-6578: Geo3D can now compute the distance from a point to a shape, both
+  inner distance and to an outside edge. Multiple distance algorithms are
+  available.  (Karl Wright, David Smiley)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

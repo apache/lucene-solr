@@ -71,12 +71,6 @@ public class GeoLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return topPlane.isWithin(point) &&
-        bottomPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return topPlane.isWithin(x, y, z) &&
         bottomPlane.isWithin(x, y, z);
@@ -94,11 +88,6 @@ public class GeoLatitudeZone extends GeoBaseBBox {
     return maxCosLat * Math.PI;
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     // This is totally arbitrary and only a cartesian could agree with it.
@@ -116,15 +105,6 @@ public class GeoLatitudeZone extends GeoBaseBBox {
         p.intersects(planetModel, bottomPlane, notablePoints, planePoints, bounds, topPlane);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -171,6 +151,14 @@ public class GeoLatitudeZone extends GeoBaseBBox {
       return WITHIN;
 
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double topDistance = distanceStyle.computeDistance(planetModel, topPlane, x,y,z, bottomPlane);
+    final double bottomDistance = distanceStyle.computeDistance(planetModel, bottomPlane, x,y,z, topPlane);
+
+    return Math.min(topDistance, bottomDistance);
   }
 
   @Override

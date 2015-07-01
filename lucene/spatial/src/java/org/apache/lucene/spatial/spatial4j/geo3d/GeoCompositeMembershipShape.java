@@ -40,14 +40,7 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape {
 
   @Override
   public boolean isWithin(final Vector point) {
-    //System.err.println("Checking whether point "+point+" is within Composite");
-    for (GeoMembershipShape shape : shapes) {
-      if (shape.isWithin(point)) {
-        //System.err.println(" Point is within "+shape);
-        return true;
-      }
-    }
-    return false;
+    return isWithin(point.x, point.y, point.z);
   }
 
   @Override
@@ -73,15 +66,6 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape {
     return false;
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -93,23 +77,36 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape {
   }
 
   @Override
+  public double computeOutsideDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
+    return computeOutsideDistance(distanceStyle, point.x, point.y, point.z);
+  }
+
+  @Override
+  public double computeOutsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    if (isWithin(x,y,z))
+      return 0.0;
+    double distance = Double.MAX_VALUE;
+    for (GeoMembershipShape shape : shapes) {
+      final double normalDistance = shape.computeOutsideDistance(distanceStyle, x, y, z);
+      if (normalDistance < distance) {
+        distance = normalDistance;
+      }
+    }
+    return distance;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof GeoCompositeMembershipShape))
       return false;
     GeoCompositeMembershipShape other = (GeoCompositeMembershipShape) o;
-    if (other.shapes.size() != shapes.size())
-      return false;
 
-    for (int i = 0; i < shapes.size(); i++) {
-      if (!other.shapes.get(i).equals(shapes.get(i)))
-        return false;
-    }
-    return true;
+    return super.equals(o) && shapes.equals(other.shapes);
   }
 
   @Override
   public int hashCode() {
-    return shapes.hashCode();//TODO cache
+    return super.hashCode() * 31 + shapes.hashCode();//TODO cache
   }
 
   @Override

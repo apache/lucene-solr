@@ -117,15 +117,6 @@ public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    if (point == null)
-      return false;
-    return plane.evaluateIsZero(point) &&
-        (leftPlane.isWithin(point) ||
-            rightPlane.isWithin(point));
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return plane.evaluateIsZero(x, y, z) &&
         (leftPlane.isWithin(x, y, z) ||
@@ -142,11 +133,6 @@ public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
     return Math.max(topAngle, bottomAngle);
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return centerPoint;
@@ -164,15 +150,6 @@ public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
     return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, eitherBound);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -193,6 +170,18 @@ public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
     }
 
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double distance = distanceStyle.computeDistance(planetModel, plane, x,y,z, eitherBound);
+    
+    final double LHCDistance = distanceStyle.computeDistance(LHC, x,y,z);
+    final double RHCDistance = distanceStyle.computeDistance(RHC, x,y,z);
+    
+    return Math.min(
+      distance,
+      Math.min(LHCDistance, RHCDistance));
   }
 
   @Override
@@ -218,11 +207,6 @@ public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
 
   protected class EitherBound implements Membership {
     public EitherBound() {
-    }
-
-    @Override
-    public boolean isWithin(final Vector v) {
-      return leftPlane.isWithin(v) || rightPlane.isWithin(v);
     }
 
     @Override

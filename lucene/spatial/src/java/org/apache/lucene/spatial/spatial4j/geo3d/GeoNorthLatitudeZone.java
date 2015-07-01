@@ -60,12 +60,6 @@ public class GeoNorthLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return
-        bottomPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return
         bottomPlane.isWithin(x, y, z);
@@ -81,11 +75,6 @@ public class GeoNorthLatitudeZone extends GeoBaseBBox {
     return maxCosLat * Math.PI;
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return interiorPoint;
@@ -102,15 +91,6 @@ public class GeoNorthLatitudeZone extends GeoBaseBBox {
         p.intersects(planetModel, bottomPlane, notablePoints, planePoints, bounds);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -133,8 +113,7 @@ public class GeoNorthLatitudeZone extends GeoBaseBBox {
     // Second, the shortcut of seeing whether endpoints are in/out is not going to
     // work with no area endpoints.  So we rely entirely on intersections.
 
-    if (
-        path.intersects(bottomPlane, planePoints))
+    if (path.intersects(bottomPlane, planePoints))
       return OVERLAPS;
 
     // There is another case for latitude zones only.  This is when the boundaries of the shape all fit
@@ -150,6 +129,11 @@ public class GeoNorthLatitudeZone extends GeoBaseBBox {
       return WITHIN;
 
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distanceStyle.computeDistance(planetModel, bottomPlane, x,y,z);
   }
 
   @Override

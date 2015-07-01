@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @lucene.experimental
  */
-public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembershipShape {
+public class GeoConvexPolygon extends GeoBaseMembershipShape {
   protected final List<GeoPoint> points;
   protected final BitSet isInternalEdges;
 
@@ -152,15 +152,6 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    for (final SidedPlane edge : edges) {
-      if (!edge.isWithin(point))
-        return false;
-    }
-    return true;
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     for (final SidedPlane edge : edges) {
       if (!edge.isWithin(x, y, z))
@@ -201,15 +192,6 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
     return false;
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     bounds = super.getBounds(bounds);
@@ -238,6 +220,32 @@ public class GeoConvexPolygon extends GeoBaseExtendedShape implements GeoMembers
       bounds.noLongitudeBound();
     }
     return bounds;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    double minimumDistance = Double.MAX_VALUE;
+    for (final GeoPoint edgePoint : points) {
+      final double newDist = distanceStyle.computeDistance(edgePoint, x,y,z);
+      if (newDist < minimumDistance) {
+        minimumDistance = newDist;
+      }
+    }
+    for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+      final Plane edgePlane = edges[edgeIndex];
+      final Membership[] membershipBounds = new Membership[edges.length - 1];
+      int count = 0;
+      for (int otherIndex = 0; otherIndex < edges.length; otherIndex++) {
+        if (otherIndex != edgeIndex) {
+          membershipBounds[count++] = edges[otherIndex];
+        }
+      }
+      final double newDist = distanceStyle.computeDistance(planetModel, edgePlane, x, y, z, membershipBounds);
+      if (newDist < minimumDistance) {
+        minimumDistance = newDist;
+      }
+    }
+    return minimumDistance;
   }
 
   @Override

@@ -21,7 +21,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * Bounding box limited on three sides (bottom lat, left lon, right lon), including
  * the north pole.
  * The left-right maximum extent for this shape is PI; for anything larger, use
- * GeoWideNorthRectangle.
+ * {@link GeoWideNorthRectangle}.
  *
  * @lucene.internal
  */
@@ -123,14 +123,6 @@ public class GeoNorthRectangle extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return
-        bottomPlane.isWithin(point) &&
-            leftPlane.isWithin(point) &&
-            rightPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return
         bottomPlane.isWithin(x, y, z) &&
@@ -171,15 +163,6 @@ public class GeoNorthRectangle extends GeoBaseBBox {
             p.intersects(planetModel, rightPlane, notablePoints, rightPlanePoints, bounds, leftPlane, bottomPlane);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -224,6 +207,23 @@ public class GeoNorthRectangle extends GeoBaseBBox {
     }
     //System.err.println(" disjoint");
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double bottomDistance = distanceStyle.computeDistance(planetModel, bottomPlane, x,y,z, leftPlane, rightPlane);
+    final double leftDistance = distanceStyle.computeDistance(planetModel, leftPlane, x,y,z, rightPlane, bottomPlane);
+    final double rightDistance = distanceStyle.computeDistance(planetModel, rightPlane, x,y,z, leftPlane, bottomPlane);
+    
+    final double LRHCDistance = distanceStyle.computeDistance(LRHC, x,y,z);
+    final double LLHCDistance = distanceStyle.computeDistance(LLHC, x,y,z);
+    
+    return
+      Math.min(
+        bottomDistance,
+        Math.min(
+          Math.min(leftDistance, rightDistance),
+          Math.min(LRHCDistance, LLHCDistance)));
   }
 
   @Override

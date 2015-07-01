@@ -143,6 +143,178 @@ public class Plane extends Vector {
     return new Plane(normVect, this.D);
   }
 
+  /** @see #arcDistance(PlanetModel, double, double, double, Membership...) */
+  public double arcDistance(final PlanetModel planetModel, final GeoPoint v, final Membership... bounds) {
+    return arcDistance(planetModel, v.x, v.y, v.z, bounds);
+  }
+    
+  /**
+   * Compute arc distance from plane to a vector.
+   * @param x is the x vector value.
+   * @param y is the y vector value.
+   * @param z is the z vector value.
+   * @return the arc distance.
+   */
+  public double arcDistance(final PlanetModel planetModel, final double x, final double y, final double z, final Membership... bounds) {
+
+    if (evaluateIsZero(x,y,z)) {
+      if (meetsAllBounds(x,y,z, bounds))
+        return 0.0;
+      return Double.MAX_VALUE;
+    }
+    
+    // First, compute the perpendicular plane.
+    final Plane perpPlane = new Plane(this.y * z - this.z * y, this.z * x - this.x * z, this.x * y - this.y * x, 0.0);
+
+    // We need to compute the intersection of two planes on the geo surface: this one, and its perpendicular.
+    // Then, we need to choose which of the two points we want to compute the distance to.  We pick the
+    // shorter distance always.
+    
+    final GeoPoint[] intersectionPoints = findIntersections(planetModel, perpPlane);
+    
+    // For each point, compute a linear distance, and take the minimum of them
+    double minDistance = Double.MAX_VALUE;
+    
+    for (final GeoPoint intersectionPoint : intersectionPoints) {
+      if (meetsAllBounds(intersectionPoint, bounds)) {
+        final double theDistance = intersectionPoint.arcDistance(x,y,z);
+        if (theDistance < minDistance) {
+          minDistance = theDistance;
+        }
+      }
+    }
+    return minDistance;
+
+  }
+
+  /**
+   * Compute normal distance from plane to a vector.
+   * @param v is the vector.
+   * @return the normal distance.
+   */
+  public double normalDistance(final Vector v, final Membership... bounds) {
+    return normalDistance(v.x, v.y, v.z, bounds);
+  }
+    
+  /**
+   * Compute normal distance from plane to a vector.
+   * @param x is the vector x.
+   * @param y is the vector y.
+   * @param z is the vector z.
+   * @return the normal distance.
+   */
+  public double normalDistance(final double x, final double y, final double z, final Membership... bounds) {
+
+    final double dist = evaluate(x,y,z);
+    final double perpX = x - dist * this.x;
+    final double perpY = y - dist * this.y;
+    final double perpZ = z - dist * this.z;
+
+    if (!meetsAllBounds(perpX, perpY, perpZ, bounds)) {
+      return Double.MAX_VALUE;
+    }
+    
+    return Math.abs(dist);
+  }
+  
+  /**
+   * Compute normal distance squared from plane to a vector.
+   * @param v is the vector.
+   * @return the normal distance squared.
+   */
+  public double normalDistanceSquared(final Vector v, final Membership... bounds) {
+    return normalDistanceSquared(v.x, v.y, v.z, bounds);
+  }
+  
+  /**
+   * Compute normal distance squared from plane to a vector.
+   * @param x is the vector x.
+   * @param y is the vector y.
+   * @param z is the vector z.
+   * @return the normal distance squared.
+   */
+  public double normalDistanceSquared(final double x, final double y, final double z, final Membership... bounds) {
+    final double normal = normalDistance(x,y,z,bounds);
+    if (normal == Double.MAX_VALUE)
+      return normal;
+    return normal * normal;
+  }
+
+  /**
+   * Compute linear distance from plane to a vector.  This is defined
+   * as the distance from the given point to the nearest intersection of 
+   * this plane with the planet surface.
+   * @param v is the vector.
+   * @return the linear distance.
+   */
+  public double linearDistance(final PlanetModel planetModel, final GeoPoint v, final Membership... bounds) {
+    return linearDistance(planetModel, v.x, v.y, v.z, bounds);
+  }
+    
+  /**
+   * Compute linear distance from plane to a vector.  This is defined
+   * as the distance from the given point to the nearest intersection of 
+   * this plane with the planet surface.
+   * @param x is the vector x.
+   * @param y is the vector y.
+   * @param z is the vector z.
+   * @return the linear distance.
+   */
+  public double linearDistance(final PlanetModel planetModel, final double x, final double y, final double z, final Membership... bounds) {
+    if (evaluateIsZero(x,y,z)) {
+      if (meetsAllBounds(x,y,z, bounds))
+        return 0.0;
+      return Double.MAX_VALUE;
+    }
+    
+    // First, compute the perpendicular plane.
+    final Plane perpPlane = new Plane(this.y * z - this.z * y, this.z * x - this.x * z, this.x * y - this.y * x, 0.0);
+
+    // We need to compute the intersection of two planes on the geo surface: this one, and its perpendicular.
+    // Then, we need to choose which of the two points we want to compute the distance to.  We pick the
+    // shorter distance always.
+    
+    final GeoPoint[] intersectionPoints = findIntersections(planetModel, perpPlane);
+    
+    // For each point, compute a linear distance, and take the minimum of them
+    double minDistance = Double.MAX_VALUE;
+    
+    for (final GeoPoint intersectionPoint : intersectionPoints) {
+      if (meetsAllBounds(intersectionPoint, bounds)) {
+        final double theDistance = intersectionPoint.linearDistance(x,y,z);
+        if (theDistance < minDistance) {
+          minDistance = theDistance;
+        }
+      }
+    }
+    return minDistance;
+  }
+      
+  /**
+   * Compute linear distance squared from plane to a vector.  This is defined
+   * as the distance from the given point to the nearest intersection of 
+   * this plane with the planet surface.
+   * @param v is the vector.
+   * @return the linear distance squared.
+   */
+  public double linearDistanceSquared(final PlanetModel planetModel, final GeoPoint v, final Membership... bounds) {
+    return linearDistanceSquared(planetModel, v.x, v.y, v.z, bounds);
+  }
+  
+  /**
+   * Compute linear distance squared from plane to a vector.  This is defined
+   * as the distance from the given point to the nearest intersection of 
+   * this plane with the planet surface.
+   * @param x is the vector x.
+   * @param y is the vector y.
+   * @param z is the vector z.
+   * @return the linear distance squared.
+   */
+  public double linearDistanceSquared(final PlanetModel planetModel, final double x, final double y, final double z, final Membership... bounds) {
+    final double linearDistance = linearDistance(planetModel, x, y, z, bounds);
+    return linearDistance * linearDistance;
+  }
+
   /**
    * Find points on the boundary of the intersection of a plane and the unit sphere,
    * given a starting point, and ending point, and a list of proportions of the arc (e.g. 0.25, 0.5, 0.75).
@@ -320,7 +492,8 @@ public class Plane extends Vector {
    */
   protected GeoPoint[] findIntersections(final PlanetModel planetModel, final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
     //System.err.println("Looking for intersection between plane "+this+" and plane "+q+" within bounds");
-    final Vector lineVector = new Vector(this, q);
+    // Unnormalized, unchecked...
+    final Vector lineVector = new Vector(y * q.z - z * q.y, z * q.x - x * q.z, x * q.y - y * q.x);
     if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
       //System.err.println(" planes are parallel - no intersection");
@@ -860,16 +1033,25 @@ public class Plane extends Vector {
     return evaluateIsZero(-p.x * p.D * denom, -p.y * p.D * denom, -p.z * p.D * denom);
   }
 
-  protected static boolean meetsAllBounds(final GeoPoint p, final Membership[] bounds, final Membership[] moreBounds) {
+  protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds) {
+    return meetsAllBounds(p.x, p.y, p.z, bounds);
+  }
+
+  protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds) {
     for (final Membership bound : bounds) {
-      if (!bound.isWithin(p))
-        return false;
-    }
-    for (final Membership bound : moreBounds) {
-      if (!bound.isWithin(p))
+      if (!bound.isWithin(x,y,z))
         return false;
     }
     return true;
+  }
+
+  protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds, final Membership[] moreBounds) {
+    return meetsAllBounds(p.x, p.y, p.z, bounds, moreBounds);
+  }
+
+  protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds,
+                                          final Membership[] moreBounds) {
+    return meetsAllBounds(x,y,z, bounds) && meetsAllBounds(x,y,z, moreBounds);
   }
 
   /**

@@ -103,14 +103,6 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return plane.evaluateIsZero(point) &&
-        boundingPlane.isWithin(point) &&
-        topPlane.isWithin(point) &&
-        bottomPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return plane.evaluateIsZero(x, y, z) &&
         boundingPlane.isWithin(x, y, z) &&
@@ -128,11 +120,6 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
     return Math.max(topAngle, bottomAngle);
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return centerPoint;
@@ -148,15 +135,6 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
     return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, boundingPlane, topPlane, bottomPlane);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -181,6 +159,18 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
 
     //System.err.println(" disjoint");
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double distance = distanceStyle.computeDistance(planetModel, plane, x,y,z, topPlane, bottomPlane, boundingPlane);
+    
+    final double UHCDistance = distanceStyle.computeDistance(UHC, x,y,z);
+    final double LHCDistance = distanceStyle.computeDistance(LHC, x,y,z);
+    
+    return Math.min(
+      distance,
+      Math.min(UHCDistance, LHCDistance));
   }
 
   @Override

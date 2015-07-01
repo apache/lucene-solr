@@ -52,11 +52,6 @@ public class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return Math.abs(point.z - this.sinLatitude) < 1e-10;
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return Math.abs(z - this.sinLatitude) < 1e-10;
   }
@@ -66,11 +61,6 @@ public class GeoDegenerateLatitudeZone extends GeoBaseBBox {
     return Math.PI;
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     // Totally arbitrary
@@ -119,6 +109,11 @@ public class GeoDegenerateLatitudeZone extends GeoBaseBBox {
     }
 
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distanceStyle.computeDistance(planetModel, plane, x,y,z);
   }
 
   @Override
