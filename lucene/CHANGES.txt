@@ -155,6 +155,12 @@ API Changes
 * LUCENE-6643: GroupingSearch from lucene/grouping was changed to take a Query
   object to define groups instead of a Filter. (Adrien Grand)
 
+* LUCENE-6554: ToParentBlockJoinFieldComparator was removed because of a bug
+  with missing values that could not be fixed. ToParentBlockJoinSortField now
+  works with string or numeric doc values selectors. Sorting on anything else
+  than a string or numeric field would require to implement a custom selector.
+  (Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

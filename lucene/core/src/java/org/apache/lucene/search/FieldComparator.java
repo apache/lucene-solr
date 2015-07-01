@@ -152,7 +152,7 @@ public abstract class FieldComparator<T> {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       currentReaderValues = getNumericDocValues(context, field);
       if (missingValue != null) {
-        docsWithField = DocValues.getDocsWithField(context.reader(), field);
+        docsWithField = getDocsWithValue(context, field);
         // optimization to remove unneeded checks on the bit interface:
         if (docsWithField instanceof Bits.MatchAllBits) {
           docsWithField = null;
@@ -165,6 +165,11 @@ public abstract class FieldComparator<T> {
     /** Retrieves the NumericDocValues for the field in this segment */
     protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
       return DocValues.getNumeric(context.reader(), field);
+    }
+
+    /** Retrieves a {@link Bits} instance representing documents that have a value in this segment. */
+    protected Bits getDocsWithValue(LeafReaderContext context, String field) throws IOException {
+      return DocValues.getDocsWithField(context.reader(), field);
     }
   }
 
