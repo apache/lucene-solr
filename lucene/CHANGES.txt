@@ -164,6 +164,10 @@ API Changes
 * LUCENE-6648: All lucene/facet APIs now take Query objects where they used to
   take Filter objects. (Adrien Grand)
 
+* LUCENE-6640: Suggesters now take a BitsProducer object instead of a Filter
+  object to reduce the scope of doc IDs that may be returned, emphasizing the
+  fact that these objects need to support random-access. (Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

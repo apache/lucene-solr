@@ -17,6 +17,7 @@ package org.apache.lucene.search.suggest.document;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,17 +38,16 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.TermsQuery;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.suggest.BitsProducer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -223,7 +223,12 @@ public class TestSuggestField extends LuceneTestCase {
       }
     }
 
-    Filter filter = new QueryWrapperFilter(new TermsQuery("str_fld", new BytesRef("non_existent")));
+    BitsProducer filter = new BitsProducer() {
+      @Override
+      public Bits getBits(LeafReaderContext context) throws IOException {
+        return new Bits.MatchNoBits(context.reader().maxDoc());
+      }
+    };
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
     // no random access required;

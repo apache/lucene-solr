@@ -24,15 +24,15 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.suggest.BitsProducer;
 
 import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.HOLE_CHARACTER;
 import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.SEP_LABEL;
 
 /**
  * Abstract {@link Query} that match documents containing terms with a specified prefix
- * filtered by {@link Filter}. This should be used to query against any {@link SuggestField}s
+ * filtered by {@link BitsProducer}. This should be used to query against any {@link SuggestField}s
  * or {@link ContextSuggestField}s of documents.
  * <p>
  * Use {@link SuggestIndexSearcher#suggest(CompletionQuery, int)} to execute any query
@@ -56,25 +56,25 @@ public abstract class CompletionQuery extends Query {
   private final Term term;
 
   /**
-   * Filter for document scoping
+   * {@link BitsProducer} which is used to filter the document scope.
    */
-  private final Filter filter;
+  private final BitsProducer filter;
 
   /**
    * Creates a base Completion query against a <code>term</code>
    * with a <code>filter</code> to scope the documents
    */
-  protected CompletionQuery(Term term, Filter filter) {
+  protected CompletionQuery(Term term, BitsProducer filter) {
     validate(term.text());
     this.term = term;
     this.filter = filter;
   }
 
   /**
-   * Returns the filter for the query, used to
-   * suggest completions on a subset of indexed documents
+   * Returns a {@link BitsProducer}. Only suggestions matching the returned
+   * bits will be returned.
    */
-  public Filter getFilter() {
+  public BitsProducer getFilter() {
     return filter;
   }
 
@@ -148,7 +148,7 @@ public abstract class CompletionQuery extends Query {
       buffer.append(",");
       buffer.append("filter");
       buffer.append(":");
-      buffer.append(filter.toString(field));
+      buffer.append(filter.toString());
     }
     return buffer.toString();
   }
