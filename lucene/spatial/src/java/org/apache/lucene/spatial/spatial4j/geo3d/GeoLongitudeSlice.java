@@ -20,7 +20,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 /**
  * Bounding box limited on left and right.
  * The left-right maximum extent for this shape is PI; for anything larger, use
- * GeoWideLongitudeSlice.
+ * {@link GeoWideLongitudeSlice}.
  *
  * @lucene.internal
  */
@@ -92,12 +92,6 @@ public class GeoLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return leftPlane.isWithin(point) &&
-        rightPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return leftPlane.isWithin(x, y, z) &&
         rightPlane.isWithin(x, y, z);
@@ -112,11 +106,6 @@ public class GeoLongitudeSlice extends GeoBaseBBox {
     return Math.max(Math.PI * 0.5, extent * 0.5);
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return centerPoint;
@@ -133,15 +122,6 @@ public class GeoLongitudeSlice extends GeoBaseBBox {
         p.intersects(planetModel, rightPlane, notablePoints, planePoints, bounds, leftPlane);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -176,6 +156,20 @@ public class GeoLongitudeSlice extends GeoBaseBBox {
     }
 
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double leftDistance = distanceStyle.computeDistance(planetModel, leftPlane, x,y,z, rightPlane);
+    final double rightDistance = distanceStyle.computeDistance(planetModel, rightPlane, x,y,z, leftPlane);
+    
+    final double northDistance = distanceStyle.computeDistance(planetModel.NORTH_POLE, x,y,z);
+    final double southDistance = distanceStyle.computeDistance(planetModel.SOUTH_POLE, x,y,z);
+    
+    return
+      Math.min(
+        Math.min(northDistance, southDistance),
+        Math.min(leftDistance, rightDistance));
   }
 
   @Override

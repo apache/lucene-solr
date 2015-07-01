@@ -23,14 +23,11 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.internal
  */
-public abstract class GeoBaseBBox extends GeoBaseShape implements GeoBBox {
+public abstract class GeoBaseBBox extends GeoBaseMembershipShape implements GeoBBox {
 
   public GeoBaseBBox(final PlanetModel planetModel) {
     super(planetModel);
   }
-  
-  @Override
-  public abstract boolean isWithin(final Vector point);
 
   protected final static int ALL_INSIDE = 0;
   protected final static int SOME_INSIDE = 1;
@@ -58,15 +55,6 @@ public abstract class GeoBaseBBox extends GeoBaseShape implements GeoBBox {
       return NONE_INSIDE;
     return SOME_INSIDE;
   }
-  
-  @Override
-  public int hashCode() {
-    return super.hashCode();
-  }
-  
-  @Override
-  public boolean equals(final Object o) {
-    return super.equals(o);
-  }
+
 }
 

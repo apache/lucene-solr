@@ -18,41 +18,37 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 /**
- * An implementer of this interface is capable of computing the described "distance" values,
- * which are meant to provide both actual distance values, as well as
- * distance estimates that can be computed more cheaply.
+ * Implemented by Geo3D shapes that can compute the distance from a point to the closest outside edge.
  *
  * @lucene.experimental
  */
-public interface GeoDistance extends Membership {
+public interface GeoOutsideDistance extends Membership {
   
   // The following methods compute distances from the shape to a point
-  // expected to be INSIDE the shape.  Typically a value of Double.MAX_VALUE
-  // is returned for points that happen to be outside the shape.
-
+  // expected to be OUTSIDE the shape.  Typically a value of 0.0
+  // is returned for points that happen to be within the shape.
+  
   /**
-   * Compute this shape's <em>internal</em> "distance" to the GeoPoint.
-   * Implementations should clarify how this is computed when it's non-obvious.
-   * A return value of Double.MAX_VALUE should be returned for
-   * points outside of the shape.
-   *
+   * Compute this shape's distance to the GeoPoint.
+   * A return value of 0.0 should be returned for
+   * points inside of the shape.
    * @param distanceStyle is the distance style.
    * @param point is the point to compute the distance to.
    * @return the distance.
    */
-  public double computeDistance(final DistanceStyle distanceStyle, final GeoPoint point);
+  public double computeOutsideDistance(final DistanceStyle distanceStyle, final GeoPoint point);
 
   /**
-   * Compute this shape's <em>internal</em> "distance" to the GeoPoint.
-   * Implementations should clarify how this is computed when it's non-obvious.
-   * A return value of Double.MAX_VALUE should be returned for
-   * points outside of the shape.
-   *
+   * Compute this shape's distance to the GeoPoint.
+   * A return value of 0.0 should be returned for
+   * points inside of the shape.
+   * @param distanceStyle is the distance style.
    * @param x is the point's unit x coordinate (using U.S. convention).
    * @param y is the point's unit y coordinate (using U.S. convention).
    * @param z is the point's unit z coordinate (using U.S. convention).
    * @return the distance.
    */
-  public double computeDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
+  public double computeOutsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
 
 }
+

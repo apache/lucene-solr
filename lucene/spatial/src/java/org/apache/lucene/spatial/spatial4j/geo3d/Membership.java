@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 /**
- * Interface describing 3d shape membership methods.
+ * Implemented by Geo3D shapes that can calculate if a point is within it or not.
  *
  * @lucene.experimental
  */

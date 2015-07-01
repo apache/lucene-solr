@@ -18,11 +18,31 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 /**
- * Membership shapes have capabilities of both geohashing and membership
- * determination.
+ * All Geo3D shapes can derive from this base class, which furnishes
+ * some common code
  *
- * @lucene.experimental
+ * @lucene.internal
  */
-public interface GeoMembershipShape extends GeoShape, GeoOutsideDistance, Membership {
+public abstract class BasePlanetObject {
 
+  protected final PlanetModel planetModel;
+  
+  public BasePlanetObject(final PlanetModel planetModel) {
+    this.planetModel = planetModel;
+  }
+  
+  @Override
+  public int hashCode() {
+    return planetModel.hashCode();
+  }
+  
+  @Override
+  public boolean equals(final Object o) {
+    if (!(o instanceof BasePlanetObject))
+      return false;
+    return planetModel.equals(((BasePlanetObject)o).planetModel);
+  }
 }
+
+
+

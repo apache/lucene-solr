@@ -69,12 +69,6 @@ public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return plane.evaluateIsZero(point) &&
-        boundingPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return plane.evaluateIsZero(x, y, z) &&
         boundingPlane.isWithin(x, y, z);
@@ -85,11 +79,6 @@ public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
     return Math.PI * 0.5;
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return interiorPoint;
@@ -105,15 +94,6 @@ public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
     return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, boundingPlane);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     if (bounds == null)
@@ -133,6 +113,18 @@ public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
       return CONTAINS;
 
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double distance = distanceStyle.computeDistance(planetModel, plane, x,y,z, boundingPlane);
+    
+    final double northDistance = distanceStyle.computeDistance(planetModel.NORTH_POLE, x,y,z);
+    final double southDistance = distanceStyle.computeDistance(planetModel.SOUTH_POLE, x,y,z);
+    
+    return Math.min(
+      distance,
+      Math.min(northDistance, southDistance));
   }
 
   @Override

@@ -19,17 +19,19 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * GeoSearchableShape representing a path across the surface of the globe,
+ * GeoShape representing a path across the surface of the globe,
  * with a specified half-width.  Path is described by a series of points.
  * Distances are measured from the starting point along the path, and then at right
  * angles to the path.
  *
  * @lucene.experimental
  */
-public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
+public class GeoPath extends GeoBaseDistanceShape {
   
   public final double cutoffAngle;
 
@@ -83,7 +85,7 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     GeoPoint lastPoint = null;
     for (final GeoPoint end : points) {
       if (lastPoint != null) {
-        final Plane normalizedConnectingPlane = new Plane(lastPoint, end).normalize();
+        final Plane normalizedConnectingPlane = new Plane(lastPoint, end);
         if (normalizedConnectingPlane == null) {
           continue;
         }
@@ -166,173 +168,46 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
 
   }
 
-  /**
-   * Compute an estimate of "distance" to the GeoPoint.
-   * A return value of Double.MAX_VALUE should be returned for
-   * points outside of the shape.
-   */
   @Override
-  public double computeNormalDistance(final GeoPoint point) {
+  protected double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     // Algorithm:
     // (1) If the point is within any of the segments along the path, return that value.
     // (2) If the point is within any of the segment end circles along the path, return that value.
     double currentDistance = 0.0;
     for (PathSegment segment : segments) {
-      double distance = segment.pathNormalDistance(point);
+      double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
       if (distance != Double.MAX_VALUE)
         return currentDistance + distance;
-      currentDistance += segment.fullNormalDistance;
+      currentDistance += segment.fullPathDistance(distanceStyle);
     }
 
     int segmentIndex = 0;
     currentDistance = 0.0;
     for (SegmentEndpoint endpoint : endPoints) {
-      double distance = endpoint.pathNormalDistance(point);
+      double distance = endpoint.pathDistance(distanceStyle, x, y, z);
       if (distance != Double.MAX_VALUE)
         return currentDistance + distance;
       if (segmentIndex < segments.size())
-        currentDistance += segments.get(segmentIndex++).fullNormalDistance;
-    }
-
-    return Double.MAX_VALUE;
-  }
-
-  /**
-   * Compute an estimate of "distance" to the GeoPoint.
-   * A return value of Double.MAX_VALUE should be returned for
-   * points outside of the shape.
-   */
-  @Override
-  public double computeNormalDistance(final double x, final double y, final double z) {
-    return computeNormalDistance(new GeoPoint(x, y, z));
-  }
-
-  /**
-   * Compute a squared estimate of the "distance" to the
-   * GeoPoint.  Double.MAX_VALUE indicates a point outside of the
-   * shape.
-   */
-  @Override
-  public double computeSquaredNormalDistance(final GeoPoint point) {
-    double pd = computeNormalDistance(point);
-    if (pd == Double.MAX_VALUE)
-      return pd;
-    return pd * pd;
-  }
-
-  /**
-   * Compute a squared estimate of the "distance" to the
-   * GeoPoint.  Double.MAX_VALUE indicates a point outside of the
-   * shape.
-   */
-  @Override
-  public double computeSquaredNormalDistance(final double x, final double y, final double z) {
-    return computeSquaredNormalDistance(new GeoPoint(x, y, z));
-  }
-
-  /**
-   * Compute a linear distance to the point.
-   */
-  @Override
-  public double computeLinearDistance(final GeoPoint point) {
-    // Algorithm:
-    // (1) If the point is within any of the segments along the path, return that value.
-    // (2) If the point is within any of the segment end circles along the path, return that value.
-    double currentDistance = 0.0;
-    for (PathSegment segment : segments) {
-      double distance = segment.pathLinearDistance(point);
-      if (distance != Double.MAX_VALUE)
-        return currentDistance + distance;
-      currentDistance += segment.fullLinearDistance;
-    }
-
-    int segmentIndex = 0;
-    currentDistance = 0.0;
-    for (SegmentEndpoint endpoint : endPoints) {
-      double distance = endpoint.pathLinearDistance(point);
-      if (distance != Double.MAX_VALUE)
-        return currentDistance + distance;
-      if (segmentIndex < segments.size())
-        currentDistance += segments.get(segmentIndex++).fullLinearDistance;
-    }
-
-    return Double.MAX_VALUE;
-  }
-
-  /**
-   * Compute a linear distance to the point.
-   */
-  @Override
-  public double computeLinearDistance(final double x, final double y, final double z) {
-    return computeLinearDistance(new GeoPoint(x, y, z));
-  }
-
-  /**
-   * Compute a squared linear distance to the vector.
-   */
-  @Override
-  public double computeSquaredLinearDistance(final GeoPoint point) {
-    double pd = computeLinearDistance(point);
-    if (pd == Double.MAX_VALUE)
-      return pd;
-    return pd * pd;
-  }
-
-  /**
-   * Compute a squared linear distance to the vector.
-   */
-  @Override
-  public double computeSquaredLinearDistance(final double x, final double y, final double z) {
-    return computeSquaredLinearDistance(new GeoPoint(x, y, z));
-  }
-
-  /**
-   * Compute a true, accurate, great-circle distance.
-   * Double.MAX_VALUE indicates a point is outside of the shape.
-   */
-  @Override
-  public double computeArcDistance(final GeoPoint point) {
-    // Algorithm:
-    // (1) If the point is within any of the segments along the path, return that value.
-    // (2) If the point is within any of the segment end circles along the path, return that value.
-    double currentDistance = 0.0;
-    for (PathSegment segment : segments) {
-      double distance = segment.pathDistance(point);
-      if (distance != Double.MAX_VALUE)
-        return currentDistance + distance;
-      currentDistance += segment.fullDistance;
-    }
-
-    int segmentIndex = 0;
-    currentDistance = 0.0;
-    for (SegmentEndpoint endpoint : endPoints) {
-      double distance = endpoint.pathDistance(point);
-      if (distance != Double.MAX_VALUE)
-        return currentDistance + distance;
-      if (segmentIndex < segments.size())
-        currentDistance += segments.get(segmentIndex++).fullDistance;
+        currentDistance += segments.get(segmentIndex++).fullPathDistance(distanceStyle);
     }
 
     return Double.MAX_VALUE;
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    //System.err.println("Assessing whether point "+point+" is within geopath "+this);
-    for (SegmentEndpoint pathPoint : endPoints) {
-      if (pathPoint.isWithin(point)) {
-        //System.err.println(" point is within SegmentEndpoint "+pathPoint);
-        return true;
-      }
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    double minDistance = Double.MAX_VALUE;
+    for (final SegmentEndpoint endpoint : endPoints) {
+      final double newDistance = endpoint.outsideDistance(distanceStyle, x,y,z);
+      if (newDistance < minDistance)
+        minDistance = newDistance;
     }
-    for (PathSegment pathSegment : segments) {
-      if (pathSegment.isWithin(point)) {
-        //System.err.println(" point is within PathSegment "+pathSegment);
-        return true;
-      }
+    for (final PathSegment segment : segments) {
+      final double newDistance = segment.outsideDistance(planetModel, distanceStyle, x, y, z);
+      if (newDistance < minDistance)
+        minDistance = newDistance;
     }
-    //System.err.println(" point is not within geopath");
-    return false;
+    return minDistance;
   }
 
   @Override
@@ -380,15 +255,6 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
     return false;
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     bounds = super.getBounds(bounds);
@@ -562,22 +428,14 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       return circlePlane.isWithin(x, y, z);
     }
 
-    public double pathDistance(final GeoPoint point) {
-      if (!isWithin(point))
+    public double pathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+      if (!isWithin(x,y,z))
         return Double.MAX_VALUE;
-      return this.point.arcDistance(point);
+      return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
-    public double pathNormalDistance(final GeoPoint point) {
-      if (!isWithin(point))
-        return Double.MAX_VALUE;
-      return this.point.normalDistance(point);
-    }
-
-    public double pathLinearDistance(final GeoPoint point) {
-      if (!isWithin(point))
-        return Double.MAX_VALUE;
-      return this.point.linearDistance(point);
+    public double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+      return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
     public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
@@ -614,14 +472,12 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
   }
 
   /**
-   * This is the precalculated data for a path segment.
+   * This is the pre-calculated data for a path segment.
    */
   public static class PathSegment {
     public final GeoPoint start;
     public final GeoPoint end;
-    public final double fullDistance;
-    public final double fullNormalDistance;
-    public final double fullLinearDistance;
+    public final Map<DistanceStyle,Double> fullDistanceCache = new HashMap<DistanceStyle,Double>();
     public final Plane normalizedConnectingPlane;
     public final SidedPlane upperConnectingPlane;
     public final SidedPlane lowerConnectingPlane;
@@ -644,9 +500,6 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       this.normalizedConnectingPlane = normalizedConnectingPlane;
       this.planeBoundingOffset = planeBoundingOffset;
 
-      fullDistance = start.arcDistance(end);
-      fullNormalDistance = start.normalDistance(end);
-      fullLinearDistance = start.linearDistance(end);
       // Either start or end should be on the correct side
       upperConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, -planeBoundingOffset);
       lowerConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, planeBoundingOffset);
@@ -684,6 +537,17 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       endCutoffPlanePoints = new GeoPoint[]{URHC, LRHC};
     }
 
+    public double fullPathDistance(final DistanceStyle distanceStyle) {
+      synchronized (fullDistanceCache) {
+        Double dist = fullDistanceCache.get(distanceStyle);
+        if (dist == null) {
+          dist = new Double(distanceStyle.computeDistance(start, end.x, end.y, end.z));
+          fullDistanceCache.put(distanceStyle, dist);
+        }
+        return dist.doubleValue();
+      }
+    }
+    
     public boolean isWithin(final Vector point) {
       //System.err.println(" assessing whether point "+point+" is within path segment "+this);
       //System.err.println("  within "+startCutoffPlane+": "+startCutoffPlane.isWithin(point));
@@ -704,74 +568,58 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
           lowerConnectingPlane.isWithin(x, y, z);
     }
 
-    public double pathDistance(final GeoPoint point) {
-      if (!isWithin(point))
+    public double pathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+      if (!isWithin(x,y,z))
         return Double.MAX_VALUE;
 
-      // Compute the distance, filling in both components.
-      final double perpDistance = Math.PI * 0.5 - Tools.safeAcos(Math.abs(normalizedConnectingPlane.evaluate(point)));
-      final Plane normalizedPerpPlane = new Plane(normalizedConnectingPlane, point).normalize();
-      final double pathDistance = Math.PI * 0.5 - Tools.safeAcos(Math.abs(normalizedPerpPlane.evaluate(start)));
-      return perpDistance + pathDistance;
-    }
-
-    public double pathNormalDistance(final GeoPoint point) {
-      if (!isWithin(point))
-        return Double.MAX_VALUE;
-
-      final double pointEval = Math.abs(normalizedConnectingPlane.evaluate(point));
-
+      // (1) Compute normalizedPerpPlane.  If degenerate, then return point distance from start to point.
       // Want no allocations or expensive operations!  so we do this the hard way
-      final double perpX = normalizedConnectingPlane.y * point.z - normalizedConnectingPlane.z * point.y;
-      final double perpY = normalizedConnectingPlane.z * point.x - normalizedConnectingPlane.x * point.z;
-      final double perpZ = normalizedConnectingPlane.x * point.y - normalizedConnectingPlane.y * point.x;
+      final double perpX = normalizedConnectingPlane.y * z - normalizedConnectingPlane.z * y;
+      final double perpY = normalizedConnectingPlane.z * x - normalizedConnectingPlane.x * z;
+      final double perpZ = normalizedConnectingPlane.x * y - normalizedConnectingPlane.y * x;
+      final double magnitude = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
+      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION)
+        return distanceStyle.computeDistance(start, x,y,z);
+      final double normFactor = 1.0/magnitude;
+      final Plane normalizedPerpPlane = new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
+      
+      // Old computation: too expensive, because it calculates the intersection point twice.
+      //return distanceStyle.computeDistance(planetModel, normalizedConnectingPlane, x, y, z, startCutoffPlane, endCutoffPlane) +
+      //  distanceStyle.computeDistance(planetModel, normalizedPerpPlane, start.x, start.y, start.z, upperConnectingPlane, lowerConnectingPlane);
 
-      // If we have a degenerate line, then just compute the normal distance from point x to the start
-      if (Math.abs(perpX) < Vector.MINIMUM_RESOLUTION && Math.abs(perpY) < Vector.MINIMUM_RESOLUTION && Math.abs(perpZ) < Vector.MINIMUM_RESOLUTION)
-        return point.normalDistance(start);
-
-      final double normFactor = 1.0 / Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
-      final double perpEval = Math.abs(perpX * start.x + perpY * start.y + perpZ * start.z);
-      return perpEval * normFactor + pointEval;
-    }
-
-    public double pathLinearDistance(final GeoPoint point) {
-      if (!isWithin(point))
-        return Double.MAX_VALUE;
-
-      // We have a normalized connecting plane.
-      // First, compute the perpendicular plane.
-      // Want no allocations or expensive operations!  so we do this the hard way
-      final double perpX = normalizedConnectingPlane.y * point.z - normalizedConnectingPlane.z * point.y;
-      final double perpY = normalizedConnectingPlane.z * point.x - normalizedConnectingPlane.x * point.z;
-      final double perpZ = normalizedConnectingPlane.x * point.y - normalizedConnectingPlane.y * point.x;
-
-      // If we have a degenerate line, then just compute the normal distance from point x to the start
-      if (Math.abs(perpX) < Vector.MINIMUM_RESOLUTION && Math.abs(perpY) < Vector.MINIMUM_RESOLUTION && Math.abs(perpZ) < Vector.MINIMUM_RESOLUTION)
-        return point.linearDistance(start);
-
-      // Next, we need the vector of the line, which is the cross product of the normalized connecting plane
-      // and the perpendicular plane that we just calculated.
-      final double lineX = normalizedConnectingPlane.y * perpZ - normalizedConnectingPlane.z * perpY;
-      final double lineY = normalizedConnectingPlane.z * perpX - normalizedConnectingPlane.x * perpZ;
-      final double lineZ = normalizedConnectingPlane.x * perpY - normalizedConnectingPlane.y * perpX;
-
-      // Now, compute a normalization factor
-      final double normalizer = 1.0 / Math.sqrt(lineX * lineX + lineY * lineY + lineZ * lineZ);
-
-      // Pick which point by using bounding planes
-      double normLineX = lineX * normalizer;
-      double normLineY = lineY * normalizer;
-      double normLineZ = lineZ * normalizer;
-      if (!startCutoffPlane.isWithin(normLineX, normLineY, normLineZ) ||
-          !endCutoffPlane.isWithin(normLineX, normLineY, normLineZ)) {
-        normLineX = -normLineX;
-        normLineY = -normLineY;
-        normLineZ = -normLineZ;
+      final GeoPoint[] intersectionPoints = normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
+      GeoPoint thePoint;
+      if (intersectionPoints.length == 0)
+        throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
+      else if (intersectionPoints.length == 1)
+        thePoint = intersectionPoints[0];
+      else {
+        if (startCutoffPlane.isWithin(intersectionPoints[0]) && endCutoffPlane.isWithin(intersectionPoints[0]))
+          thePoint = intersectionPoints[0];
+        else if (startCutoffPlane.isWithin(intersectionPoints[1]) && endCutoffPlane.isWithin(intersectionPoints[1]))
+          thePoint = intersectionPoints[1];
+        else
+          throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
       }
+      return distanceStyle.computeDistance(thePoint, x, y, z) + distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z);
+    }
 
-      // Compute linear distance for the two points
-      return point.linearDistance(normLineX, normLineY, normLineZ) + start.linearDistance(normLineX, normLineY, normLineZ);
+    public double outsideDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+      final double upperDistance = distanceStyle.computeDistance(planetModel, upperConnectingPlane, x,y,z, lowerConnectingPlane, startCutoffPlane, endCutoffPlane);
+      final double lowerDistance = distanceStyle.computeDistance(planetModel, lowerConnectingPlane, x,y,z, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
+      final double startDistance = distanceStyle.computeDistance(planetModel, startCutoffPlane, x,y,z, endCutoffPlane, lowerConnectingPlane, upperConnectingPlane);
+      final double endDistance = distanceStyle.computeDistance(planetModel, endCutoffPlane, x,y,z, startCutoffPlane, lowerConnectingPlane, upperConnectingPlane);
+      final double ULHCDistance = distanceStyle.computeDistance(ULHC, x,y,z);
+      final double URHCDistance = distanceStyle.computeDistance(URHC, x,y,z);
+      final double LLHCDistance = distanceStyle.computeDistance(LLHC, x,y,z);
+      final double LRHCDistance = distanceStyle.computeDistance(LRHC, x,y,z);
+      return Math.min(
+        Math.min(
+          Math.min(upperDistance,lowerDistance),
+          Math.min(startDistance,endDistance)),
+        Math.min(
+          Math.min(ULHCDistance, URHCDistance),
+          Math.min(LLHCDistance, LRHCDistance)));
     }
 
     public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
@@ -790,12 +638,6 @@ public class GeoPath extends GeoBaseExtendedShape implements GeoDistanceShape {
       lowerConnectingPlane.recordBounds(planetModel, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
       startCutoffPlane.recordBounds(planetModel, bounds, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
       endCutoffPlane.recordBounds(planetModel, bounds, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
-      if (fullDistance >= Math.PI) {
-        // Too large a segment basically means that we can confuse the Bounds object.  Specifically, if our span exceeds 180 degrees
-        // in longitude (which even a segment whose actual length is less than that might if it goes close to a pole).
-        // Unfortunately, we can get arbitrarily close to the pole, so this may still not work in all cases.
-        bounds.noLongitudeBound();
-      }
     }
 
   }

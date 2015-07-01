@@ -22,7 +22,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.experimental
  */
-public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape, GeoSizeable {
+public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
   public final GeoPoint center;
   public final double cutoffAngle;
   public final SidedPlane circlePlane;
@@ -81,124 +81,19 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     return cutoffAngle;
   }
 
-  /**
-   * Returns the center of a circle into which the area will be inscribed.
-   *
-   * @return the center.
-   */
   @Override
   public GeoPoint getCenter() {
     return center;
   }
 
-  /**
-   * Compute an estimate of "distance" to the GeoPoint.
-   * A return value of Double.MAX_VALUE should be returned for
-   * points outside of the shape.
-   */
   @Override
-  public double computeNormalDistance(final GeoPoint point) {
-    if (!isWithin(point))
-      return Double.MAX_VALUE;
-    return this.center.normalDistance(point);
-  }
-
-  /**
-   * Compute an estimate of "distance" to the GeoPoint.
-   * A return value of Double.MAX_VALUE should be returned for
-   * points outside of the shape.
-   */
-  @Override
-  public double computeNormalDistance(final double x, final double y, final double z) {
-    if (!isWithin(x,y,z))
-      return Double.MAX_VALUE;
-    return this.center.normalDistance(x, y, z);
-  }
-
-  /**
-   * Compute a squared estimate of the "distance" to the
-   * GeoPoint.  Double.MAX_VALUE indicates a point outside of the
-   * shape.
-   */
-  @Override
-  public double computeSquaredNormalDistance(final GeoPoint point) {
-    if (!isWithin(point))
-      return Double.MAX_VALUE;
-    return this.center.normalDistanceSquared(point);
-  }
-
-  /**
-   * Compute a squared estimate of the "distance" to the
-   * GeoPoint.  Double.MAX_VALUE indicates a point outside of the
-   * shape.
-   */
-  @Override
-  public double computeSquaredNormalDistance(final double x, final double y, final double z) {
-    if (!isWithin(x,y,z))
-      return Double.MAX_VALUE;
-    return this.center.normalDistanceSquared(x, y, z);
-  }
-
-  /**
-   * Compute a linear distance to the vector.
-   * return Double.MAX_VALUE for points outside the shape.
-   */
-  @Override
-  public double computeLinearDistance(final GeoPoint point) {
-    if (!isWithin(point))
-      return Double.MAX_VALUE;
-    return this.center.linearDistance(point);
-  }
-
-  /**
-   * Compute a linear distance to the vector.
-   * return Double.MAX_VALUE for points outside the shape.
-   */
-  @Override
-  public double computeLinearDistance(final double x, final double y, final double z) {
-    if (!isWithin(x,y,z))
-      return Double.MAX_VALUE;
-    return this.center.linearDistance(x, y, z);
-  }
-
-  /**
-   * Compute a squared linear distance to the vector.
-   */
-  @Override
-  public double computeSquaredLinearDistance(final GeoPoint point) {
-    if (!isWithin(point))
-      return Double.MAX_VALUE;
-    return this.center.linearDistanceSquared(point);
-  }
-
-  /**
-   * Compute a squared linear distance to the vector.
-   */
-  @Override
-  public double computeSquaredLinearDistance(final double x, final double y, final double z) {
-    if (!isWithin(x,y,z))
-      return Double.MAX_VALUE;
-    return this.center.linearDistanceSquared(x, y, z);
-  }
-
-  /**
-   * Compute a true, accurate, great-circle distance.
-   * Double.MAX_VALUE indicates a point is outside of the shape.
-   */
-  @Override
-  public double computeArcDistance(final GeoPoint point) {
-    if (!isWithin(point))
-      return Double.MAX_VALUE;
-    return this.center.arcDistance(point);
+  protected double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distanceStyle.computeDistance(this.center, x, y, z);
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    if (circlePlane == null) {
-      return true;
-    }
-    // Fastest way of determining membership
-    return circlePlane.isWithin(point);
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distanceStyle.computeDistance(planetModel, circlePlane, x, y, z);
   }
 
   @Override
@@ -223,15 +118,6 @@ public class GeoCircle extends GeoBaseExtendedShape implements GeoDistanceShape,
     return circlePlane.intersects(planetModel, p, notablePoints, circlePoints, bounds);
   }
 
-  /**
-   * Compute longitude/latitude bounds for the shape.
-   *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
-   */
   @Override
   public Bounds getBounds(Bounds bounds) {
     bounds = super.getBounds(bounds);

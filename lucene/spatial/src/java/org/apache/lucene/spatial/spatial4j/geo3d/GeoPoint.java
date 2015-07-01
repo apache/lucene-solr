@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 /**
- * This class represents a point on the surface of a unit sphere.
+ * This class represents a point on the surface of a sphere or ellipsoid.
  *
  * @lucene.experimental
  */
@@ -122,6 +122,16 @@ public class GeoPoint extends Vector {
    */
   public double arcDistance(final GeoPoint v) {
     return Tools.safeAcos(dotProduct(v)/(magnitude() * v.magnitude()));
+  }
+
+  /** Compute an arc distance between two points.
+   * @param x is the x part of the second point.
+   * @param y is the y part of the second point.
+   * @param z is the z part of the second point.
+   * @return the angle, in radians, between the two points.
+   */
+  public double arcDistance(final double x, final double y, final double z) {
+    return Tools.safeAcos(dotProduct(x,y,z)/(magnitude() * Vector.magnitude(x,y,z)));
   }
 
   /** Compute the latitude for the point.

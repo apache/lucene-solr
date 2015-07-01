@@ -60,11 +60,6 @@ public class GeoSouthLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  public boolean isWithin(final Vector point) {
-    return topPlane.isWithin(point);
-  }
-
-  @Override
   public boolean isWithin(final double x, final double y, final double z) {
     return topPlane.isWithin(x, y, z);
   }
@@ -146,6 +141,11 @@ public class GeoSouthLatitudeZone extends GeoBaseBBox {
       return WITHIN;
 
     return DISJOINT;
+  }
+
+  @Override
+  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distanceStyle.computeDistance(planetModel, topPlane, x,y,z);
   }
 
   @Override

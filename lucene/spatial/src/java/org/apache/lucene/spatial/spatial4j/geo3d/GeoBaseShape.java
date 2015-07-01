@@ -18,30 +18,29 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  */
 
 /**
- * All bounding box shapes can derive from this base class, which furnishes
- * some common code
+ * Base extended shape object.
  *
  * @lucene.internal
  */
-public abstract class GeoBaseShape {
+public abstract class GeoBaseShape extends BasePlanetObject implements GeoShape {
 
-  protected final PlanetModel planetModel;
-  
   public GeoBaseShape(final PlanetModel planetModel) {
-    this.planetModel = planetModel;
+    super(planetModel);
   }
-  
+
   @Override
-  public int hashCode() {
-    return planetModel.hashCode();
+  public Bounds getBounds(Bounds bounds) {
+    if (bounds == null)
+      bounds = new Bounds();
+    if (isWithin(planetModel.NORTH_POLE)) {
+      bounds.noTopLatitudeBound().noLongitudeBound();
+    }
+    if (isWithin(planetModel.SOUTH_POLE)) {
+      bounds.noBottomLatitudeBound().noLongitudeBound();
+    }
+    return bounds;
   }
-  
-  @Override
-  public boolean equals(final Object o) {
-    if (!(o instanceof GeoBaseShape))
-      return false;
-    return planetModel.equals(((GeoBaseShape)o).planetModel);
-  }
+
 }
 
 
