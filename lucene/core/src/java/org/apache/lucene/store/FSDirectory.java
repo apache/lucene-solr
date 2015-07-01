@@ -125,7 +125,10 @@ public abstract class FSDirectory extends BaseDirectory {
    */
   protected FSDirectory(Path path, LockFactory lockFactory) throws IOException {
     super(lockFactory);
-    Files.createDirectories(path);  // create directory, if it doesn't exist
+    // If only read access is permitted, createDirectories fails even if the directory already exists.
+    if (!Files.isDirectory(path)) {
+      Files.createDirectories(path);  // create directory, if it doesn't exist
+    }
     directory = path.toRealPath();
   }
 
