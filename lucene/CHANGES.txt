@@ -116,6 +116,10 @@ New Features
 * LUCENE-6632: Geo3D: Compute circle planes more accurately.
   (Karl Wright via David Smiley)
 
+* LUCENE-6653: Added general purpose BytesTermAttribute to basic token
+  attributes package that can be used for TokenStreams that solely produce
+  binary terms.  (Uwe Schindler)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
@@ -295,6 +299,9 @@ Test Framework
   environments (e.g., read-only dirs). If tests are running without a security
   manager, an assume cancels test execution automatically.  (Uwe Schindler)
 
+* LUCENE-6652: Removed lots of useless Byte(s)TermAttributes all over test
+  infrastructure.  (Uwe Schindler)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-6553: The iterator returned by the LeafReader.postings method now
@@ -304,6 +311,11 @@ Changes in Backwards Compatibility Policy
 * LUCENE-6633: DuplicateFilter has been deprecated and will be removed in 6.0.
   DiversifiedTopDocsCollector can be used instead with a maximum number of hits
   per key equal to 1. (Adrien Grand)
+
+* LUCENE-6653: The workflow for consuming the TermToBytesRefAttribute was changed:
+  getBytesRef() now does all work and is called on each token, fillBytesRef()
+  was removed. The implementation is free to reuse the internal BytesRef
+  or return a new one on each call.  (Uwe Schindler)
 
 ======================= Lucene 5.2.1 =======================
 

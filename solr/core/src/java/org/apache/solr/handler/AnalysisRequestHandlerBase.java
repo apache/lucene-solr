@@ -148,13 +148,11 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     try (TokenStream tokenStream = analyzer.tokenStream("", query)){
       final Set<BytesRef> tokens = new HashSet<>();
       final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
-      final BytesRef bytes = bytesAtt.getBytesRef();
 
       tokenStream.reset();
 
       while (tokenStream.incrementToken()) {
-        bytesAtt.fillBytesRef();
-        tokens.add(BytesRef.deepCopyOf(bytes));
+        tokens.add(BytesRef.deepCopyOf(bytesAtt.getBytesRef()));
       }
 
       tokenStream.end();
@@ -246,7 +244,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       final NamedList<Object> tokenNamedList = new SimpleOrderedMap<>();
       final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
       BytesRef rawBytes = termAtt.getBytesRef();
-      termAtt.fillBytesRef();
       final String text = fieldType.indexedToReadable(rawBytes, new CharsRefBuilder()).toString();
       tokenNamedList.add("text", text);
       

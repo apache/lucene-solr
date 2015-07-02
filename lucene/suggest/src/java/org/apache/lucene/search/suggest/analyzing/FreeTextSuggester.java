@@ -486,11 +486,10 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       
       // Run full analysis, but save only the
       // last 1gram, last 2gram, etc.:
-      BytesRef tokenBytes = termBytesAtt.getBytesRef();
       int maxEndOffset = -1;
       boolean sawRealToken = false;
       while(ts.incrementToken()) {
-        termBytesAtt.fillBytesRef();
+        BytesRef tokenBytes = termBytesAtt.getBytesRef();
         sawRealToken |= tokenBytes.length > 0;
         // TODO: this is somewhat iffy; today, ShingleFilter
         // sets posLen to the gram count; maybe we should make

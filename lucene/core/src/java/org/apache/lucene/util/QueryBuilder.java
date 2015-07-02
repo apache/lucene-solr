@@ -267,15 +267,13 @@ public class QueryBuilder {
    */
   private Query analyzeTerm(String field, TokenStream stream) throws IOException {
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
     
     stream.reset();
     if (!stream.incrementToken()) {
       throw new AssertionError();
     }
     
-    termAtt.fillBytesRef();
-    return newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
+    return newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
   }
   
   /** 
@@ -286,12 +284,10 @@ public class QueryBuilder {
     q.setDisableCoord(true);
 
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
     
     stream.reset();
     while (stream.incrementToken()) {
-      termAtt.fillBytesRef();
-      Query currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
+      Query currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
       q.add(currentQuery, BooleanClause.Occur.SHOULD);
     }
     
@@ -317,18 +313,15 @@ public class QueryBuilder {
     BooleanQuery.Builder currentQuery = newBooleanQuery(true);
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
-
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     
     stream.reset();
     while (stream.incrementToken()) {
-      termAtt.fillBytesRef();
       if (posIncrAtt.getPositionIncrement() != 0) {
         add(q, currentQuery.build(), operator);
         currentQuery = newBooleanQuery(true);
       }
-      currentQuery.add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
+      currentQuery.add(newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef()))), BooleanClause.Occur.SHOULD);
     }
     add(q, currentQuery.build(), operator);
     
@@ -343,21 +336,17 @@ public class QueryBuilder {
     builder.setSlop(slop);
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
-
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;    
     
     stream.reset();
     while (stream.incrementToken()) {
-      termAtt.fillBytesRef();
-      
       if (enablePositionIncrements) {
         position += posIncrAtt.getPositionIncrement();
       } else {
         position += 1;
       }
-      builder.add(new Term(field, bytes), position);
+      builder.add(new Term(field, termAtt.getBytesRef()), position);
     }
 
     return builder.build();
@@ -371,7 +360,6 @@ public class QueryBuilder {
     mpq.setSlop(slop);
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-    BytesRef bytes = termAtt.getBytesRef();
 
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;  
@@ -379,7 +367,6 @@ public class QueryBuilder {
     List<Term> multiTerms = new ArrayList<>();
     stream.reset();
     while (stream.incrementToken()) {
-      termAtt.fillBytesRef();
       int positionIncrement = posIncrAtt.getPositionIncrement();
       
       if (positionIncrement > 0 && multiTerms.size() > 0) {
@@ -391,7 +378,7 @@ public class QueryBuilder {
         multiTerms.clear();
       }
       position += positionIncrement;
-      multiTerms.add(new Term(field, BytesRef.deepCopyOf(bytes)));
+      multiTerms.add(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
     }
     
     if (enablePositionIncrements) {

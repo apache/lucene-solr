@@ -36,7 +36,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   protected final DocumentsWriterPerThread.DocState docState;
   protected final FieldInvertState fieldState;
   TermToBytesRefAttribute termAtt;
-  BytesRef termBytesRef;
 
   // Copied from our perThread
   final IntBlockPool intPool;
@@ -145,13 +144,10 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
    *  entry point (for first TermsHash); postings use this
    *  API. */
   void add() throws IOException {
-
-    termAtt.fillBytesRef();
-
     // We are first in the chain so we must "intern" the
     // term text into textStart address
     // Get the text & hash of this term.
-    int termID = bytesHash.add(termBytesRef);
+    int termID = bytesHash.add(termAtt.getBytesRef());
       
     //System.out.println("add term=" + termBytesRef.utf8ToString() + " doc=" + docState.docID + " termID=" + termID);
 
@@ -292,10 +288,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
    *  document. */
   boolean start(IndexableField field, boolean first) {
     termAtt = fieldState.termAttribute;
-    // EmptyTokenStream can have null term att
-    if (termAtt != null) {
-      termBytesRef = termAtt.getBytesRef();
-    }
     if (nextPerField != null) {
       doNextCall = nextPerField.start(field, first);
     }

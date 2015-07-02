@@ -267,10 +267,9 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     String term = TestUtil.randomRealisticUnicodeString(random());
     try (TokenStream ts = analyzer.tokenStream("fake", term)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-      val = termAtt.getBytesRef();
       ts.reset();
       assertTrue(ts.incrementToken());
-      termAtt.fillBytesRef();
+      val = BytesRef.deepCopyOf(termAtt.getBytesRef());
       assertFalse(ts.incrementToken());
       ts.end();
     }

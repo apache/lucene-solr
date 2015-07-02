@@ -252,16 +252,16 @@ public class ICUCollationField extends FieldType {
       source.reset();
       
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-      BytesRef bytes = termAtt.getBytesRef();
+      
 
       // we control the analyzer here: most errors are impossible
       if (!source.incrementToken())
         throw new IllegalArgumentException("analyzer returned no terms for text: " + text);
-      termAtt.fillBytesRef();
+      BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
       assert !source.incrementToken();
       
       source.end();
-      return BytesRef.deepCopyOf(bytes);
+      return bytes;
     } catch (IOException e) {
       throw new RuntimeException("Unable to analyze text: " + text, e);
     }

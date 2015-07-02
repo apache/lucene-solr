@@ -96,9 +96,4 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
     this.copyTo(cloned);
     return cloned;
   }
-  
-  @Override
-  public String toString() {
-    return tags == null ? "<no tags>" : tags.toString();
-  }
 }

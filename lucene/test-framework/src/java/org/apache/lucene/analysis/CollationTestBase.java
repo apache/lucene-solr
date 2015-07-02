@@ -183,12 +183,10 @@ public abstract class CollationTestBase extends LuceneTestCase {
       String term = TestUtil.randomSimpleString(random());
       try (TokenStream ts = analyzer.tokenStream("fake", term)) {
         TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-        BytesRef bytes = termAtt.getBytesRef();
         ts.reset();
         assertTrue(ts.incrementToken());
-        termAtt.fillBytesRef();
         // ensure we make a copy of the actual bytes too
-        map.put(term, BytesRef.deepCopyOf(bytes));
+        map.put(term, BytesRef.deepCopyOf(termAtt.getBytesRef()));
         assertFalse(ts.incrementToken());
         ts.end();
       }
@@ -205,11 +203,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
               BytesRef expected = mapping.getValue();
               try (TokenStream ts = analyzer.tokenStream("fake", term)) {
                 TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-                BytesRef bytes = termAtt.getBytesRef();
                 ts.reset();
                 assertTrue(ts.incrementToken());
-                termAtt.fillBytesRef();
-                assertEquals(expected, bytes);
+                assertEquals(expected, termAtt.getBytesRef());
                 assertFalse(ts.incrementToken());
                 ts.end();
               }

@@ -40,11 +40,12 @@ public class CollatedTermAttributeImpl extends CharTermAttributeImpl {
   }
   
   @Override
-  public void fillBytesRef() {
-    BytesRef bytes = getBytesRef();
-    bytes.bytes = collator.getCollationKey(toString()).toByteArray();
-    bytes.offset = 0;
-    bytes.length = bytes.bytes.length;
+  public BytesRef getBytesRef() {
+    final BytesRef ref = this.builder.get();
+    ref.bytes = collator.getCollationKey(toString()).toByteArray();
+    ref.offset = 0;
+    ref.length = ref.bytes.length;
+    return ref;
   }
 
 }

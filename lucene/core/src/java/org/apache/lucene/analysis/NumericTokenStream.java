@@ -158,17 +158,13 @@ public final class NumericTokenStream extends TokenStream {
 
     @Override
     public BytesRef getBytesRef() {
-      return bytes.get();
-    }
-    
-    @Override
-    public void fillBytesRef() {
       assert valueSize == 64 || valueSize == 32;
       if (valueSize == 64) {
         NumericUtils.longToPrefixCoded(value, shift, bytes);
       } else {
         NumericUtils.intToPrefixCoded((int) value, shift, bytes);
       }
+      return bytes.get();
     }
 
     @Override
@@ -201,8 +197,7 @@ public final class NumericTokenStream extends TokenStream {
     
     @Override
     public void reflectWith(AttributeReflector reflector) {
-      fillBytesRef();
-      reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes.toBytesRef());
+      reflector.reflect(TermToBytesRefAttribute.class, "bytes", getBytesRef());
       reflector.reflect(NumericTermAttribute.class, "shift", shift);
       reflector.reflect(NumericTermAttribute.class, "rawValue", getRawValue());
       reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);
@@ -219,7 +214,7 @@ public final class NumericTokenStream extends TokenStream {
       NumericTermAttributeImpl t = (NumericTermAttributeImpl)super.clone();
       // Do a deep clone
       t.bytes = new BytesRefBuilder();
-      t.bytes.copyBytes(bytes.get());
+      t.bytes.copyBytes(getBytesRef());
       return t;
     }
 

@@ -17,13 +17,11 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * TokenStream from a canned list of binary (BytesRef-based)
@@ -54,64 +52,10 @@ public final class CannedBinaryTokenStream extends TokenStream {
 
   private final BinaryToken[] tokens;
   private int upto = 0;
-  private final BinaryTermAttribute termAtt = addAttribute(BinaryTermAttribute.class);
+  private final BytesTermAttribute termAtt = addAttribute(BytesTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-
-  /** An attribute extending {@link
-   *  TermToBytesRefAttribute} but exposing {@link
-   *  #setBytesRef} method. */
-  public interface BinaryTermAttribute extends TermToBytesRefAttribute {
-
-    /** Set the current binary value. */
-    public void setBytesRef(BytesRef bytes);
-  }
-
-  /** Implementation for {@link BinaryTermAttribute}. */
-  public final static class BinaryTermAttributeImpl extends AttributeImpl implements BinaryTermAttribute, TermToBytesRefAttribute {
-    private final BytesRefBuilder bytes = new BytesRefBuilder();
-
-    @Override
-    public void fillBytesRef() {
-      bytes.get(); // sets the length on the bytesref
-    }
-      
-    @Override
-    public BytesRef getBytesRef() {
-      return bytes.get();
-    }
-
-    @Override
-    public void setBytesRef(BytesRef bytes) {
-      this.bytes.copyBytes(bytes);
-    }
-    
-    @Override
-    public void clear() {
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return other == this;
-    }
-
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
-    }
-    
-    @Override
-    public void copyTo(AttributeImpl target) {
-      BinaryTermAttributeImpl other = (BinaryTermAttributeImpl) target;
-      other.bytes.copyBytes(bytes);
-    }
-    
-    @Override
-    public BinaryTermAttributeImpl clone() {
-      throw new UnsupportedOperationException();
-    }
-  }
 
   public CannedBinaryTokenStream(BinaryToken... tokens) {
     super();

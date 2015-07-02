@@ -34,11 +34,11 @@ public class MockUTF16TermAttributeImpl extends CharTermAttributeImpl {
       AttributeFactory.getStaticImplementation(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, MockUTF16TermAttributeImpl.class);
   
   @Override
-  public void fillBytesRef() {
-    BytesRef bytes = getBytesRef();
-    byte[] utf16 = toString().getBytes(StandardCharsets.UTF_16LE);
-    bytes.bytes = utf16;
-    bytes.offset = 0;
-    bytes.length = utf16.length;
+  public BytesRef getBytesRef() {
+    final BytesRef ref = this.builder.get();
+    ref.bytes = toString().getBytes(StandardCharsets.UTF_16LE);
+    ref.offset = 0;
+    ref.length = ref.bytes.length;
+    return ref;
   }
 }

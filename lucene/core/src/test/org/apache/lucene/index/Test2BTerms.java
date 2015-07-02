@@ -109,11 +109,6 @@ public class Test2BTerms extends LuceneTestCase {
 
     private final static class MyTermAttributeImpl extends AttributeImpl implements TermToBytesRefAttribute {
       @Override
-      public void fillBytesRef() {
-        // no-op: the bytes was already filled by our owner's incrementToken
-      }
-      
-      @Override
       public BytesRef getBytesRef() {
         return bytes;
       }
@@ -123,17 +118,8 @@ public class Test2BTerms extends LuceneTestCase {
       }
 
       @Override
-      public boolean equals(Object other) {
-        return other == this;
-      }
-
-      @Override
-      public int hashCode() {
-        return System.identityHashCode(this);
-      }
-    
-      @Override
       public void copyTo(AttributeImpl target) {
+        throw new UnsupportedOperationException();
       }
     
       @Override

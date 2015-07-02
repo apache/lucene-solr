@@ -53,11 +53,9 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
 
     try (TokenStream ts = analyzer.tokenStream(fieldName, value)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-      BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
       while (ts.incrementToken()) {
-        termAtt.fillBytesRef();
-        SpanTermQuery stq = new SpanTermQuery(new Term(fieldName, BytesRef.deepCopyOf(bytes)));
+        SpanTermQuery stq = new SpanTermQuery(new Term(fieldName, BytesRef.deepCopyOf(termAtt.getBytesRef())));
         clausesList.add(stq);
       }
       ts.end();

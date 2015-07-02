@@ -105,8 +105,6 @@ public class TokenStreamToAutomaton {
     final PositionLengthAttribute posLengthAtt = in.addAttribute(PositionLengthAttribute.class);
     final OffsetAttribute offsetAtt = in.addAttribute(OffsetAttribute.class);
 
-    final BytesRef term = termBytesAtt.getBytesRef();
-
     in.reset();
 
     // Only temporarily holds states ahead of our current
@@ -157,8 +155,7 @@ public class TokenStreamToAutomaton {
 
       final int endPos = pos + posLengthAtt.getPositionLength();
 
-      termBytesAtt.fillBytesRef();
-      final BytesRef termUTF8 = changeToken(term);
+      final BytesRef termUTF8 = changeToken(termBytesAtt.getBytesRef());
       int[] termUnicode = null;
       final Position endPosData = positions.get(endPos);
       if (endPosData.arriving == -1) {
