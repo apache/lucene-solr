@@ -113,6 +113,9 @@ New Features
   inner distance and to an outside edge. Multiple distance algorithms are
   available.  (Karl Wright, David Smiley)
 
+* LUCENE-6632: Geo3D: Compute circle planes more accurately.
+  (Karl Wright via David Smiley)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

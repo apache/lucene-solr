@@ -67,7 +67,7 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       this.edgePoints = new GeoPoint[0];
     } else {
       // Construct normal plane
-      final Plane normalPlane = new Plane(upperPoint, center);
+      final Plane normalPlane = Plane.constructNormalizedVerticalPlane(upperPoint, lowerPoint, center);
       // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
       if (circlePlane == null)
