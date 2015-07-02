@@ -20,9 +20,6 @@ package org.apache.lucene.util;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.tokenattributes.*;
 
-import java.lang.reflect.ReflectPermission;
-import java.security.AccessControlException;
-import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -183,7 +180,6 @@ public class TestAttributeSource extends LuceneTestCase {
   
   @SuppressWarnings("unused")
   static final class OnlyReflectAttributeImpl extends AttributeImpl implements TypeAttribute {
-    
     private String field1 = "foo";
     private int field2 = 4711;
     private static int x = 0;
@@ -204,7 +200,6 @@ public class TestAttributeSource extends LuceneTestCase {
 
     @Override
     public void copyTo(AttributeImpl target) {}
-    
   }
   
   public void testBackwardsCompatibilityReflector() throws Exception {
@@ -214,23 +209,5 @@ public class TestAttributeSource extends LuceneTestCase {
       put(TypeAttribute.class.getName() + "#field3", "public");
     }});    
   }
-  
-  /* For now disable this...
-  public void testBackwardsCompatibilityReflectorWithoutRights() throws Exception {
-    try {
-      runWithRestrictedPermissions(new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          testBackwardsCompatibilityReflector();
-          return null; // Void
-        }
-      }, new RuntimePermission("*"));
-      fail("Should not run successfully because private field access is denied by policy.");
-    } catch (AccessControlException e) {
-      assertTrue(e.getPermission() instanceof ReflectPermission);
-      assertEquals("suppressAccessChecks", e.getPermission().getName());
-    }
-  }
-  */
   
 }
