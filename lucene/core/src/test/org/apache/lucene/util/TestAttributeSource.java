@@ -223,7 +223,7 @@ public class TestAttributeSource extends LuceneTestCase {
           testBackwardsCompatibilityReflector();
           return null; // Void
         }
-      });
+      }, new RuntimePermission("*"));
       fail("Should not run successfully because private field access is denied by policy.");
     } catch (AccessControlException e) {
       assertTrue(e.getPermission() instanceof ReflectPermission);
