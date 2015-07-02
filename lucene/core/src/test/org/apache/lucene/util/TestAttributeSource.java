@@ -20,8 +20,13 @@ package org.apache.lucene.util;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.tokenattributes.*;
 
+import java.lang.reflect.ReflectPermission;
+import java.security.AccessControlException;
+import java.security.PrivilegedExceptionAction;
+import java.util.HashMap;
 import java.util.Iterator;
 
+@SuppressWarnings("deprecation")
 public class TestAttributeSource extends LuceneTestCase {
 
   public void testCaptureState() {
@@ -174,6 +179,56 @@ public class TestAttributeSource extends LuceneTestCase {
     src.copyTo(clone);
     clone.getPayload().bytes[0] = 10; // modify one byte, srcBytes shouldn't change
     assertEquals("clone() wasn't deep", 1, src.getPayload().bytes[0]);
+  }
+  
+  @SuppressWarnings("unused")
+  static final class OnlyReflectAttributeImpl extends AttributeImpl implements TypeAttribute {
+    
+    private String field1 = "foo";
+    private int field2 = 4711;
+    private static int x = 0;
+    public String field3 = "public";
+
+    @Override
+    public String type() {
+      return field1;
+    }
+
+    @Override
+    public void setType(String type) {
+      this.field1 = type;
+    }
+
+    @Override
+    public void clear() {}
+
+    @Override
+    public void copyTo(AttributeImpl target) {}
+    
+  }
+  
+  public void testBackwardsCompatibilityReflector() throws Exception {
+    TestUtil.assertAttributeReflection(new OnlyReflectAttributeImpl(), new HashMap<String, Object>() {{
+      put(TypeAttribute.class.getName() + "#field1", "foo");
+      put(TypeAttribute.class.getName() + "#field2", 4711);
+      put(TypeAttribute.class.getName() + "#field3", "public");
+    }});    
+  }
+  
+  public void testBackwardsCompatibilityReflectorWithoutRights() throws Exception {
+    try {
+      LuceneTestCase.runWithRestrictedPermissions(new PrivilegedExceptionAction<Void>() {
+        @Override
+        public Void run() throws Exception {
+          testBackwardsCompatibilityReflector();
+          return null; // Void
+        }
+      });
+      fail("Should not run successfully because private field access is denied by policy.");
+    } catch (AccessControlException e) {
+      assertTrue(e.getPermission() instanceof ReflectPermission);
+      assertEquals("suppressAccessChecks", e.getPermission().getName());
+    }
   }
   
 }
