@@ -136,7 +136,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
           query = new MatchAllDocsQuery();
         }
         searcher.search(query, collector1);
-        searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits, mergePolicy));
+        searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits, mergePolicy.getSort()));
         assertTrue(collector1.getTotalHits() >= collector2.getTotalHits());
         assertTopDocsEquals(collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
       }
@@ -145,37 +145,33 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   }
   
   public void testCanEarlyTerminate() {
-    assertTrue(canEarlyTerminate(
+    assertTrue(EarlyTerminatingSortingCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
         new Sort(new SortField("a", SortField.Type.LONG))));
 
-    assertTrue(canEarlyTerminate(
+    assertTrue(EarlyTerminatingSortingCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
 
-    assertTrue(canEarlyTerminate(
+    assertTrue(EarlyTerminatingSortingCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
 
-    assertFalse(canEarlyTerminate(
+    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG, true)),
         new Sort(new SortField("a", SortField.Type.LONG, false))));
 
-    assertFalse(canEarlyTerminate(
+    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("a", SortField.Type.LONG))));
 
-    assertFalse(canEarlyTerminate(
+    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("c", SortField.Type.STRING))));
 
-    assertFalse(canEarlyTerminate(
+    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("c", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
-  }
-
-  private boolean canEarlyTerminate(Sort querySort, Sort mergeSort) {
-    return EarlyTerminatingSortingCollector.canEarlyTerminate(querySort, new SortingMergePolicy(newMergePolicy(), mergeSort));
   }
 
   public void testEarlyTerminationDifferentSorter() throws IOException {
@@ -201,7 +197,8 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       }
       searcher.search(query, collector1);
       Sort different = new Sort(new SortField("ndv2", SortField.Type.LONG));
-      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits, new SortingMergePolicy(newMergePolicy(), different)) {
+
+      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits, different) {
         @Override
         public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
           final LeafCollector ret = super.getLeafCollector(context);

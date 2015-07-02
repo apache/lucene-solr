@@ -187,8 +187,9 @@ public final class SortingMergePolicy extends MergePolicy {
   }
 
   /** Returns {@code true} if the given {@code reader} is sorted by the
-   *  {@code sort} order of this {@link SortingMergePolicy}. */
-  public boolean isSorted(LeafReader reader) {
+   *  {@code sort} given. Typically the given {@code sort} would be the
+   *  {@link SortingMergePolicy#getSort()} order of a {@link SortingMergePolicy}. */
+  public static boolean isSorted(LeafReader reader, Sort sort) {
     String description = getSortDescription(reader);
     if (description != null && description.equals(sort.toString())) {
       return true;
