@@ -82,6 +82,23 @@ public class Plane extends Vector {
     this.D = D;
   }
 
+  /** Construct the most accurate normalized, vertical plane given a set of points.  If none of the points can determine
+  * the plane, return null.
+  */
+  public static Plane constructNormalizedVerticalPlane(final Vector... planePoints) {
+    // Pick the best one (with the greatest x-y distance)
+    double bestDistance = 0.0;
+    Vector bestPoint = null;
+    for (final Vector point : planePoints) {
+      final double pointDist = point.x * point.x + point.y * point.y;
+      if (pointDist > bestDistance) {
+        bestDistance = pointDist;
+        bestPoint = point;
+      }
+    }
+    return constructNormalizedVerticalPlane(bestPoint.x, bestPoint.y);
+  }
+
   /** Construct a normalized, vertical plane through an x-y point.  If the x-y point is at (0,0), return null.
   */
   public static Plane constructNormalizedVerticalPlane(final double x, final double y) {

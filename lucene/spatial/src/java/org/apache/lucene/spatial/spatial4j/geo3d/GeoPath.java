@@ -329,7 +329,7 @@ public class GeoPath extends GeoBaseDistanceShape {
     public SegmentEndpoint(final GeoPoint point, final GeoPoint upperPoint, final GeoPoint lowerPoint) {
       this.point = point;
       // Construct normal plane
-      final Plane normalPlane = new Plane(upperPoint, point);
+      final Plane normalPlane = Plane.constructNormalizedVerticalPlane(upperPoint, lowerPoint, point);
       // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(point, normalPlane, upperPoint, lowerPoint);
       this.cutoffPlanes = new Membership[0];
