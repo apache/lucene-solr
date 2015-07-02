@@ -217,7 +217,7 @@ public class TestAttributeSource extends LuceneTestCase {
   
   public void testBackwardsCompatibilityReflectorWithoutRights() throws Exception {
     try {
-      LuceneTestCase.runWithRestrictedPermissions(new PrivilegedExceptionAction<Void>() {
+      runWithRestrictedPermissions(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
           testBackwardsCompatibilityReflector();
