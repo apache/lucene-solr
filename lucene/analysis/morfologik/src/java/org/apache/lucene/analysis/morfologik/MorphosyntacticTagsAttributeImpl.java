@@ -21,6 +21,7 @@ package org.apache.lucene.analysis.morfologik;
 import java.util.*;
 
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 
 /**
  * Morphosyntactic annotations for surface forms.
@@ -95,5 +96,10 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
     MorphosyntacticTagsAttributeImpl cloned = new MorphosyntacticTagsAttributeImpl();
     this.copyTo(cloned);
     return cloned;
+  }
+
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(MorphosyntacticTagsAttribute.class, "tags", tags);
   }
 }

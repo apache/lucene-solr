@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -361,6 +362,11 @@ public final class CompletionTokenStream extends TokenStream {
       BytesRefBuilderTermAttributeImpl other = new BytesRefBuilderTermAttributeImpl();
       copyTo(other);
       return other;
+    }
+
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      reflector.reflect(TermToBytesRefAttribute.class, "bytes", getBytesRef());
     }
 
     @Override

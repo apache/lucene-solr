@@ -21,11 +21,13 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -225,6 +227,18 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
       final List<Range> targetRanges = ((ComputedRangesAttribute)target).ranges();
       targetRanges.clear();
       targetRanges.addAll(rangeBounds);
+    }
+
+    @Override
+    public AttributeImpl clone() {
+      ComputedRangesAttributeImpl c = (ComputedRangesAttributeImpl) super.clone();;
+      copyTo(c);
+      return c;
+    }
+
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      reflector.reflect(ComputedRangesAttribute.class, "rangeBounds", rangeBounds);
     }
   }
 

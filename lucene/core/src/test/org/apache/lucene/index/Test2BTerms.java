@@ -38,6 +38,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -45,6 +46,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
+
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 // NOTE: SimpleText codec will consume very large amounts of
@@ -125,6 +127,11 @@ public class Test2BTerms extends LuceneTestCase {
       @Override
       public MyTermAttributeImpl clone() {
         throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void reflectWith(AttributeReflector reflector) {
+        reflector.reflect(TermToBytesRefAttribute.class, "bytes", getBytesRef());
       }
     }
 

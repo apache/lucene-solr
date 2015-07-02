@@ -18,6 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -94,6 +95,8 @@ public class TestToken extends LuceneTestCase {
     public boolean equals(Object o) { return (o instanceof SenselessAttributeImpl); }
     @Override
     public int hashCode() { return 0; }
+    @Override
+    public void reflectWith(AttributeReflector reflector) {}
   }
 
   public void testTokenAttributeFactory() throws Exception {
