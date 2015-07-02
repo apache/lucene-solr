@@ -58,7 +58,7 @@ public final class CompletionTokenStream extends TokenStream {
 
   private final PayloadAttribute payloadAttr = addAttribute(PayloadAttribute.class);
   private final PositionIncrementAttribute posAttr = addAttribute(PositionIncrementAttribute.class);
-  private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
+  private final BytesRefBuilderTermAttribute bytesAtt = addAttribute(BytesRefBuilderTermAttribute.class);
 
   private final TokenStream input;
   final boolean preserveSep;
@@ -309,9 +309,7 @@ public final class CompletionTokenStream extends TokenStream {
   /**
    * Attribute providing access to the term builder and UTF-16 conversion
    */
-  private interface ByteTermAttribute extends TermToBytesRefAttribute {
-    // marker interface
-
+  private interface BytesRefBuilderTermAttribute extends TermToBytesRefAttribute {
     /**
      * Returns the builder from which the term is derived.
      */
@@ -326,20 +324,15 @@ public final class CompletionTokenStream extends TokenStream {
   /**
    * Custom attribute implementation for completion token stream
    */
-  public static final class ByteTermAttributeImpl extends AttributeImpl implements ByteTermAttribute, TermToBytesRefAttribute {
+  public static final class BytesRefBuilderTermAttributeImpl extends AttributeImpl implements BytesRefBuilderTermAttribute, TermToBytesRefAttribute {
     private final BytesRefBuilder bytes = new BytesRefBuilder();
-    private CharsRefBuilder charsRef;
+    private transient CharsRefBuilder charsRef;
 
     /**
      * Sole constructor
      * no-op
      */
-    public ByteTermAttributeImpl() {
-    }
-
-    @Override
-    public void fillBytesRef() {
-      // does nothing - we change in place
+    public BytesRefBuilderTermAttributeImpl() {
     }
 
     @Override
@@ -359,8 +352,15 @@ public final class CompletionTokenStream extends TokenStream {
 
     @Override
     public void copyTo(AttributeImpl target) {
-      ByteTermAttributeImpl other = (ByteTermAttributeImpl) target;
+      BytesRefBuilderTermAttributeImpl other = (BytesRefBuilderTermAttributeImpl) target;
       other.bytes.copyBytes(bytes);
+    }
+
+    @Override
+    public AttributeImpl clone() {
+      BytesRefBuilderTermAttributeImpl other = new BytesRefBuilderTermAttributeImpl();
+      copyTo(other);
+      return other;
     }
 
     @Override

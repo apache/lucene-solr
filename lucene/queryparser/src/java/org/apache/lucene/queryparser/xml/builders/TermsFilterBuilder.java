@@ -56,11 +56,9 @@ public class TermsFilterBuilder implements FilterBuilder {
 
     try (TokenStream ts = analyzer.tokenStream(fieldName, text)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-      BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
       while (ts.incrementToken()) {
-        termAtt.fillBytesRef();
-        terms.add(BytesRef.deepCopyOf(bytes));
+        terms.add(BytesRef.deepCopyOf(termAtt.getBytesRef()));
       }
       ts.end();
     }

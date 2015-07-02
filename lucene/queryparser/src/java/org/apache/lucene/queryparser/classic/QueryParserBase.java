@@ -602,15 +602,14 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
       source.reset();
       
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-      BytesRef bytes = termAtt.getBytesRef();
 
       if (!source.incrementToken())
         throw new IllegalArgumentException("analyzer returned no terms for multiTerm term: " + part);
-      termAtt.fillBytesRef();
+      BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
       if (source.incrementToken())
         throw new IllegalArgumentException("analyzer returned too many terms for multiTerm term: " + part);
       source.end();
-      return BytesRef.deepCopyOf(bytes);
+      return bytes;
     } catch (IOException e) {
       throw new RuntimeException("Error analyzing multiTerm term: " + part, e);
     }

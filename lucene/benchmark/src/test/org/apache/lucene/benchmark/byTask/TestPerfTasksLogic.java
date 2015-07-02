@@ -976,8 +976,6 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue(ts2.incrementToken());
     BytesRef bytes1 = termAtt1.getBytesRef();
     BytesRef bytes2 = termAtt2.getBytesRef();
-    termAtt1.fillBytesRef();
-    termAtt2.fillBytesRef();
     assertEquals(bytes1, bytes2);
     assertFalse(ts1.incrementToken());
     assertFalse(ts2.incrementToken());

@@ -171,14 +171,11 @@ public abstract class AbstractTestCase extends LuceneTestCase {
 
     try (TokenStream tokenStream = analyzer.tokenStream(field, text)) {
       TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
-
-      BytesRef bytesRef = termAttribute.getBytesRef();
-
+      
       tokenStream.reset();
     
       while (tokenStream.incrementToken()) {
-        termAttribute.fillBytesRef();
-        bytesRefs.add(BytesRef.deepCopyOf(bytesRef));
+        bytesRefs.add(BytesRef.deepCopyOf(termAttribute.getBytesRef()));
       }
 
       tokenStream.end();

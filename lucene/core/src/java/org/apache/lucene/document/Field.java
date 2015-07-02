@@ -23,16 +23,14 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.index.FieldInvertState; // javadocs
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -568,71 +566,47 @@ public class Field implements IndexableField {
   }
   
   private static final class BinaryTokenStream extends TokenStream {
-    private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
-
-    // Do not init this to true, becase caller must first call reset:
-    private boolean available;
+    private final BytesTermAttribute bytesAtt = addAttribute(BytesTermAttribute.class);
+    private boolean used = true;
+    private BytesRef value;
   
-    public BinaryTokenStream() {
+    /** Creates a new TokenStream that returns a BytesRef as single token.
+     * <p>Warning: Does not initialize the value, you must call
+     * {@link #setValue(BytesRef)} afterwards!
+     */
+    BinaryTokenStream() {
     }
 
     public void setValue(BytesRef value) {
-      bytesAtt.setBytesRef(value);
+      this.value = value;
     }
   
     @Override
     public boolean incrementToken() {
-      if (available) {
-        clearAttributes();
-        available = false;
-        return true;
+      if (used) {
+        return false;
       }
-      return false;
+      clearAttributes();
+      bytesAtt.setBytesRef(value);
+      used = true;
+      return true;
     }
   
     @Override
     public void reset() {
-      available = true;
+      used = false;
     }
-  
-    public interface ByteTermAttribute extends TermToBytesRefAttribute {
-      public void setBytesRef(BytesRef bytes);
-    }
-  
-    public static class ByteTermAttributeImpl extends AttributeImpl implements ByteTermAttribute, TermToBytesRefAttribute {
-      private BytesRef bytes;
-    
-      @Override
-      public void fillBytesRef() {
-        // no-op: the bytes was already filled by our owner's incrementToken
-      }
-    
-      @Override
-      public BytesRef getBytesRef() {
-        return bytes;
-      }
 
-      @Override
-      public void setBytesRef(BytesRef bytes) {
-        this.bytes = bytes;
-      }
-    
-      @Override
-      public void clear() {
-      }
-    
-      @Override
-      public void copyTo(AttributeImpl target) {
-        ByteTermAttributeImpl other = (ByteTermAttributeImpl) target;
-        other.bytes = bytes;
-      }
+    @Override
+    public void close() {
+      value = null;
     }
   }
 
   private static final class StringTokenStream extends TokenStream {
     private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
-    private boolean used = false;
+    private boolean used = true;
     private String value = null;
     
     /** Creates a new TokenStream that returns a String as single token.

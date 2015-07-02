@@ -54,11 +54,9 @@ public class TermsQueryBuilder implements QueryBuilder {
     try (TokenStream ts = analyzer.tokenStream(fieldName, text)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       Term term = null;
-      BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
       while (ts.incrementToken()) {
-        termAtt.fillBytesRef();
-        term = new Term(fieldName, BytesRef.deepCopyOf(bytes));
+        term = new Term(fieldName, BytesRef.deepCopyOf(termAtt.getBytesRef()));
         bq.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.SHOULD));
       }
       ts.end();

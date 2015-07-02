@@ -49,14 +49,13 @@ public class TestLongPostings extends LuceneTestCase {
       }
       try (TokenStream ts = a.tokenStream("foo", s)) {
         final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
-        final BytesRef termBytes = termAtt.getBytesRef();
         ts.reset();
 
         int count = 0;
         boolean changed = false;
 
         while(ts.incrementToken()) {
-          termAtt.fillBytesRef();
+          final BytesRef termBytes = termAtt.getBytesRef();
           if (count == 0 && !termBytes.utf8ToString().equals(s)) {
             // The value was changed during analysis.  Keep iterating so the
             // tokenStream is exhausted.

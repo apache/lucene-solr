@@ -23,17 +23,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -94,78 +89,6 @@ public class TestPrefixQuery extends LuceneTestCase {
     directory.close();
   }
 
-  static final class BinaryTokenStream extends TokenStream {
-    private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
-    private boolean available = true;
-  
-    public BinaryTokenStream(BytesRef bytes) {
-      bytesAtt.setBytesRef(bytes);
-    }
-  
-    @Override
-    public boolean incrementToken() {
-      if (available) {
-        clearAttributes();
-        available = false;
-        return true;
-      }
-      return false;
-    }
-  
-    @Override
-    public void reset() {
-      available = true;
-    }
-  
-    public interface ByteTermAttribute extends TermToBytesRefAttribute {
-      public void setBytesRef(BytesRef bytes);
-    }
-  
-    public static class ByteTermAttributeImpl extends AttributeImpl implements ByteTermAttribute,TermToBytesRefAttribute {
-      private BytesRef bytes;
-    
-      @Override
-      public void fillBytesRef() {
-       // no-op: the bytes was already filled by our owner's incrementToken
-      }
-    
-      @Override
-      public BytesRef getBytesRef() {
-        return bytes;
-      }
-
-      @Override
-      public void setBytesRef(BytesRef bytes) {
-        this.bytes = bytes;
-      }
-   
-      @Override
-      public void clear() {}
-    
-      @Override
-      public void copyTo(AttributeImpl target) {
-        ByteTermAttributeImpl other = (ByteTermAttributeImpl) target;
-        other.bytes = bytes;
-      }
-    }
-  }
-
-  /** Basically a StringField that accepts binary term. */
-  private static class BinaryField extends Field {
-
-    final static FieldType TYPE;
-    static {
-      TYPE = new FieldType(StringField.TYPE_NOT_STORED);
-      // Necessary so our custom tokenStream is used by Field.tokenStream:
-      TYPE.setTokenized(true);
-      TYPE.freeze();
-    }
-
-    public BinaryField(String name, BytesRef value) {
-      super(name, new BinaryTokenStream(value), TYPE);
-    }
-  }
-
   public void testRandomBinaryPrefix() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -182,7 +105,7 @@ public class TestPrefixQuery extends LuceneTestCase {
     Collections.shuffle(termsList, random());
     for(BytesRef term : termsList) {
       Document doc = new Document();
-      doc.add(new BinaryField("field", term));
+      doc.add(newStringField("field", term, Field.Store.NO));
       w.addDocument(doc);
     }
 

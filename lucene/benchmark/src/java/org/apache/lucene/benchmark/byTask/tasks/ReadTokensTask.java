@@ -87,7 +87,7 @@ public class ReadTokensTask extends PerfTask {
 
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       while(stream.incrementToken()) {
-        termAtt.fillBytesRef();
+        termAtt.getBytesRef();
         tokenCount++;
       }
       stream.end();

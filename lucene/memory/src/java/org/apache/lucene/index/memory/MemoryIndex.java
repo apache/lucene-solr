@@ -453,18 +453,16 @@ public class MemoryIndex {
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
       PayloadAttribute payloadAtt = storePayloads ? stream.addAttribute(PayloadAttribute.class) : null;
-      BytesRef ref = termAtt.getBytesRef();
       stream.reset();
       
       while (stream.incrementToken()) {
-        termAtt.fillBytesRef();
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
         final int posIncr = posIncrAttribute.getPositionIncrement();
         if (posIncr == 0)
           numOverlapTokens++;
         pos += posIncr;
-        int ord = terms.add(ref);
+        int ord = terms.add(termAtt.getBytesRef());
         if (ord < 0) {
           ord = (-ord) - 1;
           postingsWriter.reset(sliceArray.end[ord]);

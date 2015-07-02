@@ -61,8 +61,6 @@ public class TokenStreamToTermAutomatonQuery {
     final PositionLengthAttribute posLengthAtt = in.addAttribute(PositionLengthAttribute.class);
     final OffsetAttribute offsetAtt = in.addAttribute(OffsetAttribute.class);
 
-    final BytesRef term = termBytesAtt.getBytesRef();
-
     in.reset();
 
     TermAutomatonQuery query = new TermAutomatonQuery(field);
@@ -93,7 +91,7 @@ public class TokenStreamToTermAutomatonQuery {
         state = query.createState();
       }
 
-      termBytesAtt.fillBytesRef();
+      BytesRef term = termBytesAtt.getBytesRef();
       //System.out.println(pos + "-" + endPos + ": " + term.utf8ToString() + ": posInc=" + posInc);
       if (term.length == 1 && term.bytes[term.offset] == (byte) '*') {
         query.addAnyTransition(pos, endPos);
