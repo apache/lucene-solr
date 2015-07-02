@@ -31,17 +31,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public final class TestRateLimiter extends LuceneTestCase {
 
-  public void testPause() {
-    SimpleRateLimiter limiter = new SimpleRateLimiter(10); // 10 MB / Sec
-    long pause = 0;
-    for (int i = 0; i < 3; i++) {
-      pause += limiter.pause(4 * 1024 * 1024); // fire up 3 * 4 MB 
-    }
-    final long convert = TimeUnit.MILLISECONDS.convert(pause, TimeUnit.NANOSECONDS);
-    assertTrue("we should sleep less than 2 seconds but did: " + convert + " millis", convert < 2000l); 
-    assertTrue("we should sleep at least 1 second but did only: " + convert + " millis", convert > 1000l); 
-  }
-
   // LUCENE-6075
   public void testOverflowInt() throws Exception {
     Thread t = new Thread() {
