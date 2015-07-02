@@ -178,6 +178,9 @@ API Changes
   object to reduce the scope of doc IDs that may be returned, emphasizing the
   fact that these objects need to support random-access. (Adrien Grand)
 
+* LUCENE-6646: Make EarlyTerminatingCollector take a Sort object directly
+  instead of a SortingMergePolicy. (Christine Poerschke via Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
