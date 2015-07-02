@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 /**
  * This interface is used to reflect contents of {@link AttributeSource} or {@link AttributeImpl}.
  */
+@FunctionalInterface
 public interface AttributeReflector {
 
   /**

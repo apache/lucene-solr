@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.tokenattributes;
  */
 
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 
 /** Default implementation of {@link PositionIncrementAttribute}. */
 public class PositionIncrementAttributeImpl extends AttributeImpl implements PositionIncrementAttribute, Cloneable {
@@ -69,4 +70,9 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     PositionIncrementAttribute t = (PositionIncrementAttribute) target;
     t.setPositionIncrement(positionIncrement);
   }  
+
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(PositionIncrementAttribute.class, "positionIncrement", positionIncrement);
+  }
 }

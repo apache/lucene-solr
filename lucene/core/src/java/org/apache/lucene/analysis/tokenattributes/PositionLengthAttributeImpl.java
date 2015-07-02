@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.tokenattributes;
  */
 
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 
 /** Default implementation of {@link PositionLengthAttribute}. */
 public class PositionLengthAttributeImpl extends AttributeImpl implements PositionLengthAttribute, Cloneable {
@@ -69,4 +70,9 @@ public class PositionLengthAttributeImpl extends AttributeImpl implements Positi
     PositionLengthAttribute t = (PositionLengthAttribute) target;
     t.setPositionLength(positionLength);
   }  
+
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(PositionLengthAttribute.class, "positionLength", positionLength);
+  }
 }

@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.tokenattributes;
  */
 
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 
 /** Default implementation of {@link PayloadAttribute}. */
@@ -89,5 +90,8 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
     t.setPayload((payload == null) ? null : BytesRef.deepCopyOf(payload));
   }  
 
-  
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(PayloadAttribute.class, "payload", payload);
+  }
 }

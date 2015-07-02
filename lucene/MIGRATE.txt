@@ -40,3 +40,9 @@ can now be constructed this way using its builder:
       .setMinimumNumberShouldMatch(1)
       .build();
 
+## AttributeImpl now requires that reflectWith() is implemented (LUCENE-6651)
+
+AttributeImpl removed the default, reflection-based implementation of
+reflectWith(AtrributeReflector). The method was made abstract. If you have
+implemented your own attribute, make sure to add the required method sigature.
+See the Javadocs for an example.

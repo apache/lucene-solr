@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.xml.sax.InputSource;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
@@ -269,22 +270,31 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
   public static final class MockRetainAttributeImpl extends AttributeImpl implements MockRetainAttribute {
     private boolean retain = false;
+    
     @Override
     public void clear() {
       retain = false;
     }
+    
     @Override
     public boolean getRetain() {
       return retain;
     }
+    
     @Override
     public void setRetain(boolean retain) {
       this.retain = retain;
     }
+    
     @Override
     public void copyTo(AttributeImpl target) {
       MockRetainAttribute t = (MockRetainAttribute) target;
       t.setRetain(retain);
+    }
+
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      reflector.reflect(MockRetainAttribute.class, "retain", retain);
     }
   }
 

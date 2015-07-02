@@ -40,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -105,6 +106,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     @Override
     public void copyTo(AttributeImpl target) {
       ((CheckClearAttributesAttributeImpl) target).clear();
+    }
+
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      reflector.reflect(CheckClearAttributesAttribute.class, "clearCalled", clearCalled);
     }
   }
 

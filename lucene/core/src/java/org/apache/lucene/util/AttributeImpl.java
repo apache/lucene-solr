@@ -17,9 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-
 /**
  * Base class for Attributes that can be added to a 
  * {@link org.apache.lucene.util.AttributeSource}.
@@ -48,17 +45,14 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
    */
   public final String reflectAsString(final boolean prependAttClass) {
     final StringBuilder buffer = new StringBuilder();
-    reflectWith(new AttributeReflector() {
-      @Override
-      public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
-        if (buffer.length() > 0) {
-          buffer.append(',');
-        }
-        if (prependAttClass) {
-          buffer.append(attClass.getName()).append('#');
-        }
-        buffer.append(key).append('=').append((value == null) ? "null" : value);
+    reflectWith((attClass, key, value) -> {
+      if (buffer.length() > 0) {
+        buffer.append(',');
       }
+      if (prependAttClass) {
+        buffer.append(attClass.getName()).append('#');
+      }
+      buffer.append(key).append('=').append((value == null) ? "null" : value);
     });
     return buffer.toString();
   }
@@ -67,13 +61,7 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
    * This method is for introspection of attributes, it should simply
    * add the key/values this attribute holds to the given {@link AttributeReflector}.
    *
-   * <p>The default implementation calls {@link AttributeReflector#reflect} for all
-   * non-static fields from the implementing class, using the field name as key
-   * and the field value as value. The Attribute class is also determined by reflection.
-   * Please note that the default implementation can only handle single-Attribute
-   * implementations.
-   *
-   * <p>Custom implementations look like this (e.g. for a combined attribute implementation):
+   * <p>Implementations look like this (e.g. for a combined attribute implementation):
    * <pre class="prettyprint">
    *   public void reflectWith(AttributeReflector reflector) {
    *     reflector.reflect(CharTermAttribute.class, "term", term());
@@ -87,28 +75,7 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
    *
    * @see #reflectAsString(boolean)
    */
-  public void reflectWith(AttributeReflector reflector) {
-    final Class<? extends AttributeImpl> clazz = this.getClass();
-    final Class<? extends Attribute>[] interfaces = AttributeSource.getAttributeInterfaces(clazz);
-    if (interfaces.length != 1) {
-      throw new UnsupportedOperationException(clazz.getName() +
-        " implements more than one Attribute interface, the default reflectWith() implementation cannot handle this.");
-    }
-    final Class<? extends Attribute> interf = interfaces[0];
-    final Field[] fields = clazz.getDeclaredFields();
-    try {
-      for (int i = 0; i < fields.length; i++) {
-        final Field f = fields[i];
-        if (Modifier.isStatic(f.getModifiers())) continue;
-        f.setAccessible(true);
-        reflector.reflect(interf, f.getName(), f.get(this));
-      }
-    } catch (IllegalAccessException e) {
-      // this should never happen, because we're just accessing fields
-      // from 'this'
-      throw new RuntimeException(e);
-    }
-  }
+  public abstract void reflectWith(AttributeReflector reflector);
   
   /**
    * Copies the values from this Attribute into the passed-in

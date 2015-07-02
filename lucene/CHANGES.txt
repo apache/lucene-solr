@@ -42,6 +42,9 @@ API Changes
   BooleanQuery with one MUST clause for the query, and one FILTER clause for
   the filter. (Adrien Grand)
 
+* LUCENE-6651: AttributeImpl#reflectWith(AttributeReflector) was made
+  abstract and has no reflection-based default implementation anymore.
+  (Uwe Schindler)
 
 ======================= Lucene 5.3.0 =======================
 
@@ -261,6 +264,11 @@ Changes in Runtime Behavior
 
 * LUCENE-6542: FSDirectory's ctor now works with security policies or file systems
   that restrict write access.  (Trejkaz, hossman, Uwe Schindler)
+
+* LUCENE-6651: The default implementation of AttributeImpl#reflectWith(AttributeReflector)
+  now uses AccessControler#doPrivileged() to do the reflection. Please consider
+  implementing this method in all your custom attributes, because the method will be
+  made abstract in Lucene 6.  (Uwe Schindler)
 
 Optimizations
 

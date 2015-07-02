@@ -60,6 +60,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
@@ -169,6 +170,12 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     public void copyTo(AttributeImpl target) {
       OffsetAttribute t = (OffsetAttribute) target;
       t.setOffset(start, end);
+    }
+
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      reflector.reflect(OffsetAttribute.class, "startOffset", start);
+      reflector.reflect(OffsetAttribute.class, "endOffset", end);
     }
 
   }

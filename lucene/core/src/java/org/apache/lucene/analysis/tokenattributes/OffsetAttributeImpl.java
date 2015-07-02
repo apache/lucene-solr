@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.tokenattributes;
  */
 
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 
 /** Default implementation of {@link OffsetAttribute}. */
 public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribute, Cloneable {
@@ -90,4 +91,10 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     OffsetAttribute t = (OffsetAttribute) target;
     t.setOffset(startOffset, endOffset);
   }  
+
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(OffsetAttribute.class, "startOffset", startOffset);
+    reflector.reflect(OffsetAttribute.class, "endOffset", endOffset);
+  }
 }

@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.tokenattributes;
  */
 
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 
 /** Default implementation of {@link FlagsAttribute}. */
 public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable {
@@ -63,5 +64,10 @@ public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute,
   public void copyTo(AttributeImpl target) {
     FlagsAttribute t = (FlagsAttribute) target;
     t.setFlags(flags);
+  }
+
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(FlagsAttribute.class, "flags", flags);
   }
 }
