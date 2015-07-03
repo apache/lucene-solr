@@ -23,12 +23,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -271,33 +269,6 @@ public class AnalyzingSuggester extends Lookup {
     }
   }
 
-  private int[] topoSortStates(Automaton a) {
-    int numStates = a.getNumStates();
-    int[] states = new int[numStates];
-    final BitSet visited = new BitSet(numStates);
-    final LinkedList<Integer> worklist = new LinkedList<>();
-    worklist.add(0);
-    visited.set(0);
-    int upto = 0;
-    states[upto] = 0;
-    upto++;
-    Transition t = new Transition();
-    while (worklist.size() > 0) {
-      int s = worklist.removeFirst();
-      int count = a.initTransition(s, t);
-      for (int i=0;i<count;i++) {
-        a.getNextTransition(t);
-        if (!visited.get(t.dest)) {
-          visited.set(t.dest);
-          worklist.add(t.dest);
-          states[upto++] = t.dest;
-        }
-      }
-    }
-    return states;
-  }
-
-
   // Replaces SEP with epsilon or remaps them if
   // we were asked to preserve them:
   private Automaton replaceSep(Automaton a) {
@@ -310,7 +281,7 @@ public class AnalyzingSuggester extends Lookup {
     // Go in reverse topo sort so we know we only have to
     // make one pass:
     Transition t = new Transition();
-    int[] topoSortStates = topoSortStates(a);
+    int[] topoSortStates = Operations.topoSortStates(a);
     for(int i=0;i<topoSortStates.length;i++) {
       int state = topoSortStates[topoSortStates.length-1-i];
       int count = a.initTransition(state, t);

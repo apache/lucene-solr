@@ -18,9 +18,7 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -245,7 +243,7 @@ public final class CompletionTokenStream extends TokenStream {
     // Go in reverse topo sort so we know we only have to
     // make one pass:
     Transition t = new Transition();
-    int[] topoSortStates = topoSortStates(a);
+    int[] topoSortStates = Operations.topoSortStates(a);
     for (int i = 0; i < topoSortStates.length; i++) {
       int state = topoSortStates[topoSortStates.length - 1 - i];
       int count = a.initTransition(state, t);
@@ -279,32 +277,6 @@ public final class CompletionTokenStream extends TokenStream {
     result.finishState();
 
     return result;
-  }
-
-  private static int[] topoSortStates(Automaton a) {
-    int numStates = a.getNumStates();
-    int[] states = new int[numStates];
-    final BitSet visited = new BitSet(numStates);
-    final LinkedList<Integer> worklist = new LinkedList<>();
-    worklist.add(0);
-    visited.set(0);
-    int upto = 0;
-    states[upto] = 0;
-    upto++;
-    Transition t = new Transition();
-    while (worklist.size() > 0) {
-      int s = worklist.removeFirst();
-      int count = a.initTransition(s, t);
-      for (int i=0;i<count;i++) {
-        a.getNextTransition(t);
-        if (!visited.get(t.dest)) {
-          visited.set(t.dest);
-          worklist.add(t.dest);
-          states[upto++] = t.dest;
-        }
-      }
-    }
-    return states;
   }
 
   /**
