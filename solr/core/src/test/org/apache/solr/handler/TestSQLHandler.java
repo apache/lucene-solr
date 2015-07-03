@@ -17,17 +17,16 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.tree.Statement;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -89,6 +88,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     testPredicate();
     testBasicSelect();
     testBasicGrouping();
+    testSQLException();
     testTimeSeriesGrouping();
     testParallelBasicGrouping();
     testParallelTimeSeriesGrouping();
@@ -302,6 +302,62 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("id") == 1);
       assert(tuple.getLong("field_i") == 7);
       assert(tuple.get("str_s").equals("a"));
+
+    } finally {
+      delete();
+    }
+  }
+
+  private void testSQLException() throws Exception {
+    try {
+
+      CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+      del("*:*");
+
+      commit();
+
+      indexr("id", "1", "text", "XXXX XXXX", "str_s", "a", "field_i", "7");
+      indexr("id", "2", "text", "XXXX XXXX", "str_s", "b", "field_i", "8");
+      indexr("id", "3", "text", "XXXX XXXX", "str_s", "a", "field_i", "20");
+      indexr("id", "4", "text", "XXXX XXXX", "str_s", "b", "field_i", "11");
+      indexr("id", "5", "text", "XXXX XXXX", "str_s", "c", "field_i", "30");
+      indexr("id", "6", "text", "XXXX XXXX", "str_s", "c", "field_i", "40");
+      indexr("id", "7", "text", "XXXX XXXX", "str_s", "c", "field_i", "50");
+      indexr("id", "8", "text", "XXXX XXXX", "str_s", "c", "field_i", "60");
+      commit();
+      Map params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("sql", "select id, field_i, str_s from mytable where text='XXXX' order by field_iff desc");
+
+      SolrStream solrStream = new SolrStream(jetty.url, params);
+      Tuple tuple = getTuple(new ExceptionStream(solrStream));
+      assert(tuple.EOF);
+      assert(tuple.EXCEPTION);
+      //A parse exception detected before being sent to the search engine
+      assert(tuple.getException().contains("Fields in the sort spec must be included in the field list"));
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("sql", "select id, field_iff, str_s from mytable where text='XXXX' order by field_iff desc");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuple = getTuple(new ExceptionStream(solrStream));
+      assert(tuple.EOF);
+      assert(tuple.EXCEPTION);
+      //An exception not detected by the parser thrown from the /select handler
+      assert(tuple.getException().contains("An exception has occurred on the server, refer to server log for details"));
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("sql", "select str_s, count(*), sum(field_iff), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuple = getTuple(new ExceptionStream(solrStream));
+      assert(tuple.EOF);
+      assert(tuple.EXCEPTION);
+      //An exception not detected by the parser thrown from the /export handler
+      assert(tuple.getException().contains("undefined field:"));
 
     } finally {
       delete();
@@ -839,5 +895,13 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     }
     tupleStream.close();
     return tuples;
+  }
+
+
+  protected Tuple getTuple(TupleStream tupleStream) throws IOException {
+    tupleStream.open();
+    Tuple t = tupleStream.read();
+    tupleStream.close();
+    return t;
   }
 }

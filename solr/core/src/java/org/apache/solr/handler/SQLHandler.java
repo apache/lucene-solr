@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.io.stream.RankStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -52,8 +53,10 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Optional;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import com.facebook.presto.sql.parser.SqlParser;
 
@@ -62,6 +65,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
   private Map<String, TableSpec> tableMappings = new HashMap();
   private String defaultZkhost = null;
   private String defaultWorkerCollection = null;
+
+  private Logger logger = LoggerFactory.getLogger(SQLHandler.class);
 
   public void inform(SolrCore core) {
 
@@ -93,11 +98,17 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     String workerCollection = params.get("workerCollection", defaultWorkerCollection);
     String workerZkhost = params.get("workerZkhost",defaultZkhost);
     StreamContext context = new StreamContext();
-    TupleStream tupleStream = SQLTupleStreamParser.parse(sql, tableMappings, numWorkers, workerCollection, workerZkhost);
-    context.numWorkers = numWorkers;
-    context.setSolrClientCache(StreamHandler.clientCache);
-    tupleStream.setStreamContext(context);
-    rsp.add("tuples", tupleStream);
+    try {
+      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, tableMappings, numWorkers, workerCollection, workerZkhost);
+      context.numWorkers = numWorkers;
+      context.setSolrClientCache(StreamHandler.clientCache);
+      tupleStream.setStreamContext(context);
+      rsp.add("tuples", new ExceptionStream(tupleStream));
+    } catch(Exception e) {
+      //Catch the SQL parsing and query transformation exceptions.
+      logger.error("Exception parsing SQL", e);
+      rsp.add("tuples", new StreamHandler.DummyErrorStream(e));
+    }
   }
 
   public String getDescription() {

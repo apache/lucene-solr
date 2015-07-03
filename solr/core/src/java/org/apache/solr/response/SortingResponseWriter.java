@@ -76,29 +76,31 @@ public class SortingResponseWriter implements QueryResponseWriter {
       }
       return;
     }
+
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
     SortSpec sortSpec = info.getResponseBuilder().getSortSpec();
+    Exception exception = null;
 
     if(sortSpec == null) {
-      throw new IOException(new SyntaxError("No sort criteria was provided."));
+      exception = new IOException(new SyntaxError("No sort criteria was provided."));
     }
 
     SolrIndexSearcher searcher = req.getSearcher();
     Sort sort = searcher.weightSort(sortSpec.getSort());
 
     if(sort == null) {
-      throw new IOException(new SyntaxError("No sort criteria was provided."));
+      exception = new IOException(new SyntaxError("No sort criteria was provided."));
     }
 
     if(sort.needsScores()) {
-      throw new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
+      exception = new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
     }
 
     FixedBitSet[] sets = (FixedBitSet[])req.getContext().get("export");
     Integer th = (Integer)req.getContext().get("totalHits");
 
     if(sets == null) {
-      throw new IOException(new SyntaxError("xport RankQuery is required for xsort: rq={!xport}"));
+      exception = new IOException(new SyntaxError("xport RankQuery is required for xsort: rq={!xport}"));
     }
 
     int totalHits = th.intValue();
@@ -106,19 +108,35 @@ public class SortingResponseWriter implements QueryResponseWriter {
     String fl = params.get("fl");
 
     if(fl == null) {
-      throw new IOException(new SyntaxError("export field list (fl) must be specified."));
+      exception = new IOException(new SyntaxError("export field list (fl) must be specified."));
     }
 
     String[] fields = fl.split(",");
 
     for(int i=0;i<fields.length; i++) {
       if(fl.trim().equals("score")) {
-        throw new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
+        exception =  new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
+        break;
       }
     }
 
-    FieldWriter[] fieldWriters = getFieldWriters(fields, req.getSearcher());
+    FieldWriter[] fieldWriters = null;
+
+    try {
+      fieldWriters = getFieldWriters(fields, req.getSearcher());
+    }catch(Exception e) {
+      exception = e;
+    }
+
     writer.write("{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":"+totalHits+", \"docs\":[");
+
+    if(exception != null) {
+      //We have an exception. Send it back to the client and return.
+      writeException(exception, writer);
+      writer.write("]}}");
+      writer.flush();
+      return;
+    }
 
     //Write the data.
     List<LeafReaderContext> leaves = req.getSearcher().getTopReaderContext().leaves();
@@ -222,6 +240,12 @@ public class SortingResponseWriter implements QueryResponseWriter {
       fieldWriter.write(sortDoc.docId, context.reader(), out);
       needsComma = true;
     }
+  }
+
+  protected void writeException(Exception e, Writer out) throws IOException{
+    out.write("{\"_EXCEPTION_\":\"");
+    writeStr(e.getMessage(), out);
+    out.write("\"}");
   }
 
   protected FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
@@ -1209,7 +1233,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
           out.write('"');
         }
 
-        out.write(cref.toString());
+        writeStr(cref.toString(), out);
 
         if(!numeric) {
           out.write('"');
@@ -1293,9 +1317,53 @@ public class SortingResponseWriter implements QueryResponseWriter {
       out.write('"');
       out.write(":");
       out.write('"');
-      out.write(cref.toString());
+      writeStr(cref.toString(), out);
       out.write('"');
     }
+  }
+
+  private void writeStr(String val, Writer writer) throws IOException {
+    for (int i=0; i<val.length(); i++) {
+      char ch = val.charAt(i);
+      if ((ch > '#' && ch != '\\' && ch < '\u2028') || ch == ' ') { // fast path
+        writer.write(ch);
+        continue;
+      }
+      switch(ch) {
+        case '"':
+        case '\\':
+          writer.write('\\');
+          writer.write(ch);
+          break;
+        case '\r': writer.write('\\'); writer.write('r'); break;
+        case '\n': writer.write('\\'); writer.write('n'); break;
+        case '\t': writer.write('\\'); writer.write('t'); break;
+        case '\b': writer.write('\\'); writer.write('b'); break;
+        case '\f': writer.write('\\'); writer.write('f'); break;
+        case '\u2028': // fallthrough
+        case '\u2029':
+          unicodeEscape(writer,ch);
+          break;
+        // case '/':
+        default: {
+          if (ch <= 0x1F) {
+            unicodeEscape(writer,ch);
+          } else {
+            writer.write(ch);
+          }
+        }
+      }
+    }
+  }
+
+  private static char[] hexdigits = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+  protected static void unicodeEscape(Appendable out, int ch) throws IOException {
+    out.append('\\');
+    out.append('u');
+    out.append(hexdigits[(ch>>>12)     ]);
+    out.append(hexdigits[(ch>>>8) & 0xf]);
+    out.append(hexdigits[(ch>>>4) & 0xf]);
+    out.append(hexdigits[(ch)     & 0xf]);
   }
 
   public abstract class PriorityQueue<T> {

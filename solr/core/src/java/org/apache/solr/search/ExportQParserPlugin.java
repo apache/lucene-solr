@@ -25,6 +25,8 @@ import org.apache.lucene.index.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.common.params.SolrParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,6 +35,8 @@ import java.util.Set;
 public class ExportQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xport";
+
+  Logger logger = LoggerFactory.getLogger(ExportQParserPlugin.class);
   
   public void init(NamedList namedList) {
   }
@@ -62,11 +66,10 @@ public class ExportQParserPlugin extends QParserPlugin {
     private Query mainQuery;
     private Object id;
 
-    public Query clone() {
+    public RankQuery clone() {
       ExportQuery clone = new ExportQuery();
       clone.id = id;
       clone.leafCount = leafCount;
-      clone.mainQuery = mainQuery;
       return clone;
     }
 
@@ -79,12 +82,17 @@ public class ExportQParserPlugin extends QParserPlugin {
       return null;
     }
 
-    public Weight createWeight(IndexSearcher searcher) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
       return mainQuery.createWeight(searcher, true);
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
-      return this.mainQuery.rewrite(reader);
+      Query q = mainQuery.rewrite(reader);
+      if(q == mainQuery) {
+        return this;
+      } else {
+        return clone().wrap(q);
+      }
     }
 
     public TopDocsCollector getTopDocsCollector(int len,
@@ -157,7 +165,11 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs(int start, int howMany) {
+
+      assert(sets != null);
+
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+
       SolrQueryRequest req = null;
       if(info != null && ((req = info.getReq()) != null)) {
         Map context = req.getContext();
@@ -175,4 +187,5 @@ public class ExportQParserPlugin extends QParserPlugin {
       return true; // TODO: is this the case?
     }
   }
+
 }

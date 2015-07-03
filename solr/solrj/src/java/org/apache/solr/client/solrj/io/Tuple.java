@@ -38,12 +38,18 @@ public class Tuple implements Cloneable {
    *  metrics/aggregates gathered by underlying streams.
    * */
 
-   public boolean EOF;
+  public boolean EOF;
+  public boolean EXCEPTION;
+
   public Map fields = new HashMap();
 
   public Tuple(Map fields) {
     if(fields.containsKey("EOF")) {
       EOF = true;
+    }
+
+    if(fields.containsKey("_EXCEPTION_")){
+      EXCEPTION = true;
     }
 
     this.fields.putAll(fields);
@@ -60,6 +66,8 @@ public class Tuple implements Cloneable {
   public String getString(Object key) {
     return this.fields.get(key).toString();
   }
+
+  public String getException(){ return (String)this.fields.get("_EXCEPTION_"); }
 
   public Long getLong(Object key) {
     Object o = this.fields.get(key);

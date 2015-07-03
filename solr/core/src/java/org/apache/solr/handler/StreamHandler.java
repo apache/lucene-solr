@@ -20,10 +20,16 @@ package org.apache.solr.handler;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.MergeStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
@@ -42,12 +48,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
 
   static SolrClientCache clientCache = new SolrClientCache();
   private StreamFactory streamFactory = new StreamFactory();
-  
+  private Logger logger = LoggerFactory.getLogger(StreamHandler.class);
+
   public void inform(SolrCore core) {
     
     /* The stream factory will always contain the zkUrl for the given collection
@@ -108,15 +117,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     boolean objectSerialize = params.getBool("objectSerialize", false);
     TupleStream tupleStream = null;
 
-    if(objectSerialize) {
-      String encodedStream = params.get("stream");
-      encodedStream = URLDecoder.decode(encodedStream, "UTF-8");
-      byte[] bytes = Base64.base64ToByteArray(encodedStream);
-      ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
-      ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
-      tupleStream = (TupleStream)objectInputStream.readObject();
-    } else {
-      tupleStream = this.streamFactory.constructStream(params.get("stream"));
+    try {
+      if (objectSerialize) {
+        String encodedStream = params.get("stream");
+        encodedStream = URLDecoder.decode(encodedStream, "UTF-8");
+        byte[] bytes = Base64.base64ToByteArray(encodedStream);
+        ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
+        ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
+        tupleStream = (TupleStream) objectInputStream.readObject();
+      } else {
+        tupleStream = this.streamFactory.constructStream(params.get("stream"));
+      }
+    } catch (Exception e) {
+      //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
+      logger.error("Exception creating TupleStream", e);
+      rsp.add("tuples", new DummyErrorStream(e));
+
+      return;
     }
 
     int worker = params.getInt("workerID", 0);
@@ -126,7 +143,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
     tupleStream.setStreamContext(context);
-    rsp.add("tuples", tupleStream);
+    rsp.add("tuples", new ExceptionStream(tupleStream));
   }
 
   public String getDescription() {
@@ -135,5 +152,38 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
 
   public String getSource() {
     return null;
+  }
+
+
+  public static class DummyErrorStream extends TupleStream {
+    private Exception e;
+
+    public DummyErrorStream(Exception e) {
+      this.e = e;
+    }
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public void close() {
+    }
+
+    public void open() {
+    }
+
+    public void setStreamContext(StreamContext context) {
+    }
+
+    public List<TupleStream> children() {
+      return null;
+    }
+
+    public Tuple read() {
+      String msg = e.getMessage();
+      Map m = new HashMap();
+      m.put("EOF", true);
+      m.put("_EXCEPTION_", msg);
+      return new Tuple(m);
+    }
   }
 }

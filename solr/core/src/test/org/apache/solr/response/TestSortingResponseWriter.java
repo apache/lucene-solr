@@ -25,6 +25,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 public class TestSortingResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("export.test", "true");
     initCore("solrconfig-sortingresponse.xml","schema-sortingresponse.xml");
     createIndex();
   }
@@ -44,7 +45,7 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
                  "doubledv_m", "23232.2",
                  "longdv_m", "43434343434",
                  "longdv_m", "343332",
-                 "stringdv_m", "manchester city",
+                 "stringdv_m", "manchester \"city\"",
                  "stringdv_m", "liverpool",
                  "stringdv_m", "Everton"));
 
@@ -77,7 +78,25 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
         "doubledv_m", "23232.2",
         "longdv_m", "43434343434",
         "longdv_m", "343332",
-        "stringdv_m", "manchester city",
+        "stringdv_m", "manchester \"city\"",
+        "stringdv_m", "liverpool",
+        "stringdv_m", "everton"));
+    assertU(commit());
+    assertU(adoc("id","8",
+        "floatdv","2.1",
+        "intdv", "10000000",
+        "stringdv", "chello \"world\"",
+        "longdv", "323223232323",
+        "doubledv","2344.346",
+        "intdv_m","100",
+        "intdv_m","250",
+        "floatdv_m", "123.321",
+        "floatdv_m", "345.123",
+        "doubledv_m", "3444.222",
+        "doubledv_m", "23232.2",
+        "longdv_m", "43434343434",
+        "longdv_m", "343332",
+        "stringdv_m", "manchester \"city\"",
         "stringdv_m", "liverpool",
         "stringdv_m", "everton"));
     assertU(commit());
@@ -90,15 +109,16 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
 
     //Test single value DocValue output
     String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
+
     assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"floatdv\":2.1,\"intdv\":1,\"stringdv\":\"hello world\",\"longdv\":323223232323,\"doubledv\":2344.345}]}}");
 
     //Test null value string:
-    s =  h.query(req("q", "id:7", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
+    s = h.query(req("q", "id:7", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
     assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"floatdv\":2.1,\"intdv\":7,\"stringdv\":\"\",\"longdv\":323223232323,\"doubledv\":2344.345}]}}");
 
     //Test multiValue docValues output
-    s =  h.query(req("q", "id:1", "qt", "/export", "fl", "intdv_m,floatdv_m,doubledv_m,longdv_m,stringdv_m", "sort", "intdv asc"));
-    assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"intdv_m\":[100,250],\"floatdv_m\":[123.321,345.123],\"doubledv_m\":[3444.222,23232.2],\"longdv_m\":[343332,43434343434],\"stringdv_m\":[\"Everton\",\"liverpool\",\"manchester city\"]}]}}");
+    s = h.query(req("q", "id:1", "qt", "/export", "fl", "intdv_m,floatdv_m,doubledv_m,longdv_m,stringdv_m", "sort", "intdv asc"));
+    assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"intdv_m\":[100,250],\"floatdv_m\":[123.321,345.123],\"doubledv_m\":[3444.222,23232.2],\"longdv_m\":[343332,43434343434],\"stringdv_m\":[\"Everton\",\"liverpool\",\"manchester \\\"city\\\"\"]}]}}");
 
     //Test multiValues docValues output with nulls
     s =  h.query(req("q", "id:7", "qt", "/export", "fl", "intdv_m,floatdv_m,doubledv_m,longdv_m,stringdv_m", "sort", "intdv asc"));
@@ -141,6 +161,16 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
 
     s =  h.query(req("q", "id:(1 2 3)", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
     assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":1},{\"intdv\":2}]}}");
+
+    s =  h.query(req("q", "intdv:[2 TO 1000]", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
+    assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":3, \"docs\":[{\"intdv\":3},{\"intdv\":7},{\"intdv\":2}]}}");
+
+    s =  h.query(req("q", "stringdv:blah", "qt", "/export", "fl", "intdv", "sort", "doubledv desc"));
+    assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":0, \"docs\":[]}}");
+
+    s =  h.query(req("q", "id:8", "qt", "/export", "fl", "stringdv", "sort", "intdv asc"));
+    assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"stringdv\":\"chello \\\"world\\\"\"}]}}");
+
 
   }
 }

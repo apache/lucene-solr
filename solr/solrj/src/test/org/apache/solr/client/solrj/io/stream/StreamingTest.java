@@ -96,7 +96,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     super.setUp();
     // we expect this time of exception as shards go up and down...
     //ignoreException(".*");
-
+    //System.setProperty("export.test", "true");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
 
@@ -167,7 +167,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     String zkHost = zkServer.getZkAddress();
     streamFactory.withCollectionZkHost("collection1", zkHost);
 
-    Map params = mapParams("q","*:*","fl","id , a_s , a_i , a_f","sort", "a_f  asc , a_i  asc");
+    Map params = mapParams("q", "*:*", "fl", "id , a_s , a_i , a_f", "sort", "a_f  asc , a_i  asc");
 
     //CloudSolrStream compares the values of the sort with the fl field.
     //The constructor will throw an exception if the sort fields do not the
@@ -508,6 +508,86 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     commit();
   }
 
+
+  private void testExceptionStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    String zkHost = zkServer.getZkAddress();
+
+
+    //Test an error that comes originates from the /select handler
+    Map paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
+    CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
+    ExceptionStream estream = new ExceptionStream(stream);
+    Tuple t = getTuple(estream);
+    assert(t.EOF);
+    assert(t.EXCEPTION);
+    //The /select handler does not return exceptions in tuple so the generic exception is returned.
+    assert(t.getException().contains("An exception has occurred on the server, refer to server log for details."));
+
+
+    //Test an error that comes originates from the /export handler
+    paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt","/export");
+    stream = new CloudSolrStream(zkHost, "collection1", paramsA);
+    estream = new ExceptionStream(stream);
+    t = getTuple(estream);
+    assert(t.EOF);
+    assert(t.EXCEPTION);
+    //The /export handler will pass through a real exception.
+    assert(t.getException().contains("undefined field:"));
+  }
+
+  private void testParallelExceptionStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    String zkHost = zkServer.getZkAddress();
+
+    Map paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
+    CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
+    ParallelStream pstream = new ParallelStream(zkHost,"collection1", stream, 2, new FieldComparator("blah", ComparatorOrder.ASCENDING));
+    ExceptionStream estream = new ExceptionStream(pstream);
+    Tuple t = getTuple(estream);
+    assert(t.EOF);
+    assert(t.EXCEPTION);
+    //ParallelStream requires that partitionKeys be set.
+    assert(t.getException().contains("When numWorkers > 1 partitionKeys must be set."));
+
+    //Test an error that originates from the /export handler
+    paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt","/export", "partitionKeys","a_s");
+    stream = new CloudSolrStream(zkHost, "collection1", paramsA);
+    pstream = new ParallelStream(zkHost,"collection1", stream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+    estream = new ExceptionStream(pstream);
+    t = getTuple(estream);
+    assert(t.EOF);
+    assert(t.EXCEPTION);
+    //The /export handler will pass through a real exception.
+    assert(t.getException().contains("undefined field:"));
+  }
+
   private void testRollupStream() throws Exception {
 
     indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
@@ -524,7 +604,6 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     commit();
 
     String zkHost = zkServer.getZkAddress();
-    streamFactory.withCollectionZkHost("collection1", zkHost);
 
     Map paramsA = mapParams("q","*:*","fl","a_s,a_i,a_f","sort", "a_s asc");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
@@ -647,7 +726,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     String zkHost = zkServer.getZkAddress();
     streamFactory.withCollectionZkHost("collection1", zkHost);
 
-    Map paramsA = mapParams("q","*:*","fl","a_s,a_i,a_f","sort", "a_s asc", "partitionKeys", "a_s");
+    Map paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc", "partitionKeys", "a_s");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
 
     Bucket[] buckets =  {new Bucket("a_s")};
@@ -1084,12 +1163,14 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     testReducerStream();
     testRollupStream();
     testZeroReducerStream();
+    testExceptionStream();
     testParallelEOF();
     testParallelUniqueStream();
     testParallelRankStream();
     testParallelMergeStream();
     testParallelRollupStream();
     testParallelReducerStream();
+    testParallelExceptionStream();
     testZeroParallelReducerStream();
   }
 
@@ -1122,6 +1203,14 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     tupleStream.close();
     return tuples;
   }
+
+  protected Tuple getTuple(TupleStream tupleStream) throws IOException {
+    tupleStream.open();
+    Tuple t = tupleStream.read();
+    tupleStream.close();
+    return t;
+  }
+
 
   protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
     int i = 0;

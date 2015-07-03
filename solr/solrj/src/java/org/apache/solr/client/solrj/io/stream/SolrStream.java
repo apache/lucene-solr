@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-
 /**
 *  Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
 **/
@@ -135,7 +134,11 @@ public class SolrStream extends TupleStream {
   * */
 
   public void close() throws IOException {
-    jsonTupleStream.close();
+
+    if(jsonTupleStream != null) {
+      jsonTupleStream.close();
+    }
+
     if(cache == null) {
       client.close();
     }
@@ -146,22 +149,43 @@ public class SolrStream extends TupleStream {
   **/
 
   public Tuple read() throws IOException {
-    Map fields = jsonTupleStream.next();
+    try {
+      Map fields = jsonTupleStream.next();
 
-    if(trace) {
-      fields.put("_CORE_", this.baseUrl);
-    }
+      if (fields == null) {
+        //Return the EOF tuple.
+        Map m = new HashMap();
+        m.put("EOF", true);
+        return new Tuple(m);
+      } else {
 
-    if(fields == null) {
-      //Return the EOF tuple.
-      Map m = new HashMap();
-      m.put("EOF", true);
-      return new Tuple(m);
-    } else {
-      if(fieldMappings != null) {
-        fields = mapFields(fields, fieldMappings);
+        String msg = (String) fields.get("_EXCEPTION_");
+        if (msg != null) {
+          HandledException ioException = new HandledException(this.baseUrl + ":" + msg);
+          throw ioException;
+        }
+
+        if (trace) {
+          fields.put("_CORE_", this.baseUrl);
+        }
+
+        if (fieldMappings != null) {
+          fields = mapFields(fields, fieldMappings);
+        }
+        return new Tuple(fields);
       }
-      return new Tuple(fields);
+    } catch (HandledException e) {
+      throw e;
+    } catch (Exception e) {
+      //The Stream source did not provide an exception in a format that the SolrStream could propagate.
+      e.printStackTrace();
+      throw new IOException(this.baseUrl+": An exception has occurred on the server, refer to server log for details.");
+    }
+  }
+
+  public static class HandledException extends IOException {
+    public HandledException(String msg) {
+      super(msg);
     }
   }
   
