@@ -783,6 +783,7 @@ public class TestAutomaton extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("  op=optional");
           }
+          // NOTE: This can add a dead state:
           a = Operations.optional(a);
           terms.add(new BytesRef());
         }
@@ -1032,9 +1033,46 @@ public class TestAutomaton extends LuceneTestCase {
 
       assertSame(terms, a);
       assertEquals(AutomatonTestUtil.isDeterministicSlow(a), a.isDeterministic());
+
+      if (random().nextInt(10) == 7) {
+        a = verifyTopoSort(a);
+      }
     }
 
     assertSame(terms, a);
+  }
+
+  /** Runs topo sort, verifies transitions then only "go forwards", and
+   *  builds and returns new automaton with those remapped toposorted states. */
+  private Automaton verifyTopoSort(Automaton a) {
+    int[] sorted = Operations.topoSortStates(a);
+    // This can be < if we removed dead states:
+    assertTrue(sorted.length <= a.getNumStates());
+    Automaton a2 = new Automaton();
+    int[] stateMap = new int[a.getNumStates()];
+    Arrays.fill(stateMap, -1);
+    Transition transition = new Transition();
+    for(int state : sorted) {
+      int newState = a2.createState();
+      a2.setAccept(newState, a.isAccept(state));
+
+      // Each state should only appear once in the sort:
+      assertEquals(-1, stateMap[state]);
+      stateMap[state] = newState;
+    }
+
+    // 2nd pass: add new transitions
+    for(int state : sorted) {
+      int count = a.initTransition(state, transition);
+      for(int i=0;i<count;i++) {
+        a.getNextTransition(transition);
+        assert stateMap[transition.dest] > stateMap[state];
+        a2.addTransition(stateMap[state], stateMap[transition.dest], transition.min, transition.max);
+      }
+    }
+
+    a2.finishState();
+    return a2;
   }
 
   private void assertSame(Collection<BytesRef> terms, Automaton a) {

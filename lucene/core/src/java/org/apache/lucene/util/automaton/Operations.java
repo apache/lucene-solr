@@ -150,7 +150,7 @@ final public class Operations {
 
   /**
    * Returns an automaton that accepts the union of the empty string and the
-   * language of the given automaton.
+   * language of the given automaton.  This may create a dead state.
    * <p>
    * Complexity: linear in number of states.
    */
@@ -1130,7 +1130,6 @@ final public class Operations {
     IntsRefBuilder builder = new IntsRefBuilder();
     HashSet<Integer> visited = new HashSet<>();
     int s = 0;
-    boolean done;
     Transition t = new Transition();
     while (true) {
       visited.add(s);
@@ -1421,32 +1420,49 @@ final public class Operations {
     return result;
   }
 
-  /** Returns the topological sort of all states.  Behavior is undefined if this
-   *  automaton has cycles.  CPU cost is O(numTransitions). */
+  /** Returns the topological sort of all states reachable from
+   *  the initial state.  Behavior is undefined if this
+   *  automaton has cycles.  CPU cost is O(numTransitions),
+   *  and the implementation is recursive so an automaton
+   *  matching long strings may exhaust the java stack. */
   public static int[] topoSortStates(Automaton a) {
+    if (a.getNumStates() == 0) {
+      return new int[0];
+    }
     int numStates = a.getNumStates();
     int[] states = new int[numStates];
     final BitSet visited = new BitSet(numStates);
-    final LinkedList<Integer> worklist = new LinkedList<>();
-    worklist.add(0);
-    visited.set(0);
-    int upto = 0;
-    states[upto] = 0;
-    upto++;
-    Transition t = new Transition();
-    while (worklist.size() > 0) {
-      int s = worklist.removeFirst();
-      int count = a.initTransition(s, t);
-      for (int i=0;i<count;i++) {
-        a.getNextTransition(t);
-        if (!visited.get(t.dest)) {
-          visited.set(t.dest);
-          worklist.add(t.dest);
-          states[upto++] = t.dest;
-        }
-      }
+    int upto = topoSortStatesRecurse(a, visited, states, 0, 0);
+
+    if (upto < states.length) {
+      // There were dead states
+      int[] newStates = new int[upto];
+      System.arraycopy(states, 0, newStates, 0, upto);
+      states = newStates;
+    }
+
+    // Reverse the order:
+    for(int i=0;i<states.length/2;i++) {
+      int s = states[i];
+      states[i] = states[states.length-1-i];
+      states[states.length-1-i] = s;
     }
 
     return states;
+  }
+
+  private static int topoSortStatesRecurse(Automaton a, BitSet visited, int[] states, int upto, int state) {
+    Transition t = new Transition();
+    int count = a.initTransition(state, t);
+    for (int i=0;i<count;i++) {
+      a.getNextTransition(t);
+      if (!visited.get(t.dest)) {
+        visited.set(t.dest);
+        upto = topoSortStatesRecurse(a, visited, states, upto, t.dest);
+      }
+    }
+    states[upto] = state;
+    upto++;
+    return upto;
   }
 }
