@@ -19,6 +19,8 @@ package org.apache.solr.update;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -45,6 +47,10 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
+  
+  private final String instanceDir = new File("solr", "collection1").getPath();
+  private final String solrConfigFileNameWarmer = "solrconfig-warmer.xml";
+  private final String solrConfigFileNameTieredMergePolicy = "solrconfig-tieredmergepolicy.xml";
 
   @Test
   public void testFailingSolrIndexConfigCreation() {
@@ -62,8 +68,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTieredMPSolrIndexConfigCreation() throws Exception {
-    SolrConfig solrConfig = new SolrConfig("solr" + File.separator
-        + "collection1", "solrconfig-tieredmergepolicy.xml", null);
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameTieredMergePolicy, null);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null,
         null);
     assertNotNull(solrIndexConfig);
@@ -87,8 +92,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
-    SolrConfig solrConfig = new SolrConfig("solr" + File.separator
-        + "collection1", "solrconfig-warmer.xml", null);
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameWarmer, null);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
     assertNotNull(solrIndexConfig);
     assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
@@ -100,4 +104,55 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());
   }
 
+  public void testToMap() throws Exception {
+    final String solrConfigFileName = (random().nextBoolean() ? solrConfigFileNameWarmer : solrConfigFileNameTieredMergePolicy);
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName, null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    assertNotNull(solrIndexConfig);
+    assertNotNull(solrIndexConfig.mergePolicyInfo);
+    if (solrConfigFileName.equals(solrConfigFileNameWarmer)) {
+      assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
+    } else {
+      assertNull(solrIndexConfig.mergedSegmentWarmerInfo);
+    }
+    assertNotNull(solrIndexConfig.mergeSchedulerInfo);
+
+    Map<String, Object> m = solrIndexConfig.toMap();
+    int mSizeExpected = 0;
+
+    ++mSizeExpected; assertTrue(m.get("useCompoundFile") instanceof Boolean);
+
+    ++mSizeExpected; assertTrue(m.get("maxBufferedDocs") instanceof Integer);
+    ++mSizeExpected; assertTrue(m.get("maxMergeDocs") instanceof Integer);
+    ++mSizeExpected; assertTrue(m.get("maxIndexingThreads") instanceof Integer);
+    ++mSizeExpected; assertTrue(m.get("mergeFactor") instanceof Integer);
+
+    ++mSizeExpected; assertTrue(m.get("ramBufferSizeMB") instanceof Double);
+
+    ++mSizeExpected; assertTrue(m.get("writeLockTimeout") instanceof Integer);
+
+    ++mSizeExpected; assertTrue(m.get("lockType") instanceof String);
+    {
+      final String lockType = (String)m.get("lockType");
+      assertTrue(SolrIndexConfig.LOCK_TYPE_SIMPLE.equals(lockType) ||
+          SolrIndexConfig.LOCK_TYPE_NATIVE.equals(lockType) ||
+          SolrIndexConfig.LOCK_TYPE_SINGLE.equals(lockType) ||
+          SolrIndexConfig.LOCK_TYPE_NONE.equals(lockType));
+    }
+
+    ++mSizeExpected; assertTrue(m.get("infoStreamEnabled") instanceof Boolean);
+    {
+      assertFalse(Boolean.valueOf(m.get("infoStreamEnabled").toString()).booleanValue());
+    }
+    
+    ++mSizeExpected; assertTrue(m.get("mergeScheduler") instanceof Map);
+    ++mSizeExpected; assertTrue(m.get("mergePolicy") instanceof Map);
+    if (solrConfigFileName.equals(solrConfigFileNameWarmer)) {
+      ++mSizeExpected; assertTrue(m.get("mergedSegmentWarmer") instanceof Map);
+    } else {
+      assertNull(m.get("mergedSegmentWarmer"));
+    }
+
+    assertEquals(mSizeExpected, m.size());
+  }
 }
