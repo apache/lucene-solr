@@ -103,6 +103,17 @@ Upgrading from Solr 5.2
 * The "name" parameter in ADDREPLICA Collections API call has be deprecated. One cannot specify
   the core name for a replica. See SOLR-7499 for more info.
 
+* The ShardHandler interface has changed. The interface used to provide a
+  `checkDistributed` function which doubled up in purpose to determine if the
+  request is distributed, and to prepare for distributed requests. This unfortunately
+  meant that the object had to be instantiated even when the request is not
+  distributed. The task of initially determining if the request is distributed
+  is now done by SearchHandler using the distrib/shards parameters, and a
+  ShardHandler object is created only if the request is distributed. The interface
+  now has a `prepDistributed` function instead of the `checkDistributed` function,
+  which can then be used to prepare for the distributed request. Users with custom
+  ShardHandler implementations would need to modify their code to this effect.
+
 Detailed Change List
 ----------------------
 
