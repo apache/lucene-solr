@@ -195,6 +195,9 @@ Bug Fixes
 * SOLR-7673: Race condition in shard splitting can cause operation to hang indefinitely
   or sub-shards to never become active. (shalin)
 
+* SOLR-7741: Add missing fields to SolrIndexerConfig.toMap
+  (Mike Drob, Christine Poerschke via Ramkumar Aiyengar)
+
 Optimizations
 ----------------------
 

@@ -169,15 +169,18 @@ public class SolrIndexConfig implements MapSerializable {
   }
   @Override
   public Map<String, Object> toMap() {
-    Map<String, Object> m = ZkNodeProps.makeMap("maxBufferedDocs", maxBufferedDocs,
+    Map<String, Object> m = ZkNodeProps.makeMap("useCompoundFile", effectiveUseCompoundFileSetting,
+        "maxBufferedDocs", maxBufferedDocs,
         "maxMergeDocs", maxMergeDocs,
         "maxIndexingThreads", maxIndexingThreads,
         "mergeFactor", mergeFactor,
         "ramBufferSizeMB", ramBufferSizeMB,
         "writeLockTimeout", writeLockTimeout,
-        "lockType", lockType);
+        "lockType", lockType,
+        "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
     if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo.toMap());
-    if(mergePolicyInfo != null) m.put("mergeScheduler",mergePolicyInfo.toMap());
+    if(mergePolicyInfo != null) m.put("mergePolicy",mergePolicyInfo.toMap());
+    if(mergedSegmentWarmerInfo != null) m.put("mergedSegmentWarmer",mergedSegmentWarmerInfo.toMap());
     return m;
   }
 
