@@ -1420,4 +1420,33 @@ final public class Operations {
     result.finishState();
     return result;
   }
+
+  /** Returns the topological sort of all states.  Behavior is undefined if this
+   *  automaton has cycles.  CPU cost is O(numTransitions). */
+  public static int[] topoSortStates(Automaton a) {
+    int numStates = a.getNumStates();
+    int[] states = new int[numStates];
+    final BitSet visited = new BitSet(numStates);
+    final LinkedList<Integer> worklist = new LinkedList<>();
+    worklist.add(0);
+    visited.set(0);
+    int upto = 0;
+    states[upto] = 0;
+    upto++;
+    Transition t = new Transition();
+    while (worklist.size() > 0) {
+      int s = worklist.removeFirst();
+      int count = a.initTransition(s, t);
+      for (int i=0;i<count;i++) {
+        a.getNextTransition(t);
+        if (!visited.get(t.dest)) {
+          visited.set(t.dest);
+          worklist.add(t.dest);
+          states[upto++] = t.dest;
+        }
+      }
+    }
+
+    return states;
+  }
 }

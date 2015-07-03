@@ -123,6 +123,9 @@ New Features
   attributes package that can be used for TokenStreams that solely produce
   binary terms.  (Uwe Schindler)
 
+* LUCENE-6365: Add Operations.topoSort, to run topological sort of the
+  states in an Automaton (Markus Heiden via Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
