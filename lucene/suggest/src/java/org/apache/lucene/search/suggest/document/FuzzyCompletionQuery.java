@@ -18,7 +18,9 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -30,6 +32,7 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.UTF32ToUTF8;
@@ -142,28 +145,29 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text());
-    Automaton a = stream.toAutomaton(unicodeAware);
-    final Set<IntsRef> refs = Operations.getFiniteStrings(a, -1);
-    assert refs.size() > 0;
-    Automaton automaton = toLevenshteinAutomata(refs);
+    Set<IntsRef> refs = new HashSet<>();
+    Automaton automaton = toLevenshteinAutomata(stream.toAutomaton(unicodeAware), refs);
     if (unicodeAware) {
       Automaton utf8automaton = new UTF32ToUTF8().convert(automaton);
       utf8automaton = Operations.determinize(utf8automaton, maxDeterminizedStates);
       automaton = utf8automaton;
     }
+    // TODO Accumulating all refs is bad, because the resulting set may be very big.
+    // TODO Better iterate over automaton again inside FuzzyCompletionWeight?
     return new FuzzyCompletionWeight(this, automaton, refs);
   }
 
-  private Automaton toLevenshteinAutomata(Set<IntsRef> ref) {
-    Automaton subs[] = new Automaton[ref.size()];
-    int upto = 0;
-    for (IntsRef path : ref) {
-      if (path.length <= nonFuzzyPrefix || path.length < minFuzzyLength) {
-        subs[upto] = Automata.makeString(path.ints, path.offset, path.length);
-        upto++;
+  private Automaton toLevenshteinAutomata(Automaton automaton, Set<IntsRef> refs) {
+    List<Automaton> subs = new ArrayList<>();
+    FiniteStringsIterator finiteStrings = new FiniteStringsIterator(automaton);
+    for (IntsRef string; (string = finiteStrings.next()) != null;) {
+      refs.add(IntsRef.deepCopyOf(string));
+
+      if (string.length <= nonFuzzyPrefix || string.length < minFuzzyLength) {
+        subs.add(Automata.makeString(string.ints, string.offset, string.length));
       } else {
-        int ints[] = new int[path.length - nonFuzzyPrefix];
-        System.arraycopy(path.ints, path.offset + nonFuzzyPrefix, ints, 0, ints.length);
+        int ints[] = new int[string.length - nonFuzzyPrefix];
+        System.arraycopy(string.ints, string.offset + nonFuzzyPrefix, ints, 0, ints.length);
         // TODO: maybe add alphaMin to LevenshteinAutomata,
         // and pass 1 instead of 0?  We probably don't want
         // to allow the trailing dedup bytes to be
@@ -172,22 +176,21 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
         LevenshteinAutomata lev = new LevenshteinAutomata(ints,
             unicodeAware ? Character.MAX_CODE_POINT : 255,
             transpositions);
-        subs[upto] = lev.toAutomaton(maxEdits,
-            UnicodeUtil.newString(path.ints, path.offset, nonFuzzyPrefix));
-        upto++;
+        subs.add(lev.toAutomaton(maxEdits,
+            UnicodeUtil.newString(string.ints, string.offset, nonFuzzyPrefix)));
       }
     }
 
-    if (subs.length == 0) {
+    if (subs.isEmpty()) {
       // automaton is empty, there is no accepted paths through it
       return Automata.makeEmpty(); // matches nothing
-    } else if (subs.length == 1) {
+    } else if (subs.size() == 1) {
       // no synonyms or anything: just a single path through the tokenstream
-      return subs[0];
+      return subs.get(0);
     } else {
       // multiple paths: this is really scary! is it slow?
       // maybe we should not do this and throw UOE?
-      Automaton a = Operations.union(Arrays.asList(subs));
+      Automaton a = Operations.union(subs);
       // TODO: we could call toLevenshteinAutomata() before det?
       // this only happens if you have multiple paths anyway (e.g. synonyms)
       return Operations.determinize(a, maxDeterminizedStates);

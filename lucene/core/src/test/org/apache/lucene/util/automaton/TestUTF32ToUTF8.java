@@ -218,7 +218,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
       Util.toIntsRef(new BytesRef(s), ints);
       Set<IntsRef> set = new HashSet<>();
       set.add(ints.get());
-      assertEquals(set, Operations.getFiniteStrings(utf8, -1));
+      assertEquals(set, TestOperations.getFiniteStrings(utf8));
     }
   }
   

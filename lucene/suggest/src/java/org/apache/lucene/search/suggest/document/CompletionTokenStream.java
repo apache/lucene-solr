@@ -18,14 +18,11 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
@@ -35,6 +32,8 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.FiniteStringsIterator;
+import org.apache.lucene.util.automaton.LimitedFiniteStringsIterator;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Util;
@@ -56,7 +55,6 @@ import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.SEP_L
 public final class CompletionTokenStream extends TokenStream {
 
   private final PayloadAttribute payloadAttr = addAttribute(PayloadAttribute.class);
-  private final PositionIncrementAttribute posAttr = addAttribute(PositionIncrementAttribute.class);
   private final BytesRefBuilderTermAttribute bytesAtt = addAttribute(BytesRefBuilderTermAttribute.class);
 
   private final TokenStream input;
@@ -64,9 +62,8 @@ public final class CompletionTokenStream extends TokenStream {
   final boolean preservePositionIncrements;
   final int maxGraphExpansions;
 
+  private FiniteStringsIterator finiteStrings;
   private BytesRef payload;
-  private Iterator<IntsRef> finiteStrings;
-  private int posInc = -1;
   private CharTermAttribute charTermAttribute;
 
   /**
@@ -100,45 +97,38 @@ public final class CompletionTokenStream extends TokenStream {
   public boolean incrementToken() throws IOException {
     clearAttributes();
     if (finiteStrings == null) {
-      //TODO: make this return a Iterator<IntsRef> instead?
       Automaton automaton = toAutomaton();
-      Set<IntsRef> strings = Operations.getFiniteStrings(automaton, maxGraphExpansions);
-
-      posInc = strings.size();
-      finiteStrings = strings.iterator();
-    }
-    if (finiteStrings.hasNext()) {
-      posAttr.setPositionIncrement(posInc);
-      /*
-       * this posInc encodes the number of paths that this surface form
-       * produced. Multi Fields have the same surface form and therefore sum up
-       */
-      posInc = 0;
-      Util.toBytesRef(finiteStrings.next(), bytesAtt.builder()); // now we have UTF-8
-      if (charTermAttribute != null) {
-        charTermAttribute.setLength(0);
-        charTermAttribute.append(bytesAtt.toUTF16());
-      }
-      if (payload != null) {
-        payloadAttr.setPayload(this.payload);
-      }
-      return true;
+      finiteStrings = new LimitedFiniteStringsIterator(automaton, maxGraphExpansions);
     }
 
-    return false;
+    IntsRef string = finiteStrings.next();
+    if (string == null) {
+      return false;
+    }
+
+    Util.toBytesRef(string, bytesAtt.builder()); // now we have UTF-8
+    if (charTermAttribute != null) {
+      charTermAttribute.setLength(0);
+      charTermAttribute.append(bytesAtt.toUTF16());
+    }
+    if (payload != null) {
+      payloadAttr.setPayload(this.payload);
+    }
+
+    return true;
   }
 
   @Override
   public void end() throws IOException {
     super.end();
-    if (posInc == -1) {
+    if (finiteStrings == null) {
       input.end();
     }
   }
 
   @Override
   public void close() throws IOException {
-    if (posInc == -1) {
+    if (finiteStrings == null) {
       input.close();
     }
   }
@@ -151,7 +141,6 @@ public final class CompletionTokenStream extends TokenStream {
       charTermAttribute = getAttribute(CharTermAttribute.class);
     }
     finiteStrings = null;
-    posInc = -1;
   }
 
   /**

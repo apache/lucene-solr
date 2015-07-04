@@ -505,8 +505,8 @@ public class TestAutomaton extends LuceneTestCase {
       expected.add(Util.toUTF32(s, ints));
     }
 
-    assertEquals(expected, Operations.getFiniteStrings(Operations.determinize(a,
-      DEFAULT_MAX_DETERMINIZED_STATES), -1)); 
+    assertEquals(expected, TestOperations.getFiniteStrings(
+        Operations.determinize(a, DEFAULT_MAX_DETERMINIZED_STATES)));
   }
 
   public void testConcatenatePreservesDet() throws Exception {
@@ -552,11 +552,11 @@ public class TestAutomaton extends LuceneTestCase {
     // If you concat empty automaton to anything the result should still be empty:
     Automaton a = Operations.concatenate(Automata.makeEmpty(),
                                                         Automata.makeString("foo"));
-    assertEquals(new HashSet<IntsRef>(), Operations.getFiniteStrings(a, -1));
+    assertEquals(new HashSet<IntsRef>(), TestOperations.getFiniteStrings(a));
 
     a = Operations.concatenate(Automata.makeString("foo"),
                                          Automata.makeEmpty());
-    assertEquals(new HashSet<IntsRef>(), Operations.getFiniteStrings(a, -1));
+    assertEquals(new HashSet<IntsRef>(), TestOperations.getFiniteStrings(a));
   }
 
   public void testSeemsNonEmptyButIsNot1() throws Exception {
@@ -1097,7 +1097,7 @@ public class TestAutomaton extends LuceneTestCase {
         Util.toUTF32(term.utf8ToString(), intsRef);
         expected.add(intsRef.toIntsRef());
       }
-      Set<IntsRef> actual = Operations.getFiniteStrings(a, -1);
+      Set<IntsRef> actual = TestOperations.getFiniteStrings(a);
 
       if (expected.equals(actual) == false) {
         System.out.println("FAILED:");
@@ -1129,7 +1129,7 @@ public class TestAutomaton extends LuceneTestCase {
         Util.toIntsRef(term, intsRef);
         expected2.add(intsRef.toIntsRef());
       }
-      assertEquals(expected2, Operations.getFiniteStrings(utf8, -1));
+      assertEquals(expected2, TestOperations.getFiniteStrings(utf8));
     } catch (AssertionError ae) {
       System.out.println("TEST: FAILED: not same");
       System.out.println("  terms (count=" + terms.size() + "):");
@@ -1259,7 +1259,7 @@ public class TestAutomaton extends LuceneTestCase {
         continue;
       } else {
         // Enumerate all finite strings and verify the count matches what we expect:
-        assertEquals(expectedCount, Operations.getFiniteStrings(a, expectedCount).size());
+        assertEquals(expectedCount, TestOperations.getFiniteStrings(a, expectedCount).size());
       }
 
       b = new BytesRefBuilder();
@@ -1339,7 +1339,7 @@ public class TestAutomaton extends LuceneTestCase {
     Automaton a = Automata.makeBinaryInterval(new BytesRef("bar"), true, new BytesRef("bar"), true);
     assertTrue(Operations.run(a, intsRef("bar")));
     assertTrue(Operations.isFinite(a));
-    assertEquals(1, Operations.getFiniteStrings(a, 10).size());
+    assertEquals(1, TestOperations.getFiniteStrings(a).size());
   }
 
   public void testMakeBinaryIntervalCommonPrefix() throws Exception {

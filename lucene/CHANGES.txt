@@ -126,6 +126,10 @@ New Features
 * LUCENE-6365: Add Operations.topoSort, to run topological sort of the
   states in an Automaton (Markus Heiden via Mike McCandless)
 
+* LUCENE-6365: Replace Operations.getFiniteStrings with a
+  more scalable iterator API (FiniteStringsIterator) (Markus Heiden
+  via Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
