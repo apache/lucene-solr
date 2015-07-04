@@ -29,6 +29,13 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -118,10 +125,12 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testRankStream();
     testReducerStream();
     testUniqueStream();
+    testRollupStream();
     testParallelUniqueStream();
     testParallelReducerStream();
     testParallelRankStream();
     testParallelMergeStream();
+    testParallelRollupStream();
   }
 
   private void testCloudSolrStream() throws Exception {
@@ -232,8 +241,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withStreamFunction("search", CloudSolrStream.class)
-      .withStreamFunction("unique", UniqueStream.class);
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("unique", UniqueStream.class);
     
     // Basic test
     expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")");
@@ -285,9 +294,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withStreamFunction("search", CloudSolrStream.class)
-      .withStreamFunction("unique", UniqueStream.class)
-      .withStreamFunction("merge", MergeStream.class);
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("unique", UniqueStream.class)
+      .withFunctionName("merge", MergeStream.class);
     
     // Basic test
     expression = StreamExpressionParser.parse("merge("
@@ -351,9 +360,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withStreamFunction("search", CloudSolrStream.class)
-      .withStreamFunction("unique", UniqueStream.class)
-      .withStreamFunction("top", RankStream.class);
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("unique", UniqueStream.class)
+      .withFunctionName("top", RankStream.class);
     
     // Basic test
     expression = StreamExpressionParser.parse("top("
@@ -416,10 +425,10 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withStreamFunction("search", CloudSolrStream.class)
-      .withStreamFunction("unique", UniqueStream.class)
-      .withStreamFunction("top", RankStream.class)
-      .withStreamFunction("group", ReducerStream.class);
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("unique", UniqueStream.class)
+      .withFunctionName("top", RankStream.class)
+      .withFunctionName("group", ReducerStream.class);
 
     // basic
     expression = StreamExpressionParser.parse("group("
@@ -469,6 +478,128 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     commit();
   }
 
+  private void testRollupStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("rollup", RollupStream.class)
+      .withFunctionName("sum", SumMetric.class)
+      .withFunctionName("min", MinMetric.class)
+      .withFunctionName("max", MaxMetric.class)
+      .withFunctionName("avg", MeanMetric.class)
+      .withFunctionName("count", CountMetric.class);     
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    expression = StreamExpressionParser.parse("rollup("
+                                              + "search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
+                                              + "over=\"a_s\","
+                                              + "sum(a_i),"
+                                              + "sum(a_f),"
+                                              + "min(a_i),"
+                                              + "min(a_f),"
+                                              + "max(a_i),"
+                                              + "max(a_f),"
+                                              + "avg(a_i),"
+                                              + "avg(a_f),"
+                                              + "count(*),"
+                                              + ")");
+    stream = factory.constructStream(expression);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 3);
+
+    //Test Long and Double Sums
+
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
+
+    del("*:*");
+    commit();
+  }
+  
   private void testParallelUniqueStream() throws Exception {
 
     indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
@@ -485,11 +616,11 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     String zkHost = zkServer.getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
-        .withStreamFunction("search", CloudSolrStream.class)
-        .withStreamFunction("unique", UniqueStream.class)
-        .withStreamFunction("top", RankStream.class)
-        .withStreamFunction("group", ReducerStream.class)
-        .withStreamFunction("parallel", ParallelStream.class);
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("unique", UniqueStream.class)
+        .withFunctionName("top", RankStream.class)
+        .withFunctionName("group", ReducerStream.class)
+        .withFunctionName("parallel", ParallelStream.class);
 
     ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_f asc\")");
 
@@ -524,11 +655,11 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     String zkHost = zkServer.getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
-        .withStreamFunction("search", CloudSolrStream.class)
-        .withStreamFunction("unique", UniqueStream.class)
-        .withStreamFunction("top", RankStream.class)
-        .withStreamFunction("group", ReducerStream.class)
-        .withStreamFunction("parallel", ParallelStream.class);
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("unique", UniqueStream.class)
+        .withFunctionName("top", RankStream.class)
+        .withFunctionName("group", ReducerStream.class)
+        .withFunctionName("parallel", ParallelStream.class);
 
     ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
 
@@ -595,11 +726,11 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     String zkHost = zkServer.getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
-        .withStreamFunction("search", CloudSolrStream.class)
-        .withStreamFunction("unique", UniqueStream.class)
-        .withStreamFunction("top", RankStream.class)
-        .withStreamFunction("group", ReducerStream.class)
-        .withStreamFunction("parallel", ParallelStream.class);
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("unique", UniqueStream.class)
+        .withFunctionName("top", RankStream.class)
+        .withFunctionName("group", ReducerStream.class)
+        .withFunctionName("parallel", ParallelStream.class);
 
     ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel("
         + "collection1, "
@@ -634,12 +765,12 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     String zkHost = zkServer.getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
-        .withStreamFunction("search", CloudSolrStream.class)
-        .withStreamFunction("unique", UniqueStream.class)
-        .withStreamFunction("top", RankStream.class)
-        .withStreamFunction("group", ReducerStream.class)
-        .withStreamFunction("merge", MergeStream.class)
-        .withStreamFunction("parallel", ParallelStream.class);
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("unique", UniqueStream.class)
+        .withFunctionName("top", RankStream.class)
+        .withFunctionName("group", ReducerStream.class)
+        .withFunctionName("merge", MergeStream.class)
+        .withFunctionName("parallel", ParallelStream.class);
 
     //Test ascending
     ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, merge(search(collection1, q=\"id:(4 1 8 7 9)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), search(collection1, q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), on=\"a_i asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i asc\")");
@@ -663,7 +794,132 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     del("*:*");
     commit();
   }
+  
+  private void testParallelRollupStream() throws Exception {
 
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("parallel", ParallelStream.class)
+      .withFunctionName("rollup", RollupStream.class)
+      .withFunctionName("sum", SumMetric.class)
+      .withFunctionName("min", MinMetric.class)
+      .withFunctionName("max", MaxMetric.class)
+      .withFunctionName("avg", MeanMetric.class)
+      .withFunctionName("count", CountMetric.class);     
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    expression = StreamExpressionParser.parse("parallel(collection1,"
+                                              + "rollup("
+                                                + "search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\"),"
+                                                + "over=\"a_s\","
+                                                + "sum(a_i),"
+                                                + "sum(a_f),"
+                                                + "min(a_i),"
+                                                + "min(a_f),"
+                                                + "max(a_i),"
+                                                + "max(a_f),"
+                                                + "avg(a_i),"
+                                                + "avg(a_f),"
+                                                + "count(*)"
+                                              + "),"
+                                              + "workers=\"2\", zkHost=\""+zkServer.getZkAddress()+"\", sort=\"a_s asc\")"
+                                              );
+    stream = factory.constructStream(expression);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 3);
+
+    //Test Long and Double Sums
+
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
+
+    del("*:*");
+    commit();
+  }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();

@@ -17,10 +17,15 @@
 
 package org.apache.solr.client.solrj.io.eq;
 
+import java.io.Serializable;
+import java.util.Comparator;
+
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -105,5 +110,12 @@ public class FieldEqualitor implements StreamEqualitor {
     }
     
     return false;
+  }
+  
+  public String getLeftFieldName(){
+    return leftFieldName;
+  }
+  public String getRightFieldName(){
+    return rightFieldName;
   }
 }

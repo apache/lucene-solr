@@ -18,11 +18,41 @@ package org.apache.solr.client.solrj.io.stream.metrics;
  */
 
 import java.io.Serializable;
-import org.apache.solr.client.solrj.io.Tuple;
 
-public interface Metric extends Serializable {
-  public String getName();
-  public double getValue();
-  public void update(Tuple tuple);
-  public Metric newInstance();
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+
+public abstract class Metric implements Serializable, Expressible {
+  
+  private static final long serialVersionUID = 1L;
+  private String functionName;
+  private String identifier;
+  
+//  @Override
+  public String getFunctionName(){
+    return functionName;
+  }
+  
+//  @Override
+  public void setFunctionName(String functionName){
+    this.functionName = functionName;
+  }
+  
+  public String getIdentifier(){
+    return identifier;
+  }
+  public void setIdentifier(String identifier){
+    this.identifier = identifier;
+  }
+  public void setIdentifier(String ... identifierParts){
+    StringBuilder sb = new StringBuilder();
+    for(String part : identifierParts){
+      sb.append(part);
+    }
+    this.identifier = sb.toString();
+  }
+  
+  public abstract double getValue();
+  public abstract void update(Tuple tuple);
+  public abstract Metric newInstance();
 }

@@ -34,11 +34,17 @@ import org.apache.solr.client.solrj.io.stream.MergeStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
 import org.apache.solr.client.solrj.io.stream.ReducerStream;
+import org.apache.solr.client.solrj.io.stream.RollupStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
@@ -65,7 +71,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
      * RequestHandler def. Example config override
      *  <lst name="streamFunctions">
      *    <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str>
-     *    <str name="count">org.apache.solr.client.solrj.io.stream.CountStream</str>
+     *    <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
      *  </lst>
      * */
 
@@ -80,12 +86,22 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
      streamFactory
-      .withStreamFunction("search", CloudSolrStream.class)
-      .withStreamFunction("merge", MergeStream.class)
-      .withStreamFunction("unique", UniqueStream.class)
-      .withStreamFunction("top", RankStream.class)
-      .withStreamFunction("group", ReducerStream.class)
-      .withStreamFunction("parallel", ParallelStream.class);
+       // streams
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("merge", MergeStream.class)
+      .withFunctionName("unique", UniqueStream.class)
+      .withFunctionName("top", RankStream.class)
+      .withFunctionName("group", ReducerStream.class)
+      .withFunctionName("parallel", ParallelStream.class)
+      .withFunctionName("rollup", RollupStream.class)
+      
+      // metrics
+      .withFunctionName("min", MinMetric.class)
+      .withFunctionName("max", MaxMetric.class)
+      .withFunctionName("avg", MeanMetric.class)
+      .withFunctionName("sum", SumMetric.class)
+      .withFunctionName("count", CountMetric.class)
+      ;
 
     
     // This pulls all the overrides and additions from the config
@@ -94,7 +110,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
       for(Entry<String,?> functionMapping : functionMappings){
         Class<?> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(), Expressible.class);
-        streamFactory.withStreamFunction(functionMapping.getKey(), clazz);
+        streamFactory.withFunctionName(functionMapping.getKey(), clazz);
       }
     }
         

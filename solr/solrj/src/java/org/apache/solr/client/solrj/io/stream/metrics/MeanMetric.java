@@ -17,43 +17,68 @@ package org.apache.solr.client.solrj.io.stream.metrics;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Serializable;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class MeanMetric implements Metric, Serializable {
-
+public class MeanMetric extends Metric implements Serializable {
+  // How'd the MeanMetric get to be so mean?
+  // Maybe it was born with it.
+  // Maybe it was mayba-mean.
+  //
+  // I'll see myself out.
+  
   private static final long serialVersionUID = 1;
 
-  private String column;
+  private String columnName;
   private double doubleSum;
   private long longSum;
   private long count;
 
-  public MeanMetric(String column) {
-    this.column = column;
+  public MeanMetric(String columnName){
+    init("avg", columnName);
   }
-
-  public String getName() {
-    return "avg("+column+")";
+  public MeanMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+    // grab all parameters out
+    String functionName = expression.getFunctionName();
+    String columnName = factory.getValueOperand(expression, 0);
+    
+    // validate expression contains only what we want.
+    if(null == columnName){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
+    }
+    if(1 != expression.getParameters().size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    }
+    
+    init(functionName, columnName);    
   }
-
+  
+  private void init(String functionName, String columnName){
+    this.columnName = columnName;
+    setFunctionName(functionName);
+    setIdentifier(functionName, "(", columnName, ")");
+  }
+  
   public void update(Tuple tuple) {
     ++count;
-    Object o = tuple.get(column);
+    Object o = tuple.get(columnName);
     if(o instanceof Double) {
-      Double d = (Double)tuple.get(column);
+      Double d = (Double)tuple.get(columnName);
       doubleSum += d.doubleValue();
     } else {
-      Long l = (Long)tuple.get(column);
+      Long l = (Long)tuple.get(columnName);
       longSum += l.doubleValue();
     }
   }
 
   public Metric newInstance() {
-    return new MeanMetric(column);
+    return new MeanMetric(columnName);
   }
 
   public double getValue() {
@@ -66,5 +91,10 @@ public class MeanMetric implements Metric, Serializable {
       double ave = longSum/dcount;
       return ave;
     }
+  }
+  
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+    return new StreamExpression(getFunctionName()).withParameter(columnName);
   }
 }

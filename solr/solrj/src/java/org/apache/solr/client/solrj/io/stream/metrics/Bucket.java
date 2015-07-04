@@ -1,4 +1,4 @@
-package org.apache.solr.client.solrj.io.stream.metrics;
+  package org.apache.solr.client.solrj.io.stream.metrics;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

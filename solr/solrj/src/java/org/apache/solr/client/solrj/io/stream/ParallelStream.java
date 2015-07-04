@@ -80,6 +80,10 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     init(zkHost,collection, tStream, workers,comp);
   }
 
+  public void setStreamFactory(StreamFactory streamFactory) {
+    this.streamFactory = streamFactory;
+  }
+
   public ParallelStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     objectSerialize = false;

@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.io.stream.RollupStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -184,7 +185,21 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       // Do the rollups in parallel
       // Maintain the sort of the Tuples coming from the workers.
       StreamComparator comp = bucketSortComp(buckets, sortDirection);
-      tupleStream = new ParallelStream(workerZkHost, workerCollection, tupleStream, numWorkers, comp);
+      ParallelStream parallelStream = new ParallelStream(workerZkHost, workerCollection, tupleStream, numWorkers, comp);
+
+      StreamFactory factory = new StreamFactory()
+          .withFunctionName("search", CloudSolrStream.class)
+          .withFunctionName("parallel", ParallelStream.class)
+          .withFunctionName("rollup", RollupStream.class)
+          .withFunctionName("sum", SumMetric.class)
+          .withFunctionName("min", MinMetric.class)
+          .withFunctionName("max", MaxMetric.class)
+          .withFunctionName("avg", MeanMetric.class)
+          .withFunctionName("count", CountMetric.class);
+
+      parallelStream.setStreamFactory(factory);
+      parallelStream.setObjectSerialize(false);
+      tupleStream = parallelStream;
     }
 
     //TODO: This should be done on the workers, but it won't serialize because it relies on Presto classes.

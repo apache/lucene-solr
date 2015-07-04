@@ -56,9 +56,12 @@
       <str name="wt">json</str>
       <str name="distrib">false</str>
     </lst>
-    <lst name="streamFunctions">
-      <str name="count">org.apache.solr.client.solrj.io.stream.CountStream</str>
-    </lst>
+    
+    <!-- This is how you provide other functions --> 
+    <!-- <lst name="streamFunctions">
+      <str name="recordCount">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
+    </lst> -->
+    
   </requestHandler>
   
   <requestDispatcher handleSelect="true" >

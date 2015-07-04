@@ -17,28 +17,50 @@ package org.apache.solr.client.solrj.io.stream.metrics;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class SumMetric implements Metric, Serializable {
+public class SumMetric extends Metric implements Serializable {
 
   private static final long serialVersionUID = 1;
 
-  private String column;
+  private String columnName;
   private double doubleSum;
   private long longSum;
 
-  public SumMetric(String column) {
-    this.column = column;
+  public SumMetric(String columnName){
+    init("sum", columnName);
   }
-
-  public String getName() {
-    return "sum("+column+")";
+  public SumMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+    // grab all parameters out
+    String functionName = expression.getFunctionName();
+    String columnName = factory.getValueOperand(expression, 0);
+    
+    // validate expression contains only what we want.
+    if(null == columnName){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
+    }
+    if(1 != expression.getParameters().size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    }
+    
+    init(functionName, columnName);    
+  }
+  
+  private void init(String functionName, String columnName){
+    this.columnName = columnName;
+    setFunctionName(functionName);
+    setIdentifier(functionName, "(", columnName, ")");
   }
 
   public void update(Tuple tuple) {
-    Object o = tuple.get(column);
+    Object o = tuple.get(columnName);
     if(o instanceof Double) {
       Double d = (Double)o;
       doubleSum += d.doubleValue();
@@ -49,7 +71,7 @@ public class SumMetric implements Metric, Serializable {
   }
 
   public Metric newInstance() {
-    return new SumMetric(column);
+    return new SumMetric(columnName);
   }
 
   public double getValue() {
@@ -58,5 +80,10 @@ public class SumMetric implements Metric, Serializable {
     } else {
       return (double)longSum;
     }
+  }
+  
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+    return new StreamExpression(getFunctionName()).withParameter(columnName);
   }
 }

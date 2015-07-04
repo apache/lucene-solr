@@ -23,5 +23,7 @@ import java.io.IOException;
  * Defines a stream that can be expressed in an expression
  */
 public interface Expressible {
+//  public String getFunctionName();
+//  public void setFunctionName(String functionName);
   StreamExpressionParameter toExpression(StreamFactory factory) throws IOException;
 }

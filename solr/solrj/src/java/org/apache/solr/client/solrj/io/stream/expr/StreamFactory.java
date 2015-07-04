@@ -11,14 +11,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eq.Equalitor;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -43,11 +42,11 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 public class StreamFactory implements Serializable {
   
   private transient HashMap<String,String> collectionZkHosts;
-  private transient HashMap<String,Class> streamFunctions;
+  private transient HashMap<String,Class> functionNames;
   
   public StreamFactory(){
     collectionZkHosts = new HashMap<String,String>();
-    streamFunctions = new HashMap<String,Class>();
+    functionNames = new HashMap<String,Class>();
   }
   
   public StreamFactory withCollectionZkHost(String collectionName, String zkHost){
@@ -61,11 +60,11 @@ public class StreamFactory implements Serializable {
     return null;
   }
   
-  public Map<String,Class> getStreamFunctions(){
-    return streamFunctions;
+  public Map<String,Class> getFunctionNames(){
+    return functionNames;
   }
-  public StreamFactory withStreamFunction(String streamFunction, Class clazz){
-    this.streamFunctions.put(streamFunction, clazz);
+  public StreamFactory withFunctionName(String functionName, Class clazz){
+    this.functionNames.put(functionName, clazz);
     return this;
   }
   
@@ -150,9 +149,9 @@ public class StreamFactory implements Serializable {
     
     parameterLoop:
     for(StreamExpression streamExpression : allStreamExpressions){
-      if(streamFunctions.containsKey(streamExpression.getFunctionName())){
+      if(functionNames.containsKey(streamExpression.getFunctionName())){
         for(Class clazz : clazzes){
-          if(!clazz.isAssignableFrom(streamFunctions.get(streamExpression.getFunctionName()))){
+          if(!clazz.isAssignableFrom(functionNames.get(streamExpression.getFunctionName()))){
             continue parameterLoop;
           }
         }
@@ -169,15 +168,31 @@ public class StreamFactory implements Serializable {
   }
   public TupleStream constructStream(StreamExpression expression) throws IOException{
     String function = expression.getFunctionName();
-    if(streamFunctions.containsKey(function)){
-      Class clazz = streamFunctions.get(function);
+    if(functionNames.containsKey(function)){
+      Class clazz = functionNames.get(function);
       if(Expressible.class.isAssignableFrom(clazz) && TupleStream.class.isAssignableFrom(clazz)){
-        TupleStream stream = (TupleStream)createInstance(streamFunctions.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+        TupleStream stream = (TupleStream)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
         return stream;
       }
     }
     
     throw new IOException(String.format(Locale.ROOT,"Invalid stream expression %s - function '%s' is unknown (not mapped to a valid TupleStream)", expression, expression.getFunctionName()));
+  }
+  
+  public Metric constructMetric(String expressionClause) throws IOException {
+    return constructMetric(StreamExpressionParser.parse(expressionClause));
+  }
+  public Metric constructMetric(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && Metric.class.isAssignableFrom(clazz)){
+        Metric metric = (Metric)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+        return metric;
+      }
+    }
+    
+    throw new IOException(String.format(Locale.ROOT,"Invalid metric expression %s - function '%s' is unknown (not mapped to a valid Metric)", expression, expression.getFunctionName()));
   }
 
   public StreamComparator constructComparator(String comparatorString, Class comparatorType) throws IOException {
@@ -233,8 +248,6 @@ public class StreamFactory implements Serializable {
   }
 
   public <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException{
-    // This should use SolrResourceLoader - TODO
-    // This is adding a restriction that the class has a public constructor - we may not want to do that
     Constructor<T> ctor;
     try {
       ctor = clazz.getConstructor(paramTypes);
@@ -246,7 +259,7 @@ public class StreamFactory implements Serializable {
   }
   
   public String getFunctionName(Class clazz) throws IOException{
-    for(Entry<String,Class> entry : streamFunctions.entrySet()){
+    for(Entry<String,Class> entry : functionNames.entrySet()){
       if(entry.getValue() == clazz){
         return entry.getKey();
       }

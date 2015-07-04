@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
@@ -112,12 +113,12 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     sliceCount = 2;
 
     streamFactory = new StreamFactory()
-                    .withStreamFunction("search", CloudSolrStream.class)
-                    .withStreamFunction("merge", MergeStream.class)
-                    .withStreamFunction("unique", UniqueStream.class)
-                    .withStreamFunction("top", RankStream.class)
-                    .withStreamFunction("group", ReducerStream.class)
-                    .withStreamFunction("count", CountStream.class)
+                    .withFunctionName("search", CloudSolrStream.class)
+                    .withFunctionName("merge", MergeStream.class)
+                    .withFunctionName("unique", UniqueStream.class)
+                    .withFunctionName("top", RankStream.class)
+                    .withFunctionName("group", ReducerStream.class)
+                    .withFunctionName("count", RecordCountStream.class)
                     ;
   }
 
@@ -143,18 +144,6 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     List<Tuple> tuples = getTuples(ustream);
     assert(tuples.size() == 4);
     assertOrder(tuples, 0,1,3,4);
-
-
-    try {
-      params = mapParams("q","*:*","fl","id,a_s,a_i,a_f","sort", "a_f asc,a_i asc");
-      stream = new CloudSolrStream(zkHost, "collection1", params);
-      ustream = new UniqueStream(stream, new FieldEqualitor("a_i"));
-      throw new Exception("Equalitors did not match but no excepion was thrown");
-    } catch(Exception e) {
-      if(!e.getMessage().equals("Invalid UniqueStream - substream comparator (sort) must be a superset of this stream's equalitor.")) {
-        throw e;
-      }
-    }
 
     del("*:*");
     commit();
@@ -384,18 +373,6 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     Tuple t2 = tuples.get(2);
     List<Map> maps2 = t2.getMaps();
     assertMaps(maps2, 4, 6);
-
-    try {
-
-      paramsA = mapParams("q","*:*","fl","id,a_s, a_i,  a_f","sort", "a_i asc  ,  a_f   asc");
-      stream = new CloudSolrStream(zkHost, "collection1", paramsA);
-      rstream = new ReducerStream(stream, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
-      throw new Exception("Sorts did not match up and Exception was not not thrown.");
-    } catch (Exception e) {
-      if(!e.getMessage().equals("Invalid ReducerStream - substream comparator (sort) must be a superset of this stream's comparator.")) {
-        throw e;
-      }
-    }
 
 
 
@@ -957,35 +934,6 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     assert(tuples.size() == 5);
     assertOrder(tuples, 2,0,1,3,4);
 
-    try {
-      paramsA = mapParams("q","id:(2 4 1)","fl","id,a_s,a_i,a_f","sort", "a_f desc,a_i desc");
-      streamA = new CloudSolrStream(zkHost, "collection1", paramsA);
-
-      paramsB = mapParams("q","id:(0 3)","fl","id,a_s,a_i,a_f","sort", "a_f asc,a_i desc");
-      streamB = new CloudSolrStream(zkHost, "collection1", paramsB);
-      mstream = new MergeStream(streamA, streamB, new MultipleFieldComparator(new FieldComparator("a_f",ComparatorOrder.ASCENDING),new FieldComparator("a_i",ComparatorOrder.DESCENDING)));
-      throw new Exception("Sorts did not match up and Exception was not not thrown.");
-    } catch(Exception e) {
-      if(!e.getMessage().equals("Invalid MergeStream - both substream comparators (sort) must be a superset of this stream's comparator.")) {
-        throw e;
-      }
-    }
-
-    try {
-      paramsA = mapParams("q","id:(2 4 1)","fl","id,a_s,a_i,a_f","sort", "a_f asc,a_i desc");
-      streamA = new CloudSolrStream(zkHost, "collection1", paramsA);
-
-      paramsB = mapParams("q","id:(0 3)","fl","id,a_s,a_i,a_f","sort", "a_f asc,a_i asc");
-      streamB = new CloudSolrStream(zkHost, "collection1", paramsB);
-      mstream = new MergeStream(streamA, streamB, new MultipleFieldComparator(new FieldComparator("a_f",ComparatorOrder.ASCENDING),new FieldComparator("a_i",ComparatorOrder.DESCENDING)));
-      throw new Exception("Sorts did not match up and Exception was not not thrown.");
-    } catch(Exception e) {
-      if(!e.getMessage().equals("Invalid MergeStream - both substream comparators (sort) must be a superset of this stream's comparator.")) {
-        throw e;
-      }
-    }
-
-
     del("*:*");
     commit();
   }
@@ -1067,7 +1015,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream streamB = new CloudSolrStream(zkHost, "collection1", paramsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
-    CountStream cstream = new CountStream(mstream);
+    RecordCountStream cstream = new RecordCountStream(mstream);
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", cstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
     List<Tuple> tuples = getTuples(pstream);
 

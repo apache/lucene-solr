@@ -21,22 +21,34 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ArrayList;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.HashKey;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 
-public class RollupStream extends TupleStream {
+public class RollupStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
   private PushBackStream tupleStream;
   private Bucket[] buckets;
   private Metric[] metrics;
+  
   private HashKey currentKey = new HashKey("-");
   private Metric[] currentMetrics;
   private boolean finished = false;
@@ -44,9 +56,94 @@ public class RollupStream extends TupleStream {
   public RollupStream(TupleStream tupleStream,
                       Bucket[] buckets,
                       Metric[] metrics) {
+    init(tupleStream, buckets, metrics);
+  }
+  
+  public RollupStream(StreamExpression expression, StreamFactory factory) throws IOException {
+    // grab all parameters out
+    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
+    StreamExpressionNamedParameter overExpression = factory.getNamedOperand(expression, "over");
+    
+    // validate expression contains only what we want.
+    if(expression.getParameters().size() != streamExpressions.size() + metricExpressions.size() + 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    }
+    
+    if(1 != streamExpressions.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+    }
+    if(0 == metricExpressions.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least 1 metric but found %d",expression, metricExpressions.size()));
+    }
+    if(null == overExpression || !(overExpression.getParameter() instanceof StreamExpressionValue)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting single 'over' parameter listing fields to rollup by but didn't find one",expression));
+    }
+    
+    // Construct the metrics
+    Metric[] metrics = new Metric[metricExpressions.size()];
+    for(int idx = 0; idx < metricExpressions.size(); ++idx){
+      metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
+    }
+    
+    // Construct the buckets.
+    // Buckets are nothing more than equalitors (I think). We can use equalitors as helpers for creating the buckets, but because
+    // I feel I'm missing something wrt buckets I don't want to change the use of buckets in this class to instead be equalitors.    
+    StreamEqualitor streamEqualitor = factory.constructEqualitor(((StreamExpressionValue)overExpression.getParameter()).getValue(), FieldEqualitor.class);
+    List<FieldEqualitor> flattenedEqualitors = flattenEqualitor(streamEqualitor);
+    Bucket[] buckets = new Bucket[flattenedEqualitors.size()];
+    for(int idx = 0; idx < flattenedEqualitors.size(); ++idx){
+      buckets[idx] = new Bucket(flattenedEqualitors.get(idx).getLeftFieldName());
+      // while we're using equalitors we don't support those of the form a=b. Only single field names.
+    }
+    
+    init(factory.constructStream(streamExpressions.get(0)), buckets, metrics);
+  }
+  
+  private List<FieldEqualitor> flattenEqualitor(StreamEqualitor equalitor){
+    List<FieldEqualitor> flattenedList = new ArrayList<>();
+    
+    if(equalitor instanceof FieldEqualitor){
+      flattenedList.add((FieldEqualitor)equalitor);
+    }
+    else if(equalitor instanceof MultipleFieldEqualitor){
+      MultipleFieldEqualitor mEqualitor = (MultipleFieldEqualitor)equalitor;
+      for(StreamEqualitor subEqualitor : mEqualitor.getEqs()){
+        flattenedList.addAll(flattenEqualitor(subEqualitor));
+      }
+    }
+    
+    return flattenedList;
+  }
+  
+  private void init(TupleStream tupleStream, Bucket[] buckets, Metric[] metrics){
     this.tupleStream = new PushBackStream(tupleStream);
     this.buckets = buckets;
     this.metrics = metrics;
+  }
+
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+    // function name
+    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+    
+    // stream
+    expression.addParameter(tupleStream.toExpression(factory));
+        
+    // over
+    StringBuilder overBuilder = new StringBuilder();
+    for(Bucket bucket : buckets){
+      if(overBuilder.length() > 0){ overBuilder.append(","); }
+      overBuilder.append(bucket.toString());
+    }
+    expression.addParameter(new StreamExpressionNamedParameter("over",overBuilder.toString()));
+    
+    // metrics
+    for(Metric metric : metrics){
+      expression.addParameter(metric.toExpression(factory));
+    }
+    
+    return expression;
   }
 
   public void setStreamContext(StreamContext context) {
@@ -54,7 +151,7 @@ public class RollupStream extends TupleStream {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<TupleStream>();
     l.add(tupleStream);
     return l;
   }
@@ -67,10 +164,6 @@ public class RollupStream extends TupleStream {
     tupleStream.close();
   }
 
-  public StreamComparator getStreamSort(){
-    return tupleStream.getStreamSort();
-  }
-
   public Tuple read() throws IOException {
 
     while(true) {
@@ -79,7 +172,7 @@ public class RollupStream extends TupleStream {
         if(!finished) {
           Map map = new HashMap();
           for(Metric metric : currentMetrics) {
-            map.put(metric.getName(), metric.getValue());
+            map.put(metric.getIdentifier(), metric.getValue());
           }
 
           for(int i=0; i<buckets.length; i++) {
@@ -110,7 +203,7 @@ public class RollupStream extends TupleStream {
         if(currentMetrics != null) {
           Map map = new HashMap();
           for(Metric metric : currentMetrics) {
-            map.put(metric.getName(), metric.getValue());
+            map.put(metric.getIdentifier(), metric.getValue());
           }
 
           for(int i=0; i<buckets.length; i++) {
@@ -136,5 +229,10 @@ public class RollupStream extends TupleStream {
 
   public int getCost() {
     return 0;
+  }
+
+  @Override
+  public StreamComparator getStreamSort() {
+    return tupleStream.getStreamSort();
   }
 }

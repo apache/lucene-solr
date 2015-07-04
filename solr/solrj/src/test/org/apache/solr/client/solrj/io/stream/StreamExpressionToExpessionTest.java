@@ -17,15 +17,15 @@ package org.apache.solr.client.solrj.io.stream;
  * limitations under the License.
  */
 
-import java.util.List;
-
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.junit.Test;
 
 /**
@@ -40,11 +40,16 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     
     factory = new StreamFactory()
                     .withCollectionZkHost("collection1", "testhost:1234")
-                    .withStreamFunction("search", CloudSolrStream.class)
-                    .withStreamFunction("merge", MergeStream.class)
-                    .withStreamFunction("unique", UniqueStream.class)
-                    .withStreamFunction("top", RankStream.class)
-                    .withStreamFunction("group", ReducerStream.class)
+                    .withFunctionName("search", CloudSolrStream.class)
+                    .withFunctionName("merge", MergeStream.class)
+                    .withFunctionName("unique", UniqueStream.class)
+                    .withFunctionName("top", RankStream.class)
+                    .withFunctionName("group", ReducerStream.class)
+                    .withFunctionName("count", CountMetric.class)
+                    .withFunctionName("sum", SumMetric.class)
+                    .withFunctionName("min", MinMetric.class)
+                    .withFunctionName("max", MaxMetric.class)
+                    .withFunctionName("avg", MeanMetric.class)
                     ;
   }
   
@@ -133,5 +138,69 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("group(search(collection1"));
     assertTrue(expressionString.contains("by=\"a_s desc\""));
   }
+  
+  @Test
+  public void testCountMetric() throws Exception {
 
+    Metric metric;
+    String expressionString;
+    
+    // Basic test
+    metric = new CountMetric(StreamExpressionParser.parse("count(*)"), factory);
+    expressionString = metric.toExpression(factory).toString();
+    
+    assertEquals("count(*)", expressionString);
+  }
+  
+  @Test
+  public void testMaxMetric() throws Exception {
+
+    Metric metric;
+    String expressionString;
+    
+    // Basic test
+    metric = new MaxMetric(StreamExpressionParser.parse("max(foo)"), factory);
+    expressionString = metric.toExpression(factory).toString();
+    
+    assertEquals("max(foo)", expressionString);
+  }
+  
+  @Test
+  public void testMinMetric() throws Exception {
+
+    Metric metric;
+    String expressionString;
+    
+    // Basic test
+    metric = new MinMetric(StreamExpressionParser.parse("min(foo)"), factory);
+    expressionString = metric.toExpression(factory).toString();
+    
+    assertEquals("min(foo)", expressionString);
+  }
+
+  @Test
+  public void testMeanMetric() throws Exception {
+
+    Metric metric;
+    String expressionString;
+    
+    // Basic test
+    metric = new MeanMetric(StreamExpressionParser.parse("avg(foo)"), factory);
+    expressionString = metric.toExpression(factory).toString();
+    
+    assertEquals("avg(foo)", expressionString);
+  }
+  
+  @Test
+  public void testSumMetric() throws Exception {
+
+    Metric metric;
+    String expressionString;
+    
+    // Basic test
+    metric = new SumMetric(StreamExpressionParser.parse("sum(foo)"), factory);
+    expressionString = metric.toExpression(factory).toString();
+    
+    assertEquals("sum(foo)", expressionString);
+  }
 }

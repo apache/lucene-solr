@@ -29,16 +29,16 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CountStream extends TupleStream implements Expressible, Serializable {
+public class RecordCountStream extends TupleStream implements Expressible, Serializable {
 
   private TupleStream stream;
   private int count;
 
-  public CountStream(TupleStream stream) {
+  public RecordCountStream(TupleStream stream) {
     this.stream = stream;
   }
   
-  public CountStream(StreamExpression expression, StreamFactory factory) throws IOException{
+  public RecordCountStream(StreamExpression expression, StreamFactory factory) throws IOException{
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     
     // validate expression contains only what we want.
@@ -63,7 +63,7 @@ public class CountStream extends TupleStream implements Expressible, Serializabl
       expression.addParameter(((Expressible)stream).toExpression(factory));
     }
     else{
-      throw new IOException("This CountStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      throw new IOException("This RecordCountStream contains a non-expressible TupleStream - it cannot be converted to an expression");
     }
     
     return expression;

@@ -17,25 +17,47 @@ package org.apache.solr.client.solrj.io.stream.metrics;
  * limitations under the License.
  */
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class MinMetric implements Metric, Serializable {
+public class MinMetric extends Metric {
 
-  private static final long serialVersionUID = 1;
-
+  private static final long serialVersionUID = 1L;
+  
   private long longMin = Long.MAX_VALUE;
   private double doubleMin = Double.MAX_VALUE;
-  private String column;
+  private String columnName;
 
-  public MinMetric(String column) {
-    this.column = column;
+  public MinMetric(String columnName){
+    init("min", columnName);
   }
-
-  public String getName() {
-    return "min("+column+")";
+  public MinMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+    // grab all parameters out
+    String functionName = expression.getFunctionName();
+    String columnName = factory.getValueOperand(expression, 0);
+    
+    // validate expression contains only what we want.
+    if(null == columnName){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
+    }
+    if(1 != expression.getParameters().size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    }
+    
+    init(functionName, columnName);    
   }
+  
+  private void init(String functionName, String columnName){
+    this.columnName = columnName;
+    setFunctionName(functionName);
+    setIdentifier(functionName, "(", columnName, ")");
+  }
+  
 
   public double getValue() {
     if(longMin == Long.MAX_VALUE) {
@@ -46,7 +68,7 @@ public class MinMetric implements Metric, Serializable {
   }
 
   public void update(Tuple tuple) {
-    Object o = tuple.get(column);
+    Object o = tuple.get(columnName);
     if(o instanceof Double) {
       double d = (double)o;
       if(d < doubleMin) {
@@ -61,6 +83,11 @@ public class MinMetric implements Metric, Serializable {
   }
 
   public Metric newInstance() {
-    return new MinMetric(column);
+    return new MinMetric(columnName);
+  }
+
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+    return new StreamExpression(getFunctionName()).withParameter(columnName);
   }
 }
