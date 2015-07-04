@@ -113,11 +113,11 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
       assertSearcherHasNotChanged(expectedSearcher);
 
       assertU(delQ("id:match_no_documents"));
-      assertU(commit());
+      assertU(commit("softCommit","true","openSearcher","true"));
       assertSearcherHasNotChanged(expectedSearcher);
 
       assertU(delI("0")); // no doc has this id, yet
-      assertU(commit("softCommit","true"));
+      assertU(commit("softCommit","true","openSearcher","true"));
       assertSearcherHasNotChanged(expectedSearcher);
 
     } finally {
