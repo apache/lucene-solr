@@ -49,6 +49,7 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.fst.Util;
 
 public class FuzzySuggesterTest extends LuceneTestCase {
@@ -773,10 +774,11 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       BytesRefBuilder spare = new BytesRefBuilder();
       for (TermFreqPayload2 e : slowCompletor) {
         spare.copyChars(e.analyzedForm);
-        Set<IntsRef> finiteStrings = suggester.toFiniteStrings(spare.get(), tokenStreamToAutomaton);
-        for (IntsRef intsRef : finiteStrings) {
+        FiniteStringsIterator finiteStrings =
+            new FiniteStringsIterator(suggester.toAutomaton(spare.get(), tokenStreamToAutomaton));
+        for (IntsRef string; (string = finiteStrings.next()) != null;) {
           int p = 0;
-          BytesRef ref = Util.toBytesRef(intsRef, spare);
+          BytesRef ref = Util.toBytesRef(string, spare);
           boolean added = false;
           for (int i = ref.offset; i < ref.length; i++) {
             int q = automaton.step(p, ref.bytes[i] & 0xff);
