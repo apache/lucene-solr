@@ -34,7 +34,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -386,20 +385,25 @@ public class TermAutomatonQuery extends Query {
       // Initialize the enums; null for a given slot means that term didn't appear in this reader
       EnumAndScorer[] enums = new EnumAndScorer[idToTerm.size()];
 
+      boolean any = false;
       for(Map.Entry<Integer,TermContext> ent : termStates.entrySet()) {
         TermContext termContext = ent.getValue();
         assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
         BytesRef term = idToTerm.get(ent.getKey());
         TermState state = termContext.get(context.ord);
         if (state != null) {
-
           TermsEnum termsEnum = context.reader().terms(field).iterator();
           termsEnum.seekExact(term, state);
           enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(null, PostingsEnum.POSITIONS));
+          any = true;
         }
       }
 
-      return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, similarity.simScorer(stats, context));
+      if (any) {
+        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, similarity.simScorer(stats, context));
+      } else {
+        return null;
+      }
     }
     
     @Override
