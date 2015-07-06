@@ -35,9 +35,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
-import org.apache.lucene.util.Bits;
 
 /**
  * This query requires that you index
@@ -83,7 +81,7 @@ import org.apache.lucene.util.Bits;
  */
 public class ToParentBlockJoinQuery extends Query {
 
-  private final BitDocIdSetFilter parentsFilter;
+  private final BitSetProducer parentsFilter;
   private final Query childQuery;
 
   // If we are rewritten, this is the original childQuery we
@@ -101,7 +99,7 @@ public class ToParentBlockJoinQuery extends Query {
    * @param scoreMode How to aggregate multiple child scores
    * into a single parent score.
    **/
-  public ToParentBlockJoinQuery(Query childQuery, BitDocIdSetFilter parentsFilter, ScoreMode scoreMode) {
+  public ToParentBlockJoinQuery(Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode) {
     super();
     this.origChildQuery = childQuery;
     this.childQuery = childQuery;
@@ -109,7 +107,7 @@ public class ToParentBlockJoinQuery extends Query {
     this.scoreMode = scoreMode;
   }
 
-  private ToParentBlockJoinQuery(Query origChildQuery, Query childQuery, BitDocIdSetFilter parentsFilter, ScoreMode scoreMode) {
+  private ToParentBlockJoinQuery(Query origChildQuery, Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode) {
     super();
     this.origChildQuery = origChildQuery;
     this.childQuery = childQuery;
@@ -130,10 +128,10 @@ public class ToParentBlockJoinQuery extends Query {
   private static class BlockJoinWeight extends Weight {
     private final Query joinQuery;
     private final Weight childWeight;
-    private final BitDocIdSetFilter parentsFilter;
+    private final BitSetProducer parentsFilter;
     private final ScoreMode scoreMode;
 
-    public BlockJoinWeight(Query joinQuery, Weight childWeight, BitDocIdSetFilter parentsFilter, ScoreMode scoreMode) {
+    public BlockJoinWeight(Query joinQuery, Weight childWeight, BitSetProducer parentsFilter, ScoreMode scoreMode) {
       super(joinQuery);
       this.joinQuery = joinQuery;
       this.childWeight = childWeight;
@@ -173,14 +171,14 @@ public class ToParentBlockJoinQuery extends Query {
 
       // NOTE: this does not take accept docs into account, the responsibility
       // to not match deleted docs is on the scorer
-      final BitDocIdSet parents = parentsFilter.getDocIdSet(readerContext);
+      final BitSet parents = parentsFilter.getBitSet(readerContext);
 
       if (parents == null) {
         // No matches
         return null;
       }
 
-      return new BlockJoinScorer(this, childScorer, parents.bits(), firstChildDoc, scoreMode);
+      return new BlockJoinScorer(this, childScorer, parents, firstChildDoc, scoreMode);
     }
 
     @Override

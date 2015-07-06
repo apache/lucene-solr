@@ -24,8 +24,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
-import org.apache.lucene.search.join.BitDocIdSetFilter;
+import org.apache.lucene.search.join.QueryBitSetProducer;
+import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -76,10 +76,10 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     String childFilter = params.get( "childFilter" );
     int limit = params.getInt( "limit", 10 );
 
-    BitDocIdSetFilter parentsFilter = null;
+    BitSetProducer parentsFilter = null;
     try {
       Query parentFilterQuery = QParser.getParser( parentFilter, null, req).getQuery();
-      parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(parentFilterQuery));
+      parentsFilter = new QueryBitSetProducer(new QueryWrapperFilter(parentFilterQuery));
     } catch (SyntaxError syntaxError) {
       throw new SolrException( ErrorCode.BAD_REQUEST, "Failed to create correct parent filter query" );
     }
@@ -101,11 +101,11 @@ class ChildDocTransformer extends TransformerWithContext {
   private final String name;
   private final SchemaField idField;
   private final IndexSchema schema;
-  private BitDocIdSetFilter parentsFilter;
+  private BitSetProducer parentsFilter;
   private Query childFilterQuery;
   private int limit;
 
-  public ChildDocTransformer( String name, final BitDocIdSetFilter parentsFilter, 
+  public ChildDocTransformer( String name, final BitSetProducer parentsFilter, 
                               final SchemaField idField, IndexSchema schema,
                               final Query childFilterQuery, int limit) {
     this.name = name;

@@ -1,3 +1,5 @@
+package org.apache.lucene.search.join;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,27 +17,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.search.join;
+import java.io.IOException;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.join.ToChildBlockJoinQuery;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.BitSet;
 
-public class BlockJoinChildQParser extends BlockJoinParentQParser {
+/**
+ * A producer of {@link BitSet}s per segment.
+ */
+public interface BitSetProducer {
 
-  public BlockJoinChildQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    super(qstr, localParams, params, req);
-  }
+  /**
+   * Produce a {@link BitSet} matching the expected documents on the given
+   * segment. This may return {@code null} if no documents match.
+   */
+  BitSet getBitSet(LeafReaderContext context) throws IOException;
 
-  protected Query createQuery(Query parentListQuery, Query query) {
-    return new ToChildBlockJoinQuery(query, getFilter(parentListQuery).filter);
-  }
-
-  @Override
-  protected String getParentFilterLocalParamName() {
-    return "of";
-  }
 }
-
-

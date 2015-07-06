@@ -25,7 +25,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NumericUtils;
 
@@ -40,8 +40,8 @@ import java.io.IOException;
 public class ToParentBlockJoinSortField extends SortField {
 
   private final boolean order;
-  private final BitDocIdSetFilter parentFilter;
-  private final BitDocIdSetFilter childFilter;
+  private final BitSetProducer parentFilter;
+  private final BitSetProducer childFilter;
 
   /**
    * Create ToParentBlockJoinSortField. The parent document ordering is based on child document ordering (reverse).
@@ -52,7 +52,7 @@ public class ToParentBlockJoinSortField extends SortField {
    * @param parentFilter Filter that identifies the parent documents.
    * @param childFilter Filter that defines which child documents participates in sorting.
    */
-  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, BitDocIdSetFilter parentFilter, BitDocIdSetFilter childFilter) {
+  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, BitSetProducer parentFilter, BitSetProducer childFilter) {
     super(field, type, reverse);
     switch (getType()) {
       case STRING:
@@ -80,7 +80,7 @@ public class ToParentBlockJoinSortField extends SortField {
    * @param parentFilter Filter that identifies the parent documents.
    * @param childFilter Filter that defines which child documents participates in sorting.
    */
-  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, boolean order, BitDocIdSetFilter parentFilter, BitDocIdSetFilter childFilter) {
+  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, boolean order, BitSetProducer parentFilter, BitSetProducer childFilter) {
     super(field, type, reverse);
     this.order = order;
     this.parentFilter = parentFilter;
@@ -114,12 +114,12 @@ public class ToParentBlockJoinSortField extends SortField {
         final BlockJoinSelector.Type type = order
             ? BlockJoinSelector.Type.MAX
             : BlockJoinSelector.Type.MIN;
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return DocValues.emptySorted();
         }
-        return BlockJoinSelector.wrap(sortedSet, type, parents.bits(), children.bits());
+        return BlockJoinSelector.wrap(sortedSet, type, parents, children);
       }
 
     };
@@ -133,22 +133,22 @@ public class ToParentBlockJoinSortField extends SortField {
         final BlockJoinSelector.Type type = order
             ? BlockJoinSelector.Type.MAX
             : BlockJoinSelector.Type.MIN;
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        return BlockJoinSelector.wrap(sortedNumeric, type, parents.bits(), children.bits());
+        return BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
       }
       @Override
       protected Bits getDocsWithValue(LeafReaderContext context, String field) throws IOException {
         final Bits docsWithValue = DocValues.getDocsWithField(context.reader(), field);
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return new Bits.MatchNoBits(context.reader().maxDoc());
         }
-        return BlockJoinSelector.wrap(docsWithValue, parents.bits(), children.bits());
+        return BlockJoinSelector.wrap(docsWithValue, parents, children);
       }
     };
   }
@@ -161,22 +161,22 @@ public class ToParentBlockJoinSortField extends SortField {
         final BlockJoinSelector.Type type = order
             ? BlockJoinSelector.Type.MAX
             : BlockJoinSelector.Type.MIN;
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        return BlockJoinSelector.wrap(sortedNumeric, type, parents.bits(), children.bits());
+        return BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
       }
       @Override
       protected Bits getDocsWithValue(LeafReaderContext context, String field) throws IOException {
         final Bits docsWithValue = DocValues.getDocsWithField(context.reader(), field);
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return new Bits.MatchNoBits(context.reader().maxDoc());
         }
-        return BlockJoinSelector.wrap(docsWithValue, parents.bits(), children.bits());
+        return BlockJoinSelector.wrap(docsWithValue, parents, children);
       }
     };
   }
@@ -189,12 +189,12 @@ public class ToParentBlockJoinSortField extends SortField {
         final BlockJoinSelector.Type type = order
             ? BlockJoinSelector.Type.MAX
             : BlockJoinSelector.Type.MIN;
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        final NumericDocValues view = BlockJoinSelector.wrap(sortedNumeric, type, parents.bits(), children.bits());
+        final NumericDocValues view = BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
         // undo the numericutils sortability
         return new NumericDocValues() {
           @Override
@@ -214,12 +214,12 @@ public class ToParentBlockJoinSortField extends SortField {
         final BlockJoinSelector.Type type = order
             ? BlockJoinSelector.Type.MAX
             : BlockJoinSelector.Type.MIN;
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        final NumericDocValues view = BlockJoinSelector.wrap(sortedNumeric, type, parents.bits(), children.bits());
+        final NumericDocValues view = BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
         // undo the numericutils sortability
         return new NumericDocValues() {
           @Override
@@ -231,12 +231,12 @@ public class ToParentBlockJoinSortField extends SortField {
       @Override
       protected Bits getDocsWithValue(LeafReaderContext context, String field) throws IOException {
         final Bits docsWithValue = DocValues.getDocsWithField(context.reader(), field);
-        final BitDocIdSet parents = parentFilter.getDocIdSet(context);
-        final BitDocIdSet children = childFilter.getDocIdSet(context);
+        final BitSet parents = parentFilter.getBitSet(context);
+        final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
           return new Bits.MatchNoBits(context.reader().maxDoc());
         }
-        return BlockJoinSelector.wrap(docsWithValue, parents.bits(), children.bits());
+        return BlockJoinSelector.wrap(docsWithValue, parents, children);
       }
     };
   }
