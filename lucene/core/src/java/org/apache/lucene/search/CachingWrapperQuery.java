@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -115,8 +116,11 @@ public class CachingWrapperQuery extends Query implements Accountable {
       // our cache is not sufficient, we need scores too
       return weight;
     }
-    policy.onUse(weight.getQuery());
+
     return new ConstantScoreWeight(weight.getQuery()) {
+
+      final AtomicBoolean used = new AtomicBoolean(false);
+
       @Override
       public void extractTerms(Set<Term> terms) {
         weight.extractTerms(terms);
@@ -124,6 +128,10 @@ public class CachingWrapperQuery extends Query implements Accountable {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
+        if (used.compareAndSet(false, true)) {
+          policy.onUse(getQuery());
+        }
+
         final LeafReader reader = context.reader();
         final Object key = reader.getCoreCacheKey();
 
