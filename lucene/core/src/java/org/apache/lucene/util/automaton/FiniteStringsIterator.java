@@ -33,6 +33,9 @@ import java.util.BitSet;
  * <p>Be aware that the iteration order is implementation dependent
  * and may change across releases.
  *
+ * <p>If the automaton is not determinized then it's possible this iterator
+ * will return duplicates.
+ *
  * @lucene.experimental
  */
 public class FiniteStringsIterator {

@@ -47,11 +47,12 @@ public class FiniteStringsIteratorTest extends LuceneTestCase {
     IntsRefBuilder scratch = new IntsRefBuilder();
     for(int i=0;i<numStrings;i++) {
       String s = TestUtil.randomSimpleString(random(), 1, 200);
-      automata.add(Automata.makeString(s));
       Util.toUTF32(s.toCharArray(), 0, s.length(), scratch);
-      strings.add(scratch.toIntsRef());
-      if (VERBOSE) {
-        System.out.println("  add string=" + s);
+      if (strings.add(scratch.toIntsRef())) {
+        automata.add(Automata.makeString(s));
+        if (VERBOSE) {
+          System.out.println("  add string=" + s);
+        }
       }
     }
 
