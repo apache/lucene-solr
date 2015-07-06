@@ -180,18 +180,28 @@ solrAdminServices.factory('System',
       }}
     });
   }])
-.factory('Query', // use $http for Query, as we need complete control over the URL
-  ['$http', '$location', function($http, $location) {
-    return {
-      "query": function(url, callback) {
-        $http({
-          url:url,
-          method: 'GET',
-          transformResponse: [ function(data, headersGetter){ return {data:data}}]
-        }).success(callback);
-      }
-    }}
-])
+.factory('Query',
+    ['$resource', function($resource) {
+       var resource = $resource('/solr/:core:handler', {core: '@core', handler: '@handler'}, {
+           "query": {
+               method: "GET", transformResponse: function (data) {
+                   return {data: data}
+               }
+           }
+       });
+       resource.url = function(params) {
+           var qs = [];
+           for (key in params) {
+               if (key != "core" && key != "handler" && key != "doNotIntercept") {
+                   for (var i in params[key]) {
+                       qs.push(key + "=" + params[key][i]);
+                   }
+               }
+           }
+           return "/solr/" + params.core + params.handler + "?" + qs.join("&");
+       }
+       return resource;
+    }])
 .factory('Segments',
    ['$resource', function($resource) {
        return $resource('/solr/:core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {

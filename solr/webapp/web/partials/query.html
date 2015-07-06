@@ -17,8 +17,8 @@ limitations under the License.
 <div id="query" class="clearfix">
 
   <div id="form">
-
-      <label for="qt">
+    <form>
+      <label for="qt" title="Request handler in solrconfig.xml.">
         <a rel="help">Request-Handler (qt)</a>
       </label>
       <input type="text" ng-model="qt" id="qt" value="/select" title="Request handler in solrconfig.xml.">
@@ -27,12 +27,12 @@ limitations under the License.
         <legend>common</legend>
         <div class="fieldset">
 
-        <label for="q">
+        <label for="q" title="The query string.">
           q
         </label>
         <textarea name="q" ng-model="query.q" id="q" title="The query string.">*:*</textarea>
 
-        <label for="fq">
+        <label for="fq" title="Filter query.">
           <a rel="help">fq</a>
         </label>
         <div class="multiple">
@@ -45,12 +45,12 @@ limitations under the License.
           </div>
         </div>
 
-        <label for="sort">
+        <label for="sort" title="Sort field or function with asc|desc.">
           <a rel="help">sort</a>
         </label>
         <input type="text" id="sort" name="sort" title="Sort field or function with asc|desc.">
 
-        <label for="start">
+        <label for="start" title="Number of leading documents to skip and number of documents to return after 'start'. (Integers)">
           <a rel="help">start</a>,
           <a rel="help">rows</a>
         </label>
@@ -59,12 +59,12 @@ limitations under the License.
           <input type="text" name="rows" ng-model="query.rows" id="rows" placeholder="10" pattern="[0-9]+" title="Number of documents to return after 'start'. (Integer)">
         </div>
 
-        <label for="fl">
+        <label for="fl" title="Field list, comma separated.">
           <a rel="help">fl</a>
         </label>
         <input type="text" ng-model="query.fl" name="fl" id="fl" value="" title="Field list, comma separated.">
 
-        <label for="df">
+        <label for="df" title="Default search field">
           <a rel="help">df</a>
         </label>
         <input type="text" ng-model="query.df" name="df" id="df" value="" title="Default search field">
@@ -74,7 +74,7 @@ limitations under the License.
         </label>
         <input type="text" ng-model="rawParams" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2">
 
-        <label for="wt">
+        <label for="wt" title="The writer type (response format).">
           <a rel="help">wt</a>
         </label>
         <select name="wt" ng-model="query.wt" id="wt" title="The writer type (response format).">
@@ -86,12 +86,12 @@ limitations under the License.
           <option>csv</option>
         </select>
 
-        <label for="indent" class="checkbox">
+        <label for="indent" class="checkbox" title="Indent results.">
           <input type="checkbox" ng-model="query.indent" name="indent" id="indent" value="true" title="Indent results." checked="checked">
           <a rel="help">indent</a>
         </label>
 
-        <label for="debugQuery" class="checkbox">
+        <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">
           <input type="checkbox" ng-model="query.debugQuery" name="debugQuery" id="debugQuery" value="true" title="Show timing and diagnostics.">
           <a rel="help">debugQuery</a>
         </label>
@@ -101,38 +101,38 @@ limitations under the License.
 
       <fieldset class="dismax optional">
         <legend>
-          <label for="dismax" class="checkbox">
+          <label for="dismax" class="checkbox" title="Enable dismax.">
             <input type="checkbox" ng-model="isDismax" name="defType" id="dismax" value="dismax">
             dismax
           </label>
         </legend>
         <div class="fieldset" ng-show="isDismax">
 
-        <label for="q_alt">q.alt</label>
+        <label for="q_alt" title="Alternate query when 'q' is absent.">q.alt</label>
         <input type="text" ng-model="dismax['q.alt']" name="q.alt" id="q_alt" title="Alternate query when 'q' is absent.">
 
-        <label for="qf">qf</label>
+        <label for="qf" title="Query fields with optional boosts.">qf</label>
         <input type="text" ng-model="dismax.qf" name="qf" id="qf" title="Query fields with optional boosts.">
 
-        <label for="mm">mm</label>
+        <label for="mm" title="Min-should-match expression">mm</label>
         <input type="text" ng-model="dismax.mm" name="mm" id="mm" title="Min-should-match expression.">
 
-        <label for="pf">pf</label>
+        <label for="pf" title="Phrase boosted fields.">pf</label>
         <input type="text" ng-model="dismax.pf" name="pf" id="pf" title="Phrase boosted fields.">
 
-        <label for="ps">ps</label>
+        <label for="ps" title="Phrase boost slop.">ps</label>
         <input type="text" ng-model="dismax.ps" name="ps" id="ps" title="Phrase boost slop.">
 
-        <label for="qs">qs</label>
+        <label for="qs" title="Query string phrase slop.">qs</label>
         <input type="text" ng-model="dismax.qs" name="qs" id="qs" title="Query string phrase slop.">
 
-        <label for="tie">tie</label>
+        <label for="tie" title="Score tie-breaker. Try 0.1.">tie</label>
         <input type="text" ng-model="dismax.tie" name="tie" id="tie" title="Score tie-breaker. Try 0.1.">
 
-        <label for="bq">bq</label>
+        <label for="bq" title="Boost query.">bq</label>
         <input type="text" ng-model="dismax.bq" name="bq" id="bq" title="Boost query.">
 
-        <label for="bf">bf</label>
+        <label for="bf" title="Boost function (added).">bf</label>
         <input type="text" ng-model="dismax.bf" name="bf" id="bf" title="Boost function (added).">
 
         </div>
@@ -140,57 +140,57 @@ limitations under the License.
 
       <fieldset class="edismax optional">
         <legend>
-          <label for="edismax" class="checkbox">
+          <label for="edismax" class="checkbox" title="Enable edismax.">
             <input type="checkbox" ng-model="isEdismax" name="defType" id="edismax" value="edismax">
             <strong>e</strong>dismax
           </label>
         </legend>
         <div class="fieldset" ng-show="isEdismax">
 
-        <label for="edismax_q_alt">q.alt</label>
+        <label for="edismax_q_alt" title="Alternate query when 'q' is absent.">q.alt</label>
         <input type="text" ng-model="edismax['q.alt']" name="q.alt" id="edismax_q_alt"  title="Alternate query when 'q' is absent.">
 
-        <label for="edismax_qf">qf</label>
+        <label for="edismax_qf" title="Query fields with optional boosts.">qf</label>
         <input type="text" ng-model="edismax.qf" name="qf" id="edismax_qf" title="Query fields with optional boosts.">
 
-        <label for="edismax_mm">mm</label>
+        <label for="edismax_mm" title="Min-should-match expression.">mm</label>
         <input type="text" ng-model="edismax.mm" name="mm" id="edismax_mm" title="Min-should-match expression.">
 
-        <label for="edismax_pf">pf</label>
+        <label for="edismax_pf" title="Phrase boosted fields.">pf</label>
         <input type="text" ng-model="edismax.pf" name="pf" id="edismax_pf" title="Phrase boosted fields.">
 
-        <label for="edismax_ps">ps</label>
+        <label for="edismax_ps" title="Phrase boost slop.">ps</label>
         <input type="text" ng-model="edismax.ps" name="ps" id="edismax_ps" title="Phrase boost slop.">
 
-        <label for="edismax_qs">qs</label>
+        <label for="edismax_qs" title="Query string phrase slop.">qs</label>
         <input type="text" ng-model="edismax.qs" name="qs" id="edismax_qs" title="Query string phrase slop.">
 
-        <label for="edismax_tie">tie</label>
+        <label for="edismax_tie" title="Score tie-breaker. Try 0.1.">tie</label>
         <input type="text" ng-model="edismax.tie" name="tie" id="edismax_tie" title="Score tie-breaker. Try 0.1.">
 
-        <label for="edismax_bq">bq</label>
+        <label for="edismax_bq" title="Boost query.">bq</label>
         <input type="text" ng-model="edismax.bq" name="bq" id="edismax_bq" title="Boost query.">
 
-        <label for="edismax_bf">bf</label>
+        <label for="edismax_bf" title="Boost function (added).">bf</label>
         <input type="text" ng-model="edismax.bf" name="bf" id="edismax_bf" title="Boost function (added).">
 
         <label for="edismax_uf" title="User Fields">uf</label>
-        <input type="text" ng-model="edismax.uf" name="uf" id="edismax_uf">
+        <input type="text" ng-model="edismax.uf" name="uf" id="edismax_uf" title="User Fields">
 
         <label for="edismax_pf2" title="bigram phrase boost fields">pf2</label>
-        <input type="text" ng-model="edismax.pf2" name="pf2" id="edismax_pf2">
+        <input type="text" ng-model="edismax.pf2" name="pf2" id="edismax_pf2" title="bigram phrase boost fields">
 
         <label for="edismax_pf3" title="trigram phrase boost fields">pf3</label>
-        <input type="text" ng-model="edismax.pf3" name="pf3" id="edismax_pf3">
+        <input type="text" ng-model="edismax.pf3" name="pf3" id="edismax_pf3" title="trigram phrase boost fields">
 
         <label for="edismax_ps2" title="phrase slop for bigram phrases">ps2</label>
-        <input type="text" ng-model="edismax.ps2" name="ps2" id="edismax_ps2">
+        <input type="text" ng-model="edismax.ps2" name="ps2" id="edismax_ps2" title="phrase slop for bigram phrases">
 
         <label for="edismax_ps3" title="phrase slop for trigram phrases">ps3</label>
-        <input type="text" ng-model="edismax.ps3" name="ps3" id="edismax_ps3">
+        <input type="text" ng-model="edismax.ps3" name="ps3" id="edismax_ps3" title="phrase slop for trigram phrases">
 
         <label for="edismax_boost" title="multiplicative boost function">boost</label>
-        <input type="text" ng-model="edismax.boost" name="boost" id="edismax_boost">
+        <input type="text" ng-model="edismax.boost" name="boost" id="edismax_boost" title="multiplicative boost function">
 
         <label for="edismax_stopwords" class="checkbox" title="remove stopwords from mandatory 'matching' component">
           <input type="checkbox" ng-model="edismax.stopwords" name="stopwords" id="edismax_stopwords">
@@ -207,14 +207,14 @@ limitations under the License.
 
       <fieldset class="hl optional">
         <legend>
-          <label for="hl" class="checkbox">
-            <input type="checkbox" ng-model="isHighlight" name="hl" id="hl" value="true" title="Enable highlighting.">
+          <label for="hl" class="checkbox" title="Enable highlighting.">
+            <input type="checkbox" ng-model="isHighlight" name="hl" id="hl" value="true">
             hl
           </label>
         </legend>
         <div class="fieldset" ng-show="isHighlight">
 
-        <label for="hl_fl">hl.fl</label>
+        <label for="hl_fl" title="Fields to highlight on.">hl.fl</label>
         <input type="text" ng-model="hl.fl" name="hl.fl" id="hl_fl" value="" title="Fields to highlight on.">
 
         <label for="hl_simple_pre">hl.simple.pre</label>
@@ -229,7 +229,7 @@ limitations under the License.
         </label>
 
         <label for="hl_usePhraseHighlighter" class="checkbox">
-          <input type="checkbox" ng-model="hl.usePhraseHighLighter" "hl.usePhraseHighlighter" id="hl_usePhraseHighlighter" value="true">
+          <input type="checkbox" ng-model="hl.usePhraseHighLighter" name="hl.usePhraseHighlighter" id="hl_usePhraseHighlighter" value="true">
           hl.usePhraseHighlighter
         </label>
 
@@ -243,7 +243,7 @@ limitations under the License.
 
       <fieldset class="facet optional">
         <legend>
-          <label for="facet" class="checkbox">
+          <label for="facet" class="checkbox" title="Enable faceting.">
             <input type="checkbox" ng-model="isFacet" name="facet" id="facet" value="true">
             facet
           </label>
@@ -264,7 +264,7 @@ limitations under the License.
 
       <fieldset class="spatial optional">
         <legend>
-          <label for="spatial" class="checkbox">
+          <label for="spatial" class="checkbox" title="Show spatial options">
             <input type="checkbox" ng-model="isSpatial" name="spatial" id="spatial" value="true">
             spatial
           </label>
@@ -285,7 +285,7 @@ limitations under the License.
 
       <fieldset class="spellcheck optional">
         <legend>
-          <label for="spellcheck" class="checkbox">
+          <label for="spellcheck" class="checkbox" title="Enable spellchecking.">
             <input type="checkbox" ng-model="isSpellcheck" name="spellcheck" id="spellcheck" value="true">
             spellcheck
           </label>
@@ -334,11 +334,13 @@ limitations under the License.
 
         <label for="spellcheck_accuracy">spellcheck.accuracy</label>
         <input type="text" ng-model="spellcheck.accuracy" name="spellcheck.accuracy" id="spellcheck_accuracy">
+       </div>
 
       </fieldset>
 
 
       <button type="submit" ng-click="doQuery()">Execute Query</button>
+    </form>
   </div>
 
   <div id="result">
