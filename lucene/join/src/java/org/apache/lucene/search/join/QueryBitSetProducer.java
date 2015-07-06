@@ -22,80 +22,84 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BitSet;
 
 /**
- * {@link Filter} wrapper that implements {@link BitDocIdSetFilter}.
+ * A {@link BitSetProducer} that wraps a query and caches matching
+ * {@link BitSet}s per segment.
  */
-public class BitDocIdSetCachingWrapperFilter extends BitDocIdSetFilter {
-  private final Filter filter;
+public class QueryBitSetProducer implements BitSetProducer {
+  private final Query query;
   private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<>());
 
-  /** Wraps another filter's result and caches it into bitsets.
-   * @param filter Filter to cache results of
+  /** Wraps another query's result and caches it into bitsets.
+   * @param query Query to cache results of
    */
-  public BitDocIdSetCachingWrapperFilter(Filter filter) {
-    this.filter = filter;
+  public QueryBitSetProducer(Query query) {
+    this.query = query;
   }
 
   /**
-   * Gets the contained filter.
-   * @return the contained filter.
+   * Gets the contained query.
+   * @return the contained query.
    */
-  public Filter getFilter() {
-    return filter;
-  }
-
-  private BitDocIdSet docIdSetToCache(DocIdSet docIdSet, LeafReader reader) throws IOException {
-    final DocIdSetIterator it = docIdSet.iterator();
-    if (it == null) {
-      return null;
-    } else {
-      BitDocIdSet.Builder builder = new BitDocIdSet.Builder(reader.maxDoc());
-      builder.or(it);
-      return builder.build();
-    }
+  public Query getQuery() {
+    return query;
   }
   
   @Override
-  public BitDocIdSet getDocIdSet(LeafReaderContext context) throws IOException {
+  public BitSet getBitSet(LeafReaderContext context) throws IOException {
     final LeafReader reader = context.reader();
     final Object key = reader.getCoreCacheKey();
 
     DocIdSet docIdSet = cache.get(key);
     if (docIdSet == null) {
-      docIdSet = filter.getDocIdSet(context, null);
-      docIdSet = docIdSetToCache(docIdSet, reader);
+      final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(context);
+      final IndexSearcher searcher = new IndexSearcher(topLevelContext);
+      searcher.setQueryCache(null);
+      final Weight weight = searcher.createNormalizedWeight(query, false);
+      final DocIdSetIterator it = weight.scorer(context);
+
+      BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
+      if (it != null) {
+        builder.or(it);
+      }
+      docIdSet = builder.build();
       if (docIdSet == null) {
         // We use EMPTY as a sentinel for the empty set, which is cacheable
         docIdSet = DocIdSet.EMPTY;
       }
       cache.put(key, docIdSet);
     }
-    return docIdSet == DocIdSet.EMPTY ? null : (BitDocIdSet) docIdSet;
+    return docIdSet == DocIdSet.EMPTY ? null : ((BitDocIdSet) docIdSet).bits();
   }
   
   @Override
-  public String toString(String field) {
-    return getClass().getSimpleName() + "("+filter.toString(field)+")";
+  public String toString() {
+    return getClass().getSimpleName() + "("+query.toString()+")";
   }
 
   @Override
   public boolean equals(Object o) {
-    if (super.equals(o) == false) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final BitDocIdSetCachingWrapperFilter other = (BitDocIdSetCachingWrapperFilter) o;
-    return this.filter.equals(other.filter);
+    final QueryBitSetProducer other = (QueryBitSetProducer) o;
+    return this.query.equals(other.query);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + filter.hashCode();
+    return 31 * getClass().hashCode() + query.hashCode();
   }
 }

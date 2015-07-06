@@ -20,29 +20,17 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BitsFilteredDocIdSet;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitSet;
 
 /**
- * A {@link Filter} that produces {@link BitDocIdSet}s.
+ * A producer of {@link BitSet}s per segment.
  */
-public abstract class BitDocIdSetFilter extends Filter {
-
-  /** Sole constructor, typically called from sub-classes. */
-  protected BitDocIdSetFilter() {}
+public interface BitSetProducer {
 
   /**
-   * Same as {@link #getDocIdSet(LeafReaderContext, Bits)} but does not take
-   * acceptDocs into account and guarantees to return a {@link BitDocIdSet}.
+   * Produce a {@link BitSet} matching the expected documents on the given
+   * segment. This may return {@code null} if no documents match.
    */
-  public abstract BitDocIdSet getDocIdSet(LeafReaderContext context) throws IOException;
-
-  @Override
-  public final DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    return BitsFilteredDocIdSet.wrap(getDocIdSet(context), acceptDocs);
-  }
+  BitSet getBitSet(LeafReaderContext context) throws IOException;
 
 }

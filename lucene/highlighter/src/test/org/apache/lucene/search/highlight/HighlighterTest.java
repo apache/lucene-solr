@@ -81,8 +81,8 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
-import org.apache.lucene.search.join.BitDocIdSetCachingWrapperFilter;
-import org.apache.lucene.search.join.BitDocIdSetFilter;
+import org.apache.lucene.search.join.QueryBitSetProducer;
+import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
@@ -587,7 +587,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   public void testToParentBlockJoinQuery() throws Exception {
-    BitDocIdSetFilter parentFilter = new BitDocIdSetCachingWrapperFilter(
+    BitSetProducer parentFilter = new QueryBitSetProducer(
         new QueryWrapperFilter(
           new TermQuery(new Term(FIELD_NAME, "parent"))));
     
@@ -613,7 +613,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   public void testToChildBlockJoinQuery() throws Exception {
-    BitDocIdSetFilter parentFilter = new BitDocIdSetCachingWrapperFilter(
+    BitSetProducer parentFilter = new QueryBitSetProducer(
         new QueryWrapperFilter(
           new TermQuery(new Term(FIELD_NAME, "parent"))));
     

@@ -188,6 +188,10 @@ API Changes
 * LUCENE-6646: Make EarlyTerminatingCollector take a Sort object directly
   instead of a SortingMergePolicy. (Christine Poerschke via Adrien Grand)
 
+* LUCENE-6649: BitDocIdSetFilter and BitDocIdSetCachingWrapperFilter are now
+  deprecated in favour of BitSetProducer and QueryBitSetProducer, which do not
+  extend oal.search.Filter. (Adrien Grand)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

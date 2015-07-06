@@ -34,7 +34,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
@@ -54,7 +53,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   private Directory directory;
   private IndexReader indexReader;
   private IndexSearcher indexSearcher;
-  private BitDocIdSetFilter parentsFilter;
+  private BitSetProducer parentsFilter;
 
   @Override
   public void setUp() throws Exception {
@@ -70,7 +69,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     indexReader = DirectoryReader.open(indexWriter, random().nextBoolean());
     indexWriter.close();
     indexSearcher = new IndexSearcher(indexReader);
-    parentsFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new WildcardQuery(new Term("parent", "*"))));
+    parentsFilter = new QueryBitSetProducer(new WildcardQuery(new Term("parent", "*")));
   }
 
   @Override
@@ -132,7 +131,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     final LeafReaderContext context = indexSearcher.getIndexReader().leaves().get(0);
     Weight weight = indexSearcher.createNormalizedWeight(blockJoinQuery, true);
     Scorer scorer = weight.scorer(context);
-    final Bits parentDocs = parentsFilter.getDocIdSet(context).bits();
+    final Bits parentDocs = parentsFilter.getBitSet(context);
 
     int target;
     do {

@@ -31,7 +31,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 
 /**
@@ -51,7 +50,7 @@ public class ToChildBlockJoinQuery extends Query {
   static final String INVALID_QUERY_MESSAGE = "Parent query yields document which is not matched by parents filter, docID=";
   static final String ILLEGAL_ADVANCE_ON_PARENT = "Expect to be advanced on child docs only. got docID=";
 
-  private final BitDocIdSetFilter parentsFilter;
+  private final BitSetProducer parentsFilter;
   private final Query parentQuery;
 
   // If we are rewritten, this is the original parentQuery we
@@ -67,14 +66,14 @@ public class ToChildBlockJoinQuery extends Query {
    * @param parentQuery Query that matches parent documents
    * @param parentsFilter Filter identifying the parent documents.
    */
-  public ToChildBlockJoinQuery(Query parentQuery, BitDocIdSetFilter parentsFilter) {
+  public ToChildBlockJoinQuery(Query parentQuery, BitSetProducer parentsFilter) {
     super();
     this.origParentQuery = parentQuery;
     this.parentQuery = parentQuery;
     this.parentsFilter = parentsFilter;
   }
 
-  private ToChildBlockJoinQuery(Query origParentQuery, Query parentQuery, BitDocIdSetFilter parentsFilter) {
+  private ToChildBlockJoinQuery(Query origParentQuery, Query parentQuery, BitSetProducer parentsFilter) {
     super();
     this.origParentQuery = origParentQuery;
     this.parentQuery = parentQuery;
@@ -94,10 +93,10 @@ public class ToChildBlockJoinQuery extends Query {
   private static class ToChildBlockJoinWeight extends Weight {
     private final Query joinQuery;
     private final Weight parentWeight;
-    private final BitDocIdSetFilter parentsFilter;
+    private final BitSetProducer parentsFilter;
     private final boolean doScores;
 
-    public ToChildBlockJoinWeight(Query joinQuery, Weight parentWeight, BitDocIdSetFilter parentsFilter, boolean doScores) {
+    public ToChildBlockJoinWeight(Query joinQuery, Weight parentWeight, BitSetProducer parentsFilter, boolean doScores) {
       super(joinQuery);
       this.joinQuery = joinQuery;
       this.parentWeight = parentWeight;
@@ -132,13 +131,13 @@ public class ToChildBlockJoinQuery extends Query {
 
       // NOTE: this doesn't take acceptDocs into account, the responsibility
       // to not match deleted docs is on the scorer
-      final BitDocIdSet parents = parentsFilter.getDocIdSet(readerContext);
+      final BitSet parents = parentsFilter.getBitSet(readerContext);
       if (parents == null) {
         // No parents
         return null;
       }
 
-      return new ToChildBlockJoinScorer(this, parentScorer, parents.bits(), doScores);
+      return new ToChildBlockJoinScorer(this, parentScorer, parents, doScores);
     }
 
     @Override

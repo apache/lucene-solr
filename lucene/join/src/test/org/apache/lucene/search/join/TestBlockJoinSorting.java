@@ -29,7 +29,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -228,11 +227,11 @@ public class TestBlockJoinSorting extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(w.w, false));
     w.close();
-    BitDocIdSetFilter parentFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("__type", "parent"))));
-    BitDocIdSetFilter childFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new PrefixQuery(new Term("field2"))));
+    BitSetProducer parentFilter = new QueryBitSetProducer(new TermQuery(new Term("__type", "parent")));
+    BitSetProducer childFilter = new QueryBitSetProducer(new PrefixQuery(new Term("field2")));
     ToParentBlockJoinQuery query = new ToParentBlockJoinQuery(
-        childFilter,
-        new BitDocIdSetCachingWrapperFilter(parentFilter),
+        new PrefixQuery(new Term("field2")),
+        parentFilter,
         ScoreMode.None
     );
 
@@ -294,10 +293,10 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     assertEquals("g", ((BytesRef) ((FieldDoc) topDocs.scoreDocs[4]).fields[0]).utf8ToString());
 
     // Sort by field descending, order last, sort filter (filter_1:T)
-    childFilter = new BitDocIdSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery((new Term("filter_1", "T")))));
+    childFilter = new QueryBitSetProducer(new TermQuery((new Term("filter_1", "T"))));
     query = new ToParentBlockJoinQuery(
-        childFilter,
-        new BitDocIdSetCachingWrapperFilter(parentFilter),
+        new TermQuery((new Term("filter_1", "T"))),
+        parentFilter,
         ScoreMode.None
     );
     sortField = new ToParentBlockJoinSortField(
