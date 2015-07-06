@@ -50,6 +50,8 @@ import java.util.Collection;
   * documents.
   */
 public final class IndexUpgrader {
+  
+  private static final String LOG_PREFIX = "IndexUpgrader";
 
   private static void printUsage() {
     System.err.println("Upgrades an index so all segments created with a previous Lucene version are rewritten.");
@@ -156,18 +158,22 @@ public final class IndexUpgrader {
     iwc.setMergePolicy(new UpgradeIndexMergePolicy(iwc.getMergePolicy()));
     iwc.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     
-    final IndexWriter w = new IndexWriter(dir, iwc);
-    try {
+    try (final IndexWriter w = new IndexWriter(dir, iwc)) {
       InfoStream infoStream = iwc.getInfoStream();
-      if (infoStream.isEnabled("IndexUpgrader")) {
-        infoStream.message("IndexUpgrader", "Upgrading all pre-" + Version.LATEST + " segments of index directory '" + dir + "' to version " + Version.LATEST + "...");
+      if (infoStream.isEnabled(LOG_PREFIX)) {
+        infoStream.message(LOG_PREFIX, "Upgrading all pre-" + Version.LATEST + " segments of index directory '" + dir + "' to version " + Version.LATEST + "...");
       }
       w.forceMerge(1);
-      if (infoStream.isEnabled("IndexUpgrader")) {
-        infoStream.message("IndexUpgrader", "All segments upgraded to version " + Version.LATEST);
+      if (infoStream.isEnabled(LOG_PREFIX)) {
+        infoStream.message(LOG_PREFIX, "All segments upgraded to version " + Version.LATEST);
+        infoStream.message(LOG_PREFIX, "Enforcing commit to rewrite all index metadata...");
       }
-    } finally {
-      w.close();
+      w.setCommitData(w.getCommitData()); // fake change to enforce a commit (e.g. if index has no segments)
+      assert w.hasUncommittedChanges();
+      w.commit();
+      if (infoStream.isEnabled(LOG_PREFIX)) {
+        infoStream.message(LOG_PREFIX, "Committed upgraded metadata to index.");
+      }
     }
   }
   

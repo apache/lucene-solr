@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.10.5 ======================
 
+Bug Fixes
+
+* LUCENE-6658: Fix IndexUpgrader to also upgrade indexes without any
+  segments.  (Trejkaz, Uwe Schindler)
+
 ======================= Lucene 4.10.4 ======================
 
 Bug fixes

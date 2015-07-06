@@ -1061,7 +1061,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  private int checkAllSegmentsUpgraded(Directory dir) throws IOException {
+  private int checkAllSegmentsUpgraded(Directory dir, long oldGen) throws IOException {
     final SegmentInfos infos = new SegmentInfos();
     infos.read(dir);
     if (VERBOSE) {
@@ -1070,6 +1070,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (SegmentCommitInfo si : infos) {
       assertEquals(Version.LATEST, si.info.getVersion());
     }
+    assertTrue("generation of old index", oldGen < infos.getLastGeneration());
     return infos.size();
   }
   
@@ -1077,6 +1078,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     final SegmentInfos infos = new SegmentInfos();
     infos.read(dir);
     return infos.size();
+  }
+
+  private long getGeneration(Directory dir) throws IOException {
+    final SegmentInfos infos = new SegmentInfos();
+    infos.read(dir);
+    return infos.getLastGeneration();
   }
 
   public void testUpgradeOldIndex() throws Exception {
@@ -1088,10 +1095,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("testUpgradeOldIndex: index=" +name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
+      long oldGen = getGeneration(dir);
 
       newIndexUpgrader(dir).upgrade();
 
-      checkAllSegmentsUpgraded(dir);
+      checkAllSegmentsUpgraded(dir, oldGen);
       
       dir.close();
     }
@@ -1139,7 +1147,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         
         Directory upgradedDir = newFSDirectory(dir);
         try {
-          checkAllSegmentsUpgraded(upgradedDir);
+          checkAllSegmentsUpgraded(upgradedDir, -1L /* fake, always smaller */);
         } finally {
           upgradedDir.close();
         }
@@ -1161,6 +1169,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
       }
 
+      long oldGen = getGeneration(dir);
       assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
 
       // create a bunch of dummy segments
@@ -1195,12 +1204,27 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(1, DirectoryReader.listCommits(dir).size());
       newIndexUpgrader(dir).upgrade();
 
-      final int segCount = checkAllSegmentsUpgraded(dir);
+      final int segCount = checkAllSegmentsUpgraded(dir, oldGen);
       assertEquals("Index must still contain the same number of segments, as only one segment was upgraded and nothing else merged",
         origSegCount, segCount);
       
       dir.close();
     }
+  }
+
+  public static final String emptyIndex = "empty.4104.zip";
+
+  public void testUpgradeEmptyOldIndex() throws Exception {
+    File oldIndexDir = createTempDir("emptyIndex");
+    TestUtil.unzip(getDataFile(emptyIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    long oldGen = getGeneration(dir);
+
+    newIndexUpgrader(dir).upgrade();
+
+    checkAllSegmentsUpgraded(dir, oldGen);
+    
+    dir.close();
   }
 
   public static final String moreTermsIndex = "moreterms.40.zip";
