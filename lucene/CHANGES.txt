@@ -287,6 +287,10 @@ Changes in Runtime Behavior
   implementing this method in all your custom attributes, because the method will be
   made abstract in Lucene 6.  (Uwe Schindler)
 
+* LUCENE-6639: LRUQueryCache and CachingWrapperQuery now consider a query as
+  "used" when the first Scorer is pulled instead of when a Scorer is pulled on
+  the first segment on an index. (Terry Smith, Adrien Grand)
+
 Optimizations
 
 * LUCENE-6548: Some optimizations for BlockTree's intersect with very

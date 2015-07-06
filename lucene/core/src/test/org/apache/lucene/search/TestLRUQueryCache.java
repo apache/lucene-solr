@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,12 +44,12 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
@@ -1005,5 +1006,80 @@ public class TestLRUQueryCache extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+
+  /**
+   * Tests CachingWrapperWeight.scorer() propagation of {@link QueryCachingPolicy#onUse(Query)} when the first segment
+   * is skipped.
+   *
+   * #f:foo #f:bar causes all frequencies to increment
+   * #f:bar #f:foo does not increment the frequency for f:foo
+   */
+  public void testOnUseWithRandomFirstSegmentSkipping() throws IOException {
+    try (final Directory directory = newDirectory()) {
+      try (final RandomIndexWriter indexWriter = new RandomIndexWriter(random(), directory, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+        Document doc = new Document();
+        doc.add(new StringField("f", "bar", Store.NO));
+        indexWriter.addDocument(doc);
+        if (random().nextBoolean()) {
+          indexWriter.getReader().close();
+        }
+        doc = new Document();
+        doc.add(new StringField("f", "foo", Store.NO));
+        doc.add(new StringField("f", "bar", Store.NO));
+        indexWriter.addDocument(doc);
+        indexWriter.commit();
+      }
+      try (final IndexReader indexReader = DirectoryReader.open(directory)) {
+        final FrequencyCountingPolicy policy = new FrequencyCountingPolicy();
+        final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+        indexSearcher.setQueryCache(new LRUQueryCache(100, 10240));
+        indexSearcher.setQueryCachingPolicy(policy);
+        final Query foo = new TermQuery(new Term("f", "foo"));
+        final Query bar = new TermQuery(new Term("f", "bar"));
+        final BooleanQuery.Builder query = new BooleanQuery.Builder();
+        if (random().nextBoolean()) {
+          query.add(foo, Occur.FILTER);
+          query.add(bar, Occur.FILTER);
+        } else {
+          query.add(bar, Occur.FILTER);
+          query.add(foo, Occur.FILTER);
+        }
+        indexSearcher.count(query.build());
+        assertEquals(1, policy.frequency(query.build()));
+        assertEquals(1, policy.frequency(foo));
+        assertEquals(1, policy.frequency(bar));
+      }
+    }
+  }
+
+  private static class FrequencyCountingPolicy implements QueryCachingPolicy {
+    private final Map<Query,AtomicInteger> counts = new HashMap<>();
+
+    public int frequency(final Query query) {
+      AtomicInteger count;
+      synchronized (counts) {
+        count = counts.get(query);
+      }
+      return count != null ? count.get() : 0;
+    }
+
+    @Override
+    public void onUse(final Query query) {
+      AtomicInteger count;
+      synchronized (counts) {
+        count = counts.get(query);
+        if (count == null) {
+          count = new AtomicInteger();
+          counts.put(query, count);
+        }
+      }
+      count.incrementAndGet();
+    }
+
+    @Override
+    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+      return true;
+    }
   }
 }

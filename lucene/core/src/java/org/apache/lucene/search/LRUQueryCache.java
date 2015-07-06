@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
@@ -540,11 +541,15 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
     private final Weight in;
     private final QueryCachingPolicy policy;
+    // we use an AtomicBoolean because Weight.scorer may be called from multiple
+    // threads when IndexSearcher is created with threads
+    private final AtomicBoolean used;
 
     CachingWrapperWeight(Weight in, QueryCachingPolicy policy) {
       super(in.getQuery());
       this.in = in;
       this.policy = policy;
+      used = new AtomicBoolean(false);
     }
 
     @Override
@@ -566,7 +571,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      if (context.ord == 0) {
+      if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
       DocIdSet docIdSet = get(in.getQuery(), context);
