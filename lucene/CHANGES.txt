@@ -236,6 +236,9 @@ Bug fixes
 * LUCENE-6586: Fix typo in GermanStemmer, causing possible wrong value
   for substCount.  (Christoph Kaser via Mike McCandless)
 
+* LUCENE-6658: Fix IndexUpgrader to also upgrade indexes without any
+  segments.  (Trejkaz, Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

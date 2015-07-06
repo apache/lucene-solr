@@ -1118,6 +1118,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (SegmentCommitInfo si : infos) {
       assertEquals(Version.LATEST, si.info.getVersion());
     }
+    assertEquals(Version.LATEST, infos.getCommitLuceneVersion());
     return infos.size();
   }
   
@@ -1255,6 +1256,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       dir.close();
     }
+  }
+
+  public static final String emptyIndex = "empty.5.0.0.zip";
+
+  public void testUpgradeEmptyOldIndex() throws Exception {
+    Path oldIndexDir = createTempDir("emptyIndex");
+    TestUtil.unzip(getDataInputStream(emptyIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+
+    newIndexUpgrader(dir).upgrade();
+
+    checkAllSegmentsUpgraded(dir);
+    
+    dir.close();
   }
 
   public static final String moreTermsIndex = "moreterms.5.0.0.zip";
