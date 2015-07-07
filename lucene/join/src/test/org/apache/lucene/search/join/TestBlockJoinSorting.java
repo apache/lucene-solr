@@ -185,12 +185,6 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     docs.add(document);
     w.addDocuments(docs);
 
-    // This doc will not be included, because it doesn't have nested docs
-    document = new Document();
-    document.add(new StringField("__type", "parent", Field.Store.NO));
-    document.add(new StringField("field1", "h", Field.Store.NO));
-    w.addDocument(document);
-
     docs.clear();
     document = new Document();
     document.add(new StringField("field2", "m", Field.Store.NO));
@@ -214,20 +208,10 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     w.addDocuments(docs);
     w.commit();
 
-    // Some garbage docs, just to check if the NestedFieldComparator can deal with this.
-    document = new Document();
-    document.add(new StringField("fieldXXX", "x", Field.Store.NO));
-    w.addDocument(document);
-    document = new Document();
-    document.add(new StringField("fieldXXX", "x", Field.Store.NO));
-    w.addDocument(document);
-    document = new Document();
-    document.add(new StringField("fieldXXX", "x", Field.Store.NO));
-    w.addDocument(document);
-
     IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(w.w, false));
     w.close();
     BitSetProducer parentFilter = new QueryBitSetProducer(new TermQuery(new Term("__type", "parent")));
+    CheckJoinIndex.check(searcher.getIndexReader(), parentFilter);
     BitSetProducer childFilter = new QueryBitSetProducer(new PrefixQuery(new Term("field2")));
     ToParentBlockJoinQuery query = new ToParentBlockJoinQuery(
         new PrefixQuery(new Term("field2")),
@@ -281,7 +265,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     topDocs = searcher.search(query, 5, sort);
     assertEquals(topDocs.totalHits, 7);
     assertEquals(5, topDocs.scoreDocs.length);
-    assertEquals(28, topDocs.scoreDocs[0].doc);
+    assertEquals(27, topDocs.scoreDocs[0].doc);
     assertEquals("o", ((BytesRef) ((FieldDoc) topDocs.scoreDocs[0]).fields[0]).utf8ToString());
     assertEquals(23, topDocs.scoreDocs[1].doc);
     assertEquals("m", ((BytesRef) ((FieldDoc) topDocs.scoreDocs[1]).fields[0]).utf8ToString());
@@ -308,7 +292,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     assertEquals(5, topDocs.scoreDocs.length);
     assertEquals(23, topDocs.scoreDocs[0].doc);
     assertEquals("m", ((BytesRef) ((FieldDoc) topDocs.scoreDocs[0]).fields[0]).utf8ToString());
-    assertEquals(28, topDocs.scoreDocs[1].doc);
+    assertEquals(27, topDocs.scoreDocs[1].doc);
     assertEquals("m", ((BytesRef) ((FieldDoc) topDocs.scoreDocs[1]).fields[0]).utf8ToString());
     assertEquals(11, topDocs.scoreDocs[2].doc);
     assertEquals("g", ((BytesRef) ((FieldDoc) topDocs.scoreDocs[2]).fields[0]).utf8ToString());
