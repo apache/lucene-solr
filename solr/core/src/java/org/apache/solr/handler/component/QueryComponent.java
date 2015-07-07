@@ -296,7 +296,6 @@ public class QueryComponent extends SearchComponent
     LOG.debug("process: {}", rb.req.getParams());
   
     SolrQueryRequest req = rb.req;
-    SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
@@ -316,13 +315,8 @@ public class QueryComponent extends SearchComponent
       statsCache.receiveGlobalStats(req);
     }
 
-    // -1 as flag if not set.
-    long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
-    if (null != rb.getCursorMark() && 0 < timeAllowed) {
-      // fundamentally incompatible
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " +
-                              CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
-    }
+    SolrQueryResponse rsp = rb.rsp;
+    IndexSchema schema = searcher.getSchema();
 
     // Optional: This could also be implemented by the top-level searcher sending
     // a filter that lists the ids... that would be transparent to
@@ -330,12 +324,12 @@ public class QueryComponent extends SearchComponent
     // too if desired).
     String ids = params.get(ShardParams.IDS);
     if (ids != null) {
-      SchemaField idField = searcher.getSchema().getUniqueKeyField();
+      SchemaField idField = schema.getUniqueKeyField();
       List<String> idArr = StrUtils.splitSmart(ids, ",", true);
       int[] luceneIds = new int[idArr.size()];
       int docs = 0;
       for (int i=0; i<idArr.size(); i++) {
-        int id = req.getSearcher().getFirstMatch(
+        int id = searcher.getFirstMatch(
                 new Term(idField.getName(), idField.getType().toInternal(idArr.get(i))));
         if (id >= 0)
           luceneIds[docs++] = id;
@@ -358,6 +352,14 @@ public class QueryComponent extends SearchComponent
       ctx.query = null; // anything?
       rsp.add("response", ctx);
       return;
+    }
+
+    // -1 as flag if not set.
+    long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
+    if (null != rb.getCursorMark() && 0 < timeAllowed) {
+      // fundamentally incompatible
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " +
+                              CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
     }
 
     SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
@@ -383,7 +385,7 @@ public class QueryComponent extends SearchComponent
 
           for (String field : groupingSpec.getFields()) {
             topsGroupsActionBuilder.addCommandField(new SearchGroupsFieldCommand.Builder()
-                .setField(searcher.getSchema().getField(field))
+                .setField(schema.getField(field))
                 .setGroupSort(groupingSpec.getGroupSort())
                 .setTopNGroups(cmd.getOffset() + cmd.getLen())
                 .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
@@ -405,6 +407,7 @@ public class QueryComponent extends SearchComponent
               .setSearcher(searcher);
 
           for (String field : groupingSpec.getFields()) {
+            SchemaField schemaField = schema.getField(field);
             String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
             if (topGroupsParam == null) {
               topGroupsParam = new String[0];
@@ -414,14 +417,14 @@ public class QueryComponent extends SearchComponent
             for (String topGroup : topGroupsParam) {
               SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
               if (!topGroup.equals(TopGroupsShardRequestFactory.GROUP_NULL_VALUE)) {
-                searchGroup.groupValue = new BytesRef(searcher.getSchema().getField(field).getType().readableToIndexed(topGroup));
+                searchGroup.groupValue = new BytesRef(schemaField.getType().readableToIndexed(topGroup));
               }
               topGroups.add(searchGroup);
             }
 
             secondPhaseBuilder.addCommandField(
                 new TopGroupsFieldCommand.Builder()
-                    .setField(searcher.getSchema().getField(field))
+                    .setField(schemaField)
                     .setGroupSort(groupingSpec.getGroupSort())
                     .setSortWithinGroup(groupingSpec.getSortWithinGroup())
                     .setFirstPhaseGroups(topGroups)
