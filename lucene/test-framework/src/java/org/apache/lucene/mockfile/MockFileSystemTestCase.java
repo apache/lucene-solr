@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.Constants;
@@ -58,20 +59,32 @@ public abstract class MockFileSystemTestCase extends LuceneTestCase {
   
   /** Test that URIs are not corrumpted */
   public void testURI() throws IOException {
+    implTestURI("file1"); // plain ASCII
+  }
+
+  public void testURIumlaute() throws IOException {
+    implTestURI("äÄöÖüÜß"); // Umlaute and s-zet
+  }
+
+  public void testURIchinese() throws IOException {
+    implTestURI("中国"); // chinese
+  }
+
+  private void implTestURI(String fileName) throws IOException {
     assumeFalse("broken on J9: see https://issues.apache.org/jira/browse/LUCENE-6517", Constants.JAVA_VENDOR.startsWith("IBM"));
     Path dir = wrap(createTempDir());
 
-    Path f1 = dir.resolve("file1");
+    try {
+      dir.resolve(fileName);
+    } catch (InvalidPathException ipe) {
+      assumeNoException("couldn't resolve '"+fileName+"'", ipe);
+    }
+
+    Path f1 = dir.resolve(fileName);
     URI uri = f1.toUri();
     Path f2 = dir.getFileSystem().provider().getPath(uri);
     assertEquals(f1, f2);
-    
-    assumeTrue(Charset.defaultCharset().name() + " can't encode chinese", 
-               Charset.defaultCharset().newEncoder().canEncode("中国"));
-    Path f3 = dir.resolve("中国");
-    URI uri2 = f3.toUri();
-    Path f4 = dir.getFileSystem().provider().getPath(uri2);
-    assertEquals(f3, f4);
+
     dir.getFileSystem().close();
   }
   

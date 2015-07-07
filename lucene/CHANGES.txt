@@ -335,6 +335,10 @@ Test Framework
 * LUCENE-6652: Removed lots of useless Byte(s)TermAttributes all over test
   infrastructure.  (Uwe Schindler)
 
+* LUCENE-6563: Improve MockFileSystemTestCase.testURI to check if a path
+  can be encoded according to local filesystem requirements. Otherwise
+  stop test execution.  (Christine Poerschke via Uwe Schindler)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-6553: The iterator returned by the LeafReader.postings method now
