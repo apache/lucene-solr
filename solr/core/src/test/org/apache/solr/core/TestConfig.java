@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.schema.IndexSchema;
@@ -109,11 +110,28 @@ public class TestConfig extends SolrTestCaseJ4 {
   @Test
   public void testDefaults() throws Exception {
 
+    int numDefaultsTested = 0;
+    int numNullDefaults = 0;
+
     SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-defaults.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
-    assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
-    assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
-    assertEquals("default useCompoundFile", false, sic.getUseCompoundFile());
+
+    ++numDefaultsTested; assertEquals("default useCompoundFile", false, sic.getUseCompoundFile());
+
+    ++numDefaultsTested; assertEquals("default maxBufferedDocs", -1, sic.maxBufferedDocs);
+    ++numDefaultsTested; assertEquals("default maxMergeDocs", -1, sic.maxMergeDocs);
+    ++numDefaultsTested; assertEquals("default maxIndexingThreads", IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, sic.maxIndexingThreads);
+    ++numDefaultsTested; assertEquals("default mergeFactor", -1, sic.mergeFactor);
+
+    ++numDefaultsTested; assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
+    ++numDefaultsTested; assertEquals("default writeLockTimeout", -1, sic.writeLockTimeout);
+    ++numDefaultsTested; assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
+
+    ++numDefaultsTested; assertEquals("default infoStream", InfoStream.NO_OUTPUT, sic.infoStream);
+
+    ++numDefaultsTested; ++numNullDefaults; assertNull("default mergePolicyInfo", sic.mergePolicyInfo);
+    ++numDefaultsTested; ++numNullDefaults; assertNull("default mergeSchedulerInfo", sic.mergeSchedulerInfo);
+    ++numDefaultsTested; ++numNullDefaults; assertNull("default mergedSegmentWarmerInfo", sic.mergedSegmentWarmerInfo);
 
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
     IndexWriterConfig iwc = sic.toIndexWriterConfig(h.getCore());
@@ -123,6 +141,11 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     assertNotNull("null ms", iwc.getMergeScheduler());
     assertTrue("ms is not CMS", iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler);
+
+    assertNull("non-null mergedSegmentWarmer", iwc.getMergedSegmentWarmer());
+
+    final int numDefaultsMapped = sic.toMap().size();
+    assertEquals("numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="+sic.toMap().keySet(), numDefaultsTested, numDefaultsMapped+numNullDefaults);
   }
 
 
