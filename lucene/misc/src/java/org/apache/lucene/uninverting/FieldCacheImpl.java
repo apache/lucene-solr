@@ -273,7 +273,7 @@ class FieldCacheImpl implements FieldCache {
           assert termsDocCount <= maxDoc;
           if (termsDocCount == maxDoc) {
             // Fast case: all docs have this field:
-            docsWithField = new Bits.MatchAllBits(maxDoc);
+            this.docsWithField = new Bits.MatchAllBits(maxDoc);
             setDocsWithField = false;
           }
         }
