@@ -130,6 +130,10 @@ New Features
   more scalable iterator API (FiniteStringsIterator) (Markus Heiden
   via Mike McCandless)
 
+* LUCENE-6589: Add a new org.apache.lucene.search.join.CheckJoinIndex class
+  that can be used to validate that an index has an appropriate structure to
+  run join queries. (Adrien Grand)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
