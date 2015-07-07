@@ -221,6 +221,9 @@ Optimizations
   from one for each shard and the federator, to just one for the federator.
   (Christine Poerschke via Ramkumar Aiyengar)
 
+* SOLR-7751: Minor optimizations to QueryComponent.process (reduce eager instantiations,
+  cache method calls) (Christine Poerschke via Ramkumar Aiyengar)
+
 Other Changes
 ----------------------
 
