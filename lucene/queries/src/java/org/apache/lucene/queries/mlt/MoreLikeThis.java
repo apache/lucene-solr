@@ -753,9 +753,10 @@ public final class MoreLikeThis {
       IOException {
     HashMap<String,Int> termFreqMap = new HashMap();
     for (String fieldName : fieldNames) {
-
       for (String field : fields.keySet()) {
         Collection<Object> fieldValues = fields.get(field);
+        if(fieldValues == null)
+          continue;
         for(Object fieldValue:fieldValues) {
           if (fieldValue != null) {
             addTermFrequencies(new StringReader(String.valueOf(fieldValue)), termFreqMap,

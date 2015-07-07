@@ -25,6 +25,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -35,8 +36,11 @@ import org.apache.solr.search.SolrIndexSearcher;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class SimpleMLTQParser extends QParser {
+  // Pattern is thread safe -- TODO? share this with general 'fl' param
+  private static final Pattern splitList = Pattern.compile(",| ");
 
   public SimpleMLTQParser(String qstr, SolrParams localParams,
                           SolrParams params, SolrQueryRequest req) {
@@ -85,18 +89,30 @@ public class SimpleMLTQParser extends QParser {
       ArrayList<String> fields = new ArrayList();
 
       if (qf != null) {
-        mlt.setFieldNames(qf);
+        for (String fieldName : qf) {
+          if (!StringUtils.isEmpty(fieldName))  {
+            String[] strings = splitList.split(fieldName);
+            for (String string : strings) {
+              if (!StringUtils.isEmpty(string)) {
+                fields.add(string);
+              }
+            }
+          }
+        }
       } else {
-
         Map<String, SchemaField> fieldNames = req.getSearcher().getSchema().getFields();
         for (String fieldName : fieldNames.keySet()) {
           if (fieldNames.get(fieldName).indexed() && fieldNames.get(fieldName).stored())
             if (fieldNames.get(fieldName).getType().getNumericType() == null)
               fields.add(fieldName);
         }
-        mlt.setFieldNames(fields.toArray(new String[fields.size()]));
+      }
+      if( fields.size() < 1 ) {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+            "MoreLikeThis requires at least one similarity field: qf" );
       }
 
+      mlt.setFieldNames(fields.toArray(new String[fields.size()]));
       mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
       return mlt.like(scoreDocs[0].doc);
