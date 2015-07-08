@@ -18,6 +18,8 @@ package org.apache.solr.handler.component;
  */
 
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -41,7 +43,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,6 +53,8 @@ import java.util.Map;
  */
 public class PivotFacetProcessor extends SimpleFacets
 {
+  public static final String QUERY = "query";
+  public static final String RANGE = "range";
   protected SolrParams params;
     
   public PivotFacetProcessor(SolrQueryRequest req, DocSet docs, SolrParams params, ResponseBuilder rb) {
@@ -101,7 +104,8 @@ public class PivotFacetProcessor extends SimpleFacets
 
       String refineKey = null; // no local => no refinement
       List<StatsField> statsFields = Collections.emptyList(); // no local => no stats
-      
+      List<FacetComponent.FacetBase> facetQueries = Collections.emptyList();
+      List<RangeFacetRequest> facetRanges = Collections.emptyList();
       if (null != parsed.localParams) {
         // we might be refining..
         refineKey = parsed.localParams.get(PivotFacet.REFINE_PARAM);
@@ -117,6 +121,42 @@ public class PivotFacetProcessor extends SimpleFacets
           statsInfo = new StatsInfo(rb);
         }
         statsFields = getTaggedStatsFields(statsInfo, statsLocalParam);
+
+        try {
+          FacetComponent.FacetContext facetContext = FacetComponent.FacetContext.getFacetContext(req);
+
+          String taggedQueries = parsed.localParams.get(QUERY);
+          if (StringUtils.isEmpty(taggedQueries))  {
+            facetQueries = Collections.emptyList();
+          } else  {
+            List<String> localParamValue = StrUtils.splitSmart(taggedQueries, ',');
+            if (localParamValue.size() > 1) {
+              String msg = QUERY + " local param of " + FacetParams.FACET_PIVOT +
+                  "may not include tags separated by a comma - please use a common tag on all " +
+                  FacetParams.FACET_QUERY + " params you wish to compute under this pivot";
+              throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+            }
+            taggedQueries = localParamValue.get(0);
+            facetQueries = facetContext.getQueryFacetsForTag(taggedQueries);
+          }
+
+          String taggedRanges = parsed.localParams.get(RANGE);
+          if (StringUtils.isEmpty(taggedRanges)) {
+            facetRanges = Collections.emptyList();
+          } else  {
+            List<String> localParamValue = StrUtils.splitSmart(taggedRanges, ',');
+            if (localParamValue.size() > 1) {
+              String msg = RANGE + " local param of " + FacetParams.FACET_PIVOT +
+                  "may not include tags separated by a comma - please use a common tag on all " +
+                  FacetParams.FACET_RANGE + " params you wish to compute under this pivot";
+              throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+            }
+            taggedRanges = localParamValue.get(0);
+            facetRanges = facetContext.getRangeFacetRequestsForTag(taggedRanges);
+          }
+        } catch (IllegalStateException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Faceting context not set, cannot calculate pivot values");
+        }
       }
 
       if (null != refineKey) {
@@ -124,10 +164,10 @@ public class PivotFacetProcessor extends SimpleFacets
           = params.getParams(PivotFacet.REFINE_PARAM + refineKey);
 
         for(String refinements : refinementValuesByField){
-          pivotResponse.addAll(processSingle(pivotFields, refinements, statsFields, parsed));
+          pivotResponse.addAll(processSingle(pivotFields, refinements, statsFields, parsed, facetQueries, facetRanges));
         }
       } else{
-        pivotResponse.addAll(processSingle(pivotFields, null, statsFields, parsed));
+        pivotResponse.addAll(processSingle(pivotFields, null, statsFields, parsed, facetQueries, facetRanges));
       }
     }
     return pivotResponse;
@@ -138,12 +178,16 @@ public class PivotFacetProcessor extends SimpleFacets
    * @param pivotFields the ordered list of fields in this pivot
    * @param refinements the comma separate list of refinement values corresponding to each field in the pivot, or null if there are no refinements
    * @param statsFields List of {@link StatsField} instances to compute for each pivot value
+   * @param facetQueries the list of facet queries hung under this pivot
+   * @param facetRanges the list of facet ranges hung under this pivot
    */
   private SimpleOrderedMap<List<NamedList<Object>>> processSingle
-    (List<String> pivotFields,
-     String refinements,
-     List<StatsField> statsFields,
-     final ParsedParams parsed) throws IOException {
+  (List<String> pivotFields,
+   String refinements,
+   List<StatsField> statsFields,
+   final ParsedParams parsed,
+   List<FacetComponent.FacetBase> facetQueries,
+   List<RangeFacetRequest> facetRanges) throws IOException {
 
     SolrIndexSearcher searcher = rb.req.getSearcher();
     SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<>();
@@ -181,9 +225,9 @@ public class PivotFacetProcessor extends SimpleFacets
     if(pivotFields.size() > 1) {
       String subField = pivotFields.get(1);
       pivotResponse.add(parsed.key,
-                        doPivots(facetCounts, field, subField, fnames, vnames, parsed, statsFields));
+                        doPivots(facetCounts, field, subField, fnames, vnames, parsed, statsFields, facetQueries, facetRanges));
     } else {
-      pivotResponse.add(parsed.key, doPivots(facetCounts, field, null, fnames, vnames, parsed, statsFields));
+      pivotResponse.add(parsed.key, doPivots(facetCounts, field, null, fnames, vnames, parsed, statsFields, facetQueries, facetRanges));
     }
     return pivotResponse;
   }
@@ -223,10 +267,11 @@ public class PivotFacetProcessor extends SimpleFacets
    * Recursive function to compute all the pivot counts for the values under the specified field
    */
   protected List<NamedList<Object>> doPivots(NamedList<Integer> superFacets,
-                                             String field, String subField, 
-                                             Deque<String> fnames, Deque<String> vnames, 
-                                             ParsedParams parsed, List<StatsField> statsFields) 
-    throws IOException {
+                                             String field, String subField,
+                                             Deque<String> fnames, Deque<String> vnames,
+                                             ParsedParams parsed, List<StatsField> statsFields,
+                                             List<FacetComponent.FacetBase> facetQueries, List<RangeFacetRequest> facetRanges)
+      throws IOException {
 
     boolean isShard = rb.req.getParams().getBool(ShardParams.IS_SHARD, false);
 
@@ -259,6 +304,8 @@ public class PivotFacetProcessor extends SimpleFacets
 
         final DocSet subset = getSubset(parsed.docs, sfield, fieldValue);
         
+        addPivotQueriesAndRanges(pivot, params, subset, facetQueries, facetRanges);
+
         if( subField != null )  {
           NamedList<Integer> facetCounts;
           if(!vnames.isEmpty()){
@@ -272,7 +319,7 @@ public class PivotFacetProcessor extends SimpleFacets
           }
 
           if (facetCounts.size() >= 1) {
-            pivot.add( "pivot", doPivots( facetCounts, subField, nextField, fnames, vnames, parsed.withDocs(subset), statsFields ) );
+            pivot.add( "pivot", doPivots( facetCounts, subField, nextField, fnames, vnames, parsed.withDocs(subset), statsFields, facetQueries, facetRanges) );
           }
         }
         if ((isShard || 0 < pivotCount) && ! statsFields.isEmpty()) {
@@ -327,6 +374,65 @@ public class PivotFacetProcessor extends SimpleFacets
       Query query = ft.getFieldQuery(null, field, pivotValue);
       return searcher.getDocSet(query, base);
     }
+  }
+
+  /**
+   * Add facet.queries and facet.ranges to the pivot response if needed
+   * 
+   * @param pivot
+   *          Pivot in which to inject additional data
+   * @param params
+   *          Query parameters.
+   * @param docs
+   *          DocSet of the current pivot to use for computing sub-counts
+   * @param facetQueries
+   *          Tagged facet queries should have to be included, must not be null
+   * @param facetRanges
+   *          Taged facet ranges should have to be included, must not be null
+   * @throws IOException
+   *           If searcher has issues finding numDocs.
+   */
+  protected void addPivotQueriesAndRanges(NamedList<Object> pivot, SolrParams params, DocSet docs,
+                                          List<FacetComponent.FacetBase> facetQueries,
+                                          List<RangeFacetRequest> facetRanges) throws IOException {
+    assert null != facetQueries;
+    assert null != facetRanges;
+    
+    if ( ! facetQueries.isEmpty()) {
+      SimpleFacets facets = new SimpleFacets(req, docs, params);
+      NamedList<Integer> res = new SimpleOrderedMap<>();
+      for (FacetComponent.FacetBase facetQuery : facetQueries) {
+        try {
+          ParsedParams parsed = getParsedParams(params, docs, facetQuery);
+          facets.getFacetQueryCount(parsed, res);
+        } catch (SyntaxError e) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+                                  "Invalid " + FacetParams.FACET_QUERY + " (" + facetQuery.facetStr +
+                                  ") cause: " + e.getMessage(), e);
+        }
+      }
+      pivot.add(PivotListEntry.QUERIES.getName(), res);
+    }
+    if ( ! facetRanges.isEmpty()) {
+      RangeFacetProcessor rangeFacetProcessor = new RangeFacetProcessor(req, docs, params, null);
+      NamedList<Object> resOuter = new SimpleOrderedMap<>();
+      for (RangeFacetRequest rangeFacet : facetRanges) {
+        try {
+          rangeFacetProcessor.getFacetRangeCounts(rangeFacet, resOuter);
+        } catch (SyntaxError e) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+                                  "Invalid " + FacetParams.FACET_RANGE + " (" + rangeFacet.facetStr +
+                                  ") cause: " + e.getMessage(), e);
+        }
+      }
+      pivot.add(PivotListEntry.RANGES.getName(), resOuter);
+    }
+  }
+
+  private ParsedParams getParsedParams(SolrParams params, DocSet docs, FacetComponent.FacetBase facet) {
+    SolrParams wrapped = SolrParams.wrapDefaults(facet.localParams, global);
+    SolrParams required = new RequiredSolrParams(params);
+    return new ParsedParams(facet.localParams, wrapped, required, facet.facetOn, docs, facet.getKey(), facet.getTags(), -1);
   }
 
   private int getMinCountForField(String fieldname){

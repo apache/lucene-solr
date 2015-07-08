@@ -32,12 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -45,6 +46,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
@@ -61,17 +63,183 @@ public class FacetComponent extends SearchComponent {
   public static Logger log = LoggerFactory.getLogger(FacetComponent.class);
   
   public static final String COMPONENT_NAME = "facet";
-  
+
+  public static final String FACET_QUERY_KEY = "facet_queries";
+  public static final String FACET_FIELD_KEY = "facet_fields";
+  public static final String FACET_DATE_KEY = "facet_dates";
+  public static final String FACET_RANGES_KEY = "facet_ranges";
+  public static final String FACET_INTERVALS_KEY = "facet_intervals";
+
   private static final String PIVOT_KEY = "facet_pivot";
   private static final String PIVOT_REFINE_PREFIX = "{!"+PivotFacet.REFINE_PARAM+"=";
-
-
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.req.getParams().getBool(FacetParams.FACET, false)) {
       rb.setNeedDocSet(true);
       rb.doFacets = true;
+
+      // Deduplicate facet params
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      SolrParams origParams = rb.req.getParams();
+      Iterator<String> iter = origParams.getParameterNamesIterator();
+      while (iter.hasNext()) {
+        String paramName = iter.next();
+        // Deduplicate the list with LinkedHashSet, but _only_ for facet params.
+        if (!paramName.startsWith(FacetParams.FACET)) {
+          params.add(paramName, origParams.getParams(paramName));
+          continue;
+        }
+        HashSet<String> deDupe = new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
+        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
+
+      }
+      rb.req.setParams(params);
+
+      // Initialize context
+      FacetContext.initContext(rb);
+    }
+  }
+
+  /**
+   * Encapsulates facet ranges and facet queries such that their parameters
+   * are parsed and cached for efficient re-use.
+   * <p>
+   * An instance of this class is initialized and kept in the request context via the static
+   * method {@link org.apache.solr.handler.component.FacetComponent.FacetContext#initContext(ResponseBuilder)} and
+   * can be retrieved via {@link org.apache.solr.handler.component.FacetComponent.FacetContext#getFacetContext(SolrQueryRequest)}
+   * <p>
+   * This class is used exclusively in a single-node context (i.e. non distributed requests or an individual shard
+   * request). Also see {@link org.apache.solr.handler.component.FacetComponent.FacetInfo} which is
+   * dedicated exclusively for merging responses from multiple shards and plays no role during computation of facet
+   * counts in a single node request.
+   *
+   * <b>This API is experimental and subject to change</b>
+   *
+   * @see org.apache.solr.handler.component.FacetComponent.FacetInfo
+   */
+  public static class FacetContext {
+    private static final String FACET_CONTEXT_KEY = "_facet.context";
+
+    private final List<RangeFacetRequest> allRangeFacets; // init in constructor
+    private final List<FacetBase> allQueryFacets; // init in constructor
+
+    private final Map<String, List<RangeFacetRequest>> taggedRangeFacets;
+    private final Map<String, List<FacetBase>> taggedQueryFacets;
+
+    /**
+     * Initializes FacetContext using request parameters and saves it in the request
+     * context which can be retrieved via {@link #getFacetContext(SolrQueryRequest)}
+     *
+     * @param rb the ResponseBuilder object from which the request parameters are read
+     *           and to which the FacetContext object is saved.
+     */
+    public static void initContext(ResponseBuilder rb)  {
+      // Parse facet queries and ranges and put them in the request
+      // context so that they can be hung under pivots if needed without re-parsing
+      List<RangeFacetRequest> facetRanges = null;
+      List<FacetBase> facetQueries = null;
+
+      String[] ranges = rb.req.getParams().getParams(FacetParams.FACET_RANGE);
+      if (ranges != null) {
+        facetRanges = new ArrayList<>(ranges.length);
+        for (String range : ranges) {
+          RangeFacetRequest rangeFacetRequest = new RangeFacetRequest(rb, range);
+          facetRanges.add(rangeFacetRequest);
+        }
+      }
+
+      String[] queries = rb.req.getParams().getParams(FacetParams.FACET_QUERY);
+      if (queries != null)  {
+        facetQueries = new ArrayList<>();
+        for (String query : queries) {
+          facetQueries.add(new FacetBase(rb, FacetParams.FACET_QUERY, query));
+        }
+      }
+
+      rb.req.getContext().put(FACET_CONTEXT_KEY, new FacetContext(facetRanges, facetQueries));
+    }
+
+    private FacetContext(List<RangeFacetRequest> allRangeFacets, List<FacetBase> allQueryFacets) {
+      // avoid NPEs, set to empty list if parameters are null
+      this.allRangeFacets = allRangeFacets == null ? Collections.<RangeFacetRequest>emptyList() : allRangeFacets;
+      this.allQueryFacets = allQueryFacets == null ? Collections.<FacetBase>emptyList() : allQueryFacets;
+
+      taggedRangeFacets = new HashMap<>();
+      for (RangeFacetRequest rf : this.allRangeFacets) {
+        for (String tag : rf.getTags()) {
+          List<RangeFacetRequest> list = taggedRangeFacets.get(tag);
+          if (list == null) {
+            list = new ArrayList<>(1); // typically just one object
+            taggedRangeFacets.put(tag, list);
+          }
+          list.add(rf);
+        }
+      }
+
+      taggedQueryFacets = new HashMap<>();
+      for (FacetBase qf : this.allQueryFacets) {
+        for (String tag : qf.getTags()) {
+          List<FacetBase> list = taggedQueryFacets.get(tag);
+          if (list == null) {
+            list = new ArrayList<>(1);
+            taggedQueryFacets.put(tag, list);
+          }
+          list.add(qf);
+        }
+      }
+    }
+
+    /**
+     * Return the {@link org.apache.solr.handler.component.FacetComponent.FacetContext} instance
+     * cached in the request context.
+     *
+     * @param req the {@link SolrQueryRequest}
+     * @return the cached FacetContext instance
+     * @throws IllegalStateException if no cached FacetContext instance is found in the request context
+     */
+    public static FacetContext getFacetContext(SolrQueryRequest req) throws IllegalStateException {
+      FacetContext result = (FacetContext) req.getContext().get(FACET_CONTEXT_KEY);
+      if (null == result) {
+        throw new IllegalStateException("FacetContext can't be accessed before it's initialized in request context");
+      }
+      return result;
+    }
+
+    /**
+     * @return a {@link List} of {@link RangeFacetRequest} objects each representing a facet.range to be
+     * computed. Returns an empty list if no facet.range were requested.
+     */
+    public List<RangeFacetRequest> getAllRangeFacetRequests() {
+      return allRangeFacets;
+    }
+
+    /**
+     * @return a {@link List} of {@link org.apache.solr.handler.component.FacetComponent.FacetBase} objects
+     * each representing a facet.query to be computed. Returns an empty list of no facet.query were requested.
+     */
+    public List<FacetBase> getAllQueryFacets() {
+      return allQueryFacets;
+    }
+
+    /**
+     * @param tag a String tag usually specified via local param on a facet.pivot
+     * @return a list of {@link RangeFacetRequest} objects which have been tagged with the given tag.
+     * Returns an empty list if none found.
+     */
+    public List<RangeFacetRequest> getRangeFacetRequestsForTag(String tag) {
+      List<RangeFacetRequest> list = taggedRangeFacets.get(tag);
+      return list == null ? Collections.<RangeFacetRequest>emptyList() : list;
+    }
+
+    /**
+     * @param tag a String tag usually specified via local param on a facet.pivot
+     * @return a list of {@link org.apache.solr.handler.component.FacetComponent.FacetBase} objects which have been
+     * tagged with the given tag. Returns and empty List if none found.
+     */
+    public List<FacetBase> getQueryFacetsForTag(String tag) {
+      List<FacetBase> list = taggedQueryFacets.get(tag);
+      return list == null ? Collections.<FacetBase>emptyList() : list;
     }
   }
   
@@ -81,27 +249,13 @@ public class FacetComponent extends SearchComponent {
   @Override
   public void process(ResponseBuilder rb) throws IOException {
 
-    //SolrParams params = rb.req.getParams();
     if (rb.doFacets) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      SolrParams origParams = rb.req.getParams();
-      Iterator<String> iter = origParams.getParameterNamesIterator();
-      while (iter.hasNext()) {
-        String paramName = iter.next();
-        // Deduplicate the list with LinkedHashSet, but _only_ for facet params.
-        if (paramName.startsWith(FacetParams.FACET) == false) {
-          params.add(paramName, origParams.getParams(paramName));
-          continue;
-        }
-        HashSet<String> deDupe = new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
-        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
-      }
-
+      SolrParams params = rb.req.getParams();
       SimpleFacets f = new SimpleFacets(rb.req, rb.getResults().docSet, params, rb);
-      
-      NamedList<Object> counts = f.getFacetCounts();
+
+      NamedList<Object> counts = FacetComponent.getFacetCounts(f);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (pivots != null && pivots.length > 0) {
+      if (!ArrayUtils.isEmpty(pivots)) {
         PivotFacetProcessor pivotProcessor 
           = new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v 
@@ -110,11 +264,46 @@ public class FacetComponent extends SearchComponent {
           counts.add(PIVOT_KEY, v);
         }
       }
-      
+
       rb.rsp.add("facet_counts", counts);
     }
   }
-  
+
+  /**
+   * Looks at various Params to determining if any simple Facet Constraint count
+   * computations are desired.
+   *
+   * @see SimpleFacets#getFacetQueryCounts
+   * @see SimpleFacets#getFacetFieldCounts
+   * @see DateFacetProcessor#getFacetDateCounts
+   * @see RangeFacetProcessor#getFacetRangeCounts
+   * @see RangeFacetProcessor#getFacetIntervalCounts
+   * @see FacetParams#FACET
+   * @return a NamedList of Facet Count info or null
+   */
+  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets) {
+    // if someone called this method, benefit of the doubt: assume true
+    if (!simpleFacets.getGlobalParams().getBool(FacetParams.FACET, true))
+      return null;
+
+    DateFacetProcessor dateFacetProcessor = new DateFacetProcessor(simpleFacets.getRequest(), simpleFacets.getDocsOrig(), simpleFacets.getGlobalParams(), simpleFacets.getResponseBuilder());
+    RangeFacetProcessor rangeFacetProcessor = new RangeFacetProcessor(simpleFacets.getRequest(), simpleFacets.getDocsOrig(), simpleFacets.getGlobalParams(), simpleFacets.getResponseBuilder());
+    NamedList<Object> counts = new SimpleOrderedMap<>();
+    try {
+      counts.add(FACET_QUERY_KEY, simpleFacets.getFacetQueryCounts());
+      counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+      counts.add(FACET_DATE_KEY, dateFacetProcessor.getFacetDateCounts());
+      counts.add(FACET_RANGES_KEY, rangeFacetProcessor.getFacetRangeCounts());
+      counts.add(FACET_INTERVALS_KEY, simpleFacets.getFacetIntervalCounts());
+      counts.add(SpatialHeatmapFacets.RESPONSE_KEY, simpleFacets.getHeatmapCounts());
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (SyntaxError e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    }
+    return counts;
+  }
+
   private static final String commandPrefix = "{!" + CommonParams.TERMS + "=$";
   
   @Override
@@ -514,7 +703,7 @@ public class FacetComponent extends SearchComponent {
           qf.count += count;
         }
       }
-      
+
       // step through each facet.field, adding results from this shard
       NamedList facet_fields = (NamedList) facet_counts.get("facet_fields");
       
@@ -528,7 +717,12 @@ public class FacetComponent extends SearchComponent {
       doDistribDates(fi, facet_counts);
 
       // Distributed facet_ranges
-      doDistribRanges(fi, facet_counts);
+      @SuppressWarnings("unchecked")
+      SimpleOrderedMap<SimpleOrderedMap<Object>> rangesFromShard = (SimpleOrderedMap<SimpleOrderedMap<Object>>)
+          facet_counts.get("facet_ranges");
+      if (rangesFromShard != null)  {
+        RangeFacetRequest.DistribRangeFacet.mergeFacetRangesFromShardResponse(fi.rangeFacets, rangesFromShard);
+      }
 
       // Distributed facet_intervals
       doDistribIntervals(fi, facet_counts);
@@ -655,43 +849,19 @@ public class FacetComponent extends SearchComponent {
     }
 
     FacetInfo fi = rb._facetInfo;
-
-    @SuppressWarnings("unchecked")
-    SimpleOrderedMap<SimpleOrderedMap<Object>> facet_ranges =
-        (SimpleOrderedMap<SimpleOrderedMap<Object>>)
-            fi.rangeFacets;
-
-    if (facet_ranges == null) {
-      return;
-    }
-
-    // go through each facet_range
-    for (Map.Entry<String, SimpleOrderedMap<Object>> entry : facet_ranges) {
-      boolean replace = false;
+    for (Map.Entry<String, RangeFacetRequest.DistribRangeFacet> entry : fi.rangeFacets.entrySet()) {
       final String field = entry.getKey();
+      final RangeFacetRequest.DistribRangeFacet rangeFacet = entry.getValue();
+
       int minCount = rb.req.getParams().getFieldInt(field, FacetParams.FACET_MINCOUNT, 0);
       if (minCount == 0) {
         continue;
       }
 
-      @SuppressWarnings("unchecked")
-      NamedList<Integer> vals
-          = (NamedList<Integer>) facet_ranges.get(field).get("counts");
-      NamedList newList = new NamedList();
-      for (Map.Entry<String, Integer> pair : vals) {
-        if (pair.getValue() >= minCount) {
-          newList.add(pair.getKey(), pair.getValue());
-        } else {
-          log.trace("Removing facet/key: " + pair.getKey() + "/" + pair.getValue().toString() + " mincount=" + minCount);
-          replace = true;
-        }
-      }
-      if (replace) {
-        vals.clear();
-        vals.addAll(newList);
-      }
+      rangeFacet.removeRangeFacetsUnderLimits(minCount);
     }
   }
+
   private void removeFieldFacetsUnderLimits(ResponseBuilder rb) {
     if (rb.stage != ResponseBuilder.STAGE_DONE) {
       return;
@@ -754,62 +924,6 @@ public class FacetComponent extends SearchComponent {
                 "Interval facet shard response has at least one extra key: "
                 + newItr.next().getKey());
           }
-        }
-      }
-    }
-  }
-
-  private final static String[] OTHER_KEYS = new String[]{FacetRangeOther.BEFORE.toString(), FacetRangeOther.BETWEEN.toString(), FacetRangeOther.AFTER.toString()};
-  // The implementation below uses the first encountered shard's
-  // facet_ranges as the basis for subsequent shards' data to be merged.
-  private void doDistribRanges(FacetInfo fi, NamedList facet_counts) {
-    @SuppressWarnings("unchecked")
-    SimpleOrderedMap<SimpleOrderedMap<Object>> facet_ranges =
-      (SimpleOrderedMap<SimpleOrderedMap<Object>>)
-      facet_counts.get("facet_ranges");
-
-    if (facet_ranges != null) {
-
-      // go through each facet_range
-      for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_ranges) {
-        final String field = entry.getKey();
-        SimpleOrderedMap<Object> fieldMap = fi.rangeFacets.get(field); 
-        if (fieldMap == null) {
-          // first time we've seen this field, no merging
-          fi.rangeFacets.add(field, entry.getValue());
-
-        } else {
-          // not the first time, merge current field counts
-
-          @SuppressWarnings("unchecked")
-          NamedList<Integer> shardFieldValues
-            = (NamedList<Integer>) entry.getValue().get("counts");
-
-          @SuppressWarnings("unchecked")
-          NamedList<Integer> existFieldValues
-            = (NamedList<Integer>) fieldMap.get("counts");
-
-          for (Map.Entry<String,Integer> existPair : existFieldValues) {
-            final String key = existPair.getKey();
-            // can be null if inconsistencies in shards responses
-            Integer newValue = shardFieldValues.get(key);
-            if (null != newValue) {
-              Integer oldValue = existPair.getValue();
-              existPair.setValue(oldValue + newValue);
-            }
-          }
-          
-          // merge before/between/after if they exist
-          for (String otherKey:OTHER_KEYS) {
-            Integer shardValue = (Integer)entry.getValue().get(otherKey);
-            if (shardValue != null && shardValue > 0) {
-              Integer existingValue = (Integer)fieldMap.get(otherKey);
-              // shouldn't be null
-              int idx = fieldMap.indexOf(otherKey, 0);
-              fieldMap.setVal(idx, existingValue + shardValue);
-            }
-          }
-          
         }
       }
     }
@@ -1046,7 +1160,15 @@ public class FacetComponent extends SearchComponent {
     }
 
     facet_counts.add("facet_dates", fi.dateFacets);
-    facet_counts.add("facet_ranges", fi.rangeFacets);
+
+    SimpleOrderedMap<SimpleOrderedMap<Object>> rangeFacetOutput = new SimpleOrderedMap<>();
+    for (Map.Entry<String, RangeFacetRequest.DistribRangeFacet> entry : fi.rangeFacets.entrySet()) {
+      String key = entry.getKey();
+      RangeFacetRequest.DistribRangeFacet value = entry.getValue();
+      rangeFacetOutput.add(key, value.rangeFacet);
+    }
+    facet_counts.add("facet_ranges", rangeFacetOutput);
+
     facet_counts.add("facet_intervals", fi.intervalFacets);
     facet_counts.add(SpatialHeatmapFacets.RESPONSE_KEY,
         SpatialHeatmapFacets.distribFinish(fi.heatmapFacets, rb));
@@ -1077,11 +1199,23 @@ public class FacetComponent extends SearchComponent {
   }
 
   // use <int> tags for smaller facet counts (better back compatibility)
-  private Number num(long val) {
+
+  /**
+   * @param val a primitive long value
+   * @return an {@link Integer} if the value of the argument is less than {@link Integer#MAX_VALUE}
+   * else a @{link java.lang.Long}
+   */
+  static Number num(long val) {
    if (val < Integer.MAX_VALUE) return (int)val;
    else return val;
   }
-  private Number num(Long val) {
+
+  /**
+   * @param val a {@link java.lang.Long} value
+   * @return an {@link Integer} if the value of the argument is less than {@link Integer#MAX_VALUE}
+   * else a @{link java.lang.Long}
+   */
+  static Number num(Long val) {
     if (val.longValue() < Integer.MAX_VALUE) return val.intValue();
     else return val;
   }
@@ -1102,7 +1236,16 @@ public class FacetComponent extends SearchComponent {
   }
 
   /**
+   * This class is used exclusively for merging results from each shard
+   * in a distributed facet request. It plays no role in the computation
+   * of facet counts inside a single node.
+   *
+   * A related class {@link org.apache.solr.handler.component.FacetComponent.FacetContext}
+   * exists for assisting computation inside a single node.
+   *
    * <b>This API is experimental and subject to change</b>
+   *
+   * @see org.apache.solr.handler.component.FacetComponent.FacetContext
    */
   public static class FacetInfo {
     /**
@@ -1116,8 +1259,8 @@ public class FacetComponent extends SearchComponent {
     public LinkedHashMap<String,DistribFieldFacet> facets;
     public SimpleOrderedMap<SimpleOrderedMap<Object>> dateFacets
       = new SimpleOrderedMap<>();
-    public SimpleOrderedMap<SimpleOrderedMap<Object>> rangeFacets
-      = new SimpleOrderedMap<>();
+    public LinkedHashMap<String, RangeFacetRequest.DistribRangeFacet> rangeFacets
+            = new LinkedHashMap<>();
     public SimpleOrderedMap<SimpleOrderedMap<Integer>> intervalFacets
       = new SimpleOrderedMap<>();
     public SimpleOrderedMap<PivotFacet> pivotFacets
@@ -1157,7 +1300,7 @@ public class FacetComponent extends SearchComponent {
       heatmapFacets = SpatialHeatmapFacets.distribParse(params, rb);
     }
   }
-  
+
   /**
    * <b>This API is experimental and subject to change</b>
    */
@@ -1168,6 +1311,9 @@ public class FacetComponent extends SearchComponent {
     private String key; // label in the response for the result... 
                         // "foo" for {!key=foo}myfield
     SolrParams localParams; // any local params for the facet
+    private List<String> tags = Collections.emptyList();
+    private List<String> excludeTags = Collections.emptyList();
+    private int threadCount = -1;
     
     public FacetBase(ResponseBuilder rb, String facetType, String facetStr) {
       this.facetType = facetType;
@@ -1189,12 +1335,28 @@ public class FacetComponent extends SearchComponent {
         }
         
         key = localParams.get(CommonParams.OUTPUT_KEY, key);
+
+        String tagStr = localParams.get(CommonParams.TAG);
+        this.tags = tagStr == null ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr,',');
+
+        String threadStr = localParams.get(CommonParams.THREADS);
+        this.threadCount = threadStr != null ? Integer.parseInt(threadStr) : -1;
+
+        String excludeStr = localParams.get(CommonParams.EXCLUDE);
+        if (StringUtils.isEmpty(excludeStr))  {
+          this.excludeTags = Collections.emptyList();
+        } else {
+          this.excludeTags = StrUtils.splitSmart(excludeStr,',');
+        }
       }
     }
     
     /** returns the key in the response that this facet will be under */
     public String getKey() { return key; }
     public String getType() { return facetType; }
+    public List<String> getTags() { return tags; }
+    public List<String> getExcludeTags() { return excludeTags; }
+    public int getThreadCount() { return threadCount; }
   }
   
   /**
@@ -1407,4 +1569,5 @@ public class FacetComponent extends SearchComponent {
       return "{term=" + name + ",termNum=" + termNum + ",count=" + count + "}";
     }
   }
+
 }

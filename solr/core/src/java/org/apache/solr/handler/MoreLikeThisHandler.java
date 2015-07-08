@@ -37,6 +37,10 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.SpatialHeatmapFacets;
+import org.apache.solr.handler.component.DateFacetProcessor;
+import org.apache.solr.handler.component.RangeFacetProcessor;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -230,7 +234,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
             rsp.add("facet_counts", null);
           } else {
             SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params);
-            rsp.add("facet_counts", f.getFacetCounts());
+            rsp.add("facet_counts", FacetComponent.getFacetCounts(f));
           }
         }
         boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);

@@ -120,7 +120,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
    * Constructor that accepts an already constructed array of {@link FacetInterval} objects. This array needs to be sorted
    * by start value in weakly ascending order. null values are not allowed in the array.
    */
-  IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, FacetInterval[] intervals) throws IOException {
+  public IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, FacetInterval[] intervals) throws IOException {
     this.schemaField = schemaField;
     this.searcher = searcher;
     this.docs = docs;
@@ -351,7 +351,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     }
   }
 
-  static enum IntervalCompareResult {
+  enum IntervalCompareResult {
     LOWER_THAN_START,
     INCLUDED,
     GREATER_THAN_END,
@@ -360,7 +360,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   /**
    * Helper class to match and count of documents in specified intervals
    */
-  static class FacetInterval {
+  public static class FacetInterval {
 
     /**
      * Key to represent this interval
@@ -519,7 +519,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      * @param includeUpper Indicates weather this interval should include values equal to end
      * @param key String key of this interval
      */
-    FacetInterval(SchemaField schemaField, String startStr, String endStr,
+    public FacetInterval(SchemaField schemaField, String startStr, String endStr,
         boolean includeLower, boolean includeUpper, String key) {
       assert schemaField.getType().getNumericType() != null: "Only numeric fields supported with this constructor";
       this.key = key;
@@ -750,9 +750,9 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *              should be the {@code long} representation of the value of the document
      *              in the specified field. For multi-valued and/or non-numeric fields, {@code value}
      *              should be the ordinal of the term in the current segment
-     * @return <ul><li>{@link IntervalCompareResult#INCLUDED} if the value is included in the interval
-     * <li>{@link IntervalCompareResult#GREATER_THAN_END} if the value is greater than {@code endLimit}
-     * <li>{@link IntervalCompareResult#LOWER_THAN_START} if the value is lower than {@code startLimit}
+     * @return <ul><li>{@link org.apache.solr.request.IntervalFacets.IntervalCompareResult#INCLUDED} if the value is included in the interval
+     * <li>{@link org.apache.solr.request.IntervalFacets.IntervalCompareResult#GREATER_THAN_END} if the value is greater than {@code endLimit}
+     * <li>{@link org.apache.solr.request.IntervalFacets.IntervalCompareResult#LOWER_THAN_START} if the value is lower than {@code startLimit}
      * </ul>
      * @see NumericUtils#floatToSortableInt(float)
      * @see NumericUtils#doubleToSortableLong(double)

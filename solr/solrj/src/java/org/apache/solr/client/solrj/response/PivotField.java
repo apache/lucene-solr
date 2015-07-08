@@ -22,6 +22,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.util.NamedList;
+
 public class PivotField implements Serializable
 {
   final String  _field;
@@ -29,22 +31,26 @@ public class PivotField implements Serializable
   final int     _count;
   final List<PivotField> _pivot;
   final Map<String,FieldStatsInfo> _statsInfo;
+  final Map<String,Integer> _querycounts;
+  final List<RangeFacet> _ranges;
 
   /**
-   * @deprecated Use {@link #PivotField(String,Object,int,List,Map)} with a null <code>statsInfo</code>
+   * @deprecated Use {@link #PivotField(String,Object,int,List,Map,Map,List)} with null <code>statsInfo</code>, queryCounts and ranges
    */
   @Deprecated
   public PivotField( String f, Object v, int count, List<PivotField> pivot) {
-    this(f, v, count, pivot, null);
+    this(f, v, count, pivot, null, null, null);
   }
 
-  public PivotField( String f, Object v, int count, List<PivotField> pivot, Map<String,FieldStatsInfo> statsInfo)
+  public PivotField( String f, Object v, int count, List<PivotField> pivot, Map<String,FieldStatsInfo> statsInfo, Map<String,Integer> queryCounts, List<RangeFacet> ranges)
   {
     _field = f;
     _value = v;
     _count = count;
     _pivot = pivot;
     _statsInfo = statsInfo;
+    _querycounts= queryCounts;
+    _ranges= ranges;
   }
    
   public String getField() {
@@ -65,6 +71,14 @@ public class PivotField implements Serializable
    
   public Map<String,FieldStatsInfo> getFieldStatsInfo() {
     return _statsInfo;
+  }
+
+  public Map<String,Integer> getFacetQuery() {
+    return _querycounts;
+  }
+
+  public List<RangeFacet> getFacetRanges() {
+    return _ranges;
   }
 
   @Override
@@ -88,6 +102,12 @@ public class PivotField implements Serializable
       out.print("]");
     }
     out.println();
+    if(_querycounts != null) {
+      out.println(_querycounts.toString());
+    }
+    if(_ranges != null) {
+      out.println(_ranges.toString());
+    }
     if( _pivot != null ) {
       for( PivotField p : _pivot ) {
         p.write( out, indent+1 );
