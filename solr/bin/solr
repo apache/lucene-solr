@@ -1236,9 +1236,20 @@ if [ -f "$SOLR_LOGS_DIR/solr_gc.log" ]; then
   mv "$SOLR_LOGS_DIR/solr_gc.log" "$SOLR_LOGS_DIR/solr_gc_log_$(date +"%Y%m%d_%H%M")"
 fi
 
+java_ver_out=`echo "$("$JAVA" -version 2>&1)"`
+JAVA_VERSION=`echo $java_ver_out | grep "java version" | awk '{ print substr($3, 2, length($3)-2); }'`
+JAVA_VENDOR="Oracle"
+if [ "`echo $java_ver_out | grep -i "IBM J9"`" != "" ]; then
+  JAVA_VENDOR="IBM J9"
+fi
+
 # if verbose gc logging enabled, setup the location of the log file
 if [ "$GC_LOG_OPTS" != "" ]; then
-  GC_LOG_OPTS=($GC_LOG_OPTS "-Xloggc:$SOLR_LOGS_DIR/solr_gc.log")
+  gc_log_flag="-Xloggc"
+  if [ "$JAVA_VENDOR" == "IBM J9" ]; then
+    gc_log_flag="-Xverbosegclog"
+  fi
+  GC_LOG_OPTS=($GC_LOG_OPTS "$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log")
 else
   GC_LOG_OPTS=()
 fi
@@ -1316,14 +1327,15 @@ function launch_solr() {
 
   GC_TUNE=($GC_TUNE)
   # deal with Java version specific GC and other flags
-  JAVA_VERSION=`echo "$("$JAVA" -version 2>&1)" | grep "java version" | awk '{ print substr($3, 2, length($3)-2); }'`
   if [ "${JAVA_VERSION:0:3}" == "1.7" ]; then
     # Specific Java version hacking
     GC_TUNE+=('-XX:CMSFullGCsBeforeCompaction=1' '-XX:CMSTriggerPermRatio=80')
-    JAVA_MINOR_VERSION=${JAVA_VERSION:(-2)}
-    if [[ $JAVA_MINOR_VERSION -ge 40 && $JAVA_MINOR_VERSION -le 51 ]]; then
-      GC_TUNE+=('-XX:-UseSuperWord')
-      echo -e "\nWARNING: Java version $JAVA_VERSION has known bugs with Lucene and requires the -XX:-UseSuperWord flag. Please consider upgrading your JVM.\n"
+    if [ "$JAVA_VENDOR" != "IBM J9" ]; then
+      JAVA_MINOR_VERSION=${JAVA_VERSION:(-2)}
+      if [[ $JAVA_MINOR_VERSION -ge 40 && $JAVA_MINOR_VERSION -le 51 ]]; then
+        GC_TUNE+=('-XX:-UseSuperWord')
+        echo -e "\nWARNING: Java version $JAVA_VERSION has known bugs with Lucene and requires the -XX:-UseSuperWord flag. Please consider upgrading your JVM.\n"
+      fi
     fi
   fi
 
