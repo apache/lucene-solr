@@ -747,8 +747,8 @@ final class IndexFileDeleter implements Closeable {
     } catch (IOException e) {  // if delete fails
 
       // IndexWriter should only ask us to delete files it knows it wrote, so if we hit this, something is wrong!
-      assert e instanceof NoSuchFileException == false: "file=" + fileName;
-      assert e instanceof FileNotFoundException == false: "file=" + fileName;
+      assert e instanceof NoSuchFileException == false: "hit unexpected NoSuchFileException: file=" + fileName;
+      assert e instanceof FileNotFoundException == false: "hit unexpected FileNotFoundException: file=" + fileName;
 
       // Some operating systems (e.g. Windows) don't
       // permit a file to be deleted while it is opened

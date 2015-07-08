@@ -123,9 +123,10 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
-    si.addFile(fileName);
 
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
+      // Only add the file once we've successfully created it, else IFD assert can trip:
+      si.addFile(fileName);
       CodecUtil.writeIndexHeader(output, 
                                    Lucene50SegmentInfoFormat.CODEC_NAME, 
                                    Lucene50SegmentInfoFormat.VERSION_CURRENT,
