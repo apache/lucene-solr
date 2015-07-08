@@ -78,7 +78,7 @@ IF NOT EXIST "%JAVA_HOME%\bin\java.exe" (
   goto err
 )
 set "JAVA=%JAVA_HOME%\bin\java"
-CALL :resolve_java_version
+CALL :resolve_java_info
 IF !JAVA_MAJOR_VERSION! LSS 8 (
   set "SCRIPT_ERROR=Java 1.8 or later is required to run Solr. Current Java version is: !JAVA_VERSION_INFO!"
   goto err
@@ -895,6 +895,12 @@ IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
   mkdir "%SOLR_SERVER_DIR%\tmp"
 )
 
+IF "%JAVA_VENDOR%" == "IBM J9" (
+  set "GCLOG_OPT=-Xverbosegclog"
+) else (
+  set "GCLOG_OPT=-Xloggc"
+)
+
 @echo.
 CALL :safe_echo "Starting Solr on port %SOLR_PORT% from %SOLR_SERVER_DIR%"
 @echo.
@@ -902,10 +908,10 @@ IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
-  "%JAVA%" %SERVEROPT% -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -Xloggc:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
+  "%JAVA%" %SERVEROPT% -Xss256k %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT%:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%"
 ) ELSE (
-  START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" "%JAVA%" %SERVEROPT% -Xss256k %SOLR_JAVA_MEM% %START_OPTS% -Xloggc:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
+  START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" "%JAVA%" %SERVEROPT% -Xss256k %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT%:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 )
@@ -1384,23 +1390,48 @@ ENDLOCAL
 GOTO :eof
 
 REM Tests what Java we have and sets some global variables
-:resolve_java_version
+:resolve_java_info
+
+CALL :resolve_java_vendor
 
 set JAVA_MAJOR_VERSION=0
 set JAVA_VERSION_INFO=
 set JAVA_BUILD=0
+
 "%JAVA%" -version 2>&1 | findstr /i "version" > javavers
 set /p JAVAVEROUT=<javavers
 del javavers
-for /f "tokens=3" %%g in ("!JAVAVEROUT!") do (
-  set JAVA_VERSION_INFO=%%g
+
+for /f "tokens=3" %%a in ("!JAVAVEROUT!") do (
+  set JAVA_VERSION_INFO=%%a
+  REM Remove surrounding quotes
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
-  for /f "delims=_ tokens=1-3" %%v in ("!JAVA_VERSION_INFO!") do (
-    set JAVA_MAJOR=!JAVA_VERSION_INFO:~0,3!
-    set /a JAVA_BUILD=%%w
-    set /a JAVA_MAJOR_VERSION=!JAVA_MAJOR:~2,1!*1
+  
+  REM Extract the major Java version, e.g. 7, 8, 9, 10 ...
+  for /f "tokens=2 delims=." %%a in ("!JAVA_VERSION_INFO!") do (
+    set JAVA_MAJOR_VERSION=%%a
+  )
+    
+  REM Don't look for "_{build}" if we're on IBM J9.
+  if NOT "%JAVA_VENDOR%" == "IBM J9" (
+    for /f "delims=_ tokens=2" %%a in ("!JAVA_VERSION_INFO!") do (
+      set /a JAVA_BUILD=%%a
+    )
   )
 )
+GOTO :eof
+
+REM Set which JVM vendor we have
+:resolve_java_vendor
+set "JAVA_VENDOR=Oracle"
+%JAVA% -version 2>&1 | findstr /i "IBM J9" > javares
+set /p JAVA_VENDOR_OUT=<javares
+del javares
+if NOT "%JAVA_VENDOR_OUT%" == "" (
+  set "JAVA_VENDOR=IBM J9"
+)
+
+set JAVA_VENDOR_OUT=
 GOTO :eof
 
 REM Safe echo which does not mess with () in strings

@@ -212,6 +212,8 @@ Bug Fixes
 
 * SOLR-7741: Add missing fields to SolrIndexerConfig.toMap
   (Mike Drob, Christine Poerschke via Ramkumar Aiyengar)
+  
+* SOLR-7748: Fix bin/solr to start on IBM J9. (Shai Erera)
 
 * SOLR-7143: MoreLikeThis Query parser should handle multiple field names
   (Jens Wille, Anshum Gupta)
