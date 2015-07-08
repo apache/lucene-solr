@@ -1467,33 +1467,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  public void testNoSegmentFile() throws IOException {
-    BaseDirectoryWrapper dir = newDirectory(random(), NoLockFactory.INSTANCE);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                           .setMaxBufferedDocs(2));
-
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    doc.add(newField("c", "val", customType));
-    w.addDocument(doc);
-    w.addDocument(doc);
-    IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                            .setMaxBufferedDocs(2)
-                                            .setOpenMode(OpenMode.CREATE));
-
-    w2.close();
-    // If we don't do that, the test fails on Windows
-    w.rollback();
-
-    // This test leaves only segments.gen, which causes
-    // DirectoryReader.indexExists to return true:
-    dir.setCheckIndexOnClose(false);
-    dir.close();
-  }
-
   public void testNoUnwantedTVFiles() throws Exception {
 
     Directory dir = newDirectory();
@@ -2238,7 +2211,9 @@ public class TestIndexWriter extends LuceneTestCase {
       BaseDirectoryWrapper dir = newDirectory();
 
       // Create a corrupt first commit:
-      dir.createOutput("segments_0", IOContext.DEFAULT).close();
+      dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS,
+                                                             "",
+                                                             0), IOContext.DEFAULT).close();
 
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       int mode = i/2;
@@ -2259,9 +2234,6 @@ public class TestIndexWriter extends LuceneTestCase {
           new IndexWriter(dir, iwc).close();
         } else {
           new IndexWriter(dir, iwc).rollback();
-        }
-        if (mode != 0) {
-          fail("expected exception");
         }
       } catch (IOException ioe) {
         // OpenMode.APPEND should throw an exception since no

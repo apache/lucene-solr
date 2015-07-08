@@ -227,7 +227,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     }
 
     for(int iter=0;iter<3;iter++) {
-      
+
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
@@ -251,7 +251,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       
       while(!done) {
         if (VERBOSE) {
-          System.out.println("TEST: cycle...");
+          System.out.println("\nTEST: cycle...");
         }
         
         // Make a new dir that will enforce disk usage:

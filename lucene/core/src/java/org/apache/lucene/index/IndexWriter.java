@@ -808,6 +808,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean initialIndexExists = true;
       boolean fromReader = false;
 
+      String[] files = directory.listAll();
+
       // Set up our initial SegmentInfos:
       IndexCommit commit = config.getIndexCommit();
 
@@ -898,7 +900,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       } else {
         // Init from either the latest commit point, or an explicit prior commit point:
 
-        String[] files = directory.listAll();
         String lastSegmentsFile = SegmentInfos.getLastCommitSegmentsFileName(files);
         if (lastSegmentsFile == null) {
           throw new IndexNotFoundException("no segments* file found in " + directory + ": files: " + Arrays.toString(files));
@@ -942,8 +943,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
+
+      // Sync'd is silly here, but IFD asserts we sync'd on the IW instance:
       synchronized(this) {
-        deleter = new IndexFileDeleter(directoryOrig, directory,
+        deleter = new IndexFileDeleter(files, directoryOrig, directory,
                                        config.getIndexDeletionPolicy(),
                                        segmentInfos, infoStream, this,
                                        initialIndexExists, reader != null);
@@ -2507,7 +2510,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       } finally {
         if (!success) {
           for(SegmentCommitInfo sipc : infos) {
-            IOUtils.deleteFilesIgnoringExceptions(directory, sipc.files().toArray(new String[0]));
+            // Safe: these files must exist
+            deleteNewFiles(sipc.files());
           }
         }
       }
@@ -2524,12 +2528,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         } finally {
           if (!success) {
             for(SegmentCommitInfo sipc : infos) {
-              for(String file : sipc.files()) {
-                try {
-                  directory.deleteFile(file);
-                } catch (Throwable t) {
-                }
-              }
+              // Safe: these files must exist
+              deleteNewFiles(sipc.files());
             }
           }
         }
@@ -2642,7 +2642,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean useCompoundFile;
       synchronized(this) { // Guard segmentInfos
         if (stopMerges) {
-          deleter.deleteNewFiles(infoPerCommit.files());
+          // Safe: these files must exist
+          deleteNewFiles(infoPerCommit.files());
           return;
         }
         ensureOpen();
@@ -2660,9 +2661,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         } finally {
           // delete new non cfs files directly: they were never
           // registered with IFD
-          synchronized(this) {
-            deleter.deleteNewFiles(filesToDelete);
-          }
+          deleteNewFiles(filesToDelete);
         }
         info.setUseCompoundFile(true);
       }
@@ -2688,7 +2687,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Register the new segment
       synchronized(this) {
         if (stopMerges) {
-          deleter.deleteNewFiles(info.files());
+          // Safe: these files must exist
+          deleteNewFiles(infoPerCommit.files());
           return;
         }
         ensureOpen();
@@ -2720,6 +2720,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     boolean success = false;
 
+    Set<String> copiedFiles = new HashSet<>();
     try {
       // Copy the segment's files
       for (String file: info.files()) {
@@ -2728,13 +2729,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         assert !slowFileExists(directory, newFileName): "file \"" + newFileName + "\" already exists; newInfo.files=" + newInfo.files();
 
         directory.copyFrom(info.info.dir, file, newFileName, context);
+        copiedFiles.add(newFileName);
       }
       success = true;
     } finally {
       if (!success) {
-        IOUtils.deleteFilesIgnoringExceptions(directory, newInfo.files().toArray(new String[0]));
+        // Safe: these files must exist
+        deleteNewFiles(copiedFiles);
       }
     }
+
+    assert copiedFiles.equals(newInfoPerCommit.files());
     
     return newInfoPerCommit;
   }
@@ -3483,7 +3488,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // doing this  makes  MockDirWrapper angry in
       // TestNRTThreads (LUCENE-5434):
       readerPool.drop(merge.info);
-      deleter.deleteNewFiles(merge.info.files());
+
+      // Safe: these files must exist:
+      deleteNewFiles(merge.info.files());
       return false;
     }
 
@@ -3550,7 +3557,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (dropSegment) {
       assert !segmentInfos.contains(merge.info);
       readerPool.drop(merge.info);
-      deleter.deleteNewFiles(merge.info.files());
+      // Safe: these files must exist
+      deleteNewFiles(merge.info.files());
     }
 
     boolean success = false;
@@ -3653,9 +3661,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       } finally {
         synchronized(this) {
+
           mergeFinish(merge);
 
-          if (!success) {
+          if (success == false) {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "hit exception during merge");
             }
@@ -4133,31 +4142,27 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         try {
           createCompoundFile(infoStream, trackingCFSDir, merge.info.info, context);
           success = true;
-        } catch (IOException ioe) {
+        } catch (Throwable t) {
           synchronized(this) {
             if (merge.rateLimiter.getAbort()) {
-              // This can happen if rollback or close(false)
-              // is called -- fall through to logic below to
-              // remove the partially created CFS:
+              // This can happen if rollback is called while we were building
+              // our CFS -- fall through to logic below to remove the non-CFS
+              // merged files:
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "hit merge abort exception creating compound file during merge");
+              }
+              return 0;
             } else {
-              handleMergeException(ioe, merge);
+              handleMergeException(t, merge);
             }
           }
-        } catch (Throwable t) {
-          handleMergeException(t, merge);
         } finally {
-          if (!success) {
+          if (success == false) {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "hit exception creating compound file during merge");
             }
-
-            synchronized(this) {
-              Set<String> cfsFiles = new HashSet<>(trackingCFSDir.getCreatedFiles());
-              for (String cfsFile : cfsFiles) {
-                deleter.deleteFile(cfsFile);
-              }
-              deleter.deleteNewFiles(merge.info.files());
-            }
+            // Safe: these files must exist
+            deleteNewFiles(merge.info.files());
           }
         }
 
@@ -4170,16 +4175,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
           // delete new non cfs files directly: they were never
           // registered with IFD
-          deleter.deleteNewFiles(filesToRemove);
+          deleteNewFiles(filesToRemove);
 
           if (merge.rateLimiter.getAbort()) {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "abort merge after building CFS");
             }
-            Set<String> cfsFiles = new HashSet<>(trackingCFSDir.getCreatedFiles());
-            for (String cfsFile : cfsFiles) {
-              deleter.deleteFile(cfsFile);
-            }
+            // Safe: these files must exist
+            deleteNewFiles(merge.info.files());
             return 0;
           }
         }
@@ -4202,9 +4205,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         success2 = true;
       } finally {
         if (!success2) {
-          synchronized(this) {
-            deleter.deleteNewFiles(merge.info.files());
-          }
+          // Safe: these files must exist
+          deleteNewFiles(merge.info.files());
         }
       }
 
@@ -4241,7 +4243,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     } finally {
       // Readers are already closed in commitMerge if we didn't hit
       // an exc:
-      if (!success) {
+      if (success == false) {
         closeMergeReaders(merge, true);
       }
     }
@@ -4651,8 +4653,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * deletion files, this SegmentInfo must not reference such files when this
    * method is called, because they are not allowed within a compound file.
    */
-  static final void createCompoundFile(InfoStream infoStream, TrackingDirectoryWrapper directory, final SegmentInfo info, IOContext context)
-          throws IOException {
+  final void createCompoundFile(InfoStream infoStream, TrackingDirectoryWrapper directory, final SegmentInfo info, IOContext context) throws IOException {
 
     // maybe this check is not needed, but why take the risk?
     if (!directory.getCreatedFiles().isEmpty()) {
@@ -4669,16 +4670,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       success = true;
     } finally {
       if (!success) {
-        Set<String> cfsFiles = new HashSet<>(directory.getCreatedFiles());
-        for (String file : cfsFiles) {
-          IOUtils.deleteFilesIgnoringExceptions(directory, file);
-        }
+        // Safe: these files must exist
+        deleteNewFiles(directory.getCreatedFiles());
       }
     }
 
     // Replace all previous files with the CFS/CFE files:
-    Set<String> siFiles = new HashSet<>(directory.getCreatedFiles());
-    info.setFiles(siFiles);
+    info.setFiles(new HashSet<>(directory.getCreatedFiles()));
   }
   
   /**
@@ -4779,7 +4777,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  (can be opened), false if it cannot be opened, and
    *  (unlike Java's File.exists) throws IOException if
    *  there's some unexpected error. */
-  private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
+  static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
       dir.openInput(fileName, IOContext.DEFAULT).close();
       return true;

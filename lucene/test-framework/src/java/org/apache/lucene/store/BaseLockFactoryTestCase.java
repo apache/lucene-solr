@@ -151,7 +151,7 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   // no unexpected exceptions are raised:
   public void testStressLocks() throws Exception {
     Directory dir = getDirectory(createTempDir());
-    
+
     // First create a 1 doc index:
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     addDoc(w);
@@ -190,6 +190,9 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     public void run() {
       IndexWriter writer = null;
       for(int i=0;i<this.numIteration;i++) {
+        if (VERBOSE) {
+          System.out.println("TEST: WriterThread iter=" + i);
+        }
         try {
           writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
         } catch (LockObtainFailedException e) {

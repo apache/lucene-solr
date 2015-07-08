@@ -157,9 +157,11 @@ class DocumentsWriterPerThread {
   private final AtomicLong pendingNumDocs;
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
+  private final IndexWriter indexWriter;
   
-  public DocumentsWriterPerThread(String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
+  public DocumentsWriterPerThread(IndexWriter writer, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
                                   FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
+    this.indexWriter = writer;
     this.directoryOrig = directoryOrig;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
@@ -487,7 +489,7 @@ class DocumentsWriterPerThread {
       if (indexWriterConfig.getUseCompoundFile()) {
         Set<String> originalFiles = newSegment.info.files();
         // TODO: like addIndexes, we are relying on createCompoundFile to successfully cleanup...
-        IndexWriter.createCompoundFile(infoStream, new TrackingDirectoryWrapper(directory), newSegment.info, context);
+        indexWriter.createCompoundFile(infoStream, new TrackingDirectoryWrapper(directory), newSegment.info, context);
         filesToDelete.addAll(originalFiles);
         newSegment.info.setUseCompoundFile(true);
       }
