@@ -120,7 +120,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
    * Constructor that accepts an already constructed array of {@link FacetInterval} objects. This array needs to be sorted
    * by start value in weakly ascending order. null values are not allowed in the array.
    */
-  IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, FacetInterval[] intervals) throws IOException {
+  public IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, FacetInterval[] intervals) throws IOException {
     this.schemaField = schemaField;
     this.searcher = searcher;
     this.docs = docs;
@@ -360,7 +360,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   /**
    * Helper class to match and count of documents in specified intervals
    */
-  static class FacetInterval {
+  public static class FacetInterval {
 
     /**
      * Key to represent this interval
@@ -519,7 +519,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      * @param includeUpper Indicates weather this interval should include values equal to end
      * @param key String key of this interval
      */
-    FacetInterval(SchemaField schemaField, String startStr, String endStr,
+    public FacetInterval(SchemaField schemaField, String startStr, String endStr,
         boolean includeLower, boolean includeUpper, String key) {
       assert schemaField.getType().getNumericType() != null: "Only numeric fields supported with this constructor";
       this.key = key;

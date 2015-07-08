@@ -155,6 +155,9 @@ New Features
 
 * SOLR-7651: New response format added wt=smile (noble)
 
+* SOLR-4212: SOLR-6353: Let facet queries and facet ranges hang off of pivots. Example:
+  facet.range={!tag=r1}price&facet.query={!tag=q1}somequery&facet.pivot={!range=r1 query=q1}category,manufacturer
+
 Bug Fixes
 ----------------------
 

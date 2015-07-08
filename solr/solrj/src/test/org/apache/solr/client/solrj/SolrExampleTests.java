@@ -42,7 +42,9 @@ import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.RangeFacet.Count;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -65,6 +67,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -1092,6 +1095,218 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     }
     
 
+  }
+
+  @Test
+  public void testPivotFacetsQueries() throws Exception {
+    SolrClient client = getSolrClient();
+
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    assertNumFound("*:*", 0); // make sure it got in
+
+    int id = 1;
+    ArrayList<SolrInputDocument> docs = new ArrayList<>();
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "a", "inStock", false, "popularity", 13, "price", 16.04));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "a", "inStock", true, "popularity", 14, "price", 12.34));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "b", "inStock", false, "popularity", 24, "price", 51.39));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "b", "inStock", true, "popularity", 28, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "a", "inStock", false, "popularity", 32));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "a", "inStock", true, "popularity", 31, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", false, "popularity", 36));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", true, "popularity", 37, "price", 1.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", false, "popularity", 38, "price", 47.98));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", true, "popularity", -38));
+    docs.add(makeTestDoc("id", id++, "cat", "b")); // something not matching all fields
+    client.add(docs);
+    client.commit();
+
+    SolrQuery query = new SolrQuery("*:*");
+    query.addFacetPivotField("{!query=s1}features,manu");
+    query.addFacetQuery("{!key=highPrice tag=s1}price:[100 TO *]");
+    query.addFacetQuery("{!tag=s1 key=lowPrice}price:[0 TO 50]");
+    query.setFacetMinCount(0);
+    query.setRows(0);
+    QueryResponse rsp = client.query(query);
+
+    Map<String,Integer> map = rsp.getFacetQuery();
+    assertEquals(2, map.get("highPrice").intValue());
+    assertEquals(5, map.get("lowPrice").intValue());
+    
+    NamedList<List<PivotField>> pivots = rsp.getFacetPivot();
+    List<PivotField> pivotValues = pivots.get("features,manu");
+
+    PivotField featuresBBBPivot = pivotValues.get(0);
+    assertEquals("features", featuresBBBPivot.getField());
+    assertEquals("bbb", featuresBBBPivot.getValue());
+    assertNotNull(featuresBBBPivot.getFacetQuery());
+    assertEquals(2, featuresBBBPivot.getFacetQuery().size());
+    assertEquals(1, featuresBBBPivot.getFacetQuery().get("highPrice").intValue());
+    assertEquals(2, featuresBBBPivot.getFacetQuery().get("lowPrice").intValue());
+    
+    PivotField featuresAAAPivot = pivotValues.get(1);
+    assertEquals("features", featuresAAAPivot.getField());
+    assertEquals("aaa", featuresAAAPivot.getValue());
+    assertNotNull(featuresAAAPivot.getFacetQuery());
+    assertEquals(2, featuresAAAPivot.getFacetQuery().size());
+    assertEquals(1, featuresAAAPivot.getFacetQuery().get("highPrice").intValue());
+    assertEquals(3, featuresAAAPivot.getFacetQuery().get("lowPrice").intValue());
+  }
+
+  @Test
+  public void testPivotFacetsRanges() throws Exception {
+    SolrClient client = getSolrClient();
+
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    assertNumFound("*:*", 0); // make sure it got in
+
+    int id = 1;
+    ArrayList<SolrInputDocument> docs = new ArrayList<>();
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "a", "inStock", false, "popularity", 13, "price", 16.04));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "a", "inStock", true, "popularity", 14, "price", 12.34));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "b", "inStock", false, "popularity", 24, "price", 51.39));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "cat", "b", "inStock", true, "popularity", 28, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "a", "inStock", false, "popularity", 32));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "a", "inStock", true, "popularity", 31, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", false, "popularity", 36));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", true, "popularity", 37, "price", 1.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", false, "popularity", 38, "price", 47.98));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "cat", "b", "inStock", true, "popularity", -38));
+    docs.add(makeTestDoc("id", id++, "cat", "b")); // something not matching all fields
+    client.add(docs);
+    client.commit();
+
+    SolrQuery query = new SolrQuery("*:*");
+    query.addFacetPivotField("{!range=s1}features,manu");
+    query.add(FacetParams.FACET_RANGE, "{!key=price1 tag=s1}price");
+    query.add(String.format(Locale.ROOT, "f.%s.%s", "price", FacetParams.FACET_RANGE_START), "0");
+    query.add(String.format(Locale.ROOT, "f.%s.%s", "price", FacetParams.FACET_RANGE_END), "200");
+    query.add(String.format(Locale.ROOT, "f.%s.%s", "price", FacetParams.FACET_RANGE_GAP), "50");
+    query.set(FacetParams.FACET, true);
+    query.add(FacetParams.FACET_RANGE, "{!key=price2 tag=s1}price");
+    query.setFacetMinCount(0);
+    query.setRows(0);
+    QueryResponse rsp = client.query(query);
+
+    List<RangeFacet> list = rsp.getFacetRanges();
+    assertEquals(2, list.size());
+    @SuppressWarnings("unchecked")
+    RangeFacet<Float, Float> range1 = list.get(0);
+    assertEquals("price1", range1.getName());
+    assertEquals(0, range1.getStart().intValue());
+    assertEquals(200, range1.getEnd().intValue());
+    assertEquals(50, range1.getGap().intValue());
+    List<Count> counts1 = range1.getCounts();
+    assertEquals(4, counts1.size());
+    assertEquals(5, counts1.get(0).getCount());
+    assertEquals("0.0", counts1.get(0).getValue());
+    assertEquals(1, counts1.get(1).getCount());
+    assertEquals("50.0", counts1.get(1).getValue());
+    assertEquals(2, counts1.get(2).getCount());
+    assertEquals("100.0", counts1.get(2).getValue());
+    assertEquals(0, counts1.get(3).getCount());
+    assertEquals("150.0", counts1.get(3).getValue());
+    @SuppressWarnings("unchecked")
+    RangeFacet<Float, Float> range2 = list.get(1);
+    assertEquals("price2", range2.getName());
+    assertEquals(0, range2.getStart().intValue());
+    assertEquals(200, range2.getEnd().intValue());
+    assertEquals(50, range2.getGap().intValue());
+    List<Count> counts2 = range2.getCounts();
+    assertEquals(4, counts2.size());
+    assertEquals(5, counts2.get(0).getCount());
+    assertEquals("0.0", counts2.get(0).getValue());
+    assertEquals(1, counts2.get(1).getCount());
+    assertEquals("50.0", counts2.get(1).getValue());
+    assertEquals(2, counts2.get(2).getCount());
+    assertEquals("100.0", counts2.get(2).getValue());
+    assertEquals(0, counts2.get(3).getCount());
+    assertEquals("150.0", counts2.get(3).getValue());
+    
+    NamedList<List<PivotField>> pivots = rsp.getFacetPivot();
+    List<PivotField> pivotValues = pivots.get("features,manu");
+
+    PivotField featuresBBBPivot = pivotValues.get(0);
+    assertEquals("features", featuresBBBPivot.getField());
+    assertEquals("bbb", featuresBBBPivot.getValue());
+    List<RangeFacet> featuresBBBRanges = featuresBBBPivot.getFacetRanges();
+
+    for (RangeFacet range : featuresBBBRanges) {
+      if (range.getName().equals("price1")) {
+        assertNotNull(range);
+        assertEquals(0, ((Float)range.getStart()).intValue());
+        assertEquals(200, ((Float)range.getEnd()).intValue());
+        assertEquals(50, ((Float)range.getGap()).intValue());
+        List<Count> counts = range.getCounts();
+        assertEquals(4, counts.size());
+        for (Count count : counts) {
+          switch (count.getValue()) {
+            case "0.0": assertEquals(2, count.getCount()); break;
+            case "50.0": assertEquals(0, count.getCount()); break;
+            case "100.0": assertEquals(1, count.getCount()); break;
+            case "150.0": assertEquals(0, count.getCount()); break;
+          }
+        }
+      } else if (range.getName().equals("price2"))  {
+        assertNotNull(range);
+        assertEquals(0, ((Float) range.getStart()).intValue());
+        assertEquals(200, ((Float) range.getEnd()).intValue());
+        assertEquals(50, ((Float) range.getGap()).intValue());
+        List<Count> counts = range.getCounts();
+        assertEquals(4, counts.size());
+        for (Count count : counts) {
+          switch (count.getValue()) {
+            case "0.0": assertEquals(2, count.getCount()); break;
+            case "50.0": assertEquals(0, count.getCount()); break;
+            case "100.0": assertEquals(1, count.getCount()); break;
+            case "150.0": assertEquals(0, count.getCount()); break;
+          }
+        }
+      }
+    }
+
+    PivotField featuresAAAPivot = pivotValues.get(1);
+    assertEquals("features", featuresAAAPivot.getField());
+    assertEquals("aaa", featuresAAAPivot.getValue());
+    List<RangeFacet> facetRanges = featuresAAAPivot.getFacetRanges();
+    for (RangeFacet range : facetRanges) {
+      if (range.getName().equals("price1")) {
+        assertNotNull(range);
+        assertEquals(0, ((Float)range.getStart()).intValue());
+        assertEquals(200, ((Float)range.getEnd()).intValue());
+        assertEquals(50, ((Float)range.getGap()).intValue());
+        List<Count> counts = range.getCounts();
+        assertEquals(4, counts.size());
+        for (Count count : counts) {
+          switch (count.getValue()) {
+            case "0.0": assertEquals(3, count.getCount()); break;
+            case "50.0": assertEquals(1, count.getCount()); break;
+            case "100.0": assertEquals(1, count.getCount()); break;
+            case "150.0": assertEquals(0, count.getCount()); break;
+          }
+        }
+      } else if (range.getName().equals("price2"))  {
+        assertNotNull(range);
+        assertEquals(0, ((Float)range.getStart()).intValue());
+        assertEquals(200, ((Float)range.getEnd()).intValue());
+        assertEquals(50, ((Float)range.getGap()).intValue());
+        List<Count> counts = range.getCounts();
+        assertEquals(4, counts.size());
+        for (Count count : counts) {
+          switch (count.getValue()) {
+            case "0.0": assertEquals(3, count.getCount()); break;
+            case "50.0": assertEquals(1, count.getCount()); break;
+            case "100.0": assertEquals(1, count.getCount()); break;
+            case "150.0": assertEquals(0, count.getCount()); break;
+          }
+        }
+      }
+    }
   }
 
   public void testPivotFacetsMissing() throws Exception {

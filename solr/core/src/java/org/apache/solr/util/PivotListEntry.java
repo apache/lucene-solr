@@ -34,7 +34,9 @@ public enum PivotListEntry {
   COUNT(2),
   // optional entries
   PIVOT,
-  STATS;
+  STATS,
+  QUERIES,
+  RANGES;
   
   private static final int MIN_INDEX_OF_OPTIONAL = 3;
 
