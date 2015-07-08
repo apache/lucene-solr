@@ -30,22 +30,18 @@ import java.util.stream.IntStream;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertEquals;
 
 /* WARNING: This test does *not* extend LuceneTestCase to prevent static class
  * initialization when spawned as subprocess (and please let default codecs alive)! */
 
 @RunWith(RandomizedRunner.class)
-@ThreadLeakLingering(linger = 5000) // Linger a bit waiting for threadpool threads to die.
-public class TestCodecLoadingDeadlock {
+public class TestCodecLoadingDeadlock extends Assert {
   
   @Test
   public void testDeadlock() throws Exception {
