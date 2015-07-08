@@ -395,7 +395,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     if (state.isActive() && state.dwpt == null) {
       final FieldInfos.Builder infos = new FieldInfos.Builder(
           writer.globalFieldNumberMap);
-      state.dwpt = new DocumentsWriterPerThread(writer.newSegmentName(), directoryOrig,
+      state.dwpt = new DocumentsWriterPerThread(writer, writer.newSegmentName(), directoryOrig,
                                                 directory, config, infoStream, deleteQueue, infos,
                                                 writer.pendingNumDocs, writer.enableTestPoints);
     }

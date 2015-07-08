@@ -311,6 +311,14 @@ Optimizations
 
 * LUCENE-6617: Reduce heap usage for small FSTs (Mike McCandless)
 
+* LUCENE-6616: IndexWriter now lists the files in the index directory
+  only once on init, and IndexFileDeleter no longer suppresses
+  FileNotFoundException and NoSuchFileException.  This also improves
+  IndexFileDeleter to delete segments_N files last, so that in the
+  presence of a virus checker, the index is never left in a state
+  where an expired segments_N references non-existing files (Robert
+  Muir, Mike McCandless)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
