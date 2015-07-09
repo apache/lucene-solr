@@ -319,6 +319,10 @@ Optimizations
   where an expired segments_N references non-existing files (Robert
   Muir, Mike McCandless)
 
+* LUCENE-6645: Optimized the way we merge postings lists in multi-term queries
+  and TermsQuery. This should especially help when there are lots of small
+  postings lists. (Adrien Grand, Mike McCandless)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9

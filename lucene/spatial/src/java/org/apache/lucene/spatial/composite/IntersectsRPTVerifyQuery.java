@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -37,6 +38,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.prefix.AbstractVisitingPrefixTreeFilter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.util.BitDocIdSetBuilder;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 
@@ -151,8 +153,8 @@ public class IntersectsRPTVerifyQuery extends Query {
     // TODO consider if IntersectsPrefixTreeFilter should simply do this and provide both sets
 
     class IntersectsDifferentiatingVisitor extends VisitorTemplate {
-      BitDocIdSet.Builder approxBuilder = new BitDocIdSet.Builder(maxDoc);
-      BitDocIdSet.Builder exactBuilder = new BitDocIdSet.Builder(maxDoc);
+      BitDocIdSetBuilder approxBuilder = new BitDocIdSetBuilder(maxDoc);
+      BitDocIdSetBuilder exactBuilder = new BitDocIdSetBuilder(maxDoc);
       BitDocIdSet exactDocIdSet;
       BitDocIdSet approxDocIdSet;
 

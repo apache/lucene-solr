@@ -24,9 +24,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** Handles intersection of a shape with a BKD tree previously written with {@link BKDTreeWriter}.
@@ -71,7 +69,7 @@ final class BKDTreeReader implements Accountable {
     final IndexInput in;
     byte[] scratch = new byte[16];
     final ByteArrayDataInput scratchReader = new ByteArrayDataInput(scratch);
-    final FixedBitSet bits;
+    final DocIdSetBuilder docs;
     final int latMinEnc;
     final int latMaxEnc;
     final int lonMinEnc;
@@ -85,7 +83,7 @@ final class BKDTreeReader implements Accountable {
                       LatLonFilter latLonFilter,
                       SortedNumericDocValues sndv) {
       this.in = in;
-      this.bits = new FixedBitSet(maxDoc);
+      this.docs = new DocIdSetBuilder(maxDoc);
       this.latMinEnc = latMinEnc;
       this.latMaxEnc = latMaxEnc;
       this.lonMinEnc = lonMinEnc;
@@ -135,7 +133,7 @@ final class BKDTreeReader implements Accountable {
                              BKDTreeWriter.encodeLon(Math.nextAfter(180.0, Double.POSITIVE_INFINITY)));
 
     // NOTE: hitCount is an over-estimate in the multi-valued case:
-    return new BitDocIdSet(state.bits, hitCount);
+    return state.docs.build(hitCount);
   }
 
   /** Fast path: this is called when the query rect fully encompasses all cells under this node. */
@@ -167,9 +165,10 @@ final class BKDTreeReader implements Accountable {
       //System.out.println("    seek to leafFP=" + fp);
       // How many points are stored in this leaf cell:
       int count = state.in.readVInt();
+      state.docs.grow(count);
       for(int i=0;i<count;i++) {
         int docID = state.in.readInt();
-        state.bits.set(docID);
+        state.docs.add(docID);
       }
 
       //bits.or(allLeafDISI);
@@ -262,6 +261,7 @@ final class BKDTreeReader implements Accountable {
       // How many points are stored in this leaf cell:
       int count = state.in.readVInt();
 
+      state.docs.grow(count);
       for(int i=0;i<count;i++) {
         int docID = state.in.readInt();
         state.sndv.setDocument(docID);
@@ -279,7 +279,7 @@ final class BKDTreeReader implements Accountable {
               lonEnc < state.lonMaxEnc &&
               (state.latLonFilter == null ||
                state.latLonFilter.accept(BKDTreeWriter.decodeLat(latEnc), BKDTreeWriter.decodeLon(lonEnc)))) {
-            state.bits.set(docID);
+            state.docs.add(docID);
             hitCount++;
 
             // Stop processing values for this doc:

@@ -44,6 +44,7 @@ import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -52,9 +53,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -221,17 +221,17 @@ public class TermsQuery extends Query implements Accountable {
     }
   }
 
-  private static class WeightOrBitSet {
+  private static class WeightOrDocIdSet {
     final Weight weight;
-    final BitDocIdSet bitset;
+    final DocIdSet set;
 
-    WeightOrBitSet(Weight weight) {
+    WeightOrDocIdSet(Weight weight) {
       this.weight = Objects.requireNonNull(weight);
-      this.bitset = null;
+      this.set = null;
     }
 
-    WeightOrBitSet(BitDocIdSet bitset) {
-      this.bitset = bitset;
+    WeightOrDocIdSet(DocIdSet bitset) {
+      this.set = bitset;
       this.weight = null;
     }
   }
@@ -252,7 +252,7 @@ public class TermsQuery extends Query implements Accountable {
        * On the given leaf context, try to either rewrite to a disjunction if
        * there are few matching terms, or build a bitset containing matching docs.
        */
-      private WeightOrBitSet rewrite(LeafReaderContext context) throws IOException {
+      private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
         final LeafReader reader = context.reader();
 
         // We will first try to collect up to 'threshold' terms into 'matchingTerms'
@@ -260,7 +260,7 @@ public class TermsQuery extends Query implements Accountable {
         final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
         assert termData.size() > threshold : "Query should have been rewritten";
         List<TermAndState> matchingTerms = new ArrayList<>(threshold);
-        BitDocIdSet.Builder builder = null;
+        DocIdSetBuilder builder = null;
 
         final Fields fields = reader.fields();
         String lastField = null;
@@ -283,18 +283,18 @@ public class TermsQuery extends Query implements Accountable {
           if (termsEnum != null && termsEnum.seekExact(term)) {
             if (matchingTerms == null) {
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
-              builder.or(docs);
+              builder.add(docs);
             } else if (matchingTerms.size() < threshold) {
               matchingTerms.add(new TermAndState(field, termsEnum));
             } else {
               assert matchingTerms.size() == threshold;
-              builder = new BitDocIdSet.Builder(reader.maxDoc());
+              builder = new DocIdSetBuilder(reader.maxDoc());
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
-              builder.or(docs);
+              builder.add(docs);
               for (TermAndState t : matchingTerms) {
                 t.termsEnum.seekExact(t.term, t.state);
                 docs = t.termsEnum.postings(docs, PostingsEnum.NONE);
-                builder.or(docs);
+                builder.add(docs);
               }
               matchingTerms = null;
             }
@@ -310,14 +310,14 @@ public class TermsQuery extends Query implements Accountable {
           }
           Query q = new ConstantScoreQuery(bq.build());
           q.setBoost(score());
-          return new WeightOrBitSet(searcher.rewrite(q).createWeight(searcher, needsScores));
+          return new WeightOrDocIdSet(searcher.rewrite(q).createWeight(searcher, needsScores));
         } else {
           assert builder != null;
-          return new WeightOrBitSet(builder.build());
+          return new WeightOrDocIdSet(builder.build());
         }
       }
 
-      private Scorer scorer(BitDocIdSet set) {
+      private Scorer scorer(DocIdSet set) throws IOException {
         if (set == null) {
           return null;
         }
@@ -330,11 +330,11 @@ public class TermsQuery extends Query implements Accountable {
 
       @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-        final WeightOrBitSet weightOrBitSet = rewrite(context);
+        final WeightOrDocIdSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet.weight != null) {
           return weightOrBitSet.weight.bulkScorer(context);
         } else {
-          final Scorer scorer = scorer(weightOrBitSet.bitset);
+          final Scorer scorer = scorer(weightOrBitSet.set);
           if (scorer == null) {
             return null;
           }
@@ -344,11 +344,11 @@ public class TermsQuery extends Query implements Accountable {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        final WeightOrBitSet weightOrBitSet = rewrite(context);
+        final WeightOrDocIdSet weightOrBitSet = rewrite(context);
         if (weightOrBitSet.weight != null) {
           return weightOrBitSet.weight.scorer(context);
         } else {
-          return scorer(weightOrBitSet.bitset);
+          return scorer(weightOrBitSet.set);
         }
       }
     };
