@@ -339,8 +339,11 @@ public class Builder<T> {
   }
   */
 
-  /** It's OK to add the same input twice in a row with
-   *  different outputs, as long as outputs impls the merge
+  /** Add the next input/output pair.  The provided input
+   *  must be sorted after the previous one according to
+   *  {@link IntsRef#compareTo}.  It's also OK to add the same
+   *  input twice in a row with different outputs, as long
+   *  as {@link Outputs} implements the {@link Outputs#merge}
    *  method. Note that input is fully consumed after this
    *  method is returned (so caller is free to reuse), but
    *  output is not.  So if your outputs are changeable (eg
