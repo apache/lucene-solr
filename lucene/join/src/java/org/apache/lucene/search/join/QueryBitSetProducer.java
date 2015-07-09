@@ -70,14 +70,10 @@ public class QueryBitSetProducer implements BitSetProducer {
       final Weight weight = searcher.createNormalizedWeight(query, false);
       final DocIdSetIterator it = weight.scorer(context);
 
-      BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
-      if (it != null) {
-        builder.or(it);
-      }
-      docIdSet = builder.build();
-      if (docIdSet == null) {
-        // We use EMPTY as a sentinel for the empty set, which is cacheable
+      if (it == null) {
         docIdSet = DocIdSet.EMPTY;
+      } else {
+        docIdSet = new BitDocIdSet(BitSet.of(it, context.reader().maxDoc()));
       }
       cache.put(key, docIdSet);
     }

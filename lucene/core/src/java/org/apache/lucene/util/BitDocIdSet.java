@@ -77,7 +77,8 @@ public class BitDocIdSet extends DocIdSet {
   }
 
   /**
-   * A builder of {@link DocIdSet}s that supports random access.
+   * A builder of {@link DocIdSet}s that supports random access. If you don't
+   * need random access, you should rather use {@link DocIdSetBuilder}.
    * @lucene.internal
    */
   public static final class Builder {

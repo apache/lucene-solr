@@ -48,6 +48,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -74,9 +75,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
         final DocIdSet uncached = filter.getDocIdSet(context, null);
         final DocIdSetIterator it = uncached == null ? null : uncached.iterator();
         if (it != null) {
-          BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
-          builder.or(it);
-          docIdSet = builder.build();
+          docIdSet = new BitDocIdSet(BitSet.of(it, context.reader().maxDoc()));
         }
         if (docIdSet == null) {
           docIdSet = new BitDocIdSet(new SparseFixedBitSet(context.reader().maxDoc()));

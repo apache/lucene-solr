@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -29,13 +28,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
@@ -145,7 +141,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   /**
    * Returns a random filter over the document set
    */
-  protected Filter randomFilter() {
+  protected Query randomFilter() {
     final Query query;
     if (random().nextBoolean()) {
       query = TermRangeQuery.newStringRange("field", "a", "" + randomChar(), true, true);
@@ -157,89 +153,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       phrase.setSlop(100);
       query = phrase;
     }
-    
-    // now wrap the query as a filter. QWF has its own codepath
-    if (random().nextBoolean()) {
-      return new QueryWrapperFilter(query);
-    } else {
-      return new SlowWrapperFilter(query, random().nextBoolean());
-    }
-  }
-  
-  static class SlowWrapperFilter extends Filter {
-    final Query query;
-    final boolean useBits;
-    
-    SlowWrapperFilter(Query query, boolean useBits) {
-      this.query = query;
-      this.useBits = useBits;
-    }
-    
-    @Override
-    public Query rewrite(IndexReader reader) throws IOException {
-      Query q = query.rewrite(reader);
-      if (q != query) {
-        return new SlowWrapperFilter(q, useBits);
-      } else {
-        return super.rewrite(reader);
-      }
-    }
-
-    @Override
-    public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) throws IOException {
-      // get a private context that is used to rewrite, createWeight and score eventually
-      final LeafReaderContext privateContext = context.reader().getContext();
-      final Weight weight = new IndexSearcher(privateContext).createNormalizedWeight(query, false);
-      return new DocIdSet() {
-        @Override
-        public DocIdSetIterator iterator() throws IOException {
-          return weight.scorer(privateContext);
-        }
-
-        @Override
-        public long ramBytesUsed() {
-          return 0L;
-        }
-
-        @Override
-        public Bits bits() throws IOException {
-          if (useBits) {
-            BitDocIdSet.Builder builder = new BitDocIdSet.Builder(context.reader().maxDoc());
-            DocIdSetIterator disi = iterator();
-            if (disi != null) {
-              builder.or(disi);
-            }
-            BitDocIdSet bitset = builder.build();
-            if (bitset == null) {
-              return new Bits.MatchNoBits(context.reader().maxDoc());
-            } else {
-              return bitset.bits();
-            }
-          } else {
-            return null;
-          }
-        }
-      };
-    }
-
-    @Override
-    public String toString(String field) {
-      return "SlowQWF(" + query + ")";
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      return query.equals(((SlowWrapperFilter) obj).query);
-    }
-
-    @Override
-    public int hashCode() {
-      return 31 * super.hashCode() + query.hashCode();
-    }
-
+    return query;
   }
 
   /**
@@ -262,13 +176,10 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     // test with some filters (this will sometimes cause advance'ing enough to test it)
     int numFilters = TEST_NIGHTLY ? atLeast(10) : atLeast(3);
     for (int i = 0; i < numFilters; i++) {
-      Filter filter = randomFilter();
+      Query filter = randomFilter();
       // incorporate the filter in different ways.
       assertSubsetOf(q1, q2, filter);
       assertSubsetOf(filteredQuery(q1, filter), filteredQuery(q2, filter), null);
-      assertSubsetOf(filteredQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
-      assertSubsetOf(filteredBooleanQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
-      assertSubsetOf(filteredBooleanQuery(q1, filter), filteredQuery(q2, filter), null);
     }
   }
   
@@ -278,13 +189,13 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
    * 
    * Both queries will be filtered by <code>filter</code>
    */
-  protected void assertSubsetOf(Query q1, Query q2, Filter filter) throws Exception {
+  protected void assertSubsetOf(Query q1, Query q2, Query filter) throws Exception {
     QueryUtils.check(q1);
     QueryUtils.check(q2);
 
     if (filter != null) {
-      q1 = new FilteredQuery(q1, filter);
-      q2 = new FilteredQuery(q2, filter);
+      q1 = filteredQuery(q1, filter);
+      q2 = filteredQuery(q2, filter);
     }
     // we test both INDEXORDER and RELEVANCE because we want to test needsScores=true/false
     for (Sort sort : new Sort[] { Sort.INDEXORDER, Sort.RELEVANCE }) {
@@ -316,21 +227,18 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     // also test with some filters to test advancing
     int numFilters = TEST_NIGHTLY ? atLeast(10) : atLeast(3);
     for (int i = 0; i < numFilters; i++) {
-      Filter filter = randomFilter();
+      Query filter = randomFilter();
       // incorporate the filter in different ways.
       assertSameScores(q1, q2, filter);
       assertSameScores(filteredQuery(q1, filter), filteredQuery(q2, filter), null);
-      assertSameScores(filteredQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
-      assertSameScores(filteredBooleanQuery(q1, filter), filteredBooleanQuery(q2, filter), null);
-      assertSameScores(filteredBooleanQuery(q1, filter), filteredQuery(q2, filter), null);
     }
   }
 
-  protected void assertSameScores(Query q1, Query q2, Filter filter) throws Exception {
+  protected void assertSameScores(Query q1, Query q2, Query filter) throws Exception {
     // not efficient, but simple!
     if (filter != null) {
-      q1 = new FilteredQuery(q1, filter);
-      q2 = new FilteredQuery(q2, filter);
+      q1 = filteredQuery(q1, filter);
+      q2 = filteredQuery(q2, filter);
     }
     TopDocs td1 = s1.search(q1, reader.maxDoc());
     TopDocs td2 = s2.search(q2, reader.maxDoc());
@@ -341,11 +249,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     }
   }
   
-  protected Query filteredQuery(Query query, Filter filter) {
-    return new FilteredQuery(query, filter, TestUtil.randomFilterStrategy(random()));
-  }
-  
-  protected Query filteredBooleanQuery(Query query, Filter filter) {
+  protected Query filteredQuery(Query query, Query filter) {
     BooleanQuery bq = new BooleanQuery();
     bq.add(query, Occur.MUST);
     bq.add(filter, Occur.FILTER);
