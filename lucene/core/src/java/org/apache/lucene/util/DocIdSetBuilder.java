@@ -23,7 +23,9 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
- * A builder of {@link DocIdSet}s.
+ * A builder of {@link DocIdSet}s.  At first it uses a sparse structure to gather
+ * documents, and then upgrades to a non-sparse bit set once enough hits match.
+ *
  * @lucene.internal
  */
 public final class DocIdSetBuilder {
@@ -62,6 +64,17 @@ public final class DocIdSetBuilder {
     this.bufferSize = 0;
   }
 
+  /** Grows the buffer to at least minSize, but never larger than threshold. */
+  private void growBuffer(int minSize) {
+    assert minSize < threshold;
+    if (buffer.length < minSize) {
+      int nextSize = Math.min(threshold, ArrayUtil.oversize(minSize, RamUsageEstimator.NUM_BYTES_INT));
+      int[] newBuffer = new int[nextSize];
+      System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+      buffer = newBuffer;
+    }
+  }
+
   /**
    * Add the content of the provided {@link DocIdSetIterator} to this builder.
    * NOTE: if you need to build a {@link DocIdSet} out of a single
@@ -74,7 +87,8 @@ public final class DocIdSetBuilder {
       bitSet.or(iter);
     } else {
       while (true) {  
-        final int end = Math.min(threshold, buffer.length);
+        assert buffer.length <= threshold;
+        final int end = buffer.length;
         for (int i = bufferSize; i < end; ++i) {
           final int doc = iter.nextDoc();
           if (doc == DocIdSetIterator.NO_MORE_DOCS) {
@@ -89,7 +103,7 @@ public final class DocIdSetBuilder {
           break;
         }
 
-        buffer = ArrayUtil.grow(buffer, bufferSize + 1);
+        growBuffer(bufferSize+1);
       }
 
       upgradeToBitSet();
@@ -105,8 +119,8 @@ public final class DocIdSetBuilder {
   public void grow(int numDocs) {
     if (bitSet == null) {
       final long newLength = bufferSize + numDocs;
-      if (newLength <= threshold) {
-        buffer = ArrayUtil.grow(buffer, (int) newLength);
+      if (newLength < threshold) {
+        growBuffer((int) newLength);
       } else {
         upgradeToBitSet();
       }
@@ -123,13 +137,13 @@ public final class DocIdSetBuilder {
     if (bitSet != null) {
       bitSet.set(doc);
     } else {
-      if (bufferSize + 1 >= threshold) {
-        upgradeToBitSet();
-        bitSet.set(doc);
-        return;
-      }
       if (bufferSize + 1 > buffer.length) {
-        buffer = ArrayUtil.grow(buffer, bufferSize + 1);
+        if (bufferSize + 1 >= threshold) {
+          upgradeToBitSet();
+          bitSet.set(doc);
+          return;
+        }
+        growBuffer(bufferSize+1);
       }
       buffer[bufferSize++] = doc;
     }
@@ -175,6 +189,7 @@ public final class DocIdSetBuilder {
         LSBRadixSorter sorter = new LSBRadixSorter();
         sorter.sort(buffer, 0, bufferSize);
         final int l = dedup(buffer, bufferSize);
+        assert l <= bufferSize;
         buffer = ArrayUtil.grow(buffer, l + 1);
         buffer[l] = DocIdSetIterator.NO_MORE_DOCS;
         return new IntArrayDocIdSet(buffer, l);
