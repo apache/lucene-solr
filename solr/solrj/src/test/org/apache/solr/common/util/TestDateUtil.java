@@ -19,23 +19,24 @@ package org.apache.solr.common.util;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDateUtil extends LuceneTestCase {
 
-  public void testCurrentTime() throws ParseException {
-    long now = System.currentTimeMillis();
-    assertParsedDate(now, new Date(now).toString(), 1000L);
+  public void testDateToString() throws ParseException {
+    long ts = 1226583351000L;
+    assertParsedDate(ts, new Date(ts).toString());
   }
   
   public void testParseDate() throws ParseException {
-    assertParsedDate(1226583351000L, "Thu Nov 13 04:35:51 AKST 2008", 0L);
+    assertParsedDate(1226583351000L, "Thu Nov 13 04:35:51 AKST 2008");
   }
     
-  private static void assertParsedDate(long ts, String dateStr, long epsilon) throws ParseException {
-    System.out.println(DateUtil.parseDate(dateStr).getTime());
-    assertTrue("Incorrect parsed timestamp", Math.abs(ts - DateUtil.parseDate(dateStr).getTime()) <= epsilon);
+  private static void assertParsedDate(long ts, String dateStr) throws ParseException {
+    long parsed = DateUtil.parseDate(dateStr).getTime();
+    assertTrue(String.format(Locale.ENGLISH, "Incorrect parsed timestamp: %d != %d (%s)", ts, parsed, dateStr), Math.abs(ts - parsed) <= 1000L);
   }
 
 }
