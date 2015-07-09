@@ -18,18 +18,12 @@ package org.apache.solr.common.util;
  */
 
 import java.text.ParseException;
-import java.util.Date;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDateUtil extends LuceneTestCase {
 
-  public void testDateToString() throws ParseException {
-    long ts = 1226583351000L;
-    assertParsedDate(ts, new Date(ts).toString());
-  }
-  
   public void testParseDate() throws ParseException {
     assertParsedDate(1226583351000L, "Thu Nov 13 04:35:51 AKST 2008");
   }
