@@ -28,7 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 public abstract class BitSet implements MutableBits, Accountable {
 
   /** Build a {@link BitSet} from the content of the provided {@link DocIdSetIterator}.
-   *  NOTE: this will consume the {@link BitSet}. */
+   *  NOTE: this will fully consume the {@link DocIdSetIterator}. */
   public static BitSet of(DocIdSetIterator it, int maxDoc) throws IOException {
     final long cost = it.cost();
     final int threshold = maxDoc >>> 7;
