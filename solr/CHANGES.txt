@@ -218,6 +218,9 @@ Bug Fixes
 * SOLR-7143: MoreLikeThis Query parser should handle multiple field names
   (Jens Wille, Anshum Gupta)
 
+* SOLR-7132: The Collections API ADDREPLICA command property.name is not reflected 
+  in the clusterstate until after Solr restarts (Erick Erickson)
+
 Optimizations
 ----------------------
 

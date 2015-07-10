@@ -2493,6 +2493,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     String node = message.getStr("node");
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
+    if (StringUtils.isBlank(coreName)) {
+      coreName = message.getStr(CoreAdminParams.PROPERTY_PREFIX + CoreAdminParams.NAME);
+    }
     
     final String asyncId = message.getStr(ASYNC);
     
@@ -2507,7 +2510,6 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     
     if (node == null) {
-      
       node = getNodesForNewShard(clusterState, collection, shard, 1, null,
           overseer.getZkController().getCoreContainer()).get(0).nodeName;
       log.info("Node not provided, Identified {} for creating new replica", node);
