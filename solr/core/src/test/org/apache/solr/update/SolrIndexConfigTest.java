@@ -124,7 +124,6 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
     ++mSizeExpected; assertTrue(m.get("maxBufferedDocs") instanceof Integer);
     ++mSizeExpected; assertTrue(m.get("maxMergeDocs") instanceof Integer);
-    ++mSizeExpected; assertTrue(m.get("maxIndexingThreads") instanceof Integer);
     ++mSizeExpected; assertTrue(m.get("mergeFactor") instanceof Integer);
 
     ++mSizeExpected; assertTrue(m.get("ramBufferSizeMB") instanceof Double);

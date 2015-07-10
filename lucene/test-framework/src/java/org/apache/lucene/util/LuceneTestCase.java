@@ -949,12 +949,6 @@ public abstract class LuceneTestCase extends Assert {
         c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
       }
     }
-    if (r.nextBoolean()) {
-      int maxNumThreadStates = rarely(r) ? TestUtil.nextInt(r, 5, 20) // crazy value
-          : TestUtil.nextInt(r, 1, 4); // reasonable value
-
-      c.setMaxThreadStates(maxNumThreadStates);
-    }
 
     c.setMergePolicy(newMergePolicy(r));
 

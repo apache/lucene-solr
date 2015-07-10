@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
@@ -116,7 +115,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       // (numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta) -> those are the total number of DWPT that are not active but not yet fully flushed
       // all of them could theoretically be taken out of the loop once they crossed the RAM buffer and the last document was the peak delta
       // (numDocsSinceStalled * peakDelta) -> at any given time there could be n threads in flight that crossed the stall control before we reached the limit and each of them could hold a peak document
-      final long expected = (2 * (ramBufferBytes)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta) + (numDocsSinceStalled * peakDelta);
+      final long expected = (2 * ramBufferBytes) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta) + (numDocsSinceStalled * peakDelta);
       // the expected ram consumption is an upper bound at this point and not really the expected consumption
       if (peakDelta < (ramBufferBytes >> 1)) {
         /*
@@ -245,9 +244,9 @@ final class DocumentsWriterFlushControl implements Accountable {
      * that we don't stall/block if an ongoing or pending flush can
      * not free up enough memory to release the stall lock.
      */
-    final boolean stall = ((activeBytes + flushBytes) > limit)  &&
-                          (activeBytes < limit) &&
-                          !closed;
+    final boolean stall = (activeBytes + flushBytes) > limit &&
+      activeBytes < limit &&
+      !closed;
     stallControl.updateStalled(stall);
     return stall;
   }
@@ -364,7 +363,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       numPending = this.numPending;
     }
     if (numPending > 0 && !fullFlush) { // don't check if we are doing a full flush
-      final int limit = perThreadPool.getActiveThreadState();
+      final int limit = perThreadPool.getActiveThreadStateCount();
       for (int i = 0; i < limit && numPending > 0; i++) {
         final ThreadState next = perThreadPool.getThreadState(i);
         if (next.flushPending) {
@@ -390,7 +389,7 @@ final class DocumentsWriterFlushControl implements Accountable {
    * Returns an iterator that provides access to all currently active {@link ThreadState}s 
    */
   public Iterator<ThreadState> allActiveThreadStates() {
-    return getPerThreadsIterator(perThreadPool.getActiveThreadState());
+    return getPerThreadsIterator(perThreadPool.getActiveThreadStateCount());
   }
   
   private Iterator<ThreadState> getPerThreadsIterator(final int upto) {
@@ -451,7 +450,7 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
   
   int numActiveDWPT() {
-    return this.perThreadPool.getActiveThreadState();
+    return this.perThreadPool.getActiveThreadStateCount();
   }
   
   ThreadState obtainAndLock() {
@@ -488,7 +487,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1);
       documentsWriter.deleteQueue = newQueue;
     }
-    final int limit = perThreadPool.getActiveThreadState();
+    final int limit = perThreadPool.getActiveThreadStateCount();
     for (int i = 0; i < limit; i++) {
       final ThreadState next = perThreadPool.getThreadState(i);
       next.lock();
@@ -531,7 +530,7 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
   
   private boolean assertActiveDeleteQueue(DocumentsWriterDeleteQueue queue) {
-    final int limit = perThreadPool.getActiveThreadState();
+    final int limit = perThreadPool.getActiveThreadStateCount();
     for (int i = 0; i < limit; i++) {
       final ThreadState next = perThreadPool.getThreadState(i);
       next.lock();

@@ -92,12 +92,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /** Default value is 1945. Change using {@link #setRAMPerThreadHardLimitMB(int)} */
   public static final int DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB = 1945;
   
-  /** The maximum number of simultaneous threads that may be
-   *  indexing documents at once in IndexWriter; if more
-   *  than this many threads arrive they will wait for
-   *  others to finish. Default value is 8. */
-  public final static int DEFAULT_MAX_THREAD_STATES = 8;
-  
   /** Default value for compound file system for newly written segments
    *  (set to <code>true</code>). For batch indexing with very large 
    *  ram buffers use <code>false</code> */
@@ -285,23 +279,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   DocumentsWriterPerThreadPool getIndexerThreadPool() {
     return indexerThreadPool;
-  }
-
-  /**
-   * Sets the max number of simultaneous threads that may be indexing documents
-   * at once in IndexWriter. Values &lt; 1 are invalid and if passed
-   * <code>maxThreadStates</code> will be set to
-   * {@link #DEFAULT_MAX_THREAD_STATES}.
-   *
-   * <p>Only takes effect when IndexWriter is first created. */
-  public IndexWriterConfig setMaxThreadStates(int maxThreadStates) {
-    this.indexerThreadPool = new DocumentsWriterPerThreadPool(maxThreadStates);
-    return this;
-  }
-
-  @Override
-  public int getMaxThreadStates() {
-    return indexerThreadPool.getMaxThreadStates();
   }
 
   /** By default, IndexWriter does not pool the

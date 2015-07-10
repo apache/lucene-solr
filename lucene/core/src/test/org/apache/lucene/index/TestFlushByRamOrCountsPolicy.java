@@ -70,9 +70,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer)
                               .setFlushPolicy(flushPolicy);
-    final int numDWPT = 1 + atLeast(2);
-    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
-        numDWPT);
+    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
     iwc.setIndexerThreadPool(threadPool);
     iwc.setRAMBufferSizeMB(maxRamMB);
     iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
@@ -129,9 +127,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       IndexWriterConfig iwc = newIndexWriterConfig(analyzer)
                                 .setFlushPolicy(flushPolicy);
 
-      final int numDWPT = 1 + atLeast(2);
-      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
-          numDWPT);
+      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
       iwc.setIndexerThreadPool(threadPool);
       iwc.setMaxBufferedDocs(2 + atLeast(10));
       iwc.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
@@ -181,9 +177,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     iwc.setFlushPolicy(flushPolicy);
 
-    final int numDWPT = 1 + random().nextInt(8);
-    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
-        numDWPT);
+    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
     iwc.setIndexerThreadPool(threadPool);
 
     IndexWriter writer = new IndexWriter(dir, iwc);
@@ -249,8 +243,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       FlushPolicy flushPolicy = new FlushByRamOrCountsPolicy();
       iwc.setFlushPolicy(flushPolicy);
       
-      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
-          numThreads[i]== 1 ? 1 : 2);
+      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool();
       iwc.setIndexerThreadPool(threadPool);
       // with such a small ram buffer we should be stalled quite quickly
       iwc.setRAMBufferSizeMB(0.25);

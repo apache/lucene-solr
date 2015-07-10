@@ -57,7 +57,6 @@ public class SolrIndexConfig implements MapSerializable {
 
   public final int maxBufferedDocs;
   public final int maxMergeDocs;
-  public final int maxIndexingThreads;
   public final int mergeFactor;
 
   public final double ramBufferSizeMB;
@@ -86,7 +85,6 @@ public class SolrIndexConfig implements MapSerializable {
     effectiveUseCompoundFileSetting = false;
     maxBufferedDocs = -1;
     maxMergeDocs = -1;
-    maxIndexingThreads = IndexWriterConfig.DEFAULT_MAX_THREAD_STATES;
     mergeFactor = -1;
     ramBufferSizeMB = 100;
     writeLockTimeout = -1;
@@ -136,7 +134,6 @@ public class SolrIndexConfig implements MapSerializable {
     effectiveUseCompoundFileSetting = solrConfig.getBool(prefix+"/useCompoundFile", def.getUseCompoundFile());
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
-    maxIndexingThreads=solrConfig.getInt(prefix+"/maxIndexingThreads",def.maxIndexingThreads);
     mergeFactor=solrConfig.getInt(prefix+"/mergeFactor",def.mergeFactor);
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
 
@@ -172,7 +169,6 @@ public class SolrIndexConfig implements MapSerializable {
     Map<String, Object> m = ZkNodeProps.makeMap("useCompoundFile", effectiveUseCompoundFileSetting,
         "maxBufferedDocs", maxBufferedDocs,
         "maxMergeDocs", maxMergeDocs,
-        "maxIndexingThreads", maxIndexingThreads,
         "mergeFactor", mergeFactor,
         "ramBufferSizeMB", ramBufferSizeMB,
         "writeLockTimeout", writeLockTimeout,
@@ -221,10 +217,6 @@ public class SolrIndexConfig implements MapSerializable {
     // there may modify the effective useCompoundFile
     iwc.setUseCompoundFile(getUseCompoundFile());
 
-    if (maxIndexingThreads != -1) {
-      iwc.setMaxThreadStates(maxIndexingThreads);
-    }
-    
     if (mergedSegmentWarmerInfo != null) {
       // TODO: add infostream -> normal logging system (there is an issue somewhere)
       IndexReaderWarmer warmer = schema.getResourceLoader().newInstance(mergedSegmentWarmerInfo.className, 

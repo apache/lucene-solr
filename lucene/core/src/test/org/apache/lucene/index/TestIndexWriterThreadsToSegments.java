@@ -131,8 +131,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
         assertNotNull(r2);
         r.close();
         r = r2;
-        int maxThreadStates = w.getConfig().getMaxThreadStates();
-        int maxExpectedSegments = oldSegmentCount + Math.min(maxThreadStates, maxThreadCountPerIter.get());
+        int maxExpectedSegments = oldSegmentCount + maxThreadCountPerIter.get();
         if (VERBOSE) {
           System.out.println("TEST: iter done; now verify oldSegCount=" + oldSegmentCount + " newSegCount=" + r2.leaves().size() + " maxExpected=" + maxExpectedSegments);
         }
@@ -165,16 +164,9 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
 
-    int maxThreadStates = TestUtil.nextInt(random(), 1, 12);
-
-    if (VERBOSE) {
-      System.out.println("TEST: maxThreadStates=" + maxThreadStates);
-    }
-
     // Never trigger flushes (so we only flush on getReader):
     iwc.setMaxBufferedDocs(100000000);
     iwc.setRAMBufferSizeMB(-1);
-    iwc.setMaxThreadStates(maxThreadStates);
 
     // Never trigger merges (so we can simplistically count flushed segments):
     iwc.setMergePolicy(NoMergePolicy.INSTANCE);

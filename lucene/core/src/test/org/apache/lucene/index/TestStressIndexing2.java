@@ -32,7 +32,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -65,9 +64,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
-    int maxThreadStates = 1+random().nextInt(10);
     boolean doReaderPooling = random().nextBoolean();
-    Map<String,Document> docs = indexRandom(5, 3, 100, dir1, maxThreadStates, doReaderPooling);
+    Map<String,Document> docs = indexRandom(5, 3, 100, dir1, doReaderPooling);
     indexSerial(random(), docs, dir2);
 
     // verifying verify
@@ -90,7 +88,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
       sameFieldOrder=random().nextBoolean();
       mergeFactor=random().nextInt(3)+2;
       maxBufferedDocs=random().nextInt(3)+2;
-      int maxThreadStates = 1+random().nextInt(10);
       boolean doReaderPooling = random().nextBoolean();
       seed++;
 
@@ -100,9 +97,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Directory dir1 = newDirectory();
       Directory dir2 = newDirectory();
       if (VERBOSE) {
-        System.out.println("  nThreads=" + nThreads + " iter=" + iter + " range=" + range + " doPooling=" + doReaderPooling + " maxThreadStates=" + maxThreadStates + " sameFieldOrder=" + sameFieldOrder + " mergeFactor=" + mergeFactor + " maxBufferedDocs=" + maxBufferedDocs);
+        System.out.println("  nThreads=" + nThreads + " iter=" + iter + " range=" + range + " doPooling=" + doReaderPooling + " sameFieldOrder=" + sameFieldOrder + " mergeFactor=" + mergeFactor + " maxBufferedDocs=" + maxBufferedDocs);
       }
-      Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates, doReaderPooling);
+      Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, doReaderPooling);
       if (VERBOSE) {
         System.out.println("TEST: index serial");
       }
@@ -187,14 +184,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
     return dw;
   }
   
-  public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir, int maxThreadStates,
+  public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir,
                                           boolean doReaderPooling) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<>();
     IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
              .setOpenMode(OpenMode.CREATE)
              .setRAMBufferSizeMB(0.1)
              .setMaxBufferedDocs(maxBufferedDocs)
-             .setIndexerThreadPool(new DocumentsWriterPerThreadPool(maxThreadStates))
              .setReaderPooling(doReaderPooling)
              .setMergePolicy(newLogMergePolicy()), random());
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();

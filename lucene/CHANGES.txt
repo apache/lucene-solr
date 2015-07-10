@@ -134,6 +134,9 @@ New Features
   that can be used to validate that an index has an appropriate structure to
   run join queries. (Adrien Grand)
 
+* LUCENE-6659: Remove IndexWriter's unnecessary hard limit on max concurrency
+  (Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

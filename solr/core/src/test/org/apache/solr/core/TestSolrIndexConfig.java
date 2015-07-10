@@ -57,7 +57,6 @@ public class TestSolrIndexConfig extends SolrTestCaseJ4 {
 
   private void checkIndexWriterConfig(LiveIndexWriterConfig iwc) {
 
-    assertEquals(123, iwc.getMaxThreadStates());
     assertTrue(iwc.getInfoStream() instanceof LoggingInfoStream);
     assertTrue(iwc.getMergePolicy().getClass().toString(),
                iwc.getMergePolicy() instanceof RandomMergePolicy);

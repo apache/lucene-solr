@@ -370,13 +370,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       mergeSchedulerClass = "org.apache.lucene.index.ConcurrentMergeScheduler";
     }
     System.setProperty("solr.tests.mergeScheduler", mergeSchedulerClass);
-
-    // don't ask iwc.getMaxThreadStates(), sometimes newIWC uses 
-    // RandomDocumentsWriterPerThreadPool and all hell breaks loose
-    int maxIndexingThreads = rarely(random())
-      ? TestUtil.nextInt(random(), 5, 20) // crazy value
-      : TestUtil.nextInt(random(), 1, 4); // reasonable value
-    System.setProperty("solr.tests.maxIndexingThreads", String.valueOf(maxIndexingThreads));
   }
 
   public static Throwable getWrappedException(Throwable e) {

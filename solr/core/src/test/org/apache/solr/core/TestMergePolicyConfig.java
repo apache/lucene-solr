@@ -143,9 +143,6 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     assertEquals(-1, solrConfig.indexConfig.maxBufferedDocs);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, 
                  iwc.getMaxBufferedDocs());
-    assertEquals(-1, solrConfig.indexConfig.maxIndexingThreads);
-    assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, 
-                 iwc.getMaxThreadStates());
     assertEquals(-1, solrConfig.indexConfig.ramBufferSizeMB, 0.0D);
     assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 
                  iwc.getRAMBufferSizeMB(), 0.0D);

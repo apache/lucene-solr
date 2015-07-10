@@ -25,7 +25,6 @@
     <!-- set some values to -1 to force the use of internal lucene defaults -->
     <maxBufferedDocs>-1</maxBufferedDocs>
     <ramBufferSizeMB>-1</ramBufferSizeMB>
-    <maxIndexingThreads>-1</maxIndexingThreads>
 
     <mergeFactor>11</mergeFactor>
     <maxMergeDocs>456</maxMergeDocs>
