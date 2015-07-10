@@ -265,7 +265,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
 
     createAccs(fcontext.base.size(), slotCount);
-    prepareForCollection();
 
     for (int idx = 0; idx<rangeList.size(); idx++) {
       rangeStats(rangeList.get(idx), idx);

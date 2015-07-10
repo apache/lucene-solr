@@ -240,7 +240,7 @@ public class UnInvertedField extends DocTermOrds {
       return te;
     }
 
-    public void getTerms(int doc, Callback target) throws IOException {
+    public void getBigTerms(int doc, Callback target) throws IOException {
       if (bigTermSets != null) {
         for (int i=0; i<bigTermSets.length; i++) {
           if (bigTermSets[i].exists(doc)) {
@@ -248,12 +248,9 @@ public class UnInvertedField extends DocTermOrds {
           }
         }
       }
-
-      getNonBigTerms(doc, target);
     }
 
-
-    public void getNonBigTerms(int doc, Callback target) {
+    public void getSmallTerms(int doc, Callback target) {
       if (termInstances > 0) {
         int code = index[doc];
 
@@ -309,6 +306,7 @@ public class UnInvertedField extends DocTermOrds {
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
 
+    // what about allBuckets?
     if (baseSize < processor.effectiveMincount) {
       return;
     }
@@ -382,6 +380,7 @@ public class UnInvertedField extends DocTermOrds {
       }
     }
 
+    /*** TODO - future optimization to handle allBuckets
     if (processor.allBucketsSlot >= 0) {
       int all = 0;  // overflow potential
       for (int i=0; i<numTermsInField; i++) {
@@ -389,33 +388,14 @@ public class UnInvertedField extends DocTermOrds {
       }
       counts.incrementCount(processor.allBucketsSlot, all);
     }
+     ***/
   }
 
 
 
   public void collectDocs(FacetFieldProcessorUIF processor) throws IOException {
-    if (processor.accs.length == 0 && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField)
-    {
+    if (processor.collectAcc==null && processor.missingAcc == null && processor.allBucketsAcc == null && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField) {
       getCounts(processor, processor.countAcc);
-
-      /*** debugging
-      int sz = processor.countAcc.getCountArray().length;
-      CountSlotAcc acc = processor.countAcc;
-      CountSlotAcc acc2 = new CountSlotAcc(processor.fcontext, sz);
-      processor.countAcc = acc2;
-      collectDocsGeneric(processor); // hopefully we can call this again?
-
-      for (int i=0; i<sz; i++) {
-        if (acc.getCount(i) != acc2.getCount(i)) {
-          System.out.println("ERROR! ERROR! i=" + i + " counts=" + acc.getCount(i) + " " + acc2.getCount(i));
-          CountSlotAcc acc3 = new CountSlotAcc(processor.fcontext, sz);  // put breakpoint here and re-execute
-          processor.countAcc = acc3;
-          int[] arr3 = processor.countAcc.getCountArray();
-          getCountsInArray(processor, arr3);
-        }
-      }
-       ***/
-
       return;
     }
 
@@ -433,24 +413,22 @@ public class UnInvertedField extends DocTermOrds {
     DocSet docs = processor.fcontext.base;
 
     int uniqueTerms = 0;
+    final CountSlotAcc countAcc = processor.countAcc;
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
         // handle the biggest terms
         try ( DocSet intersection = searcher.getDocSet(tt.termQuery, docs); )
         {
-          int collected = processor.collect(intersection, tt.termNum - startTermIndex);
-          processor.countAcc.incrementCount(tt.termNum - startTermIndex, collected);
-          if (processor.allBucketsSlot >= 0) {
-            processor.collect(intersection, processor.allBucketsSlot);
-            processor.countAcc.incrementCount(processor.allBucketsSlot, collected);
-          }
+          int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex);
+          countAcc.incrementCount(tt.termNum - startTermIndex, collected);
           if (collected > 0) {
             uniqueTerms++;
           }
         }
       }
     }
+
 
     if (termInstances > 0) {
 
@@ -480,7 +458,7 @@ public class UnInvertedField extends DocTermOrds {
             adjustedMax = segBase + segMax;
           } while (doc >= adjustedMax);
           assert doc >= ctx.docBase;
-          processor.setNextReader(ctx);
+          processor.setNextReaderFirstPhase(ctx);
         }
         int segDoc = doc - segBase;
 
@@ -504,12 +482,8 @@ public class UnInvertedField extends DocTermOrds {
             int arrIdx = tnum - startTermIndex;
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
-            processor.countAcc.incrementCount(arrIdx, 1);
-            processor.collect(segDoc, arrIdx);
-            if (processor.allBucketsSlot >= 0) {
-              processor.countAcc.incrementCount(processor.allBucketsSlot, 1);
-              processor.collect(segDoc, processor.allBucketsSlot);
-            }
+            countAcc.incrementCount(arrIdx, 1);
+            processor.collectFirstPhase(segDoc, arrIdx);
           }
         } else {
           int tnum = 0;
@@ -522,13 +496,8 @@ public class UnInvertedField extends DocTermOrds {
               int arrIdx = tnum - startTermIndex;
               if (arrIdx < 0) continue;
               if (arrIdx >= nTerms) break;
-              processor.countAcc.incrementCount(arrIdx, 1);
-              processor.collect(segDoc, arrIdx);
-              if (processor.allBucketsSlot >= 0) {
-                processor.countAcc.incrementCount(processor.allBucketsSlot, 1);
-                processor.collect(segDoc, processor.allBucketsSlot);
-              }
-
+              countAcc.incrementCount(arrIdx, 1);
+              processor.collectFirstPhase(segDoc, arrIdx);
               delta = 0;
             }
             code >>>= 8;

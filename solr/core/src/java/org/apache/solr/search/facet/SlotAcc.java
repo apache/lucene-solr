@@ -29,6 +29,8 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.Closeable;
@@ -36,6 +38,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -51,6 +54,39 @@ public abstract class SlotAcc implements Closeable {
   }
 
   public abstract void collect(int doc, int slot) throws IOException;
+
+  public int collect(DocSet docs, int slot) throws IOException {
+    int count = 0;
+    SolrIndexSearcher searcher = fcontext.searcher;
+
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
+    LeafReaderContext ctx = null;
+    int segBase = 0;
+    int segMax;
+    int adjustedMax = 0;
+    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
+      final int doc = docsIt.nextDoc();
+      if (doc >= adjustedMax) {
+        do {
+          ctx = ctxIt.next();
+          if (ctx == null) {
+            // should be impossible
+            throw new RuntimeException("INTERNAL FACET ERROR");
+          }
+          segBase = ctx.docBase;
+          segMax = ctx.reader().maxDoc();
+          adjustedMax = segBase + segMax;
+        } while (doc >= adjustedMax);
+        assert doc >= ctx.docBase;
+        setNextReader(ctx);
+      }
+      count++;
+      collect(doc - segBase, slot);  // per-seg collectors
+    }
+    return count;
+  }
+
 
   public abstract int compare(int slotA, int slotB);
 

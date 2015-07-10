@@ -230,6 +230,16 @@ Optimizations
 * SOLR-7751: Minor optimizations to QueryComponent.process (reduce eager instantiations,
   cache method calls) (Christine Poerschke via Ramkumar Aiyengar)
 
+* SOLR-7455: Terms facets with the JSON Facet API now defer calculating non-sorting stats
+  until a second phase, after the top N facets are found. This improves performance
+  proportional to the number of non-sorting statistics being calculated in addition to
+  the number of buckets and domain documents.
+  For Example: The facet request  {type:terms, field:field1, facet:{x:"unique(field2)"}}
+  saw a 7x improvement when field1 and 1M unique terms and field2 had 1000 unique terms.
+  (yonik)
+  
+
+
 Other Changes
 ----------------------
 
