@@ -25,17 +25,13 @@ import java.util.List;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSet;
 
 class FacetFieldProcessorNumeric extends FacetFieldProcessor {
   static int MAXIMUM_STARTING_TABLE_SIZE=1024;  // must be a power of two, non-final to support setting by tests
@@ -151,11 +147,11 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     response = calcFacets();
   }
 
-
   private void doRehash(LongCounts table) {
-    if (accs.length == 0) return;  // TODO: FUTURE: only need to resize acc we will sort on
+    if (collectAcc == null && missingAcc == null && allBucketsAcc == null) return;
 
     // Our "count" acc is backed by the hash table and will already be rehashed
+    // otherAccs don't need to be rehashed
 
     int newTableSize = table.numSlots();
     int numSlots = newTableSize;
@@ -164,7 +160,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     if (oldMissingSlot >= 0) {
       missingSlot = numSlots++;
     }
-    if (allBucketsSlot >= 0) {
+    if (oldAllBucketsSlot >= 0) {
       allBucketsSlot = numSlots++;
     }
 
@@ -192,8 +188,15 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       }
     };
 
-    for (SlotAcc acc : accs) {
-      acc.resize( resizer );
+    // NOTE: resizing isn't strictly necessary for missing/allBuckets... we could just set the new slot directly
+    if (collectAcc != null) {
+      collectAcc.resize(resizer);
+    }
+    if (missingAcc != null) {
+      missingAcc.resize(resizer);
+    }
+    if (allBucketsAcc != null) {
+      allBucketsAcc.resize(resizer);
     }
   }
 
@@ -292,12 +295,17 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       }
     };
 
+    // we set the countAcc & indexAcc first so generic ones won't be created for us.
+    createCollectAcc(fcontext.base.size(), numSlots);
 
-    // we set the countAcc first so it won't be created here
-    createAccs(fcontext.base.size(), numSlots);
-    setSortAcc(numSlots);
-    prepareForCollection();
+    if (freq.allBuckets) {
+      allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0);
+    }
 
+    if (freq.missing) {
+      // TODO: optimize case when missingSlot can be contiguous with other slots
+      missingAcc = new SpecialSlotAcc(fcontext, collectAcc, missingSlot, otherAccs, 1);
+    }
 
     NumericDocValues values = null;
     Bits docsWithField = null;
@@ -319,7 +327,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
           adjustedMax = segBase + segMax;
         } while (doc >= adjustedMax);
         assert doc >= ctx.docBase;
-        setNextReader(ctx);
+        setNextReaderFirstPhase(ctx);
 
         values = DocValues.getNumeric(ctx.reader(), sf.getName());
         docsWithField = DocValues.getDocsWithField(ctx.reader(), sf.getName());
@@ -328,19 +336,16 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       int segDoc = doc - segBase;
       long val = values.get(segDoc);
       if (val == 0 && !docsWithField.get(segDoc)) {
-        // missing
-        if (missingSlot >= 0) {
-          numMissing++;
-          collect(segDoc, missingSlot);
+        if (missingAcc != null) {
+          missingAcc.collect(segDoc, -1);
         }
       } else {
         int slot = table.add(val);  // this can trigger a rehash rehash
 
-        collect(segDoc, slot);
+        // countAcc.incrementCount(slot, 1);
+        // our countAcc is virtual, so this is not needed
 
-        if (allBucketsSlot >= 0) {
-          collect(segDoc, allBucketsSlot);
-        }
+        collectFirstPhase(segDoc, slot);
       }
     }
 
@@ -414,29 +419,16 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
       // countAcc.setValues(allBuckets, allBucketsSlot);
       allBuckets.add("count", table.numAdds);
-      for (SlotAcc acc : accs) {
-        acc.setValues(allBuckets, allBucketsSlot);
-      }
+      allBucketsAcc.setValues(allBuckets, -1);
       // allBuckets currently doesn't execute sub-facets (because it doesn't change the domain?)
       res.add("allBuckets", allBuckets);
     }
 
     if (freq.missing) {
-      SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      // countAcc.setValues(missingBucket, missingSlot);
-      missingBucket.add("count", numMissing);
-      for (SlotAcc acc : accs) {
-        acc.setValues(missingBucket, missingSlot);
-      }
+      // TODO: it would be more efficient to buid up a missing DocSet if we need it here anyway.
 
-      if (freq.getSubFacets().size() > 0) {
-        // TODO: we can do better than this!
-        DocSet missingDocSet = null;
-        if (missingDocSet == null) {
-          missingDocSet = getFieldMissing(fcontext.searcher, fcontext.base, freq.field);
-        }
-        processSubs(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), missingDocSet);
-      }
+      SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field));
       res.add("missing", missingBucket);
     }
 
@@ -451,26 +443,16 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     ArrayList bucketList = new ArrayList(collectCount);
     res.add("buckets", bucketList);
 
+    boolean needFilter = deferredAggs != null || freq.getSubFacets().size() > 0;
 
     for (int slotNum : sortedSlots) {
       SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
       Comparable val = calc.bitsToValue(table.vals[slotNum]);
       bucket.add("val", val);
 
-      // add stats for this bucket
-      // TODO: this gets count from countAcc
-      // addStats(bucket, slotNum);
-      bucket.add("count", table.counts[slotNum]);
+      Query filter = needFilter ? sf.getType().getFieldQuery(null, sf, calc.formatValue(val)) : null;
 
-      for (SlotAcc acc : accs) {
-        acc.setValues(bucket, slotNum);
-      }
-
-      // handle sub-facets for this bucket
-      if (freq.getSubFacets().size() > 0) {
-        Query filter = sf.getType().getFieldQuery(null, sf, calc.formatValue(val));
-        processSubs(bucket, filter, fcontext.searcher.getDocSet(filter, fcontext.base) );
-      }
+      fillBucket(bucket, table.counts[slotNum], slotNum, null, filter);
 
       bucketList.add(bucket);
     }
