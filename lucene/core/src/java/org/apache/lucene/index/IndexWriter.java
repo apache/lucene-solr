@@ -806,7 +806,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // IndexFormatTooOldException.
 
       boolean initialIndexExists = true;
-      boolean fromReader = false;
 
       String[] files = directory.listAll();
 
@@ -2102,8 +2101,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         IOUtils.close(writeLock);                     // release write lock
         writeLock = null;
-        
-        assert docWriter.perThreadPool.numDeactivatedThreadStates() == docWriter.perThreadPool.getMaxThreadStates() : "" +  docWriter.perThreadPool.numDeactivatedThreadStates() + " " +  docWriter.perThreadPool.getMaxThreadStates();
       }
 
       success = true;

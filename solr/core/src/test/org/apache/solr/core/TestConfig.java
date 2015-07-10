@@ -120,7 +120,6 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     ++numDefaultsTested; assertEquals("default maxBufferedDocs", -1, sic.maxBufferedDocs);
     ++numDefaultsTested; assertEquals("default maxMergeDocs", -1, sic.maxMergeDocs);
-    ++numDefaultsTested; assertEquals("default maxIndexingThreads", IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, sic.maxIndexingThreads);
     ++numDefaultsTested; assertEquals("default mergeFactor", -1, sic.mergeFactor);
 
     ++numDefaultsTested; assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);

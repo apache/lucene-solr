@@ -23,7 +23,6 @@
 
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-    <maxIndexingThreads>123</maxIndexingThreads>
     <infoStream>true</infoStream>
     <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
   </indexConfig>

@@ -16,10 +16,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.ThreadInterruptedException;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * {@link DocumentsWriterPerThreadPool} controls {@link ThreadState} instances
@@ -128,42 +129,17 @@ final class DocumentsWriterPerThreadPool {
     }
   }
 
-  private final ThreadState[] threadStates;
+  private final List<ThreadState> threadStates = new ArrayList<>();
   private volatile int numThreadStatesActive;
 
-  private final ThreadState[] freeList;
-  private int freeCount;
+  private final List<ThreadState> freeList = new ArrayList<>();
 
-  /**
-   * Creates a new {@link DocumentsWriterPerThreadPool} with a given maximum of {@link ThreadState}s.
-   */
-  DocumentsWriterPerThreadPool(int maxNumThreadStates) {
-    if (maxNumThreadStates < 1) {
-      throw new IllegalArgumentException("maxNumThreadStates must be >= 1 but was: " + maxNumThreadStates);
-    }
-    threadStates = new ThreadState[maxNumThreadStates];
-    numThreadStatesActive = 0;
-    for (int i = 0; i < threadStates.length; i++) {
-      threadStates[i] = new ThreadState(null);
-    }
-    freeList = new ThreadState[maxNumThreadStates];
-  }
-
-  /**
-   * Returns the max number of {@link ThreadState} instances available in this
-   * {@link DocumentsWriterPerThreadPool}
-   */
-  int getMaxThreadStates() {
-    return threadStates.length;
-  }
-  
   /**
    * Returns the active number of {@link ThreadState} instances.
    */
-  int getActiveThreadState() {
+  synchronized int getActiveThreadStateCount() {
     return numThreadStatesActive;
   }
-  
 
   /**
    * Returns a new {@link ThreadState} iff any new state is available otherwise
@@ -175,9 +151,14 @@ final class DocumentsWriterPerThreadPool {
    * @return a new {@link ThreadState} iff any new state is available otherwise
    *         <code>null</code>
    */
-  private ThreadState newThreadState() {
-    assert numThreadStatesActive < threadStates.length;
-    final ThreadState threadState = threadStates[numThreadStatesActive];
+  private synchronized ThreadState newThreadState() {
+    assert numThreadStatesActive <= threadStates.size();
+
+    if (numThreadStatesActive == threadStates.size()) {
+      threadStates.add(new ThreadState(null));
+    } 
+
+    ThreadState threadState = threadStates.get(numThreadStatesActive);
     threadState.lock(); // lock so nobody else will get this ThreadState
     boolean unlock = true;
     try {
@@ -199,14 +180,16 @@ final class DocumentsWriterPerThreadPool {
       }
     }
   }
-  
+
+  // Used by assert
   private synchronized boolean assertUnreleasedThreadStatesInactive() {
-    for (int i = numThreadStatesActive; i < threadStates.length; i++) {
-      assert threadStates[i].tryLock() : "unreleased threadstate should not be locked";
+    for (int i = numThreadStatesActive; i < threadStates.size(); i++) {
+      ThreadState threadState = threadStates.get(i);
+      assert threadState.tryLock() : "unreleased threadstate should not be locked";
       try {
-        assert !threadStates[i].isInitialized() : "expected unreleased thread state to be inactive";
+        assert !threadState.isInitialized() : "expected unreleased thread state to be inactive";
       } finally {
-        threadStates[i].unlock();
+        threadState.unlock();
       }
     }
     return true;
@@ -216,8 +199,8 @@ final class DocumentsWriterPerThreadPool {
    * Deactivate all unreleased threadstates 
    */
   synchronized void deactivateUnreleasedStates() {
-    for (int i = numThreadStatesActive; i < threadStates.length; i++) {
-      final ThreadState threadState = threadStates[i];
+    for (int i = numThreadStatesActive; i < threadStates.size(); i++) {
+      final ThreadState threadState = threadStates.get(i);
       threadState.lock();
       try {
         threadState.deactivate();
@@ -249,43 +232,32 @@ final class DocumentsWriterPerThreadPool {
   ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter) {
     ThreadState threadState = null;
     synchronized (this) {
-      while (true) {
-        if (freeCount > 0) {
-          // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
-          // limited number of thread states:
-          threadState = freeList[freeCount-1];
+      if (freeList.isEmpty()) {
+        // ThreadState is already locked before return by this method:
+        return newThreadState();
+      } else {
+        // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
+        // limited number of thread states:
+        threadState = freeList.remove(freeList.size()-1);
 
-          if (threadState.dwpt == null) {
-            // This thread-state is not initialized, e.g. it
-            // was just flushed. See if we can instead find
-            // another free thread state that already has docs
-            // indexed. This way if incoming thread concurrency
-            // has decreased, we don't leave docs
-            // indefinitely buffered, tying up RAM.  This
-            // will instead get those thread states flushed,
-            // freeing up RAM for larger segment flushes:
-            for(int i=0;i<freeCount;i++) {
-              if (freeList[i].dwpt != null) {
-                // Use this one instead, and swap it with
-                // the un-initialized one:
-                ThreadState ts = freeList[i];
-                freeList[i] = threadState;
-                threadState = ts;
-                break;
-              }
+        if (threadState.dwpt == null) {
+          // This thread-state is not initialized, e.g. it
+          // was just flushed. See if we can instead find
+          // another free thread state that already has docs
+          // indexed. This way if incoming thread concurrency
+          // has decreased, we don't leave docs
+          // indefinitely buffered, tying up RAM.  This
+          // will instead get those thread states flushed,
+          // freeing up RAM for larger segment flushes:
+          for(int i=0;i<freeList.size();i++) {
+            ThreadState ts = freeList.get(i);
+            if (ts.dwpt != null) {
+              // Use this one instead, and swap it with
+              // the un-initialized one:
+              freeList.set(i, threadState);
+              threadState = ts;
+              break;
             }
-          }
-          freeCount--;
-          break;
-        } else if (numThreadStatesActive < threadStates.length) {
-          // ThreadState is already locked before return by this method:
-          return newThreadState();
-        } else {
-          // Wait until a thread state frees up:
-          try {
-            wait();
-          } catch (InterruptedException ie) {
-            throw new ThreadInterruptedException(ie);
           }
         }
       }
@@ -300,8 +272,7 @@ final class DocumentsWriterPerThreadPool {
   void release(ThreadState state) {
     state.unlock();
     synchronized (this) {
-      assert freeCount < freeList.length;
-      freeList[freeCount++] = state;
+      freeList.add(state);
       // In case any thread is waiting, wake one of them up since we just released a thread state; notify() should be sufficient but we do
       // notifyAll defensively:
       notifyAll();
@@ -317,8 +288,12 @@ final class DocumentsWriterPerThreadPool {
    * @return the <i>i</i>th active {@link ThreadState} where <i>i</i> is the
    *         given ord.
    */
-  ThreadState getThreadState(int ord) {
-    return threadStates[ord];
+  synchronized ThreadState getThreadState(int ord) {
+    return threadStates.get(ord);
+  }
+
+  synchronized int getMaxThreadStates() {
+    return threadStates.size();
   }
 
   /**
@@ -330,34 +305,12 @@ final class DocumentsWriterPerThreadPool {
     ThreadState minThreadState = null;
     final int limit = numThreadStatesActive;
     for (int i = 0; i < limit; i++) {
-      final ThreadState state = threadStates[i];
+      final ThreadState state = threadStates.get(i);
       if (minThreadState == null || state.getQueueLength() < minThreadState.getQueueLength()) {
         minThreadState = state;
       }
     }
     return minThreadState;
-  }
-  
-  /**
-   * Returns the number of currently deactivated {@link ThreadState} instances.
-   * A deactivated {@link ThreadState} should not be used for indexing anymore.
-   * 
-   * @return the number of currently deactivated {@link ThreadState} instances.
-   */
-  int numDeactivatedThreadStates() {
-    int count = 0;
-    for (int i = 0; i < threadStates.length; i++) {
-      final ThreadState threadState = threadStates[i];
-      threadState.lock();
-      try {
-        if (!threadState.isActive) {
-          count++;
-        }
-      } finally {
-        threadState.unlock();
-      }
-    }
-    return count;
   }
 
   /**

@@ -122,7 +122,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       Map<String, String> collectionProperties = new HashMap<>();
       collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
       collectionProperties.put("solr.tests.maxBufferedDocs", "100000");
-      collectionProperties.put("solr.tests.maxIndexingThreads", "-1");
       collectionProperties.put("solr.tests.ramBufferSizeMB", "100");
       // use non-test classes so RandomizedRunner isn't necessary
       collectionProperties.put("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");

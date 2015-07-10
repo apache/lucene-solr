@@ -176,7 +176,6 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
       Properties properties = new Properties();
       properties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
       properties.put("solr.tests.maxBufferedDocs", "100000");
-      properties.put("solr.tests.maxIndexingThreads", "-1");
       properties.put("solr.tests.ramBufferSizeMB", "100");
       // use non-test classes so RandomizedRunner isn't necessary
       properties.put("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
