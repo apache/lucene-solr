@@ -155,7 +155,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     }
   }
 
-  /** Responsible for issuing build and rebload command to the specified {@link SolrSuggester} */
+  /** Responsible for issuing build and rebuild command to the specified {@link SolrSuggester} */
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
