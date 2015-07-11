@@ -381,7 +381,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** Updates a previous suggestion, matching the exact same
    *  text as before.  Use this to change the weight or
-   *  payload of an already added suggstion.  If you know
+   *  payload of an already added suggestion.  If you know
    *  this text is not already present you can use {@link
    *  #add} instead.  After adding or updating a batch of
    *  new suggestions, you must call {@link #refresh} in the
