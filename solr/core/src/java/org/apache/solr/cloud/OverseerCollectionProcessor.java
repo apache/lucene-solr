@@ -44,7 +44,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.Assign.Node;
+import org.apache.solr.cloud.Assign.ReplicaCount;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -95,7 +95,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.Assign.getNodesForNewShard;
+import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
@@ -1285,7 +1285,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     DocCollection collection = clusterState.getCollection(collectionName);
     int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
     String createNodeSetStr = message.getStr(CREATE_NODE_SET);
-    List<Node> sortedNodeList = getNodesForNewShard(clusterState, collectionName, sliceName, repFactor,
+    List<ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, repFactor,
         createNodeSetStr, overseer.getZkController().getCoreContainer());
         
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
@@ -2490,7 +2490,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   private void addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results)
       throws KeeperException, InterruptedException {
     String collection = message.getStr(COLLECTION_PROP);
-    String node = message.getStr("node");
+    String node = message.getStr(CoreAdminParams.NODE);
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
     if (StringUtils.isBlank(coreName)) {
@@ -2508,13 +2508,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           "Collection: " + collection + " shard: " + shard + " does not exist");
     }
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
-    
-    if (node == null) {
-      node = getNodesForNewShard(clusterState, collection, shard, 1, null,
-          overseer.getZkController().getCoreContainer()).get(0).nodeName;
-      log.info("Node not provided, Identified {} for creating new replica", node);
-    }
-    
+
+    // Kind of unnecessary, but it does put the logic of whether to override maxShardsPerNode in one place.
+    node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
+        overseer.getZkController().getCoreContainer()).get(0).nodeName;
+    log.info("Node not provided, Identified {} for creating new replica", node);
+
     if (!clusterState.liveNodesContain(node)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Node: " + node + " is not live");
     }

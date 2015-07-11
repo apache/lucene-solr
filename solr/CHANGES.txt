@@ -221,6 +221,9 @@ Bug Fixes
 * SOLR-7132: The Collections API ADDREPLICA command property.name is not reflected 
   in the clusterstate until after Solr restarts (Erick Erickson)
 
+* SOLR-7172: addreplica API fails with incorrect error msg "cannot create collection"
+  (Erick Erickson)
+
 Optimizations
 ----------------------
 
