@@ -66,7 +66,7 @@ import org.apache.lucene.util.CharsRefBuilder;
  * </p>
  * <p>
  * plus if {@link #preserveOriginal} is true, it would also return
- * <code>"camelCaseFilter</code>
+ * <code>"camelCaseFilter"</code>
  * </p>
  */
 public final class PatternCaptureGroupTokenFilter extends TokenFilter {
