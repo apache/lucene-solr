@@ -138,7 +138,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     String value = solrParams.get(AnalysisParams.FIELD_VALUE);
     if (analysisRequest.getQuery() == null && value == null)  {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "One of analysis.value or q or analysis.query parameters must be specified");
+          "One of analysis.fieldvalue, q, or analysis.query parameters must be specified");
     }
 
     Iterable<ContentStream> streams = req.getContentStreams();
