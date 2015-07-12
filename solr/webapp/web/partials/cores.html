@@ -23,13 +23,14 @@ limitations under the License.
     <div id="actions" class="actions clearfix">
 
       <button id="add" class="action" ng-click="showAddCore()"><span>Add Core</span></button>
+      <span ng-show="hasCores">
       <button id="unload" class="warn requires-core" ng-click="unloadCore()"><span>Unload</span></button>
       <button id="rename" class="action requires-core" ng-click="showRenameCore()"><span>Rename</span></button>
       <button id="swap" class="action requires-core" ng-click="showSwapCores()"><span>Swap</span></button>
       <button id="reload" class="requires-core" ng-click="reloadCore()"
          ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
       <button id="optimize" class="requires-core" ng-click="optimizeCore()" ng-show="core.hasDeletions"><span>Optimize</span></button>
-
+      </span>
       <div class="action add" data-rel="add" ng-show="showAdd" style="display:block;left:0px;">
 
         <form>
@@ -49,7 +50,7 @@ limitations under the License.
           <p class="clearfix"><label for="add_schema">schema:</label>
           <input type="text" name="schema" id="add_schema" ng-model="newCore.schema"></p>
 
-          <div class="cloud">
+          <div class="cloud" ng-show="isCloud">
 
             <p class="clearfix"><label for="add_collection">collection:</label>
             <input type="text" name="collection" id="add_collection" ng-model="newCore.collection"></p>
@@ -125,7 +126,7 @@ limitations under the License.
 
     </div>
 
-    <div id="data" class="requires-core">
+    <div id="data" class="requires-core" ng-show="hasCore">
 
       <div class="block" id="core-data">
 
@@ -159,7 +160,7 @@ limitations under the License.
         </div>
       </div>
 
-      <div class="block" id="index-data">
+      <div class="block" id="index-data" ng-show="hasCore">
 
           <h2><span>Index</span></h2>
 
@@ -220,7 +221,7 @@ limitations under the License.
 
   </div>
 
-  <div id="navigation" class="requires-core clearfix">
+  <div id="navigation" class="requires-core clearfix" ng-show="hasCore">
     <ul>
       <li ng-repeat="c in cores" ng-class="{current: core.name == c.name}"><a href="#~cores/{{c.name}}">{{c.name}}</a></li>
     </ul>
