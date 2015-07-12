@@ -126,7 +126,7 @@ limitations under the License.
 
     </div>
 
-    <div id="data" class="requires-core" ng-show="hasCore">
+    <div id="data" class="requires-core" ng-show="hasCores">
 
       <div class="block" id="core-data">
 
@@ -160,7 +160,7 @@ limitations under the License.
         </div>
       </div>
 
-      <div class="block" id="index-data" ng-show="hasCore">
+      <div class="block" id="index-data" ng-show="hasCores">
 
           <h2><span>Index</span></h2>
 
@@ -221,7 +221,7 @@ limitations under the License.
 
   </div>
 
-  <div id="navigation" class="requires-core clearfix" ng-show="hasCore">
+  <div id="navigation" class="requires-core clearfix" ng-show="hasCores">
     <ul>
       <li ng-repeat="c in cores" ng-class="{current: core.name == c.name}"><a href="#~cores/{{c.name}}">{{c.name}}</a></li>
     </ul>
