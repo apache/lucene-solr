@@ -243,5 +243,21 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     } catch (Exception e) {
       assertEquals("Expected error message for non-existent core.", "Core with core name [non-existent-core] does not exist.", e.getMessage());
     }
+
+    // test null core
+    try {
+      admin.handleRequestBody(
+          req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.RELOAD.toString())
+          , resp);
+      fail("Was able to successfully reload null core");
+    }
+    catch (Exception e) {
+      if (!(e instanceof SolrException)) {
+        fail("Expected SolrException but got " + e);
+      }
+      assertEquals("Expected error message for non-existent core.", "Core with core name [null] does not exist.", e.getMessage());
+    }
+
   }
 }
