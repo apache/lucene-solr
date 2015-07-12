@@ -78,10 +78,13 @@ solrAdminServices.factory('System',
   }])
 .factory('Update',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/:handler', {core: '@core', wt:'json', _:Date.now(), handler:'/update'}, {
+    return $resource('/solr/:core/:handler', {core: '@core', wt:'json', _:Date.now(), handler:'update'}, {
       "optimize": {params: { optimize: "true"}},
       "commit": {params: {commit: "true"}},
-      "post": {method: "POST", params: {handler: '@handler'}}
+      "post": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
+      "postJson": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
+      "postXml": {headers: {'Content-type': 'text/xml'}, method: "POST", params: {handler: '@handler'}},
+      "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
     });
   }])
 .service('FileUpload', function ($http) {
