@@ -178,6 +178,18 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         assertThat(e.getMessage(), containsString("Cannot unload non-existent core [non_existent_core]"));
       }
 
+      // try and remove a null core
+      try {
+        cores.unload(null);
+        fail("Should have thrown an exception when unloading a null core");
+      }
+      catch (Exception e) {
+        if (!(e instanceof SolrException)) {
+          fail("Should not have thrown SolrException but got " + e);
+        }
+        assertThat(e.getMessage(), containsString("Cannot unload non-existent core [null]"));
+      }
+
     } finally {
       cores.shutdown();
     }

@@ -224,6 +224,9 @@ Bug Fixes
 * SOLR-7172: addreplica API fails with incorrect error msg "cannot create collection"
   (Erick Erickson)
 
+* SOLR-7705: CoreAdminHandler Unload no longer handles null core name and throws NPE
+  instead of a bad request error. (John Call, Edward Ribeiro via shalin)
+
 Optimizations
 ----------------------
 
@@ -244,7 +247,6 @@ Optimizations
   saw a 7x improvement when field1 and 1M unique terms and field2 had 1000 unique terms.
   (yonik)
   
-
 
 Other Changes
 ----------------------
