@@ -29,7 +29,8 @@ limitations under the License.
       <button id="swap" class="action requires-core" ng-click="showSwapCores()"><span>Swap</span></button>
       <button id="reload" class="requires-core" ng-click="reloadCore()"
          ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
-      <button id="optimize" class="requires-core" ng-click="optimizeCore()" ng-show="core.hasDeletions"><span>Optimize</span></button>
+      <button id="optimize" class="requires-core" ng-click="optimizeCore()" ng-show="core.index.hasDeletions || optimizeSuccess"
+         ng-class="{success: optimizeSuccess, warn: optimizeFailure}"><span>Optimize</span></button>
       </span>
       <div class="action add" data-rel="add" ng-show="showAdd" style="display:block;left:0px;">
 
@@ -199,7 +200,7 @@ limitations under the License.
 
             <li class="optimized"><dl class="clearfix">
               <dt><span>optimized:</span></dt>
-                <dd class="ico" ng-class="core.index.hasDeletions ? 'ico-1' : 'ico-0'"><span></span></dd>
+                <dd class="ico" ng-class="core.index.hasDeletions ? 'ico-0' : 'ico-1'"><span></span></dd>
             </dl></li>
 
             <li class="current"><dl class="clearfix">
