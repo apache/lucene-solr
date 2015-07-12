@@ -27,6 +27,10 @@ var catalyst = angular.module('ngtimeago', []);
 
 catalyst.filter('timeago', function() {
         return function(input, p_allowFuture) {
+
+            if (input === undefined) {
+              return "-";
+            }
 		
             var substitute = function (stringOrFunction, number, strings) {
                     var string = angular.isFunction(stringOrFunction) ? stringOrFunction(number, dateDifference) : stringOrFunction;
