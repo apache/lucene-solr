@@ -28,7 +28,7 @@ solrAdminApp.controller('CoreAdminController',
           for (_obj in data.status) coreCount++;
           $scope.hasCores = coreCount >0;
           if (!$scope.currentCore && coreCount==0) {
-            // @todo Do something if no cores defined
+            $scope.showAddCore();
             return;
           } else if (!$scope.currentCore) {
             for (firstCore in data.status) break;
@@ -50,9 +50,11 @@ solrAdminApp.controller('CoreAdminController',
         $scope.newCore = {
           name: "new_core",
           dataDir: "data",
-          instanceDir: "",
+          instanceDir: "new_core",
           config: "solrconfig.xml",
-          schema: "schema.xml"
+          schema: "schema.xml",
+          collection: "",
+          shard: ""
         };
       };
 
@@ -62,15 +64,20 @@ solrAdminApp.controller('CoreAdminController',
         } else if (false) { //@todo detect whether core exists
           $scope.AddMessage = "A core with that name already exists";
         } else {
-          Cores.add({
+          var params = {
             name: $scope.newCore.name,
             instanceDir: $scope.newCore.instanceDir,
             config: $scope.newCore.config,
-            scheme: $scope.newCore.schema,
+            schema: $scope.newCore.schema,
             dataDir: $scope.newCore.dataDir
-          }, function(data) {
-            $scope.cancelAddCore();
+          };
+          if ($scope.isCloud) {
+            params.collection = $scope.newCore.collection;
+            params.shard = $scope.newCore.shard;
+          }
+          Cores.add(params, function(data) {
             $location.path("/~cores/" + $scope.newCore.name);
+            $scope.cancelAddCore();
           });
         }
       };
@@ -100,7 +107,6 @@ solrAdminApp.controller('CoreAdminController',
           $scope.renameMessage = "New name must be different from the current one";
         } else {
           Cores.rename({core:$scope.currentCore, other: $scope.other}, function(data) {
-            console.log("RENAME2");
             $location.path("/~cores/" + $scope.other);
             $scope.cancelRename();
           });
