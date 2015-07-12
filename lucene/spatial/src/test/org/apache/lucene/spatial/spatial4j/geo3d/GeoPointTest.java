@@ -17,9 +17,12 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  * limitations under the License.
  */
 
-import com.spatial4j.core.distance.DistanceUtils;
+import org.apache.lucene.geo3d.GeoPoint;
+import org.apache.lucene.geo3d.PlanetModel;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
+
+import com.spatial4j.core.distance.DistanceUtils;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomFloat;
 

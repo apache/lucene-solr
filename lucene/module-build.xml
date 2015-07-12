@@ -585,6 +585,28 @@
     <property name="sandbox-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="spatial3d.jar" value="${common.dir}/build/spatial3d/lucene-spatial3d-${version}.jar"/>
+  <target name="check-spatial3d-uptodate" unless="spatial3d.uptodate">
+    <module-uptodate name="spatial3d" jarfile="${spatial3d.jar}" property="spatial3d.uptodate"/>
+  </target>
+  <target name="jar-spatial3d" unless="spatial3d.uptodate" depends="check-spatial3d-uptodate">
+  	<ant dir="${common.dir}/spatial3d" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial3d.uptodate" value="true"/>
+  </target>
+
+  <property name="spatial3d-javadoc.jar" value="${common.dir}/build/spatial3d/lucene-spatial3d-${version}-javadoc.jar"/>
+  <target name="check-spatial3d-javadocs-uptodate" unless="spatial3d-javadocs.uptodate">
+    <module-uptodate name="spatial3d" jarfile="${spatial3d-javadoc.jar}" property="spatial3d-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-spatial3d" unless="spatial3d-javadocs.uptodate" depends="check-spatial3d-javadocs-uptodate">
+    <ant dir="${common.dir}/spatial3d" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial3d-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="spatial.jar" value="${common.dir}/build/spatial/lucene-spatial-${version}.jar"/>
   <target name="check-spatial-uptodate" unless="spatial.uptodate">
     <module-uptodate name="spatial" jarfile="${spatial.jar}" property="spatial.uptodate"/>

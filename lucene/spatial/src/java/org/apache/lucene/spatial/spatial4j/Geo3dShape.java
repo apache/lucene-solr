@@ -24,12 +24,12 @@ import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
-import org.apache.lucene.spatial.spatial4j.geo3d.Bounds;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoArea;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoAreaFactory;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
-import org.apache.lucene.spatial.spatial4j.geo3d.PlanetModel;
+import org.apache.lucene.geo3d.Bounds;
+import org.apache.lucene.geo3d.GeoArea;
+import org.apache.lucene.geo3d.GeoAreaFactory;
+import org.apache.lucene.geo3d.GeoPoint;
+import org.apache.lucene.geo3d.GeoShape;
+import org.apache.lucene.geo3d.PlanetModel;
 
 /**
  * A Spatial4j Shape wrapping a {@link GeoShape} ("Geo3D") -- a 3D planar geometry based Spatial4j Shape implementation.
