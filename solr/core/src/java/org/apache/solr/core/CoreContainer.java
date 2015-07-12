@@ -819,14 +819,16 @@ public class CoreContainer {
    */
   public void unload(String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
 
-    // check for core-init errors first
-    CoreLoadFailure loadFailure = coreInitFailures.remove(name);
-    if (loadFailure != null) {
-      // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
-      // which we may not be able to do because of the init error.  So we just go with what we
-      // can glean from the CoreDescriptor - datadir and instancedir
-      SolrCore.deleteUnloadedCore(loadFailure.cd, deleteDataDir, deleteInstanceDir);
-      return;
+    if (name != null) {
+      // check for core-init errors first
+      CoreLoadFailure loadFailure = coreInitFailures.remove(name);
+      if (loadFailure != null) {
+        // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
+        // which we may not be able to do because of the init error.  So we just go with what we
+        // can glean from the CoreDescriptor - datadir and instancedir
+        SolrCore.deleteUnloadedCore(loadFailure.cd, deleteDataDir, deleteInstanceDir);
+        return;
+      }
     }
 
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
