@@ -17,14 +17,13 @@
 
 // @todo test optimize (delete stuff, watch button appear, test button/form)
 solrAdminApp.controller('CoreAdminController',
-  ['$scope', '$routeParams', '$location', '$timeout', 'Cores',
-    function($scope, $routeParams, $location, $timeout, Cores){
+  ['$scope', '$routeParams', '$location', '$timeout', 'Cores', 'Update',
+    function($scope, $routeParams, $location, $timeout, Cores, Update){
       $scope.resetMenu("cores");
       $scope.currentCore = $routeParams.core;
       $scope.refresh = function() {
         Cores.get(function(data) {
           var coreCount = 0;
-          // @todo mark 'current' core in navigation with 'current' style
           for (_obj in data.status) coreCount++;
           $scope.hasCores = coreCount >0;
           if (!$scope.currentCore && coreCount==0) {
@@ -165,6 +164,17 @@ solrAdminApp.controller('CoreAdminController',
       };
 
       $scope.optimizeCore = function() {
+        Update.optimize({core: $scope.currentCore},
+          function(successData) {
+            $scope.optimizeSuccess = true;
+            $timeout(function() {$scope.optimizeSuccess=false}, 1000);
+            $scope.refresh();
+          },
+          function(failureData) {
+            $scope.optimizeFailure = true;
+            $timeout(function () {$scope.optimizeFailure=false}, 1000);
+            $scope.refresh();
+          });
       };
 
       $scope.refresh();
