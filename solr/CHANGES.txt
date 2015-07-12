@@ -230,6 +230,10 @@ Bug Fixes
 * SOLR-7529: CoreAdminHandler Reload throws NPE on null core name instead of a bad
   request error. (Jellyfrog, Edward Ribeiro via shalin)
 
+* SOLR-7781: JSON Facet API: Terms facet on string/text fields with sub-facets caused 
+  a bug that resulted in filter cache lookup misses as well as the filter cache 
+  exceeding it's configured size. (yonik)
+
 Optimizations
 ----------------------
 

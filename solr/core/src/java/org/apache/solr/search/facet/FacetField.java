@@ -516,6 +516,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
   }
 
 
+  /** this BytesRef may be shared across calls and should be deep-cloned if necessary */
   abstract protected BytesRef lookupOrd(int ord) throws IOException;
   abstract protected void findStartAndEndOrds() throws IOException;
   abstract protected void collectDocs() throws IOException;
@@ -663,7 +664,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
       bucket.add("val", val);
 
-      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), br.clone())) : null;
+      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), BytesRef.deepCopyOf(br))) : null;
       fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
 
       bucketList.add(bucket);
