@@ -227,6 +227,9 @@ Bug Fixes
 * SOLR-7705: CoreAdminHandler Unload no longer handles null core name and throws NPE
   instead of a bad request error. (John Call, Edward Ribeiro via shalin)
 
+* SOLR-7529: CoreAdminHandler Reload throws NPE on null core name instead of a bad
+  request error. (Jellyfrog, Edward Ribeiro via shalin)
+
 Optimizations
 ----------------------
 

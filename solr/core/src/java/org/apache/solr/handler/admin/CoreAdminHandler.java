@@ -766,7 +766,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.CORE);
 
-    if(!coreContainer.getCoreNames().contains(cname)) {
+    if (cname == null || !coreContainer.getCoreNames().contains(cname)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Core with core name [" + cname + "] does not exist.");
     }
 
