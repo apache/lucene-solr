@@ -199,6 +199,9 @@ API Changes
   deprecated in favour of BitSetProducer and QueryBitSetProducer, which do not
   extend oal.search.Filter. (Adrien Grand)
 
+* LUCENE-6607: Factor out geo3d into its own spatial3d module.  (Karl
+  Wright, Nick Knize, David Smiley, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

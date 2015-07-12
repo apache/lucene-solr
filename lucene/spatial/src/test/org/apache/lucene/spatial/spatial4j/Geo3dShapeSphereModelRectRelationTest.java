@@ -21,14 +21,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.spatial4j.core.shape.Rectangle;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoArea;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBox;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoBBoxFactory;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoCircle;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoPoint;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoPolygonFactory;
-import org.apache.lucene.spatial.spatial4j.geo3d.GeoShape;
-import org.apache.lucene.spatial.spatial4j.geo3d.PlanetModel;
+import org.apache.lucene.geo3d.GeoArea;
+import org.apache.lucene.geo3d.GeoBBox;
+import org.apache.lucene.geo3d.GeoBBoxFactory;
+import org.apache.lucene.geo3d.GeoCircle;
+import org.apache.lucene.geo3d.GeoPoint;
+import org.apache.lucene.geo3d.GeoPolygonFactory;
+import org.apache.lucene.geo3d.GeoShape;
+import org.apache.lucene.geo3d.PlanetModel;
 import org.junit.Test;
 
 public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
