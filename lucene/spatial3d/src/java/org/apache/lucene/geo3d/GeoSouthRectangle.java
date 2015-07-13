@@ -26,29 +26,45 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoSouthRectangle extends GeoBaseBBox {
-  public final double topLat;
-  public final double leftLon;
-  public final double rightLon;
+  /** The top latitude of the rect */
+  protected final double topLat;
+  /** The left longitude of the rect */
+  protected final double leftLon;
+  /** The right longitude of the rect */
+  protected final double rightLon;
+  /** The cosine of a middle latitude */
+  protected final double cosMiddleLat;
+  /** The upper left hand corner of the rectangle */
+  protected final GeoPoint ULHC;
+  /** The upper right hand corner of the rectangle */
+  protected final GeoPoint URHC;
 
-  public final double cosMiddleLat;
+  /** The top plane */
+  protected final SidedPlane topPlane;
+  /** The left plane */
+  protected final SidedPlane leftPlane;
+  /** The right plane */
+  protected final SidedPlane rightPlane;
 
-  public final GeoPoint ULHC;
-  public final GeoPoint URHC;
+  /** Notable points for the top plane */
+  protected final GeoPoint[] topPlanePoints;
+  /** Notable points for the left plane */
+  protected final GeoPoint[] leftPlanePoints;
+  /** Notable points for the right plane */
+  protected final GeoPoint[] rightPlanePoints;
 
-  public final SidedPlane topPlane;
-  public final SidedPlane leftPlane;
-  public final SidedPlane rightPlane;
+  /** The center point */
+  protected final GeoPoint centerPoint;
 
-  public final GeoPoint[] topPlanePoints;
-  public final GeoPoint[] leftPlanePoints;
-  public final GeoPoint[] rightPlanePoints;
-
-  public final GeoPoint centerPoint;
-
-  public final GeoPoint[] edgePoints;
+  /** A point on the edge */
+  protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
+   *@param planetModel is the planet model.
+   *@param topLat is the top latitude.
+   *@param leftLon is the left longitude.
+   *@param rightLon is the right longitude.
    */
   public GeoSouthRectangle(final PlanetModel planetModel, final double topLat, final double leftLon, double rightLon) {
     super(planetModel);

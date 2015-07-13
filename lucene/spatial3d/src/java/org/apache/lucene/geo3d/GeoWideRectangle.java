@@ -24,33 +24,33 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideRectangle extends GeoBaseBBox {
-  public final double topLat;
-  public final double bottomLat;
-  public final double leftLon;
-  public final double rightLon;
+  protected final double topLat;
+  protected final double bottomLat;
+  protected final double leftLon;
+  protected final double rightLon;
 
-  public final double cosMiddleLat;
+  protected final double cosMiddleLat;
 
-  public final GeoPoint ULHC;
-  public final GeoPoint URHC;
-  public final GeoPoint LRHC;
-  public final GeoPoint LLHC;
+  protected final GeoPoint ULHC;
+  protected final GeoPoint URHC;
+  protected final GeoPoint LRHC;
+  protected final GeoPoint LLHC;
 
-  public final SidedPlane topPlane;
-  public final SidedPlane bottomPlane;
-  public final SidedPlane leftPlane;
-  public final SidedPlane rightPlane;
+  protected final SidedPlane topPlane;
+  protected final SidedPlane bottomPlane;
+  protected final SidedPlane leftPlane;
+  protected final SidedPlane rightPlane;
 
-  public final GeoPoint[] topPlanePoints;
-  public final GeoPoint[] bottomPlanePoints;
-  public final GeoPoint[] leftPlanePoints;
-  public final GeoPoint[] rightPlanePoints;
+  protected final GeoPoint[] topPlanePoints;
+  protected final GeoPoint[] bottomPlanePoints;
+  protected final GeoPoint[] leftPlanePoints;
+  protected final GeoPoint[] rightPlanePoints;
 
-  public final GeoPoint centerPoint;
+  protected final GeoPoint centerPoint;
 
-  public final EitherBound eitherBound;
+  protected final EitherBound eitherBound;
 
-  public final GeoPoint[] edgePoints;
+  protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.

@@ -25,24 +25,39 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
-  public final double latitude;
-  public final double leftLon;
-  public final double rightLon;
+  /** Latitude of horizontal line */
+  protected final double latitude;
+  /** Left bounding longitude of line */
+  protected final double leftLon;
+  /** Right bounding longitude of line */
+  protected final double rightLon;
 
-  public final GeoPoint LHC;
-  public final GeoPoint RHC;
+  /** Left hand endpoint of line */
+  protected final GeoPoint LHC;
+  /** Right hand endpoint of line */
+  protected final GeoPoint RHC;
 
-  public final Plane plane;
-  public final SidedPlane leftPlane;
-  public final SidedPlane rightPlane;
+  /** The plane describing the line */
+  protected final Plane plane;
+  /** The left side end plane */
+  protected final SidedPlane leftPlane;
+  /** The right side end plane */
+  protected final SidedPlane rightPlane;
 
-  public final GeoPoint[] planePoints;
+  /** Notable points for the line */
+  protected final GeoPoint[] planePoints;
 
-  public final GeoPoint centerPoint;
-  public final GeoPoint[] edgePoints;
+  /** Center of line */
+  protected final GeoPoint centerPoint;
+  /** A point that's on the line */
+  protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
+   *@param planetModel is the planet model.
+   *@param latitude is the latitude of the line.
+   *@param leftLon is the left end longitude.
+   *@param rightLon is the right end longitude.
    */
   public GeoDegenerateHorizontalLine(final PlanetModel planetModel, final double latitude, final double leftLon, double rightLon) {
     super(planetModel);

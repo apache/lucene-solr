@@ -24,17 +24,17 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideLongitudeSlice extends GeoBaseBBox {
-  public final double leftLon;
-  public final double rightLon;
+  protected final double leftLon;
+  protected final double rightLon;
 
-  public final SidedPlane leftPlane;
-  public final SidedPlane rightPlane;
+  protected final SidedPlane leftPlane;
+  protected final SidedPlane rightPlane;
 
-  public final GeoPoint[] planePoints;
+  protected final GeoPoint[] planePoints;
 
-  public final GeoPoint centerPoint;
+  protected final GeoPoint centerPoint;
 
-  public final GeoPoint[] edgePoints; 
+  protected final GeoPoint[] edgePoints; 
 
   /**
    * Accepts only values in the following ranges: lon: {@code -PI -> PI}.

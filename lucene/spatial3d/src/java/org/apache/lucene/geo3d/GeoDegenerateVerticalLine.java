@@ -23,22 +23,32 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoDegenerateVerticalLine extends GeoBaseBBox {
-  public final double topLat;
-  public final double bottomLat;
-  public final double longitude;
+  /** Top latitude of the vertical line */
+  protected final double topLat;
+  /** Bottom latitude of the vertical line */
+  protected final double bottomLat;
+  /** Longitude of the vertical line */
+  protected final double longitude;
 
-  public final GeoPoint UHC;
-  public final GeoPoint LHC;
+  /** Point at the upper end of the vertical line */
+  protected final GeoPoint UHC;
+  /** Point at the lower end of the vertical line */
+  protected final GeoPoint LHC;
 
-  public final SidedPlane topPlane;
-  public final SidedPlane bottomPlane;
-  public final SidedPlane boundingPlane;
-  public final Plane plane;
-
-  public final GeoPoint[] planePoints;
-
-  public final GeoPoint centerPoint;
-  public final GeoPoint[] edgePoints;
+  /** Top end cutoff plane */
+  protected final SidedPlane topPlane;
+  /** Bottom end cutoff plane */
+  protected final SidedPlane bottomPlane;
+  /** Back-side cutoff plane */
+  protected final SidedPlane boundingPlane;
+  /** The vertical line plane */
+  protected final Plane plane;
+  /** Notable points for the line (end points) */
+  protected final GeoPoint[] planePoints;
+  /** A computed center point for the line */
+  protected final GeoPoint centerPoint;
+  /** A point that's on the line */
+  protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, longitude: {@code -PI -> PI}

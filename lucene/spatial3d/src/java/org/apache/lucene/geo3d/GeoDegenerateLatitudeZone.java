@@ -24,14 +24,23 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoDegenerateLatitudeZone extends GeoBaseBBox {
-  public final double latitude;
+  /** The latitude */
+  protected final double latitude;
+  /** Sine of the latitude */
+  protected final double sinLatitude;
+  /** Plane describing the latitude zone */
+  protected final Plane plane;
+  /** A point on the world that's also on the zone */
+  protected final GeoPoint interiorPoint;
+  /** An array consisting of the interiorPoint */
+  protected final GeoPoint[] edgePoints;
+  /** No notable points */
+  protected final static GeoPoint[] planePoints = new GeoPoint[0];
 
-  public final double sinLatitude;
-  public final Plane plane;
-  public final GeoPoint interiorPoint;
-  public final GeoPoint[] edgePoints;
-  public final static GeoPoint[] planePoints = new GeoPoint[0];
-
+  /** Constructor.
+   *@param planetModel is the planet model to use.
+   *@param latitude is the latitude of the latitude zone.
+   */
   public GeoDegenerateLatitudeZone(final PlanetModel planetModel, final double latitude) {
     super(planetModel);
     this.latitude = latitude;

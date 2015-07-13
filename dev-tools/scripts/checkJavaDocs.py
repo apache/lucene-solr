@@ -26,7 +26,9 @@ reJ8Caption = re.compile('<h3>(.*?) Summary</h3>')
 reTDLastNested = re.compile('^<td class="colLast"><code><strong><a href="[^>]*\.([^>]*?)\.html" title="class in[^>]*">', re.IGNORECASE)
 reTDLast = re.compile('^<td class="colLast"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
 reColOne = re.compile('^<td class="colOne"><code><strong><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
-reMemberNameLink = re.compile('^<td class="colLast"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)">', re.IGNORECASE)
+reMemberNameLink = re.compile('^<td class="colLast"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)"', re.IGNORECASE)
+reNestedClassMemberNameLink = re.compile('^<td class="colLast"><code><span class="memberNameLink"><a href="[^>]*?".*?>(.*?)</a>', re.IGNORECASE)
+reMemberNameOneLink = re.compile('^<td class="colOne"><code><span class="memberNameLink"><a href="[^>]*#([^>]*?)"', re.IGNORECASE)
 
 # the Method detail section at the end
 reMethodDetail = re.compile('^<h3>Method Detail</h3>$', re.IGNORECASE)
@@ -203,7 +205,9 @@ def checkClassSummaries(fullPath):
     for matcher in (reTDLastNested, # nested classes
                     reTDLast, # methods etc.
                     reColOne, # ctors etc.
-                    reMemberNameLink): # java 8
+                    reMemberNameLink, # java 8
+                    reNestedClassMemberNameLink, # java 8, nested class
+                    reMemberNameOneLink): # java 8 ctors
       m = matcher.search(line)
       if m is not None:
         lastItem = m.group(1)

@@ -24,6 +24,9 @@ package org.apache.lucene.geo3d;
  */
 public abstract class GeoBaseShape extends BasePlanetObject implements GeoShape {
 
+  /** Constructor.
+   *@param planetModel is the planet model to use.
+   */
   public GeoBaseShape(final PlanetModel planetModel) {
     super(planetModel);
   }

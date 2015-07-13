@@ -31,11 +31,17 @@ package org.apache.lucene.geo3d;
  * @lucene.experimental
  */
 public class Bounds {
+
+  /** Set to true if no longitude bounds can be stated */
   protected boolean noLongitudeBound = false;
+  /** Set to true if no top latitude bound can be stated */
   protected boolean noTopLatitudeBound = false;
+  /** Set to true if no bottom latitude bound can be stated */
   protected boolean noBottomLatitudeBound = false;
 
+  /** If non-null, the minimum latitude bound */
   protected Double minLatitude = null;
+  /** If non-null, the maximum latitude bound */
   protected Double maxLatitude = null;
 
   // For longitude bounds, this class needs to worry about keeping track of the distinction
@@ -90,40 +96,69 @@ public class Bounds {
   // to the right.  We choose the direction with the least longitude difference.  (If we aren't sure,
   // and can recognize that, we can set "unconstrained in longitude".)
 
+  /** If non-null, the left longitude bound */
   protected Double leftLongitude = null;
+  /** If non-null, the right longitude bound */
   protected Double rightLongitude = null;
 
+  /** Construct an empty bounds object */
   public Bounds() {
   }
 
+  /** Get maximum latitude, if any.
+   *@return maximum latitude or null.
+   */
   public Double getMaxLatitude() {
     return maxLatitude;
   }
 
+  /** Get minimum latitude, if any.
+   *@return minimum latitude or null.
+   */
   public Double getMinLatitude() {
     return minLatitude;
   }
 
+  /** Get left longitude, if any.
+   *@return left longitude, or null.
+   */
   public Double getLeftLongitude() {
     return leftLongitude;
   }
 
+  /** Get right longitude, if any.
+   *@return right longitude, or null.
+   */
   public Double getRightLongitude() {
     return rightLongitude;
   }
 
+  /** Check if there's no longitude bound.
+   *@return true if no longitude bound.
+   */
   public boolean checkNoLongitudeBound() {
     return noLongitudeBound;
   }
 
+  /** Check if there's no top latitude bound.
+   *@return true if no top latitude bound.
+   */
   public boolean checkNoTopLatitudeBound() {
     return noTopLatitudeBound;
   }
 
+  /** Check if there's no bottom latitude bound.
+   *@return true if no bottom latitude bound.
+   */
   public boolean checkNoBottomLatitudeBound() {
     return noBottomLatitudeBound;
   }
 
+  /** Add a constraint representing a horizontal circle with a
+   * specified z value.
+   *@param z is the z value.
+   *@return the updated Bounds object.
+   */
   public Bounds addHorizontalCircle(double z) {
     if (!noTopLatitudeBound || !noBottomLatitudeBound) {
       // Compute a latitude value
@@ -133,6 +168,11 @@ public class Bounds {
     return this;
   }
 
+  /** Add a constraint representing a horizontal circle at
+   * a specific latitude.
+   *@param latitude is the latitude.
+   *@return the updated Bounds object.
+   */
   public Bounds addLatitudeZone(double latitude) {
     if (!noTopLatitudeBound || !noBottomLatitudeBound) {
       addLatitudeBound(latitude);
@@ -140,6 +180,11 @@ public class Bounds {
     return this;
   }
 
+  /** Add a constraint representing a longitude slice.
+   *@param newLeftLongitude is the left longitude value.
+   *@param newRightLongitude is the right longitude value.
+   *@return the updated Bounds object.
+   */
   public Bounds addLongitudeSlice(double newLeftLongitude, double newRightLongitude) {
     if (!noLongitudeBound) {
       addLongitudeBound(newLeftLongitude, newRightLongitude);
@@ -147,6 +192,9 @@ public class Bounds {
     return this;
   }
 
+  /** Update latitude bound.
+   *@param latitude is the latitude.
+   */
   protected void addLatitudeBound(double latitude) {
     if (!noTopLatitudeBound && (maxLatitude == null || latitude > maxLatitude))
       maxLatitude = latitude;
@@ -154,6 +202,10 @@ public class Bounds {
       minLatitude = latitude;
   }
 
+  /** Update longitude bound.
+   *@param newLeftLongitude is the left longitude.
+   *@param newRightLongitude is the right longitude.
+   */
   protected void addLongitudeBound(double newLeftLongitude, double newRightLongitude) {
     if (leftLongitude == null && rightLongitude == null) {
       leftLongitude = newLeftLongitude;
@@ -197,6 +249,9 @@ public class Bounds {
     }
   }
 
+  /** Update longitude bound.
+   *@param longitude is the new longitude value.
+   */
   protected void addLongitudeBound(double longitude) {
     // If this point is within the current bounds, we're done; otherwise
     // expand one side or the other.
@@ -254,10 +309,20 @@ public class Bounds {
     }
   }
 
+  /** Add a single point.
+   *@param v is the point vector.
+   *@return the updated Bounds object.
+   */
   public Bounds addPoint(final Vector v) {
     return addPoint(v.x, v.y, v.z);
   }
 
+  /** Add a single point.
+   *@param x is the point x.
+   *@param y is the point y.
+   *@param z is the point z.
+   *@return the updated Bounds object.
+   */
   public Bounds addPoint(final double x, final double y, final double z) {
     if (!noLongitudeBound) {
       // Get a longitude value
@@ -273,6 +338,11 @@ public class Bounds {
     return this;
   }
 
+  /** Add a single point.
+   *@param latitude is the point's latitude.
+   *@param longitude is the point's longitude.
+   *@return the updated Bounds object.
+   */
   public Bounds addPoint(double latitude, double longitude) {
     if (!noLongitudeBound) {
       // Get a longitude value
@@ -285,6 +355,9 @@ public class Bounds {
     return this;
   }
 
+  /** Signal that there is no longitude bound.
+   *@return the updated Bounds object.
+   */
   public Bounds noLongitudeBound() {
     noLongitudeBound = true;
     leftLongitude = null;
@@ -292,12 +365,18 @@ public class Bounds {
     return this;
   }
 
+  /** Signal that there is no top latitude bound.
+   *@return the updated Bounds object.
+   */
   public Bounds noTopLatitudeBound() {
     noTopLatitudeBound = true;
     maxLatitude = null;
     return this;
   }
 
+  /** Signal that there is no bottom latitude bound.
+   *@return the updated Bounds object.
+   */
   public Bounds noBottomLatitudeBound() {
     noBottomLatitudeBound = true;
     minLatitude = null;

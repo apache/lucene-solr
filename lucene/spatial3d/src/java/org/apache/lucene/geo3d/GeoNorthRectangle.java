@@ -26,29 +26,41 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoNorthRectangle extends GeoBaseBBox {
-  public final double bottomLat;
-  public final double leftLon;
-  public final double rightLon;
-
-  public final double cosMiddleLat;
-
-  public final GeoPoint LRHC;
-  public final GeoPoint LLHC;
-
-  public final SidedPlane bottomPlane;
-  public final SidedPlane leftPlane;
-  public final SidedPlane rightPlane;
-
-  public final GeoPoint[] bottomPlanePoints;
-  public final GeoPoint[] leftPlanePoints;
-  public final GeoPoint[] rightPlanePoints;
-
-  public final GeoPoint centerPoint;
-
-  public final GeoPoint[] edgePoints;
+  /** The bottom latitude of the rectangle */
+  protected final double bottomLat;
+  /** The left longitude */
+  protected final double leftLon;
+  /** The right longitude */
+  protected final double rightLon;
+  /** Cosine of the middle latitude */
+  protected final double cosMiddleLat;
+  /** Lower right hand corner point */
+  protected final GeoPoint LRHC;
+  /** Lower left hand corner point */
+  protected final GeoPoint LLHC;
+  /** Bottom edge plane */
+  protected final SidedPlane bottomPlane;
+  /** Left-side plane */
+  protected final SidedPlane leftPlane;
+  /** Right-side plane */
+  protected final SidedPlane rightPlane;
+  /** Bottom plane notable points */
+  protected final GeoPoint[] bottomPlanePoints;
+  /** Left plane notable points */
+  protected final GeoPoint[] leftPlanePoints;
+  /** Right plane notable points */
+  protected final GeoPoint[] rightPlanePoints;
+  /** Center point */
+  protected final GeoPoint centerPoint;
+  /** A point on the edge */
+  protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
+   *@param planetModel is the planet model.
+   *@param bottomLat is the bottom latitude.
+   *@param leftLon is the left longitude.
+   *@param rightLon is the right longitude.
    */
   public GeoNorthRectangle(final PlanetModel planetModel, final double bottomLat, final double leftLon, double rightLon) {
     super(planetModel);

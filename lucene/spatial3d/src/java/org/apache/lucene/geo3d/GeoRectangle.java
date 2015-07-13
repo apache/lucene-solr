@@ -25,34 +25,57 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoRectangle extends GeoBaseBBox {
-  public final double topLat;
-  public final double bottomLat;
-  public final double leftLon;
-  public final double rightLon;
+  /** The top latitude of the rect */
+  protected final double topLat;
+  /** The bottom latitude of the rect */
+  protected final double bottomLat;
+  /** The left longitude of the rect */
+  protected final double leftLon;
+  /** The right longitude of the rect */
+  protected final double rightLon;
+  /** The cosine of a middle latitude */
+  protected final double cosMiddleLat;
 
-  public final double cosMiddleLat;
+  /** The upper left hand corner point */
+  protected final GeoPoint ULHC;
+  /** The upper right hand corner point */
+  protected final GeoPoint URHC;
+  /** The lower right hand corner point */
+  protected final GeoPoint LRHC;
+  /** The lower left hand corner point */
+  protected final GeoPoint LLHC;
 
-  public final GeoPoint ULHC;
-  public final GeoPoint URHC;
-  public final GeoPoint LRHC;
-  public final GeoPoint LLHC;
+  /** The top plane */
+  protected final SidedPlane topPlane;
+  /** The bottom plane */
+  protected final SidedPlane bottomPlane;
+  /** The left plane */
+  protected final SidedPlane leftPlane;
+  /** The right plane */
+  protected final SidedPlane rightPlane;
 
-  public final SidedPlane topPlane;
-  public final SidedPlane bottomPlane;
-  public final SidedPlane leftPlane;
-  public final SidedPlane rightPlane;
+  /** Notable points for the top plane */
+  protected final GeoPoint[] topPlanePoints;
+  /** Notable points for the bottom plane */
+  protected final GeoPoint[] bottomPlanePoints;
+  /** Notable points for the left plane */
+  protected final GeoPoint[] leftPlanePoints;
+  /** Notable points for the right plane */
+  protected final GeoPoint[] rightPlanePoints;
 
-  public final GeoPoint[] topPlanePoints;
-  public final GeoPoint[] bottomPlanePoints;
-  public final GeoPoint[] leftPlanePoints;
-  public final GeoPoint[] rightPlanePoints;
+  /** Center point */
+  protected final GeoPoint centerPoint;
 
-  public final GeoPoint centerPoint;
-
-  public final GeoPoint[] edgePoints;
+  /** Edge point for this rectangle */
+  protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
+   *@param planetModel is the planet model.
+   *@param topLat is the top latitude.
+   *@param bottomLat is the bottom latitude.
+   *@param leftLon is the left longitude.
+   *@param rightLon is the right longitude.
    */
   public GeoRectangle(final PlanetModel planetModel, final double topLat, final double bottomLat, final double leftLon, double rightLon) {
     super(planetModel);

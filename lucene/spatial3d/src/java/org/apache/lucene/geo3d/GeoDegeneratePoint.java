@@ -24,11 +24,20 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
-  public final double latitude;
-  public final double longitude;
-  public final PlanetModel planetModel;
-  public final GeoPoint[] edgePoints;
+  /** The latitude of the point */
+  protected final double latitude;
+  /** The longitude of the point */
+  protected final double longitude;
+  /** Current planet model, since we don't extend BasePlanetObject */
+  protected final PlanetModel planetModel;
+  /** Edge point is an area containing just this */
+  protected final GeoPoint[] edgePoints;
 
+  /** Constructor.
+   *@param planetModel is the planet model to use.
+   *@param lat is the latitude.
+   *@param lon is the longitude.
+   */
   public GeoDegeneratePoint(final PlanetModel planetModel, final double lat, final double lon) {
     super(planetModel, lat, lon);
     this.planetModel = planetModel;

@@ -31,9 +31,15 @@ public interface GeoArea extends Membership {
   // This will, of course, rely heavily on methods provided by
   // the underlying GeoShape class.
 
+  // Relationship values for "getRelationship()"
+  
+  /** The referenced shape CONTAINS this shape */
   public static final int CONTAINS = 0;
+  /** The referenced shape IS WITHIN this shape */
   public static final int WITHIN = 1;
+  /** The referenced shape OVERLAPS this shape */
   public static final int OVERLAPS = 2;
+  /** The referenced shape has no relation to this shape */
   public static final int DISJOINT = 3;
 
   /**

@@ -32,27 +32,43 @@ import java.util.Map;
  * @lucene.experimental
  */
 public class GeoPath extends GeoBaseDistanceShape {
+  /** The cutoff angle (width) */
+  protected final double cutoffAngle;
+
+  /** Sine of cutoff angle */
+  protected final double sinAngle;
+  /** Cosine of cutoff angle */
+  protected final double cosAngle;
+
+  /** The original list of path points */
+  protected final List<GeoPoint> points = new ArrayList<GeoPoint>();
   
-  public final double cutoffAngle;
+  /** A list of SegmentEndpoints */
+  protected List<SegmentEndpoint> endPoints;
+  /** A list of PathSegments */
+  protected List<PathSegment> segments;
 
-  public final double sinAngle; // sine of cutoffAngle
-  public final double cosAngle; // cosine of cutoffAngle
+  /** A point on the edge */
+  protected GeoPoint[] edgePoints;
 
-  public final List<GeoPoint> points = new ArrayList<GeoPoint>();
+  /** Set to true if path has been completely constructed */
+  protected boolean isDone = false;
   
-  public List<SegmentEndpoint> endPoints;
-  public List<PathSegment> segments;
-
-  public GeoPoint[] edgePoints;
-
-  public boolean isDone = false;
-  
+  /** Constructor.
+   *@param planetModel is the planet model.
+   *@param maxCutoffAngle is the width of the path, measured as an angle.
+   *@param pathPoints are the points in the path.
+   */
   public GeoPath(final PlanetModel planetModel, final double maxCutoffAngle, final GeoPoint[] pathPoints) {
     this(planetModel, maxCutoffAngle);
     Collections.addAll(points, pathPoints);
     done();
   }
   
+  /** Piece-wise constructor.  Use in conjunction with addPoint() and done().
+   *@param planetModel is the planet model.
+   *@param maxCutoffAngle is the width of the path, measured as an angle.
+   */
   public GeoPath(final PlanetModel planetModel, final double maxCutoffAngle) {
     super(planetModel);
     if (maxCutoffAngle <= 0.0 || maxCutoffAngle > Math.PI * 0.5)
@@ -62,12 +78,18 @@ public class GeoPath extends GeoBaseDistanceShape {
     this.sinAngle = Math.sin(maxCutoffAngle);
   }
 
-  public void addPoint(double lat, double lon) {
+  /** Add a point to the path.
+   *@param lat is the latitude of the point.
+   *@param lon is the longitude of the point.
+   */
+  public void addPoint(final double lat, final double lon) {
     if (isDone)
       throw new IllegalStateException("Can't call addPoint() if done() already called");
     points.add(new GeoPoint(planetModel, lat, lon));
   }
   
+  /** Complete the path.
+   */
   public void done() {
     if (isDone)
       throw new IllegalStateException("Can't call done() twice");
@@ -307,11 +329,15 @@ public class GeoPath extends GeoBaseDistanceShape {
    *    cutoff plane/edge plane points.
    */
   public static class SegmentEndpoint {
+    /** The center point of the endpoint */
     public final GeoPoint point;
+    /** A plane describing the circle */
     public final SidedPlane circlePlane;
+    /** Pertinent cutoff planes from adjoining segments */
     public final Membership[] cutoffPlanes;
+    /** Notable points for this segment endpoint */
     public final GeoPoint[] notablePoints;
-
+    /** No notable points from the circle itself */
     public final static GeoPoint[] circlePoints = new GeoPoint[0];
 
     /** Base case.  Does nothing at all.
@@ -325,6 +351,9 @@ public class GeoPath extends GeoBaseDistanceShape {
     
     /** Constructor for case (1).
      * Generate a simple circle cutoff plane.
+     *@param point is the center point.
+     *@param upperPoint is a point that must be on the circle plane.
+     *@param lowerPoint is another point that must be on the circle plane.
      */
     public SegmentEndpoint(final GeoPoint point, final GeoPoint upperPoint, final GeoPoint lowerPoint) {
       this.point = point;
@@ -338,6 +367,10 @@ public class GeoPath extends GeoBaseDistanceShape {
     
     /** Constructor for case (2).
      * Generate an endpoint, given a single cutoff plane plus upper and lower edge points.
+     *@param point is the center point.
+     *@param cutoffPlane is the plane from the adjoining path segment marking the boundary between this endpoint and that segment.
+     *@param topEdgePoint is a point on the cutoffPlane that should be also on the circle plane.
+     *@param bottomEdgePoint is another point on the cutoffPlane that should be also on the circle plane.
      */
     public SegmentEndpoint(final GeoPoint point,
       final SidedPlane cutoffPlane, final GeoPoint topEdgePoint, final GeoPoint bottomEdgePoint) {
@@ -350,6 +383,11 @@ public class GeoPath extends GeoBaseDistanceShape {
 
     /** Constructor for case (2.5).
      * Generate an endpoint, given two cutoff planes plus upper and lower edge points.
+     *@param point is the center.
+     *@param cutoffPlane1 is one adjoining path segment cutoff plane.
+     *@param cutoffPlane2 is another adjoining path segment cutoff plane.
+     *@param topEdgePoint is a point on the cutoffPlane that should be also on the circle plane.
+     *@param bottomEdgePoint is another point on the cutoffPlane that should be also on the circle plane.
      */
     public SegmentEndpoint(final GeoPoint point,
       final SidedPlane cutoffPlane1, final SidedPlane cutoffPlane2, final GeoPoint topEdgePoint, final GeoPoint bottomEdgePoint) {
@@ -362,6 +400,17 @@ public class GeoPath extends GeoBaseDistanceShape {
     
     /** Constructor for case (3).
      * Generate an endpoint for an intersection, given four points.
+     *@param point is the center.
+     *@param prevCutoffPlane is the previous adjoining segment cutoff plane.
+     *@param nextCutoffPlane is the next path segment cutoff plane.
+     *@param notCand2Point is a point NOT on candidate2.
+     *@param notCand1Point is a point NOT on candidate1.
+     *@param notCand3Point is a point NOT on candidate3.
+     *@param notCand4Point is a point NOT on candidate4.
+     *@param candidate1 one of four candidate circle planes.
+     *@param candidate2 one of four candidate circle planes.
+     *@param candidate3 one of four candidate circle planes.
+     *@param candidate4 one of four candidate circle planes.
      */
     public SegmentEndpoint(final GeoPoint point,
       final SidedPlane prevCutoffPlane, final SidedPlane nextCutoffPlane,
@@ -416,28 +465,59 @@ public class GeoPath extends GeoBaseDistanceShape {
       }
     }
 
+    /** Check if point is within this endpoint.
+     *@param point is the point.
+     *@return true of within.
+     */
     public boolean isWithin(final Vector point) {
       if (circlePlane == null)
         return false;
       return circlePlane.isWithin(point);
     }
 
+    /** Check if point is within this endpoint.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return true of within.
+     */
     public boolean isWithin(final double x, final double y, final double z) {
       if (circlePlane == null)
         return false;
       return circlePlane.isWithin(x, y, z);
     }
 
+    /** Compute interior path distance.
+     *@param distanceStyle is the distance style.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return the distance metric.
+     */
     public double pathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
         return Double.MAX_VALUE;
       return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
+    /** Compute external distance.
+     *@param distanceStyle is the distance style.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return the distance metric.
+     */
     public double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
+    /** Determine if this endpoint intersects a specified plane.
+     *@param planetModel is the planet model.
+     *@param p is the plane.
+     *@param notablePoints are the points associated with the plane.
+     *@param bounds are any bounds which the intersection must lie within.
+     *@return true if there is a matching intersection.
+     */
     public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
       //System.err.println("  looking for intersection between plane "+p+" and circle "+circlePlane+" on proper side of "+cutoffPlanes+" within "+bounds);
       if (circlePlane == null)
@@ -445,6 +525,10 @@ public class GeoPath extends GeoBaseDistanceShape {
       return circlePlane.intersects(planetModel, p, notablePoints, this.notablePoints, bounds, this.cutoffPlanes);
     }
 
+    /** Get the bounds for a segment endpoint.
+     *@param planetModel is the planet model.
+     *@param bounds are the bounds to be modified.
+     */
     public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       bounds.addPoint(point);
       if (circlePlane == null)
@@ -475,31 +559,45 @@ public class GeoPath extends GeoBaseDistanceShape {
    * This is the pre-calculated data for a path segment.
    */
   public static class PathSegment {
+    /** Starting point of the segment */
     public final GeoPoint start;
+    /** End point of the segment */
     public final GeoPoint end;
+    /** Place to keep any complete segment distances we've calculated so far */
     public final Map<DistanceStyle,Double> fullDistanceCache = new HashMap<DistanceStyle,Double>();
+    /** Normalized plane connecting the two points and going through world center */
     public final Plane normalizedConnectingPlane;
+    /** Cutoff plane parallel to connecting plane representing one side of the path segment */
     public final SidedPlane upperConnectingPlane;
+    /** Cutoff plane parallel to connecting plane representing the other side of the path segment */
     public final SidedPlane lowerConnectingPlane;
+    /** Plane going through the center and start point, marking the start edge of the segment */
     public final SidedPlane startCutoffPlane;
+    /** Plane going through the center and end point, marking the end edge of the segment */
     public final SidedPlane endCutoffPlane;
+    /** Upper right hand corner of segment */
     public final GeoPoint URHC;
+    /** Lower right hand corner of segment */
     public final GeoPoint LRHC;
+    /** Upper left hand corner of segment */
     public final GeoPoint ULHC;
+    /** Lower left hand corner of segment */
     public final GeoPoint LLHC;
+    /** Notable points for the upper connecting plane */
     public final GeoPoint[] upperConnectingPlanePoints;
+    /** Notable points for the lower connecting plane */
     public final GeoPoint[] lowerConnectingPlanePoints;
+    /** Notable points for the start cutoff plane */
     public final GeoPoint[] startCutoffPlanePoints;
+    /** Notable points for the end cutoff plane */
     public final GeoPoint[] endCutoffPlanePoints;
-    public final double planeBoundingOffset;
 
     public PathSegment(final PlanetModel planetModel, final GeoPoint start, final GeoPoint end,
       final Plane normalizedConnectingPlane, final double planeBoundingOffset) {
       this.start = start;
       this.end = end;
       this.normalizedConnectingPlane = normalizedConnectingPlane;
-      this.planeBoundingOffset = planeBoundingOffset;
-
+        
       // Either start or end should be on the correct side
       upperConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, -planeBoundingOffset);
       lowerConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, planeBoundingOffset);
@@ -537,6 +635,10 @@ public class GeoPath extends GeoBaseDistanceShape {
       endCutoffPlanePoints = new GeoPoint[]{URHC, LRHC};
     }
 
+    /** Compute the full distance along this path segment.
+     *@param distanceStyle is the distance style.
+     *@return the distance metric.
+     */
     public double fullPathDistance(final DistanceStyle distanceStyle) {
       synchronized (fullDistanceCache) {
         Double dist = fullDistanceCache.get(distanceStyle);
@@ -547,20 +649,24 @@ public class GeoPath extends GeoBaseDistanceShape {
         return dist.doubleValue();
       }
     }
-    
+  
+    /** Check if point is within this segment.
+     *@param point is the point.
+     *@return true of within.
+     */
     public boolean isWithin(final Vector point) {
-      //System.err.println(" assessing whether point "+point+" is within path segment "+this);
-      //System.err.println("  within "+startCutoffPlane+": "+startCutoffPlane.isWithin(point));
-      //System.err.println("  within "+endCutoffPlane+": "+endCutoffPlane.isWithin(point));
-      //System.err.println("  within "+upperConnectingPlane+": "+upperConnectingPlane.isWithin(point));
-      //System.err.println("  within "+lowerConnectingPlane+": "+lowerConnectingPlane.isWithin(point));
-
       return startCutoffPlane.isWithin(point) &&
           endCutoffPlane.isWithin(point) &&
           upperConnectingPlane.isWithin(point) &&
           lowerConnectingPlane.isWithin(point);
     }
 
+    /** Check if point is within this segment.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return true of within.
+     */
     public boolean isWithin(final double x, final double y, final double z) {
       return startCutoffPlane.isWithin(x, y, z) &&
           endCutoffPlane.isWithin(x, y, z) &&
@@ -568,6 +674,14 @@ public class GeoPath extends GeoBaseDistanceShape {
           lowerConnectingPlane.isWithin(x, y, z);
     }
 
+    /** Compute interior path distance.
+     *@param planetModel is the planet model.
+     *@param distanceStyle is the distance style.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return the distance metric.
+     */
     public double pathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
         return Double.MAX_VALUE;
@@ -604,6 +718,14 @@ public class GeoPath extends GeoBaseDistanceShape {
       return distanceStyle.computeDistance(thePoint, x, y, z) + distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z);
     }
 
+    /** Compute external distance.
+     *@param planetModel is the planet model.
+     *@param distanceStyle is the distance style.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return the distance metric.
+     */
     public double outsideDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       final double upperDistance = distanceStyle.computeDistance(planetModel, upperConnectingPlane, x,y,z, lowerConnectingPlane, startCutoffPlane, endCutoffPlane);
       final double lowerDistance = distanceStyle.computeDistance(planetModel, lowerConnectingPlane, x,y,z, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
@@ -622,11 +744,22 @@ public class GeoPath extends GeoBaseDistanceShape {
           Math.min(LLHCDistance, LRHCDistance)));
     }
 
+    /** Determine if this endpoint intersects a specified plane.
+     *@param planetModel is the planet model.
+     *@param p is the plane.
+     *@param notablePoints are the points associated with the plane.
+     *@param bounds are any bounds which the intersection must lie within.
+     *@return true if there is a matching intersection.
+     */
     public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
       return upperConnectingPlane.intersects(planetModel, p, notablePoints, upperConnectingPlanePoints, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
           lowerConnectingPlane.intersects(planetModel, p, notablePoints, lowerConnectingPlanePoints, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
     }
 
+    /** Get the bounds for a segment endpoint.
+     *@param planetModel is the planet model.
+     *@param bounds are the bounds to be modified.
+     */
     public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       // We need to do all bounding planes as well as corner points
       bounds.addPoint(start).addPoint(end);

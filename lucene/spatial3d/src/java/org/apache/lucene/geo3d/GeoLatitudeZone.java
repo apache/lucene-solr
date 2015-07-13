@@ -23,23 +23,38 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoLatitudeZone extends GeoBaseBBox {
-  public final double topLat;
-  public final double bottomLat;
-  public final double cosTopLat;
-  public final double cosBottomLat;
-  public final SidedPlane topPlane;
-  public final SidedPlane bottomPlane;
-  public final GeoPoint interiorPoint;
-  public final static GeoPoint[] planePoints = new GeoPoint[0];
+  /** The top latitude of the zone */
+  protected final double topLat;
+  /** The bottom latitude of the zone */
+  protected final double bottomLat;
+  /** Cosine of the top lat */
+  protected final double cosTopLat;
+  /** Cosine of the bottom lat */
+  protected final double cosBottomLat;
+  /** The top plane */
+  protected final SidedPlane topPlane;
+  /** The bottom plane */
+  protected final SidedPlane bottomPlane;
+  /** An interior point */
+  protected final GeoPoint interiorPoint;
+  /** Notable points (none) */
+  protected final static GeoPoint[] planePoints = new GeoPoint[0];
 
   // We need two additional points because a latitude zone's boundaries don't intersect.  This is a very
   // special case that most GeoBBox's do not have.
-  public final GeoPoint topBoundaryPoint;
-  public final GeoPoint bottomBoundaryPoint;
+  
+  /** Top boundary point */
+  protected final GeoPoint topBoundaryPoint;
+  /** Bottom boundary point */
+  protected final GeoPoint bottomBoundaryPoint;
+  /** A point on each distinct edge */
+  protected final GeoPoint[] edgePoints;
 
-  // Edge points
-  public final GeoPoint[] edgePoints;
-
+  /** Constructor.
+   *@param planetModel is the planet model to use.
+   *@param topLat is the top latitude.
+   *@param bottomLat is the bottom latitude.
+   */
   public GeoLatitudeZone(final PlanetModel planetModel, final double topLat, final double bottomLat) {
     super(planetModel);
     this.topLat = topLat;

@@ -25,14 +25,27 @@ package org.apache.lucene.geo3d;
  */
 public abstract class GeoBaseBBox extends GeoBaseMembershipShape implements GeoBBox {
 
+  /** Construct, given planet model.
+   *@param planetModel is the planet model.
+   */
   public GeoBaseBBox(final PlanetModel planetModel) {
     super(planetModel);
   }
 
+  // Signals for relationship of edge points to shape
+  
+  /** All edgepoints inside shape */
   protected final static int ALL_INSIDE = 0;
+  /** Some edgepoints inside shape */
   protected final static int SOME_INSIDE = 1;
+  /** No edgepoints inside shape */
   protected final static int NONE_INSIDE = 2;
 
+  /** Determine the relationship between this BBox and the provided
+   * shape's edgepoints.
+   *@param path is the shape.
+   *@return the relationship.
+   */
   protected int isShapeInsideBBox(final GeoShape path) {
     final GeoPoint[] pathPoints = path.getEdgePoints();
     boolean foundOutside = false;

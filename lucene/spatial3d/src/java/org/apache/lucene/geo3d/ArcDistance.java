@@ -24,6 +24,7 @@ package org.apache.lucene.geo3d;
  */
 public class ArcDistance implements DistanceStyle {
   
+  /** An instance of the ArcDistance DistanceStyle. */
   public final static ArcDistance INSTANCE = new ArcDistance();
   
   @Override

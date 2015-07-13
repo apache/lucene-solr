@@ -23,16 +23,19 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
-  public final double longitude;
+  /** The longitude of the slice */
+  protected final double longitude;
 
-  public final double sinLongitude;
-  public final double cosLongitude;
-  public final SidedPlane boundingPlane;
-  public final Plane plane;
-  public final GeoPoint interiorPoint;
-  public final GeoPoint[] edgePoints;
-
-  public final GeoPoint[] planePoints;
+  /** The bounding plane for the slice (through both poles, perpendicular to the slice) */
+  protected final SidedPlane boundingPlane;
+  /** The plane of the slice */
+  protected final Plane plane;
+  /** A point on the slice */
+  protected final GeoPoint interiorPoint;
+  /** An array consisting of the one point chosen on the slice */
+  protected final GeoPoint[] edgePoints;
+  /** Notable points for the slice (north and south poles) */
+  protected final GeoPoint[] planePoints;
 
   /**
    * Accepts only values in the following ranges: lon: {@code -PI -> PI}
@@ -44,8 +47,8 @@ public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
       throw new IllegalArgumentException("Longitude out of range");
     this.longitude = longitude;
 
-    this.sinLongitude = Math.sin(longitude);
-    this.cosLongitude = Math.cos(longitude);
+    final double sinLongitude = Math.sin(longitude);
+    final double cosLongitude = Math.cos(longitude);
 
     this.plane = new Plane(cosLongitude, sinLongitude);
     // We need a bounding plane too, which is perpendicular to the longitude plane and sided so that the point (0.0, longitude) is inside.
