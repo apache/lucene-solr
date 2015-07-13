@@ -23,28 +23,44 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
+  /** The latitude of the line */
   protected final double latitude;
+  /** The left longitude cutoff of the line */
   protected final double leftLon;
+  /** The right longitude cutoff of the line */
   protected final double rightLon;
 
+  /** The left end of the line */
   protected final GeoPoint LHC;
+  /** The right end of the line */
   protected final GeoPoint RHC;
 
+  /** The plane the line is in */
   protected final Plane plane;
+  /** The left cutoff plane */
   protected final SidedPlane leftPlane;
+  /** The right cutoff plane */
   protected final SidedPlane rightPlane;
 
+  /** Notable points for the line */
   protected final GeoPoint[] planePoints;
 
+  /** Center point for the line */
   protected final GeoPoint centerPoint;
 
+  /** Left/right combination bound */
   protected final EitherBound eitherBound;
 
+  /** A point on the line */
   protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
    * Horizontal angle must be greater than or equal to PI.
+   *@param planetModel is the planet model.
+   *@param latitude is the line latitude.
+   *@param leftLon is the left cutoff longitude.
+   *@param rightLon is the right cutoff longitude.
    */
   public GeoWideDegenerateHorizontalLine(final PlanetModel planetModel, final double latitude, final double leftLon, double rightLon) {
     super(planetModel);
@@ -205,7 +221,11 @@ public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
     return "GeoWideDegenerateHorizontalLine: {planetmodel="+planetModel+", latitude=" + latitude + "(" + latitude * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightLon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 
+  /** Membership implementation representing a wide cutoff (more than 180 degrees).
+   */
   protected class EitherBound implements Membership {
+    /** Constructor.
+     */
     public EitherBound() {
     }
 

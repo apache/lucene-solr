@@ -592,6 +592,13 @@ public class GeoPath extends GeoBaseDistanceShape {
     /** Notable points for the end cutoff plane */
     public final GeoPoint[] endCutoffPlanePoints;
 
+    /** Construct a path segment.
+     *@param planetModel is the planet model.
+     *@param start is the starting point.
+     *@param end is the ending point.
+     *@param normalizedConnectingPlane is the connecting plane.
+     *@param planeBoundingOffset is the linear offset from the connecting plane to either side.
+     */
     public PathSegment(final PlanetModel planetModel, final GeoPoint start, final GeoPoint end,
       final Plane normalizedConnectingPlane, final double planeBoundingOffset) {
       this.start = start;

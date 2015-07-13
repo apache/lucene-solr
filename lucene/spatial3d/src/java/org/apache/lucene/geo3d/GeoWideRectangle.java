@@ -24,32 +24,52 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideRectangle extends GeoBaseBBox {
+  /** The top latitude */
   protected final double topLat;
+  /** The bottom latitude */
   protected final double bottomLat;
+  /** The left longitude */
   protected final double leftLon;
+  /** The right longitude */
   protected final double rightLon;
 
+  /** Cosine of the middle latitude */
   protected final double cosMiddleLat;
 
+  /** Upper left hand corner point */
   protected final GeoPoint ULHC;
+  /** Lower right hand corner point */
   protected final GeoPoint URHC;
+  /** Lower right hand corner point */
   protected final GeoPoint LRHC;
+  /** Lower left hand corner point */
   protected final GeoPoint LLHC;
 
+  /** Top plane */
   protected final SidedPlane topPlane;
+  /** Bottom plane */
   protected final SidedPlane bottomPlane;
+  /** Left plane */
   protected final SidedPlane leftPlane;
+  /** Right plane */
   protected final SidedPlane rightPlane;
 
+  /** Top plane's notable points */
   protected final GeoPoint[] topPlanePoints;
+  /** Bottom plane's notable points */
   protected final GeoPoint[] bottomPlanePoints;
+  /** Left plane's notable points */
   protected final GeoPoint[] leftPlanePoints;
+  /** Right plane's notable points */
   protected final GeoPoint[] rightPlanePoints;
 
+  /** Center point */
   protected final GeoPoint centerPoint;
 
+  /** Combined left/right bounds */
   protected final EitherBound eitherBound;
 
+  /** A point on the edge */
   protected final GeoPoint[] edgePoints;
 
   /**
@@ -276,7 +296,11 @@ public class GeoWideRectangle extends GeoBaseBBox {
     return "GeoWideRectangle: {planetmodel=" + planetModel + ", toplat=" + topLat + "(" + topLat * 180.0 / Math.PI + "), bottomlat=" + bottomLat + "(" + bottomLat * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 
+  /** A membership implementation representing a wide (more than 180) left/right bound.
+   */
   protected class EitherBound implements Membership {
+    /** Constructor.
+      */
     public EitherBound() {
     }
 

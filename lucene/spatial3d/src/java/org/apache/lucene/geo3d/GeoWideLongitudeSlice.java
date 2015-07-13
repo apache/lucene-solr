@@ -24,21 +24,31 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideLongitudeSlice extends GeoBaseBBox {
+  /** The left longitude */
   protected final double leftLon;
+  /** The right longitude */
   protected final double rightLon;
 
+  /** The left plane */
   protected final SidedPlane leftPlane;
+  /** The right plane */
   protected final SidedPlane rightPlane;
 
+  /** Notable points for the shape */
   protected final GeoPoint[] planePoints;
 
+  /** Center point for the shape */
   protected final GeoPoint centerPoint;
 
+  /** A point on the edge of the shape */
   protected final GeoPoint[] edgePoints; 
 
   /**
    * Accepts only values in the following ranges: lon: {@code -PI -> PI}.
    * Horizantal angle must be greater than or equal to PI.
+   *@param planetModel is the planet model.
+   *@param leftLon is the left longitude.
+   *@param rightLon is the right longitude.
    */
   public GeoWideLongitudeSlice(final PlanetModel planetModel, final double leftLon, double rightLon) {
     super(planetModel);

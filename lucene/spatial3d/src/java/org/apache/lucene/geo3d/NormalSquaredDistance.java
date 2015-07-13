@@ -24,7 +24,13 @@ package org.apache.lucene.geo3d;
  */
 public class NormalSquaredDistance implements DistanceStyle {
   
+  /** A convenient instance */
   public final static NormalSquaredDistance INSTANCE = new NormalSquaredDistance();
+  
+  /** Constructor.
+   */
+  public NormalSquaredDistance() {
+  }
   
   @Override
   public double computeDistance(final GeoPoint point1, final GeoPoint point2) {

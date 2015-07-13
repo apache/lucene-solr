@@ -27,6 +27,11 @@ public class ArcDistance implements DistanceStyle {
   /** An instance of the ArcDistance DistanceStyle. */
   public final static ArcDistance INSTANCE = new ArcDistance();
   
+  /** Constructor.
+   */
+  public ArcDistance() {
+  }
+  
   @Override
   public double computeDistance(final GeoPoint point1, final GeoPoint point2) {
     return point1.arcDistance(point2);

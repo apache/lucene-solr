@@ -24,7 +24,13 @@ package org.apache.lucene.geo3d;
  */
 public class LinearDistance implements DistanceStyle {
   
+  /** A convenient instance */
   public final static LinearDistance INSTANCE = new LinearDistance();
+  
+  /** Constructor.
+   */
+  public LinearDistance() {
+  }
   
   @Override
   public double computeDistance(final GeoPoint point1, final GeoPoint point2) {
