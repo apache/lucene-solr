@@ -23,24 +23,24 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
-  public final double latitude;
-  public final double leftLon;
-  public final double rightLon;
+  protected final double latitude;
+  protected final double leftLon;
+  protected final double rightLon;
 
-  public final GeoPoint LHC;
-  public final GeoPoint RHC;
+  protected final GeoPoint LHC;
+  protected final GeoPoint RHC;
 
-  public final Plane plane;
-  public final SidedPlane leftPlane;
-  public final SidedPlane rightPlane;
+  protected final Plane plane;
+  protected final SidedPlane leftPlane;
+  protected final SidedPlane rightPlane;
 
-  public final GeoPoint[] planePoints;
+  protected final GeoPoint[] planePoints;
 
-  public final GeoPoint centerPoint;
+  protected final GeoPoint centerPoint;
 
-  public final EitherBound eitherBound;
+  protected final EitherBound eitherBound;
 
-  public final GeoPoint[] edgePoints;
+  protected final GeoPoint[] edgePoints;
 
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.

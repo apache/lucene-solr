@@ -25,8 +25,13 @@ package org.apache.lucene.geo3d;
  */
 public abstract class BasePlanetObject {
 
+  /** This is the planet model embedded in all objects derived from this
+   * class. */
   protected final PlanetModel planetModel;
   
+  /** Constructor creating class instance given a planet model.
+   * @param planetModel is the planet model.
+   */
   public BasePlanetObject(final PlanetModel planetModel) {
     this.planetModel = planetModel;
   }

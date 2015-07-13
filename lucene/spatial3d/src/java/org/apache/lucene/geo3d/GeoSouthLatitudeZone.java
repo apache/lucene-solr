@@ -23,17 +23,25 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoSouthLatitudeZone extends GeoBaseBBox {
-  public final double topLat;
-  public final double cosTopLat;
-  public final SidedPlane topPlane;
-  public final GeoPoint interiorPoint;
-  public final static GeoPoint[] planePoints = new GeoPoint[0];
+  /** The top latitude of the zone */
+  protected final double topLat;
+  /** The cosine of the top latitude of the zone */
+  protected final double cosTopLat;
+  /** The top plane of the zone */
+  protected final SidedPlane topPlane;
+  /** An interior point of the zone */
+  protected final GeoPoint interiorPoint;
+  /** Notable points for the plane (none) */
+  protected final static GeoPoint[] planePoints = new GeoPoint[0];
+  /** A point on the top boundary */
+  protected final GeoPoint topBoundaryPoint;
+  /** Edge points; a reference to the topBoundaryPoint */
+  protected final GeoPoint[] edgePoints;
 
-  public final GeoPoint topBoundaryPoint;
-
-  // Edge points
-  public final GeoPoint[] edgePoints;
-
+  /** Constructor.
+   *@param planetModel is the planet model.
+   *@param topLat is the top latitude of the zone.
+   */
   public GeoSouthLatitudeZone(final PlanetModel planetModel, final double topLat) {
     super(planetModel);
     this.topLat = topLat;

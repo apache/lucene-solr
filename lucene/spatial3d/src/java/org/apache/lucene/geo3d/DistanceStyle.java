@@ -27,10 +27,15 @@ public interface DistanceStyle {
 
   // convenient access to built-in styles:
 
+  /** Arc distance calculator */
   public static final ArcDistance ARC = ArcDistance.INSTANCE;
+  /** Linear distance calculator */
   public static final LinearDistance LINEAR = LinearDistance.INSTANCE;
+  /** Linear distance squared calculator */
   public static final LinearSquaredDistance LINEAR_SQUARED = LinearSquaredDistance.INSTANCE;
+  /** Normal distance calculator */
   public static final NormalDistance NORMAL = NormalDistance.INSTANCE;
+  /** Normal distance squared calculator */
   public static final NormalSquaredDistance NORMAL_SQUARED = NormalSquaredDistance.INSTANCE;
 
   /** Compute the distance from a point to another point.

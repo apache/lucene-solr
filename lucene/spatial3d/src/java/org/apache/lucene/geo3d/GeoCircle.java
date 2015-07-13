@@ -23,12 +23,23 @@ package org.apache.lucene.geo3d;
  * @lucene.experimental
  */
 public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
-  public final GeoPoint center;
-  public final double cutoffAngle;
-  public final SidedPlane circlePlane;
-  public final GeoPoint[] edgePoints;
-  public static final GeoPoint[] circlePoints = new GeoPoint[0];
+  /** Center of circle */
+  protected final GeoPoint center;
+  /** Cutoff angle of circle (not quite the same thing as radius) */
+  protected final double cutoffAngle;
+  /** The plane describing the circle (really an ellipse on a non-spherical world) */
+  protected final SidedPlane circlePlane;
+  /** A point that is on the world and on the circle plane */
+  protected final GeoPoint[] edgePoints;
+  /** Notable points for a circle -- there aren't any */
+  protected static final GeoPoint[] circlePoints = new GeoPoint[0];
 
+  /** Constructor.
+   *@param planetModel is the planet model.
+   *@param lat is the center latitude.
+   *@param lon is the center longitude.
+   *@param cutoffAngle is the cutoff angle for the circle.
+   */
   public GeoCircle(final PlanetModel planetModel, final double lat, final double lon, final double cutoffAngle) {
     super(planetModel);
     if (lat < -Math.PI * 0.5 || lat > Math.PI * 0.5)

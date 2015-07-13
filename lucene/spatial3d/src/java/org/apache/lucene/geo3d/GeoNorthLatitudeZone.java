@@ -23,17 +23,25 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoNorthLatitudeZone extends GeoBaseBBox {
-  public final double bottomLat;
-  public final double cosBottomLat;
-  public final SidedPlane bottomPlane;
-  public final GeoPoint interiorPoint;
-  public final static GeoPoint[] planePoints = new GeoPoint[0];
+  /** The bottom latitude of the zone */
+  protected final double bottomLat;
+  /** Cosine of the bottom latitude of the zone */
+  protected final double cosBottomLat;
+  /** The bottom plane of the zone */
+  protected final SidedPlane bottomPlane;
+  /** An interior point of the zone */
+  protected final GeoPoint interiorPoint;
+  /** Notable points: none */
+  protected final static GeoPoint[] planePoints = new GeoPoint[0];
+  /** A point on the bottom boundary */
+  protected final GeoPoint bottomBoundaryPoint;
+  /** A reference to the point on the boundary */
+  protected final GeoPoint[] edgePoints;
 
-  public final GeoPoint bottomBoundaryPoint;
-
-  // Edge points
-  public final GeoPoint[] edgePoints;
-
+  /** Constructor.
+   *@param planetModel is the planet model.
+   *@param bottomLat is the bottom latitude.
+   */
   public GeoNorthLatitudeZone(final PlanetModel planetModel, final double bottomLat) {
     super(planetModel);
     this.bottomLat = bottomLat;

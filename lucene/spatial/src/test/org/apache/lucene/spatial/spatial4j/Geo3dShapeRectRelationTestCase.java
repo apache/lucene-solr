@@ -117,7 +117,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
       @Override
       protected Point randomPointInEmptyShape(Geo3dShape shape) {
-        GeoPoint geoPoint = ((GeoCircle)shape.shape).center;
+        GeoPoint geoPoint = ((GeoCircle)shape.shape).getCenter();
         return geoPointToSpatial4jPoint(geoPoint);
       }
 
@@ -215,7 +215,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
         while (true) {
           try {
             final GeoPath path = new GeoPath(planetModel, width);
-            while (path.points.size() < pointCount) {
+            for (int i = 0; i < pointCount; i++) {
               final Point nextPoint = randomPointIn(pointZone);
               path.addPoint(nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
             }

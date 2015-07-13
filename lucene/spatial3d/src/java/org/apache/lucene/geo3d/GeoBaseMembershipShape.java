@@ -25,6 +25,9 @@ package org.apache.lucene.geo3d;
  */
 public abstract class GeoBaseMembershipShape extends GeoBaseShape implements GeoMembershipShape {
 
+  /** Constructor.
+   *@param planetModel is the planet model to use.
+   */
   public GeoBaseMembershipShape(final PlanetModel planetModel) {
     super(planetModel);
   }

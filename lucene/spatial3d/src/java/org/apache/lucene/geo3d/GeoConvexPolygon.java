@@ -30,21 +30,27 @@ import java.util.List;
  * @lucene.experimental
  */
 public class GeoConvexPolygon extends GeoBaseMembershipShape {
+  /** The list of polygon points */
   protected final List<GeoPoint> points;
+  /** A bitset describing, for each edge, whether it is internal or not */
   protected final BitSet isInternalEdges;
 
+  /** A list of edges */
   protected SidedPlane[] edges = null;
+  /** The set of notable points for each edge */
   protected GeoPoint[][] notableEdgePoints = null;
-
+  /** A point which is on the boundary of the polygon */
   protected GeoPoint[] edgePoints = null;
-
+  /** Tracking the maximum distance we go at any one time, so to be sure it's legal */
   protected double fullDistance = 0.0;
-
+  /** Set to true when the polygon is complete */
   protected boolean isDone = false;
   
   /**
    * Create a convex polygon from a list of points.  The first point must be on the
    * external edge.
+   *@param planetModel is the planet model.
+   *@param pointList is the list of points to create the polygon from.
    */
   public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList) {
     super(planetModel);
@@ -56,6 +62,10 @@ public class GeoConvexPolygon extends GeoBaseMembershipShape {
   /**
    * Create a convex polygon from a list of points, keeping track of which boundaries
    * are internal.  This is used when creating a polygon as a building block for another shape.
+   *@param planetModel is the planet model.
+   *@param pointList is the set of points to create the polygon from.
+   *@param internalEdgeFlags is a bitset describing whether each edge is internal or not.
+   *@param returnEdgeInternal is true when the final return edge is an internal one.
    */
   public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final BitSet internalEdgeFlags,
                           final boolean returnEdgeInternal) {
@@ -68,6 +78,9 @@ public class GeoConvexPolygon extends GeoBaseMembershipShape {
   /**
    * Create a convex polygon, with a starting latitude and longitude.
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
+   *@param planetModel is the planet model.
+   *@param startLatitude is the latitude of the first point.
+   *@param startLongitude is the longitude of the first point.
    */
   public GeoConvexPolygon(final PlanetModel planetModel, final double startLatitude, final double startLongitude) {
     super(planetModel);
@@ -95,6 +108,7 @@ public class GeoConvexPolygon extends GeoBaseMembershipShape {
 
   /**
    * Finish the polygon, by connecting the last added point with the starting point.
+   *@param isInternalReturnEdge is true if the return edge (back to start) is an internal one.
    */
   public void done(final boolean isInternalReturnEdge) {
     if (isDone)
@@ -128,6 +142,8 @@ public class GeoConvexPolygon extends GeoBaseMembershipShape {
     createCenterPoint();
   }
 
+  /** Compute a reasonable center point.
+   */
   protected void createCenterPoint() {
     // In order to naively confirm that the polygon is convex, I would need to
     // check every edge, and verify that every point (other than the edge endpoints)
@@ -145,6 +161,10 @@ public class GeoConvexPolygon extends GeoBaseMembershipShape {
     edgePoints = new GeoPoint[]{points.get(0)};
   }
 
+  /** Compute a legal point index from a possibly illegal one, that may have wrapped.
+   *@param index is the index.
+   *@return the normalized index.
+   */
   protected int legalIndex(int index) {
     while (index >= points.size())
       index -= points.size();

@@ -47,6 +47,14 @@ public class GeoPolygonFactory {
         false);
   }
 
+  /** Build a GeoMembershipShape given points, starting edge, and whether starting edge is internal or not.
+   * @param pointsList        is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @param startPointIndex is one of the points constituting the starting edge.
+   * @param endPointIndex is another of the points constituting the starting edge.
+   * @param startingEdge is the plane describing the starting edge.
+   * @param isInternalEdge is true if the specified edge is an internal one.
+   * @return a GeoMembershipShape corresponding to what was specified.
+   */
   public static GeoMembershipShape buildPolygonShape(final PlanetModel planetModel, final List<GeoPoint> pointsList, final int startPointIndex, final int endPointIndex, final SidedPlane startingEdge, final boolean isInternalEdge) {
     // Algorithm as follows:
     // Start with sided edge.  Go through all points in some order.  For each new point, determine if the point is within all edges considered so far.
@@ -149,7 +157,12 @@ public class GeoPolygonFactory {
     return rval;
   }
 
-  protected static boolean isWithin(GeoPoint newPoint, List<SidedPlane> currentPlanes) {
+  /** Check if a point is within a described list of planes.
+   *@param newPoint is the point. 
+   *@param currentPlanes is the list of planes.
+   *@return true if within.
+   */
+  protected static boolean isWithin(final GeoPoint newPoint, final List<SidedPlane> currentPlanes) {
     for (SidedPlane p : currentPlanes) {
       if (!p.isWithin(newPoint))
         return false;
@@ -157,6 +170,11 @@ public class GeoPolygonFactory {
     return true;
   }
 
+  /** Convert raw point index into valid array position.
+   *@param index is the array index.
+   *@param size is the array size.
+   *@return an updated index.
+   */
   protected static int getLegalIndex(int index, int size) {
     while (index < 0) {
       index += size;

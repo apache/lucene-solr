@@ -26,13 +26,17 @@ import java.util.List;
  * @lucene.experimental
  */
 public class GeoCompositeMembershipShape implements GeoMembershipShape {
+  /** The list of shapes. */
   protected final List<GeoMembershipShape> shapes = new ArrayList<GeoMembershipShape>();
 
+  /** Constructor.
+   */
   public GeoCompositeMembershipShape() {
   }
 
   /**
    * Add a shape to the composite.
+   *@param shape is the shape to add.
    */
   public void addShape(final GeoMembershipShape shape) {
     shapes.add(shape);
