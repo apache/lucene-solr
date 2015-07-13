@@ -18,7 +18,7 @@
 solrAdminApp.controller('ThreadsController',
   ["$scope", "Threads",
   function($scope, Threads){
-    $scope.resetMenu("threads");
+    $scope.resetMenu("threads", true);
     $scope.refresh = function() {
       Threads.get(function(data) {
         var threadDump = data.system.threadDump;

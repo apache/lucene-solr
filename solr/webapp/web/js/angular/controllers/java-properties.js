@@ -17,7 +17,7 @@
 
 solrAdminApp.controller('JavaPropertiesController',
   function($scope, Properties){
-    $scope.resetMenu("java-props");
+    $scope.resetMenu("java-props", true);
     $scope.refresh = function() {
       Properties.get(function(data) {
         var sysprops = data["system.properties"];

@@ -19,8 +19,8 @@
 solrAdminApp.controller('CoreAdminController',
   ['$scope', '$routeParams', '$location', '$timeout', 'Cores', 'Update',
     function($scope, $routeParams, $location, $timeout, Cores, Update){
-      $scope.resetMenu("cores");
-      $scope.currentCore = $routeParams.core;
+      $scope.resetMenu("cores", true);
+      $scope.currentCore = $routeParams.corename; // use 'corename' not 'core' to distinguish from /solr/:core/
       $scope.refresh = function() {
         Cores.get(function(data) {
           var coreCount = 0;
