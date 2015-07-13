@@ -30,13 +30,13 @@ solrAdminApp.controller('CloudController',
 
         var view = $location.search().view ? $location.search().view : "graph";
         if (view == "tree") {
-            $scope.resetMenu("cloud-tree");
+            $scope.resetMenu("cloud-tree", true);
             treeSubController($scope, Zookeeper);
         } else if (view == "rgraph") {
-            $scope.resetMenu("cloud-rgraph");
+            $scope.resetMenu("cloud-rgraph", true);
             graphSubController($scope, Zookeeper, true);
         } else if (view == "graph") {
-            $scope.resetMenu("cloud-graph");
+            $scope.resetMenu("cloud-graph", true);
             graphSubController($scope, Zookeeper, false);
         }
     }

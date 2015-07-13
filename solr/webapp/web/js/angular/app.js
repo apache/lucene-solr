@@ -47,7 +47,7 @@ solrAdminApp.config([
         templateUrl: 'partials/cores.html',
         controller: 'CoreAdminController'
       }).
-      when('/~cores/:core', {
+      when('/~cores/:corename', {
         templateUrl: 'partials/cores.html',
         controller: 'CoreAdminController'
       }).
@@ -325,6 +325,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     Cores.list(function(data) {
       $scope.cores = [];
       var currentCoreName = $route.current.params.core;
+      delete $scope.currentCore;
       for (key in data.status) {
         var core = data.status[key];
         $scope.cores.push(core);
@@ -339,10 +340,11 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   };
   $scope.refresh();
 
-  $scope.resetMenu = function(page) {
+  $scope.resetMenu = function(page, isMainPage) {
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
+    if (isMainPage) delete $scope.currentCore;
   };
 
   $scope.ping = function() {
