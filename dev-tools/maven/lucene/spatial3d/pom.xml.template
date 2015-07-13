@@ -28,17 +28,30 @@
   </parent>
   <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-spatial3d</artifactId>
-  <packaging>pom</packaging>
-  <name>Lucene Spatial shapes implemented using 3D planar geometry</name>
+  <packaging>jar</packaging>
+  <name>Lucene Spatial 3D</name>
+  <description>
+    Lucene Spatial shapes implemented using 3D planar geometry
+  </description>
+  <properties>
+    <module-directory>lucene/spatial3d</module-directory>
+    <relative-top-level>../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
+  </properties>
+  <dependencies>
+    <dependency>
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <scope>test</scope>
+    </dependency>
+@lucene-spatial3d.internal.dependencies@
+@lucene-spatial3d.external.dependencies@
+@lucene-spatial3d.internal.test.dependencies@
+@lucene-spatial3d.external.test.dependencies@
+  </dependencies>
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
+    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
   </build>
 </project>
