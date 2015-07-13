@@ -24,27 +24,42 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideSouthRectangle extends GeoBaseBBox {
+  /** Top latitude of rect */
   protected final double topLat;
+  /** Left longitude of rect */
   protected final double leftLon;
+  /** Right longitude of rect */
   protected final double rightLon;
 
+  /** Cosine of middle latitude */
   protected final double cosMiddleLat;
 
+  /** Upper left hand corner */
   protected final GeoPoint ULHC;
+  /** Upper right hand corner */
   protected final GeoPoint URHC;
 
+  /** The top plane */
   protected final SidedPlane topPlane;
+  /** The left plane */
   protected final SidedPlane leftPlane;
+  /** The right plane */
   protected final SidedPlane rightPlane;
 
+  /** Notable points for top plane */
   protected final GeoPoint[] topPlanePoints;
+  /** Notable points for left plane */
   protected final GeoPoint[] leftPlanePoints;
+  /** Notable points for right plane */
   protected final GeoPoint[] rightPlanePoints;
 
+  /** Center point */
   protected final GeoPoint centerPoint;
 
+  /** Left/right bounds */
   protected final EitherBound eitherBound;
 
+  /** A point on the edge */
   protected final GeoPoint[] edgePoints;
 
   /**
@@ -246,7 +261,11 @@ public class GeoWideSouthRectangle extends GeoBaseBBox {
     return "GeoWideSouthRectangle: {planetmodel="+planetModel+", toplat=" + topLat + "(" + topLat * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 
+  /** Membership implementation representing width more than 180.
+   */
   protected class EitherBound implements Membership {
+    /** Constructor.
+     */
     public EitherBound() {
     }
 

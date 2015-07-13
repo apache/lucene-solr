@@ -24,6 +24,7 @@ package org.apache.lucene.geo3d;
  * @lucene.experimental
  */
 public class SidedPlane extends Plane implements Membership {
+  /** The sign value for evaluation of a point on the correct side of the plane */
   public final double sigNum;
 
   /**

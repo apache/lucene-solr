@@ -23,9 +23,14 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWorld extends GeoBaseBBox {
+  /** No points on the edge of the shape */
   protected final static GeoPoint[] edgePoints = new GeoPoint[0];
+  /** Point in the middle of the world */
   protected final GeoPoint originPoint;
   
+  /** Constructor.
+   *@param planetModel is the planet model.
+   */
   public GeoWorld(final PlanetModel planetModel) {
     super(planetModel);
     originPoint = new GeoPoint(planetModel.ab, 1.0, 0.0, 0.0);

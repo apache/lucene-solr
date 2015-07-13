@@ -39,20 +39,37 @@ public class PlanetModel {
   // Surface of the planet:
   // x^2/a^2 + y^2/b^2 + z^2/c^2 = 1.0
   // Scaling factors are a,b,c.  geo3d can only support models where a==b, so use ab instead.
+  
+  /** The x/y scaling factor */
   public final double ab;
+  /** The z scaling factor */
   public final double c;
+  /** The inverse of ab */
   public final double inverseAb;
+  /** The inverse of c */
   public final double inverseC;
+  /** The square of the inverse of ab */
   public final double inverseAbSquared;
+  /** The square of the inverse of c */
   public final double inverseCSquared;
+  /** The flattening value */
   public final double flattening;
+  /** The square ratio */
   public final double squareRatio;
+  
   // We do NOT include radius, because all computations in geo3d are in radians, not meters.
   
   // Compute north and south pole for planet model, since these are commonly used.
+  
+  /** North pole */
   public final GeoPoint NORTH_POLE;
+  /** South pole */
   public final GeoPoint SOUTH_POLE;
   
+  /** Constructor.
+   * @param ab is the x/y scaling factor.
+   * @param c is the z scaling factor.
+   */
   public PlanetModel(final double ab, final double c) {
     this.ab = ab;
     this.c = c;
@@ -67,12 +84,14 @@ public class PlanetModel {
   }
   
   /** Find the minimum magnitude of all points on the ellipsoid.
+   * @return the minimum magnitude for the planet.
    */
   public double getMinimumMagnitude() {
     return Math.min(this.ab, this.c);
   }
 
   /** Find the maximum magnitude of all points on the ellipsoid.
+   * @return the maximum magnitude for the planet.
    */
   public double getMaximumMagnitude() {
     return Math.max(this.ab, this.c);

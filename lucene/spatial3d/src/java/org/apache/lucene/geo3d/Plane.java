@@ -24,13 +24,19 @@ package org.apache.lucene.geo3d;
  * @lucene.experimental
  */
 public class Plane extends Vector {
+  /** An array with no points in it */
   protected final static GeoPoint[] NO_POINTS = new GeoPoint[0];
+  /** An array with no bounds in it */
   protected final static Membership[] NO_BOUNDS = new Membership[0];
-
+  /** Ax + By + Cz + D = 0 */
   public final double D;
 
   /**
    * Construct a plane with all four coefficients defined.
+   *@param A is A
+   *@param B is B
+   *@param C is C
+   *@param D is D
    */
   public Plane(final double A, final double B, final double C, final double D) {
     super(A, B, C);
@@ -74,7 +80,7 @@ public class Plane extends Vector {
   /**
    * Construct a plane with a specific vector, and D offset
    * from origin.
-   *
+   * @param v is the normal vector.
    * @param D is the D offset from the origin.
    */
   public Plane(final Vector v, final double D) {
@@ -83,8 +89,10 @@ public class Plane extends Vector {
   }
 
   /** Construct the most accurate normalized, vertical plane given a set of points.  If none of the points can determine
-  * the plane, return null.
-  */
+   * the plane, return null.
+   * @param planePoints is a set of points to choose from.  The best one for constructing the most precise normal plane is picked.
+   * @return the normal plane
+   */
   public static Plane constructNormalizedVerticalPlane(final Vector... planePoints) {
     // Pick the best one (with the greatest x-y distance)
     double bestDistance = 0.0;
@@ -100,7 +108,10 @@ public class Plane extends Vector {
   }
 
   /** Construct a normalized, vertical plane through an x-y point.  If the x-y point is at (0,0), return null.
-  */
+   * @param x is the x value.
+   * @param y is the y value.
+   * @return a vertical plane passing through the center and (x,y,0).
+   */
   public static Plane constructNormalizedVerticalPlane(final double x, final double y) {
     if (Math.abs(x) < MINIMUM_RESOLUTION && Math.abs(y) < MINIMUM_RESOLUTION)
       return null;
@@ -122,6 +133,10 @@ public class Plane extends Vector {
   /**
    * Evaluate the plane equation for a given point, as represented
    * by a vector.
+   * @param x is the x value.
+   * @param y is the y value.
+   * @param z is the z value.
+   * @return the result of the evaluation.
    */
   public double evaluate(final double x, final double y, final double z) {
     return dotProduct(x, y, z) + D;
@@ -142,6 +157,9 @@ public class Plane extends Vector {
    * Evaluate the plane equation for a given point, as represented
    * by a vector.
    *
+   * @param x is the x value.
+   * @param y is the y value.
+   * @param z is the z value.
    * @return true if the result is on the plane.
    */
   public boolean evaluateIsZero(final double x, final double y, final double z) {
@@ -160,16 +178,19 @@ public class Plane extends Vector {
     return new Plane(normVect, this.D);
   }
 
-  /** @see #arcDistance(PlanetModel, double, double, double, Membership...) */
+  /** Compute arc distance from plane to a vector expressed with a {@link GeoPoint}.
+   *  @see #arcDistance(PlanetModel, double, double, double, Membership...) */
   public double arcDistance(final PlanetModel planetModel, final GeoPoint v, final Membership... bounds) {
     return arcDistance(planetModel, v.x, v.y, v.z, bounds);
   }
     
   /**
    * Compute arc distance from plane to a vector.
+   * @param planetModel is the planet model.
    * @param x is the x vector value.
    * @param y is the y vector value.
    * @param z is the z vector value.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the arc distance.
    */
   public double arcDistance(final PlanetModel planetModel, final double x, final double y, final double z, final Membership... bounds) {
@@ -207,6 +228,7 @@ public class Plane extends Vector {
   /**
    * Compute normal distance from plane to a vector.
    * @param v is the vector.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the normal distance.
    */
   public double normalDistance(final Vector v, final Membership... bounds) {
@@ -218,6 +240,7 @@ public class Plane extends Vector {
    * @param x is the vector x.
    * @param y is the vector y.
    * @param z is the vector z.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the normal distance.
    */
   public double normalDistance(final double x, final double y, final double z, final Membership... bounds) {
@@ -237,6 +260,7 @@ public class Plane extends Vector {
   /**
    * Compute normal distance squared from plane to a vector.
    * @param v is the vector.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the normal distance squared.
    */
   public double normalDistanceSquared(final Vector v, final Membership... bounds) {
@@ -248,6 +272,7 @@ public class Plane extends Vector {
    * @param x is the vector x.
    * @param y is the vector y.
    * @param z is the vector z.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the normal distance squared.
    */
   public double normalDistanceSquared(final double x, final double y, final double z, final Membership... bounds) {
@@ -261,7 +286,9 @@ public class Plane extends Vector {
    * Compute linear distance from plane to a vector.  This is defined
    * as the distance from the given point to the nearest intersection of 
    * this plane with the planet surface.
-   * @param v is the vector.
+   * @param planetModel is the planet model.
+   * @param v is the point.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the linear distance.
    */
   public double linearDistance(final PlanetModel planetModel, final GeoPoint v, final Membership... bounds) {
@@ -272,9 +299,11 @@ public class Plane extends Vector {
    * Compute linear distance from plane to a vector.  This is defined
    * as the distance from the given point to the nearest intersection of 
    * this plane with the planet surface.
+   * @param planetModel is the planet model.
    * @param x is the vector x.
    * @param y is the vector y.
    * @param z is the vector z.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the linear distance.
    */
   public double linearDistance(final PlanetModel planetModel, final double x, final double y, final double z, final Membership... bounds) {
@@ -311,7 +340,9 @@ public class Plane extends Vector {
    * Compute linear distance squared from plane to a vector.  This is defined
    * as the distance from the given point to the nearest intersection of 
    * this plane with the planet surface.
-   * @param v is the vector.
+   * @param planetModel is the planet model.
+   * @param v is the point.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the linear distance squared.
    */
   public double linearDistanceSquared(final PlanetModel planetModel, final GeoPoint v, final Membership... bounds) {
@@ -322,9 +353,11 @@ public class Plane extends Vector {
    * Compute linear distance squared from plane to a vector.  This is defined
    * as the distance from the given point to the nearest intersection of 
    * this plane with the planet surface.
+   * @param planetModel is the planet model.
    * @param x is the vector x.
    * @param y is the vector y.
    * @param z is the vector z.
+   * @param bounds are the bounds which constrain the intersection point.
    * @return the linear distance squared.
    */
   public double linearDistanceSquared(final PlanetModel planetModel, final double x, final double y, final double z, final Membership... bounds) {
@@ -336,6 +369,10 @@ public class Plane extends Vector {
    * Find points on the boundary of the intersection of a plane and the unit sphere,
    * given a starting point, and ending point, and a list of proportions of the arc (e.g. 0.25, 0.5, 0.75).
    * The angle between the starting point and ending point is assumed to be less than pi.
+   * @param start is the start point.
+   * @param end is the end point.
+   * @param proportions is an array of fractional proportions measured between start and end.
+   * @return an array of points corresponding to the proportions passed in.
    */
   public GeoPoint[] interpolate(final GeoPoint start, final GeoPoint end, final double[] proportions) {
     // Steps:
@@ -473,6 +510,15 @@ public class Plane extends Vector {
 
   /**
    * Modify a point to produce a vector in translated/rotated space.
+   * @param start is the start point.
+   * @param transX is the translation x value.
+   * @param transY is the translation y value.
+   * @param transZ is the translation z value.
+   * @param sinRA is the sine of the ascension angle.
+   * @param cosRA is the cosine of the ascension angle.
+   * @param sinHA is the sine of the height angle.
+   * @param cosHA is the cosine of the height angle.
+   * @return the modified point.
    */
   protected static Vector modify(final GeoPoint start, final double transX, final double transY, final double transZ,
                                  final double sinRA, final double cosRA, final double sinHA, final double cosHA) {
@@ -481,6 +527,15 @@ public class Plane extends Vector {
 
   /**
    * Reverse modify a point to produce a GeoPoint in normal space.
+   * @param point is the translated point.
+   * @param transX is the translation x value.
+   * @param transY is the translation y value.
+   * @param transZ is the translation z value.
+   * @param sinRA is the sine of the ascension angle.
+   * @param cosRA is the cosine of the ascension angle.
+   * @param sinHA is the sine of the height angle.
+   * @param cosHA is the cosine of the height angle.
+   * @return the original point.
    */
   protected static GeoPoint reverseModify(final Vector point, final double transX, final double transY, final double transZ,
                                           final double sinRA, final double cosRA, final double sinHA, final double cosHA) {
@@ -490,6 +545,10 @@ public class Plane extends Vector {
 
   /**
    * Public version of findIntersections.
+   * @param planetModel is the planet model.
+   * @param q is the plane to intersect with.
+   * @param bounds are the bounds to consider to determine legal intersection points.
+   * @return the set of legal intersection points.
    */
   public GeoPoint[] findIntersections(final PlanetModel planetModel, final Plane q, final Membership... bounds) {
     if (isNumericallyIdentical(q)) {
@@ -967,6 +1026,13 @@ public class Plane extends Vector {
 
   }
 
+  /** Add a point to boundsInfo if within a specifically bounded area.
+   * @param boundsInfo is the object to be modified.
+   * @param bounds is the area that the point must be within.
+   * @param x is the x value.
+   * @param y is the y value.
+   * @param z is the z value.
+   */
   protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final double x, final double y, final double z) {
     //System.err.println(" Want to add point x="+x+" y="+y+" z="+z);
     // Make sure the discovered point is within the bounds
@@ -1022,6 +1088,8 @@ public class Plane extends Vector {
 
   /**
    * Returns true if this plane and the other plane are identical within the margin of error.
+   * @param p is the plane to compare against.
+   * @return true if the planes are numerically identical.
    */
   protected boolean isNumericallyIdentical(final Plane p) {
     // We can get the correlation by just doing a parallel plane check.  If that passes, then compute a point on the plane
@@ -1050,10 +1118,24 @@ public class Plane extends Vector {
     return evaluateIsZero(-p.x * p.D * denom, -p.y * p.D * denom, -p.z * p.D * denom);
   }
 
+  /**
+   * Check if a vector meets the provided bounds.
+   * @param p is the vector.
+   * @param bounds are the bounds.
+   * @return true if the vector describes a point within the bounds.
+   */
   protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds) {
     return meetsAllBounds(p.x, p.y, p.z, bounds);
   }
 
+  /**
+   * Check if a vector meets the provided bounds.
+   * @param x is the x value.
+   * @param y is the y value.
+   * @param z is the z value.
+   * @param bounds are the bounds.
+   * @return true if the vector describes a point within the bounds.
+   */
   protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds) {
     for (final Membership bound : bounds) {
       if (!bound.isWithin(x,y,z))
@@ -1062,17 +1144,36 @@ public class Plane extends Vector {
     return true;
   }
 
+  /**
+   * Check if a vector meets the provided bounds.
+   * @param p is the vector.
+   * @param bounds are the bounds.
+   * @param moreBounds are an additional set of bounds.
+   * @return true if the vector describes a point within the bounds.
+   */
   protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds, final Membership[] moreBounds) {
     return meetsAllBounds(p.x, p.y, p.z, bounds, moreBounds);
   }
 
+  /**
+   * Check if a vector meets the provided bounds.
+   * @param x is the x value.
+   * @param y is the y value.
+   * @param z is the z value.
+   * @param bounds are the bounds.
+   * @param moreBounds are an additional set of bounds.
+   * @return true if the vector describes a point within the bounds.
+   */
   protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds,
                                           final Membership[] moreBounds) {
     return meetsAllBounds(x,y,z, bounds) && meetsAllBounds(x,y,z, moreBounds);
   }
 
   /**
-   * Find a sample point on the intersection between two planes and the unit sphere.
+   * Find a sample point on the intersection between two planes and the world.
+   * @param planetModel is the planet model.
+   * @param q is the second plane to consider.
+   * @return a sample point that is on the intersection between the two planes and the world.
    */
   public GeoPoint getSampleIntersectionPoint(final PlanetModel planetModel, final Plane q) {
     final GeoPoint[] intersections = findIntersections(planetModel, q, NO_BOUNDS, NO_BOUNDS);

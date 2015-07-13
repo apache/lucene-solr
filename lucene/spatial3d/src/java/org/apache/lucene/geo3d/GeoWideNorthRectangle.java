@@ -24,27 +24,42 @@ package org.apache.lucene.geo3d;
  * @lucene.internal
  */
 public class GeoWideNorthRectangle extends GeoBaseBBox {
+  /** Bottom latitude */
   protected final double bottomLat;
+  /** Left longitude */
   protected final double leftLon;
+  /** Right longitude */
   protected final double rightLon;
 
+  /** The cosine of the middle latitude */
   protected final double cosMiddleLat;
 
+  /** The lower right hand corner point */
   protected final GeoPoint LRHC;
+  /** The lower left hand corner point */
   protected final GeoPoint LLHC;
 
+  /** The bottom plane */
   protected final SidedPlane bottomPlane;
+  /** The left plane */
   protected final SidedPlane leftPlane;
+  /** The right plane */
   protected final SidedPlane rightPlane;
 
+  /** Notable points for the bottom plane */
   protected final GeoPoint[] bottomPlanePoints;
+  /** Notable points for the left plane */
   protected final GeoPoint[] leftPlanePoints;
+  /** Notable points for the right plane */
   protected final GeoPoint[] rightPlanePoints;
 
+  /** Center point */
   protected final GeoPoint centerPoint;
 
+  /** Composite left/right bounds */
   protected final EitherBound eitherBound;
 
+  /** A point on the edge */
   protected final GeoPoint[] edgePoints;
 
   /**
@@ -248,7 +263,11 @@ public class GeoWideNorthRectangle extends GeoBaseBBox {
     return "GeoWideNorthRectangle: {planetmodel="+planetModel+", bottomlat=" + bottomLat + "(" + bottomLat * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
   }
 
+  /** Membership implementation representing a wide (more than 180 degree) bound.
+   */
   protected class EitherBound implements Membership {
+    /** Constructor.
+     */
     public EitherBound() {
     }
 

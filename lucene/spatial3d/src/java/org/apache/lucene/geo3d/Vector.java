@@ -33,15 +33,23 @@ public class Vector {
    * For squared quantities, the bound is squared too.
    */
   public static final double MINIMUM_RESOLUTION_SQUARED = MINIMUM_RESOLUTION * MINIMUM_RESOLUTION;
-
+  /**
+   * For cubed quantities, cube the bound.
+   */
   public static final double MINIMUM_RESOLUTION_CUBED = MINIMUM_RESOLUTION_SQUARED * MINIMUM_RESOLUTION;
 
+  /** The x value */
   public final double x;
+  /** The y value */
   public final double y;
+  /** The z value */
   public final double z;
 
   /**
    * Construct from (U.S.) x,y,z coordinates.
+   *@param x is the x value.
+   *@param y is the y value.
+   *@param z is the z value.
    */
   public Vector(double x, double y, double z) {
     this.x = x;
