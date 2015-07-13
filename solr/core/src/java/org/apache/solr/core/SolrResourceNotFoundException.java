@@ -17,42 +17,23 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.IndexSchema;
+import java.io.IOException;
 
-/**
- * Stores a core's configuration in the form of a SolrConfig and IndexSchema
- */
-public class ConfigSet {
+public class SolrResourceNotFoundException extends IOException {
 
-  private final String name;
-
-  private final SolrConfig solrconfig;
-
-  private final IndexSchema indexSchema;
-
-  private final NamedList properties;
-
-  public ConfigSet(String name, SolrConfig solrConfig, IndexSchema indexSchema, NamedList properties) {
-    this.name = name;
-    this.solrconfig = solrConfig;
-    this.indexSchema = indexSchema;
-    this.properties = properties;
+  public SolrResourceNotFoundException() {
+    super();
   }
 
-  public String getName() {
-    return name;
+  public SolrResourceNotFoundException(String message) {
+    super(message);
   }
 
-  public SolrConfig getSolrConfig() {
-    return solrconfig;
+  public SolrResourceNotFoundException(String message, Throwable cause) {
+    super(message, cause);
   }
 
-  public IndexSchema getIndexSchema() {
-    return indexSchema;
-  }
-
-  public NamedList getProperties() {
-    return properties;
+  public SolrResourceNotFoundException(Throwable cause) {
+    super(cause);
   }
 }

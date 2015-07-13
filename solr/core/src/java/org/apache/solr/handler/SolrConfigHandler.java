@@ -89,9 +89,12 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 public class SolrConfigHandler extends RequestHandlerBase {
   public static final Logger log = LoggerFactory.getLogger(SolrConfigHandler.class);
-  public static final boolean configEditing_disabled = Boolean.getBoolean("disable.configEdit");
+  public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
+  public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
+  public static final String IMMUTABLE_CONFIGSET_ARG = "immutable";
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private Lock reloadLock = new ReentrantLock(true);
+  private boolean isImmutableConfigSet = false;
 
   static {
     Map<String, SolrConfig.SolrPluginInfo> map = new HashMap<>();
@@ -103,6 +106,12 @@ public class SolrConfigHandler extends RequestHandlerBase {
     namedPlugins = Collections.unmodifiableMap(map);
   }
 
+  @Override
+  public void init(NamedList args) {
+    super.init(args);
+    Object immutable = args.get(IMMUTABLE_CONFIGSET_ARG);
+    isImmutableConfigSet = immutable  != null ? Boolean.parseBoolean(immutable.toString()) : false;
+  }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -111,8 +120,10 @@ public class SolrConfigHandler extends RequestHandlerBase {
     String httpMethod = (String) req.getContext().get("httpMethod");
     Command command = new Command(req, rsp, httpMethod);
     if ("POST".equals(httpMethod)) {
-      if (configEditing_disabled)
-        throw new SolrException(SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled");
+      if (configEditing_disabled || isImmutableConfigSet) {
+        final String reason = configEditing_disabled ? "due to " + CONFIGSET_EDITING_DISABLED_ARG : "because ConfigSet is immutable";
+        throw new SolrException(SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
+      }
       try {
         command.handlePOST();
       } finally {

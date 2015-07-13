@@ -159,6 +159,8 @@ New Features
   facet.range={!tag=r1}price&facet.query={!tag=q1}somequery&facet.pivot={!range=r1 query=q1}category,manufacturer
   (Steve Molloy, hossman, shalin)
 
+* SOLR-7742: Support for Immutable ConfigSets (Gregory Chanan)
+
 Bug Fixes
 ----------------------
 

@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -44,11 +45,25 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 public class SchemaHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(SchemaHandler.class);
 
+  public static final String IMMUTABLE_CONFIGSET_ARG = "immutable";
+  private boolean isImmutableConfigSet = false;
+
+  @Override
+  public void init(NamedList args) {
+    super.init(args);
+    Object immutable = args.get(IMMUTABLE_CONFIGSET_ARG);
+    isImmutableConfigSet = immutable  != null ? Boolean.parseBoolean(immutable.toString()) : false;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrConfigHandler.setWt(req, JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     if ("POST".equals(httpMethod)) {
+      if (isImmutableConfigSet) {
+        rsp.add("errors", "ConfigSet is immutable");
+        return;
+      }
       if (req.getContentStreams() == null) {
         rsp.add("errors", "no stream");
         return;

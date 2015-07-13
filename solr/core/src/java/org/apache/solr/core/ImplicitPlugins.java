@@ -62,9 +62,17 @@ public class ImplicitPlugins {
     implicits.add(getReqHandlerInfo(UpdateRequestHandler.DOC_PATH, UpdateRequestHandler.class, makeMap("update.contentType", "application/json", "json.command", "false")));
 
     //solrconfighandler
-    implicits.add(getReqHandlerInfo("/config", SolrConfigHandler.class, null));
+    PluginInfo config = getReqHandlerInfo("/config", SolrConfigHandler.class, null);
+    if (solrCore.getConfigSetProperties() != null) {
+      config.initArgs.addAll(solrCore.getConfigSetProperties());
+    }
+    implicits.add(config);
     //schemahandler
-    implicits.add(getReqHandlerInfo("/schema", SchemaHandler.class, null));
+    PluginInfo schema = getReqHandlerInfo("/schema", SchemaHandler.class, null);
+    if (solrCore.getConfigSetProperties() != null) {
+      schema.initArgs.addAll(solrCore.getConfigSetProperties());
+    }
+    implicits.add(schema);
     //register replicationhandler always for SolrCloud
     implicits.add(getReqHandlerInfo("/replication", ReplicationHandler.class,null));
 

@@ -60,6 +60,7 @@ public class CoreDescriptor {
   public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
   public static final String CORE_CONFIGSET = "configSet";
+  public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE = "conf" + File.separator + "solrcore.properties";
@@ -80,13 +81,14 @@ public class CoreDescriptor {
     return originalExtraProperties;
   }
 
-  private static ImmutableMap<String, String> defaultProperties = ImmutableMap.of(
-      CORE_CONFIG, "solrconfig.xml",
-      CORE_SCHEMA, "schema.xml",
-      CORE_DATADIR, "data" + File.separator,
-      CORE_TRANSIENT, "false",
-      CORE_LOADONSTARTUP, "true"
-  );
+  private static ImmutableMap<String, String> defaultProperties = new ImmutableMap.Builder<String, String>()
+      .put(CORE_CONFIG, "solrconfig.xml")
+      .put(CORE_SCHEMA, "schema.xml")
+      .put(CORE_CONFIGSET_PROPERTIES, "configsetprops.json")
+      .put(CORE_DATADIR, "data" + File.separator)
+      .put(CORE_TRANSIENT, "false")
+      .put(CORE_LOADONSTARTUP, "true")
+      .build();
 
   private static ImmutableList<String> requiredProperties = ImmutableList.of(
       CORE_NAME, CORE_INSTDIR, CORE_ABS_INSTDIR
@@ -100,6 +102,7 @@ public class CoreDescriptor {
       CORE_ULOGDIR,
       CORE_SCHEMA,
       CORE_PROPERTIES,
+      CORE_CONFIGSET_PROPERTIES,
       CORE_LOADONSTARTUP,
       CORE_TRANSIENT,
       CORE_CONFIGSET,
@@ -408,5 +411,9 @@ public class CoreDescriptor {
 
   public String getConfigSet() {
     return coreProperties.getProperty(CORE_CONFIGSET);
+  }
+
+  public String getConfigSetPropertiesName() {
+    return coreProperties.getProperty(CORE_CONFIGSET_PROPERTIES);
   }
 }
