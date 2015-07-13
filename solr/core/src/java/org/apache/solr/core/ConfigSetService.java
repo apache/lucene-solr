@@ -22,6 +22,7 @@ import com.google.common.cache.CacheBuilder;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.joda.time.format.DateTimeFormat;
@@ -72,7 +73,8 @@ public abstract class ConfigSetService {
     try {
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configName(dcore), solrConfig, schema);
+      NamedList properties = createConfigSetProperties(dcore, coreLoader);
+      return new ConfigSet(configName(dcore), solrConfig, schema, properties);
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -100,6 +102,16 @@ public abstract class ConfigSetService {
    */
   protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig) {
     return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
+  }
+
+  /**
+   * Return the ConfigSet properties
+   * @param cd the core's CoreDescriptor
+   * @param loader the core's resource loader
+   * @return the ConfigSet properties
+   */
+  protected NamedList createConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
+    return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
 
   /**

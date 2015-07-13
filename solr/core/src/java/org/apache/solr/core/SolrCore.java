@@ -172,6 +172,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
+  private final NamedList configSetProperties;
   private final String dataDir;
   private final String ulogDir;
   private final UpdateHandler updateHandler;
@@ -254,6 +255,10 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   /** Sets the latest schema snapshot to be used by this core instance. */
   public void setLatestSchema(IndexSchema replacementSchema) {
     schema = replacementSchema;
+  }
+
+  public NamedList getConfigSetProperties() {
+    return configSetProperties;
   }
 
   public String getDataDir() {
@@ -454,7 +459,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     SolrCore core = null;
     try {
       core = new SolrCore(getName(), getDataDir(), coreConfig.getSolrConfig(),
-          coreConfig.getIndexSchema(), coreDescriptor, updateHandler, solrDelPolicy, currentCore);
+          coreConfig.getIndexSchema(), coreConfig.getProperties(),
+          coreDescriptor, updateHandler, solrDelPolicy, currentCore);
       
       // we open a new IndexWriter to pick up the latest config
       core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -646,11 +652,12 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    * @deprecated will be removed in the next release
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    this(name, dataDir, config, schema, cd, null, null, null);
+    this(name, dataDir, config, schema, null, cd, null, null, null);
   }
 
   public SolrCore(CoreDescriptor cd, ConfigSet coreConfig) {
-    this(cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), cd, null, null, null);
+    this(cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
+        cd, null, null, null);
   }
 
   /**
@@ -666,6 +673,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.dataDir = null;
     this.ulogDir = null;
     this.solrConfig = null;
+    this.configSetProperties = null;
     this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = 2;  // we don't have a config yet, just pick a number.
     this.slowQueryThresholdMillis = -1;
@@ -698,7 +706,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    * @since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config,
-      IndexSchema schema, CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
+      IndexSchema schema, NamedList configSetProperties,
+      CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
       IndexDeletionPolicyWrapper delPolicy, SolrCore prev) {
     checkNotNull(coreDescriptor, "coreDescriptor cannot be null");
     
@@ -708,6 +717,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     
     resourceLoader = config.getResourceLoader();
     this.solrConfig = config;
+    this.configSetProperties = configSetProperties;
 
     if (updateHandler == null) {
       directoryFactory = initDirectoryFactory();

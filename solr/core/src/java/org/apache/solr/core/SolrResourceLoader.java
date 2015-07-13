@@ -360,7 +360,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       throw new IOException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + new File(getConfigDir()).getAbsolutePath() + "'");
+      throw new SolrResourceNotFoundException("Can't find resource '" + resource + "' in classpath or '" + new File(getConfigDir()).getAbsolutePath() + "'");
     }
     return is;
   }
