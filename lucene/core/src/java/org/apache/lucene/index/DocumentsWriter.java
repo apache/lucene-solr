@@ -241,6 +241,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     try {
       deleteQueue.clear();
       final int limit = perThreadPool.getMaxThreadStates();
+      perThreadPool.setAbort();
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
@@ -255,7 +256,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       if (infoStream.isEnabled("DW")) {
         infoStream.message("DW", "finished lockAndAbortAll success=" + success);
       }
-      if (!success) {
+      if (success == false) {
         // if something happens here we unlock all states again
         unlockAllAfterAbortAll(indexWriter);
       }
@@ -292,13 +293,14 @@ final class DocumentsWriter implements Closeable, Accountable {
       infoStream.message("DW", "unlockAll");
     }
     final int limit = perThreadPool.getMaxThreadStates();
+    perThreadPool.clearAbort();
     for (int i = 0; i < limit; i++) {
       try {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         if (perThread.isHeldByCurrentThread()) {
           perThread.unlock();
         }
-      } catch(Throwable e) {
+      } catch (Throwable e) {
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", "unlockAll: could not unlock state: " + i + " msg:" + e.getMessage());
         }

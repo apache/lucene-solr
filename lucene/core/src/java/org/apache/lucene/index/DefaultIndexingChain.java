@@ -403,8 +403,9 @@ final class DefaultIndexingChain extends DocConsumer {
   private void indexDocValue(PerField fp, DocValuesType dvType, IndexableField field) throws IOException {
 
     if (fp.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
-      // This will throw an exc if the caller tried to
-      // change the DV type for the field:
+      // This is the first time we are seeing this field indexed with doc values, so we
+      // now record the DV type so that any future attempt to (illegally) change
+      // the DV type of this field, will throw an IllegalArgExc:
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);
     }
     fp.fieldInfo.setDocValuesType(dvType);

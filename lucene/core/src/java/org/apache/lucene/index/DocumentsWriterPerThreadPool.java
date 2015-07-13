@@ -16,7 +16,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,15 +66,9 @@ final class DocumentsWriterPerThreadPool {
       this.dwpt = dpwt;
     }
     
-    /**
-     * Resets the internal {@link DocumentsWriterPerThread} with the given one. 
-     * if the given DWPT is <code>null</code> this ThreadState is marked as inactive and should not be used
-     * for indexing anymore.
-     * @see #isActive()  
-     */
-  
+    /** Mark this ThreadState as inactive, setting dwpt to null.
+     * @see #isActive() */
     private void deactivate() {
-      assert this.isHeldByCurrentThread();
       isActive = false;
       reset();
     }
@@ -130,15 +124,25 @@ final class DocumentsWriterPerThreadPool {
   }
 
   private final List<ThreadState> threadStates = new ArrayList<>();
-  private volatile int numThreadStatesActive;
 
   private final List<ThreadState> freeList = new ArrayList<>();
+
+  private boolean aborted;
 
   /**
    * Returns the active number of {@link ThreadState} instances.
    */
   synchronized int getActiveThreadStateCount() {
-    return numThreadStatesActive;
+    return threadStates.size();
+  }
+
+  synchronized void setAbort() {
+    aborted = true;
+  }
+
+  synchronized void clearAbort() {
+    aborted = false;
+    notifyAll();
   }
 
   /**
@@ -152,67 +156,19 @@ final class DocumentsWriterPerThreadPool {
    *         <code>null</code>
    */
   private synchronized ThreadState newThreadState() {
-    assert numThreadStatesActive <= threadStates.size();
-
-    if (numThreadStatesActive == threadStates.size()) {
-      threadStates.add(new ThreadState(null));
-    } 
-
-    ThreadState threadState = threadStates.get(numThreadStatesActive);
+    while (aborted) {
+      try {
+        wait();
+      } catch (InterruptedException ie) {
+        throw new ThreadInterruptedException(ie);        
+      }
+    }
+    ThreadState threadState = new ThreadState(null);
     threadState.lock(); // lock so nobody else will get this ThreadState
-    boolean unlock = true;
-    try {
-      if (threadState.isActive()) {
-        // unreleased thread states are deactivated during DW#close()
-        numThreadStatesActive++; // increment will publish the ThreadState
-        //System.out.println("activeCount=" + numThreadStatesActive);
-        assert threadState.dwpt == null;
-        unlock = false;
-        return threadState;
-      }
-      // we are closed: unlock since the threadstate is not active anymore
-      assert assertUnreleasedThreadStatesInactive();
-      throw new AlreadyClosedException("this IndexWriter is closed");
-    } finally {
-      if (unlock) {
-        // in any case make sure we unlock if we fail 
-        threadState.unlock();
-      }
-    }
+    threadStates.add(threadState);
+    return threadState;
   }
 
-  // Used by assert
-  private synchronized boolean assertUnreleasedThreadStatesInactive() {
-    for (int i = numThreadStatesActive; i < threadStates.size(); i++) {
-      ThreadState threadState = threadStates.get(i);
-      assert threadState.tryLock() : "unreleased threadstate should not be locked";
-      try {
-        assert !threadState.isInitialized() : "expected unreleased thread state to be inactive";
-      } finally {
-        threadState.unlock();
-      }
-    }
-    return true;
-  }
-  
-  /**
-   * Deactivate all unreleased threadstates 
-   */
-  synchronized void deactivateUnreleasedStates() {
-    for (int i = numThreadStatesActive; i < threadStates.size(); i++) {
-      final ThreadState threadState = threadStates.get(i);
-      threadState.lock();
-      try {
-        threadState.deactivate();
-      } finally {
-        threadState.unlock();
-      }
-    }
-    
-    // In case any threads are waiting for indexing:
-    notifyAll();
-  }
-  
   DocumentsWriterPerThread reset(ThreadState threadState, boolean closed) {
     assert threadState.isHeldByCurrentThread();
     final DocumentsWriterPerThread dwpt = threadState.dwpt;
@@ -303,9 +259,7 @@ final class DocumentsWriterPerThreadPool {
    */
   ThreadState minContendedThreadState() {
     ThreadState minThreadState = null;
-    final int limit = numThreadStatesActive;
-    for (int i = 0; i < limit; i++) {
-      final ThreadState state = threadStates.get(i);
+    for (ThreadState state : threadStates) {
       if (minThreadState == null || state.getQueueLength() < minThreadState.getQueueLength()) {
         minThreadState = state;
       }
