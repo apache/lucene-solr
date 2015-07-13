@@ -381,7 +381,6 @@ final class DocumentsWriterFlushControl implements Accountable {
     // set by DW to signal that we should not release new DWPT after close
     if (!closed) {
       this.closed = true;
-      perThreadPool.deactivateUnreleasedStates();
     }
   }
 
