@@ -36,6 +36,7 @@
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/replicator/replicator.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/sandbox/sandbox.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial/spatial.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial3d/spatial3d.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/suggest/suggest.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/tools/tools.iml" />
 
