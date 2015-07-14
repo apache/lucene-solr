@@ -457,14 +457,19 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     testPoint.doFail = true;
     Document doc = new Document();
     doc.add(newTextField("field", "a field", Field.Store.YES));
-    for(int i=0;i<10;i++)
+    for(int i=0;i<10;i++) {
       try {
         w.addDocument(doc);
       } catch (RuntimeException re) {
         break;
       }
+    }
 
-    ((ConcurrentMergeScheduler) w.getConfig().getMergeScheduler()).sync();
+    try {
+      ((ConcurrentMergeScheduler) w.getConfig().getMergeScheduler()).sync();
+    } catch (IllegalStateException ise) {
+      // OK: merge exc causes tragedy
+    }
     assertTrue(testPoint.failed);
     w.close();
     dir.close();
@@ -975,14 +980,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                                .setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(100);
     IndexWriter w = new IndexWriter(startDir, conf);
-    for(int i=0;i<27;i++)
+    for(int i=0;i<27;i++) {
       addDoc(w);
+    }
     w.close();
 
     int iter = TEST_NIGHTLY ? 200 : 10;
     for(int i=0;i<iter;i++) {
       if (VERBOSE) {
-        System.out.println("TEST: iter " + i);
+        System.out.println("\nTEST: iter " + i);
       }
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(startDir));
       conf = newIndexWriterConfig(new MockAnalyzer(random()))
@@ -992,12 +998,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       dir.setRandomIOExceptionRate(0.5);
       try {
         w.forceMerge(1);
+      } catch (IllegalStateException ise) {
+        // expected
       } catch (IOException ioe) {
-        if (ioe.getCause() == null)
+        if (ioe.getCause() == null) {
           fail("forceMerge threw IOException without root cause");
+        }
       }
       dir.setRandomIOExceptionRate(0);
-      w.close();
+      //System.out.println("TEST: now close IW");
+      try {
+        w.close();
+      } catch (IllegalStateException ise) {
+        // ok
+      }
       dir.close();
     }
     startDir.close();
@@ -2284,5 +2298,73 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // no leaks
       dir.close();
     }
+  }
+
+  public void testMergeExceptionIsTragic() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+    final AtomicBoolean didFail = new AtomicBoolean();
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+        
+        @Override
+        public void eval(MockDirectoryWrapper dir) throws IOException {
+          if (random().nextInt(10) != 0) {
+            return;
+          }
+          if (didFail.get()) {
+            // Already failed
+            return;
+          }
+          StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+          
+          for (int i = 0; i < trace.length; i++) {
+            if ("merge".equals(trace[i].getMethodName())) {
+              if (VERBOSE) {
+                System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
+                new Throwable().printStackTrace(System.out);
+              }
+              didFail.set(true);
+              throw new FakeIOException();
+            }
+          }
+        }
+      });
+
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    MergeScheduler ms = iwc.getMergeScheduler();
+    if (ms instanceof ConcurrentMergeScheduler) {
+      ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+    }
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    while (true) {
+      try {
+        Document doc = new Document();
+        doc.add(newStringField("field", "string", Field.Store.NO));
+        w.addDocument(doc);
+        if (random().nextInt(10) == 7) {
+          // Flush new segment:
+          DirectoryReader.open(w, true).close();
+        }
+      } catch (AlreadyClosedException ace) {
+        // OK: e.g. CMS hit the exc in BG thread and closed the writer
+        break;
+      } catch (FakeIOException fioe) {
+        // OK: e.g. SMS hit the exception
+        break;
+      }
+    }
+
+    assertNotNull(w.getTragicException());
+    assertFalse(w.isOpen());
+    assertTrue(didFail.get());
+
+    if (ms instanceof ConcurrentMergeScheduler) {
+      // Sneaky: CMS's merge thread will be concurrently rolling back IW due
+      // to the tragedy, with this main thread, so we have to wait here
+      // to ensure the rollback has finished, else MDW still sees open files:
+      ((ConcurrentMergeScheduler) ms).sync();
+    }
+
+    dir.close();
   }
 }

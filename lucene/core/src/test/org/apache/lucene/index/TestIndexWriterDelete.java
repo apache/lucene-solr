@@ -598,7 +598,12 @@ public class TestIndexWriterDelete extends LuceneTestCase {
               }
               docId += 12;
             }
-            modifier.close();
+            try {
+              modifier.close();
+            } catch (IllegalStateException ise) {
+              // ok
+              throw (IOException) ise.getCause();
+            }
           }
           success = true;
           if (0 == x) {
@@ -846,6 +851,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       modifier.commit();
     } catch (RuntimeException ioe) {
       // expected
+      if (VERBOSE) {
+        System.out.println("TEST: hit exc:");
+        ioe.printStackTrace(System.out);
+      }
       failed = true;
     }
 
@@ -854,14 +863,23 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // The commit above failed, so we need to retry it (which will
     // succeed, because the failure is a one-shot)
 
-    modifier.commit();
+    boolean writerClosed;
+    try {
+      modifier.commit();
+      writerClosed = false;
+    } catch (IllegalStateException ise) {
+      // The above exc struck during merge, and closed the writer
+      writerClosed = true;
+    }
 
-    hitCount = getHitCount(dir, term);
+    if (writerClosed == false) {
+      hitCount = getHitCount(dir, term);
 
-    // Make sure the delete was successfully flushed:
-    assertEquals(0, hitCount);
+      // Make sure the delete was successfully flushed:
+      assertEquals(0, hitCount);
 
-    modifier.close();
+      modifier.close();
+    }
     dir.close();
   }
 
@@ -1356,6 +1374,40 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w, true);
     assertEquals(0, r.leaves().size());
     assertEquals(0, r.maxDoc());
+    r.close();
+
+    w.close();
+    dir.close();
+  }
+
+  // Make sure merges still kick off after IW.deleteAll!
+  public void testMergingAfterDeleteAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(2);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    mp.setMinMergeDocs(1);
+    iwc.setMergePolicy(mp);
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int i=0;i<10;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+    }
+    w.commit();
+    w.deleteAll();
+
+    for(int i=0;i<100;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+    }
+
+    w.forceMerge(1);
+
+    DirectoryReader r = DirectoryReader.open(w, true);
+    assertEquals(1, r.leaves().size());
     r.close();
 
     w.close();
