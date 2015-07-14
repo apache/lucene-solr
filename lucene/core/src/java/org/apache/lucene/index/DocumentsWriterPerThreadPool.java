@@ -60,18 +60,9 @@ final class DocumentsWriterPerThreadPool {
     // TODO this should really be part of DocumentsWriterFlushControl
     // write access guarded by DocumentsWriterFlushControl
     long bytesUsed = 0;
-    // guarded by Reentrant lock
-    private boolean isActive = true;
 
     ThreadState(DocumentsWriterPerThread dpwt) {
       this.dwpt = dpwt;
-    }
-    
-    /** Mark this ThreadState as inactive, setting dwpt to null.
-     * @see #isActive() */
-    private void deactivate() {
-      isActive = false;
-      reset();
     }
     
     private void reset() {
@@ -81,19 +72,9 @@ final class DocumentsWriterPerThreadPool {
       this.flushPending = false;
     }
     
-    /**
-     * Returns <code>true</code> if this ThreadState is still open. This will
-     * only return <code>false</code> iff the DW has been closed and this
-     * ThreadState is already checked out for flush.
-     */
-    boolean isActive() {
-      assert this.isHeldByCurrentThread();
-      return isActive;
-    }
-    
     boolean isInitialized() {
       assert this.isHeldByCurrentThread();
-      return isActive() && dwpt != null;
+      return dwpt != null;
     }
     
     /**
@@ -170,14 +151,10 @@ final class DocumentsWriterPerThreadPool {
     return threadState;
   }
 
-  DocumentsWriterPerThread reset(ThreadState threadState, boolean closed) {
+  DocumentsWriterPerThread reset(ThreadState threadState) {
     assert threadState.isHeldByCurrentThread();
     final DocumentsWriterPerThread dwpt = threadState.dwpt;
-    if (!closed) {
-      threadState.reset();
-    } else {
-      threadState.deactivate();
-    }
+    threadState.reset();
     return dwpt;
   }
   
@@ -266,17 +243,5 @@ final class DocumentsWriterPerThreadPool {
       }
     }
     return minThreadState;
-  }
-
-  /**
-   * Deactivates an active {@link ThreadState}. Inactive {@link ThreadState} can
-   * not be used for indexing anymore once they are deactivated. This method should only be used
-   * if the parent {@link DocumentsWriter} is closed or aborted.
-   * 
-   * @param threadState the state to deactivate
-   */
-  void deactivateThreadState(ThreadState threadState) {
-    assert threadState.isActive();
-    threadState.deactivate();
   }
 }

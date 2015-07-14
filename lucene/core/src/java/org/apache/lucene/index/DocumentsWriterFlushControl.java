@@ -290,7 +290,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       }
       assert assertMemory();
       // Take it out of the loop this DWPT is stale
-      perThreadPool.reset(state, closed);
+      perThreadPool.reset(state);
     } finally {
       updateStallState();
     }
@@ -308,7 +308,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       assert fullFlush : "can not block if fullFlush == false";
       final DocumentsWriterPerThread dwpt;
       final long bytes = perThread.bytesUsed;
-      dwpt = perThreadPool.reset(perThread, closed);
+      dwpt = perThreadPool.reset(perThread);
       numPending--;
       blockedFlushes.add(new BlockedFlush(dwpt, bytes));
     } finally {
@@ -316,8 +316,7 @@ final class DocumentsWriterFlushControl implements Accountable {
     }
   }
 
-  private DocumentsWriterPerThread internalTryCheckOutForFlush(
-      ThreadState perThread) {
+  private DocumentsWriterPerThread internalTryCheckOutForFlush(ThreadState perThread) {
     assert Thread.holdsLock(this);
     assert perThread.flushPending;
     try {
@@ -329,7 +328,7 @@ final class DocumentsWriterFlushControl implements Accountable {
             final DocumentsWriterPerThread dwpt;
             final long bytes = perThread.bytesUsed; // do that before
                                                          // replace!
-            dwpt = perThreadPool.reset(perThread, closed);
+            dwpt = perThreadPool.reset(perThread);
             assert !flushingWriters.containsKey(dwpt) : "DWPT is already flushing";
             // Record the flushing DWPT to reduce flushBytes in doAfterFlush
             flushingWriters.put(dwpt, Long.valueOf(bytes));
@@ -381,9 +380,7 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   synchronized void setClosed() {
     // set by DW to signal that we should not release new DWPT after close
-    if (!closed) {
-      this.closed = true;
-    }
+    this.closed = true;
   }
 
   /**
@@ -499,9 +496,6 @@ final class DocumentsWriterFlushControl implements Accountable {
       next.lock();
       try {
         if (!next.isInitialized()) {
-          if (closed && next.isActive()) {
-            perThreadPool.deactivateThreadState(next);
-          }
           continue; 
         }
         assert next.dwpt.deleteQueue == flushingQueue
@@ -571,7 +565,7 @@ final class DocumentsWriterFlushControl implements Accountable {
         fullFlushBuffer.add(flushingDWPT);
       }
     } else {
-        perThreadPool.reset(perThread, closed); // make this state inactive
+      perThreadPool.reset(perThread); // make this state inactive
     }
   }
   
