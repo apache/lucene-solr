@@ -29,10 +29,10 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -222,7 +222,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
       if (data == null) {
         return false;
       } else {
-        Map m = (Map) ZkStateReader.fromJSON(data);
+        Map m = (Map) Utils.fromJSON(data);
         zkCore = (String) m.get("core");
         repCore = ent.getValue().getStr("core");
         if (zkCore.equals(repCore) == false) {

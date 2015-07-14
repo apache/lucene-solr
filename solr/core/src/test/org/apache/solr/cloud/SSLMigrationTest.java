@@ -43,7 +43,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * We want to make sure that when migrating between http and https modes the

@@ -51,7 +51,6 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
@@ -82,7 +81,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;

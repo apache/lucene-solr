@@ -76,6 +76,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -709,7 +710,7 @@ public final class ZkController {
                 ZkStateReader.COLLECTION_PROP, collectionName,
                 ZkStateReader.CORE_NODE_NAME_PROP, replica.getName());
             updatedCoreNodeNames.add(replica.getName());
-            overseerJobQueue.offer(ZkStateReader.toJSON(m));
+            overseerJobQueue.offer(Utils.toJSON(m));
           }
         }
       }
@@ -1212,7 +1213,7 @@ public final class ZkController {
       if (updateLastState) {
         cd.getCloudDescriptor().lastPublished = state;
       }
-      overseerJobQueue.offer(ZkStateReader.toJSON(m));
+      overseerJobQueue.offer(Utils.toJSON(m));
     } finally {
       MDCLoggingContext.clear();
     }
@@ -1269,7 +1270,7 @@ public final class ZkController {
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
         ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
-    overseerJobQueue.offer(ZkStateReader.toJSON(m));
+    overseerJobQueue.offer(Utils.toJSON(m));
   }
   
   public void createCollection(String collection) throws KeeperException,
@@ -1277,7 +1278,7 @@ public final class ZkController {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, collection);
-    overseerJobQueue.offer(ZkStateReader.toJSON(m));
+    overseerJobQueue.offer(Utils.toJSON(m));
   }
 
   // convenience for testing
@@ -1344,7 +1345,7 @@ public final class ZkController {
           collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP);  // we don't put numShards in the collections properties
 
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
-          zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
+          zkClient.makePath(collectionPath, Utils.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
 
         } catch (KeeperException e) {
           // it's okay if the node already exists
@@ -1706,7 +1707,7 @@ public final class ZkController {
       ZkNodeProps props = new ZkNodeProps(CONFIGNAME_PROP, confSetName);
       try {
 
-        zkClient.makePath(path, ZkStateReader.toJSON(props),
+        zkClient.makePath(path, Utils.toJSON(props),
             CreateMode.PERSISTENT, null, true);
       } catch (KeeperException e2) {
         // it's okay if the node already exists
@@ -1715,7 +1716,7 @@ public final class ZkController {
         }
         // if we fail creating, setdata
         // TODO: we should consider using version
-        zkClient.setData(path, ZkStateReader.toJSON(props), true);
+        zkClient.setData(path, Utils.toJSON(props), true);
       }
       return;
     }
@@ -1732,7 +1733,7 @@ public final class ZkController {
     }
     
     // TODO: we should consider using version
-    zkClient.setData(path, ZkStateReader.toJSON(props), true);
+    zkClient.setData(path, Utils.toJSON(props), true);
 
   }
   
@@ -1892,7 +1893,7 @@ public final class ZkController {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if(data ==null) return;
-      Map roles = (Map) ZkStateReader.fromJSON(data);
+      Map roles = (Map) Utils.fromJSON(data);
       if(roles ==null) return;
       List nodeList= (List) roles.get("overseer");
       if(nodeList == null) return;
@@ -1901,7 +1902,7 @@ public final class ZkController {
             "node", getNodeName(),
             "role", "overseer");
         log.info("Going to add role {} ",props);
-        getOverseerCollectionQueue().offer(ZkStateReader.toJSON(props));
+        getOverseerCollectionQueue().offer(Utils.toJSON(props));
       }
     } catch (NoNodeException nne){
       return;
@@ -1986,7 +1987,7 @@ public final class ZkController {
           ZkStateReader.COLLECTION_PROP, collection);
       log.warn("Leader is publishing core={} coreNodeName ={} state={} on behalf of un-reachable replica {}; forcePublishState? "+forcePublishState,
           replicaCoreName, replicaCoreNodeName, Replica.State.DOWN.toString(), replicaUrl);
-      overseerJobQueue.offer(ZkStateReader.toJSON(m));      
+      overseerJobQueue.offer(Utils.toJSON(m));
     }
     
     return nodeIsLive;
@@ -2044,7 +2045,7 @@ public final class ZkController {
     if (stateData != null && stateData.length > 0) {
       // TODO: Remove later ... this is for upgrading from 4.8.x to 4.10.3 (see: SOLR-6732)
       if (stateData[0] == (byte)'{') {
-        Object parsedJson = ZkStateReader.fromJSON(stateData);
+        Object parsedJson = Utils.fromJSON(stateData);
         if (parsedJson instanceof Map) {
           stateObj = (Map<String,Object>)parsedJson;
         } else {
@@ -2052,7 +2053,7 @@ public final class ZkController {
         }
       } else {
         // old format still in ZK
-        stateObj = ZkNodeProps.makeMap("state", new String(stateData, StandardCharsets.UTF_8));
+        stateObj = Utils.makeMap("state", new String(stateData, StandardCharsets.UTF_8));
       }
     }
 
@@ -2087,14 +2088,14 @@ public final class ZkController {
       log.warn(exc.getMessage(), exc);
     }
     if (stateObj == null)
-      stateObj = ZkNodeProps.makeMap();
+      stateObj = Utils.makeMap();
 
     stateObj.put(ZkStateReader.STATE_PROP, state.toString());
     // only update the createdBy value if it's not set
     if (stateObj.get("createdByNodeName") == null)
       stateObj.put("createdByNodeName", String.valueOf(this.nodeName));
 
-    byte[] znodeData = ZkStateReader.toJSON(stateObj);
+    byte[] znodeData = Utils.toJSON(stateObj);
 
     try {
       if (state == Replica.State.DOWN) {

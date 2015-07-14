@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -49,6 +48,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.component.RealTimeGetComponent;
@@ -551,13 +551,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   if (ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
                     log.info("Going to expire routing rule");
                     try {
-                      Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, OverseerAction.REMOVEROUTINGRULE.toLower(),
+                      Map<String, Object> map = Utils.makeMap(Overseer.QUEUE_OPERATION, OverseerAction.REMOVEROUTINGRULE.toLower(),
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,
                           "routeKey", routeKey + "!");
                       SolrZkClient zkClient = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
                       DistributedQueue queue = Overseer.getInQueue(zkClient);
-                      queue.offer(ZkStateReader.toJSON(map));
+                      queue.offer(Utils.toJSON(map));
                     } catch (KeeperException e) {
                       log.warn("Exception while removing routing rule for route key: " + routeKey, e);
                     } catch (Exception e) {

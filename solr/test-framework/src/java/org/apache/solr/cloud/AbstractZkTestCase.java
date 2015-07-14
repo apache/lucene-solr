@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -96,9 +96,9 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     props.put("configName", "conf1");
     final ZkNodeProps zkProps = new ZkNodeProps(props);
     
-    zkClient.makePath("/collections/collection1", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/collection1", Utils.toJSON(zkProps), CreateMode.PERSISTENT, true);
     zkClient.makePath("/collections/collection1/shards", CreateMode.PERSISTENT, true);
-    zkClient.makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
+    zkClient.makePath("/collections/control_collection", Utils.toJSON(zkProps), CreateMode.PERSISTENT, true);
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
 
     // for now, always upload the config and schema to the canonical names

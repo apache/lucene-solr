@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -141,7 +142,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         
         //Verify the URL Scheme is taken into account
         zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
-            ZkStateReader.toJSON(Collections.singletonMap("urlScheme", "https")), CreateMode.PERSISTENT, true);
+            Utils.toJSON(Collections.singletonMap("urlScheme", "https")), CreateMode.PERSISTENT, true);
         
         assertEquals("https://zzz.xxx:1234/solr",
             zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
@@ -178,7 +179,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       props.put("configName", actualConfigName);
       ZkNodeProps zkProps = new ZkNodeProps(props);
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/"
-              + COLLECTION_NAME, ZkStateReader.toJSON(zkProps),
+              + COLLECTION_NAME, Utils.toJSON(zkProps),
           CreateMode.PERSISTENT, true);
 
       if (DEBUG) {
@@ -351,7 +352,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         Slice slice = new Slice("shard1", replicas, sliceProps);
         DocCollection c = new DocCollection("testPublishAndWaitForDownStates", map("shard1", slice), Collections.<String, Object>emptyMap(), DocRouter.DEFAULT);
         ClusterState state = new ClusterState(0, Collections.<String>emptySet(), map("testPublishAndWaitForDownStates", c));
-        byte[] bytes = ZkStateReader.toJSON(state);
+        byte[] bytes = Utils.toJSON(state);
         zkController.getZkClient().makePath(ZkStateReader.getCollectionPath("testPublishAndWaitForDownStates"), bytes, CreateMode.PERSISTENT, true);
 
         zkController.getZkStateReader().updateClusterState(true);

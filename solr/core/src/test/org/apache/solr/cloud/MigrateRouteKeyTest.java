@@ -29,9 +29,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -111,7 +110,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = ZkNodeProps.makeMap(
+      Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, 1,
           MAX_SHARDS_PER_NODE, 5,
           NUM_SLICES, 1);

@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.*;
-import static org.apache.solr.common.cloud.ZkNodeProps.*;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -37,6 +36,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
@@ -120,7 +120,7 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
       ChaosMonkey.start(stoppedJetty);
       log.info("restarted jetty");
 
-      Map m = makeMap("qt", "/admin/cores", "action", "status");
+      Map m = Utils.makeMap("qt", "/admin/cores", "action", "status");
 
       try (SolrClient queryClient = new HttpSolrClient(replica1.getStr(ZkStateReader.BASE_URL_PROP))) {
         NamedList<Object> resp = queryClient.request(new QueryRequest(new MapSolrParams(m)));
@@ -132,7 +132,7 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
 
       try {
 
-        m = makeMap(
+        m = Utils.makeMap(
             "action", CoreAdminParams.CoreAdminAction.CREATE.toString(),
             ZkStateReader.COLLECTION_PROP, collectionName,
             ZkStateReader.SHARD_ID_PROP, "shard2",

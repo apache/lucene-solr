@@ -35,10 +35,10 @@ import org.apache.solr.common.cloud.HashBasedRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -227,7 +227,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     String shard_fld = "shard_s";
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = ZkNodeProps.makeMap(
+      Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, replicationFactor,
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           NUM_SLICES, numShards,
@@ -302,7 +302,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = ZkNodeProps.makeMap(
+      Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, replicationFactor,
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           NUM_SLICES, numShards);

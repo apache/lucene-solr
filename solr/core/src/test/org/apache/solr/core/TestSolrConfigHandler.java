@@ -35,6 +35,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.util.RestTestBase;
@@ -48,7 +49,7 @@ import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.handler.TestBlobHandler.getAsString;
 
 public class TestSolrConfigHandler extends RestTestBase {
@@ -218,7 +219,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
       String uri = "/config/overlay?wt=json";
       Map m = testServerBaseUrl == null ? getRespMap(uri, writeHarness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl + uri, cloudSolrServer);
-      if (null == ConfigOverlay.getObjectByPath(m, true, Arrays.asList("overlay", "requestHandler", "/x", "a"))) {
+      if (null == Utils.getObjectByPath(m, true, Arrays.asList("overlay", "requestHandler", "/x", "a"))) {
         success = true;
         break;
       }
@@ -374,7 +375,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         10);
 
-    List l = (List) ConfigOverlay.getObjectByPath(map,false, Arrays.asList("config", "initParams"));
+    List l = (List) Utils.getObjectByPath(map, false, Arrays.asList("config", "initParams"));
     assertNotNull("no object /config/initParams : "+ TestBlobHandler.getAsString(map) , l);
     assertEquals( 1, l.size());
     assertEquals( "val", ((Map)l.get(0)).get("key") );
@@ -399,7 +400,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         continue;
 
       }
-      if (Objects.equals(expected, ConfigOverlay.getObjectByPath(m, false, jsonPath))) {
+      if (Objects.equals(expected, Utils.getObjectByPath(m, false, jsonPath))) {
         success = true;
         break;
       }

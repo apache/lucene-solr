@@ -18,14 +18,11 @@ package org.apache.solr.handler;
  */
 
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import org.apache.lucene.util.LuceneTestCase.BadApple;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -35,7 +32,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.ConfigOverlay;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -268,7 +265,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   public static void compareValues(Map result, Object expected, List<String> jsonPath) {
     assertTrue(StrUtils.formatString("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(result)),
-        Objects.equals(expected, ConfigOverlay.getObjectByPath(result, false, jsonPath)));
+        Objects.equals(expected, Utils.getObjectByPath(result, false, jsonPath)));
   }
 
 }

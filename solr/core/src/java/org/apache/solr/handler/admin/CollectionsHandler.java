@@ -59,6 +59,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -167,7 +168,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         result.put(QUEUE_OPERATION, operation.action.toLower());
         ZkNodeProps props = new ZkNodeProps(result);
         if (operation.sendToOCPQueue) handleResponse(operation.action.toLower(), props, rsp, operation.timeOut);
-        else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(ZkStateReader.toJSON(props));
+        else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
 
       }
     } else {
@@ -212,7 +213,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
        } else {
          coreContainer.getZkController().getOverseerCollectionQueue()
-             .offer(ZkStateReader.toJSON(m));
+             .offer(Utils.toJSON(m));
        }
        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
        SolrResponse response = new OverseerSolrResponse(r);
@@ -224,7 +225,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
-        .offer(ZkStateReader.toJSON(m), timeout);
+        .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
       SolrResponse response = SolrResponse.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());

@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
@@ -401,7 +402,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   protected void issueCreateJob(Integer numberOfSlices,
       Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
-    Map<String,Object> propMap = ZkNodeProps.makeMap(
+    Map<String,Object> propMap = Utils.makeMap(
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
@@ -418,7 +419,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     }
 
     ZkNodeProps props = new ZkNodeProps(propMap);
-    QueueEvent qe = new QueueEvent("id", ZkStateReader.toJSON(props), null){
+    QueueEvent qe = new QueueEvent("id", Utils.toJSON(props), null){
       @Override
       public void setBytes(byte[] bytes) {
         lastProcessMessageResult = SolrResponse.deserialize( bytes);

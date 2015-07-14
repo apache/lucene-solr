@@ -18,12 +18,9 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -39,17 +36,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ByteUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,39 +117,6 @@ public class ZkStateReader implements Closeable {
       URL_SCHEME,
       AUTO_ADD_REPLICAS)));
 
-  //
-  // convenience methods... should these go somewhere else?
-  //
-  public static byte[] toJSON(Object o) {
-    CharArr out = new CharArr();
-    new JSONWriter(out, 2).write(o); // indentation by default
-    return toUTF8(out);
-  }
-
-  public static String toJSONString(Object o) {
-    return new String(toJSON(o), StandardCharsets.UTF_8);
-  }
-
-  public static byte[] toUTF8(CharArr out) {
-    byte[] arr = new byte[out.size() << 2]; // is 4x the real worst-case upper-bound?
-    int nBytes = ByteUtils.UTF16toUTF8(out, 0, out.size(), arr, 0);
-    return Arrays.copyOf(arr, nBytes);
-  }
-
-  public static Object fromJSON(byte[] utf8) {
-    // convert directly from bytes to chars
-    // and parse directly from that instead of going through
-    // intermediate strings or readers
-    CharArr chars = new CharArr();
-    ByteUtils.UTF8toUTF16(utf8, 0, utf8.length, chars);
-    JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
-    try {
-      return ObjectBuilder.getVal(parser);
-    } catch (IOException e) {
-      throw new RuntimeException(e); // should never happen w/o using real IO
-    }
-  }
-  
   /**
    * Returns config set name for collection.
    *
@@ -771,7 +731,7 @@ public class ZkStateReader implements Closeable {
     Map result = null;
     try {
       if(getZkClient().exists(ZkStateReader.CLUSTER_PROPS, true)){
-        result = (Map) ZkStateReader.fromJSON(getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)) ;
+        result = (Map) Utils.fromJSON(getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)) ;
       } else {
         result= new LinkedHashMap();
       }
@@ -797,24 +757,24 @@ public class ZkStateReader implements Closeable {
       try {
         if (getZkClient().exists(CLUSTER_PROPS, true)) {
           int v = 0;
-          Map properties = (Map) fromJSON(getZkClient().getData(CLUSTER_PROPS, null, s, true));
+          Map properties = (Map) Utils.fromJSON(getZkClient().getData(CLUSTER_PROPS, null, s, true));
           if (propertyValue == null) {
             //Don't update ZK unless absolutely necessary.
             if (properties.get(propertyName) != null) {
               properties.remove(propertyName);
-              getZkClient().setData(CLUSTER_PROPS, toJSON(properties), s.getVersion(), true);
+              getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
             }
           } else {
             //Don't update ZK unless absolutely necessary.
             if (!propertyValue.equals(properties.get(propertyName))) {
               properties.put(propertyName, propertyValue);
-              getZkClient().setData(CLUSTER_PROPS, toJSON(properties), s.getVersion(), true);
+              getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
             }
           }
         } else {
           Map properties = new LinkedHashMap();
           properties.put(propertyName, propertyValue);
-          getZkClient().create(CLUSTER_PROPS, toJSON(properties), CreateMode.PERSISTENT, true);
+          getZkClient().create(CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
         }
       } catch (KeeperException.BadVersionException bve) {
         log.warn("Race condition while trying to set a new cluster prop on current version " + s.getVersion());
@@ -841,7 +801,7 @@ public class ZkStateReader implements Closeable {
   public Map getSecurityProps() {
     try {
       if(getZkClient().exists(SOLR_SECURITY_CONF_PATH, true)) {
-        return (Map) ZkStateReader.fromJSON(getZkClient()
+        return (Map) Utils.fromJSON(getZkClient()
             .getData(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, new Stat(), true)) ;
       }
     } catch (KeeperException | InterruptedException e) {

@@ -41,6 +41,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 
 public class ClusterStatus {
@@ -84,14 +85,14 @@ public class ClusterStatus {
 
     Map roles = null;
     if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) ZkStateReader.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
+      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
     ClusterState clusterState = zkStateReader.getClusterState();
 
     // convert cluster state into a map of writable types
-    byte[] bytes = ZkStateReader.toJSON(clusterState);
-    Map<String, Object> stateMap = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
+    byte[] bytes = Utils.toJSON(clusterState);
+    Map<String, Object> stateMap = (Map<String,Object>) Utils.fromJSON(bytes);
 
     Set<String> collections = new HashSet<>();
     String routeKey = message.getStr(ShardParams._ROUTE_);
@@ -121,8 +122,8 @@ public class ClusterStatus {
       }
 
       if (clusterStateCollection.getStateFormat() > 1) {
-        bytes = ZkStateReader.toJSON(clusterStateCollection);
-        Map<String, Object> docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+        bytes = Utils.toJSON(clusterStateCollection);
+        Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
         collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
       } else {
         collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, requestedShards);

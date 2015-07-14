@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -148,9 +149,9 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       ClusterState clusterState = writer.enqueueUpdate(reader.getClusterState(), c1, null);
       writer.writePendingUpdates();
 
-      Map map = (Map) ZkStateReader.fromJSON(zkClient.getData("/clusterstate.json", null, null, true));
+      Map map = (Map) Utils.fromJSON(zkClient.getData("/clusterstate.json", null, null, true));
       assertNull(map.get("c1"));
-      map = (Map) ZkStateReader.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
+      map = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
       assertNotNull(map.get("c1"));
 
     } finally {

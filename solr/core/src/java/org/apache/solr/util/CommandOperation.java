@@ -20,7 +20,6 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,15 +27,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 public class CommandOperation {
   public final String name;
@@ -244,7 +243,7 @@ public class CommandOperation {
   @Override
   public String toString() {
     try {
-      return new String(ZkStateReader.toJSON(singletonMap(name, commandData)), IOUtils.UTF_8);
+      return new String(Utils.toJSON(singletonMap(name, commandData)), IOUtils.UTF_8);
     } catch (UnsupportedEncodingException e) {
       //should not happen
       return "";

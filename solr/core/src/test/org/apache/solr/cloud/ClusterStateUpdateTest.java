@@ -25,6 +25,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -151,7 +152,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
     zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore",
-        ZkStateReader.toJSON(zkProps2), CreateMode.PERSISTENT, true);
+        Utils.toJSON(zkProps2), CreateMode.PERSISTENT, true);
     zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/testcore/shards",
         CreateMode.PERSISTENT, true);
     zkClient.close();

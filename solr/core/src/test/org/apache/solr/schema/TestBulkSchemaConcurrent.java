@@ -34,8 +34,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
@@ -160,7 +160,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     Object errors = map.get("errors");
     if (errors != null) {
-      errs.add(new String(ZkStateReader.toJSON(errors), StandardCharsets.UTF_8));
+      errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
       return;
     }
 
@@ -231,7 +231,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     Object errors = map.get("errors");
     if (errors != null) {
-      errs.add(new String(ZkStateReader.toJSON(errors), StandardCharsets.UTF_8));
+      errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
       return;
     }
 
@@ -293,7 +293,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     Object errors = map.get("errors");
     if (errors != null) {
-      errs.add(new String(ZkStateReader.toJSON(errors), StandardCharsets.UTF_8));
+      errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
       return;
     }
 

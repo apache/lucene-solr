@@ -52,6 +52,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.ShardHandler;
@@ -67,7 +68,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
@@ -303,7 +303,7 @@ public class Overseer implements Closeable {
         return;
       }
       try {
-        Map m = (Map) ZkStateReader.fromJSON(data);
+        Map m = (Map) Utils.fromJSON(data);
         String id = (String) m.get("id");
         if(overseerCollectionProcessor.getId().equals(id)){
           try {

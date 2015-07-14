@@ -42,10 +42,10 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.ReturnFields;
@@ -78,7 +78,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     JSONWriter jsonWriter = new JSONWriter(out, 2);
     jsonWriter.setIndentSize(-1); // indentation by default
     jsonWriter.write(m);
-    String s = new String(ZkStateReader.toUTF8(out), StandardCharsets.UTF_8);
+    String s = new String(Utils.toUTF8(out), StandardCharsets.UTF_8);
     assertEquals(s , "{\"data1\":NaN,\"data2\":-Infinity,\"data3\":Infinity}");
 
     req.close();
@@ -102,7 +102,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     w.write(buf, req, rsp);
     Map m = (Map) decodeSmile(new ByteArrayInputStream(buf.toByteArray()));
     Map o2 = (Map) new ObjectBuilder(new JSONParser(new StringReader(expected))).getObject();
-    assertEquals(ZkStateReader.toJSONString(m),ZkStateReader.toJSONString(o2));
+    assertEquals(Utils.toJSONString(m), Utils.toJSONString(o2));
     req.close();
   }
 

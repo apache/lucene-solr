@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.params.CoreConnectionPNames;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -69,6 +68,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -84,7 +84,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -205,7 +205,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT)) {
         zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
-            ZkStateReader.toJSON(Collections.singletonMap("urlScheme", "https")),
+            Utils.toJSON(Collections.singletonMap("urlScheme", "https")),
             CreateMode.PERSISTENT, true);
       }
     }
@@ -356,7 +356,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
       Overseer.getInQueue(zkClient).offer(
-          ZkStateReader.toJSON(ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION,
+          Utils.toJSON(Utils.makeMap(Overseer.QUEUE_OPERATION,
               CollectionParams.CollectionAction.CREATE.toLower(), "name",
               DEFAULT_COLLECTION, "numShards", String.valueOf(sliceCount),
               DocCollection.STATE_FORMAT, getStateFormat())));
@@ -1579,7 +1579,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
 
     return createCollection(collectionInfos, collectionName,
-        ZkNodeProps.makeMap(
+        Utils.makeMap(
         NUM_SLICES, numShards,
         ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
@@ -1591,7 +1591,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                                      String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr, String configName) throws SolrServerException, IOException {
 
     return createCollection(collectionInfos, collectionName,
-        ZkNodeProps.makeMap(
+        Utils.makeMap(
         NUM_SLICES, numShards,
         ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,

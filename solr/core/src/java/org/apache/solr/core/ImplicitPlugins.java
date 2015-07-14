@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.RealTimeGetHandler;
@@ -43,7 +42,7 @@ import org.apache.solr.handler.admin.ThreadDumpHandler;
 import org.apache.solr.request.SolrRequestHandler;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.WT;
@@ -52,7 +51,7 @@ import static org.apache.solr.core.PluginInfo.INVARIANTS;
 
 public class ImplicitPlugins {
 
-  public static List<PluginInfo> getHandlers(SolrCore solrCore){
+  public static List<PluginInfo> getHandlers(SolrCore solrCore) {
     List<PluginInfo> implicits = new ArrayList<>();
 
     //update handle implicits
@@ -74,7 +73,7 @@ public class ImplicitPlugins {
     }
     implicits.add(schema);
     //register replicationhandler always for SolrCloud
-    implicits.add(getReqHandlerInfo("/replication", ReplicationHandler.class,null));
+    implicits.add(getReqHandlerInfo("/replication", ReplicationHandler.class, null));
 
     implicits.add(getReqHandlerInfo("/get", RealTimeGetHandler.class,
         makeMap(
@@ -97,9 +96,9 @@ public class ImplicitPlugins {
     return implicits;
   }
 
-  public static PluginInfo getReqHandlerInfo(String name, Class clz, Map defaults){
-    if(defaults == null) defaults= Collections.emptyMap();
+  public static PluginInfo getReqHandlerInfo(String name, Class clz, Map defaults) {
+    if (defaults == null) defaults = Collections.emptyMap();
     Map m = makeMap(NAME, name, "class", clz.getName());
-    return new PluginInfo(SolrRequestHandler.TYPE, m, new NamedList<>(singletonMap(DEFAULTS, new NamedList(defaults))),null);
+    return new PluginInfo(SolrRequestHandler.TYPE, m, new NamedList<>(singletonMap(DEFAULTS, new NamedList(defaults))), null);
   }
 }

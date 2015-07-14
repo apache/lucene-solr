@@ -19,6 +19,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.RetryUtil.RetryCmd;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -137,7 +138,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           new RetryCmd() {
             @Override
             public void execute() throws Throwable {
-              zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps), CreateMode.EPHEMERAL, true);
+              zkClient.makePath(leaderPath, Utils.toJSON(leaderProps), CreateMode.EPHEMERAL, true);
             }
           }
       );
@@ -156,7 +157,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         ZkStateReader.CORE_NAME_PROP,
         leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
         ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
-    Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));    
+    Overseer.getInQueue(zkClient).offer(Utils.toJSON(m));
   }  
 }
 
@@ -217,7 +218,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       // clear the leader in clusterstate
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-      Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
+      Overseer.getInQueue(zkClient).offer(Utils.toJSON(m));
       
       int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
       if (!weAreReplacement) {
@@ -548,7 +549,7 @@ final class OverseerElectionContext extends ElectionContext {
         .substring(leaderSeqPath.lastIndexOf("/") + 1);
     ZkNodeProps myProps = new ZkNodeProps("id", id);
 
-    zkClient.makePath(leaderPath, ZkStateReader.toJSON(myProps),
+    zkClient.makePath(leaderPath, Utils.toJSON(myProps),
         CreateMode.EPHEMERAL, true);
     if(pauseBeforeStartMs >0){
       try {
