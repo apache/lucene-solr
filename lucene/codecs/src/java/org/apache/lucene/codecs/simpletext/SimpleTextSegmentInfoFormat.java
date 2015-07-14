@@ -154,9 +154,10 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
 
     String segFileName = IndexFileNames.segmentFileName(si.name, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
-    si.addFile(segFileName);
 
     try (IndexOutput output = dir.createOutput(segFileName, ioContext)) {
+      // Only add the file once we've successfully created it, else IFD assert can trip:
+      si.addFile(segFileName);
       BytesRefBuilder scratch = new BytesRefBuilder();
     
       SimpleTextUtil.write(output, SI_VERSION);
