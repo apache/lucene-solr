@@ -372,6 +372,9 @@ public class TestJoinUtil extends LuceneTestCase {
           @Override
           public Scorer scorer(LeafReaderContext context) throws IOException {
             Scorer fieldScorer = fieldWeight.scorer(context);
+            if (fieldScorer == null) {
+              return null;
+            }
             NumericDocValues price = context.reader().getNumericDocValues(priceField);
             return new FilterScorer(fieldScorer, this) {
               @Override
