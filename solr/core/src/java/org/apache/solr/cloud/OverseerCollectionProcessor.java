@@ -79,6 +79,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ClusterStatus;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -97,7 +98,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -432,7 +433,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   private synchronized void prioritizeOverseerNodes() throws KeeperException, InterruptedException {
     SolrZkClient zk = zkStateReader.getZkClient();
     if(!zk.exists(ZkStateReader.ROLES,true))return;
-    Map m = (Map) ZkStateReader.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
+    Map m = (Map) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
 
     List overseerDesignates = (List) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
@@ -463,8 +464,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     }
     //now ask the current leader to QUIT , so that the designate can takeover
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(
-        ZkStateReader.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            "id",getLeaderId(zkStateReader.getZkClient()))));
+        Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
+            "id", getLeaderId(zkStateReader.getZkClient()))));
 
   }
 
@@ -508,7 +509,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
-    Map m = (Map) ZkStateReader.fromJSON(data);
+    Map m = (Map) Utils.fromJSON(data);
     return  (String) m.get("id");
   }
 
@@ -636,7 +637,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
           processRebalanceLeaders(message);
           break;
         case MODIFYCOLLECTION:
-          overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
+          overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
           break;
         default:
           throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
@@ -699,7 +700,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    inQueue.offer(ZkStateReader.toJSON(m));
+    inQueue.offer(Utils.toJSON(m));
   }
 
   private void processReplicaDeletePropertyCommand(ZkNodeProps message) throws KeeperException, InterruptedException {
@@ -710,7 +711,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    inQueue.offer(ZkStateReader.toJSON(m));
+    inQueue.offer(Utils.toJSON(m));
   }
 
   private void balanceProperty(ZkNodeProps message) throws KeeperException, InterruptedException {
@@ -724,7 +725,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     propMap.putAll(message.getProperties());
-    inQueue.offer(ZkStateReader.toJSON(new ZkNodeProps(propMap)));
+    inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
   }
 
 
@@ -829,12 +830,12 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
     Map roles = null;
     if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) ZkStateReader.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
+      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
     // convert cluster state into a map of writable types
-    byte[] bytes = ZkStateReader.toJSON(clusterState);
-    Map<String, Object> stateMap = (Map<String,Object>) ZkStateReader.fromJSON(bytes);
+    byte[] bytes = Utils.toJSON(clusterState);
+    Map<String, Object> stateMap = (Map<String,Object>) Utils.fromJSON(bytes);
 
     Set<String> collections = new HashSet<>();
     String routeKey = message.getStr(ShardParams._ROUTE_);
@@ -864,8 +865,8 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       }
 
       if (clusterStateCollection.getStateFormat() > 1) {
-        bytes = ZkStateReader.toJSON(clusterStateCollection);
-        Map<String, Object> docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+        bytes = Utils.toJSON(clusterStateCollection);
+        Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
         collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
       } else {
         collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, requestedShards);
@@ -984,7 +985,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     String roleName = message.getStr("role");
     boolean nodeExists = false;
     if(nodeExists = zkClient.exists(ZkStateReader.ROLES, true)){
-      roles = (Map) ZkStateReader.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+      roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
     } else {
       roles = new LinkedHashMap(1);
     }
@@ -1000,9 +1001,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     }
 
     if(nodeExists){
-      zkClient.setData(ZkStateReader.ROLES, ZkStateReader.toJSON(roles),true);
+      zkClient.setData(ZkStateReader.ROLES, Utils.toJSON(roles),true);
     } else {
-      zkClient.create(ZkStateReader.ROLES, ZkStateReader.toJSON(roles), CreateMode.PERSISTENT,true);
+      zkClient.create(ZkStateReader.ROLES, Utils.toJSON(roles), CreateMode.PERSISTENT,true);
     }
     //if there are too many nodes this command may time out. And most likely dedicated
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
@@ -1107,7 +1108,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         ZkStateReader.NODE_NAME_PROP, replica.getStr(ZkStateReader.NODE_NAME_PROP),
         ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
-    Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(m));
+    Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
   }
 
   private void checkRequired(ZkNodeProps message, String... props) {
@@ -1133,7 +1134,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
           DELETE.toLower(), NAME, collection);
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(
-          ZkStateReader.toJSON(m));
+          Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
       long now = System.nanoTime();
@@ -1187,7 +1188,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     Aliases newAliases = new Aliases(newAliasesMap);
     byte[] jsonBytes = null;
     if (newAliases.collectionAliasSize() > 0) { // only sub map right now
-      jsonBytes = ZkStateReader.toJSON(newAliases.getAliasMap());
+      jsonBytes = Utils.toJSON(newAliases.getAliasMap());
     }
     try {
       zkStateReader.getZkClient().setData(ZkStateReader.ALIASES, jsonBytes, true);
@@ -1253,7 +1254,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     Aliases newAliases = new Aliases(newAliasesMap);
     byte[] jsonBytes = null;
     if (newAliases.collectionAliasSize() > 0) { // only sub map right now
-      jsonBytes  = ZkStateReader.toJSON(newAliases.getAliasMap());
+      jsonBytes  = Utils.toJSON(newAliases.getAliasMap());
     }
     try {
       zkStateReader.getZkClient().setData(ZkStateReader.ALIASES,
@@ -1288,7 +1289,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     List<ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, repFactor,
         createNodeSetStr, overseer.getZkController().getCoreContainer());
         
-    Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
+    Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
     // wait for a while until we see the shard
     long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
     boolean created = false;
@@ -1513,7 +1514,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         propMap.put(ZkStateReader.SHARD_STATE_PROP, Slice.State.CONSTRUCTION.toString());
         propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
         DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
-        inQueue.offer(ZkStateReader.toJSON(new ZkNodeProps(propMap)));
+        inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
         
         // wait until we are able to see the new shard in cluster state
         waitForNewShard(collectionName, subSlice);
@@ -1654,7 +1655,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
               ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(subShardNodeName),
               ZkStateReader.NODE_NAME_PROP, subShardNodeName);
-          Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(props));
+          Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
 
           HashMap<String,Object> propMap = new HashMap<>();
           propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
@@ -1695,7 +1696,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         }
         propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
         ZkNodeProps m = new ZkNodeProps(propMap);
-        inQueue.offer(ZkStateReader.toJSON(m));
+        inQueue.offer(Utils.toJSON(m));
       } else {
         log.info("Requesting shard state be set to 'recovery'");
         DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
@@ -1706,7 +1707,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         }
         propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
         ZkNodeProps m = new ZkNodeProps(propMap);
-        inQueue.offer(ZkStateReader.toJSON(m));
+        inQueue.offer(Utils.toJSON(m));
       }
 
       // now actually create replica cores on sub shard nodes
@@ -1869,7 +1870,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collection, ZkStateReader.SHARD_ID_PROP, sliceId);
-      Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(m));
+      Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
       
       // wait for a while until we don't see the shard
       long now = System.nanoTime();
@@ -2007,7 +2008,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         "expireAt", String.valueOf(System.currentTimeMillis() + timeout));
     log.info("Adding routing rule: " + m);
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(
-        ZkStateReader.toJSON(m));
+        Utils.toJSON(m));
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");
@@ -2327,7 +2328,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
 
       createConfNode(configName, collectionName, isLegacyCloud);
 
-      Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
+      Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
       // wait for a while until we don't see the collection
       long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
@@ -2366,7 +2367,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
               ZkStateReader.BASE_URL_PROP, baseUrl);
-          Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(props));
+          Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
         }
 
         // Need to create new params for each request
@@ -2539,7 +2540,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
             collection, ZkStateReader.SHARD_ID_PROP, shard, ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.BASE_URL_PROP,
             zkStateReader.getBaseUrlForNodeName(node), ZkStateReader.NODE_NAME_PROP, node);
-        Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(props));
+        Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
       }
       params.set(CoreAdminParams.CORE_NODE_NAME,
           waitToSeeReplicasInState(collection, Collections.singletonList(coreName)).get(coreName).getName());
@@ -2628,7 +2629,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     if (configName != null) {
       String collDir = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
       log.info("creating collections conf node {} ", collDir);
-      byte[] data = ZkStateReader.toJSON(makeMap(ZkController.CONFIGNAME_PROP, configName));
+      byte[] data = Utils.toJSON(makeMap(ZkController.CONFIGNAME_PROP, configName));
       if (zkStateReader.getZkClient().exists(collDir, true)) {
         zkStateReader.getZkClient().setData(collDir, data, true);
       } else {

@@ -28,8 +28,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -39,7 +38,7 @@ import java.util.Map;
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
 public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTestBase {
@@ -59,12 +58,12 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
       int replicationFactor = 1;
       int maxShardsPerNode = 5;
 
-      Map<String, Object> props = ZkNodeProps.makeMap(
-              "router.name", ImplicitDocRouter.NAME,
-              ZkStateReader.REPLICATION_FACTOR, replicationFactor,
-              ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
-              NUM_SLICES, 1,
-              SHARDS_PROP,"a,b");
+      Map<String, Object> props = Utils.makeMap(
+          "router.name", ImplicitDocRouter.NAME,
+          ZkStateReader.REPLICATION_FACTOR, replicationFactor,
+          ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
+          NUM_SLICES, 1,
+          SHARDS_PROP, "a,b");
 
       Map<String,List<Integer>> collectionInfos = new HashMap<>();
 

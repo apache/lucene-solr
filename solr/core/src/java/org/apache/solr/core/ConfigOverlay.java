@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -62,27 +62,7 @@ public class ConfigOverlay implements MapSerializable {
   public Object getXPathProperty(String xpath, boolean onlyPrimitive) {
     List<String> hierarchy = checkEditable(xpath, true, false);
     if (hierarchy == null) return null;
-    return getObjectByPath(props, onlyPrimitive, hierarchy);
-  }
-
-  public static Object getObjectByPath(Map root, boolean onlyPrimitive, List<String> hierarchy) {
-    Map obj = root;
-    for (int i = 0; i < hierarchy.size(); i++) {
-      String s = hierarchy.get(i);
-      if (i < hierarchy.size() - 1) {
-        if (!(obj.get(s) instanceof Map)) return null;
-        obj = (Map) obj.get(s);
-        if (obj == null) return null;
-      } else {
-        Object val = obj.get(s);
-        if (onlyPrimitive && val instanceof Map) {
-          return null;
-        }
-        return val;
-      }
-    }
-
-    return false;
+    return Utils.getObjectByPath(props, onlyPrimitive, hierarchy);
   }
 
   public ConfigOverlay setUserProperty(String key, Object val) {
@@ -104,7 +84,7 @@ public class ConfigOverlay implements MapSerializable {
 
   public ConfigOverlay setProperty(String name, Object val) {
     List<String> hierarchy = checkEditable(name, false, true);
-    Map deepCopy = getDeepCopy(props);
+    Map deepCopy = (Map) Utils.fromJSON(Utils.toJSON(props));
     Map obj = deepCopy;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
@@ -125,10 +105,6 @@ public class ConfigOverlay implements MapSerializable {
   }
 
 
-  private Map getDeepCopy(Map map) {
-    return (Map) ZkStateReader.fromJSON(ZkStateReader.toJSON(map));
-  }
-
   public static final String NOT_EDITABLE = "''{0}'' is not an editable property";
 
   private List<String> checkEditable(String propName, boolean isXPath, boolean failOnError) {
@@ -144,7 +120,7 @@ public class ConfigOverlay implements MapSerializable {
 
   public ConfigOverlay unsetProperty(String name) {
     List<String> hierarchy = checkEditable(name, false, true);
-    Map deepCopy = getDeepCopy(props);
+    Map deepCopy = (Map) Utils.fromJSON(Utils.toJSON(props));
     Map obj = deepCopy;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
@@ -165,7 +141,7 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   public byte[] toByteArray() {
-    return ZkStateReader.toJSON(data);
+    return Utils.toJSON(data);
   }
 
 
@@ -308,7 +284,7 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   public Map<String, String> getEditableSubProperties(String xpath) {
-    Object o = getObjectByPath(props, false, StrUtils.splitSmart(xpath, '/'));
+    Object o = Utils.getObjectByPath(props, false, StrUtils.splitSmart(xpath, '/'));
     if (o instanceof Map) {
       return (Map) o;
     } else {
@@ -336,7 +312,7 @@ public class ConfigOverlay implements MapSerializable {
 
 
   public ConfigOverlay addNamedPlugin(Map<String, Object> info, String typ) {
-    Map dataCopy = RequestParams.getDeepCopy(data, 4);
+    Map dataCopy = Utils.getDeepCopy(data, 4);
     Map reqHandler = (Map) dataCopy.get(typ);
     if (reqHandler == null) dataCopy.put(typ, reqHandler = new LinkedHashMap());
     reqHandler.put(info.get(CoreAdminParams.NAME), info);
@@ -344,7 +320,7 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   public ConfigOverlay deleteNamedPlugin(String name, String typ) {
-    Map dataCopy = RequestParams.getDeepCopy(data, 4);
+    Map dataCopy = Utils.getDeepCopy(data, 4);
     Map reqHandler = (Map) dataCopy.get(typ);
     if (reqHandler == null) return this;
     reqHandler.remove(name);

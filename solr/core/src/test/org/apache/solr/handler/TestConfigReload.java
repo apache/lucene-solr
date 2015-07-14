@@ -18,11 +18,10 @@ package org.apache.solr.handler;
  */
 
 import static java.util.Arrays.asList;
-import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

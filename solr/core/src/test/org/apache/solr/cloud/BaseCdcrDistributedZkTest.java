@@ -34,6 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.CdcrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -112,7 +113,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
       try {
         zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
-            ZkStateReader.toJSON(Collections.singletonMap("urlScheme", "https")),
+            Utils.toJSON(Collections.singletonMap("urlScheme", "https")),
             CreateMode.PERSISTENT, true);
       } finally {
         zkStateReader.close();
@@ -339,7 +340,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
                                                    int maxShardsPerNode, SolrClient client, String createNodeSetStr)
       throws SolrServerException, IOException {
     return createCollection(collectionInfos, collectionName,
-        ZkNodeProps.makeMap(
+        Utils.makeMap(
             NUM_SLICES, numShards,
             REPLICATION_FACTOR, replicationFactor,
             CREATE_NODE_SET, createNodeSetStr,

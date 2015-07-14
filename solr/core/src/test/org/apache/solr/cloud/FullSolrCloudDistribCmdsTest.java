@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
@@ -421,7 +422,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), 10000);
     int fails = 0;
     try {
-      zkClient.makePath(leaderPath, ZkStateReader.toJSON(props),
+      zkClient.makePath(leaderPath, Utils.toJSON(props),
           CreateMode.EPHEMERAL, true);
       for (int i = 0; i < 200; i++) {
         try {

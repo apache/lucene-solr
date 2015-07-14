@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +108,7 @@ public class CollectionMutator {
       slices = new LinkedHashMap<>(1);
       slices.put(slice.getName(), slice);
       Map<String, Object> props = new HashMap<>(1);
-      props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap(NAME, ImplicitDocRouter.NAME));
+      props.put(DocCollection.DOC_ROUTER, Utils.makeMap(NAME, ImplicitDocRouter.NAME));
       newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
     } else {
       slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy

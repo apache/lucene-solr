@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -131,7 +132,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     propMap.put(ZkStateReader.COLLECTION_PROP, "collection1");
     ZkNodeProps m = new ZkNodeProps(propMap);
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    inQueue.offer(ZkStateReader.toJSON(m));
+    inQueue.offer(Utils.toJSON(m));
     boolean transition = false;
 
     for (int counter = 10; counter > 0; counter--) {

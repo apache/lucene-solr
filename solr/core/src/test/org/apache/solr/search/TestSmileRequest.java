@@ -29,9 +29,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SmileWriterTest;
 import org.apache.solr.search.json.TestJsonRequest;
 import org.junit.AfterClass;
@@ -78,7 +78,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
         }
         NamedList<Object> rsp = client.request(query);
         Map m = rsp.asMap(5);
-        String jsonStr = ZkStateReader.toJSONString(m);
+        String jsonStr = Utils.toJSONString(m);
         SolrTestCaseHS.matchJSON(jsonStr, tests);
       }
     };

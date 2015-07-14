@@ -18,12 +18,11 @@ package org.apache.solr.handler;
  */
 
 import static java.util.Arrays.asList;
-import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.noggit.ObjectBuilder.getVal;
 
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +43,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
@@ -160,7 +160,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       Map map = (Map) getVal(new JSONParser(new StringReader(response)));
       Object errors = map.get("errors");
       if(errors!= null){
-        errs.add(new String(ZkStateReader.toJSON(errors), StandardCharsets.UTF_8));
+        errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
         return;
       }
 

@@ -29,12 +29,11 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 import static org.apache.solr.cloud.rule.Rule.parseRule;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 public class RuleEngineTest extends SolrTestCaseJ4{
   @Test
@@ -62,7 +61,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         "    'node':'127.0.0.1:49958_'," +
         "    'freedisk':992," +
         "    'cores':1}}";
-    MockSnitch.nodeVsTags = (Map) ZkStateReader.fromJSON(s.getBytes(StandardCharsets.UTF_8));
+    MockSnitch.nodeVsTags = (Map) Utils.fromJSON(s.getBytes(StandardCharsets.UTF_8));
     Map shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
 
     List<Rule> rules = parseRules("[{'cores':'<4'}, {" +
@@ -107,7 +106,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         "    'node':'127.0.0.1:49958_'," +
         "    'freedisk':970," +
         "    'cores':1}}";
-    MockSnitch.nodeVsTags = (Map) ZkStateReader.fromJSON(s.getBytes(StandardCharsets.UTF_8));
+    MockSnitch.nodeVsTags = (Map) Utils.fromJSON(s.getBytes(StandardCharsets.UTF_8));
     //test not
     List<Rule> rules = parseRules(
          "[{cores:'<4'}, " +
@@ -184,7 +183,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
 
   private List<Rule> parseRules(String s) {
 
-    List maps = (List) ZkStateReader.fromJSON(s.getBytes(StandardCharsets.UTF_8));
+    List maps = (List) Utils.fromJSON(s.getBytes(StandardCharsets.UTF_8));
 
     List<Rule> rules = new ArrayList<>();
     for (Object map : maps) rules.add(new Rule((Map) map));

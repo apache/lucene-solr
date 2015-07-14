@@ -18,8 +18,8 @@ package org.apache.solr.core;
  */
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
@@ -55,7 +55,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
     PluginInfo pluginInfo = new PluginInfo("requestHandler",
         new HashMap<String, String>(),
-        new NamedList<>(singletonMap("defaults", new NamedList(ZkNodeProps.makeMap("a", "A1")))), null);
+        new NamedList<>(singletonMap("defaults", new NamedList(Utils.makeMap("a", "A1")))), null);
     initParams.apply(pluginInfo);
     assertEquals( "A",initParams.defaults.get("a"));
   }
@@ -117,14 +117,14 @@ public class TestInitParams extends SolrTestCaseJ4 {
   }
 
   public void testMatchPath(){
-    InitParams initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/json/docs")));
+    InitParams initParams = new InitParams(new PluginInfo(InitParams.TYPE, Utils.makeMap("path", "/update/json/docs")));
     assertFalse(initParams.matchPath("/update"));
     assertTrue(initParams.matchPath("/update/json/docs"));
-    initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/**")));
+    initParams = new InitParams(new PluginInfo(InitParams.TYPE, Utils.makeMap("path", "/update/**")));
     assertTrue(initParams.matchPath("/update/json/docs"));
     assertTrue(initParams.matchPath("/update/json"));
     assertTrue(initParams.matchPath("/update"));
-    initParams = new InitParams(new PluginInfo(InitParams.TYPE, ZkNodeProps.makeMap("path","/update/*")));
+    initParams = new InitParams(new PluginInfo(InitParams.TYPE, Utils.makeMap("path", "/update/*")));
     assertFalse(initParams.matchPath("/update/json/docs"));
     assertTrue(initParams.matchPath("/update/json"));
     assertTrue(initParams.matchPath("/update"));

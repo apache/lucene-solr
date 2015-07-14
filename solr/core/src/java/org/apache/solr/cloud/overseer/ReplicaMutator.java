@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,7 +217,7 @@ public class ReplicaMutator {
     boolean collectionExists = prevState.hasCollection(cName);
     if (!collectionExists && numShards != null) {
       ClusterStateMutator.getShardNames(numShards, shardNames);
-      Map<String, Object> createMsg = ZkNodeProps.makeMap(NAME, cName);
+      Map<String, Object> createMsg = Utils.makeMap(NAME, cName);
       createMsg.putAll(message.getProperties());
       writeCommand = new ClusterStateMutator(zkStateReader).createCollection(prevState, new ZkNodeProps(createMsg));
       DocCollection collection = writeCommand.collection;

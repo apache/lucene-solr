@@ -23,7 +23,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -51,7 +51,7 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     collectionStates.put("collection1", new DocCollection("collection1", slices, null, DocRouter.DEFAULT));
 
     ClusterState clusterState = new ClusterState(-1,liveNodes, collectionStates);
-    byte[] bytes = ZkStateReader.toJSON(clusterState);
+    byte[] bytes = Utils.toJSON(clusterState);
     ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes);
 
     assertSame("Default state not set to active", Slice.State.ACTIVE, loadedClusterState.getSlice("collection1", "shard1").getState());

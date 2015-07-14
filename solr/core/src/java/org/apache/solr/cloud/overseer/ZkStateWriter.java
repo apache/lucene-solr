@@ -26,6 +26,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -150,7 +151,7 @@ public class ZkStateWriter {
             // let's clean up the collections path for this collection
             reader.getZkClient().clean("/collections/" + name);
           } else if (c.getStateFormat() > 1) {
-            byte[] data = ZkStateReader.toJSON(singletonMap(c.getName(),c));
+            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {
               assert c.getZNodeVersion() >= 0;
               log.info("going to update_collection {} version: {}", path, c.getZNodeVersion());
@@ -175,7 +176,7 @@ public class ZkStateWriter {
       if (isClusterStateModified) {
         assert clusterState.getZkClusterStateVersion() >= 0;
         lastUpdatedTime = System.nanoTime();
-        byte[] data = ZkStateReader.toJSON(clusterState);
+        byte[] data = Utils.toJSON(clusterState);
         Stat stat = reader.getZkClient().setData(ZkStateReader.CLUSTER_STATE, data, clusterState.getZkClusterStateVersion(), true);
         Set<String> collectionNames = clusterState.getCollections();
         Map<String, DocCollection> collectionStates = new HashMap<>(collectionNames.size());

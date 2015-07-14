@@ -17,9 +17,6 @@
 
 package org.apache.solr.update;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
@@ -29,8 +26,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.MapSerializable;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -166,7 +163,7 @@ public class SolrIndexConfig implements MapSerializable {
   }
   @Override
   public Map<String, Object> toMap() {
-    Map<String, Object> m = ZkNodeProps.makeMap("useCompoundFile", effectiveUseCompoundFileSetting,
+    Map<String, Object> m = Utils.makeMap("useCompoundFile", effectiveUseCompoundFileSetting,
         "maxBufferedDocs", maxBufferedDocs,
         "maxMergeDocs", maxMergeDocs,
         "mergeFactor", mergeFactor,

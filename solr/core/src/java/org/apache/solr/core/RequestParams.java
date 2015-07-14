@@ -21,20 +21,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.noggit.JSONParser;
@@ -118,7 +113,7 @@ public class RequestParams implements MapSerializable {
   }
 
   public RequestParams setParams(String name, Map values) {
-    Map deepCopy = getDeepCopy(data, 3);
+    Map deepCopy = Utils.getDeepCopy(data, 3);
     Map p = (Map) deepCopy.get(NAME);
     if (p == null) deepCopy.put(NAME, p = new LinkedHashMap());
     if (values == null) {
@@ -197,25 +192,8 @@ public class RequestParams implements MapSerializable {
   }
 
 
-  public static Map getDeepCopy(Map map, int maxDepth) {
-    Map copy = new LinkedHashMap<>();
-    for (Object o : map.entrySet()) {
-      Map.Entry e = (Map.Entry) o;
-      Object v = e.getValue();
-      if (v instanceof Map && maxDepth > 0) {
-        v = getDeepCopy((Map) v, maxDepth - 1);
-      } else if (v instanceof Set) {
-        v = new HashSet((Set) v);
-      } else if (v instanceof List) {
-        v = new ArrayList((List) v);
-      }
-      copy.put(e.getKey(), v);
-    }
-    return copy;
-  }
-
   public byte[] toByteArray() {
-    return ZkStateReader.toJSON(data);
+    return Utils.toJSON(data);
   }
 
   public static final String USEPARAM = "useParams";

@@ -40,7 +40,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.junit.Test;
 import org.noggit.CharArr;
@@ -306,7 +305,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
   @Test
   public void testStringCaching() throws Exception {
-    Map<String, Object> m = ZkNodeProps.makeMap("key1", "val1", "key2", "val2");
+    Map<String, Object> m = Utils.makeMap("key1", "val1", "key2", "val2");
 
     ByteArrayOutputStream os1 = new ByteArrayOutputStream();
     new JavaBinCodec().marshal(m, os1);

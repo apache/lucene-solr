@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -30,13 +29,12 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.easymock.EasyMock;
-import org.easymock.IAnswer;
 import org.junit.Test;
 
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.createStrictMock;
-import static org.easymock.EasyMock.expectLastCall;
 
 public class ClusterStateTest extends SolrTestCaseJ4 {
   @Test
@@ -63,7 +61,7 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     ZkStateReader zkStateReaderMock = getMockZkStateReader(collectionStates.keySet());
     
     ClusterState clusterState = new ClusterState(-1,liveNodes, collectionStates);
-    byte[] bytes = ZkStateReader.toJSON(clusterState);
+    byte[] bytes = Utils.toJSON(clusterState);
     // System.out.println("#################### " + new String(bytes));
     ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes);
     
