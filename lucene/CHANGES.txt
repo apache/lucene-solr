@@ -301,6 +301,10 @@ Changes in Runtime Behavior
   "used" when the first Scorer is pulled instead of when a Scorer is pulled on
   the first segment on an index. (Terry Smith, Adrien Grand)
 
+* LUCENE-6579: IndexWriter now sacrifices (closes) itself to protect the index
+  when an unexpected, tragic exception strikes while merging. (Robert
+  Muir, Mike McCandless) 
+
 Optimizations
 
 * LUCENE-6548: Some optimizations for BlockTree's intersect with very
