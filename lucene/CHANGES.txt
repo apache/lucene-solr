@@ -253,6 +253,9 @@ Bug fixes
 * LUCENE-6658: Fix IndexUpgrader to also upgrade indexes without any
   segments.  (Trejkaz, Uwe Schindler)
 
+* LUCENE-6677: QueryParserBase fails to enforce maxDeterminizedStates when
+  creating a WildcardQuery (David Causse via Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader

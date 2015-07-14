@@ -670,7 +670,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    * @return new WildcardQuery instance
    */
   protected Query newWildcardQuery(Term t) {
-    WildcardQuery query = new WildcardQuery(t);
+    WildcardQuery query = new WildcardQuery(t, maxDeterminizedStates);
     query.setRewriteMethod(multiTermRewriteMethod);
     return query;
   }
