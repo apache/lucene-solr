@@ -548,8 +548,10 @@ public class GetMavenDependenciesTask extends Task {
       } else {
         // Lucene analysis modules' build dirs do not include hyphens, but Solr contribs' build dirs do
         String origModuleDir = antProjectName.replace("analyzers-", "analysis/");
+        // Exclude the module's own build output, in addition to UNWANTED_INTERNAL_DEPENDENCIES
         Pattern unwantedInternalDependencies = Pattern.compile
-            ("(?:lucene/build/|solr/build/(?:contrib/)?)" + origModuleDir + "|" + UNWANTED_INTERNAL_DEPENDENCIES);
+            ("(?:lucene/build/|solr/build/(?:contrib/)?)" + origModuleDir + "/" // require dir separator 
+             + "|" + UNWANTED_INTERNAL_DEPENDENCIES);
         SortedSet<String> sortedDeps = new TreeSet<>();
         for (String dependency : value.split(",")) {
           matcher = SHARED_EXTERNAL_DEPENDENCIES_PATTERN.matcher(dependency);

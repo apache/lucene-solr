@@ -60,6 +60,7 @@
     <module>replicator</module>
     <module>sandbox</module>
     <module>spatial</module>
+    <module>spatial3d</module>
     <module>suggest</module>
   </modules>
   <build>
