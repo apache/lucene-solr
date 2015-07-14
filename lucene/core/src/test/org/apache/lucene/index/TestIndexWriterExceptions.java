@@ -1871,7 +1871,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // full), and then the exception stops (e.g., disk frees
   // up), so we successfully close IW or open an NRT
   // reader, we don't lose any deletes or updates:
-  public void testNoLostDeletesOrUpdates() throws Exception {
+  public void testNoLostDeletesOrUpdates() throws Throwable {
     int deleteCount = 0;
     int docBase = 0;
     int docCount = 0;
@@ -1921,6 +1921,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     });
     
     RandomIndexWriter w = null;
+
+    boolean tragic = false;
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
       int numDocs = atLeast(100);
@@ -2025,17 +2027,22 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           w = null;
         }
 
-      } catch (IOException ioe) {
+      } catch (Throwable t) {
         // FakeIOException can be thrown from mergeMiddle, in which case IW
         // registers it before our CMS gets to suppress it. IW.forceMerge later
         // throws it as a wrapped IOE, so don't fail in this case.
-        if (ioe instanceof FakeIOException || (ioe.getCause() != null && ioe.getCause() instanceof FakeIOException)) {
+        if (t instanceof FakeIOException || (t.getCause() instanceof FakeIOException)) {
           // expected
           if (VERBOSE) {
-            System.out.println("TEST: w.close() hit expected IOE");
+            System.out.println("TEST: hit expected IOE");
+          }
+          if (t instanceof AlreadyClosedException) {
+            // FakeIOExc struck during merge and writer is now closed:
+            w = null;
+            tragic = true;
           }
         } else {
-          throw ioe;
+          throw t;
         }
       }
       shouldFail.set(false);
@@ -2066,7 +2073,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
         r = w.getReader();
       }
-      assertEquals(docCount-deleteCount, r.numDocs());
+      if (tragic == false) {
+        assertEquals(docCount-deleteCount, r.numDocs());
+      }
       BytesRef scratch = new BytesRef();
       for (LeafReaderContext context : r.leaves()) {
         LeafReader reader = context.reader();
@@ -2102,9 +2111,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     // Final verify:
-    IndexReader r = DirectoryReader.open(dir);
-    assertEquals(docCount-deleteCount, r.numDocs());
-    r.close();
+    if (tragic == false) {
+      IndexReader r = DirectoryReader.open(dir);
+      assertEquals(docCount-deleteCount, r.numDocs());
+      r.close();
+    }
 
     dir.close();
   }
