@@ -88,8 +88,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                     "long_l", ""+longValue, 
                     "long_l_prehashed_l", ""+HASHER.hashLong(longValue).asLong(),
                     "string_s", strValue,
-                    // NOTE: renamed hashUnencodedChars starting with guava 15
-                    "string_s_prehashed_l", ""+HASHER.hashString(strValue).asLong()));
+                    "string_s_prehashed_l", ""+HASHER.hashUnencodedChars(strValue).asLong()));
 
       longValue -= BIG_PRIME;
     }

@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -36,6 +37,7 @@ import com.tdunning.math.stats.AVLTreeDigest;
 
 import net.agkn.hll.HLL;
 import net.agkn.hll.HLLType;
+
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
 
@@ -823,8 +825,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
 
   @Override
   public long hash(String v) {
-    // NOTE: renamed hashUnencodedChars starting with guava 15
-    return hasher.hashString(v).asLong();
+    return hasher.hashUnencodedChars(v).asLong();
   }
   
   @Override
