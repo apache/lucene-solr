@@ -48,6 +48,9 @@ public abstract class FilterScorer extends Scorer {
    */
   public FilterScorer(Scorer in, Weight weight) {
     super(weight);
+    if (in == null) {
+      throw new NullPointerException("wrapped Scorer must not be null");
+    }
     this.in = in;
   }
   
