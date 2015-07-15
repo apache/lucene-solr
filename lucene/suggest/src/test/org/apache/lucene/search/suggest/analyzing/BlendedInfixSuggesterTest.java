@@ -22,6 +22,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.search.suggest.Input;
@@ -29,8 +31,10 @@ import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class BlendedInfixSuggesterTest extends LuceneTestCase {
+
 
   /**
    * Test the weight transformation depending on the position
@@ -192,6 +196,65 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     suggester.close();
   }
 
+  public void testBlendedInfixSuggesterDedupsOnWeightTitleAndPayload() throws Exception {
+
+    //exactly same inputs
+    Input[] inputDocuments = new Input[] {
+        new Input("lend me your ear", 7, new BytesRef("uid1")),
+        new Input("lend me your ear", 7, new BytesRef("uid1")),
+    };
+    duplicateCheck(inputDocuments, 1);
+
+    // inputs differ on payload
+    inputDocuments = new Input[] {
+        new Input("lend me your ear", 7, new BytesRef("uid1")),
+        new Input("lend me your ear", 7, new BytesRef("uid2")),
+    };
+    duplicateCheck(inputDocuments, 2);
+
+    //exactly same input without payloads
+    inputDocuments = new Input[] {
+        new Input("lend me your ear", 7),
+        new Input("lend me your ear", 7),
+    };
+    duplicateCheck(inputDocuments, 1);
+
+    //Same input with first has payloads, second does not
+    inputDocuments = new Input[] {
+        new Input("lend me your ear", 7, new BytesRef("uid1")),
+        new Input("lend me your ear", 7),
+    };
+    duplicateCheck(inputDocuments, 2);
+
+    /**same input, first not having a payload, the second having payload
+     * we would expect 2 entries out but we are getting only 1 because
+     * the InputArrayIterator#hasPayloads() returns false because the first
+     * item has no payload, therefore, when ingested, none of the 2 input has payload and become 1
+     */
+    inputDocuments = new Input[] {
+        new Input("lend me your ear", 7),
+        new Input("lend me your ear", 7, new BytesRef("uid2")),
+    };
+    List<Lookup.LookupResult> results = duplicateCheck(inputDocuments, 1);
+    assertNull(results.get(0).payload);
+
+
+    //exactly same inputs but different weight
+    inputDocuments = new Input[] {
+        new Input("lend me your ear", 1, new BytesRef("uid1")),
+        new Input("lend me your ear", 7, new BytesRef("uid1")),
+    };
+    duplicateCheck(inputDocuments, 2);
+
+    //exactly same inputs but different text
+    inputDocuments = new Input[] {
+        new Input("lend me your earings", 7, new BytesRef("uid1")),
+        new Input("lend me your ear", 7, new BytesRef("uid1")),
+    };
+    duplicateCheck(inputDocuments, 2);
+
+  }
+
   public void /*testT*/rying() throws IOException {
 
     BytesRef lake = new BytesRef("lake");
@@ -236,4 +299,23 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
 
     return -1;
   }
+
+  private List<Lookup.LookupResult> duplicateCheck(Input[] inputs, int expectedSuggestionCount) throws IOException {
+
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(newDirectory(), a, a,  AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+        BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL,10, false);
+
+    InputArrayIterator inputArrayIterator = new InputArrayIterator(inputs);
+    suggester.build(inputArrayIterator);
+
+    List<Lookup.LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), 10, true, true);
+    assertEquals(expectedSuggestionCount, results.size());
+
+    suggester.close();
+    a.close();
+
+    return results;
+  }
+
 }

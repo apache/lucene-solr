@@ -256,6 +256,9 @@ Bug fixes
 * LUCENE-6677: QueryParserBase fails to enforce maxDeterminizedStates when
   creating a WildcardQuery (David Causse via Mike McCandless)
 
+* LUCENE-6680: Preserve two suggestions that have same key and weight but
+  different payloads (Arcadius Ahouansou via Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
