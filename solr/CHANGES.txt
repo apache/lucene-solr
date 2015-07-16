@@ -329,6 +329,12 @@ Other Changes
 * SOLR-7703: Authentication plugin is now loaded using the RessourceLoader.
   (Avi Digmi via Anshum Gupta)
 
+* SOLR-7800: JSON Facet API: the avg() facet function now skips missing values
+  rather than treating them as a 0 value.  The def() function can be used to
+  treat missing values as 0 if that is desired.
+  Example:  facet:{ mean:"avg(def(myfield,0))" }
+
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

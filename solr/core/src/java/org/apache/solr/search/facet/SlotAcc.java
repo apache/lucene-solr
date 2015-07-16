@@ -348,9 +348,11 @@ class AvgSlotAcc extends DoubleFuncSlotAcc {
 
   @Override
   public void collect(int doc, int slotNum) {
-    double val = values.doubleVal(doc);  // todo: worth trying to share this value across multiple stats that need it?
-    result[slotNum] += val;
-    counts[slotNum] += 1;
+    double val = values.doubleVal(doc);
+    if (val != 0 || values.exists(doc)) {
+      result[slotNum] += val;
+      counts[slotNum] += 1;
+    }
   }
 
   private double avg(double tot, int count) {
