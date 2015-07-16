@@ -20,8 +20,11 @@ package org.apache.solr.util.hll;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 import static org.apache.solr.util.hll.ProbabilisticTestUtil.*;
 
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Random;
 
 /**
@@ -66,7 +69,7 @@ public class IntegrationTestGenerator {
      * - FULL cardinality computation
      */
     private static void fullCardinalityCorrectionTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "cardinality_correction", TestType.ADD);
+        final Writer output = openOutput(schemaVersion, "cardinality_correction", TestType.ADD);
 
         // the accumulator, starts empty
         final HLL hll = newHLL(HLLType.FULL);
@@ -105,7 +108,7 @@ public class IntegrationTestGenerator {
      * - SPARSE to FULL promotion
      */
     private static void globalStepTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "comprehensive_promotion", TestType.ADD);
+        final Writer output = openOutput(schemaVersion, "comprehensive_promotion", TestType.ADD);
 
         // the accumulator, starts empty
         final HLL hll = newHLL(HLLType.EMPTY);
@@ -132,7 +135,7 @@ public class IntegrationTestGenerator {
      * - SPARSE U "barely underpopulated" FULL => FULL
      */
     private static void sparseFullRepresentationTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "sparse_full_representation", TestType.UNION);
+        final Writer output = openOutput(schemaVersion, "sparse_full_representation", TestType.UNION);
 
         final HLL emptyHLL1 = newHLL(HLLType.EMPTY);
         final HLL emptyHLL2 = newHLL(HLLType.EMPTY);
@@ -188,7 +191,7 @@ public class IntegrationTestGenerator {
      * - SPARSE addition (predictable)
      */
     private static void sparseStepTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "sparse_step", TestType.ADD);
+        final Writer output = openOutput(schemaVersion, "sparse_step", TestType.ADD);
 
         // the accumulator, starts empty sparse probabilistic
         final HLL hll = newHLL(HLLType.SPARSE);
@@ -212,7 +215,7 @@ public class IntegrationTestGenerator {
      * - SPARSE addition (random)
      */
     private static void sparseRandomTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "sparse_random", TestType.ADD);
+        final Writer output = openOutput(schemaVersion, "sparse_random", TestType.ADD);
 
         final Random random = new Random(randomLong());
 
@@ -246,7 +249,7 @@ public class IntegrationTestGenerator {
      * - SPARSE to FULL promotion
      */
     private static void sparseEdgeTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "sparse_edge", TestType.ADD);
+        final Writer output = openOutput(schemaVersion, "sparse_edge", TestType.ADD);
 
         // the accumulator, starts empty
         final HLL hll = newHLL(HLLType.SPARSE);
@@ -280,7 +283,7 @@ public class IntegrationTestGenerator {
      * - SPARSE U EXPLICIT
      */
     private static void explicitPromotionTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "explicit_promotion", TestType.UNION);
+        final Writer output = openOutput(schemaVersion, "explicit_promotion", TestType.UNION);
 
         final Random random = new Random(randomLong());
 
@@ -313,7 +316,7 @@ public class IntegrationTestGenerator {
      * - SPARSE U FULL
      */
     private static void sparseProbabilisticPromotionTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "sparse_promotion", TestType.UNION);
+        final Writer output = openOutput(schemaVersion, "sparse_promotion", TestType.UNION);
 
         final Random random = new Random(randomLong());
 
@@ -350,7 +353,7 @@ public class IntegrationTestGenerator {
      * - EXPLICIT U EXPLICIT
      */
     private static void explicitOverlapTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "explicit_explicit", TestType.UNION);
+        final Writer output = openOutput(schemaVersion, "explicit_explicit", TestType.UNION);
 
         final Random random = new Random(randomLong());
 
@@ -385,7 +388,7 @@ public class IntegrationTestGenerator {
      * - SPARSE U SPARSE
      */
     private static void sparseProbabilisticOverlapTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "sparse_sparse", TestType.UNION);
+        final Writer output = openOutput(schemaVersion, "sparse_sparse", TestType.UNION);
 
         final Random random = new Random(randomLong());
 
@@ -421,7 +424,7 @@ public class IntegrationTestGenerator {
      * - FULL U FULL
      */
     private static void probabilisticUnionTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "probabilistic_probabilistic", TestType.UNION);
+        final Writer output = openOutput(schemaVersion, "probabilistic_probabilistic", TestType.UNION);
 
         final Random random = new Random(randomLong());
 
@@ -453,7 +456,7 @@ public class IntegrationTestGenerator {
      * - hopefully all union possibilities
      */
     private static void globalUnionTest(final ISchemaVersion schemaVersion) throws IOException {
-        final FileWriter output = openOutput(schemaVersion, "comprehensive", TestType.UNION);
+        final Writer output = openOutput(schemaVersion, "comprehensive", TestType.UNION);
 
         // the accumulator, starts empty
         final HLL hll = newHLL(HLLType.EMPTY);
@@ -592,7 +595,7 @@ public class IntegrationTestGenerator {
     }
 
     /**
-     * Opens a {@link FileWriter} and writes out an appropriate CSV header.
+     * Opens a {@link Writer} and writes out an appropriate CSV header.
      *
      * @param  schemaVersion Schema version of the output. This cannot be
      *         <code>null</code>.
@@ -600,9 +603,9 @@ public class IntegrationTestGenerator {
      *         This cannot be <code>null</code>.
      * @param  type {@link TestType type} of the test file to be written.
      *         This cannot be <code>null</code>.
-     * @return The opened {@link FileWriter writer}. This will never be <code>null</code>.
+     * @return The opened {@link Writer writer}. This will never be <code>null</code>.
      */
-    private static FileWriter openOutput(final ISchemaVersion schemaVersion, final String description, final TestType type) throws IOException {
+    private static Writer openOutput(final ISchemaVersion schemaVersion, final String description, final TestType type) throws IOException {
         final String schemaVersionPrefix = "v"+ schemaVersion.schemaVersionNumber() + "_";
         final String header;
         final String filename;
@@ -619,7 +622,8 @@ public class IntegrationTestGenerator {
                 throw new RuntimeException("Unknown test type " + type);
         }
 
-        final FileWriter output = new FileWriter(OUTPUT_DIRECTORY + filename);
+        final Writer output = Files.newBufferedWriter(
+            Paths.get(OUTPUT_DIRECTORY, filename), StandardCharsets.UTF_8);
         output.write(header);
         output.flush();
         return output;
@@ -628,13 +632,13 @@ public class IntegrationTestGenerator {
     /**
      * Writes out a {@link TestType#ADD}-formatted test line.
      *
-     * @param  output The output {@link FileWriter writer}. This cannot be <code>null</code>.
+     * @param  output The output {@link Writer writer}. This cannot be <code>null</code>.
      * @param  hll The "accumulator" HLL instance. This cannot be <code>null</code>.
      * @param  rawValue The raw value added to the HLL.
      * @param  schemaVersion the schema with which to serialize the HLLs. This cannot
      *         be <code>null</code>.
      */
-    private static void cumulativeAddLine(final FileWriter output, final HLL hll, final long rawValue, final ISchemaVersion schemaVersion) throws IOException {
+    private static void cumulativeAddLine(final Writer output, final HLL hll, final long rawValue, final ISchemaVersion schemaVersion) throws IOException {
         hll.addRaw(rawValue);
         final String accumulatorCardinality = stringCardinality(hll);
 
@@ -645,12 +649,12 @@ public class IntegrationTestGenerator {
     /**
      * Writes an initial line for a {@link TestType#ADD}-formatted test.
      *
-     * @param  output The output {@link FileWriter writer}. This cannot be <code>null</code>.
+     * @param  output The output {@link Writer writer}. This cannot be <code>null</code>.
      * @param  hll The "accumulator" HLL instance. This cannot be <code>null</code>.
      * @param  schemaVersion the schema with which to serialize the HLLs. This cannot
      *         be <code>null</code>.
      */
-    private static void initLineAdd(final FileWriter output, final HLL hll, final ISchemaVersion schemaVersion) throws IOException {
+    private static void initLineAdd(final Writer output, final HLL hll, final ISchemaVersion schemaVersion) throws IOException {
         output.write(0 + "," + 0 + "," + toByteA(hll, schemaVersion) + "\n");
         output.flush();
     }
@@ -658,14 +662,14 @@ public class IntegrationTestGenerator {
     /**
      * Writes out a {@link TestType#UNION}-formatted test line.
      *
-     * @param  output The output {@link FileWriter writer}. This cannot be <code>null</code>.
+     * @param  output The output {@link Writer writer}. This cannot be <code>null</code>.
      * @param  hll The "accumulator" HLL instance. This cannot be <code>null</code>.
      * @param  increment The "increment" HLL instance which will be unioned into
      *         the accumulator. This cannot be <code>null</code>.
      * @param  schemaVersion the schema with which to serialize the HLLs. This cannot
      *         be <code>null</code>.
      */
-    private static void cumulativeUnionLine(final FileWriter output, final HLL hll, final HLL increment, final ISchemaVersion schemaVersion) throws IOException {
+    private static void cumulativeUnionLine(final Writer output, final HLL hll, final HLL increment, final ISchemaVersion schemaVersion) throws IOException {
         hll.union(increment);
 
         final String incrementCardinality = stringCardinality(increment);
