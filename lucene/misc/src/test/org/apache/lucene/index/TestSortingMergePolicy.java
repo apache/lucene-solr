@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -189,6 +191,17 @@ public class TestSortingMergePolicy extends LuceneTestCase {
       fail("Didn't get expected exception");
     } catch (IllegalArgumentException e) {
       assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
+    }
+  }
+
+  public void testMethodsOverridden() throws Exception {
+    for (Method m : MergePolicy.class.getDeclaredMethods()) {
+      if (Modifier.isFinal(m.getModifiers())) continue;
+      try {
+        SortingMergePolicy.class.getDeclaredMethod(m.getName(),  m.getParameterTypes());
+      } catch (NoSuchMethodException e) {
+        fail("SortingMergePolicy needs to override '"+m+"'");
+      }
     }
   }
 
