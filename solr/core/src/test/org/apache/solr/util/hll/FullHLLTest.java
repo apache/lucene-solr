@@ -327,7 +327,7 @@ public class FullHLLTest extends LuceneTestCase {
      */
     private static void assertElementsEqual(final HLL hllA, final HLL hllB) {
         final BitVector bitVectorA = hllA.probabilisticStorage;
-        final BitVector bitVectorB = hllA.probabilisticStorage;
+        final BitVector bitVectorB = hllB.probabilisticStorage;
 
         final LongIterator iterA = bitVectorA.registerIterator();
         final LongIterator iterB = bitVectorB.registerIterator();
