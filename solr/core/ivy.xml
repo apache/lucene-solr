@@ -134,10 +134,6 @@
     <dependency org="org.antlr" name="antlr4-runtime" rev="${/org.antlr/antlr4-runtime}"/>
     <dependency org="io.airlift" name="slice" rev="${/io.airlift/slice}"/>
 
-    <!-- StatsComponents HLL Dependencies-->
-    <dependency org="net.agkn" name="hll" rev="${/net.agkn/hll}" conf="compile->*"/>
-    <dependency org="it.unimi.dsi" name="fastutil" rev="${/it.unimi.dsi/fastutil}" conf="compile->*"/>
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
 </ivy-module>

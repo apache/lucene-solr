@@ -13,6 +13,9 @@ including, but not limited to:
   - Apache Blur
   - Apache Hadoop
 
+This product includes code forked from the Java-HLL library.
+Copyright (c) 2013 Aggregate Knowledge, Inc., https://github.com/aggregateknowledge/java-hll/
+
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2010 John Resig, http://jquery.com/
 
