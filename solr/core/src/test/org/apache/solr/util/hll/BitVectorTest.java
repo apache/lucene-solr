@@ -17,6 +17,8 @@
 
 package org.apache.solr.util.hll;
 
+import java.util.Locale;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -113,11 +115,11 @@ public class BitVectorTest extends LuceneTestCase {
         final LongIterator iter = vector.registerIterator();
 
         for(int i=0; i<count; i++) {
-            assertTrue(String.format("expected more elements: width=%s, count=%s", width, count), iter.hasNext());
+            assertTrue(String.format(Locale.ROOT, "expected more elements: width=%s, count=%s", width, count), iter.hasNext());
             // TODO: fill with a sentinel value
             assertEquals(iter.next(), 0);
         }
-        assertFalse(String.format("expected no more elements: width=%s, count=%s", width, count), iter.hasNext());
+        assertFalse(String.format(Locale.ROOT, "expected no more elements: width=%s, count=%s", width, count), iter.hasNext());
     }
 
     // ========================================================================
