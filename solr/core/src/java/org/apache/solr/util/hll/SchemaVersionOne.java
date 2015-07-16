@@ -19,8 +19,6 @@ package org.apache.solr.util.hll;
 
 /**
  * A concrete {@link ISchemaVersion} representing schema version one.
- *
- * @author timon
  */
 class SchemaVersionOne implements ISchemaVersion {
     /**

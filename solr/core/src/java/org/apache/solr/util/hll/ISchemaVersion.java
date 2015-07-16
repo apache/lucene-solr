@@ -20,8 +20,6 @@ package org.apache.solr.util.hll;
 /**
  * A serialization schema for HLLs. Reads and writes HLL metadata to
  * and from <code>byte[]</code> representations.
- *
- * @author timon
  */
 interface ISchemaVersion {
     /**

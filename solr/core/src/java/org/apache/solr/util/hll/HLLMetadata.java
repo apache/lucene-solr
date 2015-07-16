@@ -19,8 +19,6 @@ package org.apache.solr.util.hll;
 
 /**
  * A concrete {@link IHLLMetadata} implemented as a simple struct.
- *
- * @author timon
  */
 class HLLMetadata implements IHLLMetadata {
     private final int schemaVersion;

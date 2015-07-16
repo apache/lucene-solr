@@ -26,8 +26,6 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
 /**
  * Unit and smoke tests for {@link BigEndianAscendingWordDeserializer}.
- *
- * @author timon
  */
 public class BigEndianAscendingWordDeserializerTest extends LuceneTestCase {
     /**

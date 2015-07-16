@@ -22,8 +22,6 @@ import org.junit.Test;
 
 /**
  * Tests {@link HLLUtil} static methods.
- *
- * @author tkarnezo
  */
 public class HLLUtilTest extends LuceneTestCase {
     /**
