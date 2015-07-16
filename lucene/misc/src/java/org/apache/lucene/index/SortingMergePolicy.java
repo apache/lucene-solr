@@ -261,6 +261,11 @@ public final class SortingMergePolicy extends MergePolicy {
   }
 
   @Override
+  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
+    return in.size(info, writer);
+  }
+
+  @Override
   public String toString() {
     return "SortingMergePolicy(" + in + ", sorter=" + sorter + ")";
   }
