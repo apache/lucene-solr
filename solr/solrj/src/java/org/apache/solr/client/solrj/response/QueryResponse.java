@@ -49,6 +49,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _highlightingInfo = null;
   private NamedList<Object> _spellInfo = null;
   private List<NamedList<Object>> _clusterInfo = null;
+  private Map<String,NamedList<Object>> _suggestInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Number>> _termsInfo = null;
   private String _cursorMarkNext = null;
@@ -77,6 +78,9 @@ public class QueryResponse extends SolrResponseBase
 
   // Clustering Response
   private ClusteringResponse _clusterResponse = null;
+
+  // Suggester Response
+  private SuggesterResponse _suggestResponse = null;
 
   // Terms Response
   private TermsResponse _termsResponse = null;
@@ -153,6 +157,10 @@ public class QueryResponse extends SolrResponseBase
         _clusterInfo = (ArrayList<NamedList<Object>>) res.getVal(i);
         extractClusteringInfo(_clusterInfo);
       }
+      else if ( "suggest".equals( n ) )  {
+        _suggestInfo = (Map<String,NamedList<Object>>) res.getVal( i );
+        extractSuggesterInfo(_suggestInfo);
+      }
       else if ( "stats".equals( n ) )  {
         _statsInfo = (NamedList<Object>) res.getVal( i );
         extractStatsInfo( _statsInfo );
@@ -174,6 +182,10 @@ public class QueryResponse extends SolrResponseBase
 
   private void extractClusteringInfo(List<NamedList<Object>> clusterInfo) {
     _clusterResponse = new ClusteringResponse(clusterInfo);
+  }
+
+  private void extractSuggesterInfo(Map<String, NamedList<Object>> suggestInfo) {
+    _suggestResponse = new SuggesterResponse(suggestInfo);
   }
 
   private void extractTermsInfo(NamedList<NamedList<Number>> termsInfo) {
@@ -551,6 +563,10 @@ public class QueryResponse extends SolrResponseBase
 
   public ClusteringResponse getClusteringResponse() {
     return _clusterResponse;
+  }
+
+  public SuggesterResponse getSuggesterResponse() {
+    return _suggestResponse;
   }
 
   public TermsResponse getTermsResponse() {
