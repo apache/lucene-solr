@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Random;
 
 import com.tdunning.math.stats.AVLTreeDigest;
-import net.agkn.hll.HLL;
+import org.apache.solr.util.hll.HLL;
 import org.apache.lucene.queryparser.flexible.standard.processors.NumericQueryNodeProcessor;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.packed.GrowableWriter;
