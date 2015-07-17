@@ -337,6 +337,7 @@ Other Changes
   treat missing values as 0 if that is desired.
   Example:  facet:{ mean:"avg(def(myfield,0))" }
 
+* SOLR-7805: Update Kite Morphlines to 1.1.0 (Mark Miller)
 
 ==================  5.2.1 ==================
 
