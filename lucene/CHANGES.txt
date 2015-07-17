@@ -358,6 +358,9 @@ Build
 
 * LUCENE-6568: Make rat invocation depend on ivy configuration being set up
   (Ramkumar Aiyengar)
+  
+* LUCENE-6683: ivy-fail goal directs people to non-existent page
+  (Mike Drob via Steve Rowe)
 
 Test Framework
 

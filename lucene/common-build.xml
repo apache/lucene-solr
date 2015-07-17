@@ -461,7 +461,7 @@
      If you have already run ivy-bootstrap, and still get this message, please 
      try using the "--noconfig" option when running ant, or editing your global
      ant config to allow the user lib to be loaded.  See the wiki for more details:
-       http://wiki.apache.org/lucene-java/HowToContribute#antivy
+       http://wiki.apache.org/lucene-java/DeveloperTips#Problems_with_Ivy.3F
     </echo>
     <fail>Ivy is not available</fail>
   </target>
