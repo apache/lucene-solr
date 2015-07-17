@@ -20,23 +20,19 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.IOException;
 
-/** 
- * Abstract base class for input from a file in a {@link Directory}.  A
+/** Abstract base class for input from a file in a {@link Directory}.  A
  * random-access input stream.  Used for all Lucene index input operations.
  *
  * <p>{@code IndexInput} may only be used from one thread, because it is not
  * thread safe (it keeps internal state like file position). To allow
  * multithreaded use, every {@code IndexInput} instance must be cloned before
- * it is used in another thread. Subclasses must therefore implement {@link #clone()},
+ * used in another thread. Subclasses must therefore implement {@link #clone()},
  * returning a new {@code IndexInput} which operates on the same underlying
- * resource, but positioned independently. 
- * 
- * <p><b>Warning:</b> Lucene never closes cloned
- * {@code IndexInput}s, it will only call {@link #close()} on the original object.
- * 
- * <p>If you access the cloned IndexInput after closing the original object,
- * any <code>readXXX</code> methods will throw {@link AlreadyClosedException}.
- *
+ * resource, but positioned independently. Lucene never closes cloned
+ * {@code IndexInput}s, it will only do this on the original one.
+ * The original instance must take care that cloned instances throw
+ * {@link AlreadyClosedException} when the original one is closed.
+ 
  * @see Directory
  */
 public abstract class IndexInput extends DataInput implements Cloneable,Closeable {
@@ -77,12 +73,10 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   }
   
   /** {@inheritDoc}
-   * 
    * <p><b>Warning:</b> Lucene never closes cloned
-   * {@code IndexInput}s, it will only call {@link #close()} on the original object.
-   * 
-   * <p>If you access the cloned IndexInput after closing the original object,
-   * any <code>readXXX</code> methods will throw {@link AlreadyClosedException}.
+   * {@code IndexInput}s, it will only do this on the original one.
+   * The original instance must take care that cloned instances throw
+   * {@link AlreadyClosedException} when the original one is closed.
    */
   @Override
   public IndexInput clone() {
