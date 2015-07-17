@@ -259,6 +259,9 @@ Bug fixes
 * LUCENE-6680: Preserve two suggestions that have same key and weight but
   different payloads (Arcadius Ahouansou via Mike McCandless)
 
+* LUCENE-6681: SortingMergePolicy must override MergePolicy.size(...).
+  (Christine Poerschke via Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
