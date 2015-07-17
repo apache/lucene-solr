@@ -55,9 +55,9 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 import org.apache.commons.math3.util.Combinations;
 import com.tdunning.math.stats.AVLTreeDigest;
-import net.agkn.hll.HLL;
 import com.google.common.hash.Hashing; 
-import com.google.common.hash.HashFunction; 
+import com.google.common.hash.HashFunction;
+import org.apache.solr.util.hll.HLL;
 
 import org.junit.BeforeClass;
 

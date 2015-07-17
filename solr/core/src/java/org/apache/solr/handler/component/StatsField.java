@@ -55,9 +55,9 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.hll.HLL;
+import org.apache.solr.util.hll.HLLType;
 
-import net.agkn.hll.HLL;
-import net.agkn.hll.HLLType;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
 
@@ -625,8 +625,8 @@ public class StatsField {
      * Creates an HllOptions based on the (local) params specified (if appropriate).
      *
      * @param localParams the LocalParams for this {@link StatsField}
-     * @param field the field corrisponding to this {@link StatsField}, may be null if these stats are over a value source
-     * @return the {@link HllOptions} to use basd on the params, or null if no {@link HLL} should be computed
+     * @param field the field corresponding to this {@link StatsField}, may be null if these stats are over a value source
+     * @return the {@link HllOptions} to use based on the params, or null if no {@link HLL} should be computed
      * @throws SolrException if there are invalid options
      */
     public static HllOptions parseHllOptions(SolrParams localParams, SchemaField field) 

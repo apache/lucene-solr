@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
-import net.agkn.hll.HLL;
+import org.apache.solr.util.hll.HLL;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
 
