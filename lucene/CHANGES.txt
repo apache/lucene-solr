@@ -261,6 +261,12 @@ Bug fixes
 
 * LUCENE-6681: SortingMergePolicy must override MergePolicy.size(...).
   (Christine Poerschke via Adrien Grand)
+  
+* LUCENE-6682: StandardTokenizer performance bug: scanner buffer is
+  unnecessarily copied when maxTokenLength doesn't change.  Also stop silently
+  maxing out buffer size (and effectively also max token length) at 1M chars,
+  but instead throw an exception from setMaxTokenLength() when the given
+  length is greater than 1M chars.  (Piotr Idzikowski, Steve Rowe)
 
 Changes in Runtime Behavior
 
@@ -384,6 +390,13 @@ Changes in Backwards Compatibility Policy
   getBytesRef() now does all work and is called on each token, fillBytesRef()
   was removed. The implementation is free to reuse the internal BytesRef
   or return a new one on each call.  (Uwe Schindler)
+
+* LUCENE-6682: StandardTokenizer.setMaxTokenLength() now throws an exception if
+  a length greater than 1M chars is given.  Previously the effective max token
+  length (the scanner's buffer) was capped at 1M chars, but getMaxTokenLength()
+  incorrectly returned the previously requested length, even when it exceeded 1M.
+  (Piotr Idzikowski, Steve Rowe)
+
 
 ======================= Lucene 5.2.1 =======================
 
