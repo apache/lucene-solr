@@ -245,11 +245,43 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     return jetty.client.request(request);
   }
 
+  protected void waitForCdcrStateReplication(String collection) throws Exception {
+    log.info("Wait for CDCR state to replicate - collection: " + collection);
+
+    int cnt = 30;
+    while (cnt > 0) {
+      NamedList status = null;
+      boolean allEquals = true;
+      for (CloudJettyRunner jetty : cloudJettys.get(collection)) { // check all replicas
+        NamedList rsp = invokeCdcrAction(jetty, CdcrParams.CdcrAction.STATUS);
+        if (status == null) {
+          status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
+          continue;
+        }
+        allEquals &= status.equals(rsp.get(CdcrParams.CdcrAction.STATUS.toLower()));
+      }
+
+      if (allEquals) {
+        break;
+      }
+      else {
+        if (cnt == 0) {
+          throw new RuntimeException("Timeout waiting for CDCR state to replicate: collection="+collection);
+        }
+        cnt--;
+        Thread.sleep(500);
+      }
+    }
+
+    log.info("CDCR state is identical across nodes - collection: " + collection);
+  }
+
   /**
    * Assert the state of CDCR on each nodes of the given collection.
    */
   protected void assertState(String collection, CdcrParams.ProcessState processState, CdcrParams.BufferState bufferState)
-      throws Exception {
+  throws Exception {
+    this.waitForCdcrStateReplication(collection); // ensure that cdcr state is replicated and stable
     for (CloudJettyRunner jetty : cloudJettys.get(collection)) { // check all replicas
       NamedList rsp = invokeCdcrAction(jetty, CdcrParams.CdcrAction.STATUS);
       NamedList status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
@@ -282,6 +314,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
    */
   protected void clearSourceCollection() throws Exception {
     this.deleteCollection(SOURCE_COLLECTION);
+    this.waitForCollectionToDisappear(SOURCE_COLLECTION);
     this.createCollection(SOURCE_COLLECTION);
     this.waitForRecoveriesToFinish(SOURCE_COLLECTION, true);
     this.updateMappingsFromZk(SOURCE_COLLECTION);
@@ -305,6 +338,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
    */
   protected void clearTargetCollection() throws Exception {
     this.deleteCollection(TARGET_COLLECTION);
+    this.waitForCollectionToDisappear(TARGET_COLLECTION);
     this.createCollection(TARGET_COLLECTION);
     this.waitForRecoveriesToFinish(TARGET_COLLECTION, true);
     this.updateMappingsFromZk(TARGET_COLLECTION);
@@ -389,7 +423,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   /**
    * Delete a collection through the Collection API.
    */
-  protected CollectionAdminResponse deleteCollection(String collectionName) throws SolrServerException, IOException {
+  protected CollectionAdminResponse deleteCollection(String collectionName) throws Exception {
     SolrClient client = createCloudClient(null);
     CollectionAdminResponse res;
 
@@ -410,6 +444,17 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     }
 
     return res;
+  }
+
+  private void waitForCollectionToDisappear(String collection) throws Exception {
+    CloudSolrClient client = this.createCloudClient(null);
+    try {
+      client.connect();
+      ZkStateReader zkStateReader = client.getZkStateReader();
+      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, false, true, 15);
+    } finally {
+      client.close();
+    }
   }
 
   private void waitForRecoveriesToFinish(String collection, boolean verbose) throws Exception {
@@ -673,15 +718,18 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected void waitForReplicationToComplete(String collectionName, String shardId) throws Exception {
-    while (true) {
+    int cnt = 15;
+    while (cnt > 0) {
       log.info("Checking queue size @ {}:{}", collectionName, shardId);
       long size = this.getQueueSize(collectionName, shardId);
-      if (size <= 0) {
+      if (size == 0) { // if we received -1, it means that the log reader is not yet initialised, we should wait
         return;
       }
       log.info("Waiting for replication to complete. Queue size: {} @ {}:{}", size, collectionName, shardId);
+      cnt--;
       Thread.sleep(1000); // wait a bit for the replication to complete
     }
+    throw new RuntimeException("Timeout waiting for CDCR replication to complete @" + collectionName + ":"  + shardId);
   }
 
   protected long getQueueSize(String collectionName, String shardId) throws Exception {
@@ -689,47 +737,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     NamedList host = (NamedList) ((NamedList) rsp.get(CdcrParams.QUEUES)).getVal(0);
     NamedList status = (NamedList) host.get(TARGET_COLLECTION);
     return (Long) status.get(CdcrParams.QUEUE_SIZE);
-  }
-
-  /**
-   * Asserts that the number of transaction logs across all the shards
-   */
-  protected void assertUpdateLogs(String collection, int maxNumberOfTLogs) throws Exception {
-    CollectionInfo info = collectInfo(collection);
-    Map<String, List<CollectionInfo.CoreInfo>> shardToCoresMap = info.getShardToCoresMap();
-
-    int leaderLogs = 0;
-    ArrayList<Integer> replicasLogs = new ArrayList<>(Collections.nCopies(replicationFactor - 1, 0));
-
-    for (String shard : shardToCoresMap.keySet()) {
-      leaderLogs += numberOfFiles(info.getLeader(shard).ulogDir);
-      for (int i = 0; i < replicationFactor - 1; i++) {
-        replicasLogs.set(i, replicasLogs.get(i) + numberOfFiles(info.getReplicas(shard).get(i).ulogDir));
-      }
-    }
-
-    for (Integer replicaLogs : replicasLogs) {
-      log.info("Number of logs in update log on leader {} and on replica {}", leaderLogs, replicaLogs);
-
-      // replica logs must be always equal or superior to leader logs
-      assertTrue(String.format(Locale.ENGLISH, "Number of tlogs on replica: %d is different than on leader: %d.",
-          replicaLogs, leaderLogs), leaderLogs <= replicaLogs);
-
-      assertTrue(String.format(Locale.ENGLISH, "Number of tlogs on leader: %d is superior to: %d.",
-          leaderLogs, maxNumberOfTLogs), maxNumberOfTLogs >= leaderLogs);
-
-      assertTrue(String.format(Locale.ENGLISH, "Number of tlogs on replica: %d is superior to: %d.",
-          replicaLogs, maxNumberOfTLogs), maxNumberOfTLogs >= replicaLogs);
-    }
-  }
-
-  private int numberOfFiles(String dir) {
-    File file = new File(dir);
-    if (!file.isDirectory()) {
-      assertTrue("Path to tlog " + dir + " does not exists or it's not a directory.", false);
-    }
-    log.info("Update log dir {} contains: {}", dir, file.listFiles());
-    return file.listFiles().length;
   }
 
   protected CollectionInfo collectInfo(String collection) throws Exception {

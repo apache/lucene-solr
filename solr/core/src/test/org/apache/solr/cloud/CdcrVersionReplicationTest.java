@@ -61,8 +61,7 @@ public class CdcrVersionReplicationTest extends BaseCdcrDistributedZkTest {
 
   @Test
   @ShardsFixed(num = 4)
-
-  public void doTest() throws Exception {
+  public void testCdcrDocVersions() throws Exception {
     SolrClient client = createClientRandomly();
     try {
       handle.clear();

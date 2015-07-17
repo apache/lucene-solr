@@ -82,6 +82,7 @@ class CdcrReplicatorScheduler {
               @Override
               public void run() {
                 CdcrReplicatorState state = statesQueue.poll();
+                assert state != null; // Should never happen
                 try {
                   new CdcrReplicator(state, batchSize).run();
                 } finally {

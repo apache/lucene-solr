@@ -23,7 +23,6 @@ package org.apache.solr.cloud;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Ignore
 @Slow
 public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
@@ -47,7 +45,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   @Test
-  @ShardsFixed(num = 4)
+  @ShardsFixed(num = 2)
   public void doTest() throws Exception {
     this.doTestFullReplication();
     this.doTestPartialReplication();
@@ -60,6 +58,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
    * strategy should fetch all the missing tlog files from the leader.
    */
   public void doTestFullReplication() throws Exception {
+    this.clearSourceCollection();
     List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
     ChaosMonkey.stop(slaves.get(0).jetty);
 
@@ -76,7 +75,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     // Restart the slave node to trigger Replication strategy
     this.restartServer(slaves.get(0));
 
-    this.assertUpdateLogs(SOURCE_COLLECTION, 10);
+    this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
   }
 
   /**
@@ -85,7 +84,6 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
    */
   public void doTestPartialReplication() throws Exception {
     this.clearSourceCollection();
-
     for (int i = 0; i < 5; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
       for (int j = i * 20; j < (i * 20) + 20; j++) {
@@ -111,7 +109,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     this.restartServer(slaves.get(0));
 
     // at this stage, the slave should have replicated the 5 missing tlog files
-    this.assertUpdateLogs(SOURCE_COLLECTION, 10);
+    this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
   }
 
   /**
@@ -121,7 +119,6 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
    */
   public void doTestPartialReplicationWithTruncatedTlog() throws Exception {
     this.clearSourceCollection();
-
     CloudSolrClient client = createCloudClient(SOURCE_COLLECTION);
     List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
 
@@ -148,7 +145,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     this.restartServer(slaves.get(0));
 
     // at this stage, the slave should have replicated the 5 missing tlog files
-    this.assertUpdateLogs(SOURCE_COLLECTION, 10);
+    this.assertUpdateLogsEquals(SOURCE_COLLECTION, 10);
   }
 
   /**
@@ -159,7 +156,6 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
    */
   public void doTestPartialReplicationAfterPeerSync() throws Exception {
     this.clearSourceCollection();
-
     for (int i = 0; i < 5; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
       for (int j = i * 10; j < (i * 10) + 10; j++) {
@@ -199,7 +195,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     this.restartServer(slaves.get(0));
 
     // at this stage, the slave should have replicated the 5 missing tlog files
-    this.assertUpdateLogs(SOURCE_COLLECTION, 15);
+    this.assertUpdateLogsEquals(SOURCE_COLLECTION, 15);
   }
 
   private List<CloudJettyRunner> getShardToSlaveJetty(String collection, String shard) {
@@ -210,10 +206,10 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   /**
-   * Asserts that the transaction logs between the leader and slave
+   * Asserts that the update logs are in sync between the leader and slave. The leader and the slaves
+   * must have identical tlog files.
    */
-  @Override
-  protected void assertUpdateLogs(String collection, int maxNumberOfTLogs) throws Exception {
+  protected void assertUpdateLogsEquals(String collection, int numberOfTLogs) throws Exception {
     CollectionInfo info = collectInfo(collection);
     Map<String, List<CollectionInfo.CoreInfo>> shardToCoresMap = info.getShardToCoresMap();
 
@@ -221,8 +217,8 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
       Map<Long, Long> leaderFilesMeta = this.getFilesMeta(info.getLeader(shard).ulogDir);
       Map<Long, Long> slaveFilesMeta = this.getFilesMeta(info.getReplicas(shard).get(0).ulogDir);
 
-      assertEquals("Incorrect number of tlog files on the leader", maxNumberOfTLogs, leaderFilesMeta.size());
-      assertEquals("Incorrect number of tlog files on the slave", maxNumberOfTLogs, slaveFilesMeta.size());
+      assertEquals("Incorrect number of tlog files on the leader", numberOfTLogs, leaderFilesMeta.size());
+      assertEquals("Incorrect number of tlog files on the slave", numberOfTLogs, slaveFilesMeta.size());
 
       for (Long leaderFileVersion : leaderFilesMeta.keySet()) {
         assertTrue("Slave is missing a tlog for version " + leaderFileVersion, slaveFilesMeta.containsKey(leaderFileVersion));

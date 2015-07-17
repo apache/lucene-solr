@@ -21,13 +21,15 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-@Ignore
 @Slow
 public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest {
 
@@ -39,7 +41,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
   @Test
   @ShardsFixed(num = 4)
-  public void doTest() throws Exception {
+  public void doTests() throws Exception {
     this.doTestDeleteCreateSourceCollection();
     this.doTestTargetCollectionNotAvailable();
     this.doTestReplicationStartStop();
@@ -52,12 +54,13 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
     this.doTestBatchBoundaries();
     this.doTestResilienceWithDeleteByQueryOnTarget();
   }
-
   /**
    * Checks that the test framework handles properly the creation and deletion of collections and the
    * restart of servers.
    */
   public void doTestDeleteCreateSourceCollection() throws Exception {
+    this.clearSourceCollection();
+    this.clearTargetCollection();
     log.info("Indexing documents");
 
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -153,8 +156,10 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
     assertEquals(0, getNumDocs(TARGET_COLLECTION));
 
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD1);
+    this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD2);
 
     commit(TARGET_COLLECTION);
 
@@ -162,6 +167,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
     assertEquals(10, getNumDocs(TARGET_COLLECTION));
 
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.STOP);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     docs.clear();
     for (; start < 110; start++) {
@@ -176,8 +182,10 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
     // with the latest checkpoints
 
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD1);
+    this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD2);
 
     commit(TARGET_COLLECTION);
 
@@ -196,6 +204,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // send start action to first shard
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     log.info("Indexing 10 documents");
 
@@ -260,6 +269,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // send start action to first shard
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     log.info("Indexing 10 documents");
 
@@ -337,11 +347,14 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // buffering is enabled by default, so disable it
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.DISABLEBUFFER);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     for (int i = 0; i < 50; i++) {
-      index(SOURCE_COLLECTION, getDoc(id, Integer.toString(i))); // will perform a commit for every document
+      // will perform a commit for every document and will create one tlog file per commit
+      index(SOURCE_COLLECTION, getDoc(id, Integer.toString(i)));
     }
 
     // wait a bit for the replication to complete
@@ -352,26 +365,23 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // Stop CDCR
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.STOP);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     assertEquals(50, getNumDocs(SOURCE_COLLECTION));
     assertEquals(50, getNumDocs(TARGET_COLLECTION));
 
-    index(SOURCE_COLLECTION, getDoc(id, Integer.toString(0))); // trigger update log cleaning on the non-leader nodes
-
     // some of the tlogs should be trimmed, we must have less than 50 tlog files on both leader and non-leader
-    assertUpdateLogs(SOURCE_COLLECTION, 50);
+    assertNumberOfTlogFiles(SOURCE_COLLECTION, 50);
 
     for (int i = 50; i < 100; i++) {
       index(SOURCE_COLLECTION, getDoc(id, Integer.toString(i)));
     }
 
-    index(SOURCE_COLLECTION, getDoc(id, Integer.toString(0))); // trigger update log cleaning on the non-leader nodes
-
     // at this stage, we should have created one tlog file per document, and some of them must have been cleaned on the
     // leader since we are not buffering and replication is stopped, (we should have exactly 10 tlog files on the leader
     // and 11 on the non-leader)
     // the non-leader must have synchronised its update log with its leader
-    assertUpdateLogs(SOURCE_COLLECTION, 50);
+    assertNumberOfTlogFiles(SOURCE_COLLECTION, 50);
   }
 
   /**
@@ -383,9 +393,11 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // buffering is enabled by default, so disable it
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.DISABLEBUFFER);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     // Start CDCR
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     // Index documents
     for (int i = 0; i < 200; i++) {
@@ -425,6 +437,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // Start CDCR
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     // wait a bit for the replication to complete
     this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD1);
@@ -485,6 +498,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // Start CDCR
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     // wait a bit for the replication to complete
     this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD1);
@@ -501,7 +515,8 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
    * Checks that batches are correctly constructed when batch boundaries are reached.
    */
   public void doTestBatchBoundaries() throws Exception {
-    invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     log.info("Indexing documents");
 
@@ -514,6 +529,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
     assertEquals(128, getNumDocs(SOURCE_COLLECTION));
 
     this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD1);
+    this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD2);
 
     commit(TARGET_COLLECTION);
 
@@ -538,6 +554,7 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // Start CDCR
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     // wait a bit for the replication to complete
     this.waitForReplicationToComplete(SOURCE_COLLECTION, SHARD1);
@@ -577,8 +594,9 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     // Restart CDCR
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.STOP);
-    Thread.sleep(500); // wait a bit for the state to synch
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
     this.invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
+    this.waitForCdcrStateReplication(SOURCE_COLLECTION);
 
     docs.clear();
     for (; start < 150; start++) {
@@ -594,6 +612,77 @@ public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest 
 
     assertEquals(100, getNumDocs(SOURCE_COLLECTION));
     assertEquals(50, getNumDocs(TARGET_COLLECTION));
+  }
+
+  /**
+   * Asserts the number of transaction logs across all the shards. Since the cleaning of the update logs
+   * is not immediate on the slave nodes (it relies on the update log synchronizer that is executed every second),
+   * it will retry until the assert is successful or until the timeout.
+   */
+  protected void assertNumberOfTlogFiles(String collection, int maxNumberOfTLogs) throws Exception {
+    int cnt = 15; // timeout after 15 seconds
+    AssertionError lastAssertionError = null;
+
+    while (cnt > 0) {
+      try {
+        // Fire a DeleteById query with a commit to trigger update log cleaning on the non-leader nodes
+        List<String> ids = new ArrayList<>();
+        ids.add("_NON_EXISTING_ID_");
+        deleteById(collection, ids);
+
+        // Check the update logs
+        this._assertNumberOfTlogFiles(collection, maxNumberOfTLogs);
+        return;
+      }
+      catch (AssertionError e) {
+        lastAssertionError = e;
+        cnt--;
+        Thread.sleep(1000);
+      }
+    }
+
+    throw new AssertionError("Timeout while trying to assert update logs @ collection="+collection, lastAssertionError);
+  }
+
+  /**
+   * Asserts the number of transaction logs across all the shards
+   */
+  private void _assertNumberOfTlogFiles(String collection, int maxNumberOfTLogs) throws Exception {
+    CollectionInfo info = collectInfo(collection);
+    Map<String, List<CollectionInfo.CoreInfo>> shardToCoresMap = info.getShardToCoresMap();
+
+    int leaderLogs = 0;
+    ArrayList<Integer> replicasLogs = new ArrayList<>(Collections.nCopies(replicationFactor - 1, 0));
+
+    for (String shard : shardToCoresMap.keySet()) {
+      leaderLogs += numberOfFiles(info.getLeader(shard).ulogDir);
+      for (int i = 0; i < replicationFactor - 1; i++) {
+        replicasLogs.set(i, replicasLogs.get(i) + numberOfFiles(info.getReplicas(shard).get(i).ulogDir));
+      }
+    }
+
+    for (Integer replicaLogs : replicasLogs) {
+      log.info("Number of logs in update log on leader {} and on replica {}", leaderLogs, replicaLogs);
+
+      // replica logs must be always equal or superior to leader logs
+      assertTrue(String.format(Locale.ENGLISH, "Number of tlogs on replica: %d is different than on leader: %d.",
+          replicaLogs, leaderLogs), leaderLogs <= replicaLogs);
+
+      assertTrue(String.format(Locale.ENGLISH, "Number of tlogs on leader: %d is superior to: %d.",
+          leaderLogs, maxNumberOfTLogs), maxNumberOfTLogs >= leaderLogs);
+
+      assertTrue(String.format(Locale.ENGLISH, "Number of tlogs on replica: %d is superior to: %d.",
+          replicaLogs, maxNumberOfTLogs), maxNumberOfTLogs >= replicaLogs);
+    }
+  }
+
+  private int numberOfFiles(String dir) {
+    File file = new File(dir);
+    if (!file.isDirectory()) {
+      assertTrue("Path to tlog " + dir + " does not exists or it's not a directory.", false);
+    }
+    log.debug("Update log dir {} contains: {}", dir, file.listFiles());
+    return file.listFiles().length;
   }
 
 }
