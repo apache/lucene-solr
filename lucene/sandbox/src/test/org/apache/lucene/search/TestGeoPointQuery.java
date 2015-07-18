@@ -217,8 +217,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   @Test
   public void testGeoDistanceQuery() throws Exception {
-    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 600000, 20);
-    assertEquals("GeoDistanceQuery failed", 6, td.totalHits);
+    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 6000, 20);
+    assertEquals("GeoDistanceQuery failed", 1, td.totalHits);
   }
 
   @Test
