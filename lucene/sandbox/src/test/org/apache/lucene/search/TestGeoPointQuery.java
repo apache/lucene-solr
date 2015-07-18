@@ -44,6 +44,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -61,10 +62,15 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   private static final String FIELD_NAME = "geoField";
 
+  // error threshold for point-distance queries (in meters)
+  private static final int DISTANCE_ERR = 700;
+
   // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
   private static double originLat;
   private static double originLon;
-  private static double range;
+//  private static double range;
+  private static double lonRange;
+  private static double latRange;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -74,11 +80,21 @@ public class TestGeoPointQuery extends LuceneTestCase {
     // number of ranges that can be created in degenerate cases.
 
     // Between 1.0 and 3.0:
-    range = 2*(random().nextDouble() + 0.5);
-    originLon = GeoUtils.MIN_LON_INCL + range + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2*range) * random().nextDouble();
-    originLat = GeoUtils.MIN_LAT_INCL + range + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2*range) * random().nextDouble();
+//    range = 2*(random().nextDouble() + 0.5);
+    // Between 1.0 and 90.0
+    //lonRange = 1.0 + (90.0 - 1.0) * random().nextDouble();
+    //latRange = 1.0 + (45.0 - 1.0) * random().nextDouble();
+
+    // Between 1.0 and 3.0:
+    lonRange = 2*(random().nextDouble() + 0.5);
+    latRange = 2*(random().nextDouble() + 0.5);
+
+    originLon = GeoUtils.MIN_LON_INCL + lonRange + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2*lonRange) * random().nextDouble();
+    originLon = GeoUtils.normalizeLon(originLon);
+    originLat = GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2*latRange) * random().nextDouble();
+    originLat = GeoUtils.normalizeLat(originLat);
     if (VERBOSE) {
-      System.out.println("TEST: originLon=" + originLon + " originLat=" + originLat + " range=" + range);
+      System.out.println("TEST: originLon=" + originLon + " lonRange= " + lonRange + " originLat=" + originLat + " latRange=" + latRange);
     }
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
             newIndexWriterConfig(new MockAnalyzer(random()))
@@ -99,7 +115,10 @@ public class TestGeoPointQuery extends LuceneTestCase {
          new GeoPointField(FIELD_NAME, -83.99724648980559, 58.29438379542874, storedPoint),
          new GeoPointField(FIELD_NAME, -26.779373834241003, 33.541429799076354, storedPoint),
          new GeoPointField(FIELD_NAME, -77.35379276106497, 26.774024500421728, storedPoint),
-         new GeoPointField(FIELD_NAME, -14.796283808944777, -62.455081198245665, storedPoint)};
+         new GeoPointField(FIELD_NAME, -14.796283808944777, -62.455081198245665, storedPoint),
+         new GeoPointField(FIELD_NAME, -178.8538113027811, 32.94823588839368, storedPoint),
+         new GeoPointField(FIELD_NAME, 178.8538113027811, 32.94823588839368, storedPoint),
+         new GeoPointField(FIELD_NAME, -179.5, -44.5, storedPoint)};
 
     for (GeoPointField p : pts) {
         Document doc = new Document();
@@ -130,6 +149,11 @@ public class TestGeoPointQuery extends LuceneTestCase {
     return searcher.search(q, limit);
   }
 
+  private TopDocs geoDistanceQuery(double lon, double lat, double radius, int limit) throws Exception {
+    GeoPointDistanceQuery q = new GeoPointDistanceQuery(FIELD_NAME, lon, lat, radius);
+    return searcher.search(q, limit);
+  }
+
   @Test
   public void testBBoxQuery() throws Exception {
     TopDocs td = bboxQuery(-96.7772, 32.778650, -96.77690000, 32.778950, 5);
@@ -138,11 +162,11 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   @Test
   public void testPolyQuery() throws Exception {
-    TopDocs td = polygonQuery( new double[] {-96.7682647, -96.8280029, -96.6288757, -96.4929199,
-                                             -96.6041564, -96.7449188, -96.76826477, -96.7682647},
-                               new double[] { 33.073130, 32.9942669, 32.938386, 33.0374494,
-                                              33.1369762, 33.1162747, 33.073130, 33.073130}, 5);
-    assertEquals("GeoPolygonQuery failed", td.totalHits, 1);
+    TopDocs td = polygonQuery(new double[]{-96.7682647, -96.8280029, -96.6288757, -96.4929199,
+            -96.6041564, -96.7449188, -96.76826477, -96.7682647},
+        new double[]{33.073130, 32.9942669, 32.938386, 33.0374494,
+            33.1369762, 33.1162747, 33.073130, 33.073130}, 5);
+    assertEquals("GeoPolygonQuery failed", 1, td.totalHits);
   }
 
   @Test
@@ -167,6 +191,50 @@ public class TestGeoPointQuery extends LuceneTestCase {
     assertTrue(GeoUtils.rectCrossesPoly(xMin, yMin, xMax, yMax, px, py, xMinA, yMinA, xMaxA, yMaxA));
     assertFalse(GeoUtils.rectCrossesPoly(-5, 0,  0.000001, 5, px, py, xMin, yMin, xMax, yMax));
     assertTrue(GeoUtils.rectWithinPoly(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
+  }
+
+  @Test
+  public void testBBoxCrossDateline() throws Exception {
+    TopDocs td = bboxQuery(179.0, -45.0, -179.0, -44.0, 20);
+    assertEquals("BBoxCrossDateline query failed", 1, td.totalHits);
+  }
+
+  @Test
+  public void testWholeMap() throws Exception {
+    TopDocs td = bboxQuery(-179.9, -89.9, 179.9, 89.9, 20);
+    assertEquals("testWholeMap failed", 14, td.totalHits);
+  }
+
+  @Test
+  public void testInvalidBBox() throws Exception {
+    try {
+      bboxQuery(179.0, -92.0, 181.0, -91.0, 20);
+    } catch(Exception e) {
+      return;
+    }
+    throw new Exception("GeoBoundingBox should not accept invalid lat/lon");
+  }
+
+  @Test
+  public void testGeoDistanceQuery() throws Exception {
+    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 600000, 20);
+    assertEquals("GeoDistanceQuery failed", 6, td.totalHits);
+  }
+
+  @Test
+  public void testGeoDistanceQueryCrossDateline() throws Exception {
+    TopDocs td = geoDistanceQuery(-179.9538113027811, 32.94823588839368, 120000, 20);
+    assertEquals("GeoDistanceQuery failed", 2, td.totalHits);
+  }
+
+  @Test
+  public void testInvalidGeoDistanceQuery() throws Exception {
+    try {
+      geoDistanceQuery(181.0, 92.0, 120000, 20);
+    } catch (Exception e) {
+      return;
+    }
+    throw new Exception("GeoDistanceQuery should not accept invalid lat/lon as origin");
   }
 
   public void testRandomTiny() throws Exception {
@@ -298,7 +366,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
     int numThreads = TestUtil.nextInt(random(), 2, 5);
 
     List<Thread> threads = new ArrayList<>();
-    final int iters = atLeast(100);
+    final int iters = atLeast(10);
 
     final CountDownLatch startingGun = new CountDownLatch(1);
 
@@ -319,112 +387,102 @@ public class TestGeoPointQuery extends LuceneTestCase {
             NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
             for (int iter=0;iter<iters;iter++) {
-              double lat0 = randomLat();
-              double lat1 = randomLat();
-              double lon0 = randomLon();
-              double lon1 = randomLon();
-
-              if (lat1 < lat0) {
-                double x = lat0;
-                lat0 = lat1;
-                lat1 = x;
-              }
-
-              if (lon1 < lon0) {
-                double x = lon0;
-                lon0 = lon1;
-                lon1 = x;
-              }
-
               if (VERBOSE) {
-                System.out.println("\nTEST: iter=" + iter + " lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1);
+                System.out.println("\nTEST: iter=" + iter);
               }
 
               Query query;
-              boolean tooBigBBox = false;
-              boolean polySearch = false;
 
-              double bboxLat0 = lat0;
-              double bboxLat1 = lat1;
-              double bboxLon0 = lon0;
-              double bboxLon1 = lon1;
+              VerifyHits verifyHits;
 
               if (random().nextBoolean()) {
-                query = new GeoPointInBBoxQuery(FIELD_NAME, lon0, lat0, lon1, lat1);
-              } else {
-                polySearch = true;
-                if (random().nextBoolean()) {
-                  // Intentionally pass a "too big" bounding box:
-                  double pct = random().nextDouble()*0.5;
-                  double width = lon1-lon0;
-                  bboxLon0 = Math.max(-180.0, lon0-width*pct);
-                  bboxLon1 = Math.min(180.0, lon1+width*pct);
-                  double height = lat1-lat0;
-                  bboxLat0 = Math.max(-90.0, lat0-height*pct);
-                  bboxLat1 = Math.min(90.0, lat1+height*pct);
-                  tooBigBBox = true;
+                GeoBoundingBox bbox = randomBBox();
+
+                query = new GeoPointInBBoxQuery(FIELD_NAME, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+                verifyHits = new VerifyHits() {
+                    @Override
+                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+
+                      // morton encode & decode to compare apples to apples (that is, compare with same hash precision error
+                      // present in the index)
+                      long pointHash = GeoUtils.mortonHash(pointLon, pointLat);
+                      pointLon = GeoUtils.mortonUnhashLon(pointHash);
+                      pointLat = GeoUtils.mortonUnhashLat(pointHash);
+
+                      if (bboxQueryCanBeWrong(bbox, pointLat, pointLon)) {
+                        return null;
+                      } else {
+                        return rectContainsPointEnc(bbox, pointLat, pointLon);
+                      }
+                    }
+                   };
+              } else if (random().nextBoolean()) {
+                
+                // generate a random bounding box
+                GeoBoundingBox bbox = randomBBox();
+
+                double centerLat = bbox.minLat + ((bbox.maxLat - bbox.minLat)/2.0);
+                double centerLon = bbox.minLon + ((bbox.maxLon - bbox.minLon)/2.0);
+
+                // radius (in meters) as a function of the random generated bbox
+                // TODO: change 100 back to 1000
+                final double radius = SloppyMath.haversin(centerLat, centerLon, bbox.minLat, centerLon)*100;
+                if (VERBOSE) {
+                  System.out.println("\t radius = " + radius);
                 }
+                // query using the centroid of the bounding box
+                query = new GeoPointDistanceQuery(FIELD_NAME, centerLon, centerLat, radius);
+
+                verifyHits = new VerifyHits() {
+                    @Override
+                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                      if (Double.isNaN(pointLat) || Double.isNaN(pointLon)) {
+                        return null;
+                      }
+                      if (radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radius)) {
+                        return null;
+                      } else {
+                        return distanceContainsPt(centerLon, centerLat, pointLon, pointLat, radius);
+                      }
+                    }
+                   };
+                
+              } else {
+                GeoBoundingBox bbox = randomBBox();
+
                 double[] pLats = new double[5];
                 double[] pLons = new double[5];
-                pLats[0] = bboxLat0;
-                pLons[0] = bboxLon0;
-                pLats[1] = bboxLat1;
-                pLons[1] = bboxLon0;
-                pLats[2] = bboxLat1;
-                pLons[2] = bboxLon1;
-                pLats[3] = bboxLat0;
-                pLons[3] = bboxLon1;
-                pLats[4] = bboxLat0;
-                pLons[4] = bboxLon0;
-                query = new GeoPointInPolygonQuery(FIELD_NAME, bboxLon0, bboxLat0, bboxLon1, bboxLat1, pLons, pLats);
-              }
+                pLats[0] = bbox.minLat;
+                pLons[0] = bbox.minLon;
+                pLats[1] = bbox.maxLat;
+                pLons[1] = bbox.minLon;
+                pLats[2] = bbox.maxLat;
+                pLons[2] = bbox.maxLon;
+                pLats[3] = bbox.minLat;
+                pLons[3] = bbox.maxLon;
+                pLats[4] = bbox.minLat;
+                pLons[4] = bbox.minLon;
+                query = new GeoPointInPolygonQuery(FIELD_NAME, pLons, pLats);
 
-              final FixedBitSet hits = new FixedBitSet(r.maxDoc());
-              s.search(query, new SimpleCollector() {
+                verifyHits = new VerifyHits() {
+                    @Override
+                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                      // morton encode & decode to compare apples to apples (that is, compare with same hash precision error
+                      // present in the index)
+                      long pointHash = GeoUtils.mortonHash(pointLon, pointLat);
+                      pointLon = GeoUtils.mortonUnhashLon(pointHash);
+                      pointLat = GeoUtils.mortonUnhashLat(pointHash);
 
-                  private int docBase;
-
-                  @Override
-                  public boolean needsScores() {
-                    return false;
-                  }
-
-                  @Override
-                  protected void doSetNextReader(LeafReaderContext context) throws IOException {
-                    docBase = context.docBase;
-                  }
-
-                  @Override
-                  public void collect(int doc) {
-                    hits.set(docBase+doc);
-                  }
-                });
-
-              for(int docID=0;docID<r.maxDoc();docID++) {
-                int id = (int) docIDToID.get(docID);
-                if (polySearch) {
-                  lat0 = bboxLat0;
-                  lon0 = bboxLon0;
-                  lat1 = bboxLat1;
-                  lon1 = bboxLon1;
-                }
-                // morton encode & decode to compare apples to apples (that is, compare with same hash precision error
-                // present in the index)
-                final long pointHash = GeoUtils.mortonHash(lons[id], lats[id]);
-                final double pointLon = GeoUtils.mortonUnhashLon(pointHash);
-                final double pointLat = GeoUtils.mortonUnhashLat(pointHash);
-                if (!tolerateIgnorance(lat0, lat1, lon0, lon1, pointLat, pointLon)) {
-                  boolean expected = (deleted.contains(id) == false) &&
-                      rectContainsPointEnc(lat0, lat1, lon0, lon1, pointLat, pointLon);
-                  if (hits.get(docID) != expected) {
-                    System.out.println(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + pointLat + " lon=" + pointLon + " (bbox: lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + ") expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + " query=" + query);
-                    if (tooBigBBox) {
-                      System.out.println("  passed too-big bbox: lat=" + bboxLat0 + " TO " + bboxLat1 + " lon=" + bboxLon0 + " TO " + bboxLon1);
+                      if (bboxQueryCanBeWrong(bbox, pointLat, pointLon)) {
+                        return null;
+                      } else {
+                        return rectContainsPointEnc(bbox, pointLat, pointLon);
+                      }
                     }
-                    fail("wrong result");
-                  }
-                }
+                  };
               }
+
+              verifyHits.test(s, docIDToID, deleted, query, lats, lons);
             }
           }
         };
@@ -441,35 +499,132 @@ public class TestGeoPointQuery extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  private static boolean rectContainsPointEnc(double rectLatMin, double rectLatMax,
-                                              double rectLonMin, double rectLonMax,
-                                              double pointLat, double pointLon) {
-    if (Double.isNaN(pointLat)) {
-      return false;
+  private static abstract class VerifyHits {
+
+    public void test(IndexSearcher s, NumericDocValues docIDToID, Set<Integer> deleted, Query query, double[] lats, double[] lons) throws Exception {
+      int maxDoc = s.getIndexReader().maxDoc();
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+          private int docBase;
+
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
+
+          @Override
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
+            docBase = context.docBase;
+          }
+
+          @Override
+          public void collect(int doc) {
+            hits.set(docBase+doc);
+          }
+        });
+
+      for(int docID=0;docID<maxDoc;docID++) {
+        int id = (int) docIDToID.get(docID);
+        Boolean expected;
+        if (deleted.contains(id)) {
+          expected = false;
+        } else {
+          expected = shouldMatch(lats[id], lons[id]);
+        }
+
+        // null means it's a borderline case which is allowed to be wrong:
+        if (expected != null) {
+
+          if (hits.get(docID) != expected) {
+            System.out.println(Thread.currentThread().getName() + ": id=" + id +
+                               " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] +
+                               " deleted?=" + deleted.contains(id) + " expected=" + expected + " but got " + hits.get(docID) +
+                               " query=" + query);
+            fail("wrong hit");
+          }
+        }
+      }
     }
-    return GeoUtils.bboxContains(pointLon, pointLat, rectLonMin, rectLatMin, rectLonMax, rectLatMax);
+
+    /** Return true if we definitely should match, false if we definitely
+     *  should not match, and null if it's a borderline case which might
+     *  go either way. */
+    protected abstract Boolean shouldMatch(double lat, double lon);
   }
 
-  private static boolean tolerateIgnorance(final double minLat, final double maxLat,
-                                           final double minLon, final double maxLon,
-                                           final double lat, final double lon) {
+  private static boolean distanceContainsPt(double lonA, double latA, double lonB, double latB, final double radius) {
+    final long hashedPtA = GeoUtils.mortonHash(lonA, latA);
+    lonA = GeoUtils.mortonUnhashLon(hashedPtA);
+    latA = GeoUtils.mortonUnhashLat(hashedPtA);
+    final long hashedPtB = GeoUtils.mortonHash(lonB, latB);
+    lonB = GeoUtils.mortonUnhashLon(hashedPtB);
+    latB = GeoUtils.mortonUnhashLat(hashedPtB);
+
+    return (SloppyMath.haversin(latA, lonA, latB, lonB)*1000.0 <= radius);
+  }
+
+  private static boolean rectContainsPointEnc(GeoBoundingBox bbox, double pointLat, double pointLon) {
+    // We should never see a deleted doc here?
+    assert Double.isNaN(pointLat) == false;
+    return GeoUtils.bboxContains(pointLon, pointLat, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+  }
+
+  private static boolean radiusQueryCanBeWrong(double centerLat, double centerLon, double ptLon, double ptLat,
+                                               final double radius) {
+    final long hashedCntr = GeoUtils.mortonHash(centerLon, centerLat);
+    centerLon = GeoUtils.mortonUnhashLon(hashedCntr);
+    centerLat = GeoUtils.mortonUnhashLat(hashedCntr);
+    final long hashedPt = GeoUtils.mortonHash(ptLon, ptLat);
+    ptLon = GeoUtils.mortonUnhashLon(hashedPt);
+    ptLat = GeoUtils.mortonUnhashLat(hashedPt);
+
+    double ptDistance = SloppyMath.haversin(centerLat, centerLon, ptLat, ptLon)*1000.0;
+    double delta = StrictMath.abs(ptDistance - radius);
+
+    // if its within the distance error then it can be wrong
+    return delta < DISTANCE_ERR;
+  }
+
+  private static boolean bboxQueryCanBeWrong(GeoBoundingBox bbox, double lat, double lon) {
     // we can tolerate variance at the GeoUtils.TOLERANCE decimal place
     final int tLon = (int)(lon/(GeoUtils.TOLERANCE-1));
     final int tLat = (int)(lat/(GeoUtils.TOLERANCE-1));
-    final int tMinLon = (int)(minLon/(GeoUtils.TOLERANCE-1));
-    final int tMinLat = (int)(minLat/(GeoUtils.TOLERANCE-1));
-    final int tMaxLon = (int)(maxLon/(GeoUtils.TOLERANCE-1));
-    final int tMaxLat = (int)(maxLat/(GeoUtils.TOLERANCE-1));
+    final int tMinLon = (int)(bbox.minLon/(GeoUtils.TOLERANCE-1));
+    final int tMinLat = (int)(bbox.minLat/(GeoUtils.TOLERANCE-1));
+    final int tMaxLon = (int)(bbox.maxLon/(GeoUtils.TOLERANCE-1));
+    final int tMaxLat = (int)(bbox.maxLat/(GeoUtils.TOLERANCE-1));
 
     return ((tMinLon - tLon) == 0 || (tMinLat - tLat) == 0
          || (tMaxLon - tLon) == 0 || (tMaxLat - tLat) == 0);
   }
 
   private static double randomLat() {
-    return originLat + range * (random().nextDouble()-0.5);
+    return GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
   }
 
   private static double randomLon() {
-    return originLon + range * (random().nextDouble()-0.5);
+    return GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+  }
+
+  private static GeoBoundingBox randomBBox() {
+    double lat0 = randomLat();
+    double lat1 = randomLat();
+    double lon0 = randomLon();
+    double lon1 = randomLon();
+
+    if (lat1 < lat0) {
+      double x = lat0;
+      lat0 = lat1;
+      lat1 = x;
+    }
+
+    if (lon1 < lon0) {
+      double x = lon0;
+      lon0 = lon1;
+      lon1 = x;
+    }
+
+    return new GeoBoundingBox(lon0, lon1, lat0, lat1);
   }
 }

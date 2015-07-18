@@ -32,7 +32,8 @@ import org.apache.lucene.util.GeoUtils;
  * </pre>
  *
  * <p>To perform simple geospatial queries against a <code>GeoPointField</code>,
- * see {@link org.apache.lucene.search.GeoPointInBBoxQuery} or {@link org.apache.lucene.search.GeoPointInPolygonQuery}
+ * see {@link org.apache.lucene.search.GeoPointInBBoxQuery}, {@link org.apache.lucene.search.GeoPointInPolygonQuery},
+ * or {@link org.apache.lucene.search.GeoPointDistanceQuery}
  *
  * NOTE: This indexes only high precision encoded terms which may result in visiting a high number
  * of terms for large queries. See LUCENE-6481 for a future improvement.

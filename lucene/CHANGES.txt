@@ -137,6 +137,10 @@ New Features
 * LUCENE-6659: Remove IndexWriter's unnecessary hard limit on max concurrency
   (Robert Muir, Mike McCandless)
 
+* LUCENE-6547: Add GeoPointDistanceQuery, matching all points within
+  the specified distance from the center point.  Fix
+  GeoPointInBBoxQuery to handle dateline crossing.
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
