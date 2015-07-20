@@ -29,6 +29,7 @@ import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
+import org.apache.solr.util.DateFormatUtil;
 
 /** 
  * Class to hold the parsers used for Solr Analytics.
@@ -148,7 +149,7 @@ public class AnalyticsParsers {
     @SuppressWarnings("deprecation")
     public String parse(BytesRef bytes) throws IOException {
       try {
-        return TrieDateField.formatExternal(new Date(NumericUtils.prefixCodedToLong(bytes)));
+        return DateFormatUtil.formatExternal(new Date(NumericUtils.prefixCodedToLong(bytes)));
       } catch (NumberFormatException e) {
         throw new IOException("The byte array "+Arrays.toString(bytes.bytes)+" cannot be converted to a date.");
       }
@@ -156,7 +157,7 @@ public class AnalyticsParsers {
     @SuppressWarnings("deprecation")
     @Override
     public String parseNum(long l) {
-      return ""+TrieDateField.formatExternal(new Date(l));
+      return ""+DateFormatUtil.formatExternal(new Date(l));
     }
   };
   

@@ -34,9 +34,9 @@ import org.apache.solr.analytics.statistics.StatsCollectorSupplierFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.DateFormatUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +143,7 @@ public class BasicAccumulator extends ValueAccumulator {
       if (expressionName.equals(expressionNames[count])) {
         Comparable value = expressions[count].getValue();
         if (value.getClass().equals(Date.class)) {
-          return TrieDateField.formatExternal((Date)value);
+          return DateFormatUtil.formatExternal((Date)value);
         } else {
           return value.toString();
         }

@@ -54,6 +54,7 @@ import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.distance.*;
+import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;
@@ -974,8 +975,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
 
 class DateValueSourceParser extends ValueSourceParser {
-  TrieDateField df = new TrieDateField();
-
   @Override
   public void init(NamedList args) {
   }
@@ -983,7 +982,7 @@ class DateValueSourceParser extends ValueSourceParser {
   public Date getDate(FunctionQParser fp, String arg) {
     if (arg == null) return null;
     if (arg.startsWith("NOW") || (arg.length() > 0 && Character.isDigit(arg.charAt(0)))) {
-      return df.parseMathLenient(null, arg, fp.req);
+      return DateFormatUtil.parseMathLenient(null, arg, fp.req);
     }
     return null;
   }

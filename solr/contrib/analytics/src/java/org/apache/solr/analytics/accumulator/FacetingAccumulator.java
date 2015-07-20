@@ -56,11 +56,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.DateFormatUtil;
 
 import com.google.common.collect.Iterables;
 
@@ -376,7 +376,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
         if (expressionName.equals(expressionNames[count])) {
           Comparable value = facetExpressions[count].getValue();
           if (value.getClass().equals(Date.class)) {
-            return TrieDateField.formatExternal((Date)value);
+            return DateFormatUtil.formatExternal((Date)value);
           } else {
             return value.toString();
           }
@@ -430,7 +430,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
         if (expressionName.equals(expressionNames[count])) {
           Comparable value = facetExpressions[count].getValue();
           if (value.getClass().equals(Date.class)) {
-            return TrieDateField.formatExternal((Date)value);
+            return DateFormatUtil.formatExternal((Date)value);
           } else {
             return value.toString();
           }

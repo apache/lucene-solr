@@ -27,7 +27,7 @@ import java.util.Map;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.PivotListEntry;
 
 /**
@@ -93,7 +93,7 @@ public class PivotFacetValue {
     if (null == value) {
       out.add(null);
     } else if (value instanceof Date) {
-      out.add(TrieDateField.formatExternal((Date) value));
+      out.add(DateFormatUtil.formatExternal((Date) value));
     } else {
       out.add(value.toString());
     }
