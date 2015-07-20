@@ -236,6 +236,9 @@ Bug Fixes
   a bug that resulted in filter cache lookup misses as well as the filter cache 
   exceeding it's configured size. (yonik)
 
+* SOLR-7810: map-reduce contrib script to set classpath for convenience refers to example
+  rather than server. (Mark Miller)
+
 Optimizations
 ----------------------
 
