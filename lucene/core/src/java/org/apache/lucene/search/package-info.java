@@ -207,7 +207,7 @@
  *     {@link org.apache.lucene.search.FuzzyQuery FuzzyQuery}
  *     matches documents that contain terms similar to the specified term. Similarity is
  *     determined using
- *     <a href="http://en.wikipedia.org/wiki/Levenshtein">Levenshtein (edit) distance</a>.
+ *     <a href="http://en.wikipedia.org/wiki/Levenshtein_distance">Levenshtein distance</a>.
  *     This type of query can be useful when accounting for spelling variations in the collection.
  * 
  * 
