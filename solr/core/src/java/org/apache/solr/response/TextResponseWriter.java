@@ -30,7 +30,7 @@ import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.Base64;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -327,7 +327,7 @@ public abstract class TextResponseWriter {
 
 
   public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, TrieDateField.formatExternal(val));
+    writeDate(name, DateFormatUtil.formatExternal(val));
   }
   
 

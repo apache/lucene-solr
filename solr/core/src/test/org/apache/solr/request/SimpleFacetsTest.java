@@ -36,7 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -2992,8 +2992,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     }
     int gapNum = random().nextInt(100) + 1;
     
-    params.add(FacetParams.FACET_RANGE_START, TrieDateField.formatExternal(dates[0]));
-    params.add(FacetParams.FACET_RANGE_END, TrieDateField.formatExternal(dates[1]));
+    params.add(FacetParams.FACET_RANGE_START, DateFormatUtil.formatExternal(dates[0]));
+    params.add(FacetParams.FACET_RANGE_END, DateFormatUtil.formatExternal(dates[1]));
     params.add(FacetParams.FACET_RANGE_GAP, String.format(Locale.ROOT, "+%d%s", gapNum, gapUnit));
     addCommonRandomRangeParams(params);
     params.add(FacetParams.FACET_RANGE, field);

@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 
 /**
  * Extends {@link LongFieldSource} to have a field source that takes in 
@@ -54,7 +54,7 @@ public class DateFieldSource extends LongFieldSource {
 
   @SuppressWarnings("deprecation")
   public String longToString(long val) {
-    return TrieDateField.formatExternal((Date)longToObject(val));
+    return DateFormatUtil.formatExternal((Date)longToObject(val));
   }
 
   @Override

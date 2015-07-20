@@ -22,7 +22,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DateMathParser;
-
+import org.apache.solr.util.DateFormatUtil;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -34,7 +34,7 @@ import java.util.TimeZone;
 import java.util.Locale;
 
 public class DateFieldTest extends SolrTestCaseJ4 {
-  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
+  public static TimeZone UTC = DateFormatUtil.UTC;
   private final String testInstanceDir = TEST_HOME() + File.separator + "collection1";
   private final String testConfHome = testInstanceDir + File.separator + "conf"+ File.separator;
   private TrieDateField f = null;
@@ -54,11 +54,11 @@ public class DateFieldTest extends SolrTestCaseJ4 {
   }
 
   public void assertFormatParsed(String expected, String input) throws ParseException {
-    assertEquals("Input: " + input, expected, f.formatDate(f.parseMath(new Date(), input)));
+    assertEquals("Input: " + input, expected, DateFormatUtil.formatDate(DateFormatUtil.parseMath(new Date(), input)));
   }
   
   public void assertFormatDate(String expected, long input) {
-    assertEquals("Input: " + input, expected, f.formatDate(new Date(input)));
+    assertEquals("Input: " + input, expected, DateFormatUtil.formatDate(new Date(input)));
   }
 
   public void testToInternal() throws Exception {
@@ -77,7 +77,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     assertFormatParsed("1995-12-31T23:59:59", "1995-12-31T23:59:59.0Z");
 
     // kind of kludgy, but we have other tests for the actual date math
-    assertFormatParsed(f.formatDate(p.parseMath("/DAY")), "NOW/DAY");
+    assertFormatParsed(DateFormatUtil.formatDate(p.parseMath("/DAY")), "NOW/DAY");
 
     // as of Solr 1.3
     assertFormatParsed("1995-12-31T00:00:00", "1995-12-31T23:59:59Z/DAY");
@@ -94,7 +94,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     
   public void assertParseMath(long expected, String input) {
     Date d = new Date(0);
-    assertEquals("Input: "+input, expected, f.parseMath(d, input).getTime());
+    assertEquals("Input: "+input, expected, DateFormatUtil.parseMath(d, input).getTime());
   }
   
   // as of Solr1.3
@@ -171,12 +171,12 @@ public class DateFieldTest extends SolrTestCaseJ4 {
   }
 
   protected void assertFormat(final String expected, final long millis) {
-    assertEquals(expected, f.formatDate(new Date(millis)));
+    assertEquals(expected, DateFormatUtil.formatDate(new Date(millis)));
   }
 
   protected void assertRoundTrip(String canonicalDate) throws Exception {
-    Date d = TrieDateField.parseDate(canonicalDate);
-    String result = TrieDateField.formatExternal(d);
+    Date d = DateFormatUtil.parseDate(canonicalDate);
+    String result = DateFormatUtil.formatExternal(d);
     assertEquals("d:" + d.getTime(), canonicalDate, result);
 
   }

@@ -29,7 +29,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -468,7 +468,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     // otherwise, build up a term filter...
     String prefix = "{!term f=" + constraint.getField() + "}";
     if (value instanceof Date) {
-      return prefix + TrieDateField.formatExternal((Date)value);
+      return prefix + DateFormatUtil.formatExternal((Date)value);
     } else {
       return prefix + value;
     }

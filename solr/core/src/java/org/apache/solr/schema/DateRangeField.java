@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.spatial4j.core.shape.Shape;
+
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeStrategy;
@@ -37,6 +38,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.DateFormatUtil;
 
 /**
  * A field for indexed dates and date ranges. It's mostly compatible with TrieDateField.
@@ -49,8 +51,6 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   private static final String OP_PARAM = "op";//local-param to resolve SpatialOperation
 
   private static final DateRangePrefixTree tree = DateRangePrefixTree.INSTANCE;
-
-  private static final TrieDateField trieDateField = new TrieDateField();//used for utility methods
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -76,7 +76,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
       if (unitShape.getLevel() == tree.getMaxLevels()) {
         //fully precise date. We can be fully compatible with TrieDateField.
         Date date = tree.toCalendar(unitShape).getTime();
-        return TrieDateField.formatExternal(date);
+        return DateFormatUtil.formatExternal(date);
       }
     }
     return (shapeStr == null ? shape.toString() : shapeStr);//we don't normalize ranges here; should we?
@@ -101,7 +101,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
     if (str.startsWith("NOW") || str.lastIndexOf('Z') >= 0) {
       //use Solr standard date format parsing rules.
       //TODO parse a Calendar instead of a Date, rounded according to DateMath syntax.
-      Date date = trieDateField.parseMath(null, str);
+      Date date = DateFormatUtil.parseMath(null, str);
       Calendar cal = tree.newCal();
       cal.setTime(date);
       return cal;
@@ -116,9 +116,9 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
     }
   }
 
-  /** For easy compatibility with {@link TrieDateField#parseMath(Date, String)}. */
+  /** For easy compatibility with {@link DateFormatUtil#parseMath(Date, String)}. */
   public Date parseMath(Date now, String rawval) {
-    return trieDateField.parseMath(now, rawval);
+    return DateFormatUtil.parseMath(now, rawval);
   }
 
   @Override
@@ -128,7 +128,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
       if (unitShape.getLevel() == tree.getMaxLevels()) {
         //fully precise date. We can be fully compatible with TrieDateField.
         Date date = tree.toCalendar(unitShape).getTime();
-        return TrieDateField.formatExternal(date);
+        return DateFormatUtil.formatExternal(date);
       }
     }
     return shape.toString();//range shape

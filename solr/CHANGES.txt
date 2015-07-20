@@ -339,6 +339,10 @@ Other Changes
 
 * SOLR-7805: Update Kite Morphlines to 1.1.0 (Mark Miller)
 
+* SOLR-7803: Prevent class loading deadlock in TrieDateField; refactor date
+  formatting and parsing out of TrieDateField and move to static utility class
+  DateFormatUtil.  (Markus Heiden, Uwe Schindler)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

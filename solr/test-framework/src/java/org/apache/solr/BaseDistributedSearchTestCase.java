@@ -18,6 +18,7 @@ package org.apache.solr;
  */
 
 import junit.framework.Assert;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.TestUtil;
@@ -37,6 +38,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.Filter;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -1042,13 +1045,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public static class RandDate extends RandVal {
-    public static TrieDateField df = new TrieDateField();
-
     @Override
     public Object val() {
       long v = r.nextLong();
       Date d = new Date(v);
-      return df.toExternal(d);
+      return DateFormatUtil.formatExternal(d);
     }
   }
   

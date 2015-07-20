@@ -23,8 +23,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.DateFormatUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -162,15 +162,15 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
   public void dateMathTest() throws Exception {
     String math = (String) getStatResult("dmr", "cme", VAL_TYPE.STRING);
     DateMathParser date = new DateMathParser();
-    date.setNow(TrieDateField.parseDate((String) getStatResult("dmr", "median", VAL_TYPE.DATE)));
+    date.setNow(DateFormatUtil.parseDate((String) getStatResult("dmr", "median", VAL_TYPE.DATE)));
     String dateMath = (String) getStatResult("dmr", "dmme", VAL_TYPE.DATE);
-    assertEquals(getRawResponse(), TrieDateField.parseDate(dateMath), date.parseMath(math));
+    assertEquals(getRawResponse(), DateFormatUtil.parseDate(dateMath), date.parseMath(math));
 
     math = (String) getStatResult("dmr", "cma", VAL_TYPE.STRING);
     date = new DateMathParser();
-    date.setNow(TrieDateField.parseDate((String) getStatResult("dmr", "max", VAL_TYPE.DATE)));
+    date.setNow(DateFormatUtil.parseDate((String) getStatResult("dmr", "max", VAL_TYPE.DATE)));
     dateMath = (String) getStatResult("dmr", "dmma", VAL_TYPE.DATE);
-    assertEquals(getRawResponse(), TrieDateField.parseDate(dateMath), date.parseMath(math));
+    assertEquals(getRawResponse(), DateFormatUtil.parseDate(dateMath), date.parseMath(math));
   }
 
   @Test

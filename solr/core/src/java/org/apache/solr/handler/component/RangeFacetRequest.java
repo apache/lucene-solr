@@ -39,6 +39,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.DateFormatUtil;
 
 /**
  * Encapsulates a single facet.range request along with all its parameters. This class
@@ -707,12 +708,12 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public String formatValue(Date val) {
-      return ((TrieDateField) field.getType()).toExternal(val);
+      return DateFormatUtil.formatExternal(val);
     }
 
     @Override
     protected Date parseVal(String rawval) {
-      return ((TrieDateField) field.getType()).parseMath(now, rawval);
+      return DateFormatUtil.parseMath(now, rawval);
     }
 
     @Override
@@ -743,7 +744,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public String formatValue(Date val) {
-      return TrieDateField.formatExternal(val);
+      return DateFormatUtil.formatExternal(val);
     }
 
     @Override

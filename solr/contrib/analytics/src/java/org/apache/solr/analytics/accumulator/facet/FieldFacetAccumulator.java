@@ -33,8 +33,8 @@ import org.apache.solr.analytics.util.AnalyticsParsers.Parser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.DateValueFieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -67,7 +67,7 @@ public class FieldFacetAccumulator extends ValueAccumulator {
     }
     this.multiValued = schemaField.multiValued();
     this.numField = schemaField.getType().getNumericType()!=null;
-    this.dateField = schemaField.getType().getClass().equals(TrieDateField.class);
+    this.dateField = schemaField.getType() instanceof DateValueFieldType;
     this.parent = parent;  
     this.parser = AnalyticsParsers.getParser(schemaField.getType().getClass());
   }

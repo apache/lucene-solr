@@ -25,7 +25,7 @@ import org.apache.solr.analytics.statistics.StatsCollector;
 import org.apache.solr.analytics.util.AnalyticsParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 
 public class ExpressionFactory {
 
@@ -83,7 +83,7 @@ public class ExpressionFactory {
       }
     } else if (topOperation.equals(AnalyticsParams.CONSTANT_DATE)) {
       try {
-        return new ConstantDateExpression(TrieDateField.parseDate(operands));
+        return new ConstantDateExpression(DateFormatUtil.parseDate(operands));
       } catch (ParseException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "The constant "+operands+" cannot be converted into a date.",e);
       }
