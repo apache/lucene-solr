@@ -48,13 +48,15 @@ public final class DateFormatUtil {
   public static final Locale CANONICAL_LOCALE = Locale.ROOT;
   public static final String NOW = "NOW";
   public static final char Z = 'Z';
+
+  private static final ISO8601CanonicalDateFormat FORMAT_PROTOTYPE = new ISO8601CanonicalDateFormat();
+
   /**
    * Thread safe DateFormat that can <b>format</b> in the canonical
    * ISO8601 date format, not including the trailing "Z" (since it is
    * left off in the internal indexed values)
    */
-  public final static ThreadLocalDateFormat FORMAT_THREAD_LOCAL
-      = new ThreadLocalDateFormat(new ISO8601CanonicalDateFormat());
+  public final static ThreadLocal<DateFormat> FORMAT_THREAD_LOCAL = ThreadLocal.withInitial(FORMAT_PROTOTYPE::clone);
 
   private DateFormatUtil() {}
 
@@ -239,20 +241,6 @@ public final class DateFormatUtil {
       c.millisParser = NumberFormat.getIntegerInstance(CANONICAL_LOCALE);
       c.millisFormat = new DecimalFormat(".###", new DecimalFormatSymbols(CANONICAL_LOCALE));
       return c;
-    }
-  }
-
-  public static class ThreadLocalDateFormat extends ThreadLocal<DateFormat> {
-    private final DateFormat proto;
-    
-    public ThreadLocalDateFormat(DateFormat d) {
-      super();
-      proto = d;
-    }
-    
-    @Override
-    protected DateFormat initialValue() {
-      return (DateFormat) proto.clone();
     }
   }
 }
