@@ -202,7 +202,7 @@
  * <h3>
  *     {@link org.apache.lucene.search.FuzzyQuery FuzzyQuery}
  * </h3>
- * 
+ *
  * <p>A
  *     {@link org.apache.lucene.search.FuzzyQuery FuzzyQuery}
  *     matches documents that contain terms similar to the specified term. Similarity is
