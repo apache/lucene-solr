@@ -606,6 +606,10 @@ class Lucene50DocValuesConsumer extends DocValuesConsumer implements Closeable {
             return id;
           }
 
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
         };
 
       }
