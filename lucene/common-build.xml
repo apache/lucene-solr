@@ -2341,7 +2341,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.3.10"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.4"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2416,7 +2416,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown,resolve-groovy" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.4.2"
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.5.0"
       inline="true" conf="default" transitive="true" pathid="pegdown.classpath"/>
     <property name="pegdown.loaded" value="true"/>
   </target>

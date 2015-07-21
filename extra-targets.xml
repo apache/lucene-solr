@@ -25,7 +25,7 @@
   
   <import file="lucene/common-build.xml"/>
 
-  <property name="svnkit.version" value="1.8.7"/>
+  <property name="svnkit.version" value="1.8.10"/>
 
   <target name="-run-test">
     <mkdir dir="lucene/build" />
