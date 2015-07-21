@@ -63,7 +63,7 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
   public void testSortedSetVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(atLeast(300), 1, 32766, 16);
+      doTestSortedSetVsStoredFields(atLeast(300), 1, 32766, 16, 100);
     }
   }
   
@@ -71,7 +71,7 @@ public class TestLucene410DocValuesFormat extends BaseCompressingDocValuesFormat
   public void testSortedSetVariableLengthManyVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1, 500, 16);
+      doTestSortedSetVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1, 500, 16, 100);
     }
   }
   

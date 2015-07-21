@@ -206,6 +206,28 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
     ordIndexes.put(info.name, n2);
   }
 
+  private void readSortedSetFieldWithTable(FieldInfo info, IndexInput meta) throws IOException {
+    // sortedset table = binary + ordset table + ordset index
+    if (meta.readVInt() != info.number) {
+      throw new CorruptIndexException("sortedset entry for field: " + info.name + " is corrupt", meta);
+    }
+    if (meta.readByte() != Lucene50DocValuesFormat.BINARY) {
+      throw new CorruptIndexException("sortedset entry for field: " + info.name + " is corrupt", meta);
+    }
+
+    BinaryEntry b = readBinaryEntry(meta);
+    binaries.put(info.name, b);
+
+    if (meta.readVInt() != info.number) {
+      throw new CorruptIndexException("sortedset entry for field: " + info.name + " is corrupt", meta);
+    }
+    if (meta.readByte() != Lucene50DocValuesFormat.NUMERIC) {
+      throw new CorruptIndexException("sortedset entry for field: " + info.name + " is corrupt", meta);
+    }
+    NumericEntry n = readNumericEntry(meta);
+    ords.put(info.name, n);
+  }
+
   private int readFields(IndexInput meta, FieldInfos infos) throws IOException {
     int numFields = 0;
     int fieldNumber = meta.readVInt();
@@ -229,6 +251,8 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
         sortedSets.put(info.name, ss);
         if (ss.format == SORTED_WITH_ADDRESSES) {
           readSortedSetFieldWithAddresses(info, meta);
+        } else if (ss.format == SORTED_SET_TABLE) {
+          readSortedSetFieldWithTable(info, meta);
         } else if (ss.format == SORTED_SINGLE_VALUED) {
           if (meta.readVInt() != fieldNumber) {
             throw new CorruptIndexException("sortedset entry for field: " + info.name + " is corrupt", meta);
@@ -243,14 +267,14 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
       } else if (type == Lucene50DocValuesFormat.SORTED_NUMERIC) {
         SortedSetEntry ss = readSortedSetEntry(meta);
         sortedNumerics.put(info.name, ss);
-        if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
-        }
-        if (meta.readByte() != Lucene50DocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
-        }
-        numerics.put(info.name, readNumericEntry(meta));
         if (ss.format == SORTED_WITH_ADDRESSES) {
+          if (meta.readVInt() != fieldNumber) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
+          }
+          if (meta.readByte() != Lucene50DocValuesFormat.NUMERIC) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
+          }
+          numerics.put(info.name, readNumericEntry(meta));
           if (meta.readVInt() != fieldNumber) {
             throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
           }
@@ -259,7 +283,24 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
           }
           NumericEntry ordIndex = readNumericEntry(meta);
           ordIndexes.put(info.name, ordIndex);
-        } else if (ss.format != SORTED_SINGLE_VALUED) {
+        } else if (ss.format == SORTED_SET_TABLE) {
+          if (meta.readVInt() != info.number) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
+          }
+          if (meta.readByte() != Lucene50DocValuesFormat.NUMERIC) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
+          }
+          NumericEntry n = readNumericEntry(meta);
+          ords.put(info.name, n);
+        } else if (ss.format == SORTED_SINGLE_VALUED) {
+          if (meta.readVInt() != fieldNumber) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
+          }
+          if (meta.readByte() != Lucene50DocValuesFormat.NUMERIC) {
+            throw new CorruptIndexException("sortednumeric entry for field: " + info.name + " is corrupt", meta);
+          }
+          numerics.put(info.name, readNumericEntry(meta));
+        } else {
           throw new AssertionError();
         }
       } else {
@@ -346,7 +387,24 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
   SortedSetEntry readSortedSetEntry(IndexInput meta) throws IOException {
     SortedSetEntry entry = new SortedSetEntry();
     entry.format = meta.readVInt();
-    if (entry.format != SORTED_SINGLE_VALUED && entry.format != SORTED_WITH_ADDRESSES) {
+    if (entry.format == SORTED_SET_TABLE) {
+      final int totalTableLength = meta.readInt();
+      if (totalTableLength > 256) {
+        throw new CorruptIndexException("SORTED_SET_TABLE cannot have more than 256 values in its dictionary, got=" + totalTableLength, meta);
+      }
+      entry.table = new long[totalTableLength];
+      for (int i = 0; i < totalTableLength; ++i) {
+        entry.table[i] = meta.readLong();
+      }
+      final int tableSize = meta.readInt();
+      if (tableSize > totalTableLength + 1) { // +1 because of the empty set
+        throw new CorruptIndexException("SORTED_SET_TABLE cannot have more set ids than ords in its dictionary, got " + totalTableLength + " ords and " + tableSize + " sets", meta);
+      }
+      entry.tableOffsets = new int[tableSize + 1];
+      for (int i = 1; i < entry.tableOffsets.length; ++i) {
+        entry.tableOffsets[i] = entry.tableOffsets[i - 1] + meta.readInt();
+      }
+    } else if (entry.format != SORTED_SINGLE_VALUED && entry.format != SORTED_WITH_ADDRESSES) {
       throw new CorruptIndexException("Unknown format: " + entry.format, meta);
     }
     return entry;
@@ -611,12 +669,14 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
   @Override
   public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
     SortedSetEntry ss = sortedNumerics.get(field.name);
-    NumericEntry numericEntry = numerics.get(field.name);
-    final LongValues values = getNumeric(numericEntry);
     if (ss.format == SORTED_SINGLE_VALUED) {
+      NumericEntry numericEntry = numerics.get(field.name);
+      final LongValues values = getNumeric(numericEntry);
       final Bits docsWithField = getLiveBits(numericEntry.missingOffset, maxDoc);
       return DocValues.singleton(values, docsWithField);
     } else if (ss.format == SORTED_WITH_ADDRESSES) {
+      NumericEntry numericEntry = numerics.get(field.name);
+      final LongValues values = getNumeric(numericEntry);
       final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(field, ordIndexes.get(field.name));
       
       return new SortedNumericDocValues() {
@@ -639,6 +699,33 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
           return (int) (endOffset - startOffset);
         }
       };
+    } else if (ss.format == SORTED_SET_TABLE) {
+      NumericEntry entry = ords.get(field.name);
+      final LongValues ordinals = getNumeric(entry);
+
+      final long[] table = ss.table;
+      final int[] offsets = ss.tableOffsets;
+      return new SortedNumericDocValues() {
+        int startOffset;
+        int endOffset;
+        
+        @Override
+        public void setDocument(int doc) {
+          final int ord = (int) ordinals.get(doc);
+          startOffset = offsets[ord];
+          endOffset = offsets[ord + 1];
+        }
+
+        @Override
+        public long valueAt(int index) {
+          return table[startOffset + index];
+        }
+
+        @Override
+        public int count() {
+          return endOffset - startOffset;
+        }
+      };
     } else {
       throw new AssertionError();
     }
@@ -647,13 +734,20 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     SortedSetEntry ss = sortedSets.get(field.name);
-    if (ss.format == SORTED_SINGLE_VALUED) {
-      final SortedDocValues values = getSorted(field);
-      return DocValues.singleton(values);
-    } else if (ss.format != SORTED_WITH_ADDRESSES) {
-      throw new AssertionError();
+    switch (ss.format) {
+      case SORTED_SINGLE_VALUED:
+        final SortedDocValues values = getSorted(field);
+        return DocValues.singleton(values);
+      case SORTED_WITH_ADDRESSES:
+        return getSortedSetWithAddresses(field);
+      case SORTED_SET_TABLE:
+        return getSortedSetTable(field, ss);
+      default:
+        throw new AssertionError();
     }
+  }
 
+  private SortedSetDocValues getSortedSetWithAddresses(FieldInfo field) throws IOException {
     final long valueCount = binaries.get(field.name).count;
     // we keep the byte[]s and list of ords on disk, these could be large
     final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
@@ -722,7 +816,76 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
       }
     };
   }
-  
+
+  private SortedSetDocValues getSortedSetTable(FieldInfo field, SortedSetEntry ss) throws IOException {
+    final long valueCount = binaries.get(field.name).count;
+    final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
+    final LongValues ordinals = getNumeric(ords.get(field.name));
+
+    final long[] table = ss.table;
+    final int[] offsets = ss.tableOffsets;
+
+    return new RandomAccessOrds() {
+
+      int offset, startOffset, endOffset;
+
+      @Override
+      public void setDocument(int docID) {
+        final int ord = (int) ordinals.get(docID);
+        offset = startOffset = offsets[ord];
+        endOffset = offsets[ord + 1];
+      }
+
+      @Override
+      public long ordAt(int index) {
+        return table[startOffset + index];
+      }
+
+      @Override
+      public long nextOrd() {
+        if (offset == endOffset) {
+          return NO_MORE_ORDS;
+        } else {
+          return table[offset++];
+        }
+      }
+
+      @Override
+      public int cardinality() {
+        return endOffset - startOffset;
+      }
+
+      @Override
+      public BytesRef lookupOrd(long ord) {
+        return binary.get(ord);
+      }
+
+      @Override
+      public long getValueCount() {
+        return valueCount;
+      }
+
+      @Override
+      public long lookupTerm(BytesRef key) {
+        if (binary instanceof CompressedBinaryDocValues) {
+          return ((CompressedBinaryDocValues) binary).lookupTerm(key);
+        } else {
+          return super.lookupTerm(key);
+        }
+      }
+
+      @Override
+      public TermsEnum termsEnum() {
+        if (binary instanceof CompressedBinaryDocValues) {
+          return ((CompressedBinaryDocValues) binary).getTermsEnum();
+        } else {
+          return super.termsEnum();
+        }
+      }
+
+    };
+  }
+
   private Bits getLiveBits(final long offset, final int count) throws IOException {
     if (offset == ALL_MISSING) {
       return new Bits.MatchNoBits(count);
@@ -831,6 +994,9 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
   static class SortedSetEntry {
     private SortedSetEntry() {}
     int format;
+
+    long[] table;
+    int[] tableOffsets;
   }
 
   // internally we compose complex dv (sorted/sortedset) from other ones
