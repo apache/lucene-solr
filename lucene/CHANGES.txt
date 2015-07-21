@@ -352,6 +352,10 @@ Optimizations
   and TermsQuery. This should especially help when there are lots of small
   postings lists. (Adrien Grand, Mike McCandless)
 
+* LUCENE-6668: Optimized storage for sorted set and sorted numeric doc values
+  in the case that there are few unique sets of values.
+  (Adrien Grand, Robert Muir)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9

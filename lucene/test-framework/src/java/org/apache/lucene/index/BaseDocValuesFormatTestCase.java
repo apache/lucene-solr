@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -61,6 +62,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
@@ -1940,29 +1943,30 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     directory.close();
   }
 
-  protected void doTestSortedSetVsStoredFields(int numDocs, int minLength, int maxLength, int maxValuesPerDoc) throws Exception {
+  protected void doTestSortedSetVsStoredFields(int numDocs, int minLength, int maxLength, int maxValuesPerDoc, int maxUniqueValues) throws Exception {
     Directory dir = newFSDirectory(createTempDir("dvduel"));
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    
+
+    Set<String> valueSet = new HashSet<String>();
+    for (int i = 0; i < 10000 && valueSet.size() < maxUniqueValues; ++i) {
+      final int length = TestUtil.nextInt(random(), minLength, maxLength);
+      valueSet.add(TestUtil.randomSimpleString(random(), length));
+    }
+    String[] uniqueValues = valueSet.toArray(new String[0]);
+
     // index some docs
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
       doc.add(idField);
-      final int length;
-      if (minLength == maxLength) {
-        length = minLength; // fixed length
-      } else {
-        length = TestUtil.nextInt(random(), minLength, maxLength);
-      }
       int numValues = TestUtil.nextInt(random(), 0, maxValuesPerDoc);
       // create a random set of strings
       Set<String> values = new TreeSet<>();
       for (int v = 0; v < numValues; v++) {
-        values.add(TestUtil.randomSimpleString(random(), length));
+        values.add(RandomPicks.randomFrom(random(), uniqueValues));
       }
-      
+
       // add ordered to the stored field
       for (String v : values) {
         doc.add(new StoredField("stored", v));
@@ -2041,7 +2045,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
-      doTestSortedSetVsStoredFields(atLeast(300), fixedLength, fixedLength, 16);
+      doTestSortedSetVsStoredFields(atLeast(300), fixedLength, fixedLength, 16, 100);
     }
   }
   
@@ -2107,12 +2111,37 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       );
     }
   }
-  
+
+  public void testSortedNumericsFewUniqueSetsVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
+    final long[] values = new long[TestUtil.nextInt(random(), 2, 6)];
+    for (int i = 0; i < values.length; ++i) {
+      values[i] = random().nextLong();
+    }
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedNumericsVsStoredFields(
+          new LongProducer() {
+            @Override
+            long next() {
+              return TestUtil.nextLong(random(), 0, 6);
+            }
+          },
+          new LongProducer() {
+            @Override
+            long next() {
+              return values[random().nextInt(values.length)];
+            }
+          }
+      );
+    }
+  }
+
   public void testSortedSetVariableLengthVsStoredFields() throws Exception {
     assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 16);
+      doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 16, 100);
     }
   }
 
@@ -2121,7 +2150,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
-      doTestSortedSetVsStoredFields(atLeast(300), fixedLength, fixedLength, 1);
+      doTestSortedSetVsStoredFields(atLeast(300), fixedLength, fixedLength, 1, 100);
     }
   }
   
@@ -2129,7 +2158,39 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 1);
+      doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 1, 100);
+    }
+  }
+
+  public void testSortedSetFixedLengthFewUniqueSetsVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedSetVsStoredFields(atLeast(300), 10, 10, 6, 6);
+    }
+  }
+
+  public void testSortedSetVariableLengthFewUniqueSetsVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 6, 6);
+    }
+  }
+
+  public void testSortedSetVariableLengthManyValuesPerDocVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedSetVsStoredFields(atLeast(20), 1, 10, 500, 1000);
+    }
+  }
+
+  public void testSortedSetFixedLengthManyValuesPerDocVsStoredFields() throws Exception {
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedSetVsStoredFields(atLeast(20), 10, 10, 500, 1000);
     }
   }
 
