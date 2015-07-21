@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.CustomAnalyzerStrField; // jdoc
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.junit.Before;
@@ -195,6 +196,27 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     for (String n : new String[] {"0", "1", "2", "100", "99999"}) {
       assertQ(req("qt", "/admin/luke", "fl", "bogus_s", "numTerms", n),
               "count("+field(f)+"lst[@name='topTerms']/int)=0");
+    }
+  }
+
+  /** @see CustomAnalyzerStrField */
+  public void testNullFactories() throws Exception {
+    deleteCore();
+    initCore("solrconfig.xml", "schema-null-charfilters-analyzer.xml");
+
+    try {
+      assertQ(req("qt", "/admin/luke", "show", "schema")
+              , "//lst[@name='custom_tc_string']/lst[@name='indexAnalyzer']"
+              , "//lst[@name='custom_tc_string']/lst[@name='queryAnalyzer']"
+              , "0=count(//lst[@name='custom_tc_string']/lst[@name='indexAnalyzer']/lst[@name='filters'])"
+              , "0=count(//lst[@name='custom_tc_string']/lst[@name='queryAnalyzer']/lst[@name='filters'])"
+              , "0=count(//lst[@name='custom_tc_string']/lst[@name='indexAnalyzer']/lst[@name='charFilters'])"
+              , "0=count(//lst[@name='custom_tc_string']/lst[@name='queryAnalyzer']/lst[@name='charFilters'])"
+              );
+    } finally {
+      // Put back the configuration expected by the rest of the tests in this suite
+      deleteCore();
+      initCore("solrconfig.xml", "schema12.xml");
     }
   }
 

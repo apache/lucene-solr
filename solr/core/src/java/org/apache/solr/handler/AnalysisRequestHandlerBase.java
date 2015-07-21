@@ -104,7 +104,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     NamedList<Object> namedList = new NamedList<>();
 
-    if( cfiltfacs != null ){
+    if (0 < cfiltfacs.length) {
       String source = value;
       for(CharFilterFactory cfiltfac : cfiltfacs ){
         Reader reader = new StringReader(source);

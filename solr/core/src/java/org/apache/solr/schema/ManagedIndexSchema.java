@@ -1285,20 +1285,18 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
   protected void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
     CharFilterFactory[] charFilters = chain.getCharFilterFactories();
-    if (charFilters != null) {
-      for (CharFilterFactory next : charFilters) {
-        if (next instanceof ResourceLoaderAware) {
-          try {
-            ((ResourceLoaderAware) next).inform(loader);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
+    for (CharFilterFactory next : charFilters) {
+      if (next instanceof ResourceLoaderAware) {
+        try {
+          ((ResourceLoaderAware) next).inform(loader);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
-      }
+        }
     }
 
     TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
-    if (tokenizerFactory != null && tokenizerFactory instanceof ResourceLoaderAware) {
+    if (tokenizerFactory instanceof ResourceLoaderAware) {
       try {
         ((ResourceLoaderAware) tokenizerFactory).inform(loader);
       } catch (IOException e) {
@@ -1307,14 +1305,12 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     TokenFilterFactory[] filters = chain.getTokenFilterFactories();
-    if (filters != null) {
-      for (TokenFilterFactory next : filters) {
-        if (next instanceof ResourceLoaderAware) {
-          try {
-            ((ResourceLoaderAware) next).inform(loader);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
+    for (TokenFilterFactory next : filters) {
+      if (next instanceof ResourceLoaderAware) {
+        try {
+          ((ResourceLoaderAware) next).inform(loader);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
     }
