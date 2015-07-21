@@ -129,8 +129,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final SolrCache<Integer,Document> documentCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
-  private final LuceneQueryOptimizer optimizer;
-
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final HashMap<String, SolrCache> cacheMap;
   private static final HashMap<String, SolrCache> noGenericCaches=new HashMap<>(0);
@@ -294,10 +292,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       cacheMap = noGenericCaches;
       cacheList= noCaches;
     }
-    
-    // TODO: This option has been dead/noop since 3.1, should we re-enable it?
-//    optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
-    optimizer = null;
 
     fieldNames = new HashSet<>();
     fieldInfos = leafReader.getFieldInfos();
