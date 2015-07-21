@@ -19,12 +19,12 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.Writer;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+
 
 public abstract class TupleStream implements Serializable {
 
@@ -33,7 +33,15 @@ public abstract class TupleStream implements Serializable {
   public TupleStream() {
 
   }
-  
+
+  public static void writeStreamOpen(Writer out) throws IOException {
+    out.write("{\"docs\":[");
+  }
+
+  public static void writeStreamClose(Writer out) throws IOException {
+    out.write("]}");
+  }
+
   public abstract void setStreamContext(StreamContext context);
 
   public abstract List<TupleStream> children();

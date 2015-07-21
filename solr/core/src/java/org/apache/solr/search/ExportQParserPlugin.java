@@ -62,14 +62,12 @@ public class ExportQParserPlugin extends QParserPlugin {
 
   public class ExportQuery extends RankQuery {
     
-    private int leafCount;
     private Query mainQuery;
     private Object id;
 
     public RankQuery clone() {
       ExportQuery clone = new ExportQuery();
       clone.id = id;
-      clone.leafCount = leafCount;
       return clone;
     }
 
@@ -98,7 +96,8 @@ public class ExportQParserPlugin extends QParserPlugin {
     public TopDocsCollector getTopDocsCollector(int len,
                                                 SolrIndexSearcher.QueryCommand cmd,
                                                 IndexSearcher searcher) throws IOException {
-      FixedBitSet[] sets = new FixedBitSet[this.leafCount];
+      int leafCount = searcher.getTopReaderContext().leaves().size();
+      FixedBitSet[] sets = new FixedBitSet[leafCount];
       return new ExportCollector(sets);
     }
 
@@ -124,7 +123,6 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
     
     public ExportQuery(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
-      this.leafCount = request.getSearcher().getTopReaderContext().leaves().size();
       id = new Object();
     }
   }

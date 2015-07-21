@@ -114,6 +114,8 @@ public class JSONTupleStream {
             String val = parser.getString();
             if (key.equals(val)) {
               return true;
+            } else if("error".equals(val)) {
+              handleError();
             }
           }
           break;
@@ -132,6 +134,26 @@ public class JSONTupleStream {
         case JSONParser.ARRAY_START:
           skipArray(key, deepSearch);
           break;
+      }
+    }
+  }
+
+  private void handleError() throws IOException {
+    for (;;) {
+      int event = parser.nextEvent();
+      if(event == JSONParser.STRING) {
+        String val = parser.getString();
+        if("msg".equals(val)) {
+          event = parser.nextEvent();
+          if(event == JSONParser.STRING) {
+            String msg = parser.getString();
+            if(msg != null) {
+              throw new SolrStream.HandledException(msg);
+            }
+          }
+        }
+      } else if (event == JSONParser.OBJECT_END) {
+        throw new IOException("");
       }
     }
   }

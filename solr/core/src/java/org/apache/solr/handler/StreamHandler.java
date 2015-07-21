@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,9 @@ import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
@@ -129,7 +133,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
-
+    params = adjustParams(params);
+    req.setParams(params);
     boolean objectSerialize = params.getBool("objectSerialize", false);
     TupleStream tupleStream = null;
 
@@ -146,8 +151,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
-      logger.error("Exception creating TupleStream", e);
-      rsp.add("tuples", new DummyErrorStream(e));
+      SolrException.log(logger, e);
+      rsp.add("result-set", new DummyErrorStream(e));
 
       return;
     }
@@ -159,7 +164,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
     tupleStream.setStreamContext(context);
-    rsp.add("tuples", new ExceptionStream(tupleStream));
+    rsp.add("result-set", new TimerStream(new ExceptionStream(tupleStream)));
+  }
+
+  private SolrParams adjustParams(SolrParams params) {
+    ModifiableSolrParams adjustedParams = new ModifiableSolrParams();
+    adjustedParams.add(params);
+    adjustedParams.add(CommonParams.OMIT_HEADER, "true");
+    return adjustedParams;
   }
 
   public String getDescription() {
@@ -198,8 +210,49 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       String msg = e.getMessage();
       Map m = new HashMap();
       m.put("EOF", true);
-      m.put("_EXCEPTION_", msg);
+      m.put("EXCEPTION", msg);
       return new Tuple(m);
     }
   }
+
+  public static class TimerStream extends TupleStream {
+
+    private long begin;
+    private TupleStream tupleStream;
+
+    public TimerStream(TupleStream tupleStream) {
+      this.tupleStream = tupleStream;
+    }
+
+    public StreamComparator getStreamSort() {
+      return this.tupleStream.getStreamSort();
+    }
+
+    public void close() throws IOException {
+      this.tupleStream.close();
+    }
+
+    public void open() throws IOException {
+      this.begin = System.nanoTime();
+      this.tupleStream.open();
+    }
+
+    public void setStreamContext(StreamContext context) {
+      this.tupleStream.setStreamContext(context);
+    }
+
+    public List<TupleStream> children() {
+      return this.tupleStream.children();
+    }
+
+    public Tuple read() throws IOException {
+      Tuple tuple = this.tupleStream.read();
+      if(tuple.EOF) {
+        long totalTime = (System.nanoTime() - begin) / 1000000;
+        tuple.fields.put("RESPONSE_TIME", totalTime);
+      }
+      return tuple;
+    }
+  }
+
 }

@@ -37,6 +37,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -72,7 +73,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
     Exception e1 = res.getException();
     if(e1 != null) {
       if(!(e1 instanceof IgnoreException)) {
-        e1.printStackTrace(new PrintWriter(writer));
+        writeException(e1, writer, false);
       }
       return;
     }
@@ -128,15 +129,14 @@ public class SortingResponseWriter implements QueryResponseWriter {
       exception = e;
     }
 
-    writer.write("{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":"+totalHits+", \"docs\":[");
 
     if(exception != null) {
-      //We have an exception. Send it back to the client and return.
-      writeException(exception, writer);
-      writer.write("]}}");
-      writer.flush();
+      writeException(exception, writer, true);
       return;
     }
+
+    writer.write("{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":"+totalHits+", \"docs\":[");
+
 
     //Write the data.
     List<LeafReaderContext> leaves = req.getSearcher().getTopReaderContext().leaves();
@@ -189,6 +189,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
         }
       } catch(Throwable e) {
         Throwable ex = e;
+        e.printStackTrace();
         while(ex != null) {
           String m = ex.getMessage();
           if(m != null && m.contains("Broken pipe")) {
@@ -242,10 +243,16 @@ public class SortingResponseWriter implements QueryResponseWriter {
     }
   }
 
-  protected void writeException(Exception e, Writer out) throws IOException{
-    out.write("{\"_EXCEPTION_\":\"");
+  protected void writeException(Exception e, Writer out, boolean log) throws IOException{
+    out.write("{\"responseHeader\": {\"status\": 400}, \"response\":{\"numFound\":0, \"docs\":[");
+    out.write("{\"EXCEPTION\":\"");
     writeStr(e.getMessage(), out);
     out.write("\"}");
+    out.write("]}}");
+    out.flush();
+    if(log) {
+      SolrException.log(logger, e);
+    }
   }
 
   protected FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
@@ -1138,6 +1145,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
     public void setCurrentValue(int docId) {
       int ord = currentVals.getOrd(docId);
+
       if(ord < 0) {
         currentOrd = -1;
       } else {

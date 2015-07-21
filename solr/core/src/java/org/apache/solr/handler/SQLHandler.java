@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
@@ -43,7 +42,9 @@ import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -63,9 +64,8 @@ import com.facebook.presto.sql.parser.SqlParser;
 
 public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
-  private Map<String, TableSpec> tableMappings = new HashMap();
-  private String defaultZkhost = null;
-  private String defaultWorkerCollection = null;
+  private static String defaultZkhost = null;
+  private static String defaultWorkerCollection = null;
 
   private Logger logger = LoggerFactory.getLogger(SQLHandler.class);
 
@@ -77,39 +77,40 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
     }
-
-    NamedList<String> tableConf = (NamedList<String>)initArgs.get("tables");
-
-    for(Entry<String,String> entry : tableConf) {
-      String tableName = entry.getKey();
-      if(entry.getValue().indexOf("@") > -1) {
-        String[] parts = entry.getValue().split("@");
-        tableMappings.put(tableName, new TableSpec(parts[0], parts[1]));
-      } else {
-        String collection = entry.getValue();
-        tableMappings.put(tableName, new TableSpec(collection, defaultZkhost));
-      }
-    }
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
+    params = adjustParams(params);
+    req.setParams(params);
     String sql = params.get("sql");
     int numWorkers = params.getInt("numWorkers", 1);
     String workerCollection = params.get("workerCollection", defaultWorkerCollection);
     String workerZkhost = params.get("workerZkhost",defaultZkhost);
     StreamContext context = new StreamContext();
     try {
-      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, tableMappings, numWorkers, workerCollection, workerZkhost);
+
+      if(sql == null) {
+        throw new Exception("sql parameter cannot be null");
+      }
+
+      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, numWorkers, workerCollection, workerZkhost);
       context.numWorkers = numWorkers;
       context.setSolrClientCache(StreamHandler.clientCache);
       tupleStream.setStreamContext(context);
-      rsp.add("tuples", new ExceptionStream(tupleStream));
+      rsp.add("result-set", new StreamHandler.TimerStream(new ExceptionStream(tupleStream)));
     } catch(Exception e) {
       //Catch the SQL parsing and query transformation exceptions.
-      logger.error("Exception parsing SQL", e);
-      rsp.add("tuples", new StreamHandler.DummyErrorStream(e));
+      SolrException.log(logger, e);
+      rsp.add("result-set", new StreamHandler.DummyErrorStream(e));
     }
+  }
+
+  private SolrParams adjustParams(SolrParams params) {
+    ModifiableSolrParams adjustedParams = new ModifiableSolrParams();
+    adjustedParams.add(params);
+    adjustedParams.add(CommonParams.OMIT_HEADER, "true");
+    return adjustedParams;
   }
 
   public String getDescription() {
@@ -123,7 +124,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
   public static class SQLTupleStreamParser {
 
     public static TupleStream parse(String sql,
-                                    Map<String, TableSpec> tableMap,
                                     int numWorkers,
                                     String workerCollection,
                                     String workerZkhost) throws IOException {
@@ -137,30 +137,33 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       TupleStream sqlStream = null;
 
       if(sqlVistor.groupByQuery) {
-        sqlStream = doGroupBy(sqlVistor, tableMap, numWorkers, workerCollection, workerZkhost);
+        sqlStream = doGroupByWithAggregates(sqlVistor, numWorkers, workerCollection, workerZkhost);
       } else {
-        sqlStream = doSelect(sqlVistor, tableMap, numWorkers, workerCollection, workerZkhost);
+        sqlStream = doSelect(sqlVistor);
       }
 
       return sqlStream;
     }
   }
 
-  private static TupleStream doGroupBy(SQLVisitor sqlVisitor,
-                                       Map<String, TableSpec> tableMap,
-                                       int numWorkers,
-                                       String workerCollection,
-                                       String workerZkHost) throws IOException {
+  private static TupleStream doGroupByWithAggregates(SQLVisitor sqlVisitor,
+                                                     int numWorkers,
+                                                     String workerCollection,
+                                                     String workerZkHost) throws IOException {
 
     Set<String> fieldSet = new HashSet();
     Bucket[] buckets = getBuckets(sqlVisitor.groupBy, fieldSet);
     Metric[] metrics = getMetrics(sqlVisitor.fields, fieldSet);
+    if(metrics.length == 0) {
+      throw new IOException("Group by queries must include atleast one aggregate function.");
+    }
 
     String fl = fields(fieldSet);
     String sortDirection = getSortDirection(sqlVisitor.sorts);
     String sort = bucketSort(buckets, sortDirection);
 
-    TableSpec tableSpec = tableMap.get(sqlVisitor.table);
+    TableSpec tableSpec = new TableSpec(sqlVisitor.table, defaultZkhost);
+
     String zkHost = tableSpec.zkHost;
     String collection = tableSpec.collection;
     Map<String, String> params = new HashMap();
@@ -229,17 +232,36 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     return tupleStream;
   }
 
-  private static TupleStream doSelect(SQLVisitor sqlVisitor,
-                                      Map<String, TableSpec> tableMap,
-                                      int numWorkers,
-                                      String workerCollection,
-                                      String workerZkHost) throws IOException {
+  private static TupleStream doSelect(SQLVisitor sqlVisitor) throws IOException {
     List<String> fields = sqlVisitor.fields;
     StringBuilder flbuf = new StringBuilder();
     boolean comma = false;
-    for(String field : fields) {
 
-      if(comma) {
+    if(fields.size() == 0) {
+      throw new IOException("Select columns must be specified.");
+    }
+
+    boolean score = false;
+
+    for (String field : fields) {
+
+      if(field.contains("(")) {
+        throw new IOException("Aggregate functions only supported with group by queries.");
+      }
+
+      if(field.contains("*")) {
+        throw new IOException("* is not supported for column selection.");
+      }
+
+      if(field.equals("score")) {
+        if(sqlVisitor.limit < 0) {
+          throw new IOException("score is not a valid field for unlimited select queries");
+        } else {
+          score = true;
+        }
+      }
+
+      if (comma) {
         flbuf.append(",");
       }
 
@@ -254,21 +276,37 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     StringBuilder siBuf = new StringBuilder();
 
     comma = false;
-    for(SortItem sortItem : sorts) {
-      if(comma) {
-        siBuf.append(",");
+
+    if(sorts != null) {
+      for (SortItem sortItem : sorts) {
+        if (comma) {
+          siBuf.append(",");
+        }
+        siBuf.append(stripQuotes(sortItem.getSortKey().toString()) + " " + ascDesc(sortItem.getOrdering().toString()));
       }
-      siBuf.append(stripQuotes(sortItem.getSortKey().toString()) + " " + ascDesc(sortItem.getOrdering().toString()));
+    } else {
+      if(sqlVisitor.limit < 0) {
+       throw new IOException("order by is required for unlimited select statements.");
+      } else {
+        siBuf.append("score desc");
+        if(!score) {
+          fl = fl+(",score");
+        }
+      }
     }
 
-    TableSpec tableSpec = tableMap.get(sqlVisitor.table);
+    TableSpec tableSpec = new TableSpec(sqlVisitor.table, defaultZkhost);
+
     String zkHost = tableSpec.zkHost;
     String collection = tableSpec.collection;
     Map<String, String> params = new HashMap();
 
     params.put("fl", fl.toString());
     params.put("q", sqlVisitor.query);
-    params.put("sort", siBuf.toString());
+
+    if(siBuf.length() > 0) {
+      params.put("sort", siBuf.toString());
+    }
 
     if(sqlVisitor.limit > -1) {
       params.put("rows", Integer.toString(sqlVisitor.limit));
@@ -384,15 +422,15 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     return buf.toString();
   }
 
-  private static Metric[] getMetrics(List<String> fields, Set<String> fieldSet) {
+  private static Metric[] getMetrics(List<String> fields, Set<String> fieldSet) throws IOException {
     List<Metric> metrics = new ArrayList();
     for(String field : fields) {
-
       if(field.contains("(")) {
 
         field = field.substring(0, field.length()-1);
         String[] parts = field.split("\\(");
         String function = parts[0];
+        validateFunction(function);
         String column = parts[1];
         if(function.equals("min")) {
           metrics.add(new MinMetric(column));
@@ -412,6 +450,14 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     }
     return metrics.toArray(new Metric[metrics.size()]);
+  }
+
+  private static void validateFunction(String function) throws IOException {
+    if(function.equals("min") || function.equals("max") || function.equals("sum") || function.equals("avg") || function.equals("count")) {
+      return;
+    } else {
+      throw new IOException("Invalid function: "+function);
+    }
   }
 
   private static Bucket[] getBuckets(List<String> fields, Set<String> fieldSet) {
@@ -466,13 +512,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
   }
 
 
-  private class TableSpec {
+  private static class TableSpec {
     private String collection;
     private String zkHost;
 
-    public TableSpec(String collection, String zkHost) {
-      this.collection = collection;
-      this.zkHost = zkHost;
+    public TableSpec(String table, String defaultZkHost) {
+      if(table.contains("@")) {
+        String[] parts = table.split("@");
+        this.collection = parts[0];
+        this.zkHost = parts[1];
+      } else {
+        this.collection = table;
+        this.zkHost = defaultZkHost;
+      }
     }
   }
 
@@ -496,7 +548,14 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     protected Void visitComparisonExpression(ComparisonExpression node, StringBuilder buf) {
       String field = node.getLeft().toString();
       String value = node.getRight().toString();
-      buf.append('(').append(stripQuotes(field) + ":" + stripSingleQuotes(value)).append(')');
+      value = stripSingleQuotes(value);
+
+      if(!value.startsWith("(") && !value.startsWith("[")) {
+        //If no parens default to a phrase search.
+        value = '"'+value+'"';
+      }
+
+      buf.append('(').append(stripQuotes(field) + ":" + value).append(')');
       return null;
     }
   }
@@ -805,9 +864,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         case EQUAL:
           return td == d;
         case GREATER_THAN:
-          return td <= d;
+          return td > d;
         case GREATER_THAN_OR_EQUAL:
-          return td <= d;
+          return td >= d;
         default:
           return false;
       }

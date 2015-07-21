@@ -910,7 +910,12 @@
   </requestHandler>
 
 
-
+  <requestHandler name="/sql" class="solr.SQLHandler">
+    <lst name="invariants">
+      <str name="wt">json</str>
+      <str name="distrib">false</str>
+    </lst>
+  </requestHandler>
 
 
 

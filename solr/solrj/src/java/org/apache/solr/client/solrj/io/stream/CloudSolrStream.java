@@ -289,6 +289,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       //System.out.println("Connected to zk an got cluster state.");
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
+
+      if(slices == null) {
+        throw new Exception("Collection not found:"+this.collection);
+      }
+
       long time = System.currentTimeMillis();
       params.put("distrib","false"); // We are the aggregator.
 

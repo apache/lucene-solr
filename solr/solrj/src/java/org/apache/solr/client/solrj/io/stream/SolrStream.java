@@ -159,9 +159,9 @@ public class SolrStream extends TupleStream {
         return new Tuple(m);
       } else {
 
-        String msg = (String) fields.get("_EXCEPTION_");
+        String msg = (String) fields.get("EXCEPTION");
         if (msg != null) {
-          HandledException ioException = new HandledException(this.baseUrl + ":" + msg);
+          HandledException ioException = new HandledException(msg);
           throw ioException;
         }
 
@@ -175,11 +175,10 @@ public class SolrStream extends TupleStream {
         return new Tuple(fields);
       }
     } catch (HandledException e) {
-      throw e;
+      throw new IOException("--> "+this.baseUrl+":"+e.getMessage());
     } catch (Exception e) {
       //The Stream source did not provide an exception in a format that the SolrStream could propagate.
-      e.printStackTrace();
-      throw new IOException(this.baseUrl+": An exception has occurred on the server, refer to server log for details.");
+      throw new IOException("--> "+this.baseUrl+": An exception has occurred on the server, refer to server log for details.");
     }
   }
 

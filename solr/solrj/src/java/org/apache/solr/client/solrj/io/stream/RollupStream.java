@@ -170,6 +170,11 @@ public class RollupStream extends TupleStream implements Expressible {
       Tuple tuple = tupleStream.read();
       if(tuple.EOF) {
         if(!finished) {
+
+          if(currentMetrics == null) {
+            return tuple;
+          }
+
           Map map = new HashMap();
           for(Metric metric : currentMetrics) {
             map.put(metric.getIdentifier(), metric.getValue());
