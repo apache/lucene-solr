@@ -175,10 +175,8 @@ public final class FieldTypePluginLoader
     MultiTermChainBuilder builder = new MultiTermChainBuilder();
 
     CharFilterFactory[] charFactories = tc.getCharFilterFactories();
-    if (charFactories != null) {
-      for (CharFilterFactory fact : charFactories) {
-        builder.add(fact);
-      }
+    for (CharFilterFactory fact : charFactories) {
+      builder.add(fact);
     }
 
     builder.add(tc.getTokenizerFactory());

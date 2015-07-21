@@ -883,7 +883,7 @@ public abstract class FieldType extends FieldProperties {
       Map<String,String> factoryArgs;
       TokenizerChain tokenizerChain = (TokenizerChain)analyzer;
       CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
-      if (null != charFilterFactories && charFilterFactories.length > 0) {
+      if (0 < charFilterFactories.length) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
@@ -927,7 +927,7 @@ public abstract class FieldType extends FieldProperties {
       analyzerProps.add(TOKENIZER, tokenizerProps);
 
       TokenFilterFactory[] filterFactories = tokenizerChain.getTokenFilterFactories();
-      if (null != filterFactories && filterFactories.length > 0) {
+      if (0 < filterFactories.length) {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();

@@ -497,15 +497,15 @@ public class LukeRequestHandler extends RequestHandlerBase
       TokenizerChain tchain = (TokenizerChain)analyzer;
 
       CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
-      SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<>();
-      for (CharFilterFactory cfiltfac : cfiltfacs) {
-        Map<String, Object> tok = new HashMap<>();
-        String className = cfiltfac.getClass().getName();
-        tok.put("className", className);
-        tok.put("args", cfiltfac.getOriginalArgs());
-        cfilters.add(className.substring(className.lastIndexOf('.')+1), tok);
-      }
-      if (cfilters.size() > 0) {
+      if (0 < cfiltfacs.length) {
+        SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<>();
+        for (CharFilterFactory cfiltfac : cfiltfacs) {
+          Map<String, Object> tok = new HashMap<>();
+          String className = cfiltfac.getClass().getName();
+          tok.put("className", className);
+          tok.put("args", cfiltfac.getOriginalArgs());
+          cfilters.add(className.substring(className.lastIndexOf('.')+1), tok);
+        }
         aninfo.add("charFilters", cfilters);
       }
 
@@ -516,15 +516,15 @@ public class LukeRequestHandler extends RequestHandlerBase
       aninfo.add("tokenizer", tokenizer);
 
       TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
-      SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<>();
-      for (TokenFilterFactory filtfac : filtfacs) {
-        Map<String, Object> tok = new HashMap<>();
-        String className = filtfac.getClass().getName();
-        tok.put("className", className);
-        tok.put("args", filtfac.getOriginalArgs());
-        filters.add(className.substring(className.lastIndexOf('.')+1), tok);
-      }
-      if (filters.size() > 0) {
+      if (0 < filtfacs.length) {
+        SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<>();
+        for (TokenFilterFactory filtfac : filtfacs) {
+          Map<String, Object> tok = new HashMap<>();
+          String className = filtfac.getClass().getName();
+          tok.put("className", className);
+          tok.put("args", filtfac.getOriginalArgs());
+          filters.add(className.substring(className.lastIndexOf('.')+1), tok);
+        }
         aninfo.add("filters", filters);
       }
     }

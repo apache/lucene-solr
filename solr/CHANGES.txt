@@ -239,6 +239,9 @@ Bug Fixes
 * SOLR-7810: map-reduce contrib script to set classpath for convenience refers to example
   rather than server. (Mark Miller)
 
+* SOLR-7765: Hardened the behavior of TokenizerChain when null arguments are used in constructor.
+  This prevents NPEs in some code paths.  (Konstantin Gribov, hossman)
+
 Optimizations
 ----------------------
 

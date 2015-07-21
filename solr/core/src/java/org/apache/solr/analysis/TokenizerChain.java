@@ -29,22 +29,47 @@ import java.io.Reader;
  * create a TokenStream.
  */
 public final class TokenizerChain extends SolrAnalyzer {
+  private static final CharFilterFactory[] EMPTY_CHAR_FITLERS = new CharFilterFactory[0];
+  private static final TokenFilterFactory[] EMPTY_TOKEN_FITLERS = new TokenFilterFactory[0];
+  
   final private CharFilterFactory[] charFilters;
   final private TokenizerFactory tokenizer;
   final private TokenFilterFactory[] filters;
 
+  /** 
+   * Creates a new TokenizerChain w/o any CharFilterFactories.
+   *
+   * @param tokenizer Factory for the Tokenizer to use, must not be null.
+   * @param filters Factories for the TokenFilters to use - if null, will be treated as if empty.
+   */
   public TokenizerChain(TokenizerFactory tokenizer, TokenFilterFactory[] filters) {
     this(null,tokenizer,filters);
   }
 
+  /** 
+   * Creates a new TokenizerChain.
+   *
+   * @param charFilters Factories for the CharFilters to use, if any - if null, will be treated as if empty.
+   * @param tokenizer Factory for the Tokenizer to use, must not be null.
+   * @param filters Factories for the TokenFilters to use if any- if null, will be treated as if empty.
+   */
   public TokenizerChain(CharFilterFactory[] charFilters, TokenizerFactory tokenizer, TokenFilterFactory[] filters) {
+    charFilters = null == charFilters ? EMPTY_CHAR_FITLERS : charFilters;
+    filters = null == filters ? EMPTY_TOKEN_FITLERS : filters;
+    if (null == tokenizer) {
+      throw new NullPointerException("TokenizerFactory must not be null");
+    }
+    
     this.charFilters = charFilters;
     this.tokenizer = tokenizer;
     this.filters = filters;
   }
 
+  /** @return array of CharFilterFactories, may be empty but never null */
   public CharFilterFactory[] getCharFilterFactories() { return charFilters; }
+  /** @return the TokenizerFactory in use, will never be null */
   public TokenizerFactory getTokenizerFactory() { return tokenizer; }
+  /** @return array of TokenFilterFactories, may be empty but never null */
   public TokenFilterFactory[] getTokenFilterFactories() { return filters; }
 
   @Override
