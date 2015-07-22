@@ -1,6 +1,12 @@
-package org.apache.solr.client.solrj.io.stream.expr;
+package org.apache.solr.client.solrj.io.comp;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.Comparator;
+
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,8 +26,8 @@ import java.io.IOException;
  */
 
 /**
- * Defines a stream that can be expressed in an expression
+ * Defines a comparator that can be expressed in an expression
  */
-public interface Expressible {
+public interface ExpressibleComparator {
   StreamExpressionParameter toExpression(StreamFactory factory) throws IOException;
 }

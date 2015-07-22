@@ -14,9 +14,9 @@ import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.ExpressibleComparator;
 import org.apache.solr.client.solrj.io.comp.MultiComp;
-import org.apache.solr.client.solrj.io.eq.Equalitor;
-import org.apache.solr.client.solrj.io.eq.MultiEqualitor;
+import org.apache.solr.client.solrj.io.stream.ExpressibleStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 
 /*
@@ -170,7 +170,7 @@ public class StreamFactory implements Serializable {
     String function = expression.getFunctionName();
     if(streamFunctions.containsKey(function)){
       Class clazz = streamFunctions.get(function);
-      if(Expressible.class.isAssignableFrom(clazz) && TupleStream.class.isAssignableFrom(clazz)){
+      if(ExpressibleStream.class.isAssignableFrom(clazz) && TupleStream.class.isAssignableFrom(clazz)){
         TupleStream stream = (TupleStream)createInstance(streamFunctions.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
         return stream;
       }
@@ -201,36 +201,6 @@ public class StreamFactory implements Serializable {
     }
   }
     
-  public Equalitor<Tuple> constructEqualitor(String equalitorString, Class equalitorType) throws IOException {
-    if(equalitorString.contains(",")){
-      String[] parts = equalitorString.split(",");
-      Equalitor[] eqs = new Equalitor[parts.length];
-      for(int idx = 0; idx < parts.length; ++idx){
-        eqs[idx] = constructEqualitor(parts[idx].trim(), equalitorType);
-      }
-      return new MultiEqualitor(eqs);
-    }
-    else{
-      String leftFieldName;
-      String rightFieldName;
-      
-      if(equalitorString.contains("=")){
-        String[] parts = equalitorString.split("=");
-        if(2 != parts.length){
-          throw new IOException(String.format(Locale.ROOT,"Invalid equalitor expression %s - expecting fieldName=fieldName",equalitorString));
-        }
-        
-        leftFieldName = parts[0].trim();
-        rightFieldName = parts[1].trim();
-      }
-      else{
-        leftFieldName = rightFieldName = equalitorString.trim();
-      }
-      
-      return (Equalitor)createInstance(equalitorType, new Class[]{ String.class, String.class }, new Object[]{ leftFieldName, rightFieldName });
-    }
-  }
-
   public <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException{
     // This should use SolrResourceLoader - TODO
     // This is adding a restriction that the class has a public constructor - we may not want to do that

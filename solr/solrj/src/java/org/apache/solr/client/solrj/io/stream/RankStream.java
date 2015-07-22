@@ -27,8 +27,8 @@ import java.util.Locale;
 import java.util.PriorityQueue;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.ExpressibleComparator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 *  Iterates over a TupleStream and Ranks the topN tuples based on a Comparator.
 **/
 
-public class RankStream extends TupleStream implements Expressible {
+public class RankStream extends TupleStream implements ExpressibleStream {
 
   private static final long serialVersionUID = 1;
 
@@ -56,7 +56,7 @@ public class RankStream extends TupleStream implements Expressible {
   
   public RankStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, ExpressibleStream.class, TupleStream.class);
     StreamExpressionNamedParameter nParam = factory.getNamedOperand(expression, "n");
     StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, "sort");
     
@@ -87,7 +87,7 @@ public class RankStream extends TupleStream implements Expressible {
     }
     
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
-    Comparator<Tuple> comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), StreamComparator.class);
+    Comparator<Tuple> comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), FieldComparator.class);
     
     init(stream,nInt,comp);    
   }
@@ -107,16 +107,16 @@ public class RankStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("n", Integer.toString(size)));
     
     // stream
-    if(tupleStream instanceof Expressible){
-      expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+    if(tupleStream instanceof ExpressibleStream){
+      expression.addParameter(((ExpressibleStream)tupleStream).toExpression(factory));
     }
     else{
       throw new IOException("This RankStream contains a non-expressible TupleStream - it cannot be converted to an expression");
     }
         
     // sort
-    if(comp instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("sort",((Expressible)comp).toExpression(factory)));
+    if(comp instanceof ExpressibleComparator){
+      expression.addParameter(new StreamExpressionNamedParameter("sort",((ExpressibleComparator)comp).toExpression(factory)));
     }
     else{
       throw new IOException("This RankStream contains a non-expressible comparator - it cannot be converted to an expression");

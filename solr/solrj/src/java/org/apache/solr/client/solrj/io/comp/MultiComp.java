@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.Comparator;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -32,7 +31,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  *  Wraps multiple Comparators to provide sub-sorting.
  **/
 
-public class MultiComp implements Comparator<Tuple>, Expressible, Serializable {
+public class MultiComp implements Comparator<Tuple>, ExpressibleComparator, Serializable {
 
   private static final long serialVersionUID = 1;
 
@@ -57,9 +56,9 @@ public class MultiComp implements Comparator<Tuple>, Expressible, Serializable {
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StringBuilder sb = new StringBuilder();
     for(Comparator<Tuple> comp : comps){
-      if(comp instanceof Expressible){
+      if(comp instanceof ExpressibleComparator){
         if(sb.length() > 0){ sb.append(","); }
-        sb.append(((Expressible)comp).toExpression(factory));
+        sb.append(((ExpressibleComparator)comp).toExpression(factory));
       }
       else{
         throw new IOException("This MultiComp contains a non-expressible comparator - it cannot be converted to an expression");

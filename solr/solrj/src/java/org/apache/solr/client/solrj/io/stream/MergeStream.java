@@ -18,14 +18,15 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.ExpressibleComparator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -37,7 +38,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 **/
 
 
-public class MergeStream extends TupleStream implements Expressible {
+public class MergeStream extends TupleStream implements ExpressibleStream {
 
   private static final long serialVersionUID = 1;
 
@@ -53,7 +54,7 @@ public class MergeStream extends TupleStream implements Expressible {
   
   public MergeStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, ExpressibleStream.class, TupleStream.class);
     StreamExpressionNamedParameter onExpression = factory.getNamedOperand(expression, "on");
     
     // validate expression contains only what we want.
@@ -72,7 +73,7 @@ public class MergeStream extends TupleStream implements Expressible {
     }
     
     // Merge is always done over equality, so always use an EqualTo comparator
-    this.comp = factory.constructComparator(((StreamExpressionValue)onExpression.getParameter()).getValue(), StreamComparator.class);
+    this.comp = factory.constructComparator(((StreamExpressionValue)onExpression.getParameter()).getValue(), FieldComparator.class);
   }
   
   @Override
@@ -85,8 +86,8 @@ public class MergeStream extends TupleStream implements Expressible {
     expression.addParameter(streamB.toExpression(factory));
     
     // on
-    if(comp instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("on",((Expressible)comp).toExpression(factory)));
+    if(comp instanceof ExpressibleComparator){
+      expression.addParameter(new StreamExpressionNamedParameter("on",((ExpressibleComparator)comp).toExpression(factory)));
     }
     else{
       throw new IOException("This MergeStream contains a non-expressible comparator - it cannot be converted to an expression");

@@ -236,7 +236,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
       .withStreamFunction("unique", UniqueStream.class);
     
     // Basic test
-    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")");
+    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f asc\")");
     stream = new UniqueStream(expression, factory);
     tuples = getTuples(stream);
     
@@ -244,7 +244,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertOrder(tuples, 0, 1, 3, 4);
 
     // Basic test desc
-    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"), over=\"a_f\")");
+    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"), over=\"a_f desc\")");
     stream = new UniqueStream(expression, factory);
     tuples = getTuples(stream);
     
@@ -252,7 +252,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertOrder(tuples, 4,3,1,2);
     
     // Basic w/multi comp
-    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
+    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f asc, a_i asc\")");
     stream = new UniqueStream(expression, factory);
     tuples = getTuples(stream);
     
@@ -260,7 +260,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertOrder(tuples, 0,2,1,3,4);
     
     // full factory w/multi comp
-    stream = factory.constructStream("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
+    stream = factory.constructStream("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f asc, a_i asc\")");
     tuples = getTuples(stream);
     
     assert(tuples.size() == 5);
@@ -371,7 +371,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
                                               + "n=2,"
                                               + "unique("
                                               +   "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
-                                              +   "over=\"a_f\"),"
+                                              +   "over=\"a_f desc\"),"
                                               + "sort=\"a_f desc\")");
     stream = new RankStream(expression, factory);
     tuples = getTuples(stream);
@@ -384,7 +384,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
                                     + "n=4,"
                                     + "unique("
                                     +   "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
-                                    +   "over=\"a_f\"),"
+                                    +   "over=\"a_f asc\"),"
                                     + "sort=\"a_f asc\")");
     tuples = getTuples(stream);
     
@@ -491,7 +491,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         .withStreamFunction("group", ReducerStream.class)
         .withStreamFunction("parallel", ParallelStream.class);
 
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_f asc\")");
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_f asc\")");
 
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
