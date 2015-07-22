@@ -32,18 +32,22 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  *  Wraps multiple Comparators to provide sub-sorting.
  **/
 
-public class MultiComp implements Comparator<Tuple>, Expressible, Serializable {
+public class MultipleFieldComparator implements StreamComparator {
 
   private static final long serialVersionUID = 1;
 
-  private Comparator<Tuple>[] comps;
+  private StreamComparator[] comps;
 
-  public MultiComp(Comparator<Tuple>... comps) {
+  public MultipleFieldComparator(StreamComparator... comps) {
     this.comps = comps;
   }
 
+  public StreamComparator[] getComps(){
+    return comps;
+  }
+  
   public int compare(Tuple t1, Tuple t2) {
-    for(Comparator<Tuple> comp : comps) {
+    for(StreamComparator comp : comps) {
       int i = comp.compare(t1, t2);
       if(i != 0) {
         return i;
@@ -56,7 +60,7 @@ public class MultiComp implements Comparator<Tuple>, Expressible, Serializable {
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StringBuilder sb = new StringBuilder();
-    for(Comparator<Tuple> comp : comps){
+    for(StreamComparator comp : comps){
       if(comp instanceof Expressible){
         if(sb.length() > 0){ sb.append(","); }
         sb.append(((Expressible)comp).toExpression(factory));
@@ -67,5 +71,25 @@ public class MultiComp implements Comparator<Tuple>, Expressible, Serializable {
     }
     
     return new StreamExpressionValue(sb.toString());
+  }
+  
+  @Override
+  public boolean isDerivedFrom(StreamComparator base){
+    if(null == base){ return false; }
+    if(base instanceof MultipleFieldComparator){
+      MultipleFieldComparator baseComp = (MultipleFieldComparator)base;
+      
+      if(baseComp.comps.length >= comps.length){
+        for(int idx = 0; idx < comps.length; ++idx){
+          if(!comps[idx].isDerivedFrom(baseComp.comps[idx])){
+            return false;
+          }
+        }
+        
+        return true;
+      }
+    }
+    
+    return false;
   }
 }

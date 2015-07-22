@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -14,9 +13,11 @@ import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.MultiComp;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.Equalitor;
-import org.apache.solr.client.solrj.io.eq.MultiEqualitor;
+import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 
 /*
@@ -179,14 +180,14 @@ public class StreamFactory implements Serializable {
     throw new IOException(String.format(Locale.ROOT,"Invalid stream expression %s - function '%s' is unknown (not mapped to a valid TupleStream)", expression, expression.getFunctionName()));
   }
 
-  public Comparator<Tuple> constructComparator(String comparatorString, Class comparatorType) throws IOException {
+  public StreamComparator constructComparator(String comparatorString, Class comparatorType) throws IOException {
     if(comparatorString.contains(",")){
       String[] parts = comparatorString.split(",");
-      Comparator[] comps = new Comparator[parts.length];
+      StreamComparator[] comps = new StreamComparator[parts.length];
       for(int idx = 0; idx < parts.length; ++idx){
         comps[idx] = constructComparator(parts[idx].trim(), comparatorType);
       }
-      return new MultiComp(comps);
+      return new MultipleFieldComparator(comps);
     }
     else{
       String[] parts = comparatorString.split(" ");
@@ -197,18 +198,18 @@ public class StreamFactory implements Serializable {
       String fieldName = parts[0].trim();
       String order = parts[1].trim();
       
-      return (Comparator)createInstance(comparatorType, new Class[]{ String.class, ComparatorOrder.class }, new Object[]{ fieldName, ComparatorOrder.fromString(order) });
+      return (StreamComparator)createInstance(comparatorType, new Class[]{ String.class, ComparatorOrder.class }, new Object[]{ fieldName, ComparatorOrder.fromString(order) });
     }
   }
     
-  public Equalitor<Tuple> constructEqualitor(String equalitorString, Class equalitorType) throws IOException {
+  public StreamEqualitor constructEqualitor(String equalitorString, Class equalitorType) throws IOException {
     if(equalitorString.contains(",")){
       String[] parts = equalitorString.split(",");
-      Equalitor[] eqs = new Equalitor[parts.length];
+      StreamEqualitor[] eqs = new StreamEqualitor[parts.length];
       for(int idx = 0; idx < parts.length; ++idx){
         eqs[idx] = constructEqualitor(parts[idx].trim(), equalitorType);
       }
-      return new MultiEqualitor(eqs);
+      return new MultipleFieldEqualitor(eqs);
     }
     else{
       String leftFieldName;
@@ -227,7 +228,7 @@ public class StreamFactory implements Serializable {
         leftFieldName = rightFieldName = equalitorString.trim();
       }
       
-      return (Equalitor)createInstance(equalitorType, new Class[]{ String.class, String.class }, new Object[]{ leftFieldName, rightFieldName });
+      return (StreamEqualitor)createInstance(equalitorType, new Class[]{ String.class, String.class }, new Object[]{ leftFieldName, rightFieldName });
     }
   }
 

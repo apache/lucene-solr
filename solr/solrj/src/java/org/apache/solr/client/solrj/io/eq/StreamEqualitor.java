@@ -18,54 +18,13 @@
 package org.apache.solr.client.solrj.io.eq;
 
 import java.io.Serializable;
-import java.util.Comparator;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-/**
- *  An equality field Equalitor which compares a field of two Tuples and determines if they are equal.
- **/
-public class StreamEqualitor implements Equalitor<Tuple>, Expressible, Serializable {
-
-  private static final long serialVersionUID = 1;
-  
-  private String leftFieldName;
-  private String rightFieldName;
-  private StreamComparator comparator;
-  
-  public StreamEqualitor(String fieldName) {
-    init(fieldName, fieldName);
-  }
-  public StreamEqualitor(String leftFieldName, String rightFieldName){
-    init(leftFieldName, rightFieldName);
-  }
-  
-  private void init(String leftFieldName, String rightFieldName){
-    this.leftFieldName = leftFieldName;
-    this.rightFieldName = rightFieldName;
-    this.comparator = new StreamComparator(leftFieldName, rightFieldName, ComparatorOrder.ASCENDING);
-  }
-  
-  public StreamExpressionParameter toExpression(StreamFactory factory){
-    StringBuilder sb = new StringBuilder();
-    
-    sb.append(leftFieldName);
-    
-    if(!leftFieldName.equals(rightFieldName)){
-      sb.append("=");
-      sb.append(rightFieldName); 
-    }
-    
-    return new StreamExpressionValue(sb.toString());
-  }
-  
-  public boolean test(Tuple leftTuple, Tuple rightTuple) {
-    return 0 == comparator.compare(leftTuple, rightTuple); 
-  }
+/** Defines a comparator we can use with TupleStreams */
+public interface StreamEqualitor extends Equalitor<Tuple>, Expressible, Serializable {
+  public boolean isDerivedFrom(StreamEqualitor base);
+  public boolean isDerivedFrom(StreamComparator base);
 }

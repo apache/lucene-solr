@@ -32,8 +32,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.comp.MultiComp;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
@@ -171,7 +172,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     if(numWorkers > 1) {
       // Do the rollups in parallel
       // Maintain the sort of the Tuples coming from the workers.
-      Comparator<Tuple> comp = bucketSortComp(buckets, sortDirection);
+      StreamComparator comp = bucketSortComp(buckets, sortDirection);
       tupleStream = new ParallelStream(workerZkHost, workerCollection, tupleStream, numWorkers, comp);
     }
 
@@ -185,7 +186,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     if(sqlVisitor.sorts != null && sqlVisitor.sorts.size() > 0) {
       if(!sortsEqual(buckets, sortDirection, sqlVisitor.sorts)) {
         int limit = sqlVisitor.limit == -1 ? 100 : sqlVisitor.limit;
-        Comparator<Tuple> comp = getComp(sqlVisitor.sorts);
+        StreamComparator comp = getComp(sqlVisitor.sorts);
         //Rank the Tuples
         //If parallel stream is used ALL the Rolled up tuples from the workers will be ranked
         //Providing a true Top or Bottom.
@@ -311,35 +312,35 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     return "asc";
   }
 
-  private static Comparator<Tuple> bucketSortComp(Bucket[] buckets, String dir) {
-    Comparator<Tuple>[] comps = new Comparator[buckets.length];
+  private static StreamComparator bucketSortComp(Bucket[] buckets, String dir) {
+    FieldComparator[] comps = new FieldComparator[buckets.length];
     for(int i=0; i<buckets.length; i++) {
       ComparatorOrder comparatorOrder = ascDescComp(dir);
       String sortKey = buckets[i].toString();
-      comps[i] = new StreamComparator(stripQuotes(sortKey), comparatorOrder);
+      comps[i] = new FieldComparator(stripQuotes(sortKey), comparatorOrder);
     }
 
     if(comps.length == 1) {
       return comps[0];
     } else {
-      return new MultiComp(comps);
+      return new MultipleFieldComparator(comps);
     }
   }
 
-  private static Comparator<Tuple> getComp(List<SortItem> sortItems) {
-    Comparator<Tuple>[] comps = new Comparator[sortItems.size()];
+  private static StreamComparator getComp(List<SortItem> sortItems) {
+    FieldComparator[] comps = new FieldComparator[sortItems.size()];
     for(int i=0; i<sortItems.size(); i++) {
       SortItem sortItem = sortItems.get(i);
       String ordering = sortItem.getOrdering().toString();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
       String sortKey = sortItem.getSortKey().toString();
-      comps[i] = new StreamComparator(stripQuotes(sortKey), comparatorOrder);
+      comps[i] = new FieldComparator(stripQuotes(sortKey), comparatorOrder);
     }
 
     if(comps.length == 1) {
       return comps[0];
     } else {
-      return new MultiComp(comps);
+      return new MultipleFieldComparator(comps);
     }
   }
 
@@ -671,6 +672,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       return children;
     }
 
+    public StreamComparator getStreamSort(){
+      return stream.getStreamSort();
+    }
+
     public void setStreamContext(StreamContext context) {
       stream.setStreamContext(context);
     }
@@ -706,6 +711,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     public void close() throws IOException {
       this.stream.close();
+    }
+
+    public StreamComparator getStreamSort(){
+      return stream.getStreamSort();
     }
 
     public List<TupleStream> children() {
