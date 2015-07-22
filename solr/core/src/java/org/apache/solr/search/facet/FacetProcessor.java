@@ -283,15 +283,16 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
 
-  public void fillBucket(SimpleOrderedMap<Object> bucket, Query q) throws IOException {
+  public void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result) throws IOException {
     boolean needDocSet = freq.getFacetStats().size() > 0 || freq.getSubFacets().size() > 0;
 
     // TODO: always collect counts or not???
 
-    DocSet result = null;
     int count;
 
-    if (needDocSet) {
+    if (result != null) {
+      count = result.size();
+    } else if (needDocSet) {
       if (q == null) {
         result = fcontext.base;
         // result.incref(); // OFF-HEAP

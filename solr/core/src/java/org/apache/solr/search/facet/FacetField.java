@@ -53,7 +53,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.HashDocSet;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -174,7 +173,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SlotAcc[] otherAccs; // Accumulators that do not need to be calculated across all buckets.
 
   SpecialSlotAcc allBucketsAcc;  // this can internally refer to otherAccs and/or collectAcc. setNextReader should be called on otherAccs directly if they exist.
-  SpecialSlotAcc missingAcc;     // this can internally refer to otherAccs and/or collectAcc. setNextReader should be called on otherAccs directly if they exist.
 
 
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
@@ -502,7 +500,6 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
   int maxSlots;
 
   int allBucketsSlot = -1;  // slot for the primary Accs (countAcc, collectAcc)
-  int missingSlot = -1;
 
   public FacetFieldProcessorFCBase(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
@@ -538,19 +535,11 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
     if (freq.allBuckets) {
       allBucketsSlot = maxSlots++;
     }
-    if (freq.missing) {
-      missingSlot = maxSlots++;
-    }
 
     createCollectAcc(nDocs, maxSlots);
 
     if (freq.allBuckets) {
       allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0);
-    }
-
-    if (freq.missing) {
-      // TODO: optimize case when missingSlot can be contiguous with other slots
-      missingAcc = new SpecialSlotAcc(fcontext, collectAcc, missingSlot, otherAccs, 1);
     }
 
     collectDocs();
@@ -587,7 +576,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
     };
 
     Slot bottom = null;
-    for (int i = (startTermIndex == -1) ? 1 : 0; i < nTerms; i++) {
+    for (int i = 0; i < nTerms; i++) {
       // screen out buckets not matching mincount immediately (i.e. don't even increment numBuckets)
       if (effectiveMincount > 0 && countAcc.getCount(i) < effectiveMincount) {
         continue;
@@ -672,29 +661,8 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
     if (freq.missing) {
       SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field));
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null);
       res.add("missing", missingBucket);
-
-      /*** TODO - OPTIMIZE
-      DocSet missingDocSet = null;
-      if (startTermIndex == -1) {
-        fillBucket(missingBucket, countAcc.getCount(0), null);
-      } else {
-        missingDocSet = getFieldMissing(fcontext.searcher, fcontext.base, freq.field);
-        // an extra slot was added to the end for this missing bucket
-        countAcc.incrementCount(nTerms, missingDocSet.size());
-        collect(missingDocSet, nTerms);
-        addStats(missingBucket, nTerms);
-      }
-
-      if (freq.getSubFacets().size() > 0) {
-        // TODO: we can do better than this!
-        if (missingDocSet == null) {
-          missingDocSet = getFieldMissing(fcontext.searcher, fcontext.base, freq.field);
-        }
-        processSubs(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), missingDocSet);
-      }
-       ***/
     }
 
     return res;
@@ -751,9 +719,6 @@ class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
       endTermIndex = (int)si.getValueCount();
     }
 
-    // optimize collecting the "missing" bucket when startTermindex is 0 (since the "missing" ord is -1)
-    startTermIndex = startTermIndex==0 && freq.missing ? -1 : startTermIndex;
-
     nTerms = endTermIndex - startTermIndex;
   }
 
@@ -809,6 +774,7 @@ class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       int segOrd = singleDv.getOrd(doc);
+      if (segOrd < 0) continue;
       collect(doc, segOrd, toGlobal);
     }
   }
@@ -817,11 +783,8 @@ class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       multiDv.setDocument(doc);
-      int segOrd = (int)multiDv.nextOrd();
-      collect(doc, segOrd, toGlobal); // collect anything the first time (even -1 for missing)
-      if (segOrd < 0) continue;
       for(;;) {
-        segOrd = (int)multiDv.nextOrd();
+        int segOrd = (int)multiDv.nextOrd();
         if (segOrd < 0) break;
         collect(doc, segOrd, toGlobal);
       }
@@ -837,8 +800,7 @@ class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
       if (collectAcc != null) {
         collectAcc.collect(doc, arrIdx);
       }
-      // since this can be called for missing, we need to ensure it's currently not.
-      if (allBucketsAcc != null && ord >= 0) {
+      if (allBucketsAcc != null) {
         allBucketsAcc.collect(doc, arrIdx);
       }
     }

@@ -394,7 +394,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
   public void collectDocs(FacetFieldProcessorUIF processor) throws IOException {
-    if (processor.collectAcc==null && processor.missingAcc == null && processor.allBucketsAcc == null && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField) {
+    if (processor.collectAcc==null && processor.allBucketsAcc == null && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField) {
       getCounts(processor, processor.countAcc);
       return;
     }

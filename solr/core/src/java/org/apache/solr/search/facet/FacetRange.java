@@ -336,7 +336,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
-    fillBucket(bucket, rangeQ);
+    fillBucket(bucket, rangeQ, null);
 
     return bucket;
   }
