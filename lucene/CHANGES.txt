@@ -356,6 +356,9 @@ Optimizations
   in the case that there are few unique sets of values.
   (Adrien Grand, Robert Muir)
 
+* LUCENE-6690: Sped up MultiTermsEnum.next() on high-cardinality fields.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
