@@ -1424,7 +1424,7 @@ GOTO :eof
 REM Set which JVM vendor we have
 :resolve_java_vendor
 set "JAVA_VENDOR=Oracle"
-%JAVA% -version 2>&1 | findstr /i "IBM J9" > javares
+"%JAVA%" -version 2>&1 | findstr /i "IBM J9" > javares
 set /p JAVA_VENDOR_OUT=<javares
 del javares
 if NOT "%JAVA_VENDOR_OUT%" == "" (
