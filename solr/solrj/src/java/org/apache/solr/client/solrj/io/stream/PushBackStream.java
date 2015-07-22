@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -83,13 +82,6 @@ public class PushBackStream extends TupleStream {
       return stream.read();
     }
   }
-  
-  /** Return the stream sort - ie, the order in which records are returned
-   *  This returns the streamSort of the substream */
-  public StreamComparator getStreamSort(){
-    return stream.getStreamSort();
-  }
-
 
   public int getCost() {
     return 0;

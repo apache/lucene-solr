@@ -18,10 +18,10 @@
 package org.apache.solr.client.solrj.io.eq;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.Comparator;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -32,18 +32,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  *  Wraps multiple Equalitors.
  **/
 
-public class MultipleFieldEqualitor implements StreamEqualitor {
+public class MultiEqualitor implements Equalitor<Tuple>, Expressible, Serializable {
 
   private static final long serialVersionUID = 1;
 
-  private StreamEqualitor[] eqs;
+  private Equalitor<Tuple>[] eqs;
 
-  public MultipleFieldEqualitor(StreamEqualitor... eqs) {
+  public MultiEqualitor(Equalitor<Tuple>... eqs) {
     this.eqs = eqs;
-  }
-  
-  public StreamEqualitor[] getEqs(){
-    return eqs;
   }
 
   public boolean test(Tuple t1, Tuple t2) {
@@ -70,43 +66,5 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
     }
     
     return new StreamExpressionValue(sb.toString());
-  }
-  
-  @Override
-  public boolean isDerivedFrom(StreamEqualitor base){
-    if(null == base){ return false; }
-    if(base instanceof MultipleFieldEqualitor){
-      MultipleFieldEqualitor baseEq = (MultipleFieldEqualitor)base;
-      
-      if(baseEq.eqs.length >= eqs.length){
-        for(int idx = 0; idx < eqs.length; ++idx){
-          if(!eqs[idx].isDerivedFrom(baseEq.eqs[idx])){
-            return false;
-          }
-        }        
-        return true;
-      }
-    }
-    
-    return false;
-  }
-  
-  @Override
-  public boolean isDerivedFrom(StreamComparator base){
-    if(null == base){ return false; }
-    if(base instanceof StreamComparator){
-      MultipleFieldComparator baseComps = (MultipleFieldComparator)base;
-      
-      if(baseComps.getComps().length >= eqs.length){
-        for(int idx = 0; idx < eqs.length; ++idx){
-          if(!eqs[idx].isDerivedFrom(baseComps.getComps()[idx])){
-            return false;
-          }
-        }        
-        return true;
-      }
-    }
-    
-    return false;
   }
 }

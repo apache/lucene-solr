@@ -78,10 +78,10 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     String expressionString;
     
     // Basic test
-    stream = new UniqueStream(StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")"), factory);
+    stream = new UniqueStream(StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f asc\")"), factory);
     expressionString = stream.toExpression(factory).toString();
     assertTrue(expressionString.contains("unique(search(collection1"));
-    assertTrue(expressionString.contains("over=a_f"));
+    assertTrue(expressionString.contains("over=\"a_f asc\""));
   }
   
   @Test

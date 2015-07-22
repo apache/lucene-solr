@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -96,10 +95,5 @@ public class CountStream extends TupleStream implements Expressible, Serializabl
       ++count;
       return t;
     }
-  }
-
-  @Override
-  public StreamComparator getStreamSort() {
-    return null;
   }
 }

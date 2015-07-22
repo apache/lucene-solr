@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -44,10 +43,7 @@ public abstract class TupleStream implements Serializable {
 
   public abstract Tuple read() throws IOException;
 
-  public abstract StreamComparator getStreamSort();
-  
   public int getCost() {
     return 0;
   }
-  
 }

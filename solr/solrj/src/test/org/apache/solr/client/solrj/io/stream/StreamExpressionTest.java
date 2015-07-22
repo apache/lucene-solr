@@ -601,12 +601,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         .withStreamFunction("group", ReducerStream.class)
         .withStreamFunction("parallel", ParallelStream.class);
 
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel("
-        + "collection1, "
-        + "top("
-          + "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), "
-          + "n=\"11\", "
-          + "sort=\"a_i desc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i desc\")");
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, top(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), n=\"11\", sort=\"a_i desc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i desc\")");
 
     List<Tuple> tuples = getTuples(pstream);
 

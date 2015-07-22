@@ -27,7 +27,6 @@ import java.util.Iterator;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -163,11 +162,6 @@ public class SolrStream extends TupleStream {
       }
       return new Tuple(fields);
     }
-  }
-  
-  /** There is no known sort applied to a SolrStream */
-  public StreamComparator getStreamSort(){
-    return null;
   }
 
   private Map mapFields(Map fields, Map<String,String> mappings) {

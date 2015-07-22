@@ -24,6 +24,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -65,7 +65,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
                         String collection,
                         TupleStream tupleStream,
                         int workers,
-                        StreamComparator comp) throws IOException {
+                        Comparator<Tuple> comp) throws IOException {
     init(zkHost,collection,tupleStream,workers,comp);
   }
 
@@ -74,7 +74,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
                         String collection,
                         String expressionString,
                         int workers,
-                        StreamComparator comp) throws IOException {
+                        Comparator<Tuple> comp) throws IOException {
     objectSerialize = false;
     TupleStream tStream = this.streamFactory.constructStream(expressionString);
     init(zkHost,collection, tStream, workers,comp);
@@ -140,12 +140,12 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     
     // We've got all the required items    
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
-    StreamComparator comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), FieldComparator.class);
+    Comparator<Tuple> comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), StreamComparator.class);
     streamFactory = factory;
     init(zkHost,collectionName,stream,workersInt,comp);
   }
 
-  private void init(String zkHost,String collection,TupleStream tupleStream,int workers,StreamComparator comp) throws IOException{
+  private void init(String zkHost,String collection,TupleStream tupleStream,int workers,Comparator<Tuple> comp) throws IOException{
     this.zkHost = zkHost;
     this.collection = collection;
     this.workers = workers;
@@ -179,7 +179,12 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     }
         
     // sort
-    expression.addParameter(new StreamExpressionNamedParameter("sort",comp.toExpression(factory)));
+    if(comp instanceof Expressible){
+      expression.addParameter(new StreamExpressionNamedParameter("sort",((Expressible)comp).toExpression(factory)));
+    }
+    else{
+      throw new IOException("This ParallelStream contains a non-expressible comparator - it cannot be converted to an expression");
+    }
     
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
