@@ -58,27 +58,15 @@ public class Tuple implements Cloneable {
   }
 
   public String getString(Object key) {
-    return this.fields.get(key).toString();
+    return (String)this.fields.get(key);
   }
 
   public Long getLong(Object key) {
-    Object o = this.fields.get(key);
-    if(o instanceof Long) {
-      return (Long)o;
-    } else {
-      //Attempt to parse the long
-      return Long.parseLong(o.toString());
-    }
+    return (Long)this.fields.get(key);
   }
 
   public Double getDouble(Object key) {
-    Object o = this.fields.get(key);
-    if(o instanceof Double) {
-      return (Double)o;
-    } else {
-      //Attempt to parse the double
-      return Double.parseDouble(o.toString());
-    }
+    return (Double)this.fields.get(key);
   }
 
   public List<String> getStrings(Object key) {
