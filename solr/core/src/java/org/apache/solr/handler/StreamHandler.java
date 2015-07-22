@@ -17,14 +17,13 @@
 
 package org.apache.solr.handler;
 
-import java.util.Map.Entry;
-import java.net.URLDecoder;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.net.URLDecoder;
+import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
-import org.apache.solr.client.solrj.io.stream.ExpressibleStream;
 import org.apache.solr.client.solrj.io.stream.MergeStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
@@ -32,8 +31,10 @@ import org.apache.solr.client.solrj.io.stream.ReducerStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
@@ -41,7 +42,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.common.util.Base64;
 
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
 
@@ -84,7 +84,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     if(null != functionMappingsObj){
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
       for(Entry<String,?> functionMapping : functionMappings){
-        Class<?> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(), ExpressibleStream.class);
+        Class<?> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(), Expressible.class);
         streamFactory.withStreamFunction(functionMapping.getKey(), clazz);
       }
     }

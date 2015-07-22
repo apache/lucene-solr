@@ -32,7 +32,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.comp.MultiComp;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
@@ -316,7 +316,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     for(int i=0; i<buckets.length; i++) {
       ComparatorOrder comparatorOrder = ascDescComp(dir);
       String sortKey = buckets[i].toString();
-      comps[i] = new FieldComparator(stripQuotes(sortKey), comparatorOrder);
+      comps[i] = new StreamComparator(stripQuotes(sortKey), comparatorOrder);
     }
 
     if(comps.length == 1) {
@@ -333,7 +333,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       String ordering = sortItem.getOrdering().toString();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
       String sortKey = sortItem.getSortKey().toString();
-      comps[i] = new FieldComparator(stripQuotes(sortKey), comparatorOrder);
+      comps[i] = new StreamComparator(stripQuotes(sortKey), comparatorOrder);
     }
 
     if(comps.length == 1) {

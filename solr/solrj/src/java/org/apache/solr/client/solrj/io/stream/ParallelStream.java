@@ -17,25 +17,25 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.io.ByteArrayOutputStream;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.comp.ExpressibleComparator;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -54,7 +54,7 @@ import org.apache.solr.common.util.Base64;
  **/
 
 
-public class ParallelStream extends CloudSolrStream implements ExpressibleStream {
+public class ParallelStream extends CloudSolrStream implements Expressible {
 
   private TupleStream tupleStream;
   private int workers;
@@ -85,7 +85,7 @@ public class ParallelStream extends CloudSolrStream implements ExpressibleStream
     objectSerialize = false;
     String collectionName = factory.getValueOperand(expression, 0);
     StreamExpressionNamedParameter workersParam = factory.getNamedOperand(expression, "workers");
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, ExpressibleStream.class, TupleStream.class);
+    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, "sort");
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
     
@@ -140,7 +140,7 @@ public class ParallelStream extends CloudSolrStream implements ExpressibleStream
     
     // We've got all the required items    
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
-    Comparator<Tuple> comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), FieldComparator.class);
+    Comparator<Tuple> comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), StreamComparator.class);
     streamFactory = factory;
     init(zkHost,collectionName,stream,workersInt,comp);
   }
@@ -153,7 +153,7 @@ public class ParallelStream extends CloudSolrStream implements ExpressibleStream
     this.tupleStream = tupleStream;
 
     // requires Expressible stream and comparator
-    if(!objectSerialize && !(tupleStream instanceof ExpressibleStream)){
+    if(!objectSerialize && !(tupleStream instanceof Expressible)){
       throw new IOException("Unable to create ParallelStream with a non-expressible TupleStream.");
     }
   }
@@ -171,16 +171,16 @@ public class ParallelStream extends CloudSolrStream implements ExpressibleStream
     expression.addParameter(new StreamExpressionNamedParameter("workers", Integer.toString(workers)));
     
     // stream
-    if(tupleStream instanceof ExpressibleStream){
-      expression.addParameter(((ExpressibleStream)tupleStream).toExpression(factory));
+    if(tupleStream instanceof Expressible){
+      expression.addParameter(((Expressible)tupleStream).toExpression(factory));
     }
     else{
       throw new IOException("This ParallelStream contains a non-expressible TupleStream - it cannot be converted to an expression");
     }
         
     // sort
-    if(comp instanceof ExpressibleComparator){
-      expression.addParameter(new StreamExpressionNamedParameter("sort",((ExpressibleComparator)comp).toExpression(factory)));
+    if(comp instanceof Expressible){
+      expression.addParameter(new StreamExpressionNamedParameter("sort",((Expressible)comp).toExpression(factory)));
     }
     else{
       throw new IOException("This ParallelStream contains a non-expressible comparator - it cannot be converted to an expression");
@@ -241,7 +241,7 @@ public class ParallelStream extends CloudSolrStream implements ExpressibleStream
         String encoded = Base64.byteArrayToBase64(bytes, 0, bytes.length);
         pushStream = URLEncoder.encode(encoded, "UTF-8");
       } else {
-        pushStream = ((ExpressibleStream) tupleStream).toExpression(streamFactory);
+        pushStream = ((Expressible) tupleStream).toExpression(streamFactory);
       }
 
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();

@@ -23,11 +23,12 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CountStream extends TupleStream implements ExpressibleStream, Serializable {
+public class CountStream extends TupleStream implements Expressible, Serializable {
 
   private TupleStream stream;
   private int count;
@@ -37,7 +38,7 @@ public class CountStream extends TupleStream implements ExpressibleStream, Seria
   }
   
   public CountStream(StreamExpression expression, StreamFactory factory) throws IOException{
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, ExpressibleStream.class, TupleStream.class);
+    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size()){
@@ -57,8 +58,8 @@ public class CountStream extends TupleStream implements ExpressibleStream, Seria
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
     // stream
-    if(stream instanceof ExpressibleStream){
-      expression.addParameter(((ExpressibleStream)stream).toExpression(factory));
+    if(stream instanceof Expressible){
+      expression.addParameter(((Expressible)stream).toExpression(factory));
     }
     else{
       throw new IOException("This CountStream contains a non-expressible TupleStream - it cannot be converted to an expression");
