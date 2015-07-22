@@ -19,7 +19,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
@@ -31,7 +33,14 @@ import org.apache.lucene.util.PriorityQueue;
  * @lucene.experimental
  */
 public final class MultiTermsEnum extends TermsEnum {
-    
+
+  private static final Comparator<TermsEnumWithSlice> INDEX_COMPARATOR = new Comparator<TermsEnumWithSlice>() {
+    @Override
+    public int compare(TermsEnumWithSlice o1, TermsEnumWithSlice o2) {
+      return o1.index - o2.index;
+    }
+  };
+
   private final TermMergeQueue queue;
   private final TermsEnumWithSlice[] subs;        // all of our subs (one per sub-reader)
   private final TermsEnumWithSlice[] currentSubs; // current subs that have at least one term for this field
@@ -213,12 +222,14 @@ public final class MultiTermsEnum extends TermsEnum {
       if (status == SeekStatus.FOUND) {
         top[numTop++] = currentSubs[i];
         current = currentSubs[i].current = currentSubs[i].terms.term();
+        queue.add(currentSubs[i]);
       } else {
         if (status == SeekStatus.NOT_FOUND) {
           currentSubs[i].current = currentSubs[i].terms.term();
           assert currentSubs[i].current != null;
           queue.add(currentSubs[i]);
         } else {
+          assert status == SeekStatus.END;
           // enum exhausted
           currentSubs[i].current = null;
         }
@@ -253,23 +264,19 @@ public final class MultiTermsEnum extends TermsEnum {
     // extract all subs from the queue that have the same
     // top term
     assert numTop == 0;
-    while(true) {
-      top[numTop++] = queue.pop();
-      if (queue.size() == 0 || !(queue.top()).current.bytesEquals(top[0].current)) {
-        break;
-      }
-    } 
+    numTop = queue.fillTop(top);
     current = top[0].current;
   }
 
   private void pushTop() throws IOException {
-    // call next() on each top, and put back into queue
-    for(int i=0;i<numTop;i++) {
-      top[i].current = top[i].terms.next();
-      if (top[i].current != null) {
-        queue.add(top[i]);
+    // call next() on each top, and reorder queue
+    for (int i = 0; i < numTop; i++) {
+      TermsEnumWithSlice top = queue.top();
+      top.current = top.terms.next();
+      if (top.current == null) {
+        queue.pop();
       } else {
-        // no more fields in this reader
+        queue.updateTop();
       }
     }
     numTop = 0;
@@ -342,6 +349,8 @@ public final class MultiTermsEnum extends TermsEnum {
 
     int upto = 0;
 
+    ArrayUtil.timSort(top, 0, numTop, INDEX_COMPARATOR);
+
     for(int i=0;i<numTop;i++) {
 
       final TermsEnumWithSlice entry = top[i];
@@ -382,18 +391,47 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   private final static class TermMergeQueue extends PriorityQueue<TermsEnumWithSlice> {
+
+    final int[] stack;
+
     TermMergeQueue(int size) {
       super(size);
+      this.stack = new int[size];
     }
 
     @Override
     protected boolean lessThan(TermsEnumWithSlice termsA, TermsEnumWithSlice termsB) {
-      final int cmp = termsA.current.compareTo(termsB.current);
-      if (cmp != 0) {
-        return cmp < 0;
-      } else {
-        return termsA.subSlice.start < termsB.subSlice.start;
+      return termsA.current.compareTo(termsB.current) < 0;
+    }
+
+    /** Add the {@link #top()} slice as well as all slices that are positionned
+     *  on the same term to {@code tops} and return how many of them there are. */
+    int fillTop(TermsEnumWithSlice[] tops) {
+      final int size = size();
+      if (size == 0) {
+        return 0;
       }
+      tops[0] = top();
+      int numTop = 1;
+      stack[0] = 1;
+      int stackLen = 1;
+
+      while (stackLen != 0) {
+        final int index = stack[--stackLen];
+        final int leftChild = index << 1;
+        for (int child = leftChild, end = Math.min(size, leftChild + 1); child <= end; ++child) {
+          TermsEnumWithSlice te = get(child);
+          if (te.current.equals(tops[0].current)) {
+            tops[numTop++] = te;
+            stack[stackLen++] = child;
+          }
+        }
+      }
+      return numTop;
+    }
+
+    private TermsEnumWithSlice get(int i) {
+      return (TermsEnumWithSlice) getHeapArray()[i];
     }
   }
 
