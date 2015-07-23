@@ -656,6 +656,7 @@ File | Project Structure | Platform Settings | SDKs):
     </delete>
     <antcall inheritAll="false" target="test">
       <param name="tests.heapdump.args" value="-XX:+HeapDumpOnOutOfMemoryError &quot;-XX:HeapDumpPath=${tests.heap-dump-dir}&quot;"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </antcall>
     <pathconvert property="heapdumps.list" setonempty="false" pathsep="${line.separator}">
       <fileset dir="${tests.heap-dump-dir}"/>
