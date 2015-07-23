@@ -519,8 +519,7 @@
     <!-- convenience target to compile core -->
   </target>
 
-  <target name="jar-core" depends="compile-core"
-    description="Packages the JAR file">
+  <target name="jar-core" depends="compile-core">
     <jarify/>
   </target>
 
@@ -533,10 +532,14 @@
   </patternset>
   <available type="dir" file="${lucene.tgz.unpack.dir}" property="lucene.tgz.unpack.dir.exists"/>
   <target name="-ensure-lucene-tgz-exists" unless="lucene.tgz.exists">
-    <ant dir="${common.dir}" target="package-tgz" inheritall="false"/>
+    <ant dir="${common.dir}" target="package-tgz" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
   <target name="-unpack-lucene-tgz" unless="lucene.tgz.unpack.dir.exists">
-    <antcall target="-ensure-lucene-tgz-exists" inheritall="false"/>
+    <antcall target="-ensure-lucene-tgz-exists" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
     <mkdir dir="${lucene.tgz.unpack.dir}"/>
     <untar compression="gzip" src="${lucene.tgz.file}" dest="${lucene.tgz.unpack.dir}">
       <patternset refid="patternset.lucene.solr.jars"/>
@@ -1525,7 +1528,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <!--
    See http://issues.apache.org/jira/browse/LUCENE-721
    -->
-  <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
+  <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup"/>
   
   <target name="-clover.load" depends="ivy-availability-check,ivy-configure" if="run.clover" unless="clover.loaded">
     <available file="${clover.license.path}" property="clover.license.available" />
@@ -2413,16 +2416,47 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </forbidden-apis>
   </target>
 
-  <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown,resolve-groovy" -->
-  
-  <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">
+  <target name="resolve-pegdown" unless="pegdown.loaded" depends="resolve-groovy">
     <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.5.0"
       inline="true" conf="default" transitive="true" pathid="pegdown.classpath"/>
+    <groovy classpathref="pegdown.classpath"><![CDATA[
+      import org.apache.tools.ant.AntTypeDefinition;
+      import org.apache.tools.ant.ComponentHelper;
+      import org.apache.tools.ant.filters.TokenFilter.ChainableReaderFilter;
+      import org.pegdown.PegDownProcessor;
+      import org.pegdown.Extensions;
+      import org.pegdown.FastEncoder;
+
+      public final class PegDownFilter extends ChainableReaderFilter {
+        @Override
+        public String	filter(String markdownSource) {
+          PegDownProcessor processor = new PegDownProcessor(
+            Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
+            Extensions.FENCED_CODE_BLOCKS | Extensions.SMARTS
+          );
+          StringBuilder html = new StringBuilder('<html>\n<head>\n');
+          // match the first heading in markdown and use as title:
+          markdownSource.find(~/(?m)^#+\s*(.+)$/) {
+            match, title -> html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
+          }
+          html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
+            .append('</head>\n<body>\n')
+            .append(processor.markdownToHtml(markdownSource))
+            .append('\n</body>\n</html>\n');
+          return html;
+        }
+      }
+      
+      AntTypeDefinition t = new AntTypeDefinition();
+      t.setName('pegdownfilter');
+      t.setClass(PegDownFilter.class);
+      ComponentHelper.getComponentHelper(project).addDataTypeDefinition(t);
+    ]]></groovy>
     <property name="pegdown.loaded" value="true"/>
   </target>
   
-  <target name="regenerate"/>
-	
+  <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
+  
   <macrodef name="pegdown">
     <attribute name="todir"/>
     <attribute name="flatten" default="false"/>
@@ -2436,31 +2470,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
           <tokenfilter>
             <filetokenizer/>
             <replaceregex pattern="\b(LUCENE|SOLR)\-\d+\b" replace="[\0](https://issues.apache.org/jira/browse/\0)" flags="gs"/>
-            <scriptfilter language="groovy">
-              <classpath>
-                <path refid="groovy.classpath"/>
-                <path refid="pegdown.classpath"/>
-              </classpath><![CDATA[
-              import org.pegdown.PegDownProcessor;
-              import org.pegdown.Extensions;
-              import org.pegdown.FastEncoder;
-              
-              String markdownSource = self.getToken();
-              PegDownProcessor processor = new PegDownProcessor(
-                Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
-                Extensions.FENCED_CODE_BLOCKS | Extensions.SMARTS
-              );
-              StringBuilder html = new StringBuilder('<html>\n<head>\n');
-              // match the first heading in markdown and use as title:
-              markdownSource.find(~/(?m)^#+\s*(.+)$/) {
-                match, title -> html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
-              }
-              html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
-                .append('</head>\n<body>\n')
-                .append(processor.markdownToHtml(markdownSource))
-                .append('\n</body>\n</html>\n');
-              self.setToken(html.toString());
-            ]]></scriptfilter>
+            <pegdownfilter/>
           </tokenfilter>
         </filterchain>
         <nested/>
@@ -2468,6 +2478,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </sequential>
   </macrodef>
 
+  <target name="regenerate"/>
+	
   <macrodef name="check-broken-links">
        <attribute name="dir"/>
      <sequential>

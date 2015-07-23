@@ -58,10 +58,14 @@
   <available file="${solr.tgz.file}" property="solr.tgz.exists"/>
   <available type="dir" file="${solr.tgz.unpack.dir}" property="solr.tgz.unpack.dir.exists"/>
   <target name="-ensure-solr-tgz-exists" unless="solr.tgz.exists">
-    <ant dir="${common-solr.dir}" target="create-package" inheritall="false"/>
+    <ant dir="${common-solr.dir}" target="create-package" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
   <target name="-unpack-solr-tgz" unless="${solr.tgz.unpack.dir.exists}">
-    <antcall target="-ensure-solr-tgz-exists"/>
+    <antcall target="-ensure-solr-tgz-exists">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
     <mkdir dir="${solr.tgz.unpack.dir}"/>
     <untar compression="gzip" src="${solr.tgz.file}" dest="${solr.tgz.unpack.dir}">
       <patternset refid="patternset.lucene.solr.jars"/>

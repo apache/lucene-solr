@@ -373,6 +373,11 @@ Build
 * LUCENE-6683: ivy-fail goal directs people to non-existent page
   (Mike Drob via Steve Rowe)
 
+* LUCENE-6693: Updated Groovy to 2.4.4, Pegdown to 1.5, Svnkit to 1.8.10.
+  Also fixed some PermGen errors while running full build caused by
+  these updates: Tasks are now installed from root's build.xml.
+  (Uwe Schindler)
+
 Test Framework
 
 * LUCENE-6637: Fix FSTTester to not violate file permissions on
