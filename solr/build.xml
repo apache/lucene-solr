@@ -185,7 +185,7 @@
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
-  <target name="process-webpages" depends="define-lucene-javadoc-url,resolve-groovy,resolve-pegdown">
+  <target name="process-webpages" depends="define-lucene-javadoc-url,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
     </makeurl>
@@ -509,6 +509,7 @@
           description="Packages the Solr Binary Distribution">
     <antcall inheritall="true">
       <param name="called.from.create-package" value="true"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
       <target name="init-dist"/>
       <target name="dist"/>
       <target name="server"/>
@@ -664,13 +665,11 @@
   </target>
   
   <target name="generate-maven-artifacts" depends="-unpack-solr-tgz">
-    <sequential>
-      <ant dir=".." target="resolve" inheritall="false"/>
-      <antcall target="-filter-pom-templates" inheritall="false"/>
-      <antcall target="-dist-maven" inheritall="false">
-        <propertyset refid="uptodate.and.compiled.properties"/>
-      </antcall>
-    </sequential>
+    <ant dir=".." target="resolve" inheritall="false"/>
+    <antcall target="-filter-pom-templates" inheritall="false"/>
+    <antcall target="-dist-maven" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
   </target>
  
   <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">

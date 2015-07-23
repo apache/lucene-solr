@@ -201,7 +201,7 @@
     <modules-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <target name="process-webpages" depends="resolve-groovy,resolve-pegdown">
+  <target name="process-webpages" depends="resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,site/**"/>
     </makeurl>
@@ -408,6 +408,7 @@
       <m2-deploy pom.xml="${filtered.pom.templates.dir}/pom.xml"/>        <!-- Lucene/Solr grandparent POM -->
       <m2-deploy pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/> <!-- Lucene parent POM -->
       <subant target="-dist-maven" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="${common.dir}/core" includes="build.xml"/>
         <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
       </subant>
@@ -416,11 +417,11 @@
   </target>
 
   <target name="generate-maven-artifacts" depends="-unpack-lucene-tgz">
-    <sequential>
-      <ant dir=".." target="resolve" inheritall="false"/>
-      <antcall target="-filter-pom-templates" inheritall="false"/>
-      <antcall target="-dist-maven" inheritall="false"/>
-    </sequential>
+    <ant dir=".." target="resolve" inheritall="false"/>
+    <antcall target="-filter-pom-templates" inheritall="false"/>
+    <antcall target="-dist-maven" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
   </target>
   
   <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">
