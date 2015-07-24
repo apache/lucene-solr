@@ -638,7 +638,7 @@ File | Project Structure | Platform Settings | SDKs):
     <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>
   </target>
 
-  <target name="test-with-heapdumps" depends="-test-with-heapdumps-enabled,-test-with-heapdumps-disabled" description="Runs tests with heap dumps on OOM enabled (if VM supports this)"/>
+  <target name="test-with-heapdumps" depends="resolve-groovy,-test-with-heapdumps-enabled,-test-with-heapdumps-disabled" description="Runs tests with heap dumps on OOM enabled (if VM supports this)"/>
   
   <condition property="vm.supports.heapdumps">
     <or>
@@ -668,7 +668,9 @@ File | Project Structure | Platform Settings | SDKs):
 
   <target name="-test-with-heapdumps-disabled" unless="vm.supports.heapdumps">
     <echo level="warning" message="WARN: The used JVM (${java.vm.name}) does not support HPROF heap dumps on OutOfMemoryError."/>
-    <antcall target="test"/>
+    <antcall target="test">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
   </target>
 
   <target name="regenerate" description="Runs all code regenerators">
