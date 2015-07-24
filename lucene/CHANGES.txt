@@ -272,6 +272,9 @@ Bug fixes
   but instead throw an exception from setMaxTokenLength() when the given
   length is greater than 1M chars.  (Piotr Idzikowski, Steve Rowe)
 
+* LUCENE-6696: Fix FilterDirectoryReader.close() to never close the
+  underlying reader several times. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
