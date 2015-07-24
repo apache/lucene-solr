@@ -141,6 +141,9 @@ New Features
   the specified distance from the center point.  Fix
   GeoPointInBBoxQuery to handle dateline crossing.
 
+* LUCENE-6694: Add LithuanianAnalyzer and LithuanianStemmer.
+  (Dainius Jocas via Robert Muir)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
