@@ -131,7 +131,7 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
 
   @Override
   protected void doClose() throws IOException {
-    in.doClose();
+    in.close();
   }
 
   /** Returns the wrapped {@link DirectoryReader}. */
