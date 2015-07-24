@@ -440,7 +440,7 @@ File | Project Structure | Platform Settings | SDKs):
   </target>
   
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it"
-    depends="clean,resolve-groovy">
+    depends="clean,resolve-groovy,resolve-pegdown,install-maven-tasks">
     <fail message="To run nightly smoke, the JDK must be exactly Java 1.8, was: ${java.specification.version}">
       <condition>
         <not><equals arg1="${java.specification.version}" arg2="1.8"/></not>
@@ -454,7 +454,8 @@ File | Project Structure | Platform Settings | SDKs):
       <fileset dir="solr" includes="build.xml" />
       <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
       <property name="version" value="${version.base}" />
-    </subant>
+      <propertyset refid="uptodate.and.compiled.properties"/>
+   </subant>
     <mkdir dir="${smokeTestRelease.dir}"/>
     <copy todir="${smokeTestRelease.dir}/lucene">
       <fileset dir="lucene/dist"/>
