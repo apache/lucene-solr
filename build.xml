@@ -724,7 +724,7 @@ Test args: [${args}]</echo>
     </antcall>
   </target>
   
-  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build">
+  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-pegdown,install-maven-tasks">
     <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
     <antcall>
       <param name="is.jenkins.build" value="true"/>
