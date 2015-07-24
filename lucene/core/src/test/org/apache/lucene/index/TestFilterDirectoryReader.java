@@ -64,7 +64,7 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     // the original reader once (as per Closeable.close() contract that close() is
     // idempotent)
     List<DirectoryReader> readers = Arrays.asList(reader, wrapped);
-    Collections.shuffle(readers);
+    Collections.shuffle(readers, random());
     IOUtils.close(readers);
 
     w.close();
