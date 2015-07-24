@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -165,11 +166,15 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       }
       
       ModifiableSolrParams pivotP = params(FACET,"true");
-      pivotP.add(FACET_PIVOT, buildPivotParamValue(buildRandomPivot(fieldNames)));
+
+      // put our FACET_PIVOT params in a set in case we just happen to pick the same one twice
+      LinkedHashSet<String> pivotParamValues = new LinkedHashSet<String>();
+      pivotParamValues.add(buildPivotParamValue(buildRandomPivot(fieldNames)));
                  
       if (random().nextBoolean()) {
-        pivotP.add(FACET_PIVOT, buildPivotParamValue(buildRandomPivot(fieldNames)));
+        pivotParamValues.add(buildPivotParamValue(buildRandomPivot(fieldNames)));
       }
+      pivotP.set(FACET_PIVOT, pivotParamValues.toArray(new String[pivotParamValues.size()]));
 
       // keep limit low - lots of unique values, and lots of depth in pivots
       pivotP.add(FACET_LIMIT, ""+TestUtil.nextInt(random(),1,17));
