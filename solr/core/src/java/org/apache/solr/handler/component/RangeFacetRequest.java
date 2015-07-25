@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
@@ -41,12 +40,15 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.DateFormatUtil;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Encapsulates a single facet.range request along with all its parameters. This class
  * calculates all the ranges (gaps) required to be counted.
  */
 public class RangeFacetRequest extends FacetComponent.FacetBase {
-  private final static Logger log = Logger.getLogger(RangeFacetRequest.class);
+  private final static Logger log = LoggerFactory.getLogger(RangeFacetRequest.class);
 
   protected final SchemaField schemaField;
   protected final String start;

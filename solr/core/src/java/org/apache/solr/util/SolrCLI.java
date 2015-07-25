@@ -58,9 +58,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -84,6 +81,8 @@ import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -112,10 +111,6 @@ public class SolrCLI {
     }
     
     public int runTool(CommandLine cli) throws Exception {
-      
-      // quiet down the ZK logging for cli tools
-      LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
-      LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
       
       String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
       
@@ -150,7 +145,7 @@ public class SolrCLI {
         throws Exception;
   }
   
-  public static Logger log = Logger.getLogger(SolrCLI.class);    
+  public static Logger log = LoggerFactory.getLogger(SolrCLI.class);
   public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";  
   public static final String ZK_HOST = "localhost:9983";
   
@@ -1116,8 +1111,6 @@ public class SolrCLI {
       if (zkHost == null)
         throw new IllegalStateException("Must provide either the '-solrUrl' or '-zkHost' parameters!");
 
-      LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
-      LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
       try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
         cloudSolrClient.connect();
         Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
@@ -1202,10 +1195,6 @@ public class SolrCLI {
     }
 
     public int runTool(CommandLine cli) throws Exception {
-
-      // quiet down the ZK logging for cli tools
-      LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
-      LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
 
       String zkHost = getZkHost(cli);
       if (zkHost == null) {
@@ -1606,10 +1595,6 @@ public class SolrCLI {
 
     @Override
     public int runTool(CommandLine cli) throws Exception {
-
-      // quiet down the ZK logging for cli tools
-      LogManager.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
-      LogManager.getLogger("org.apache.solr.common.cloud").setLevel(Level.WARN);
 
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/"))

@@ -74,7 +74,6 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.log4j.PropertyConfigurator;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.hadoop.dedup.RetainMostRecentUpdateConflictResolver;
 import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
@@ -483,7 +482,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       
       opts.log4jConfigFile = (File) ns.get(log4jConfigFileArg.getDest());
       if (opts.log4jConfigFile != null) {
-        PropertyConfigurator.configure(opts.log4jConfigFile.getPath());        
+        Utils.configureLog4jProperties(opts.log4jConfigFile.getPath());
       }
       LOG.debug("Parsed command line args: {}", ns);
       

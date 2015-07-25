@@ -349,6 +349,12 @@ Other Changes
   formatting and parsing out of TrieDateField and move to static utility class
   DateFormatUtil.  (Markus Heiden, Uwe Schindler)
 
+* SOLR-7825: Forbid all usages of log4j and java.util.logging classes in Solr except
+  classes which are specific to logging implementations. Remove accidental usage of log4j
+  logger from a few places. The default log level for org.apache.zookeeper is changed from
+  ERROR to WARN for zkcli.{sh,cmd} only.
+  (Oliver Schrenk, Tim Potter, Uwe Schindler, shalin)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
