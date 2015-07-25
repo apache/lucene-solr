@@ -18,6 +18,7 @@ package org.apache.solr.logging.jul;
 
 import com.google.common.base.Throwables;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.CircularList;
 import org.apache.solr.logging.ListenerConfig;
 import org.apache.solr.logging.LogWatcher;
@@ -35,6 +36,7 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+@SuppressForbidden(reason = "class is specific to java.util.logging")
 public class JulWatcher extends LogWatcher<LogRecord> {
 
   final String name;

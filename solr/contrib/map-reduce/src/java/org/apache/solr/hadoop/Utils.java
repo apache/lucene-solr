@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.google.common.annotations.Beta;
+import org.apache.solr.common.util.SuppressForbidden;
 
 
 @Beta
@@ -35,6 +36,11 @@ public final class Utils {
 
   public static void getLogConfigFile(Configuration conf) {
     String log4jPropertiesFile = conf.get(LOG_CONFIG_FILE);
+    configureLog4jProperties(log4jPropertiesFile);
+  }
+
+  @SuppressForbidden(reason = "method is specific to log4j")
+  public static void configureLog4jProperties(String log4jPropertiesFile) {
     if (log4jPropertiesFile != null) {
       PropertyConfigurator.configure(log4jPropertiesFile);
     }

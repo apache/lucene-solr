@@ -19,8 +19,10 @@ package org.apache.solr.logging.jul;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.LoggerInfo;
 
+@SuppressForbidden(reason = "class is specific to java.util.logging")
 public class JulInfo extends LoggerInfo {
   private static final Level[] LEVELS = {
       null, // aka unset

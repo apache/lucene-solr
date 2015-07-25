@@ -27,11 +27,13 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SuppressForbidden(reason = "test is specific to log4j")
 public class RequestLoggingTest extends SolrTestCaseJ4 {
   private StringWriter writer;
   private Appender appender;

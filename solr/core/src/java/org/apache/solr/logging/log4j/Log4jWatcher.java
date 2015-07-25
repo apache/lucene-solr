@@ -31,6 +31,7 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.spi.ThrowableInformation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.CircularList;
 import org.apache.solr.logging.ListenerConfig;
 import org.apache.solr.logging.LogWatcher;
@@ -38,6 +39,7 @@ import org.apache.solr.logging.LoggerInfo;
 
 import com.google.common.base.Throwables;
 
+@SuppressForbidden(reason = "class is specific to log4j")
 public class Log4jWatcher extends LogWatcher<LoggingEvent> {
 
   final String name;

@@ -78,6 +78,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -391,6 +392,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     super.tearDown();
   }
 
+  @SuppressForbidden(reason = "method is specific to java.util.logging and highly suspect!")
   public static void setLoggingLevel(Level level) {
     java.util.logging.Logger logger = java.util.logging.Logger.getLogger("");
     logger.setLevel(level);
