@@ -609,8 +609,11 @@ File | Project Structure | Platform Settings | SDKs):
       <!-- The idea behind Clover is to determine test coverage, so be immune to failing tests: -->
       <param name="tests.haltonfailure" value="false"/>
       
+      <target name="clover"/>
       <target name="test"/>
       <target name="-generate-clover-reports"/>
+      
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </antcall>
   </target>
 
