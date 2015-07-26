@@ -79,8 +79,8 @@ ENABLE_REMOTE_JMX_OPTS="false"
 # If not set, the script will create PID files in $SOLR_TIP/bin
 #SOLR_PID_DIR=
 
-# Path to a directory where Solr creates index files, the specified directory
-# must contain a solr.xml; by default, Solr will use server/solr
+# Path to a directory for Solr to store cores and their data. By default, Solr will use server/solr
+# If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 #SOLR_HOME=
 
 # Solr provides a default Log4J configuration properties file in server/resources

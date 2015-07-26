@@ -73,8 +73,8 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
 
-REM Path to a directory where Solr creates index files, the specified directory
-REM must contain a solr.xml; by default, Solr will use server/solr
+REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr
+REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 REM set SOLR_HOME=
 
 REM Sets the port Solr binds to, default is 8983

@@ -142,7 +142,6 @@ public class MiniSolrCloudCluster {
     }
 
     // tell solr to look in zookeeper for solr.xml
-    System.setProperty("solr.solrxml.location","zookeeper");
     System.setProperty("zkHost", zkServer.getZkAddress());
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
@@ -366,7 +365,6 @@ public class MiniSolrCloudCluster {
       try {
         zkServer.shutdown();
       } finally {
-        System.clearProperty("solr.solrxml.location");
         System.clearProperty("zkHost");
       }
     }

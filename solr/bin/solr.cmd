@@ -188,9 +188,9 @@ goto done
 @echo   -s dir        Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
 @echo                   while reusing the same server directory set using the -d parameter. If set, the
-@echo                   specified directory should contain a solr.xml file. The default value is example/solr.
+@echo                   specified directory should contain a solr.xml file, unless solr.xml exists in ZooKeeper.
 @echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
-@echo                   on which example is run.
+@echo                   on which example is run. The default value is server/solr.
 @echo.
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
@@ -633,11 +633,6 @@ IF NOT EXIST "%SOLR_HOME%\" (
   )
 )
 
-IF NOT EXIST "%SOLR_HOME%\solr.xml" (
-  set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
-  goto err
-)
-
 IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 
 @REM This is quite hacky, but examples rely on a different log4j.properties
@@ -807,6 +802,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
+  IF NOT EXIST "%SOLR_HOME%\solr.xml" (
+    set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
+    goto err
+  )
 )
 
 REM These are useful for attaching remove profilers like VisualVM/JConsole

@@ -35,11 +35,6 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   protected SolrZkClient zkClient;
 
   @Before
-  public void beforeClass() {
-    System.setProperty("solr.solrxml.location", "zookeeper");
-  }
-
-  @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();

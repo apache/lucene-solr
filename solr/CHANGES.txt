@@ -114,6 +114,9 @@ Upgrading from Solr 5.2
   which can then be used to prepare for the distributed request. Users with custom
   ShardHandler implementations would need to modify their code to this effect.
 
+* The system property "solr.solrxml.location" is not supported any more. Now, solr.xml is first
+  looked up in zookeeper, and if not found, fallback to SOLR_HOME. See SOLR-7735 for more info.
+
 Detailed Change List
 ----------------------
 
@@ -354,6 +357,9 @@ Other Changes
   logger from a few places. The default log level for org.apache.zookeeper is changed from
   ERROR to WARN for zkcli.{sh,cmd} only.
   (Oliver Schrenk, Tim Potter, Uwe Schindler, shalin)
+
+* SOLR-7735: Look for solr.xml in Zookeeper by default in SolrCloud mode. If not found, it will be loaded
+  from $SOLR_HOME/solr.xml as before. Sysprop solr.solrxml.location is now gone. (janhoy)
 
 ==================  5.2.1 ==================
 
