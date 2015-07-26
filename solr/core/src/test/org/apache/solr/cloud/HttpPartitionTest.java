@@ -114,7 +114,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     waitForThingsToLevelOut(30000);
 
-    log.info("HttpParitionTest succeeded ... shutting down now!");
+    log.info("HttpPartitionTest succeeded ... shutting down now!");
   }
 
   /**

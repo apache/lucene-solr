@@ -338,7 +338,7 @@ Other Changes
 * SOLR-7750: Change TestConfig.testDefaults to cover all SolrIndexConfig fields
   (Christine Poerschke via Ramkumar Aiyengar)
 
-* SOLR-7703: Authentication plugin is now loaded using the RessourceLoader.
+* SOLR-7703: Authentication plugin is now loaded using the ResourceLoader.
   (Avi Digmi via Anshum Gupta)
 
 * SOLR-7800: JSON Facet API: the avg() facet function now skips missing values
