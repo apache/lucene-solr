@@ -48,7 +48,6 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
       throws Exception {
-    log.info("Handling data for segmets info query searcher");
     rsp.add("segments", getSegmentsInfo(req, rsp));
     rsp.setHttpCaching(false);
   }
