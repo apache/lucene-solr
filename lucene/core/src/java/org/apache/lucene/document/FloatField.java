@@ -79,7 +79,7 @@ import org.apache.lucene.util.NumericUtils;
  * <code>precisionStep</code> values result in larger number
  * of brackets, which consumes more disk space in the index
  * but may result in faster range search performance.  The
- * default value, 4, was selected for a reasonable tradeoff
+ * default value, 8, was selected for a reasonable tradeoff
  * of disk space consumption versus performance.  You can
  * create a custom {@link FieldType} and invoke the {@link
  * FieldType#setNumericPrecisionStep} method if you'd
