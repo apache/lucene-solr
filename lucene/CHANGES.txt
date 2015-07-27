@@ -144,6 +144,9 @@ New Features
 * LUCENE-6694: Add LithuanianAnalyzer and LithuanianStemmer.
   (Dainius Jocas via Robert Muir)
 
+* LUCENE-6695: Added a new BlendedTermQuery to blend statistics across several
+  terms. (Simon Willnauer, Adrien Grand)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

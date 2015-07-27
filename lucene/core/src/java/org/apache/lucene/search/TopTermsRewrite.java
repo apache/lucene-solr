@@ -157,18 +157,12 @@ public abstract class TopTermsRewrite<B> extends TermCollectingRewrite<B> {
     final B b = getTopLevelBuilder();
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
     ArrayUtil.timSort(scoreTerms, scoreTermSortByTermComp);
-    
-    adjustScoreTerms(reader, scoreTerms);
 
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes.toBytesRef());
       addClause(b, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
     return build(b);
-  }
-
-  void adjustScoreTerms(IndexReader reader, ScoreTerm[] scoreTerms) {
-    //no-op but allows subclasses the ability to tweak the score terms used in ranking e.g. balancing IDF.
   }
 
   @Override
