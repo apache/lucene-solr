@@ -37,7 +37,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * the scores as computed by the query.
  * <p>
  * @lucene.internal Only public to be accessible by spans package. */
-public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewrite<Q> {
+public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
 
   /** A rewrite method that first translates each term into
    *  {@link BooleanClause.Occur#SHOULD} clause in a
@@ -54,8 +54,13 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
    *  @see MultiTermQuery#setRewriteMethod */
   public final static ScoringRewrite<BooleanQuery> SCORING_BOOLEAN_REWRITE = new ScoringRewrite<BooleanQuery>() {
     @Override
-    protected BooleanQuery getTopLevelQuery() {
+    protected BooleanQuery getTopLevelBuilder() {
       return new BooleanQuery(true);
+    }
+
+    @Override
+    protected Query build(BooleanQuery builder) {
+      return builder;
     }
     
     @Override
@@ -86,7 +91,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
   public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      final BooleanQuery bq = SCORING_BOOLEAN_REWRITE.rewrite(reader, query);
+      final Query bq = SCORING_BOOLEAN_REWRITE.rewrite(reader, query);
       // strip the scores off
       final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());
@@ -99,8 +104,8 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
   protected abstract void checkMaxClauseCount(int count) throws IOException;
   
   @Override
-  public final Q rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
-    final Q result = getTopLevelQuery();
+  public final Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
+    final B builder = getTopLevelBuilder();
     final ParallelArraysTermCollector col = new ParallelArraysTermCollector();
     collectTerms(reader, query, col);
     
@@ -113,10 +118,10 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
         final int pos = sort[i];
         final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
         assert termStates[pos].hasOnlyRealTerms() == false || reader.docFreq(term) == termStates[pos].docFreq();
-        addClause(result, term, termStates[pos].docFreq(), query.getBoost() * boost[pos], termStates[pos]);
+        addClause(builder, term, termStates[pos].docFreq(), query.getBoost() * boost[pos], termStates[pos]);
       }
     }
-    return result;
+    return build(builder);
   }
 
   final class ParallelArraysTermCollector extends TermCollector {

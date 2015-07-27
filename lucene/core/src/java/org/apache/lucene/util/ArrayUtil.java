@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 
@@ -234,6 +235,14 @@ public final class ArrayUtil {
       return newSize;
     else
       return currentSize;
+  }
+
+  public static <T> T[] grow(T[] array, int minSize) {
+    assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
+    if (array.length < minSize) {
+      return Arrays.copyOf(array, oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
+    } else
+      return array;
   }
 
   public static short[] grow(short[] array, int minSize) {

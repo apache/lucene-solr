@@ -160,8 +160,13 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   public final static SpanRewriteMethod SCORING_SPAN_QUERY_REWRITE = new SpanRewriteMethod() {
     private final ScoringRewrite<SpanOrQuery> delegate = new ScoringRewrite<SpanOrQuery>() {
       @Override
-      protected SpanOrQuery getTopLevelQuery() {
+      protected SpanOrQuery getTopLevelBuilder() {
         return new SpanOrQuery();
+      }
+
+      @Override
+      protected Query build(SpanOrQuery builder) {
+        return builder;
       }
 
       @Override
@@ -179,7 +184,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     
     @Override
     public SpanQuery rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      return delegate.rewrite(reader, query);
+      return (SpanQuery) delegate.rewrite(reader, query);
     }
   };
   
@@ -209,8 +214,13 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
         }
     
         @Override
-        protected SpanOrQuery getTopLevelQuery() {
+        protected SpanOrQuery getTopLevelBuilder() {
           return new SpanOrQuery();
+        }
+
+        @Override
+        protected Query build(SpanOrQuery builder) {
+          return builder;
         }
 
         @Override
@@ -229,7 +239,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
 
     @Override
     public SpanQuery rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      return delegate.rewrite(reader, query);
+      return (SpanQuery) delegate.rewrite(reader, query);
     }
   
     @Override

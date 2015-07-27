@@ -18,16 +18,13 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.FilteredTermsEnum; // javadocs
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SingleTermsEnum;   // javadocs
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
@@ -175,10 +172,15 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected BooleanQuery getTopLevelQuery() {
+    protected BooleanQuery getTopLevelBuilder() {
       return new BooleanQuery(true);
     }
-    
+
+    @Override
+    protected Query build(BooleanQuery builder) {
+      return builder;
+    }
+
     @Override
     protected void addClause(BooleanQuery topLevel, Term term, int docCount, float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
@@ -201,7 +203,7 @@ public abstract class MultiTermQuery extends Query {
    * @see #setRewriteMethod
    */
   public static final class TopTermsBlendedFreqScoringRewrite extends
-      TopTermsRewrite<BooleanQuery> {
+      TopTermsRewrite<BlendedTermQuery.Builder> {
 
     /**
      * Create a TopTermsBlendedScoringBooleanQueryRewrite for at most
@@ -220,71 +222,22 @@ public abstract class MultiTermQuery extends Query {
     }
 
     @Override
-    protected BooleanQuery getTopLevelQuery() {
-      return new BooleanQuery(true);
+    protected BlendedTermQuery.Builder getTopLevelBuilder() {
+      BlendedTermQuery.Builder builder = new BlendedTermQuery.Builder();
+      builder.setRewriteMethod(BlendedTermQuery.BOOLEAN_REWRITE);
+      return builder;
     }
 
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docCount,
+    protected Query build(BlendedTermQuery.Builder builder) {
+      return builder.build();
+    }
+
+    @Override
+    protected void addClause(BlendedTermQuery.Builder topLevel, Term term, int docCount,
         float boost, TermContext states) {
-      final TermQuery tq = new TermQuery(term, states);
-      tq.setBoost(boost);
-      topLevel.add(tq, BooleanClause.Occur.SHOULD);
+      topLevel.add(term, boost, states);
     }
-
-    @Override
-    void adjustScoreTerms(IndexReader reader, ScoreTerm[] scoreTerms) {
-      if (scoreTerms.length <= 1) {
-        return;
-      }
-      int maxDoc = reader.maxDoc();
-      int maxDf = 0;
-      long maxTtf = 0;
-      for (ScoreTerm scoreTerm : scoreTerms) {
-        TermContext ctx = scoreTerm.termState;
-        int df = ctx.docFreq();
-        maxDf = Math.max(df, maxDf);
-        long ttf = ctx.totalTermFreq();
-        maxTtf = ttf == -1 || maxTtf == -1 ? -1 : Math.max(ttf, maxTtf);
-      }
-
-      assert maxDf >= 0 : "DF must be >= 0";
-      if (maxDf == 0) {
-        return; // we are done that term doesn't exist at all
-      }
-      assert (maxTtf == -1) || (maxTtf >= maxDf);
-
-      for (int i = 0; i < scoreTerms.length; i++) {
-        TermContext ctx = scoreTerms[i].termState;
-        ctx = adjustFrequencies(ctx, maxDf, maxTtf);
-
-        ScoreTerm adjustedScoreTerm = new ScoreTerm(ctx);
-        adjustedScoreTerm.boost = scoreTerms[i].boost;
-        adjustedScoreTerm.bytes.copyBytes(scoreTerms[i].bytes);
-        scoreTerms[i] = adjustedScoreTerm;
-      }
-    }
-  }
-
-  private static TermContext adjustFrequencies(TermContext ctx, int artificialDf,
-      long artificialTtf) {
-    List<LeafReaderContext> leaves = ctx.topReaderContext.leaves();
-    final int len;
-    if (leaves == null) {
-      len = 1;
-    } else {
-      len = leaves.size();
-    }
-    TermContext newCtx = new TermContext(ctx.topReaderContext);
-    for (int i = 0; i < len; ++i) {
-      TermState termState = ctx.get(i);
-      if (termState == null) {
-        continue;
-      }
-      newCtx.register(termState, i);
-    }
-    newCtx.accumulateStatistics(artificialDf, artificialTtf);
-    return newCtx;
   }
 
   /**
@@ -316,8 +269,13 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected BooleanQuery getTopLevelQuery() {
+    protected BooleanQuery getTopLevelBuilder() {
       return new BooleanQuery(true);
+    }
+    
+    @Override
+    protected Query build(BooleanQuery builder) {
+      return builder;
     }
     
     @Override
