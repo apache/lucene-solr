@@ -412,13 +412,6 @@ function jetty_port() {
 # run a Solr command-line tool using the SolrCLI class; 
 # useful for doing cross-platform work from the command-line using Java
 function run_tool() {
-  
-  # Extract the solr.war if it hasn't been done already (so we can access the SolrCLI class)
-  if [[ -e "$DEFAULT_SERVER_DIR/webapps/solr.war" && ! -d "$DEFAULT_SERVER_DIR/solr-webapp/webapp" ]]; then
-    (mkdir -p "$DEFAULT_SERVER_DIR/solr-webapp/webapp" && \
-      cd "$DEFAULT_SERVER_DIR/solr-webapp/webapp" && \
-      "${UNPACK_WAR_CMD[@]}" "$DEFAULT_SERVER_DIR/webapps/solr.war")
-  fi
 
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configuration="file:$DEFAULT_SERVER_DIR/scripts/cloud-scripts/log4j.properties" \

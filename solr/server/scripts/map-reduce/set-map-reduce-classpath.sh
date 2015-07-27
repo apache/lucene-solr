@@ -22,12 +22,6 @@ solr_distrib="$sdir/../../.."
 
 echo `absPath $solr_distrib`
 
-# extract war if necessary
-
-if [ ! -d "$solr_distrib/server/solr-webapp/webapp" ]; then
-   unzip -o $solr_distrib/server/webapps/solr.war -d $solr_distrib/server/solr-webapp/webapp
-fi
-
 # Setup env variables for MapReduceIndexerTool
 
 # Setup HADOOP_CLASSPATH
