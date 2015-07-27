@@ -296,7 +296,7 @@
       <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" 
                excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
       <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" 
-               excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, example/solr-webapp/**" />
+               excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, server/solr-webapp/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
     <mkdir dir="nbproject"/>

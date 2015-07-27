@@ -51,9 +51,6 @@
         <attribute name="Main-Class" value="org.apache.solr.util.SimplePostTool"/>
       </manifest>
     </jar>
-    <delete includeemptydirs="true">
-      <fileset dir="${server.dir}/solr-webapp" includes="**/*"/>
-    </delete>
     <echo>See ${common-solr.dir}/README.txt for how to run the Solr server.</echo>
   </target>
   
@@ -372,7 +369,7 @@
         <include name="solr/zoo_data/" />
         <include name="start.jar" />
         <include name="logs/*" />
-        <include name="webapps/**/*" />
+        <include name="webapps" />
         <include name="solr-webapp/**/*" />
         <exclude name="**/.gitignore" />
       </fileset>    	
@@ -517,7 +514,6 @@
     </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
-      <fileset dir="${server.dir}/solr-webapp" includes="**/*"/>
       <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
     </delete>
  

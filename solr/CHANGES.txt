@@ -361,6 +361,9 @@ Other Changes
 * SOLR-7735: Look for solr.xml in Zookeeper by default in SolrCloud mode. If not found, it will be loaded
   from $SOLR_HOME/solr.xml as before. Sysprop solr.solrxml.location is now gone. (janhoy)
 
+* SOLR-7227: Ship Solr with the Web application directory exploded into server/solr-webapp,
+  solr.war is no longer included in the distribution bundles. (Timothy Potter)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

@@ -168,74 +168,88 @@ LICENSE_FILE_NAME = 'META-INF/LICENSE.txt'
 
 def checkJARMetaData(desc, jarFile, svnRevision, version):
 
-  with zipfile.ZipFile(jarFile, 'r') as z:
-    for name in (MANIFEST_FILE_NAME, NOTICE_FILE_NAME, LICENSE_FILE_NAME):
-      try:
-        # The Python docs state a KeyError is raised ... so this None
-        # check is just defensive:
-        if z.getinfo(name) is None:
-          raise RuntimeError('%s is missing %s' % (desc, name))
-      except KeyError:
-        raise RuntimeError('%s is missing %s' % (desc, name))
-      
-    s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
-    
-    for verify in (
-      'Specification-Vendor: The Apache Software Foundation',
-      'Implementation-Vendor: The Apache Software Foundation',
-      # Make sure 1.8 compiler was used to build release bits:
-      'X-Compile-Source-JDK: 1.8',
-      # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
-      'Ant-Version: Apache Ant 1.8',
-      # Make sure .class files are 1.8 format:
-      'X-Compile-Target-JDK: 1.8',
-      'Specification-Version: %s' % version,
-      # Make sure the release was compiled with 1.8:
-      'Created-By: 1.8'):
-      if s.find(verify) == -1:
-        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
-                           (desc, verify))
+  s = None
+  notice = None
+  license = None
 
-    if svnRevision != 'skip':
-      # Make sure this matches the version and svn revision we think we are releasing:
-      verifyRevision = 'Implementation-Version: %s %s ' % (version, svnRevision)
-      if s.find(verifyRevision) == -1:
-        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong svn revision?)' % \
+  # support expanded WAR directory or JAR file
+  if isinstance(jarFile, str) and os.path.isdir(jarFile):
+    for name in (MANIFEST_FILE_NAME, NOTICE_FILE_NAME, LICENSE_FILE_NAME):
+      if not os.path.isfile(jarFile + '/' + name):
+        raise RuntimeError('%s is missing %s' % (desc, name))
+
+    s = open(jarFile + '/' + MANIFEST_FILE_NAME,encoding='UTF-8').read()
+    notice = open(jarFile + '/' + NOTICE_FILE_NAME,encoding='UTF-8').read()
+    license = open(jarFile + '/' + LICENSE_FILE_NAME,encoding='UTF-8').read()
+
+  else:
+    with zipfile.ZipFile(jarFile, 'r') as z:
+      for name in (MANIFEST_FILE_NAME, NOTICE_FILE_NAME, LICENSE_FILE_NAME):
+        try:
+          # The Python docs state a KeyError is raised ... so this None
+          # check is just defensive:
+          if z.getinfo(name) is None:
+            raise RuntimeError('%s is missing %s' % (desc, name))
+        except KeyError:
+          raise RuntimeError('%s is missing %s' % (desc, name))
+
+      s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
+      notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
+      license = decodeUTF8(z.read(LICENSE_FILE_NAME))
+
+    
+  for verify in (
+    'Specification-Vendor: The Apache Software Foundation',
+    'Implementation-Vendor: The Apache Software Foundation',
+    # Make sure 1.8 compiler was used to build release bits:
+    'X-Compile-Source-JDK: 1.8',
+    # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
+    'Ant-Version: Apache Ant 1.8',
+    # Make sure .class files are 1.8 format:
+    'X-Compile-Target-JDK: 1.8',
+    'Specification-Version: %s' % version,
+    # Make sure the release was compiled with 1.8:
+    'Created-By: 1.8'):
+    if s.find(verify) == -1:
+      raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
+                         (desc, verify))
+
+  if svnRevision != 'skip':
+    # Make sure this matches the version and svn revision we think we are releasing:
+    verifyRevision = 'Implementation-Version: %s %s ' % (version, svnRevision)
+    if s.find(verifyRevision) == -1:
+      raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong svn revision?)' % \
                            (desc, verifyRevision))
 
-    notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
-    license = decodeUTF8(z.read(LICENSE_FILE_NAME))
+  idx = desc.find('inside WAR file')
+  if idx != -1:
+    desc2 = desc[:idx]
+  else:
+    desc2 = desc
 
-    idx = desc.find('inside WAR file')
-    if idx != -1:
-      desc2 = desc[:idx]
-    else:
-      desc2 = desc
-
-    justFileName = os.path.split(desc2)[1]
-    
-    if justFileName.lower().find('solr') != -1:
-      if SOLR_LICENSE is None:
-        raise RuntimeError('BUG in smokeTestRelease!')
-      if SOLR_NOTICE is None:
-        raise RuntimeError('BUG in smokeTestRelease!')
-      if notice != SOLR_NOTICE:
-        raise RuntimeError('%s: %s contents doesn\'t match main NOTICE.txt' % \
-                           (desc, NOTICE_FILE_NAME))
-      if license != SOLR_LICENSE:
-        raise RuntimeError('%s: %s contents doesn\'t match main LICENSE.txt' % \
-                           (desc, LICENSE_FILE_NAME))
-    else:
-      if LUCENE_LICENSE is None:
-        raise RuntimeError('BUG in smokeTestRelease!')
-      if LUCENE_NOTICE is None:
-        raise RuntimeError('BUG in smokeTestRelease!')
-      if notice != LUCENE_NOTICE:
-        raise RuntimeError('%s: %s contents doesn\'t match main NOTICE.txt' % \
-                           (desc, NOTICE_FILE_NAME))
-      if license != LUCENE_LICENSE:
-        raise RuntimeError('%s: %s contents doesn\'t match main LICENSE.txt' % \
-                           (desc, LICENSE_FILE_NAME))
+  justFileName = os.path.split(desc2)[1]
+  if justFileName.lower().find('solr') != -1 or justFileName.lower().find('webapp') != -1:
+    if SOLR_LICENSE is None:
+      raise RuntimeError('BUG in smokeTestRelease!')
+    if SOLR_NOTICE is None:
+      raise RuntimeError('BUG in smokeTestRelease!')
+    if notice != SOLR_NOTICE:
+      raise RuntimeError('%s: %s contents doesn\'t match main NOTICE.txt' % \
+                         (desc, NOTICE_FILE_NAME))
+    if license != SOLR_LICENSE:
+      raise RuntimeError('%s: %s contents doesn\'t match main LICENSE.txt' % \
+                         (desc, LICENSE_FILE_NAME))
+  else:
+    if LUCENE_LICENSE is None:
+      raise RuntimeError('BUG in smokeTestRelease!')
+    if LUCENE_NOTICE is None:
+      raise RuntimeError('BUG in smokeTestRelease!')
+    if notice != LUCENE_NOTICE:
+      raise RuntimeError('%s: %s contents doesn\'t match main NOTICE.txt' % \
+                         (desc, NOTICE_FILE_NAME))
+    if license != LUCENE_LICENSE:
+      raise RuntimeError('%s: %s contents doesn\'t match main LICENSE.txt' % \
+                         (desc, LICENSE_FILE_NAME))
 
 def normSlashes(path):
   return path.replace(os.sep, '/')
@@ -292,10 +306,11 @@ def checkSolrWAR(warFileName, svnRevision, version, tmpDir, baseURL):
   for file in getBinaryDistFiles('lucene', tmpDir, version, baseURL):
     distFilenames[os.path.basename(file)] = file
 
-  with zipfile.ZipFile(warFileName, 'r') as z:
-    for name in z.namelist():
+  for (dirpath, subdirs, files) in os.walk(warFileName):
+    for name in files:
       if name.endswith('.jar'):
-        jarInsideWarContents = z.read(name)
+        path = os.path.join(dirpath, name)
+        jarInsideWarContents = open(path, 'rb').read()
         noJavaPackageClasses('JAR file %s inside WAR file %s' % (name, warFileName),
                              io.BytesIO(jarInsideWarContents))
         if name.lower().find('lucene') != -1 or name.lower().find('solr') != -1:
@@ -755,7 +770,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       checkJavadocpath('%s/docs' % unpackPath)
 
     else:
-      checkSolrWAR('%s/server/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
+      checkSolrWAR('%s/server/solr-webapp/webapp' % unpackPath, svnRevision, version, tmpDir, baseURL)
 
       print('    copying unpacked distribution for Java 8 ...')
       java8UnpackPath = '%s-java8' % unpackPath

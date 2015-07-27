@@ -46,6 +46,7 @@
     <build-manifest title="Apache Solr Search Server"
                     implementation.title="org.apache.solr"/>
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
+    <mkdir dir="${server.dir}/webapps"/>
     <war destfile="${server.dir}/webapps/solr.war"
          webxml="web/WEB-INF/web.xml"
          manifest="${manifest.file}">
@@ -60,6 +61,14 @@
       <fileset dir="web" excludes="${exclude.from.war}"/>
       <metainf dir="${common-solr.dir}" includes="LICENSE.txt,NOTICE.txt" excludes="${exclude.from.war}"/>
     </war>
+
+    <!-- Ship Solr with the WAR already extracted -->
+    <delete dir="${server.dir}/solr-webapp/webapp"/>
+    <mkdir dir="${server.dir}/solr-webapp/webapp"/>
+    <unzip dest="${server.dir}/solr-webapp/webapp" src="${server.dir}/webapps/solr.war"/>
+    <delete file="${server.dir}/webapps/solr.war"/>
+    <delete dir="${server.dir}/webapps"/>
+
   </target>
 
   <!-- nothing to do -->
