@@ -28,7 +28,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -48,8 +54,8 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -401,9 +407,7 @@ public class TestQPHelper extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
+    PhraseQuery expected = new PhraseQuery("field", "中", "国");
     
     assertEquals(expected, getQuery("\"中国\"", analyzer));
   }
@@ -412,10 +416,8 @@ public class TestQPHelper extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    PhraseQuery expected = new PhraseQuery();
+    PhraseQuery expected = new PhraseQuery("field", "中", "国");
     expected.setBoost(0.5f);
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
     
     assertEquals(expected, getQuery("\"中国\"^0.5", analyzer));
   }
@@ -424,10 +426,7 @@ public class TestQPHelper extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer(); 
     
-    PhraseQuery expected = new PhraseQuery();
-    expected.setSlop(3);
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
+    PhraseQuery expected = new PhraseQuery(3, "field", "中", "国");
     
     assertEquals(expected, getQuery("\"中国\"~3", analyzer));
   }

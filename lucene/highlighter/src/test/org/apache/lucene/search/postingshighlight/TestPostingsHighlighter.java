@@ -446,9 +446,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher searcher = newSearcher(ir);
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("body", "buddhist"));
-    query.add(new Term("body", "origins"));
+    PhraseQuery query = new PhraseQuery("body", "buddhist", "origins");
     TopDocs topDocs = searcher.search(query, 10);
     assertEquals(1, topDocs.totalHits);
     PostingsHighlighter highlighter = new PostingsHighlighter();
@@ -476,9 +474,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher searcher = newSearcher(ir);
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("body", "curious"));
-    query.add(new Term("body", "george"));
+    PhraseQuery query = new PhraseQuery("body", "curious", "george");
     TopDocs topDocs = searcher.search(query, 10);
     assertEquals(1, topDocs.totalHits);
     PostingsHighlighter highlighter = new PostingsHighlighter();

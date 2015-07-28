@@ -54,50 +54,31 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   /* some simple phrase tests */
   
   public void testP1() throws Exception {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term(FIELD, "w1"));
-    phraseQuery.add(new Term(FIELD, "w2"));
+    PhraseQuery phraseQuery = new PhraseQuery(FIELD, "w1", "w2");
     qtest(phraseQuery, new int[] { 0 });
   }
   public void testP2() throws Exception {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term(FIELD, "w1"));
-    phraseQuery.add(new Term(FIELD, "w3"));
+    PhraseQuery phraseQuery = new PhraseQuery(FIELD, "w1", "w3");
     qtest(phraseQuery, new int[] { 1,3 });
   }
   public void testP3() throws Exception {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(1);
-    phraseQuery.add(new Term(FIELD, "w1"));
-    phraseQuery.add(new Term(FIELD, "w2"));
+    PhraseQuery phraseQuery = new PhraseQuery(1, FIELD, "w1", "w2");
     qtest(phraseQuery, new int[] { 0,1,2 });
   }
   public void testP4() throws Exception {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(1);
-    phraseQuery.add(new Term(FIELD, "w2"));
-    phraseQuery.add(new Term(FIELD, "w3"));
+    PhraseQuery phraseQuery = new PhraseQuery(1, FIELD, "w2", "w3");
     qtest(phraseQuery, new int[] { 0,1,2,3 });
   }
   public void testP5() throws Exception {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(1);
-    phraseQuery.add(new Term(FIELD, "w3"));
-    phraseQuery.add(new Term(FIELD, "w2"));
+    PhraseQuery phraseQuery = new PhraseQuery(1, FIELD, "w3", "w2");
     qtest(phraseQuery, new int[] { 1,3 });
   }
   public void testP6() throws Exception {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(2);
-    phraseQuery.add(new Term(FIELD, "w3"));
-    phraseQuery.add(new Term(FIELD, "w2"));
+    PhraseQuery phraseQuery = new PhraseQuery(2, FIELD, "w3", "w2");
     qtest(phraseQuery, new int[] { 0,1,3 });
   }
   public void testP7() throws Exception {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.setSlop(3);
-    phraseQuery.add(new Term(FIELD, "w3"));
-    phraseQuery.add(new Term(FIELD, "w2"));
+    PhraseQuery phraseQuery = new PhraseQuery(3, FIELD, "w3", "w2");
     qtest(phraseQuery, new int[] { 0,1,2,3 });
   }
 
@@ -657,14 +638,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testMultiFieldBQofPQ1() throws Exception {
     BooleanQuery query = new BooleanQuery();
 
-    PhraseQuery leftChild = new PhraseQuery();
-    leftChild.add(new Term(FIELD, "w1"));
-    leftChild.add(new Term(FIELD, "w2"));
+    PhraseQuery leftChild = new PhraseQuery(FIELD, "w1", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
 
-    PhraseQuery rightChild = new PhraseQuery();
-    rightChild.add(new Term(ALTFIELD, "w1"));
-    rightChild.add(new Term(ALTFIELD, "w2"));
+    PhraseQuery rightChild = new PhraseQuery(ALTFIELD, "w1", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
     qtest(query, new int[] { 0 });
@@ -672,14 +649,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testMultiFieldBQofPQ2() throws Exception {
     BooleanQuery query = new BooleanQuery();
 
-    PhraseQuery leftChild = new PhraseQuery();
-    leftChild.add(new Term(FIELD, "w1"));
-    leftChild.add(new Term(FIELD, "w3"));
+    PhraseQuery leftChild = new PhraseQuery(FIELD, "w1", "w3");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
 
-    PhraseQuery rightChild = new PhraseQuery();
-    rightChild.add(new Term(ALTFIELD, "w1"));
-    rightChild.add(new Term(ALTFIELD, "w3"));
+    PhraseQuery rightChild = new PhraseQuery(ALTFIELD, "w1", "w3");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
     qtest(query, new int[] { 1,3 });
@@ -687,16 +660,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testMultiFieldBQofPQ3() throws Exception {
     BooleanQuery query = new BooleanQuery();
 
-    PhraseQuery leftChild = new PhraseQuery();
-    leftChild.setSlop(1);
-    leftChild.add(new Term(FIELD, "w1"));
-    leftChild.add(new Term(FIELD, "w2"));
+    PhraseQuery leftChild = new PhraseQuery(1, FIELD, "w1", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
 
-    PhraseQuery rightChild = new PhraseQuery();
-    rightChild.setSlop(1);
-    rightChild.add(new Term(ALTFIELD, "w1"));
-    rightChild.add(new Term(ALTFIELD, "w2"));
+    PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w1", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
     qtest(query, new int[] { 0,1,2 });
@@ -704,16 +671,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testMultiFieldBQofPQ4() throws Exception {
     BooleanQuery query = new BooleanQuery();
 
-    PhraseQuery leftChild = new PhraseQuery();
-    leftChild.setSlop(1);
-    leftChild.add(new Term(FIELD, "w2"));
-    leftChild.add(new Term(FIELD, "w3"));
+    PhraseQuery leftChild = new PhraseQuery(1, FIELD, "w2", "w3");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
 
-    PhraseQuery rightChild = new PhraseQuery();
-    rightChild.setSlop(1);
-    rightChild.add(new Term(ALTFIELD, "w2"));
-    rightChild.add(new Term(ALTFIELD, "w3"));
+    PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w2", "w3");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
     qtest(query, new int[] { 0,1,2,3 });
@@ -721,16 +682,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testMultiFieldBQofPQ5() throws Exception {
     BooleanQuery query = new BooleanQuery();
 
-    PhraseQuery leftChild = new PhraseQuery();
-    leftChild.setSlop(1);
-    leftChild.add(new Term(FIELD, "w3"));
-    leftChild.add(new Term(FIELD, "w2"));
+    PhraseQuery leftChild = new PhraseQuery(1, FIELD, "w3", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
 
-    PhraseQuery rightChild = new PhraseQuery();
-    rightChild.setSlop(1);
-    rightChild.add(new Term(ALTFIELD, "w3"));
-    rightChild.add(new Term(ALTFIELD, "w2"));
+    PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w3", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
     qtest(query, new int[] { 1,3 });
@@ -738,16 +693,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testMultiFieldBQofPQ6() throws Exception {
     BooleanQuery query = new BooleanQuery();
 
-    PhraseQuery leftChild = new PhraseQuery();
-    leftChild.setSlop(2);
-    leftChild.add(new Term(FIELD, "w3"));
-    leftChild.add(new Term(FIELD, "w2"));
+    PhraseQuery leftChild = new PhraseQuery(2, FIELD, "w3", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
 
-    PhraseQuery rightChild = new PhraseQuery();
-    rightChild.setSlop(2);
-    rightChild.add(new Term(ALTFIELD, "w3"));
-    rightChild.add(new Term(ALTFIELD, "w2"));
+    PhraseQuery rightChild = new PhraseQuery(2, ALTFIELD, "w3", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
     qtest(query, new int[] { 0,1,3 });
@@ -755,16 +704,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testMultiFieldBQofPQ7() throws Exception {
     BooleanQuery query = new BooleanQuery();
 
-    PhraseQuery leftChild = new PhraseQuery();
-    leftChild.setSlop(3);
-    leftChild.add(new Term(FIELD, "w3"));
-    leftChild.add(new Term(FIELD, "w2"));
+    PhraseQuery leftChild = new PhraseQuery(3, FIELD, "w3", "w2");
     query.add(leftChild, BooleanClause.Occur.SHOULD);
 
-    PhraseQuery rightChild = new PhraseQuery();
-    rightChild.setSlop(1);
-    rightChild.add(new Term(ALTFIELD, "w3"));
-    rightChild.add(new Term(ALTFIELD, "w2"));
+    PhraseQuery rightChild = new PhraseQuery(1, ALTFIELD, "w3", "w2");
     query.add(rightChild, BooleanClause.Occur.SHOULD);
 
     qtest(query, new int[] { 0,1,2,3 });

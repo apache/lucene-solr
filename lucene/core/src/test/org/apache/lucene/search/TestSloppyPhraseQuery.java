@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -30,8 +32,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
 
@@ -135,7 +135,14 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   }
   
   private float  checkPhraseQuery(Document doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
-    query.setSlop(slop);
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    Term[] terms = query.getTerms();
+    int[] positions = query.getPositions();
+    for (int i = 0; i < terms.length; ++i) {
+      builder.add(terms[i], positions[i]);
+    }
+    builder.setSlop(slop);
+    query = builder.build();
 
     MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory());
     RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
@@ -168,12 +175,8 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   }
 
   private static PhraseQuery makePhraseQuery(String terms) {
-    PhraseQuery query = new PhraseQuery();
     String[] t = terms.split(" +");
-    for (int i=0; i<t.length; i++) {
-      query.add(new Term("f", t[i]));
-    }
-    return query;
+    return new PhraseQuery("f", t);
   }
 
   static class MaxFreqCollector extends SimpleCollector {
@@ -242,16 +245,18 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
-    PhraseQuery pq = new PhraseQuery();
+
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.add(new Term("lyrics", "drug"), 1);
+    builder.add(new Term("lyrics", "drug"), 4);
+    PhraseQuery pq = builder.build();
     // "drug the drug"~1
-    pq.add(new Term("lyrics", "drug"), 1);
-    pq.add(new Term("lyrics", "drug"), 4);
-    pq.setSlop(0);
     assertEquals(1, is.search(pq, 4).totalHits);
-    pq.setSlop(1);
+    builder.setSlop(1);
+    pq = builder.build();
     assertEquals(3, is.search(pq, 4).totalHits);
-    pq.setSlop(2);
+    builder.setSlop(2);
+    pq = builder.build();
     assertEquals(4, is.search(pq, 4).totalHits);
     ir.close();
     dir.close();
@@ -270,11 +275,12 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     iw.close();
     
     IndexSearcher is = newSearcher(ir);
-    PhraseQuery pq = new PhraseQuery();
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.add(new Term("lyrics", "drug"), 1);
+    builder.add(new Term("lyrics", "drug"), 3);
+    builder.setSlop(1);
+    PhraseQuery pq = builder.build();
     // "drug the drug"~1
-    pq.add(new Term("lyrics", "drug"), 1);
-    pq.add(new Term("lyrics", "drug"), 3);
-    pq.setSlop(1);
     assertSaneScoring(pq, is);
     ir.close();
     dir.close();
@@ -324,11 +330,12 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
         
      IndexSearcher is = newSearcher(ir);
      
-     PhraseQuery pq = new PhraseQuery();
+     PhraseQuery.Builder builder = new PhraseQuery.Builder();
+     builder.add(new Term("lyrics", "drug"), 1);
+     builder.add(new Term("lyrics", "drug"), 4);
+     builder.setSlop(5);
+     PhraseQuery pq = builder.build();
      // "drug the drug"~5
-     pq.add(new Term("lyrics", "drug"), 1);
-     pq.add(new Term("lyrics", "drug"), 3);
-     pq.setSlop(5);
      assertSaneScoring(pq, is);
      ir.close();
      dir.close();

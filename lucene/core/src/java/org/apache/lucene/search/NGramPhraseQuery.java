@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -30,70 +31,93 @@ import org.apache.lucene.index.Term;
  * will query "AB/0 BC/1 CD/2" (where term/position).
  *
  */
-public class NGramPhraseQuery extends PhraseQuery {
+public class NGramPhraseQuery extends Query {
+
   private final int n;
+  private final PhraseQuery phraseQuery;
   
   /**
    * Constructor that takes gram size.
    * @param n n-gram size
    */
-  public NGramPhraseQuery(int n){
+  public NGramPhraseQuery(int n, PhraseQuery query) {
     super();
     this.n = n;
+    this.phraseQuery = Objects.requireNonNull(query);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    if(getSlop() != 0) return super.rewrite(reader);
-    
-    // check whether optimizable or not
-    if(n < 2 || // non-overlap n-gram cannot be optimized
-        getTerms().length < 3)  // too short to optimize
-      return super.rewrite(reader);
+    final Term[] terms = phraseQuery.getTerms();
+    final int[] positions = phraseQuery.getPositions();
 
-    // check all posIncrement is 1
-    // if not, cannot optimize
-    int[] positions = getPositions();
-    Term[] terms = getTerms();
-    int prevPosition = positions[0];
-    for(int i = 1; i < positions.length; i++){
-      int pos = positions[i];
-      if(prevPosition + 1 != pos) return super.rewrite(reader);
-      prevPosition = pos;
-    }
+    boolean isOptimizable = phraseQuery.getSlop() == 0
+        && n >= 2 // non-overlap n-gram cannot be optimized
+        && terms.length >= 3; // short ones can't be optimized
 
-    // now create the new optimized phrase query for n-gram
-    PhraseQuery optimized = new PhraseQuery();
-    optimized.setBoost(getBoost());
-    int pos = 0;
-    final int lastPos = terms.length - 1;
-    for(int i = 0; i < terms.length; i++){
-      if(pos % n == 0 || pos >= lastPos){
-        optimized.add(terms[i], positions[i]);
+    if (isOptimizable) {
+      for (int i = 1; i < positions.length; ++i) {
+        if (positions[i] != positions[i-1] + 1) {
+          isOptimizable = false;
+          break;
+        }
       }
-      pos++;
     }
     
-    return optimized;
+    if (isOptimizable == false) {
+      return phraseQuery.rewrite(reader);
+    }
+
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    for (int i = 0; i < terms.length; ++i) {
+      if (i % n == 0 || i == terms.length - 1) {
+        builder.add(terms[i], i);
+      }
+    }
+    PhraseQuery rewritten = builder.build();
+    rewritten.setBoost(phraseQuery.getBoost());
+    return rewritten;
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof NGramPhraseQuery))
+    if (super.equals(o) == false) {
       return false;
-    NGramPhraseQuery other = (NGramPhraseQuery)o;
-    if(this.n != other.n) return false;
-    return super.equals(other);
+    }
+    NGramPhraseQuery other = (NGramPhraseQuery) o;
+    return n == other.n && phraseQuery.equals(other.phraseQuery);
   }
 
-  /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost())
-      ^ getSlop()
-      ^ getTerms().hashCode()
-      ^ getPositions().hashCode()
-      ^ n;
+    int h = super.hashCode();
+    h = 31 * h + phraseQuery.hashCode();
+    h = 31 * h + n;
+    return h;
+  }
+
+  /** Return the list of terms. */
+  public Term[] getTerms() {
+    return phraseQuery.getTerms();
+  }
+
+  /** Return the list of relative positions that each term should appear at. */
+  public int[] getPositions() {
+    return phraseQuery.getPositions();
+  }
+
+  @Override
+  public float getBoost() {
+    return phraseQuery.getBoost();
+  }
+
+  @Override
+  public void setBoost(float b) {
+    phraseQuery.setBoost(b);
+  }
+
+  @Override
+  public String toString(String field) {
+    return phraseQuery.toString(field);
   }
 }

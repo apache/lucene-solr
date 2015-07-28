@@ -1869,9 +1869,10 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("body", "just"), 0);
-    pq.add(new Term("body", "test"), 2);
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.add(new Term("body", "just"), 0);
+    builder.add(new Term("body", "test"), 2);
+    PhraseQuery pq = builder.build();
     // body:"just ? test"
     assertEquals(1, is.search(pq, 5).totalHits);
     ir.close();
@@ -1900,9 +1901,10 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("body", "just"), 0);
-    pq.add(new Term("body", "test"), 3);
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.add(new Term("body", "just"), 0);
+    builder.add(new Term("body", "test"), 3);
+    PhraseQuery pq = builder.build();
     // body:"just ? ? test"
     assertEquals(1, is.search(pq, 5).totalHits);
     ir.close();

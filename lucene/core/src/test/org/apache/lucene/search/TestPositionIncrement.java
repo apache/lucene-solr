@@ -121,50 +121,56 @@ public class TestPositionIncrement extends LuceneTestCase {
     PhraseQuery q;
     ScoreDoc[] hits;
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "1"));
-    q.add(new Term("field", "2"));
+    q = new PhraseQuery("field", "1", "2");
+    hits = searcher.search(q, 1000).scoreDocs;
+    assertEquals(0, hits.length);
+
+    // same as previous, using the builder with implicit positions
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "1"));
+    builder.add(new Term("field", "2"));
+    q = builder.build();
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // same as previous, just specify positions explicitely.
-    q = new PhraseQuery(); 
-    q.add(new Term("field", "1"),0);
-    q.add(new Term("field", "2"),1);
+    builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "1"), 0);
+    builder.add(new Term("field", "2"), 1);
+    q = builder.build();
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // specifying correct positions should find the phrase.
-    q = new PhraseQuery();
-    q.add(new Term("field", "1"),0);
-    q.add(new Term("field", "2"),2);
+    builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "1"), 0);
+    builder.add(new Term("field", "2"), 2);
+    q = builder.build();
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "2"));
-    q.add(new Term("field", "3"));
+    q = new PhraseQuery("field", "2", "3");
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "3"));
-    q.add(new Term("field", "4"));
+    q = new PhraseQuery("field", "3", "4");
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // phrase query would find it when correct positions are specified. 
-    q = new PhraseQuery();
-    q.add(new Term("field", "3"),0);
-    q.add(new Term("field", "4"),0);
+    builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "3"), 0);
+    builder.add(new Term("field", "4"), 0);
+    q = builder.build();
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     // phrase query should fail for non existing searched term 
     // even if there exist another searched terms in the same searched position. 
-    q = new PhraseQuery();
-    q.add(new Term("field", "3"),0);
-    q.add(new Term("field", "9"),0);
+    builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "3"), 0);
+    builder.add(new Term("field", "9"), 0);
+    q = builder.build();
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
@@ -175,27 +181,19 @@ public class TestPositionIncrement extends LuceneTestCase {
     hits = searcher.search(mq, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "2"));
-    q.add(new Term("field", "4"));
+    q = new PhraseQuery("field", "2", "4");
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "3"));
-    q.add(new Term("field", "5"));
+    q = new PhraseQuery("field", "3", "5");
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "4"));
-    q.add(new Term("field", "5"));
+    q = new PhraseQuery("field", "4", "5");
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "2"));
-    q.add(new Term("field", "5"));
+    q = new PhraseQuery("field", "2", "5");
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
     

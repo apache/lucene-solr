@@ -103,42 +103,29 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
   /** test a simple phrase */
   public void testPhrase() throws Exception {
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "foo"));
-    expected.add(new Term("field", "bar"));
+    PhraseQuery expected = new PhraseQuery("field", "foo", "bar");
 
     assertEquals(expected, parse("\"foo bar\""));
   }
 
   /** test a simple phrase with various slop settings */
   public void testPhraseWithSlop() throws Exception {
-    PhraseQuery expectedWithSlop = new PhraseQuery();
-    expectedWithSlop.add(new Term("field", "foo"));
-    expectedWithSlop.add(new Term("field", "bar"));
-    expectedWithSlop.setSlop(2);
+    PhraseQuery expectedWithSlop = new PhraseQuery(2, "field", "foo", "bar");
 
     assertEquals(expectedWithSlop, parse("\"foo bar\"~2"));
 
-    PhraseQuery expectedWithMultiDigitSlop = new PhraseQuery();
-    expectedWithMultiDigitSlop.add(new Term("field", "foo"));
-    expectedWithMultiDigitSlop.add(new Term("field", "bar"));
-    expectedWithMultiDigitSlop.setSlop(10);
+    PhraseQuery expectedWithMultiDigitSlop = new PhraseQuery(10, "field", "foo", "bar");
 
     assertEquals(expectedWithMultiDigitSlop, parse("\"foo bar\"~10"));
 
-    PhraseQuery expectedNoSlop = new PhraseQuery();
-    expectedNoSlop.add(new Term("field", "foo"));
-    expectedNoSlop.add(new Term("field", "bar"));
+    PhraseQuery expectedNoSlop = new PhraseQuery("field", "foo", "bar");
 
     assertEquals("Ignore trailing tilde with no slop", expectedNoSlop, parse("\"foo bar\"~"));
     assertEquals("Ignore non-numeric trailing slop", expectedNoSlop, parse("\"foo bar\"~a"));
     assertEquals("Ignore non-numeric trailing slop", expectedNoSlop, parse("\"foo bar\"~1a"));
     assertEquals("Ignore negative trailing slop", expectedNoSlop, parse("\"foo bar\"~-1"));
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "foo"));
-    pq.add(new Term("field", "bar"));
-    pq.setSlop(12);
+    PhraseQuery pq = new PhraseQuery(12, "field", "foo", "bar");
 
     BooleanQuery expectedBoolean = new BooleanQuery();
     expectedBoolean.add(pq, Occur.MUST);
@@ -165,12 +152,8 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
   /** test some AND'd phrases using '+' operator */
   public void testANDPhrase() throws Exception {
-    PhraseQuery phrase1 = new PhraseQuery();
-    phrase1.add(new Term("field", "foo"));
-    phrase1.add(new Term("field", "bar"));
-    PhraseQuery phrase2 = new PhraseQuery();
-    phrase2.add(new Term("field", "star"));
-    phrase2.add(new Term("field", "wars"));
+    PhraseQuery phrase1 = new PhraseQuery("field", "foo", "bar");
+    PhraseQuery phrase2 = new PhraseQuery("field", "star", "wars");
     BooleanQuery expected = new BooleanQuery();
     expected.add(phrase1, Occur.MUST);
     expected.add(phrase2, Occur.MUST);
@@ -209,12 +192,8 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
   /** test some OR'd phrases using '|' operator */
   public void testORPhrase() throws Exception {
-    PhraseQuery phrase1 = new PhraseQuery();
-    phrase1.add(new Term("field", "foo"));
-    phrase1.add(new Term("field", "bar"));
-    PhraseQuery phrase2 = new PhraseQuery();
-    phrase2.add(new Term("field", "star"));
-    phrase2.add(new Term("field", "wars"));
+    PhraseQuery phrase1 = new PhraseQuery("field", "foo", "bar");
+    PhraseQuery phrase2 = new PhraseQuery("field", "star", "wars");
     BooleanQuery expected = new BooleanQuery();
     expected.add(phrase1, Occur.SHOULD);
     expected.add(phrase2, Occur.SHOULD);
@@ -324,9 +303,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   public void testGarbagePhrase() throws Exception {
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "star"));
-    expected.add(new Term("field", "wars"));
+    PhraseQuery expected = new PhraseQuery("field", "star", "wars");
 
     assertEquals(expected, parse("\"star wars\""));
     assertEquals(expected, parse("\"star wars\\ \""));
@@ -614,9 +591,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   public void testDisableSlop() {
-    PhraseQuery expectedPhrase = new PhraseQuery();
-    expectedPhrase.add(new Term("field", "foo"));
-    expectedPhrase.add(new Term("field", "bar"));
+    PhraseQuery expectedPhrase = new PhraseQuery("field", "foo", "bar");
 
     BooleanQuery expected = new BooleanQuery();
     expected.add(expectedPhrase, Occur.MUST);

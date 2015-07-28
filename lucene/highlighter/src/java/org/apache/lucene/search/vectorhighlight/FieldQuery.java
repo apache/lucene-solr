@@ -232,13 +232,14 @@ public class FieldQuery {
         }
       }
       if( overlap && src.length - i < dest.length ){
-        PhraseQuery pq = new PhraseQuery();
+        PhraseQuery.Builder pqBuilder = new PhraseQuery.Builder();
         for( Term srcTerm : src )
-          pq.add( srcTerm );
+          pqBuilder.add( srcTerm );
         for( int k = src.length - i; k < dest.length; k++ ){
-          pq.add( new Term( src[0].field(), dest[k].text() ) );
+          pqBuilder.add( new Term( src[0].field(), dest[k].text() ) );
         }
-        pq.setSlop( slop );
+        pqBuilder.setSlop( slop );
+        PhraseQuery pq = pqBuilder.build();
         pq.setBoost( boost );
         if(!expandQueries.contains( pq ) )
           expandQueries.add( pq );

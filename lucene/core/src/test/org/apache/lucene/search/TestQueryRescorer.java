@@ -79,10 +79,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
     // Now, resort using PhraseQuery:
-    PhraseQuery pq = new PhraseQuery();
-    pq.setSlop(5);
-    pq.add(new Term("field", "wizard"));
-    pq.add(new Term("field", "oz"));
+    PhraseQuery pq = new PhraseQuery(5, "field", "wizard", "oz");
 
     TopDocs hits2 = QueryRescorer.rescore(searcher, hits, pq, 2.0, 10);
 
@@ -176,10 +173,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
     // Now, resort using PhraseQuery, but with an
     // opposite-world combine:
-    PhraseQuery pq = new PhraseQuery();
-    pq.setSlop(5);
-    pq.add(new Term("field", "wizard"));
-    pq.add(new Term("field", "oz"));
+    PhraseQuery pq = new PhraseQuery(5, "field", "wizard", "oz");
     
     TopDocs hits2 = new QueryRescorer(pq) {
         @Override
@@ -229,9 +223,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
     // Now, resort using PhraseQuery:
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "wizard"));
-    pq.add(new Term("field", "oz"));
+    PhraseQuery pq = new PhraseQuery("field", "wizard", "oz");
 
     Rescorer rescorer = new QueryRescorer(pq) {
         @Override
@@ -306,9 +298,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
     // Now, resort using PhraseQuery, no slop:
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "wizard"));
-    pq.add(new Term("field", "oz"));
+    PhraseQuery pq = new PhraseQuery("field", "wizard", "oz");
 
     TopDocs hits2 = QueryRescorer.rescore(searcher, hits, pq, 2.0, 10);
 

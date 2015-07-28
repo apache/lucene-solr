@@ -31,6 +31,7 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -332,13 +333,9 @@ public class TestBoolean2 extends LuceneTestCase {
       if (qType < 3) {
         q = new TermQuery(new Term(field, vals[rnd.nextInt(vals.length)]));
       } else if (qType < 4) {
-        Term t1 = new Term(field, vals[rnd.nextInt(vals.length)]);
-        Term t2 = new Term(field, vals[rnd.nextInt(vals.length)]);
-        PhraseQuery pq = new PhraseQuery();
-        pq.add(t1);
-        pq.add(t2);
-        pq.setSlop(10); // increase possibility of matching
-        q = pq;
+        String t1 = vals[rnd.nextInt(vals.length)];
+        String t2 = vals[rnd.nextInt(vals.length)];
+        q = new PhraseQuery(10, field, t1, t2); // slop increases possibility of matching
       } else if (qType < 7) {
         q = new WildcardQuery(new Term(field, "w*"));
       } else {

@@ -97,7 +97,6 @@ public class TestPhraseQuery extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    query = new PhraseQuery();
   }
 
   @AfterClass
@@ -110,18 +109,14 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testNotCloseEnough() throws Exception {
-    query.setSlop(2);
-    query.add(new Term("field", "one"));
-    query.add(new Term("field", "five"));
+    query = new PhraseQuery(2, "field", "one", "five");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
     QueryUtils.check(random(), query,searcher);
   }
 
   public void testBarelyCloseEnough() throws Exception {
-    query.setSlop(3);
-    query.add(new Term("field", "one"));
-    query.add(new Term("field", "five"));
+    query = new PhraseQuery(3, "field", "one", "five");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), query,searcher);
@@ -132,16 +127,13 @@ public class TestPhraseQuery extends LuceneTestCase {
    */
   public void testExact() throws Exception {
     // slop is zero by default
-    query.add(new Term("field", "four"));
-    query.add(new Term("field", "five"));
+    query = new PhraseQuery("field", "four", "five");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("exact match", 1, hits.length);
     QueryUtils.check(random(), query,searcher);
 
 
-    query = new PhraseQuery();
-    query.add(new Term("field", "two"));
-    query.add(new Term("field", "one"));
+    query = new PhraseQuery("field", "two", "one");
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("reverse not exact", 0, hits.length);
     QueryUtils.check(random(), query,searcher);
@@ -149,9 +141,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
   public void testSlop1() throws Exception {
     // Ensures slop of 1 works with terms in order.
-    query.setSlop(1);
-    query.add(new Term("field", "one"));
-    query.add(new Term("field", "two"));
+    query = new PhraseQuery(1, "field", "one", "two");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("in order", 1, hits.length);
     QueryUtils.check(random(), query,searcher);
@@ -159,10 +149,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     // Ensures slop of 1 does not work for phrases out of order;
     // must be at least 2.
-    query = new PhraseQuery();
-    query.setSlop(1);
-    query.add(new Term("field", "two"));
-    query.add(new Term("field", "one"));
+    query = new PhraseQuery(1, "field", "two", "one");
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("reversed, slop not 2 or more", 0, hits.length);
     QueryUtils.check(random(), query,searcher);
@@ -172,18 +159,14 @@ public class TestPhraseQuery extends LuceneTestCase {
    * As long as slop is at least 2, terms can be reversed
    */
   public void testOrderDoesntMatter() throws Exception {
-    query.setSlop(2); // must be at least two for reverse order match
-    query.add(new Term("field", "two"));
-    query.add(new Term("field", "one"));
+    // must be at least two for reverse order match
+    query = new PhraseQuery(2, "field", "two", "one");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
     QueryUtils.check(random(), query,searcher);
 
 
-    query = new PhraseQuery();
-    query.setSlop(2);
-    query.add(new Term("field", "three"));
-    query.add(new Term("field", "one"));
+    query = new PhraseQuery(2, "field", "three", "one");
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("not sloppy enough", 0, hits.length);
     QueryUtils.check(random(), query,searcher);
@@ -195,26 +178,19 @@ public class TestPhraseQuery extends LuceneTestCase {
    * to line up a phrase
    */
   public void testMultipleTerms() throws Exception {
-    query.setSlop(2);
-    query.add(new Term("field", "one"));
-    query.add(new Term("field", "three"));
-    query.add(new Term("field", "five"));
+    query = new PhraseQuery(2, "field", "one", "three", "five");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("two total moves", 1, hits.length);
     QueryUtils.check(random(), query,searcher);
 
-
-    query = new PhraseQuery();
-    query.setSlop(5); // it takes six moves to match this phrase
-    query.add(new Term("field", "five"));
-    query.add(new Term("field", "three"));
-    query.add(new Term("field", "one"));
+    // it takes six moves to match this phrase
+    query = new PhraseQuery(5, "field", "five", "three", "one");
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("slop of 5 not close enough", 0, hits.length);
     QueryUtils.check(random(), query,searcher);
 
 
-    query.setSlop(6);
+    query = new PhraseQuery(6, "field", "five", "three", "one");
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("slop of 6 just right", 1, hits.length);
     QueryUtils.check(random(), query,searcher);
@@ -235,9 +211,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     // valid exact phrase query
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field","stop"));
-    query.add(new Term("field","words"));
+    PhraseQuery query = new PhraseQuery("field", "stop", "words");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), query,searcher);
@@ -264,9 +238,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(reader);
     
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term("source", "marketing"));
-    phraseQuery.add(new Term("source", "info"));
+    PhraseQuery phraseQuery = new PhraseQuery("source", "marketing", "info");
     ScoreDoc[] hits = searcher.search(phraseQuery, 1000).scoreDocs;
     assertEquals(2, hits.length);
     QueryUtils.check(random(), phraseQuery,searcher);
@@ -303,9 +275,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     searcher = newSearcher(reader);
     
     termQuery = new TermQuery(new Term("contents","woo"));
-    phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term("contents","map"));
-    phraseQuery.add(new Term("contents","entry"));
+    phraseQuery = new PhraseQuery("contents", "map", "entry");
     
     hits = searcher.search(termQuery, 1000).scoreDocs;
     assertEquals(3, hits.length);
@@ -355,10 +325,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarity(new DefaultSimilarity());
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "firstname"));
-    query.add(new Term("field", "lastname"));
-    query.setSlop(Integer.MAX_VALUE);
+    PhraseQuery query = new PhraseQuery(Integer.MAX_VALUE, "field", "firstname", "lastname");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);
     // Make sure that those matches where the terms appear closer to
@@ -375,25 +342,35 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    PhraseQuery q = new PhraseQuery();
+    PhraseQuery q = new PhraseQuery("field", new String[0]);
     assertEquals("\"\"", q.toString());
 
-    q.add(new Term("field", "hi"), 1);
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "hi"), 1);
+    q = builder.build();
     assertEquals("field:\"? hi\"", q.toString());
 
-    q = new PhraseQuery(); // Query "this hi this is a test is"
-    q.add(new Term("field", "hi"), 1);
-    q.add(new Term("field", "test"), 5);
     
+    builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "hi"), 1);
+    builder.add(new Term("field", "test"), 5);
+    q = builder.build(); // Query "this hi this is a test is"
+
     assertEquals("field:\"? hi ? ? ? test\"", q.toString());
 
-    q = new PhraseQuery();
-    q.add(new Term("field", "hi"), 1);
-    q.add(new Term("field", "hello"), 1);
-    q.add(new Term("field", "test"), 5);
+    builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "hi"), 1);
+    builder.add(new Term("field", "hello"), 1);
+    builder.add(new Term("field", "test"), 5);
+    q = builder.build();
     assertEquals("field:\"? hi|hello ? ? ? test\"", q.toString());
 
-    q.setSlop(5);
+    builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "hi"), 1);
+    builder.add(new Term("field", "hello"), 1);
+    builder.add(new Term("field", "test"), 5);
+    builder.setSlop(5);
+    q = builder.build();
     assertEquals("field:\"? hi|hello ? ? ? test\"~5", q.toString());
 
     q.setBoost(2);
@@ -401,17 +378,13 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testWrappedPhrase() throws IOException {
-    query.add(new Term("repeated", "first"));
-    query.add(new Term("repeated", "part"));
-    query.add(new Term("repeated", "second"));
-    query.add(new Term("repeated", "part"));
-    query.setSlop(100);
+    query = new PhraseQuery(100, "repeated", "first", "part", "second", "part");
 
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("slop of 100 just right", 1, hits.length);
     QueryUtils.check(random(), query,searcher);
 
-    query.setSlop(99);
+    query = new PhraseQuery(99, "repeated", "first", "part", "second", "part");
 
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("slop of 99 not enough", 0, hits.length);
@@ -421,44 +394,28 @@ public class TestPhraseQuery extends LuceneTestCase {
   // work on two docs like this: "phrase exist notexist exist found"
   public void testNonExistingPhrase() throws IOException {
     // phrase without repetitions that exists in 2 docs
-    query.add(new Term("nonexist", "phrase"));
-    query.add(new Term("nonexist", "notexist"));
-    query.add(new Term("nonexist", "found"));
-    query.setSlop(2); // would be found this way
+    query = new PhraseQuery(2, "nonexist", "phrase", "notexist", "found");
 
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("phrase without repetitions exists in 2 docs", 2, hits.length);
     QueryUtils.check(random(), query,searcher);
 
     // phrase with repetitions that exists in 2 docs
-    query = new PhraseQuery();
-    query.add(new Term("nonexist", "phrase"));
-    query.add(new Term("nonexist", "exist"));
-    query.add(new Term("nonexist", "exist"));
-    query.setSlop(1); // would be found 
+    query = new PhraseQuery(1, "nonexist", "phrase", "exist", "exist");
 
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("phrase with repetitions exists in two docs", 2, hits.length);
     QueryUtils.check(random(), query,searcher);
 
     // phrase I with repetitions that does not exist in any doc
-    query = new PhraseQuery();
-    query.add(new Term("nonexist", "phrase"));
-    query.add(new Term("nonexist", "notexist"));
-    query.add(new Term("nonexist", "phrase"));
-    query.setSlop(1000); // would not be found no matter how high the slop is
+    query = new PhraseQuery(1000, "nonexist", "phrase", "notexist", "phrase");
 
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("nonexisting phrase with repetitions does not exist in any doc", 0, hits.length);
     QueryUtils.check(random(), query,searcher);
 
     // phrase II with repetitions that does not exist in any doc
-    query = new PhraseQuery();
-    query.add(new Term("nonexist", "phrase"));
-    query.add(new Term("nonexist", "exist"));
-    query.add(new Term("nonexist", "exist"));
-    query.add(new Term("nonexist", "exist"));
-    query.setSlop(1000); // would not be found no matter how high the slop is
+    query = new PhraseQuery(1000, "nonexist", "phrase", "exist", "exist", "exist");
 
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("nonexisting phrase with repetitions does not exist in any doc", 0, hits.length);
@@ -478,9 +435,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void testPalyndrome2() throws Exception {
     
     // search on non palyndrome, find phrase with no slop, using exact phrase scorer
-    query.setSlop(0); // to use exact phrase scorer
-    query.add(new Term("field", "two"));
-    query.add(new Term("field", "three"));
+    query = new PhraseQuery("field", "two", "three"); // to use exact phrase scorer
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("phrase found with exact phrase scorer", 1, hits.length);
     float score0 = hits[0].score;
@@ -488,7 +443,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     QueryUtils.check(random(), query,searcher);
 
     // search on non palyndrome, find phrase with slop 2, though no slop required here.
-    query.setSlop(2); // to use sloppy scorer 
+    query = new PhraseQuery("field", "two", "three"); // to use sloppy scorer 
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
     float score1 = hits[0].score;
@@ -497,10 +452,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     QueryUtils.check(random(), query,searcher);
 
     // search ordered in palyndrome, find it twice
-    query = new PhraseQuery();
-    query.setSlop(2); // must be at least two for both ordered and reversed to match
-    query.add(new Term("palindrome", "two"));
-    query.add(new Term("palindrome", "three"));
+    query = new PhraseQuery(2, "palindrome", "two", "three"); // must be at least two for both ordered and reversed to match
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
     //float score2 = hits[0].score;
@@ -511,10 +463,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     //assertTrue("ordered scores higher in palindrome",score1+SCORE_COMP_THRESH<score2);
 
     // search reveresed in palyndrome, find it twice
-    query = new PhraseQuery();
-    query.setSlop(2); // must be at least two for both ordered and reversed to match
-    query.add(new Term("palindrome", "three"));
-    query.add(new Term("palindrome", "two"));
+    query = new PhraseQuery(2, "palindrome", "three", "two"); // must be at least two for both ordered and reversed to match
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
     //float score3 = hits[0].score;
@@ -538,10 +487,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void testPalyndrome3() throws Exception {
     
     // search on non palyndrome, find phrase with no slop, using exact phrase scorer
-    query.setSlop(0); // to use exact phrase scorer
-    query.add(new Term("field", "one"));
-    query.add(new Term("field", "two"));
-    query.add(new Term("field", "three"));
+    // slop=0 to use exact phrase scorer
+    query = new PhraseQuery(0, "field", "one", "two", "three");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("phrase found with exact phrase scorer", 1, hits.length);
     float score0 = hits[0].score;
@@ -552,7 +499,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     searcher.explain(query, 0);
 
     // search on non palyndrome, find phrase with slop 3, though no slop required here.
-    query.setSlop(4); // to use sloppy scorer 
+    // slop=4 to use sloppy scorer
+    query = new PhraseQuery(4, "field", "one", "two", "three");
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
     float score1 = hits[0].score;
@@ -561,11 +509,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     QueryUtils.check(random(), query,searcher);
 
     // search ordered in palyndrome, find it twice
-    query = new PhraseQuery();
-    query.setSlop(4); // must be at least four for both ordered and reversed to match
-    query.add(new Term("palindrome", "one"));
-    query.add(new Term("palindrome", "two"));
-    query.add(new Term("palindrome", "three"));
+    // slop must be at least four for both ordered and reversed to match
+    query = new PhraseQuery(4, "palindrome", "one", "two", "three");
     hits = searcher.search(query, 1000).scoreDocs;
 
     // just make sure no exc:
@@ -580,11 +525,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     //assertTrue("ordered scores higher in palindrome",score1+SCORE_COMP_THRESH<score2);
 
     // search reveresed in palyndrome, find it twice
-    query = new PhraseQuery();
-    query.setSlop(4); // must be at least four for both ordered and reversed to match
-    query.add(new Term("palindrome", "three"));
-    query.add(new Term("palindrome", "two"));
-    query.add(new Term("palindrome", "one"));
+    // must be at least four for both ordered and reversed to match
+    query = new PhraseQuery(4, "palindrome", "three", "two", "one");
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
     //float score3 = hits[0].score;
@@ -599,14 +541,13 @@ public class TestPhraseQuery extends LuceneTestCase {
   // LUCENE-1280
   public void testEmptyPhraseQuery() throws Throwable {
     final BooleanQuery q2 = new BooleanQuery();
-    q2.add(new PhraseQuery(), BooleanClause.Occur.MUST);
+    q2.add(new PhraseQuery("field", new String[0]), BooleanClause.Occur.MUST);
     q2.toString();
   }
   
   /* test that a single term is rewritten to a term query */
   public void testRewrite() throws IOException {
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("foo", "bar"));
+    PhraseQuery pq = new PhraseQuery("foo", "bar");
     Query rewritten = pq.rewrite(searcher.getIndexReader());
     assertTrue(rewritten instanceof TermQuery);
   }
@@ -680,12 +621,13 @@ public class TestPhraseQuery extends LuceneTestCase {
       
       final int numTerm = TestUtil.nextInt(r, 2, 20);
       final int start = r.nextInt(doc.size()-numTerm);
-      PhraseQuery pq = new PhraseQuery();
+      PhraseQuery.Builder builder = new PhraseQuery.Builder();
       StringBuilder sb = new StringBuilder();
       for(int t=start;t<start+numTerm;t++) {
-        pq.add(new Term("f", doc.get(t)));
+        builder.add(new Term("f", doc.get(t)), t);
         sb.append(doc.get(t)).append(' ');
       }
+      PhraseQuery pq = builder.build();
 
       TopDocs hits = s.search(pq, NUM_DOCS);
       boolean found = false;
@@ -704,11 +646,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testNegativeSlop() throws Exception {
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "two"));
-    query.add(new Term("field", "one"));
     try {
-      query.setSlop(-2);
+      new PhraseQuery(-2, "field", "two", "one");
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
       // expected exception
@@ -716,9 +655,9 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testNegativePosition() throws Exception {
-    PhraseQuery query = new PhraseQuery();
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
     try {
-      query.add(new Term("field", "two"), -42);
+      builder.add(new Term("field", "two"), -42);
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
       // expected exception
@@ -726,14 +665,89 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testBackwardPositions() throws Exception {
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "one"), 1);
-    query.add(new Term("field", "two"), 5);
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.add(new Term("field", "one"), 1);
+    builder.add(new Term("field", "two"), 5);
     try {
-      query.add(new Term("field", "three"), 4);
+      builder.add(new Term("field", "three"), 4);
       fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {
       // expected exception
+    }
+  }
+
+  public void test52Compat() {
+    final int iters = atLeast(5);
+    for (int iter = 0; iter < iters; ++iter) {
+      int slop = random().nextInt(5);
+      String field = TestUtil.randomSimpleString(random());
+      Term[] terms = new Term[random().nextInt(5)];
+      final int[] positions = new int[terms.length];
+      for (int i = 0; i < terms.length; ++i) {
+        terms[i] = new Term(field, TestUtil.randomSimpleString(random()));
+      }
+  
+      PhraseQuery q1 = new PhraseQuery();
+      PhraseQuery.Builder q2 = new PhraseQuery.Builder();
+      q1.setSlop(slop);
+      q2.setSlop(slop);
+      for (Term term : terms) {
+        q1.add(term);
+        q2.add(term);
+      }
+      QueryUtils.checkEqual(q1, q2.build());
+  
+      if (terms.length > 0) {
+        positions[0] = random().nextInt(3);
+        for (int i = 1; i < terms.length; ++i) {
+          positions[i] = positions[i - 1] + random().nextInt(3);
+        }
+      }
+      q1 = new PhraseQuery();
+      q2 = new PhraseQuery.Builder();
+      q1.setSlop(slop);
+      q2.setSlop(slop);
+      for (Term term : terms) {
+        q1.add(term);
+        q2.add(term);
+      }
+      QueryUtils.checkEqual(q1, q2.build());
+    }
+  }
+
+  public void testBuilderImmutable() {
+    int slop = random().nextInt(5);
+    String field = TestUtil.randomSimpleString(random());
+    Term[] terms = new Term[random().nextInt(5)];
+    final int[] positions = new int[terms.length];
+    for (int i = 0; i < terms.length; ++i) {
+      terms[i] = new Term(field, TestUtil.randomSimpleString(random()));
+    }
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.setSlop(slop);
+    for (Term term : terms) {
+      builder.add(term);
+    }
+    PhraseQuery q = builder.build();
+    try {
+      q.setSlop(2);
+      fail();
+    } catch (IllegalStateException expected) {
+      // ok
+    }
+
+    try {
+      q.add(new Term("foo", "bar"));
+      fail();
+    } catch (IllegalStateException expected) {
+      // ok
+    }
+
+    try {
+      q.add(new Term("foo", "bar"), 42);
+      fail();
+    } catch (IllegalStateException expected) {
+      // ok
     }
   }
 }

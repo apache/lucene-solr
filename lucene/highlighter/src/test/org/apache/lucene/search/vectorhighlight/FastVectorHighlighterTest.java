@@ -148,9 +148,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     }
     
     {
-      PhraseQuery query = new PhraseQuery();
-      query.add(new Term(field, "internet"));
-      query.add(new Term(field, "explorer"));
+      PhraseQuery query = new PhraseQuery(field, "internet", "explorer");
       FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
       String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
           docId, field, 128, 1);
@@ -197,11 +195,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     }
     {
       BooleanQuery query = new BooleanQuery();
-      PhraseQuery pq = new PhraseQuery();
-      pq.add(new Term(field, "test"));
-      pq.add(new Term(field, "foo"));
-      pq.add(new Term(field, "highlighed"));
-      pq.setSlop(5);
+      PhraseQuery pq = new PhraseQuery(5, field, "test", "foo", "highlighed");
       query.add(new TermQuery(new Term(field, "foo")), Occur.MUST);
       query.add(pq, Occur.MUST);
       query.add(new TermQuery(new Term(field, "highlighed")), Occur.MUST);
@@ -218,11 +212,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       
     }
     {
-      PhraseQuery query = new PhraseQuery();
-      query.add(new Term(field, "test"));
-      query.add(new Term(field, "foo"));
-      query.add(new Term(field, "highlighed"));
-      query.setSlop(3);
+      PhraseQuery query = new PhraseQuery(3, field, "test", "foo", "highlighed");
       FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
       String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
           docId, field, 18, 1);
@@ -236,11 +226,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       
     }
     {
-      PhraseQuery query = new PhraseQuery();
-      query.add(new Term(field, "test"));
-      query.add(new Term(field, "foo"));
-      query.add(new Term(field, "highlighted"));
-      query.setSlop(30);
+      PhraseQuery query = new PhraseQuery(30, field, "test", "foo", "highlighed");
       FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
       String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
           docId, field, 18, 1);
@@ -248,11 +234,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     }
     {
       BooleanQuery query = new BooleanQuery();
-      PhraseQuery pq = new PhraseQuery();
-      pq.add(new Term(field, "test"));
-      pq.add(new Term(field, "foo"));
-      pq.add(new Term(field, "highlighed"));
-      pq.setSlop(5);
+      PhraseQuery pq = new PhraseQuery(5, field, "test", "foo", "highlighed");
       BooleanQuery inner = new BooleanQuery();
       inner.add(pq, Occur.MUST);
       inner.add(new TermQuery(new Term(field, "foo")), Occur.MUST);
@@ -567,23 +549,13 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     int docId = 0;
     
     // query1: match
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "test"));
-    pq.add(new Term("field", "http"));
-    pq.add(new Term("field", "www"));
-    pq.add(new Term("field", "facebook"));
-    pq.add(new Term("field", "com"));
+    PhraseQuery pq = new PhraseQuery("field", "test", "http", "www", "facebook", "com");
     FieldQuery fieldQuery  = highlighter.getFieldQuery(pq, reader);
     String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
     assertEquals("<b>Test: http://www.facebook.com</b>", bestFragments[0]);
     
     // query2: match
-    PhraseQuery pq2 = new PhraseQuery();
-    pq2.add(new Term("field", "test"));
-    pq2.add(new Term("field", "httpwwwfacebookcom"));
-    pq2.add(new Term("field", "www"));
-    pq2.add(new Term("field", "facebook"));
-    pq2.add(new Term("field", "com"));
+    PhraseQuery pq2 = new PhraseQuery("field", "test", "httpwwwfacebookcom", "www", "facebook", "com");
     fieldQuery  = highlighter.getFieldQuery(pq2, reader);
     bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
     assertEquals("<b>Test: http://www.facebook.com</b>", bestFragments[0]);
@@ -692,11 +664,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     if ( terms.length == 1 ) {
       q = new TermQuery( new Term( field, terms[ 0 ] ) );
     } else {
-      PhraseQuery pq = new PhraseQuery();
-      for ( String term: terms ) {
-        pq.add( new Term( field, term ) );
-      }
-      q = pq;
+      q = new PhraseQuery(field, terms);
     }
     q.setBoost( boost );
     return q;

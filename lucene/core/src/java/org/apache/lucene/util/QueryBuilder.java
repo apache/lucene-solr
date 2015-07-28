@@ -323,8 +323,8 @@ public class QueryBuilder {
    * Creates simple phrase query from the cached tokenstream contents 
    */
   private Query analyzePhrase(String field, TokenStream stream, int slop) throws IOException {
-    PhraseQuery pq = newPhraseQuery();
-    pq.setSlop(slop);
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.setSlop(slop);
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
@@ -335,13 +335,13 @@ public class QueryBuilder {
       BytesRef bytes = termAtt.getBytesRef();
       if (enablePositionIncrements) {
         position += posIncrAtt.getPositionIncrement();
-        pq.add(new Term(field, BytesRef.deepCopyOf(bytes)), position);
       } else {
-        pq.add(new Term(field, BytesRef.deepCopyOf(bytes)));
+        position += 1;
       }
+      builder.add(new Term(field, bytes), position);
     }
-    
-    return pq;
+
+    return builder.build();
   }
   
   /** 
@@ -401,16 +401,6 @@ public class QueryBuilder {
    */
   protected Query newTermQuery(Term term) {
     return new TermQuery(term);
-  }
-  
-  /**
-   * Builds a new PhraseQuery instance.
-   * <p>
-   * This is intended for subclasses that wish to customize the generated queries.
-   * @return new PhraseQuery instance
-   */
-  protected PhraseQuery newPhraseQuery() {
-    return new PhraseQuery();
   }
   
   /**

@@ -673,9 +673,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   protected void smokeTestSearcher(IndexSearcher s) throws Exception {
     runQuery(s, new TermQuery(new Term("body", "united")));
     runQuery(s, new TermQuery(new Term("titleTokenized", "states")));
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("body", "united"));
-    pq.add(new Term("body", "states"));
+    PhraseQuery pq = new PhraseQuery("body", "united", "states");
     runQuery(s, pq);
   }
 }

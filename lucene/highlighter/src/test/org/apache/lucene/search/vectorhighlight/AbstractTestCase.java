@@ -138,12 +138,8 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   }
   
   protected Query pq( float boost, int slop, String field, String... texts ){
-    PhraseQuery query = new PhraseQuery();
-    for( String text : texts ){
-      query.add( new Term( field, text ) );
-    }
+    PhraseQuery query = new PhraseQuery(slop, field, texts);
     query.setBoost( boost );
-    query.setSlop( slop );
     return query;
   }
   
@@ -185,11 +181,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   }
 
   protected PhraseQuery toPhraseQuery(List<BytesRef> bytesRefs, String field) {
-    PhraseQuery phraseQuery = new PhraseQuery();
-    for (BytesRef bytesRef : bytesRefs) {
-      phraseQuery.add(new Term(field, bytesRef));
-    }
-    return phraseQuery;
+    return new PhraseQuery(field, bytesRefs.toArray(new BytesRef[0]));
   }
 
   static final class BigramAnalyzer extends Analyzer {

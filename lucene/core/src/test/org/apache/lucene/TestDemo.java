@@ -69,9 +69,7 @@ public class TestDemo extends LuceneTestCase {
     }
 
     // Test simple phrase query
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term("fieldname", "to"));
-    phraseQuery.add(new Term("fieldname", "be"));
+    PhraseQuery phraseQuery = new PhraseQuery("fieldname", "to", "be");
     assertEquals(1, isearcher.search(phraseQuery, 1).totalHits);
 
     ireader.close();

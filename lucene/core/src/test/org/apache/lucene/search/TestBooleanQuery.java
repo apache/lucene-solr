@@ -110,9 +110,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     // LUCENE-2617: make sure that a clause not in the index still contributes to the score via coord factor
     BooleanQuery qq = q.clone();
-    PhraseQuery phrase = new PhraseQuery();
-    phrase.add(new Term("field", "not_in_index"));
-    phrase.add(new Term("field", "another_not_in_index"));
+    PhraseQuery phrase = new PhraseQuery("field", "not_in_index", "another_not_in_index");
     phrase.setBoost(0);
     qq.add(phrase, BooleanClause.Occur.SHOULD);
     score2 = s.search(qq, 10).getMaxScore();
@@ -126,14 +124,14 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals(score*(2/3F), score2, 1e-6);
 
     // PhraseQuery w/ no terms added returns a null scorer
-    PhraseQuery pq = new PhraseQuery();
+    PhraseQuery pq = new PhraseQuery("field", new String[0]);
     q.add(pq, BooleanClause.Occur.SHOULD);
     assertEquals(1, s.search(q, 10).totalHits);
 
     // A required clause which returns null scorer should return null scorer to
     // IndexSearcher.
     q = new BooleanQuery();
-    pq = new PhraseQuery();
+    pq = new PhraseQuery("field", new String[0]);
     q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
     q.add(pq, BooleanClause.Occur.MUST);
     assertEquals(0, s.search(q, 10).totalHits);
@@ -610,9 +608,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "a"));
-    pq.add(new Term("field", "b"));
+    PhraseQuery pq = new PhraseQuery("field", "a", "b");
 
     BooleanQuery q = new BooleanQuery();
     q.add(pq, Occur.MUST);
@@ -641,9 +637,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "a"));
-    pq.add(new Term("field", "b"));
+    PhraseQuery pq = new PhraseQuery("field", "a", "b");
 
     BooleanQuery q = new BooleanQuery();
     q.add(pq, Occur.SHOULD);
@@ -674,9 +668,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "a"));
-    pq.add(new Term("field", "b"));
+    PhraseQuery pq = new PhraseQuery("field", "a", "b");
 
     BooleanQuery q = new BooleanQuery();
     q.add(pq, Occur.SHOULD);
@@ -705,9 +697,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "a"));
-    pq.add(new Term("field", "b"));
+    PhraseQuery pq = new PhraseQuery("field", "a", "b");
 
     BooleanQuery q = new BooleanQuery();
     q.add(pq, Occur.SHOULD);
@@ -736,9 +726,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null); // to still have approximations
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(new Term("field", "a"));
-    pq.add(new Term("field", "b"));
+    PhraseQuery pq = new PhraseQuery("field", "a", "b");
 
     BooleanQuery q = new BooleanQuery();
     q.add(pq, Occur.MUST);

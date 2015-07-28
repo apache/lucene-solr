@@ -113,18 +113,14 @@ public class TestBasics extends LuceneTestCase {
   }
 
   public void testPhrase() throws Exception {
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "seventy"));
-    query.add(new Term("field", "seven"));
+    PhraseQuery query = new PhraseQuery("field", "seventy", "seven");
     checkHits(query, new int[]
       {77, 177, 277, 377, 477, 577, 677, 777, 877,
               977, 1077, 1177, 1277, 1377, 1477, 1577, 1677, 1777, 1877, 1977});
   }
 
   public void testPhrase2() throws Exception {
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "seventish"));
-    query.add(new Term("field", "sevenon"));
+    PhraseQuery query = new PhraseQuery("field", "seventish", "sevenon");
     checkHits(query, new int[] {});
   }
 

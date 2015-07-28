@@ -25,6 +25,7 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 /**
@@ -38,10 +39,10 @@ public class PhraseQueryNodeBuilder implements StandardQueryBuilder {
   }
 
   @Override
-  public PhraseQuery build(QueryNode queryNode) throws QueryNodeException {
+  public Query build(QueryNode queryNode) throws QueryNodeException {
     TokenizedPhraseQueryNode phraseNode = (TokenizedPhraseQueryNode) queryNode;
 
-    PhraseQuery phraseQuery = new PhraseQuery();
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
 
     List<QueryNode> children = phraseNode.getChildren();
 
@@ -52,13 +53,12 @@ public class PhraseQueryNodeBuilder implements StandardQueryBuilder {
             .getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
         FieldQueryNode termNode = (FieldQueryNode) child;
 
-        phraseQuery.add(termQuery.getTerm(), termNode.getPositionIncrement());
-
+        builder.add(termQuery.getTerm(), termNode.getPositionIncrement());
       }
 
     }
 
-    return phraseQuery;
+    return builder.build();
 
   }
 

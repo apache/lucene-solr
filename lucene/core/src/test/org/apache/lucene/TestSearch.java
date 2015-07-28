@@ -167,15 +167,10 @@ public class TestSearch extends LuceneTestCase {
     booleanAB.add(new TermQuery(new Term("contents", "b")), BooleanClause.Occur.SHOULD);
     queries.add(booleanAB);
 
-    PhraseQuery phraseAB = new PhraseQuery();
-    phraseAB.add(new Term("contents", "a"));
-    phraseAB.add(new Term("contents", "b"));
+    PhraseQuery phraseAB = new PhraseQuery("contents", "a", "b");
     queries.add(phraseAB);
 
-    PhraseQuery phraseABC = new PhraseQuery();
-    phraseABC.add(new Term("contents", "a"));
-    phraseABC.add(new Term("contents", "b"));
-    phraseABC.add(new Term("contents", "c"));
+    PhraseQuery phraseABC = new PhraseQuery("contents", "a", "b", "c");
     queries.add(phraseABC);
 
     BooleanQuery booleanAC = new BooleanQuery();
@@ -183,15 +178,10 @@ public class TestSearch extends LuceneTestCase {
     booleanAC.add(new TermQuery(new Term("contents", "c")), BooleanClause.Occur.SHOULD);
     queries.add(booleanAC);
 
-    PhraseQuery phraseAC = new PhraseQuery();
-    phraseAC.add(new Term("contents", "a"));
-    phraseAC.add(new Term("contents", "c"));
+    PhraseQuery phraseAC = new PhraseQuery("contents", "a", "c");
     queries.add(phraseAC);
 
-    PhraseQuery phraseACE = new PhraseQuery();
-    phraseACE.add(new Term("contents", "a"));
-    phraseACE.add(new Term("contents", "c"));
-    phraseACE.add(new Term("contents", "e"));
+    PhraseQuery phraseACE = new PhraseQuery("contents", "a", "c", "e");
     queries.add(phraseACE);
 
     return queries;

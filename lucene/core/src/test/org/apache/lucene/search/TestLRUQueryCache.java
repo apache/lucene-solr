@@ -871,10 +871,9 @@ public class TestLRUQueryCache extends LuceneTestCase {
         bq.setMinimumNumberShouldMatch(TestUtil.nextInt(random(), 0, numShould));
         return bq;
       case 2:
-        PhraseQuery pq = new PhraseQuery();
-        pq.add(randomTerm());
-        pq.add(randomTerm());
-        pq.setSlop(random().nextInt(2));
+        Term t1 = randomTerm();
+        Term t2 = randomTerm();
+        PhraseQuery pq = new PhraseQuery(random().nextInt(2), t1.field(), t1.bytes(), t2.bytes());
         return pq;
       case 3:
         return new MatchAllDocsQuery();

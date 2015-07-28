@@ -118,9 +118,7 @@ public class TestSimilarity extends LuceneTestCase {
          }
        });
 
-    PhraseQuery pq = new PhraseQuery();
-    pq.add(a);
-    pq.add(c);
+    PhraseQuery pq = new PhraseQuery(a.field(), a.bytes(), c.bytes());
     //System.out.println(pq.toString("field"));
     searcher.search(pq,
        new SimpleCollector() {
@@ -140,7 +138,7 @@ public class TestSimilarity extends LuceneTestCase {
          }
        });
 
-    pq.setSlop(2);
+    pq = new PhraseQuery(2, a.field(), a.bytes(), c.bytes());
     //System.out.println(pq.toString("field"));
     searcher.search(pq, new SimpleCollector() {
       private Scorer scorer;
