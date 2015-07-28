@@ -488,10 +488,10 @@
     <contrib-crawl target="jar-core"/>
   </target>
 
-  <target name="contribs-add-to-war">
+  <target name="contribs-add-to-webapp">
     <mkdir dir="${dest}/web"/>
     <delete dir="${dest}/web" includes="**/*" failonerror="false"/>
-    <contrib-crawl target="add-to-war"/>
+    <contrib-crawl target="add-to-webapp"/>
   </target>
   
   <!-- Forbidden API Task, customizations for Solr -->

@@ -23,13 +23,8 @@
 
   <import file="../common-build.xml"/>
 
-  <property name="exclude.from.war" value="*slf4j*,log4j-*" />
-  <property name="solr.war.suffix" value="" />
+  <property name="exclude.from.webapp" value="*slf4j*,log4j-*" />
 	
-  <target name="test" depends="compile-test-solr-core">
-  	<!-- no more JSP -->
-  </target>
-
   <!-- this module has no javadocs -->
   <target name="javadocs"/>
 
@@ -39,36 +34,27 @@
   <!-- nothing to compile -->
   <target name="compile-core"/>
   <target name="compile-test"/>
+  <target name="test"/>
 
-  <target name="server-war"
-          description="Creates the Solr WAR Distribution file."
-          depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
-    <build-manifest title="Apache Solr Search Server"
-                    implementation.title="org.apache.solr"/>
-    <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
-    <mkdir dir="${server.dir}/webapps"/>
-    <war destfile="${server.dir}/webapps/solr.war"
-         webxml="web/WEB-INF/web.xml"
-         manifest="${manifest.file}">
-      <lib dir="${common-solr.dir}/core/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>
-      <lib dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>
-      <lib dir="${lucene-libs}" excludes="${exclude.from.war},${common.classpath.excludes}" />
-      <lib dir="${dist}" excludes="${exclude.from.war},${common.classpath.excludes}">
+  <target name="dist"
+          description="Creates the Webapp folder for distribution."
+          depends="dist-core, dist-solrj, lucene-jars-to-solr">
+    <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-webapp"/>
+    <mkdir dir="${server.dir}/solr-webapp/webapp"/>
+    <copy todir="${server.dir}/solr-webapp/webapp">
+      <fileset dir="web" excludes="${exclude.from.webapp}"/>
+      <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
+    </copy>
+    <mkdir dir="${server.dir}/solr-webapp/webapp/WEB-INF/lib"/>
+    <copy todir="${server.dir}/solr-webapp/webapp/WEB-INF/lib">
+      <fileset dir="${common-solr.dir}/core/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
+      <fileset dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
+      <fileset dir="${lucene-libs}" excludes="${exclude.from.webapp},${common.classpath.excludes}" />
+      <fileset dir="${dist}" excludes="${exclude.from.webapp},${common.classpath.excludes}">
         <include name="solr-solrj-${version}.jar" />
         <include name="solr-core-${version}.jar" />
-      </lib>
-      <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
-      <fileset dir="web" excludes="${exclude.from.war}"/>
-      <metainf dir="${common-solr.dir}" includes="LICENSE.txt,NOTICE.txt" excludes="${exclude.from.war}"/>
-    </war>
-
-    <!-- Ship Solr with the WAR already extracted -->
-    <delete dir="${server.dir}/solr-webapp/webapp"/>
-    <mkdir dir="${server.dir}/solr-webapp/webapp"/>
-    <unzip dest="${server.dir}/solr-webapp/webapp" src="${server.dir}/webapps/solr.war"/>
-    <delete file="${server.dir}/webapps/solr.war"/>
-    <delete dir="${server.dir}/webapps"/>
-
+      </fileset>
+    </copy>
   </target>
 
   <!-- nothing to do -->
