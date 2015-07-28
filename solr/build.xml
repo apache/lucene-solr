@@ -42,8 +42,11 @@
   <!-- ============================== USER TASKS =============================== -->
   <!-- ========================================================================= -->
 
-  <target name="server" depends="dist-contrib,server-war"
+  <target name="server" depends="dist-contrib"
           description="Creates a Solr server">
+    <ant dir="webapp" target="dist" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
     <jar destfile="${example}/exampledocs/post.jar"
          basedir="${dest}/solr-core/classes/java"
          includes="org/apache/solr/util/SimplePostTool*.class">
@@ -409,13 +412,6 @@
     <contrib-crawl target="dist" failonerror="true" />
   </target>
   
-  <target name="server-war"
-          description="Creates the Solr WAR Distribution file.">
-    <ant dir="webapp" target="server-war" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  
   <target name="prepare-release-no-sign" depends="clean, package, generate-maven-artifacts"/>
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
@@ -486,7 +482,7 @@
       <tarfileset dir="." prefix="${fullnamever}" includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="." prefix="${fullnamever}/solr"
                   excludes="build/** ${package.dir.rel}/** ${dist.rel}/**
-                            server/webapps/*.war example/lib/**
+                            example/lib/**
                             **/*.jar 
                             lib/README.committers.txt **/data/ **/logs/*
                             **/*.sh **/bin/ scripts/ 

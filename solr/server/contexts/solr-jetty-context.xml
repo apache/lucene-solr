@@ -4,4 +4,5 @@
   <Set name="contextPath"><Property name="hostContext" default="/solr"/></Set>
   <Set name="war"><Property name="jetty.base"/>/solr-webapp/webapp</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.base"/>/etc/webdefault.xml</Set>
+  <Set name="extractWAR">false</Set>
 </Configure>

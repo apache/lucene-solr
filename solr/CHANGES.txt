@@ -302,8 +302,9 @@ Other Changes
   ERROR to WARN for zkcli.{sh,cmd} only.
   (Oliver Schrenk, Tim Potter, Uwe Schindler, shalin)
 
-* SOLR-7227: Ship Solr with the Web application directory exploded into server/solr-webapp,
-  solr.war is no longer included in the distribution bundles. (Timothy Potter)
+* SOLR-7227: Ship Solr with the Web application directory exploded into
+  server/solr-webapp, solr.war is no longer included in the distribution
+  bundles. (Timothy Potter, Uwe Schindler)
 
 ==================  5.2.1 ==================
 
