@@ -101,6 +101,8 @@ New Features
 
 * SOLR-7742: Support for Immutable ConfigSets (Gregory Chanan)
 
+* SOLR-6234: Scoring for query time join (Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 

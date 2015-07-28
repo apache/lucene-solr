@@ -384,6 +384,23 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryScoreJoin() throws Exception {
+    SolrQueryRequest req = req("myVar", "5",
+        "df", "text",
+        "ff", "foo_s",
+        "tt", "bar_s",
+        "scoreavg","avg");
+
+    try {
+      assertQueryEquals("join", req,
+          "{!join from=foo_s to=bar_s score=avg}asdf",
+          "{!join from=$ff to=$tt score=Avg}asdf",
+          "{!join from=$ff to='bar_s' score=$scoreavg}text:asdf");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testTerms() throws Exception {
     assertQueryEquals("terms", "{!terms f=foo_i}10,20,30,-10,-20,-30", "{!terms f=foo_i}10,20,30,-10,-20,-30");
   }
