@@ -245,6 +245,9 @@ Bug Fixes
 * SOLR-7765: Hardened the behavior of TokenizerChain when null arguments are used in constructor.
   This prevents NPEs in some code paths.  (Konstantin Gribov, hossman)
 
+* SOLR-7829: Fixed a bug in distributed pivot faceting that could result in a facet.missing=true count
+  which was lower then the correct count if facet.sort=index and facet.pivot.mincount > 1 (hossman)
+
 Optimizations
 ----------------------
 

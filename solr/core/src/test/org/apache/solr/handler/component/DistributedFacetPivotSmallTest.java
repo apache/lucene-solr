@@ -218,6 +218,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
                                   "rows", "0",
                                   "facet","true",
                                   "facet.pivot","place_t,company_t",
+                                  "f.place_t.facet.mincount", "2",
                                   // default facet.sort
                                   FacetParams.FACET_MISSING, "true" );
     SolrParams missingB = SolrParams.wrapDefaults(missingA, 
