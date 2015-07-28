@@ -60,6 +60,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.TrieField;
+import org.apache.solr.search.join.ScoreJoinQParserPlugin;
 import org.apache.solr.util.RefCounted;
 
 public class JoinQParserPlugin extends QParserPlugin {
@@ -72,8 +73,17 @@ public class JoinQParserPlugin extends QParserPlugin {
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
+      
       @Override
       public Query parse() throws SyntaxError {
+        if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null){
+          return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
+        }else{
+          return parseJoin();
+        }
+      }
+      
+      Query parseJoin() throws SyntaxError {
         String fromField = getParam("from");
         String fromIndex = getParam("fromIndex");
         String toField = getParam("to");

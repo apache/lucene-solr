@@ -65,6 +65,8 @@ Other Changes
 
 * SOLR-7624: Remove deprecated zkCredientialsProvider element in solrcloud section of solr.xml.
   (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
+  
+* SOLR-6234: Scoring for query time join (Mikhail Khludnev)
 
 ==================  5.3.0 ==================
 
