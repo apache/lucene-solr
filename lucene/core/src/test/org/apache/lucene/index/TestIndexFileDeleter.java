@@ -485,7 +485,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
           w.addDocument(doc);
         }
       } catch (Throwable t) {
-        if (t.toString().contains("fake fail") || t.getCause().toString().contains("fake fail")) {
+        if (t.toString().contains("fake fail") || (t.getCause() != null && t.getCause().toString().contains("fake fail"))) {
           // ok
         } else {
           throw t;
