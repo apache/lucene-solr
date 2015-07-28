@@ -281,6 +281,10 @@ Bug fixes
 * LUCENE-6696: Fix FilterDirectoryReader.close() to never close the
   underlying reader several times. (Adrien Grand)
 
+* LUCENE-6334: FastVectorHighlighter failed to highlight phrases across
+  more than one value in a multi-valued field. (Chris Earle, Nik Everett
+  via Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
