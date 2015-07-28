@@ -573,6 +573,72 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     dir.close();
   }
 
+  public void testPhrasesSpanningFieldValues() throws IOException {
+    Directory dir = newDirectory();
+    // positionIncrementGap is 0 so the pharse is found across multiple field
+    // values.
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    FieldType type = new FieldType(TextField.TYPE_STORED);
+    type.setStoreTermVectorOffsets(true);
+    type.setStoreTermVectorPositions(true);
+    type.setStoreTermVectors(true);
+    type.freeze();
+
+    Document doc = new Document();
+    doc.add( new Field( "field", "one two three five", type ) );
+    doc.add( new Field( "field", "two three four", type ) );
+    doc.add( new Field( "field", "five six five", type ) );
+    doc.add( new Field( "field", "six seven eight nine eight nine eight " +
+      "nine eight nine eight nine eight nine", type ) );
+    doc.add( new Field( "field", "eight nine", type ) );
+    doc.add( new Field( "field", "ten eleven", type ) );
+    doc.add( new Field( "field", "twelve thirteen", type ) );
+    writer.addDocument(doc);
+
+    BaseFragListBuilder fragListBuilder = new SimpleFragListBuilder();
+    BaseFragmentsBuilder fragmentsBuilder = new SimpleFragmentsBuilder();
+    fragmentsBuilder.setDiscreteMultiValueHighlighting(true);
+    FastVectorHighlighter highlighter = new FastVectorHighlighter(true, true, fragListBuilder, fragmentsBuilder);
+    IndexReader reader = DirectoryReader.open(writer, true);
+    int docId = 0;
+
+    // Phrase that spans a field value
+    Query q = new PhraseQuery("field", "four", "five");
+    FieldQuery fieldQuery  = highlighter.getFieldQuery(q, reader);
+    String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 1000, 1000);
+    assertEquals("two three <b>four</b>", bestFragments[0]);
+    assertEquals("<b>five</b> six five", bestFragments[1]);
+    assertEquals(2, bestFragments.length);
+
+    // Phrase that ends at a field value
+    q = new PhraseQuery("field", "three", "five");
+    fieldQuery  = highlighter.getFieldQuery(q, reader);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 1000, 1000);
+    assertEquals("one two <b>three five</b>", bestFragments[0]);
+    assertEquals(1, bestFragments.length);
+
+    // Phrase that spans across three values
+    q = new PhraseQuery("field", "nine", "ten", "eleven", "twelve");
+    fieldQuery  = highlighter.getFieldQuery(q, reader);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 1000, 1000);
+    assertEquals("eight <b>nine</b>", bestFragments[0]);
+    assertEquals("<b>ten eleven</b>", bestFragments[1]);
+    assertEquals("<b>twelve</b> thirteen", bestFragments[2]);
+    assertEquals(3, bestFragments.length);
+
+    // Term query that appears in multiple values
+    q = new TermQuery(new Term("field", "two"));
+    fieldQuery  = highlighter.getFieldQuery(q, reader);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 1000, 1000);
+    assertEquals("one <b>two</b> three five", bestFragments[0]);
+    assertEquals("<b>two</b> three four", bestFragments[1]);
+    assertEquals(2, bestFragments.length);
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
   private void matchedFieldsTestCase( String fieldValue, String expected, Query... queryClauses ) throws IOException {
     matchedFieldsTestCase( true, true, fieldValue, expected, queryClauses );
   }
