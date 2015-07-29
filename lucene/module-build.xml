@@ -142,6 +142,17 @@
 	<property name="join.uptodate" value="true"/>
   </target>	
   
+  <property name="join-javadoc.jar" value="${common.dir}/build/join/lucene-join-${version}-javadoc.jar"/>
+  <target name="check-join-javadocs-uptodate" unless="join-javadocs.uptodate">
+    <module-uptodate name="join" jarfile="${join-javadoc.jar}" property="join-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-join" unless="join-javadocs.uptodate" depends="check-join-javadocs-uptodate">
+    <ant dir="${common.dir}/join" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="join-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="analyzers-common.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}.jar"/>
   <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">
     <module-uptodate name="analysis/common" jarfile="${analyzers-common.jar}" property="analyzers-common.uptodate"/>
