@@ -206,12 +206,12 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     int docCount = MultiFields.getTerms(this.leafReader, this.classFieldName).getDocCount();
     if (docCount == -1) { // in case codec doesn't support getDocCount
       TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
-      BooleanQuery q = new BooleanQuery();
+      BooleanQuery.Builder q = new BooleanQuery.Builder();
       q.add(new BooleanClause(new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING))), BooleanClause.Occur.MUST));
       if (query != null) {
         q.add(query, BooleanClause.Occur.MUST);
       }
-      indexSearcher.search(q,
+      indexSearcher.search(q.build(),
           totalHitCountCollector);
       docCount = totalHitCountCollector.getTotalHits();
     }
@@ -274,18 +274,18 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   }
 
   private int getWordFreqForClass(String word, BytesRef c) throws IOException {
-    BooleanQuery booleanQuery = new BooleanQuery();
-    BooleanQuery subQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
+    BooleanQuery.Builder subQuery = new BooleanQuery.Builder();
     for (String textFieldName : textFieldNames) {
       subQuery.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
     }
-    booleanQuery.add(new BooleanClause(subQuery, BooleanClause.Occur.MUST));
+    booleanQuery.add(new BooleanClause(subQuery.build(), BooleanClause.Occur.MUST));
     booleanQuery.add(new BooleanClause(new TermQuery(new Term(classFieldName, c)), BooleanClause.Occur.MUST));
     if (query != null) {
       booleanQuery.add(query, BooleanClause.Occur.MUST);
     }
     TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
-    indexSearcher.search(booleanQuery, totalHitCountCollector);
+    indexSearcher.search(booleanQuery.build(), totalHitCountCollector);
     return totalHitCountCollector.getTotalHits();
   }
 

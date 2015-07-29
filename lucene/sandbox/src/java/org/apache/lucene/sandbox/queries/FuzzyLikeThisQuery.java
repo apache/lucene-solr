@@ -301,7 +301,7 @@ public class FuzzyLikeThisQuery extends Query
       //clear the list of fields
         fieldVals.clear();
         
-        BooleanQuery bq=new BooleanQuery();
+        BooleanQuery.Builder bq=new BooleanQuery.Builder();
         
         
         //create BooleanQueries to hold the variants for each token/field pair and ensure it
@@ -334,7 +334,8 @@ public class FuzzyLikeThisQuery extends Query
             }
             else
             {
-                BooleanQuery termVariants=new BooleanQuery(true); //disable coord and IDF for these term variants
+                BooleanQuery.Builder termVariants=new BooleanQuery.Builder();
+                termVariants.setDisableCoord(true); //disable coord and IDF for these term variants
                 for (Iterator<ScoreTerm> iterator2 = variants.iterator(); iterator2
                         .hasNext();)
                 {
@@ -344,14 +345,15 @@ public class FuzzyLikeThisQuery extends Query
                     tq.setBoost(st.score); // set the boost using the ScoreTerm's score
                     termVariants.add(tq, BooleanClause.Occur.SHOULD);          // add to query                    
                 }
-                bq.add(termVariants, BooleanClause.Occur.SHOULD);          // add to query
+                bq.add(termVariants.build(), BooleanClause.Occur.SHOULD);          // add to query
             }
         }
         //TODO possible alternative step 3 - organize above booleans into a new layer of field-based
         // booleans with a minimum-should-match of NumFields-1?
-        bq.setBoost(getBoost());
-        this.rewrittenQuery=bq;
-        return bq;
+        Query q = bq.build();
+        q.setBoost(getBoost());
+        this.rewrittenQuery=q;
+        return q;
     }
     
     //Holds info for a fuzzy term variant - initially score is set to edit distance (for ranking best

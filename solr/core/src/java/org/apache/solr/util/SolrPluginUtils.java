@@ -591,10 +591,10 @@ public class SolrPluginUtils {
    * as clauses to just make them all "required"
    * </p>
    */
-  public static void setMinShouldMatch(BooleanQuery q, String spec) {
+  public static void setMinShouldMatch(BooleanQuery.Builder q, String spec) {
 
     int optionalClauses = 0;
-    for (BooleanClause c : q.clauses()) {
+    for (BooleanClause c : q.build().clauses()) {
       if (c.getOccur() == Occur.SHOULD) {
         optionalClauses++;
       }
@@ -604,6 +604,16 @@ public class SolrPluginUtils {
     if (0 < msm) {
       q.setMinimumNumberShouldMatch(msm);
     }
+  }
+
+  public static BooleanQuery setMinShouldMatch(BooleanQuery q, String spec) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    builder.setDisableCoord(q.isCoordDisabled());
+    for (BooleanClause clause : q) {
+      builder.add(clause);
+    }
+    setMinShouldMatch(builder, spec);
+    return builder.build();
   }
 
   // private static Pattern spaceAroundLessThanPattern = Pattern.compile("\\s*<\\s*");
@@ -665,7 +675,7 @@ public class SolrPluginUtils {
    * so do not attempt to reuse it.
    * </p>
    */
-  public static void flattenBooleanQuery(BooleanQuery to, BooleanQuery from) {
+  public static void flattenBooleanQuery(BooleanQuery.Builder to, BooleanQuery from) {
 
     for (BooleanClause clause : from.clauses()) {
 

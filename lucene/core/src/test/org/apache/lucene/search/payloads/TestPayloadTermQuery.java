@@ -288,15 +288,15 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction());
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(c1);
     query.add(c2);
-    TopDocs hits = searcher.search(query, 100);
+    TopDocs hits = searcher.search(query.build(), 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
     int[] results = new int[1];
     results[0] = 0;//hits.scoreDocs[0].doc;
-    CheckHits.checkHitCollector(random(), query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
+    CheckHits.checkHitCollector(random(), query.build(), PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
   static class BoostingSimilarity extends DefaultSimilarity {

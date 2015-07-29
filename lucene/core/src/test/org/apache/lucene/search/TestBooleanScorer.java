@@ -47,16 +47,16 @@ public class TestBooleanScorer extends LuceneTestCase {
     IndexReader ir = writer.getReader();
     writer.close();
 
-    BooleanQuery booleanQuery1 = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery1 = new BooleanQuery.Builder();
     booleanQuery1.add(new TermQuery(new Term(FIELD, "1")), BooleanClause.Occur.SHOULD);
     booleanQuery1.add(new TermQuery(new Term(FIELD, "2")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery query = new BooleanQuery();
-    query.add(booleanQuery1, BooleanClause.Occur.MUST);
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(booleanQuery1.build(), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(FIELD, "9")), BooleanClause.Occur.MUST_NOT);
 
     IndexSearcher indexSearcher = newSearcher(ir);
-    ScoreDoc[] hits = indexSearcher.search(query, 1000).scoreDocs;
+    ScoreDoc[] hits = indexSearcher.search(query.build(), 1000).scoreDocs;
     assertEquals("Number of matched documents", 2, hits.length);
     ir.close();
     directory.close();
@@ -129,15 +129,15 @@ public class TestBooleanScorer extends LuceneTestCase {
     w.close();
 
     IndexSearcher s = new IndexSearcher(r);
-    BooleanQuery q1 = new BooleanQuery();
+    BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(new TermQuery(new Term("field", "little")), BooleanClause.Occur.SHOULD);
     q1.add(new TermQuery(new Term("field", "diseases")), BooleanClause.Occur.SHOULD);
 
-    BooleanQuery q2 = new BooleanQuery();
-    q2.add(q1, BooleanClause.Occur.SHOULD);
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
+    q2.add(q1.build(), BooleanClause.Occur.SHOULD);
     q2.add(new CrazyMustUseBulkScorerQuery(), BooleanClause.Occur.SHOULD);
 
-    assertEquals(1, s.search(q2, 10).totalHits);
+    assertEquals(1, s.search(q2.build(), 10).totalHits);
     r.close();
     dir.close();
   }

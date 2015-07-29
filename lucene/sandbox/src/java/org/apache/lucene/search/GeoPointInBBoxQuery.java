@@ -57,7 +57,7 @@ public class GeoPointInBBoxQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) {
     if (maxLon < minLon) {
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
 
       GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, -180.0D, minLat, maxLon, maxLat);
       left.setBoost(getBoost());
@@ -65,7 +65,7 @@ public class GeoPointInBBoxQuery extends Query {
       GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, minLon, minLat, 180.0D, maxLat);
       right.setBoost(getBoost());
       bq.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
-      return bq;
+      return bq.build();
     }
     return new GeoPointInBBoxQueryImpl(field, minLon, minLat, maxLon, maxLat);
   }

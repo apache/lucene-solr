@@ -334,7 +334,7 @@ public class SpellChecker implements java.io.Closeable {
         return new String[] { word };
       }
 
-      BooleanQuery query = new BooleanQuery();
+      BooleanQuery.Builder query = new BooleanQuery.Builder();
       String[] grams;
       String key;
 
@@ -364,7 +364,7 @@ public class SpellChecker implements java.io.Closeable {
       int maxHits = 10 * numSug;
 
   //    System.out.println("Q: " + query);
-      ScoreDoc[] hits = indexSearcher.search(query, maxHits).scoreDocs;
+      ScoreDoc[] hits = indexSearcher.search(query.build(), maxHits).scoreDocs;
   //    System.out.println("HITS: " + hits.length());
       SuggestWordQueue sugQueue = new SuggestWordQueue(numSug, comparator);
 
@@ -415,7 +415,7 @@ public class SpellChecker implements java.io.Closeable {
   /**
    * Add a clause to a boolean query.
    */
-  private static void add(BooleanQuery q, String name, String value, float boost) {
+  private static void add(BooleanQuery.Builder q, String name, String value, float boost) {
     Query tq = new TermQuery(new Term(name, value));
     tq.setBoost(boost);
     q.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
@@ -424,7 +424,7 @@ public class SpellChecker implements java.io.Closeable {
   /**
    * Add a clause to a boolean query.
    */
-  private static void add(BooleanQuery q, String name, String value) {
+  private static void add(BooleanQuery.Builder q, String name, String value) {
     q.add(new BooleanClause(new TermQuery(new Term(name, value)), BooleanClause.Occur.SHOULD));
   }
 

@@ -54,11 +54,11 @@ public final class DrillDownQuery extends Query {
 
   private final FacetsConfig config;
   private final Query baseQuery;
-  private final List<BooleanQuery> dimQueries = new ArrayList<>();
+  private final List<BooleanQuery.Builder> dimQueries = new ArrayList<>();
   private final Map<String,Integer> drillDownDims = new LinkedHashMap<>();
 
   /** Used by clone() and DrillSideways */
-  DrillDownQuery(FacetsConfig config, Query baseQuery, List<BooleanQuery> dimQueries, Map<String,Integer> drillDownDims) {
+  DrillDownQuery(FacetsConfig config, Query baseQuery, List<BooleanQuery.Builder> dimQueries, Map<String,Integer> drillDownDims) {
     this.baseQuery = baseQuery;
     this.dimQueries.addAll(dimQueries);
     this.drillDownDims.putAll(drillDownDims);
@@ -67,10 +67,10 @@ public final class DrillDownQuery extends Query {
 
   /** Used by DrillSideways */
   DrillDownQuery(FacetsConfig config, Query filter, DrillDownQuery other) {
-    BooleanQuery baseQuery = new BooleanQuery();
+    BooleanQuery.Builder baseQuery = new BooleanQuery.Builder();
     baseQuery.add(other.baseQuery == null ? new MatchAllDocsQuery() : other.baseQuery, Occur.MUST);
     baseQuery.add(filter, Occur.FILTER);
-    this.baseQuery = baseQuery;
+    this.baseQuery = baseQuery.build();
     this.dimQueries.addAll(other.dimQueries);
     this.drillDownDims.putAll(other.drillDownDims);
     this.config = config;
@@ -108,7 +108,9 @@ public final class DrillDownQuery extends Query {
     assert drillDownDims.size() == dimQueries.size();
     if (drillDownDims.containsKey(dim) == false) {
       drillDownDims.put(dim, drillDownDims.size());
-      dimQueries.add(new BooleanQuery(true));
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
+      dimQueries.add(builder);
     }
     final int index = drillDownDims.get(dim);
     dimQueries.get(index).add(subQuery, Occur.SHOULD);
@@ -148,15 +150,15 @@ public final class DrillDownQuery extends Query {
     return getBooleanQuery().toString(field);
   }
 
-  BooleanQuery getBooleanQuery() {
-    BooleanQuery bq = new BooleanQuery();
+  private BooleanQuery getBooleanQuery() {
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     if (baseQuery != null) {
       bq.add(baseQuery, Occur.MUST);
     }
-    for (BooleanQuery q : dimQueries) {
-      bq.add(q, Occur.FILTER);
+    for (BooleanQuery.Builder builder : dimQueries) {
+      bq.add(builder.build(), Occur.FILTER);
     }
-    return bq;
+    return bq.build();
   }
 
   Query getBaseQuery() {
@@ -166,7 +168,7 @@ public final class DrillDownQuery extends Query {
   Query[] getDrillDownQueries() {
     Query[] dimQueries = new Query[this.dimQueries.size()];
     for (int i = 0; i < dimQueries.length; ++i) {
-      dimQueries[i] = this.dimQueries.get(i);
+      dimQueries[i] = this.dimQueries.get(i).build();
     }
     return dimQueries;
   }

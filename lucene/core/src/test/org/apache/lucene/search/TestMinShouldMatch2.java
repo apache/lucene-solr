@@ -118,13 +118,13 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   }
   
   private Scorer scorer(String values[], int minShouldMatch, Mode mode) throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (String value : values) {
       bq.add(new TermQuery(new Term("field", value)), BooleanClause.Occur.SHOULD);
     }
     bq.setMinimumNumberShouldMatch(minShouldMatch);
 
-    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq, true);
+    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq.build(), true);
     
     switch (mode) {
     case DOC_VALUES:
@@ -325,7 +325,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
       BooleanQuery bq = (BooleanQuery) weight.getQuery();
       this.minNrShouldMatch = bq.getMinimumNumberShouldMatch();
       this.sims = new SimScorer[(int)dv.getValueCount()];
-      for (BooleanClause clause : bq.getClauses()) {
+      for (BooleanClause clause : bq.clauses()) {
         assert !clause.isProhibited();
         assert !clause.isRequired();
         Term term = ((TermQuery)clause.getQuery()).getTerm();

@@ -84,11 +84,11 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
         for (int j = 0; j < numQueryTerms; ++j) {
           queryTerms.add(allTerms.get(random().nextInt(allTerms.size())));
         }
-        final BooleanQuery bq = new BooleanQuery();
+        final BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (Term term : queryTerms) {
           bq.add(new TermQuery(term), Occur.SHOULD);
         }
-        Query q1 = new ConstantScoreQuery(bq);
+        Query q1 = new ConstantScoreQuery(bq.build());
         q1.setBoost(boost);
         List<String> bytesTerms = new ArrayList<>();
         for (Term term : queryTerms) {
@@ -196,11 +196,11 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
         for (int j = 0; j < numQueryTerms; ++j) {
           queryTerms.add(allTerms.get(random().nextInt(allTerms.size())));
         }
-        final BooleanQuery bq = new BooleanQuery();
+        final BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (Term term : queryTerms) {
           bq.add(new TermQuery(term), Occur.SHOULD);
         }
-        Query q1 = new ConstantScoreQuery(bq);
+        Query q1 = new ConstantScoreQuery(bq.build());
         q1.setBoost(boost);
         List<String> bytesTerms = new ArrayList<>();
         for (Term term : queryTerms) {
@@ -209,15 +209,15 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
         final Query q2 = new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0]));
         q2.setBoost(boost);
 
-        BooleanQuery bq1 = new BooleanQuery();
+        BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
         bq1.add(q1, Occur.MUST);
         bq1.add(new TermQuery(allTerms.get(0)), Occur.FILTER);
 
-        BooleanQuery bq2 = new BooleanQuery();
+        BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
         bq2.add(q2, Occur.MUST);
         bq2.add(new TermQuery(allTerms.get(0)), Occur.FILTER);
 
-        assertSameMatches(searcher, bq1, bq2, true);
+        assertSameMatches(searcher, bq1.build(), bq2.build(), true);
       }
 
       reader.close();

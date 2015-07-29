@@ -163,13 +163,13 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
     int batchCount = 0;
 
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
     q.add(new BooleanClause(new WildcardQuery(new Term(classFieldName, "*")), BooleanClause.Occur.MUST));
     if (query != null) {
       q.add(new BooleanClause(query, BooleanClause.Occur.MUST));
     }
     // run the search and use stored field values
-    for (ScoreDoc scoreDoc : indexSearcher.search(q,
+    for (ScoreDoc scoreDoc : indexSearcher.search(q.build(),
         Integer.MAX_VALUE).scoreDocs) {
       Document doc = indexSearcher.doc(scoreDoc.doc);
 

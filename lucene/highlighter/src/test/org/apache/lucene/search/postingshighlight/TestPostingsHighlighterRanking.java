@@ -98,11 +98,11 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
       // check a simple term query
       checkQuery(is, new TermQuery(term), doc, maxTopN);
       // check a boolean query
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
       Term nextTerm = new Term("body", "" + (char)(ch+1));
       bq.add(new TermQuery(nextTerm), BooleanClause.Occur.SHOULD);
-      checkQuery(is, bq, doc, maxTopN);
+      checkQuery(is, bq.build(), doc, maxTopN);
     }
   }
   
@@ -126,12 +126,12 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
           }
         };
 
-      BooleanQuery bq = new BooleanQuery(false);
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(query, BooleanClause.Occur.MUST);
       bq.add(new TermQuery(new Term("id", Integer.toString(doc))), BooleanClause.Occur.MUST);
-      TopDocs td = is.search(bq, 1);
-      p1.highlight("body", bq, is, td, n);
-      p2.highlight("body", bq, is, td, n+1);
+      TopDocs td = is.search(bq.build(), 1);
+      p1.highlight("body", bq.build(), is, td, n);
+      p2.highlight("body", bq.build(), is, td, n+1);
       assertTrue(f2.seen.containsAll(f1.seen));
     }
   }
@@ -310,12 +310,12 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
           return new PassageScorer(0, 0.75f, 87);
         }
       };
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("body", "foo")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "bar")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query.build(), 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
-    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 1);
+    String snippets[] = highlighter.highlight("body", query.build(), searcher, topDocs, 1);
     assertEquals(1, snippets.length);
     assertTrue(snippets[0].startsWith("On the other hand"));
     

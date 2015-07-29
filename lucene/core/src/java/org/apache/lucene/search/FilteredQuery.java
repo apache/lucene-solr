@@ -77,9 +77,10 @@ public class FilteredQuery extends Query {
   
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    BooleanQuery rewritten = new BooleanQuery();
-    rewritten.add(query, Occur.MUST);
-    rewritten.add(strategy.rewrite(filter), Occur.FILTER);
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    builder.add(query, Occur.MUST);
+    builder.add(strategy.rewrite(filter), Occur.FILTER);
+    Query rewritten = builder.build();
     rewritten.setBoost(getBoost());
     return rewritten;
   }

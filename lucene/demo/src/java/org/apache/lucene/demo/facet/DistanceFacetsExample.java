@@ -179,7 +179,7 @@ public class DistanceFacetsExample implements Closeable {
       maxLng = Math.toRadians(180);
     }
 
-    BooleanQuery f = new BooleanQuery();
+    BooleanQuery.Builder f = new BooleanQuery.Builder();
 
     // Add latitude range filter:
     f.add(NumericRangeQuery.newDoubleRange("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat), true, true),
@@ -189,18 +189,18 @@ public class DistanceFacetsExample implements Closeable {
     if (minLng > maxLng) {
       // The bounding box crosses the international date
       // line:
-      BooleanQuery lonF = new BooleanQuery();
+      BooleanQuery.Builder lonF = new BooleanQuery.Builder();
       lonF.add(NumericRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), null, true, true),
                BooleanClause.Occur.SHOULD);
       lonF.add(NumericRangeQuery.newDoubleRange("longitude", null, Math.toDegrees(maxLng), true, true),
                BooleanClause.Occur.SHOULD);
-      f.add(lonF, BooleanClause.Occur.MUST);
+      f.add(lonF.build(), BooleanClause.Occur.MUST);
     } else {
       f.add(NumericRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng), true, true),
             BooleanClause.Occur.FILTER);
     }
 
-    return f;
+    return f.build();
   }
 
   /** User runs a query and counts facets. */

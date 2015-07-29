@@ -101,11 +101,11 @@ public class TermsQueryTest extends LuceneTestCase {
         for (int j = 0; j < numQueryTerms; ++j) {
           queryTerms.add(allTerms.get(random().nextInt(allTerms.size())));
         }
-        final BooleanQuery bq = new BooleanQuery();
+        final BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (Term t : queryTerms) {
           bq.add(new TermQuery(t), Occur.SHOULD);
         }
-        final Query q1 = new ConstantScoreQuery(bq);
+        final Query q1 = new ConstantScoreQuery(bq.build());
         q1.setBoost(boost);
         final Query q2 = new TermsQuery(queryTerms);
         q2.setBoost(boost);

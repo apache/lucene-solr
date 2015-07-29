@@ -60,6 +60,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -376,18 +377,18 @@ public class TestQPHelper extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
-    assertEquals(expected, getQuery("中国", analyzer));
+    assertEquals(expected.build(), getQuery("中国", analyzer));
     
-    expected = new BooleanQuery();
+    expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
-    BooleanQuery inner = new BooleanQuery();
+    BooleanQuery.Builder inner = new BooleanQuery.Builder();
     inner.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
     inner.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
-    expected.add(inner, BooleanClause.Occur.MUST);
-    assertEquals(expected, getQuery("中 AND 中国", new SimpleCJKAnalyzer()));
+    expected.add(inner.build(), BooleanClause.Occur.MUST);
+    assertEquals(expected.build(), getQuery("中 AND 中国", new SimpleCJKAnalyzer()));
 
   }
   
@@ -395,11 +396,11 @@ public class TestQPHelper extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
+    expectedB.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expectedB.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    Query expected = expectedB.build();
     expected.setBoost(0.5f);
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
-    
     assertEquals(expected, getQuery("中国^0.5", analyzer));
   }
   
@@ -1164,11 +1165,11 @@ public class TestQPHelper extends LuceneTestCase {
     Query escaped2 = new RegexpQuery(new Term("field", "[a-z]\\*[123]"));
     assertEquals(escaped2, qp.parse("/[a-z]\\*[123]/", df));
     
-    BooleanQuery complex = new BooleanQuery();
+    BooleanQuery.Builder complex = new BooleanQuery.Builder();
     complex.add(new RegexpQuery(new Term("field", "[a-z]\\/[123]")), Occur.MUST);
     complex.add(new TermQuery(new Term("path", "/etc/init.d/")), Occur.MUST);
     complex.add(new TermQuery(new Term("field", "/etc/init[.]d/lucene/")), Occur.SHOULD);
-    assertEquals(complex, qp.parse("/[a-z]\\/[123]/ AND path:\"/etc/init.d/\" OR \"/etc\\/init\\[.\\]d/lucene/\" ", df));
+    assertEquals(complex.build(), qp.parse("/[a-z]\\/[123]/ AND path:\"/etc/init.d/\" OR \"/etc\\/init\\[.\\]d/lucene/\" ", df));
     
     Query re = new RegexpQuery(new Term("field", "http.*"));
     assertEquals(re, qp.parse("field:/http.*/", df));
@@ -1185,11 +1186,11 @@ public class TestQPHelper extends LuceneTestCase {
     assertEquals(new TermQuery(new Term("field", "/boo/")), qp.parse("\"/boo/\"", df));
     assertEquals(new TermQuery(new Term("field", "/boo/")), qp.parse("\\/boo\\/", df));
     
-    BooleanQuery two = new BooleanQuery();
+    BooleanQuery.Builder two = new BooleanQuery.Builder();
     two.add(new RegexpQuery(new Term("field", "foo")), Occur.SHOULD);
     two.add(new RegexpQuery(new Term("field", "bar")), Occur.SHOULD);
-    assertEquals(two, qp.parse("field:/foo/ field:/bar/", df));
-    assertEquals(two, qp.parse("/foo/ /bar/", df));
+    assertEquals(two.build(), qp.parse("field:/foo/ field:/bar/", df));
+    assertEquals(two.build(), qp.parse("/foo/ /bar/", df));
   }
 
   public void testStopwords() throws Exception {
@@ -1199,9 +1200,7 @@ public class TestQPHelper extends LuceneTestCase {
 
     Query result = qp.parse("a:the OR a:foo", "a");
     assertNotNull("result is null and it shouldn't be", result);
-    assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
-    assertTrue(((BooleanQuery) result).clauses().size() + " does not equal: "
-        + 0, ((BooleanQuery) result).clauses().size() == 0);
+    assertTrue("result is not a MatchNoDocsQuery", result instanceof MatchNoDocsQuery);
     result = qp.parse("a:woo OR a:the", "a");
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a TermQuery", result instanceof TermQuery);
@@ -1245,8 +1244,9 @@ public class TestQPHelper extends LuceneTestCase {
     assertEquals(new MatchAllDocsQuery(), qp.parse("*:*", "field"));
     assertEquals(new MatchAllDocsQuery(), qp.parse("(*:*)", "field"));
     BooleanQuery bq = (BooleanQuery) qp.parse("+*:* -*:*", "field");
-    assertTrue(bq.getClauses()[0].getQuery() instanceof MatchAllDocsQuery);
-    assertTrue(bq.getClauses()[1].getQuery() instanceof MatchAllDocsQuery);
+    for (BooleanClause c : bq) {
+      assertTrue(c.getQuery().getClass() == MatchAllDocsQuery.class);
+    }
   }
 
   private void assertHits(int expected, String query, IndexSearcher is)
@@ -1337,11 +1337,11 @@ public class TestQPHelper extends LuceneTestCase {
     parser.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     parser.setAnalyzer(new MockAnalyzer(random()));
 
-    BooleanQuery exp = new BooleanQuery();
+    BooleanQuery.Builder exp = new BooleanQuery.Builder();
     exp.add(new BooleanClause(new RegexpQuery(new Term("b", "ab.+")), BooleanClause.Occur.SHOULD));//TODO spezification? was "MUST"
     exp.add(new BooleanClause(new RegexpQuery(new Term("t", "ab.+")), BooleanClause.Occur.SHOULD));//TODO spezification? was "MUST"
 
-    assertEquals(exp, parser.parse("/ab.+/", null));
+    assertEquals(exp.build(), parser.parse("/ab.+/", null));
 
     RegexpQuery regexpQueryexp = new RegexpQuery(new Term("test", "[abc]?[0-9]"));
 

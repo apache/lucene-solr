@@ -93,12 +93,12 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     assertEquals(regular, parse("foobar~a"));
     assertEquals(regular, parse("foobar~1a"));
 
-    BooleanQuery bool = new BooleanQuery();
+    BooleanQuery.Builder bool = new BooleanQuery.Builder();
     FuzzyQuery fuzzy = new FuzzyQuery(new Term("field", "foo"), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     bool.add(fuzzy, Occur.MUST);
     bool.add(new TermQuery(new Term("field", "bar")), Occur.MUST);
 
-    assertEquals(bool, parse("foo~" + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1 + " bar"));
+    assertEquals(bool.build(), parse("foo~" + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1 + " bar"));
   }
 
   /** test a simple phrase */
@@ -127,11 +127,11 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
     PhraseQuery pq = new PhraseQuery(12, "field", "foo", "bar");
 
-    BooleanQuery expectedBoolean = new BooleanQuery();
+    BooleanQuery.Builder expectedBoolean = new BooleanQuery.Builder();
     expectedBoolean.add(pq, Occur.MUST);
     expectedBoolean.add(new TermQuery(new Term("field", "baz")), Occur.MUST);
 
-    assertEquals(expectedBoolean, parse("\"foo bar\"~12 baz"));
+    assertEquals(expectedBoolean.build(), parse("\"foo bar\"~12 baz"));
   }
 
   /** test a simple prefix */
@@ -143,73 +143,73 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
   /** test some AND'd terms using '+' operator */
   public void testAND() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "foo")), Occur.MUST);
     expected.add(new TermQuery(new Term("field", "bar")), Occur.MUST);
 
-    assertEquals(expected, parse("foo+bar"));
+    assertEquals(expected.build(), parse("foo+bar"));
   }
 
   /** test some AND'd phrases using '+' operator */
   public void testANDPhrase() throws Exception {
     PhraseQuery phrase1 = new PhraseQuery("field", "foo", "bar");
     PhraseQuery phrase2 = new PhraseQuery("field", "star", "wars");
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(phrase1, Occur.MUST);
     expected.add(phrase2, Occur.MUST);
 
-    assertEquals(expected, parse("\"foo bar\"+\"star wars\""));
+    assertEquals(expected.build(), parse("\"foo bar\"+\"star wars\""));
   }
 
   /** test some AND'd terms (just using whitespace) */
   public void testANDImplicit() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "foo")), Occur.MUST);
     expected.add(new TermQuery(new Term("field", "bar")), Occur.MUST);
 
-    assertEquals(expected, parse("foo bar"));
+    assertEquals(expected.build(), parse("foo bar"));
   }
 
   /** test some OR'd terms */
   public void testOR() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "foo")), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "bar")), Occur.SHOULD);
 
-    assertEquals(expected, parse("foo|bar"));
-    assertEquals(expected, parse("foo||bar"));
+    assertEquals(expected.build(), parse("foo|bar"));
+    assertEquals(expected.build(), parse("foo||bar"));
   }
 
   /** test some OR'd terms (just using whitespace) */
   public void testORImplicit() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "foo")), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "bar")), Occur.SHOULD);
 
     SimpleQueryParser parser = new SimpleQueryParser(new MockAnalyzer(random()), "field");
-    assertEquals(expected, parser.parse("foo bar"));
+    assertEquals(expected.build(), parser.parse("foo bar"));
   }
 
   /** test some OR'd phrases using '|' operator */
   public void testORPhrase() throws Exception {
     PhraseQuery phrase1 = new PhraseQuery("field", "foo", "bar");
     PhraseQuery phrase2 = new PhraseQuery("field", "star", "wars");
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(phrase1, Occur.SHOULD);
     expected.add(phrase2, Occur.SHOULD);
 
-    assertEquals(expected, parse("\"foo bar\"|\"star wars\""));
+    assertEquals(expected.build(), parse("\"foo bar\"|\"star wars\""));
   }
 
   /** test negated term */
   public void testNOT() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "foo")), Occur.MUST_NOT);
     expected.add(new MatchAllDocsQuery(), Occur.SHOULD);
 
-    assertEquals(expected, parse("-foo"));
-    assertEquals(expected, parse("-(foo)"));
-    assertEquals(expected, parse("---foo"));
+    assertEquals(expected.build(), parse("-foo"));
+    assertEquals(expected.build(), parse("-(foo)"));
+    assertEquals(expected.build(), parse("---foo"));
   }
 
   /** test crazy prefixes with multiple asterisks */
@@ -269,37 +269,37 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   public void testGarbageAND() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "star")), Occur.MUST);
     expected.add(new TermQuery(new Term("field", "wars")), Occur.MUST);
 
-    assertEquals(expected, parse("star wars"));
-    assertEquals(expected, parse("star+wars"));
-    assertEquals(expected, parse("     star     wars   "));
-    assertEquals(expected, parse("     star +    wars   "));
-    assertEquals(expected, parse("  |     star + + |   wars   "));
-    assertEquals(expected, parse("  |     star + + |   wars   \\"));
+    assertEquals(expected.build(), parse("star wars"));
+    assertEquals(expected.build(), parse("star+wars"));
+    assertEquals(expected.build(), parse("     star     wars   "));
+    assertEquals(expected.build(), parse("     star +    wars   "));
+    assertEquals(expected.build(), parse("  |     star + + |   wars   "));
+    assertEquals(expected.build(), parse("  |     star + + |   wars   \\"));
   }
 
   public void testGarbageOR() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "star")), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "wars")), Occur.SHOULD);
 
-    assertEquals(expected, parse("star|wars"));
-    assertEquals(expected, parse("     star |    wars   "));
-    assertEquals(expected, parse("  |     star | + |   wars   "));
-    assertEquals(expected, parse("  +     star | + +   wars   \\"));
+    assertEquals(expected.build(), parse("star|wars"));
+    assertEquals(expected.build(), parse("     star |    wars   "));
+    assertEquals(expected.build(), parse("  |     star | + |   wars   "));
+    assertEquals(expected.build(), parse("  +     star | + +   wars   \\"));
   }
 
   public void testGarbageNOT() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "star")), Occur.MUST_NOT);
     expected.add(new MatchAllDocsQuery(), Occur.SHOULD);
 
-    assertEquals(expected, parse("-star"));
-    assertEquals(expected, parse("---star"));
-    assertEquals(expected, parse("- -star -"));
+    assertEquals(expected.build(), parse("-star"));
+    assertEquals(expected.build(), parse("---star"));
+    assertEquals(expected.build(), parse("- -star -"));
   }
 
   public void testGarbagePhrase() throws Exception {
@@ -322,150 +322,153 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   public void testCompoundAnd() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "star")), Occur.MUST);
     expected.add(new TermQuery(new Term("field", "wars")), Occur.MUST);
     expected.add(new TermQuery(new Term("field", "empire")), Occur.MUST);
 
-    assertEquals(expected, parse("star wars empire"));
-    assertEquals(expected, parse("star+wars + empire"));
-    assertEquals(expected, parse(" | --star wars empire \n\\"));
+    assertEquals(expected.build(), parse("star wars empire"));
+    assertEquals(expected.build(), parse("star+wars + empire"));
+    assertEquals(expected.build(), parse(" | --star wars empire \n\\"));
   }
 
   public void testCompoundOr() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "star")), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "wars")), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "empire")), Occur.SHOULD);
 
-    assertEquals(expected, parse("star|wars|empire"));
-    assertEquals(expected, parse("star|wars | empire"));
-    assertEquals(expected, parse(" | --star|wars|empire \n\\"));
+    assertEquals(expected.build(), parse("star|wars|empire"));
+    assertEquals(expected.build(), parse("star|wars | empire"));
+    assertEquals(expected.build(), parse(" | --star|wars|empire \n\\"));
   }
 
   public void testComplex00() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery inner = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner = new BooleanQuery.Builder();
     inner.add(new TermQuery(new Term("field", "star")), Occur.SHOULD);
     inner.add(new TermQuery(new Term("field", "wars")), Occur.SHOULD);
-    expected.add(inner, Occur.MUST);
+    expected.add(inner.build(), Occur.MUST);
     expected.add(new TermQuery(new Term("field", "empire")), Occur.MUST);
 
-    assertEquals(expected, parse("star|wars empire"));
-    assertEquals(expected, parse("star|wars + empire"));
-    assertEquals(expected, parse("star| + wars + ----empire |"));
+    assertEquals(expected.build(), parse("star|wars empire"));
+    assertEquals(expected.build(), parse("star|wars + empire"));
+    assertEquals(expected.build(), parse("star| + wars + ----empire |"));
   }
 
   public void testComplex01() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery inner = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner = new BooleanQuery.Builder();
     inner.add(new TermQuery(new Term("field", "star")), Occur.MUST);
     inner.add(new TermQuery(new Term("field", "wars")), Occur.MUST);
-    expected.add(inner, Occur.SHOULD);
+    expected.add(inner.build(), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "empire")), Occur.SHOULD);
 
-    assertEquals(expected, parse("star wars | empire"));
-    assertEquals(expected, parse("star + wars|empire"));
-    assertEquals(expected, parse("star + | wars | ----empire +"));
+    assertEquals(expected.build(), parse("star wars | empire"));
+    assertEquals(expected.build(), parse("star + wars|empire"));
+    assertEquals(expected.build(), parse("star + | wars | ----empire +"));
   }
 
   public void testComplex02() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery inner = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner = new BooleanQuery.Builder();
     inner.add(new TermQuery(new Term("field", "star")), Occur.MUST);
     inner.add(new TermQuery(new Term("field", "wars")), Occur.MUST);
-    expected.add(inner, Occur.SHOULD);
+    expected.add(inner.build(), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "empire")), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "strikes")), Occur.SHOULD);
 
-    assertEquals(expected, parse("star wars | empire | strikes"));
-    assertEquals(expected, parse("star + wars|empire | strikes"));
-    assertEquals(expected, parse("star + | wars | ----empire | + --strikes \\"));
+    assertEquals(expected.build(), parse("star wars | empire | strikes"));
+    assertEquals(expected.build(), parse("star + wars|empire | strikes"));
+    assertEquals(expected.build(), parse("star + | wars | ----empire | + --strikes \\"));
   }
 
   public void testComplex03() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery inner = new BooleanQuery();
-    BooleanQuery inner2 = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner2 = new BooleanQuery.Builder();
     inner2.add(new TermQuery(new Term("field", "star")), Occur.MUST);
     inner2.add(new TermQuery(new Term("field", "wars")), Occur.MUST);
-    inner.add(inner2, Occur.SHOULD);
+    inner.add(inner2.build(), Occur.SHOULD);
     inner.add(new TermQuery(new Term("field", "empire")), Occur.SHOULD);
     inner.add(new TermQuery(new Term("field", "strikes")), Occur.SHOULD);
-    expected.add(inner, Occur.MUST);
+    expected.add(inner.build(), Occur.MUST);
     expected.add(new TermQuery(new Term("field", "back")), Occur.MUST);
 
-    assertEquals(expected, parse("star wars | empire | strikes back"));
-    assertEquals(expected, parse("star + wars|empire | strikes + back"));
-    assertEquals(expected, parse("star + | wars | ----empire | + --strikes + | --back \\"));
+    assertEquals(expected.build(), parse("star wars | empire | strikes back"));
+    assertEquals(expected.build(), parse("star + wars|empire | strikes + back"));
+    assertEquals(expected.build(), parse("star + | wars | ----empire | + --strikes + | --back \\"));
   }
 
   public void testComplex04() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery inner = new BooleanQuery();
-    BooleanQuery inner2 = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner2 = new BooleanQuery.Builder();
     inner.add(new TermQuery(new Term("field", "star")), Occur.MUST);
     inner.add(new TermQuery(new Term("field", "wars")), Occur.MUST);
     inner2.add(new TermQuery(new Term("field", "strikes")), Occur.MUST);
     inner2.add(new TermQuery(new Term("field", "back")), Occur.MUST);
-    expected.add(inner, Occur.SHOULD);
+    expected.add(inner.build(), Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "empire")), Occur.SHOULD);
-    expected.add(inner2, Occur.SHOULD);
+    expected.add(inner2.build(), Occur.SHOULD);
 
-    assertEquals(expected, parse("(star wars) | empire | (strikes back)"));
-    assertEquals(expected, parse("(star + wars) |empire | (strikes + back)"));
-    assertEquals(expected, parse("(star + | wars |) | ----empire | + --(strikes + | --back) \\"));
+    assertEquals(expected.build(), parse("(star wars) | empire | (strikes back)"));
+    assertEquals(expected.build(), parse("(star + wars) |empire | (strikes + back)"));
+    assertEquals(expected.build(), parse("(star + | wars |) | ----empire | + --(strikes + | --back) \\"));
   }
 
   public void testComplex05() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery inner1 = new BooleanQuery();
-    BooleanQuery inner2 = new BooleanQuery();
-    BooleanQuery inner3 = new BooleanQuery();
-    BooleanQuery inner4 = new BooleanQuery();
-
-    expected.add(inner1, Occur.SHOULD);
-    expected.add(inner2, Occur.SHOULD);
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner1 = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner2 = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner3 = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner4 = new BooleanQuery.Builder();
 
     inner1.add(new TermQuery(new Term("field", "star")), Occur.MUST);
     inner1.add(new TermQuery(new Term("field", "wars")), Occur.MUST);
 
     inner2.add(new TermQuery(new Term("field", "empire")), Occur.SHOULD);
-    inner2.add(inner3, Occur.SHOULD);
 
     inner3.add(new TermQuery(new Term("field", "strikes")), Occur.MUST);
     inner3.add(new TermQuery(new Term("field", "back")), Occur.MUST);
-    inner3.add(inner4, Occur.MUST);
 
     inner4.add(new TermQuery(new Term("field", "jarjar")), Occur.MUST_NOT);
     inner4.add(new MatchAllDocsQuery(), Occur.SHOULD);
 
-    assertEquals(expected, parse("(star wars) | (empire | (strikes back -jarjar))"));
-    assertEquals(expected, parse("(star + wars) |(empire | (strikes + back -jarjar) () )"));
-    assertEquals(expected, parse("(star + | wars |) | --(--empire | + --(strikes + | --back + -jarjar) \"\" ) \""));
+    inner3.add(inner4.build(), Occur.MUST);
+    inner2.add(inner3.build(), Occur.SHOULD);
+    
+    expected.add(inner1.build(), Occur.SHOULD);
+    expected.add(inner2.build(), Occur.SHOULD);
+    
+    assertEquals(expected.build(), parse("(star wars) | (empire | (strikes back -jarjar))"));
+    assertEquals(expected.build(), parse("(star + wars) |(empire | (strikes + back -jarjar) () )"));
+    assertEquals(expected.build(), parse("(star + | wars |) | --(--empire | + --(strikes + | --back + -jarjar) \"\" ) \""));
   }
 
   public void testComplex06() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery inner1 = new BooleanQuery();
-    BooleanQuery inner2 = new BooleanQuery();
-    BooleanQuery inner3 = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner1 = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner2 = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner3 = new BooleanQuery.Builder();
 
     expected.add(new TermQuery(new Term("field", "star")), Occur.MUST);
-    expected.add(inner1, Occur.MUST);
 
     inner1.add(new TermQuery(new Term("field", "wars")), Occur.SHOULD);
-    inner1.add(inner2, Occur.SHOULD);
 
-    inner2.add(inner3, Occur.MUST);
     inner3.add(new TermQuery(new Term("field", "empire")), Occur.SHOULD);
     inner3.add(new TermQuery(new Term("field", "strikes")), Occur.SHOULD);
+    inner2.add(inner3.build(), Occur.MUST);
+
     inner2.add(new TermQuery(new Term("field", "back")), Occur.MUST);
     inner2.add(new TermQuery(new Term("field", "jar+|jar")), Occur.MUST);
+    inner1.add(inner2.build(), Occur.SHOULD);
 
-    assertEquals(expected, parse("star (wars | (empire | strikes back jar\\+\\|jar))"));
-    assertEquals(expected, parse("star + (wars |(empire | strikes + back jar\\+\\|jar) () )"));
-    assertEquals(expected, parse("star + (| wars | | --(--empire | + --strikes + | --back + jar\\+\\|jar) \"\" ) \""));
+    expected.add(inner1.build(), Occur.MUST);
+
+    assertEquals(expected.build(), parse("star (wars | (empire | strikes back jar\\+\\|jar))"));
+    assertEquals(expected.build(), parse("star + (wars |(empire | strikes + back jar\\+\\|jar) () )"));
+    assertEquals(expected.build(), parse("star + (| wars | | --(--empire | + --strikes + | --back + jar\\+\\|jar) \"\" ) \""));
   }
 
   /** test a term with field weights */
@@ -474,7 +477,8 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     weights.put("field0", 5f);
     weights.put("field1", 10f);
 
-    BooleanQuery expected = new BooleanQuery(true);
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    expected.setDisableCoord(true);
     Query field0 = new TermQuery(new Term("field0", "foo"));
     field0.setBoost(5f);
     expected.add(field0, Occur.SHOULD);
@@ -484,7 +488,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
     Analyzer analyzer = new MockAnalyzer(random());
     SimpleQueryParser parser = new SimpleQueryParser(analyzer, weights);
-    assertEquals(expected, parser.parse("foo"));
+    assertEquals(expected.build(), parser.parse("foo"));
   }
 
   /** test a more complex query with field weights */
@@ -493,28 +497,30 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     weights.put("field0", 5f);
     weights.put("field1", 10f);
 
-    BooleanQuery expected = new BooleanQuery();
-    BooleanQuery foo = new BooleanQuery(true);
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    BooleanQuery.Builder foo = new BooleanQuery.Builder();
+    foo.setDisableCoord(true);
     Query field0 = new TermQuery(new Term("field0", "foo"));
     field0.setBoost(5f);
     foo.add(field0, Occur.SHOULD);
     Query field1 = new TermQuery(new Term("field1", "foo"));
     field1.setBoost(10f);
     foo.add(field1, Occur.SHOULD);
-    expected.add(foo, Occur.SHOULD);
+    expected.add(foo.build(), Occur.SHOULD);
 
-    BooleanQuery bar = new BooleanQuery(true);
+    BooleanQuery.Builder bar = new BooleanQuery.Builder();
+    bar.setDisableCoord(true);
     field0 = new TermQuery(new Term("field0", "bar"));
     field0.setBoost(5f);
     bar.add(field0, Occur.SHOULD);
     field1 = new TermQuery(new Term("field1", "bar"));
     field1.setBoost(10f);
     bar.add(field1, Occur.SHOULD);
-    expected.add(bar, Occur.SHOULD);
+    expected.add(bar.build(), Occur.SHOULD);
 
     Analyzer analyzer = new MockAnalyzer(random());
     SimpleQueryParser parser = new SimpleQueryParser(analyzer, weights);
-    assertEquals(expected, parser.parse("foo|bar"));
+    assertEquals(expected.build(), parser.parse("foo|bar"));
   }
 
   /** helper to parse a query with keyword analyzer across "field" */
@@ -593,10 +599,10 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   public void testDisableSlop() {
     PhraseQuery expectedPhrase = new PhraseQuery("field", "foo", "bar");
 
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(expectedPhrase, Occur.MUST);
     expected.add(new TermQuery(new Term("field", "~2")), Occur.MUST);
-    assertEquals(expected, parse("\"foo bar\"~2", ~NEAR_OPERATOR));
+    assertEquals(expected.build(), parse("\"foo bar\"~2", ~NEAR_OPERATOR));
   }
 
   // we aren't supposed to barf on any input...

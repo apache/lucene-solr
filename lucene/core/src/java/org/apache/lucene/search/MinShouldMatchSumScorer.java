@@ -31,7 +31,7 @@ import static org.apache.lucene.search.DisiPriorityQueue.rightNode;
 
 /**
  * A {@link Scorer} for {@link BooleanQuery} when
- * {@link BooleanQuery#setMinimumNumberShouldMatch(int) minShouldMatch} is
+ * {@link BooleanQuery.Builder#setMinimumNumberShouldMatch(int) minShouldMatch} is
  * between 2 and the total number of clauses.
  *
  * This implementation keeps sub scorers in 3 different places:

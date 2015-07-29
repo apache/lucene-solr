@@ -16,24 +16,24 @@ package org.apache.lucene.queries;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.index.LeafReaderContext;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A query that executes high-frequency terms in a optional sub-query to prevent
@@ -146,7 +146,7 @@ public class CommonTermsQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (this.terms.isEmpty()) {
-      return new BooleanQuery();
+      return new MatchNoDocsQuery();
     } else if (this.terms.size() == 1) {
       final Query tq = newTermQuery(this.terms.get(0), null);
       tq.setBoost(getBoost());
@@ -177,59 +177,72 @@ public class CommonTermsQuery extends Query {
   
   protected Query buildQuery(final int maxDoc,
       final TermContext[] contextArray, final Term[] queryTerms) {
-    BooleanQuery lowFreq = new BooleanQuery(disableCoord);
-    BooleanQuery highFreq = new BooleanQuery(disableCoord);
-    highFreq.setBoost(highFreqBoost);
-    lowFreq.setBoost(lowFreqBoost);
-    BooleanQuery query = new BooleanQuery(true);
+    List<Query> lowFreqQueries = new ArrayList<>();
+    List<Query> highFreqQueries = new ArrayList<>();
     for (int i = 0; i < queryTerms.length; i++) {
       TermContext termContext = contextArray[i];
       if (termContext == null) {
-        lowFreq.add(newTermQuery(queryTerms[i], null), lowFreqOccur);
+        lowFreqQueries.add(newTermQuery(queryTerms[i], null));
       } else {
         if ((maxTermFrequency >= 1f && termContext.docFreq() > maxTermFrequency)
             || (termContext.docFreq() > (int) Math.ceil(maxTermFrequency
                 * (float) maxDoc))) {
-          highFreq
-              .add(newTermQuery(queryTerms[i], termContext), highFreqOccur);
+          highFreqQueries
+              .add(newTermQuery(queryTerms[i], termContext));
         } else {
-          lowFreq.add(newTermQuery(queryTerms[i], termContext), lowFreqOccur);
+          lowFreqQueries.add(newTermQuery(queryTerms[i], termContext));
         }
       }
-      
     }
-    final int numLowFreqClauses = lowFreq.clauses().size();
-    final int numHighFreqClauses = highFreq.clauses().size();
+    final int numLowFreqClauses = lowFreqQueries.size();
+    final int numHighFreqClauses = highFreqQueries.size();
+    Occur lowFreqOccur = this.lowFreqOccur;
+    Occur highFreqOccur = this.highFreqOccur;
+    int lowFreqMinShouldMatch = 0;
+    int highFreqMinShouldMatch = 0;
     if (lowFreqOccur == Occur.SHOULD && numLowFreqClauses > 0) {
-      int minMustMatch = calcLowFreqMinimumNumberShouldMatch(numLowFreqClauses);
-      lowFreq.setMinimumNumberShouldMatch(minMustMatch);
+      lowFreqMinShouldMatch = calcLowFreqMinimumNumberShouldMatch(numLowFreqClauses);
     }
     if (highFreqOccur == Occur.SHOULD && numHighFreqClauses > 0) {
-      int minMustMatch = calcHighFreqMinimumNumberShouldMatch(numHighFreqClauses);
-      highFreq.setMinimumNumberShouldMatch(minMustMatch);
+      highFreqMinShouldMatch = calcHighFreqMinimumNumberShouldMatch(numHighFreqClauses);
     }
-    if (lowFreq.clauses().isEmpty()) {
+    if (lowFreqQueries.isEmpty()) {
       /*
        * if lowFreq is empty we rewrite the high freq terms in a conjunction to
        * prevent slow queries.
        */
-      if (highFreq.getMinimumNumberShouldMatch() == 0 && highFreqOccur != Occur.MUST) {
-        for (BooleanClause booleanClause : highFreq) {
-            booleanClause.setOccur(Occur.MUST);
-        }
+      if (highFreqMinShouldMatch == 0 && highFreqOccur != Occur.MUST) {
+        highFreqOccur = Occur.MUST;
       }
-      highFreq.setBoost(getBoost());
-      return highFreq;
-    } else if (highFreq.clauses().isEmpty()) {
-      // only do low freq terms - we don't have high freq terms
-      lowFreq.setBoost(getBoost());
-      return lowFreq;
-    } else {
-      query.add(highFreq, Occur.SHOULD);
-      query.add(lowFreq, Occur.MUST);
-      query.setBoost(getBoost());
-      return query;
     }
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    builder.setDisableCoord(true);
+
+    if (lowFreqQueries.isEmpty() == false) {
+      BooleanQuery.Builder lowFreq = new BooleanQuery.Builder();
+      lowFreq.setDisableCoord(disableCoord);
+      for (Query query : lowFreqQueries) {
+        lowFreq.add(query, lowFreqOccur);
+      }
+      lowFreq.setMinimumNumberShouldMatch(lowFreqMinShouldMatch);
+      Query lowFreqQuery = lowFreq.build();
+      lowFreqQuery.setBoost(lowFreqBoost);
+      builder.add(lowFreqQuery, Occur.MUST);
+    }
+    if (highFreqQueries.isEmpty() == false) {
+      BooleanQuery.Builder highFreq = new BooleanQuery.Builder();
+      highFreq.setDisableCoord(disableCoord);
+      for (Query query : highFreqQueries) {
+        highFreq.add(query, highFreqOccur);
+      }
+      highFreq.setMinimumNumberShouldMatch(highFreqMinShouldMatch);
+      Query highFreqQuery = highFreq.build();
+      highFreqQuery.setBoost(highFreqBoost);
+      builder.add(highFreqQuery, Occur.SHOULD);
+    }
+    Query rewritten = builder.build();
+    rewritten.setBoost(getBoost());
+    return rewritten;
   }
   
   public void collectTermContext(IndexReader reader,

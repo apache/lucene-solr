@@ -453,7 +453,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
       IndexSearcher searcher = newSearcher(reader);
       Occur lowFreqOccur = randomOccur(random());
-      BooleanQuery verifyQuery = new BooleanQuery();
+      BooleanQuery.Builder verifyQuery = new BooleanQuery.Builder();
       CommonTermsQuery cq = new CommonTermsQuery(randomOccur(random()),
           lowFreqOccur, highFreq - 1, random().nextBoolean());
       for (TermAndFreq termAndFreq : lowTerms) {
@@ -467,7 +467,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
       TopDocs cqSearch = searcher.search(cq, reader.maxDoc());
       
-      TopDocs verifySearch = searcher.search(verifyQuery, reader.maxDoc());
+      TopDocs verifySearch = searcher.search(verifyQuery.build(), reader.maxDoc());
       assertEquals(verifySearch.totalHits, cqSearch.totalHits);
       Set<Integer> hits = new HashSet<>();
       for (ScoreDoc doc : verifySearch.scoreDocs) {

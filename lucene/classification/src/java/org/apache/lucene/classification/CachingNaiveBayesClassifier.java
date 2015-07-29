@@ -188,18 +188,18 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     // if we dont get the answer, but it's relevant we must search it and insert to the cache
     if (insertPoint != null || !justCachedTerms) {
       for (BytesRef cclass : cclasses) {
-        BooleanQuery booleanQuery = new BooleanQuery();
-        BooleanQuery subQuery = new BooleanQuery();
+        BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
+        BooleanQuery.Builder subQuery = new BooleanQuery.Builder();
         for (String textFieldName : textFieldNames) {
           subQuery.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
         }
-        booleanQuery.add(new BooleanClause(subQuery, BooleanClause.Occur.MUST));
+        booleanQuery.add(new BooleanClause(subQuery.build(), BooleanClause.Occur.MUST));
         booleanQuery.add(new BooleanClause(new TermQuery(new Term(classFieldName, cclass)), BooleanClause.Occur.MUST));
         if (query != null) {
           booleanQuery.add(query, BooleanClause.Occur.MUST);
         }
         TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
-        indexSearcher.search(booleanQuery, totalHitCountCollector);
+        indexSearcher.search(booleanQuery.build(), totalHitCountCollector);
 
         int ret = totalHitCountCollector.getTotalHits();
         if (ret != 0) {

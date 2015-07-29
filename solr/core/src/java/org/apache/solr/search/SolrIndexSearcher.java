@@ -2102,10 +2102,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       // NOTE: we cannot use FilteredQuery, because BitDocSet assumes it will never 
       // have deleted documents, but UninvertedField's doNegative has sets with deleted docs
       TotalHitCountCollector collector = new TotalHitCountCollector();
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(QueryUtils.makeQueryable(a), BooleanClause.Occur.MUST);
       bq.add(new ConstantScoreQuery(b.getTopFilter()), BooleanClause.Occur.MUST);
-      super.search(bq, collector);
+      super.search(bq.build(), collector);
       return collector.getTotalHits();
     }
   }

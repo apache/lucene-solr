@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.Objects;
 
 /** A clause in a BooleanQuery. */
-public class BooleanClause {
+public final class BooleanClause {
   
   /** Specifies how clauses are to occur in matching documents. */
   public static enum Occur {
@@ -35,7 +35,7 @@ public class BooleanClause {
      * matching documents. For a BooleanQuery with no <code>MUST</code> 
      * clauses one or more <code>SHOULD</code> clauses must match a document 
      * for the BooleanQuery to match.
-     * @see BooleanQuery#setMinimumNumberShouldMatch
+     * @see BooleanQuery.Builder#setMinimumNumberShouldMatch
      */
     SHOULD   { @Override public String toString() { return "";  } },
 
@@ -66,17 +66,8 @@ public class BooleanClause {
     return occur;
   }
 
-  public void setOccur(Occur occur) {
-    this.occur = Objects.requireNonNull(occur, "Occur must not be null");
-
-  }
-
   public Query getQuery() {
     return query;
-  }
-
-  public void setQuery(Query query) {
-    this.query = Objects.requireNonNull(query, "Query must not be null");
   }
   
   public boolean isProhibited() {
@@ -111,5 +102,23 @@ public class BooleanClause {
   @Override
   public String toString() {
     return occur.toString() + query.toString();
+  }
+
+  /**
+   * Set the {@link Occur}.
+   * @deprecated BooleanClause will be immutable in 6.0.
+   */
+  @Deprecated
+  public void setOccur(Occur occur) {
+    this.occur = Objects.requireNonNull(occur, "Occur must not be null"); 
+  }
+
+  /**
+   * Set the {@link Query}.
+   * @deprecated BooleanClause will be immutable in 6.0.
+   */
+  @Deprecated
+  public void setQuery(Query query) {
+    this.query = Objects.requireNonNull(query, "Query must not be null");
   }
 }

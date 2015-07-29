@@ -64,8 +64,7 @@ class MultiTermHighlighting {
   static CharacterRunAutomaton[] extractAutomata(Query query, String field) {
     List<CharacterRunAutomaton> list = new ArrayList<>();
     if (query instanceof BooleanQuery) {
-      BooleanClause clauses[] = ((BooleanQuery) query).getClauses();
-      for (BooleanClause clause : clauses) {
+      for (BooleanClause clause : (BooleanQuery) query) {
         if (!clause.isProhibited()) {
           list.addAll(Arrays.asList(extractAutomata(clause.getQuery(), field)));
         }

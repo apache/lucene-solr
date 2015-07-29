@@ -24,7 +24,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
@@ -162,10 +161,10 @@ public class TestSearch extends LuceneTestCase {
   private List<Query> buildQueries() {
     List<Query> queries = new ArrayList<>();
 
-    BooleanQuery booleanAB = new BooleanQuery();
+    BooleanQuery.Builder booleanAB = new BooleanQuery.Builder();
     booleanAB.add(new TermQuery(new Term("contents", "a")), BooleanClause.Occur.SHOULD);
     booleanAB.add(new TermQuery(new Term("contents", "b")), BooleanClause.Occur.SHOULD);
-    queries.add(booleanAB);
+    queries.add(booleanAB.build());
 
     PhraseQuery phraseAB = new PhraseQuery("contents", "a", "b");
     queries.add(phraseAB);
@@ -173,10 +172,10 @@ public class TestSearch extends LuceneTestCase {
     PhraseQuery phraseABC = new PhraseQuery("contents", "a", "b", "c");
     queries.add(phraseABC);
 
-    BooleanQuery booleanAC = new BooleanQuery();
+    BooleanQuery.Builder booleanAC = new BooleanQuery.Builder();
     booleanAC.add(new TermQuery(new Term("contents", "a")), BooleanClause.Occur.SHOULD);
     booleanAC.add(new TermQuery(new Term("contents", "c")), BooleanClause.Occur.SHOULD);
-    queries.add(booleanAC);
+    queries.add(booleanAC.build());
 
     PhraseQuery phraseAC = new PhraseQuery("contents", "a", "c");
     queries.add(phraseAC);

@@ -67,6 +67,7 @@ import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -373,14 +374,19 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     private Query getBoostedQuery(Query mltquery) {
       BooleanQuery boostedQuery = (BooleanQuery)mltquery.clone();
       if (boostFields.size() > 0) {
-        List clauses = boostedQuery.clauses();
-        for( Object o : clauses ) {
-          TermQuery q = (TermQuery)((BooleanClause)o).getQuery();
+        BooleanQuery.Builder newQ = new BooleanQuery.Builder();
+        newQ.setDisableCoord(boostedQuery.isCoordDisabled());
+        newQ.setMinimumNumberShouldMatch(boostedQuery.getMinimumNumberShouldMatch());
+        for (BooleanClause clause : boostedQuery) {
+          TermQuery q = (TermQuery) clause.getQuery();
           Float b = this.boostFields.get(q.getTerm().field());
           if (b != null) {
+            q = (TermQuery) q.clone();
             q.setBoost(b*q.getBoost());
           }
+          newQ.add(q, clause.getOccur());
         }
+        boostedQuery = newQ.build();
       }
       return boostedQuery;
     }
@@ -395,17 +401,18 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       }
 
       // exclude current document from results
-      realMLTQuery = new BooleanQuery();
+      BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
       realMLTQuery.add(
           new TermQuery(new Term(uniqueKeyField.getName(), uniqueKeyField.getType().storedToIndexed(doc.getField(uniqueKeyField.getName())))), 
             BooleanClause.Occur.MUST_NOT);
+      this.realMLTQuery = realMLTQuery.build();
       
       DocListAndSet results = new DocListAndSet();
       if (this.needDocSet) {
-        results = searcher.getDocListAndSet(realMLTQuery, filters, null, start, rows, flags);
+        results = searcher.getDocListAndSet(this.realMLTQuery, filters, null, start, rows, flags);
       } else {
-        results.docList = searcher.getDocList(realMLTQuery, filters, null, start, rows, flags);
+        results.docList = searcher.getDocList(this.realMLTQuery, filters, null, start, rows, flags);
       }
       return results;
     }
@@ -460,12 +467,12 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         mltquery = (BooleanQuery) getBoostedQuery(mltquery);
         
         // exclude current document from results
-        BooleanQuery mltQuery = new BooleanQuery();
+        BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
         mltQuery.add(mltquery, BooleanClause.Occur.MUST);
         
         mltQuery.add(
             new TermQuery(new Term(uniqueKeyField.getName(), uniqueId)), BooleanClause.Occur.MUST_NOT);
-        result.add(uniqueId, mltQuery);
+        result.add(uniqueId, mltQuery.build());
       }
 
       return result;
@@ -473,9 +480,9 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     
     private void fillInterestingTermsFromMLTQuery( Query query, List<InterestingTerm> terms )
     { 
-      List clauses = ((BooleanQuery)query).clauses();
-      for( Object o : clauses ) {
-        TermQuery q = (TermQuery)((BooleanClause)o).getQuery();
+      Collection<BooleanClause> clauses = ((BooleanQuery)query).clauses();
+      for( BooleanClause o : clauses ) {
+        TermQuery q = (TermQuery) o.getQuery();
         InterestingTerm it = new InterestingTerm();
         it.boost = q.getBoost();
         it.term = q.getTerm();

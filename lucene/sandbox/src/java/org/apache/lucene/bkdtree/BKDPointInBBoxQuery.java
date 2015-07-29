@@ -173,7 +173,8 @@ public class BKDPointInBBoxQuery extends Query {
     if (maxLon < minLon) {
 
       // Disable coord here because a multi-valued doc could match both rects and get unfairly boosted:
-      BooleanQuery q = new BooleanQuery(true);
+      BooleanQuery.Builder q = new BooleanQuery.Builder();
+      q.setDisableCoord(true);
 
       // E.g.: maxLon = -179, minLon = 179
       BKDPointInBBoxQuery left = new BKDPointInBBoxQuery(field, minLat, maxLat, BKDTreeWriter.MIN_LON_INCL, maxLon);
@@ -182,7 +183,7 @@ public class BKDPointInBBoxQuery extends Query {
       BKDPointInBBoxQuery right = new BKDPointInBBoxQuery(field, minLat, maxLat, minLon, BKDTreeWriter.MAX_LON_INCL);
       right.setBoost(getBoost());
       q.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
-      return q;
+      return q.build();
     } else {
       return this;
     }

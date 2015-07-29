@@ -335,11 +335,11 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
        p1 == null ? null : p1.getAmount() + "", 
        p2 == null ? null : p2.getAmount() + "",
        minInclusive, maxInclusive);
-    final BooleanQuery docsInRange = new BooleanQuery();
+    final BooleanQuery.Builder docsInRange = new BooleanQuery.Builder();
     docsInRange.add(docsWithValues, Occur.FILTER);
     docsInRange.add(vsRangeFilter, Occur.FILTER);
 
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(docsInRange));
+    return new SolrConstantScoreQuery(new QueryWrapperFilter(docsInRange.build()));
   }
 
   @Override

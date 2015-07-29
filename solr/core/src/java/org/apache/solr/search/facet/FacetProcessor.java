@@ -330,14 +330,9 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
   public static Query getFieldMissingQuery(SolrIndexSearcher searcher, String fieldName) throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);
     Query hasVal = sf.getType().getRangeQuery(null, sf, null, null, false, false);
-    BooleanQuery noVal = new BooleanQuery();
-    noVal.add(hasVal, BooleanClause.Occur.MUST_NOT);
-    return noVal;
-    /*** Lucene 6 version... BooleanQuery.Builder is not yet part of Lucene 5
     BooleanQuery.Builder noVal = new BooleanQuery.Builder();
     noVal.add(hasVal, BooleanClause.Occur.MUST_NOT);
     return noVal.build();
-     ***/
   }
 
 }

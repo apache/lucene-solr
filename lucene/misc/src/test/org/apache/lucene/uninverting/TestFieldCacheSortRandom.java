@@ -168,14 +168,14 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
       int queryType = random.nextInt(3);
       if (queryType == 0) {
         // force out of order
-        BooleanQuery bq = new BooleanQuery();
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
         // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
         // which delegates to BS if there are no mandatory clauses.
         bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
         // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
         // the clause instead of BQ.
         bq.setMinimumNumberShouldMatch(1);
-        hits = s.search(new FilteredQuery(bq, f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(new FilteredQuery(bq.build(), f), hitCount, sort, random.nextBoolean(), random.nextBoolean());
       } else if (queryType == 1) {
         hits = s.search(new ConstantScoreQuery(f),
                         hitCount, sort, random.nextBoolean(), random.nextBoolean());

@@ -247,9 +247,9 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   }
   
   protected Query filteredQuery(Query query, Query filter) {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(query, Occur.MUST);
     bq.add(filter, Occur.FILTER);
-    return bq;
+    return bq.build();
   }
 }

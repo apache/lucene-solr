@@ -49,7 +49,8 @@ public class TermsQueryBuilder implements QueryBuilder {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String text = DOMUtils.getNonBlankTextOrFail(e);
 
-    BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(DOMUtils.getAttribute(e, "disableCoord", false));
     bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));
     try (TokenStream ts = analyzer.tokenStream(fieldName, text)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
@@ -65,8 +66,9 @@ public class TermsQueryBuilder implements QueryBuilder {
       throw new RuntimeException("Error constructing terms from index:" + ioe);
     }
 
-    bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return bq;
+    Query q = bq.build();
+    q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return q;
   }
 
 }

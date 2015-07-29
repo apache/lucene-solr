@@ -88,14 +88,14 @@ public class TestExpressionSorts extends LuceneTestCase {
     for (int i = 0; i < n; i++) {
       assertQuery(new MatchAllDocsQuery());
       assertQuery(new TermQuery(new Term("english", "one")));
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.SHOULD);
       bq.add(new TermQuery(new Term("oddeven", "even")), BooleanClause.Occur.SHOULD);
-      assertQuery(bq);
+      assertQuery(bq.build());
       // force in order
       bq.add(new TermQuery(new Term("english", "two")), BooleanClause.Occur.SHOULD);
       bq.setMinimumNumberShouldMatch(2);
-      assertQuery(bq);
+      assertQuery(bq.build());
     }
   }
   

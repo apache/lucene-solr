@@ -49,7 +49,7 @@ class DrillSidewaysQuery extends Query {
   final boolean scoreSubDocsAtOnce;
 
   DrillSidewaysQuery(Query baseQuery, Collector drillDownCollector, Collector[] drillSidewaysCollectors, Query[] drillDownQueries, boolean scoreSubDocsAtOnce) {
-    this.baseQuery = baseQuery;
+    this.baseQuery = Objects.requireNonNull(baseQuery);
     this.drillDownCollector = drillDownCollector;
     this.drillSidewaysCollectors = drillSidewaysCollectors;
     this.drillDownQueries = drillDownQueries;

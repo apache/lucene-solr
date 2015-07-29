@@ -232,11 +232,11 @@ public class TermsFilterTest extends LuceneTestCase {
       Collections.shuffle(terms, random());
       int numTerms = 1 + random().nextInt(
           Math.min(BooleanQuery.getMaxClauseCount(), terms.size()));
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       for (int j = 0; j < numTerms; j++) {
         bq.add(new BooleanClause(new TermQuery(terms.get(j)), Occur.SHOULD));
       }
-      TopDocs queryResult = searcher.search(new ConstantScoreQuery(bq), reader.maxDoc());
+      TopDocs queryResult = searcher.search(new ConstantScoreQuery(bq.build()), reader.maxDoc());
       
       MatchAllDocsQuery matchAll = new MatchAllDocsQuery();
       final TermsFilter filter = termsFilter(singleField, terms.subList(0, numTerms));;

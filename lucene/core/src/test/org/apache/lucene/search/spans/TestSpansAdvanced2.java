@@ -99,14 +99,14 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     
     final Query spanQuery1 = new SpanTermQuery(new Term(FIELD_TEXT, "should"));
     final Query spanQuery2 = new SpanTermQuery(new Term(FIELD_TEXT, "we"));
-    final BooleanQuery query = new BooleanQuery();
+    final BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(spanQuery1, BooleanClause.Occur.MUST);
     query.add(spanQuery2, BooleanClause.Occur.MUST);
     final String[] expectedIds = new String[] {"D", "A"};
     // these values were pre LUCENE-413
     // final float[] expectedScores = new float[] { 0.93163157f, 0.20698164f };
     final float[] expectedScores = new float[] {1.44124233f, 1.31752586f};
-    assertHits(searcher2, query, "multiple different span queries",
+    assertHits(searcher2, query.build(), "multiple different span queries",
         expectedIds, expectedScores);
   }
   

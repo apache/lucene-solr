@@ -83,18 +83,18 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
   
   /** test null iterator */
   public void testEmpty() throws Exception {
-    Query expected = new BooleanQuery();
-    Query cached = new CachingWrapperQuery(expected, MAYBE_CACHE_POLICY);
-    assertQueryEquals(expected, cached);
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    Query cached = new CachingWrapperQuery(expected.build(), MAYBE_CACHE_POLICY);
+    assertQueryEquals(expected.build(), cached);
   }
   
   /** test iterator returns NO_MORE_DOCS */
   public void testEmpty2() throws Exception {
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST);
     expected.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST_NOT);
-    Query cached = new CachingWrapperQuery(expected, MAYBE_CACHE_POLICY);
-    assertQueryEquals(expected, cached);
+    Query cached = new CachingWrapperQuery(expected.build(), MAYBE_CACHE_POLICY);
+    assertQueryEquals(expected.build(), cached);
   }
   
   /** test iterator returns single document */

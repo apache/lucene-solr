@@ -145,12 +145,12 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     TermQuery cQuery = new TermQuery(new Term("f", "c"));
     TermQuery yQuery = new TermQuery(new Term("f", "y"));
 
-    BooleanQuery query = new BooleanQuery();
-    BooleanQuery inner = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    BooleanQuery.Builder inner = new BooleanQuery.Builder();
 
     inner.add(cQuery, Occur.SHOULD);
     inner.add(yQuery, Occur.MUST_NOT);
-    query.add(inner, Occur.MUST);
+    query.add(inner.build(), Occur.MUST);
     query.add(aQuery, Occur.MUST);
     query.add(dQuery, Occur.MUST);
     
@@ -164,7 +164,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     for (final Set<String> occur : occurList) {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
           10), occur);
-      s.search(query, c);
+      s.search(query.build(), c);
       final int maxDocs = s.getIndexReader().maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
       boolean includeOptional = occur.contains("SHOULD");

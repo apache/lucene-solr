@@ -240,6 +240,6 @@ public class TestDrillDownQuery extends FacetTestCase {
     Query base = new MatchAllDocsQuery();
     DrillDownQuery q = new DrillDownQuery(config, base);
     Query rewrite = q.rewrite(reader).rewrite(reader);
-    assertSame(base, rewrite);
+    assertEquals(base, rewrite);
   }
 }

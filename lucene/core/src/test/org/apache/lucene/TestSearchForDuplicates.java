@@ -124,12 +124,12 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       searcher = newSearcher(reader);
       hits = null;
 
-      BooleanQuery booleanQuery = new BooleanQuery();
+      BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
       booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY)), BooleanClause.Occur.SHOULD);
       booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, MED_PRIORITY)), BooleanClause.Occur.SHOULD);
-      out.println("Query: " + booleanQuery.toString(PRIORITY_FIELD));
+      out.println("Query: " + booleanQuery.build().toString(PRIORITY_FIELD));
 
-      hits = searcher.search(booleanQuery, MAX_DOCS, sort).scoreDocs;
+      hits = searcher.search(booleanQuery.build(), MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
 

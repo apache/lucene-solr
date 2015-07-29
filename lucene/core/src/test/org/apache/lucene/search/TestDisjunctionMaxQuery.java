@@ -300,7 +300,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   
   public void testBooleanRequiredEqualScores() throws Exception {
     
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
     {
       DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.0f);
       q1.add(tq("hed", "albino"));
@@ -317,9 +317,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       QueryUtils.check(random(), q2, s);
     }
     
-    QueryUtils.check(random(), q, s);
+    QueryUtils.check(random(), q.build(), s);
     
-    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q.build(), 1000).scoreDocs;
     
     try {
       assertEquals("3 docs should match " + q.toString(), 3, h.length);
@@ -336,7 +336,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   
   public void testBooleanOptionalNoTiebreaker() throws Exception {
     
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
     {
       DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.0f);
       q1.add(tq("hed", "albino"));
@@ -349,9 +349,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q2.add(tq("dek", "elephant"));
       q.add(q2, BooleanClause.Occur.SHOULD);// false,false);
     }
-    QueryUtils.check(random(), q, s);
+    QueryUtils.check(random(), q.build(), s);
     
-    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q.build(), 1000).scoreDocs;
     
     try {
       assertEquals("4 docs should match " + q.toString(), 4, h.length);
@@ -372,7 +372,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   
   public void testBooleanOptionalWithTiebreaker() throws Exception {
     
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
     {
       DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.01f);
       q1.add(tq("hed", "albino"));
@@ -385,9 +385,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q2.add(tq("dek", "elephant"));
       q.add(q2, BooleanClause.Occur.SHOULD);// false,false);
     }
-    QueryUtils.check(random(), q, s);
+    QueryUtils.check(random(), q.build(), s);
     
-    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q.build(), 1000).scoreDocs;
     
     try {
       
@@ -426,7 +426,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   
   public void testBooleanOptionalWithTiebreakerAndBoost() throws Exception {
     
-    BooleanQuery q = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
     {
       DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.01f);
       q1.add(tq("hed", "albino", 1.5f));
@@ -439,9 +439,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q2.add(tq("dek", "elephant"));
       q.add(q2, BooleanClause.Occur.SHOULD);// false,false);
     }
-    QueryUtils.check(random(), q, s);
+    QueryUtils.check(random(), q.build(), s);
     
-    ScoreDoc[] h = s.search(q, 1000).scoreDocs;
+    ScoreDoc[] h = s.search(q.build(), 1000).scoreDocs;
     
     try {
       

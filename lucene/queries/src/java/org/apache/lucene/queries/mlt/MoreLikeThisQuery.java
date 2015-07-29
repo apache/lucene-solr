@@ -71,10 +71,16 @@ public class MoreLikeThisQuery extends Query {
     mlt.setMaxQueryTerms(maxQueryTerms);
     mlt.setStopWords(stopWords);
     BooleanQuery bq = (BooleanQuery) mlt.like(fieldName, new StringReader(likeText));
-    BooleanClause[] clauses = bq.getClauses();
+    BooleanQuery.Builder newBq = new BooleanQuery.Builder();
+    newBq.setDisableCoord(bq.isCoordDisabled());
+    for (BooleanClause clause : bq) {
+      newBq.add(clause);
+    }
     //make at least half the terms match
-    bq.setMinimumNumberShouldMatch((int) (clauses.length * percentTermsToMatch));
-    return bq;
+    newBq.setMinimumNumberShouldMatch((int) (bq.clauses().size() * percentTermsToMatch));
+    Query rewritten = newBq.build();
+    rewritten.setBoost(bq.getBoost());
+    return rewritten;
   }
 
   /* (non-Javadoc)

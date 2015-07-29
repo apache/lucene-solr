@@ -144,13 +144,12 @@ public class TermsQuery extends Query implements Accountable {
   public Query rewrite(IndexReader reader) throws IOException {
     final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
     if (termData.size() <= threshold) {
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       TermIterator iterator = termData.iterator();
       for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
         bq.add(new TermQuery(new Term(iterator.field(), BytesRef.deepCopyOf(term))), Occur.SHOULD);
       }
-      assert bq.clauses().size() == termData.size();
-      ConstantScoreQuery csq = new ConstantScoreQuery(bq);
+      ConstantScoreQuery csq = new ConstantScoreQuery(bq.build());
       csq.setBoost(getBoost());
       return csq;
     }
@@ -303,13 +302,13 @@ public class TermsQuery extends Query implements Accountable {
         }
         if (matchingTerms != null) {
           assert builder == null;
-          BooleanQuery bq = new BooleanQuery();
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
           for (TermAndState t : matchingTerms) {
             final TermContext termContext = new TermContext(searcher.getTopReaderContext());
             termContext.register(t.state, context.ord, t.docFreq, t.totalTermFreq);
             bq.add(new TermQuery(new Term(t.field, t.term), termContext), Occur.SHOULD);
           }
-          Query q = new ConstantScoreQuery(bq);
+          Query q = new ConstantScoreQuery(bq.build());
           q.setBoost(score());
           return new WeightOrDocIdSet(searcher.rewrite(q).createWeight(searcher, needsScores));
         } else {

@@ -18,11 +18,12 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  *
@@ -33,7 +34,7 @@ public class QueryUtils {
   public static boolean isNegative(Query q) {
     if (!(q instanceof BooleanQuery)) return false;
     BooleanQuery bq = (BooleanQuery)q;
-    List<BooleanClause> clauses = bq.clauses();
+    Collection<BooleanClause> clauses = bq.clauses();
     if (clauses.size()==0) return false;
     for (BooleanClause clause : clauses) {
       if (!clause.isProhibited()) return false;
@@ -64,7 +65,7 @@ public class QueryUtils {
     if (!(q instanceof BooleanQuery)) return q;
     BooleanQuery bq = (BooleanQuery)q;
 
-    List<BooleanClause> clauses = bq.clauses();
+    Collection<BooleanClause> clauses = bq.clauses();
     if (clauses.size()==0) return q;
 
 
@@ -74,20 +75,22 @@ public class QueryUtils {
 
     if (clauses.size()==1) {
       // if only one clause, dispense with the wrapping BooleanQuery
-      Query negClause = clauses.get(0).getQuery();
+      Query negClause = clauses.iterator().next().getQuery();
       // we shouldn't need to worry about adjusting the boosts since the negative
       // clause would have never been selected in a positive query, and hence would
       // not contribute to a score.
       return negClause;
     } else {
-      BooleanQuery newBq = new BooleanQuery(bq.isCoordDisabled());
-      newBq.setBoost(bq.getBoost());
+      BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
+      newBqB.setDisableCoord(bq.isCoordDisabled());
       // ignore minNrShouldMatch... it doesn't make sense for a negative query
 
       // the inverse of -a -b is a OR b
       for (BooleanClause clause : clauses) {
-        newBq.add(clause.getQuery(), BooleanClause.Occur.SHOULD);
+        newBqB.add(clause.getQuery(), BooleanClause.Occur.SHOULD);
       }
+      Query newBq = newBqB.build();
+      newBq.setBoost(bq.getBoost());
       return newBq;
     }
   }
@@ -106,9 +109,17 @@ public class QueryUtils {
    * The query passed in *must* be a negative query.
    */
   public static Query fixNegativeQuery(Query q) {
-    BooleanQuery newBq = (BooleanQuery)q.clone();
-    newBq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-    return newBq;    
+    BooleanQuery bq = (BooleanQuery) q;
+    BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
+    newBqB.setDisableCoord(bq.isCoordDisabled());
+    newBqB.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
+    for (BooleanClause clause : bq) {
+      newBqB.add(clause);
+    }
+    newBqB.add(new MatchAllDocsQuery(), Occur.MUST);
+    BooleanQuery newBq = newBqB.build();
+    newBq.setBoost(bq.getBoost());
+    return newBq;
   }
 
 }

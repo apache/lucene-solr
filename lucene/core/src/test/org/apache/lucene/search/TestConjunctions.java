@@ -70,10 +70,10 @@ public class TestConjunctions extends LuceneTestCase {
   }
   
   public void testTermConjunctionsWithOmitTF() throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term(F1, "nutch")), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term(F2, "is")), BooleanClause.Occur.MUST);
-    TopDocs td = searcher.search(bq, 3);
+    TopDocs td = searcher.search(bq.build(), 3);
     assertEquals(1, td.totalHits);
     assertEquals(3F, td.scoreDocs[0].score, 0.001F); // f1:nutch + f2:is + f2:is
   }

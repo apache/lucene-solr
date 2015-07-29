@@ -52,19 +52,20 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
    *  @see MultiTermQuery#setRewriteMethod */
-  public final static ScoringRewrite<BooleanQuery> SCORING_BOOLEAN_REWRITE = new ScoringRewrite<BooleanQuery>() {
+  public final static ScoringRewrite<BooleanQuery.Builder> SCORING_BOOLEAN_REWRITE = new ScoringRewrite<BooleanQuery.Builder>() {
     @Override
-    protected BooleanQuery getTopLevelBuilder() {
-      return new BooleanQuery(true);
-    }
-
-    @Override
-    protected Query build(BooleanQuery builder) {
+    protected BooleanQuery.Builder getTopLevelBuilder() {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
       return builder;
     }
     
+    protected Query build(BooleanQuery.Builder builder) {
+      return builder.build();
+    }
+    
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docCount,
+    protected void addClause(BooleanQuery.Builder topLevel, Term term, int docCount,
         float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
       tq.setBoost(boost);

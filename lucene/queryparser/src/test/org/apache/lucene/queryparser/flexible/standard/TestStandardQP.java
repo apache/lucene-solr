@@ -194,14 +194,15 @@ public class TestStandardQP extends QueryParserTestBase {
   public void testNewFieldQuery() throws Exception {
     /** ordinary behavior, synonyms form uncoordinated boolean query */
     StandardQueryParser dumb = getParser(new Analyzer1());
-    BooleanQuery expanded = new BooleanQuery(true);
+    BooleanQuery.Builder expanded = new BooleanQuery.Builder();
+    expanded.setDisableCoord(true);
     expanded.add(new TermQuery(new Term("field", "dogs")),
         BooleanClause.Occur.SHOULD);
     expanded.add(new TermQuery(new Term("field", "dog")),
         BooleanClause.Occur.SHOULD);
-    assertEquals(expanded, dumb.parse("\"dogs\"","field"));
+    assertEquals(expanded.build(), dumb.parse("\"dogs\"","field"));
     /** even with the phrase operator the behavior is the same */
-    assertEquals(expanded, dumb.parse("dogs","field"));
+    assertEquals(expanded.build(), dumb.parse("dogs","field"));
     
     /**
      * custom behavior, the synonyms are expanded, unless you use quote operator

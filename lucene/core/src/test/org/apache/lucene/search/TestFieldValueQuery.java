@@ -93,19 +93,19 @@ public class TestFieldValueQuery extends LuceneTestCase {
       final IndexSearcher searcher = newSearcher(reader);
       iw.close();
 
-      BooleanQuery ref = new BooleanQuery();
+      BooleanQuery.Builder ref = new BooleanQuery.Builder();
       ref.add(new TermQuery(new Term("f", "yes")), Occur.MUST);
       ref.add(new TermQuery(new Term("has_value", "yes")), Occur.FILTER);
 
-      BooleanQuery bq1 = new BooleanQuery();
+      BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
       bq1.add(new TermQuery(new Term("f", "yes")), Occur.MUST);
       bq1.add(new FieldValueQuery("dv1"), Occur.FILTER);
-      assertSameMatches(searcher, ref, bq1, true);
+      assertSameMatches(searcher, ref.build(), bq1.build(), true);
 
-      BooleanQuery bq2 = new BooleanQuery();
+      BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
       bq2.add(new TermQuery(new Term("f", "yes")), Occur.MUST);
       bq2.add(new FieldValueQuery("dv2"), Occur.FILTER);
-      assertSameMatches(searcher, ref, bq2, true);
+      assertSameMatches(searcher, ref.build(), bq2.build(), true);
 
       reader.close();
       dir.close();

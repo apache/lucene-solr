@@ -142,8 +142,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       this.ids = new HashSet<>();
       this.excludeIds = new HashSet<>();
 
-      this.include = new BooleanQuery();
-      this.include.setBoost(0);
+      BooleanQuery.Builder include = new BooleanQuery.Builder();
       this.priority = new HashMap<>();
       int max = elevate.size() + 5;
       for (String id : elevate) {
@@ -153,6 +152,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         include.add(tq, BooleanClause.Occur.SHOULD);
         this.priority.put(new BytesRef(id), max--);
       }
+      this.include = include.build();
+      this.include.setBoost(0);
 
       if (exclude == null || exclude.isEmpty()) {
         this.exclude = null;
@@ -421,7 +422,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         //we only want these results
         rb.setQuery(booster.include);
       } else {
-        BooleanQuery newq = new BooleanQuery(true);
+        BooleanQuery.Builder newq = new BooleanQuery.Builder();
+        newq.setDisableCoord(true);
         newq.add(query, BooleanClause.Occur.SHOULD);
         newq.add(booster.include, BooleanClause.Occur.SHOULD);
         if (booster.exclude != null) {
@@ -435,7 +437,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             rb.req.getContext().put(EXCLUDED, booster.excludeIds);
           }
         }
-        rb.setQuery(newq);
+        rb.setQuery(newq.build());
       }
 
       ElevationComparatorSource comparator = new ElevationComparatorSource(booster);

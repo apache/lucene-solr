@@ -100,12 +100,12 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
     
     // wrong field
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     bq.add(new WildcardQuery(new Term("bogus", "te*")), BooleanClause.Occur.SHOULD);
-    topDocs = searcher.search(bq, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(bq.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", bq, searcher, topDocs);
+    snippets = highlighter.highlight("body", bq.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
@@ -152,12 +152,12 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
     
     // wrong field
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     bq.add(new PrefixQuery(new Term("bogus", "te")), BooleanClause.Occur.SHOULD);
-    topDocs = searcher.search(bq, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(bq.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", bq, searcher, topDocs);
+    snippets = highlighter.highlight("body", bq.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
@@ -204,12 +204,12 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
     
     // wrong field
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     bq.add(new RegexpQuery(new Term("bogus", "te.*")), BooleanClause.Occur.SHOULD);
-    topDocs = searcher.search(bq, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(bq.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", bq, searcher, topDocs);
+    snippets = highlighter.highlight("body", bq.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
@@ -265,12 +265,12 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
     
     // wrong field
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     bq.add(new FuzzyQuery(new Term("bogus", "tets"), 1), BooleanClause.Occur.SHOULD);
-    topDocs = searcher.search(bq, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(bq.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", bq, searcher, topDocs);
+    snippets = highlighter.highlight("body", bq.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
@@ -353,34 +353,34 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
     
     // exact start exclusive
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     bq.add(TermRangeQuery.newStringRange("body", "test", "tf", false, true), BooleanClause.Occur.SHOULD);
-    topDocs = searcher.search(bq, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(bq.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", bq, searcher, topDocs);
+    snippets = highlighter.highlight("body", bq.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
     
     // exact end exclusive
-    bq = new BooleanQuery();
+    bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     bq.add(TermRangeQuery.newStringRange("body", "ta", "test", true, false), BooleanClause.Occur.SHOULD);
-    topDocs = searcher.search(bq, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(bq.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", bq, searcher, topDocs);
+    snippets = highlighter.highlight("body", bq.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
     
     // wrong field
-    bq = new BooleanQuery();
+    bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     bq.add(TermRangeQuery.newStringRange("bogus", "ta", "tf", true, true), BooleanClause.Occur.SHOULD);
-    topDocs = searcher.search(bq, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(bq.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", bq, searcher, topDocs);
+    snippets = highlighter.highlight("body", bq.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
@@ -418,22 +418,22 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new WildcardQuery(new Term("body", "te*")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    String snippets[] = highlighter.highlight("body", query.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a <b>test</b>.", snippets[0]);
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
     
     // must not
-    query = new BooleanQuery();
+    query = new BooleanQuery.Builder();
     query.add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD);
     query.add(new WildcardQuery(new Term("bogus", "te*")), BooleanClause.Occur.MUST_NOT);
-    topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    topDocs = searcher.search(query.build(), 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    snippets = highlighter.highlight("body", query, searcher, topDocs);
+    snippets = highlighter.highlight("body", query.build(), searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a test.", snippets[0]);
     assertEquals("Test a one sentence document.", snippets[1]);
@@ -807,13 +807,13 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new WildcardQuery(new Term("body", "te*")), BooleanClause.Occur.SHOULD);
     query.add(new WildcardQuery(new Term("body", "one")), BooleanClause.Occur.SHOULD);
     query.add(new WildcardQuery(new Term("body", "se*")), BooleanClause.Occur.SHOULD);
-    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    TopDocs topDocs = searcher.search(query.build(), 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
-    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    String snippets[] = highlighter.highlight("body", query.build(), searcher, topDocs);
     assertEquals(1, snippets.length);
     
     // Default formatter just bolds each hit:
@@ -871,7 +871,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     };
     
     assertEquals(1, topDocs.totalHits);
-    snippets = highlighter.highlight("body", query, searcher, topDocs);
+    snippets = highlighter.highlight("body", query.build(), searcher, topDocs);
     assertEquals(1, snippets.length);
     
     // Default formatter bolds each hit:

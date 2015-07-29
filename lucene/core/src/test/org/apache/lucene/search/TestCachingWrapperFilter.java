@@ -100,7 +100,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
   /** test null iterator */
   public void testEmpty() throws Exception {
-    Query query = new BooleanQuery();
+    Query query = new BooleanQuery.Builder().build();
     Filter expected = new QueryWrapperFilter(query);
     Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
@@ -108,10 +108,10 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
   /** test iterator returns NO_MORE_DOCS */
   public void testEmpty2() throws Exception {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term("id", "0")), BooleanClause.Occur.MUST_NOT);
-    Filter expected = new QueryWrapperFilter(query);
+    Filter expected = new QueryWrapperFilter(query.build());
     Filter actual = new CachingWrapperFilter(expected, MAYBE_CACHE_POLICY);
     assertFilterEquals(expected, actual);
   }

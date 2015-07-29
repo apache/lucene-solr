@@ -1178,10 +1178,10 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       
       //LUCENE-6464 Using the advanced context filtering by query. 
       //Note that this is just a sanity test as all the above tests run through the filter by query method
-      BooleanQuery query = new BooleanQuery();
+      BooleanQuery.Builder query = new BooleanQuery.Builder();
       suggester.addContextToQuery(query, new BytesRef("foo"), BooleanClause.Occur.MUST);
       suggester.addContextToQuery(query, new BytesRef("bar"), BooleanClause.Occur.MUST_NOT);
-      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), query, 10, true, true);
+      results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), query.build(), 10, true, true);
       assertEquals(1, results.size());
       
       suggester.close();

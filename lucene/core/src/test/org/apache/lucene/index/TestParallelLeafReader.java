@@ -48,10 +48,10 @@ public class TestParallelLeafReader extends LuceneTestCase {
     queryTest(new TermQuery(new Term("f4", "v1")));
     queryTest(new TermQuery(new Term("f4", "v2")));
 
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     bq1.add(new TermQuery(new Term("f1", "v1")), Occur.MUST);
     bq1.add(new TermQuery(new Term("f4", "v1")), Occur.MUST);
-    queryTest(bq1);
+    queryTest(bq1.build());
     
     single.getIndexReader().close(); single = null;
     parallel.getIndexReader().close(); parallel = null;

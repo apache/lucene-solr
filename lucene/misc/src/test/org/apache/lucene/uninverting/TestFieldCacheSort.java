@@ -1204,10 +1204,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(SortField.FIELD_SCORE);
 
-    final BooleanQuery bq = new BooleanQuery();
+    final BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("value", "foo")), Occur.SHOULD);
     bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
-    TopDocs td = searcher.search(bq, 10, sort);
+    TopDocs td = searcher.search(bq.build(), 10, sort);
     assertEquals(2, td.totalHits);
     assertEquals(1, td.scoreDocs[0].doc);
     assertEquals(0, td.scoreDocs[1].doc);

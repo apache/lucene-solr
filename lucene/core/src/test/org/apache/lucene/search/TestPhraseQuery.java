@@ -245,10 +245,10 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     
     TermQuery termQuery = new TermQuery(new Term("contents","foobar"));
-    BooleanQuery booleanQuery = new BooleanQuery();
+    BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
     booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
-    hits = searcher.search(booleanQuery, 1000).scoreDocs;
+    hits = searcher.search(booleanQuery.build(), 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), termQuery,searcher);
 
@@ -283,18 +283,18 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals(2, hits.length);
 
     
-    booleanQuery = new BooleanQuery();
+    booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
     booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
-    hits = searcher.search(booleanQuery, 1000).scoreDocs;
+    hits = searcher.search(booleanQuery.build(), 1000).scoreDocs;
     assertEquals(2, hits.length);
     
-    booleanQuery = new BooleanQuery();
+    booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
     booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
-    hits = searcher.search(booleanQuery, 1000).scoreDocs;
+    hits = searcher.search(booleanQuery.build(), 1000).scoreDocs;
     assertEquals(2, hits.length);
-    QueryUtils.check(random(), booleanQuery,searcher);
+    QueryUtils.check(random(), booleanQuery.build(),searcher);
 
     
     reader.close();
@@ -540,9 +540,9 @@ public class TestPhraseQuery extends LuceneTestCase {
 
   // LUCENE-1280
   public void testEmptyPhraseQuery() throws Throwable {
-    final BooleanQuery q2 = new BooleanQuery();
+    final BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new PhraseQuery("field", new String[0]), BooleanClause.Occur.MUST);
-    q2.toString();
+    q2.build().toString();
   }
   
   /* test that a single term is rewritten to a term query */

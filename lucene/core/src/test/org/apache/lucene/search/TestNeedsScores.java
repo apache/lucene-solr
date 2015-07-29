@@ -62,10 +62,10 @@ public class TestNeedsScores extends LuceneTestCase {
   public void testProhibitedClause() throws Exception {
     Query required = new TermQuery(new Term("field", "this"));
     Query prohibited = new TermQuery(new Term("field", "3"));
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new AssertNeedsScores(required, true), BooleanClause.Occur.MUST);
     bq.add(new AssertNeedsScores(prohibited, false), BooleanClause.Occur.MUST_NOT);
-    assertEquals(4, searcher.search(bq, 5).totalHits); // we exclude 3
+    assertEquals(4, searcher.search(bq.build(), 5).totalHits); // we exclude 3
   }
   
   /** nested inside constant score query */

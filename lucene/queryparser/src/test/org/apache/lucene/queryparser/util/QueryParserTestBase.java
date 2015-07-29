@@ -275,22 +275,23 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer(); 
     
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
     expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
     
-    assertEquals(expected, getQuery("中国", analyzer));
+    assertEquals(expected.build(), getQuery("中国", analyzer));
   }
   
   public void testCJKBoostedTerm() throws Exception {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
     
-    BooleanQuery expected = new BooleanQuery();
+    BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
+    expectedB.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expectedB.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    Query expected = expectedB.build();
     expected.setBoost(0.5f);
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
-    
+
     assertEquals(expected, getQuery("中国^0.5", analyzer));
   }
   
@@ -985,11 +986,11 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     Query escaped2 = new RegexpQuery(new Term("field", "[a-z]\\*[123]"));
     assertEquals(escaped2, getQuery("/[a-z]\\*[123]/",qp));
     
-    BooleanQuery complex = new BooleanQuery();
+    BooleanQuery.Builder complex = new BooleanQuery.Builder();
     complex.add(new RegexpQuery(new Term("field", "[a-z]\\/[123]")), Occur.MUST);
     complex.add(new TermQuery(new Term("path", "/etc/init.d/")), Occur.MUST);
     complex.add(new TermQuery(new Term("field", "/etc/init[.]d/lucene/")), Occur.SHOULD);
-    assertEquals(complex, getQuery("/[a-z]\\/[123]/ AND path:\"/etc/init.d/\" OR \"/etc\\/init\\[.\\]d/lucene/\" ",qp));
+    assertEquals(complex.build(), getQuery("/[a-z]\\/[123]/ AND path:\"/etc/init.d/\" OR \"/etc\\/init\\[.\\]d/lucene/\" ",qp));
     
     Query re = new RegexpQuery(new Term("field", "http.*"));
     assertEquals(re, getQuery("field:/http.*/",qp));
@@ -1006,11 +1007,11 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertEquals(new TermQuery(new Term("field", "/boo/")), getQuery("\"/boo/\"",qp));
     assertEquals(new TermQuery(new Term("field", "/boo/")), getQuery("\\/boo\\/",qp));
     
-    BooleanQuery two = new BooleanQuery();
+    BooleanQuery.Builder two = new BooleanQuery.Builder();
     two.add(new RegexpQuery(new Term("field", "foo")), Occur.SHOULD);
     two.add(new RegexpQuery(new Term("field", "bar")), Occur.SHOULD);
-    assertEquals(two, getQuery("field:/foo/ field:/bar/",qp));
-    assertEquals(two, getQuery("/foo/ /bar/",qp));
+    assertEquals(two.build(), getQuery("field:/foo/ field:/bar/",qp));
+    assertEquals(two.build(), getQuery("/foo/ /bar/",qp));
   }
   
   public void testStopwords() throws Exception {
@@ -1018,8 +1019,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet));
     Query result = getQuery("field:the OR field:foo",qp);
     assertNotNull("result is null and it shouldn't be", result);
-    assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
-    assertTrue(((BooleanQuery) result).clauses().size() + " does not equal: " + 0, ((BooleanQuery) result).clauses().size() == 0);
+    assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery || result instanceof MatchNoDocsQuery);
+    if (result instanceof BooleanQuery) {
+      assertEquals(0, ((BooleanQuery) result).clauses().size());
+    }
     result = getQuery("field:woo OR field:the",qp);
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a TermQuery", result instanceof TermQuery);
@@ -1052,8 +1055,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertEquals(new MatchAllDocsQuery(), getQuery("*:*",qp));
     assertEquals(new MatchAllDocsQuery(), getQuery("(*:*)",qp));
     BooleanQuery bq = (BooleanQuery)getQuery("+*:* -*:*",qp);
-    assertTrue(bq.getClauses()[0].getQuery() instanceof MatchAllDocsQuery);
-    assertTrue(bq.getClauses()[1].getQuery() instanceof MatchAllDocsQuery);
+    assertEquals(2, bq.clauses().size());
+    for (BooleanClause clause : bq) {
+      assertTrue(clause.getQuery() instanceof MatchAllDocsQuery);
+    }
   }
   
   @SuppressWarnings("unused")
@@ -1272,12 +1277,12 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   public void testNestedAndClausesFoo() throws Exception {
     String query = "(field1:[1 TO *] AND field1:[* TO 2]) AND field2:(z)";
-    BooleanQuery q = new BooleanQuery();
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(TermRangeQuery.newStringRange("field1", "1", null, true, true), BooleanClause.Occur.MUST);
     bq.add(TermRangeQuery.newStringRange("field1", null, "2", true, true), BooleanClause.Occur.MUST);
-    q.add(bq, BooleanClause.Occur.MUST);
+    q.add(bq.build(), BooleanClause.Occur.MUST);
     q.add(new TermQuery(new Term("field2", "z")), BooleanClause.Occur.MUST);
-    assertEquals(q, getQuery(query, new MockAnalyzer(random())));
+    assertEquals(q.build(), getQuery(query, new MockAnalyzer(random())));
   }
 }

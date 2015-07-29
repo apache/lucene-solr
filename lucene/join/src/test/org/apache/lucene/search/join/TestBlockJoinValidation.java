@@ -98,13 +98,13 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     Query parentQueryWithRandomChild = createChildrenQueryWithOneParent(nextRandomChildNumber);
     ToParentBlockJoinQuery blockJoinQuery = new ToParentBlockJoinQuery(parentQueryWithRandomChild, parentsFilter, ScoreMode.None);
     // advance() method is used by ConjunctionScorer, so we need to create Boolean conjunction query
-    BooleanQuery conjunctionQuery = new BooleanQuery();
+    BooleanQuery.Builder conjunctionQuery = new BooleanQuery.Builder();
     WildcardQuery childQuery = new WildcardQuery(new Term("child", createFieldValue(randomChildNumber)));
     conjunctionQuery.add(new BooleanClause(childQuery, BooleanClause.Occur.MUST));
     conjunctionQuery.add(new BooleanClause(blockJoinQuery, BooleanClause.Occur.MUST));
     
     try {
-      indexSearcher.search(conjunctionQuery, 1);
+      indexSearcher.search(conjunctionQuery.build(), 1);
       fail("didn't get expected exception");
     } catch (IllegalStateException expected) {
       assertTrue(expected.getMessage() != null && expected.getMessage().contains("child query must only match non-parent docs"));
@@ -198,18 +198,18 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   private static Query createChildrenQueryWithOneParent(int childNumber) {
     TermQuery childQuery = new TermQuery(new Term("child", createFieldValue(childNumber)));
     Query randomParentQuery = new TermQuery(new Term("id", createFieldValue(getRandomParentId())));
-    BooleanQuery childrenQueryWithRandomParent = new BooleanQuery();
+    BooleanQuery.Builder childrenQueryWithRandomParent = new BooleanQuery.Builder();
     childrenQueryWithRandomParent.add(new BooleanClause(childQuery, BooleanClause.Occur.SHOULD));
     childrenQueryWithRandomParent.add(new BooleanClause(randomParentQuery, BooleanClause.Occur.SHOULD));
-    return childrenQueryWithRandomParent;
+    return childrenQueryWithRandomParent.build();
   }
 
   private static Query createParentsQueryWithOneChild(int randomChildNumber) {
-    BooleanQuery childQueryWithRandomParent = new BooleanQuery();
+    BooleanQuery.Builder childQueryWithRandomParent = new BooleanQuery.Builder();
     Query parentsQuery = new TermQuery(new Term("parent", createFieldValue(getRandomParentNumber())));
     childQueryWithRandomParent.add(new BooleanClause(parentsQuery, BooleanClause.Occur.SHOULD));
     childQueryWithRandomParent.add(new BooleanClause(randomChildQuery(randomChildNumber), BooleanClause.Occur.SHOULD));
-    return childQueryWithRandomParent;
+    return childQueryWithRandomParent.build();
   }
 
   private static int getRandomParentId() {

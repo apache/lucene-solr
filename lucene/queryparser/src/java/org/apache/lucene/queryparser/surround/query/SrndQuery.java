@@ -95,20 +95,5 @@ public abstract class SrndQuery implements Cloneable {
     return toString().equals(obj.toString());
   }
 
-  /** An empty Lucene query */
-  public final static Query theEmptyLcnQuery = new BooleanQuery() { /* no changes allowed */
-    @Override
-    public void setBoost(float boost) {
-      throw new UnsupportedOperationException();
-    }
-    @Override
-    public void add(BooleanClause clause) {
-      throw new UnsupportedOperationException();
-    }
-    @Override
-    public void add(Query query, BooleanClause.Occur occur) {
-      throw new UnsupportedOperationException();
-    }
-  };
 }
 

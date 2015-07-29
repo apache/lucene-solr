@@ -27,9 +27,6 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.search.FilterCollector;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
@@ -133,7 +130,6 @@ public class DrillSideways {
    * Search, collecting hits with a {@link Collector}, and
    * computing drill down and sideways counts.
    */
-  @SuppressWarnings({"rawtypes","unchecked"})
   public DrillSidewaysResult search(DrillDownQuery query, Collector hitCollector) throws IOException {
 
     Map<String,Integer> drillDownDims = query.getDims();
@@ -147,31 +143,19 @@ public class DrillSideways {
       return new DrillSidewaysResult(buildFacetsResult(drillDownCollector, null, null), null);
     }
 
-    BooleanQuery ddq = query.getBooleanQuery();
-    BooleanClause[] clauses = ddq.getClauses();
-
-    Query baseQuery;
-    int startClause;
-    if (clauses.length == drillDownDims.size()) {
+    Query baseQuery = query.getBaseQuery();
+    if (baseQuery == null) {
       // TODO: we could optimize this pure-browse case by
       // making a custom scorer instead:
       baseQuery = new MatchAllDocsQuery();
-      startClause = 0;
-    } else {
-      assert clauses.length == 1+drillDownDims.size();
-      baseQuery = clauses[0].getQuery();
-      startClause = 1;
     }
+    Query[] drillDownQueries = query.getDrillDownQueries();
 
     FacetsCollector[] drillSidewaysCollectors = new FacetsCollector[drillDownDims.size()];
     for (int i = 0; i < drillSidewaysCollectors.length; i++) {
       drillSidewaysCollectors[i] = new FacetsCollector();
     }
-
-    Query[] drillDownQueries = new Query[clauses.length-startClause];
-    for(int i=startClause;i<clauses.length;i++) {
-      drillDownQueries[i-startClause] = clauses[i].getQuery();
-    }
+    
     DrillSidewaysQuery dsq = new DrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownQueries, scoreSubDocsAtOnce());
     if (hitCollector.needsScores() == false) {
       // this is a borrible hack in order to make sure IndexSearcher will not

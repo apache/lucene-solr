@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -153,7 +154,7 @@ public abstract class MultiTermQuery extends Query {
    * 
    * @see #setRewriteMethod
    */
-  public static final class TopTermsScoringBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery> {
+  public static final class TopTermsScoringBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery.Builder> {
 
     /** 
      * Create a TopTermsScoringBooleanQueryRewrite for 
@@ -172,17 +173,19 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected BooleanQuery getTopLevelBuilder() {
-      return new BooleanQuery(true);
-    }
-
-    @Override
-    protected Query build(BooleanQuery builder) {
+    protected BooleanQuery.Builder getTopLevelBuilder() {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
       return builder;
     }
 
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docCount, float boost, TermContext states) {
+    protected Query build(BooleanQuery.Builder builder) {
+      return builder.build();
+    }
+    
+    @Override
+    protected void addClause(BooleanQuery.Builder topLevel, Term term, int docCount, float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
       tq.setBoost(boost);
       topLevel.add(tq, BooleanClause.Occur.SHOULD);
@@ -250,7 +253,7 @@ public abstract class MultiTermQuery extends Query {
    * 
    * @see #setRewriteMethod
    */
-  public static final class TopTermsBoostOnlyBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery> {
+  public static final class TopTermsBoostOnlyBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery.Builder> {
     
     /** 
      * Create a TopTermsBoostOnlyBooleanQueryRewrite for 
@@ -269,17 +272,19 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected BooleanQuery getTopLevelBuilder() {
-      return new BooleanQuery(true);
-    }
-    
-    @Override
-    protected Query build(BooleanQuery builder) {
+    protected BooleanQuery.Builder getTopLevelBuilder() {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(true);
       return builder;
     }
     
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost, TermContext states) {
+    protected Query build(BooleanQuery.Builder builder) {
+      return builder.build();
+    }
+    
+    @Override
+    protected void addClause(BooleanQuery.Builder topLevel, Term term, int docFreq, float boost, TermContext states) {
       final Query q = new ConstantScoreQuery(new TermQuery(term, states));
       q.setBoost(boost);
       topLevel.add(q, BooleanClause.Occur.SHOULD);

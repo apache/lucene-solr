@@ -174,12 +174,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
   @Test
   public void testCustomExternalQuery() throws Exception {
-    BooleanQuery q1 = new BooleanQuery();
+    BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD);
     q1.add(new TermQuery(new Term(TEXT_FIELD, "aid")), BooleanClause.Occur.SHOULD);
     q1.add(new TermQuery(new Term(TEXT_FIELD, "text")), BooleanClause.Occur.SHOULD);
     
-    final Query q = new CustomExternalQuery(q1);
+    final Query q = new CustomExternalQuery(q1.build());
     log(q);
 
     IndexReader r = DirectoryReader.open(dir);
@@ -225,20 +225,23 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     IndexSearcher s = newSearcher(r);
 
     // regular (boolean) query.
-    BooleanQuery q1 = new BooleanQuery();
-    q1.add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD);
-    q1.add(new TermQuery(new Term(TEXT_FIELD, "aid")), BooleanClause.Occur.SHOULD);
-    q1.add(new TermQuery(new Term(TEXT_FIELD, "text")), BooleanClause.Occur.SHOULD);
+    BooleanQuery.Builder q1b = new BooleanQuery.Builder();
+    q1b.add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD);
+    q1b.add(new TermQuery(new Term(TEXT_FIELD, "aid")), BooleanClause.Occur.SHOULD);
+    q1b.add(new TermQuery(new Term(TEXT_FIELD, "text")), BooleanClause.Occur.SHOULD);
+    Query q1 = q1b.build();
     log(q1);
 
     // custom query, that should score the same as q1.
-    BooleanQuery q2CustomNeutral = new BooleanQuery(true);
+    BooleanQuery.Builder q2CustomNeutralB = new BooleanQuery.Builder();
+    q2CustomNeutralB.setDisableCoord(true);
     Query q2CustomNeutralInner = new CustomScoreQuery(q1);
-    q2CustomNeutral.add(q2CustomNeutralInner, BooleanClause.Occur.SHOULD);
+    q2CustomNeutralInner.setBoost((float)Math.sqrt(dboost));
+    q2CustomNeutralB.add(q2CustomNeutralInner, BooleanClause.Occur.SHOULD);
     // a little tricky: we split the boost across an outer BQ and CustomScoreQuery
     // this ensures boosting is correct across all these functions (see LUCENE-4935)
+    Query q2CustomNeutral = q2CustomNeutralB.build();
     q2CustomNeutral.setBoost((float)Math.sqrt(dboost));
-    q2CustomNeutralInner.setBoost((float)Math.sqrt(dboost));
     log(q2CustomNeutral);
 
     // custom query, that should (by default) multiply the scores of q1 by that of the field

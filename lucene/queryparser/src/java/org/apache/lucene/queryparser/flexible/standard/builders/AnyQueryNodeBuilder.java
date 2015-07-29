@@ -44,7 +44,7 @@ public class AnyQueryNodeBuilder implements StandardQueryBuilder {
   public BooleanQuery build(QueryNode queryNode) throws QueryNodeException {
     AnyQueryNode andNode = (AnyQueryNode) queryNode;
 
-    BooleanQuery bQuery = new BooleanQuery();
+    BooleanQuery.Builder bQuery = new BooleanQuery.Builder();
     List<QueryNode> children = andNode.getChildren();
 
     if (children != null) {
@@ -75,7 +75,7 @@ public class AnyQueryNodeBuilder implements StandardQueryBuilder {
 
     bQuery.setMinimumNumberShouldMatch(andNode.getMinimumMatchingElements());
 
-    return bQuery;
+    return bQuery.build();
 
   }
 

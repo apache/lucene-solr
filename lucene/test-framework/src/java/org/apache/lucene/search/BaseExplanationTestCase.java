@@ -115,11 +115,11 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
    * Convenience subclass of TermsQuery
    */
   protected Query matchTheseItems(int[] terms) {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     for(int term : terms) {
       query.add(new BooleanClause(new TermQuery(new Term(KEY, ""+term)), BooleanClause.Occur.SHOULD));
     }
-    return query;
+    return query.build();
   }
 
   /** helper for generating MultiPhraseQueries */
@@ -199,10 +199,11 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
    * with a second prohibited clause which will never match anything
    */
   public Query optB(Query q) throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(q, BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.MUST_NOT);
-    return bq;
+    return bq.build();
   }
 
   /**
@@ -210,9 +211,10 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
    * with a second optional clause which will match everything
    */
   public Query reqB(Query q) throws Exception {
-    BooleanQuery bq = new BooleanQuery(true);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.setDisableCoord(true);
     bq.add(q, BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term(FIELD,"w1")), BooleanClause.Occur.SHOULD);
-    return bq;
+    return bq.build();
   }
 }

@@ -68,12 +68,5 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
       && srndQuery.equals(other.srndQuery);
   }
 
-  /** 
-   * Not supported by this query.
-   * @throws UnsupportedOperationException always: clone is not supported. */
-  @Override
-  public RewriteQuery clone() {
-    throw new UnsupportedOperationException();
-  }
 }
 

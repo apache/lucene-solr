@@ -182,10 +182,10 @@ public class TestSearchAfter extends LuceneTestCase {
     for (int i = 0; i < n; i++) {
       assertQuery(new MatchAllDocsQuery(), null);
       assertQuery(new TermQuery(new Term("english", "one")), null);
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.SHOULD);
       bq.add(new TermQuery(new Term("oddeven", "even")), BooleanClause.Occur.SHOULD);
-      assertQuery(bq, null);
+      assertQuery(bq.build(), null);
     }
   }
 

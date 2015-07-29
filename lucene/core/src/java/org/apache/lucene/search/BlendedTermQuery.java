@@ -134,11 +134,12 @@ public final class BlendedTermQuery extends Query {
   public static final RewriteMethod BOOLEAN_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(Query[] subQueries) {
-      BooleanQuery merged = new BooleanQuery(true);
+      BooleanQuery.Builder merged = new BooleanQuery.Builder();
+      merged.setDisableCoord(true);
       for (Query query : subQueries) {
         merged.add(query, Occur.SHOULD);
       }
-      return merged;
+      return merged.build();
     }
   };
 

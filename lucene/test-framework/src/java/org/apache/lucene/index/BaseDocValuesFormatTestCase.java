@@ -1068,14 +1068,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   
     IndexSearcher searcher = new IndexSearcher(reader);
 
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("docId", "0")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("docId", "1")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("docId", "2")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("docId", "3")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("docId", "4")), BooleanClause.Occur.SHOULD);
 
-    TopDocs search = searcher.search(query, 10);
+    TopDocs search = searcher.search(query.build(), 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
     NumericDocValues docValues = getOnlySegmentReader(reader).getNumericDocValues("docId");

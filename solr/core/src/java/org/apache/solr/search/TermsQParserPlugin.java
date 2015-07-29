@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
@@ -73,11 +74,12 @@ public class TermsQParserPlugin extends QParserPlugin {
     booleanQuery {
       @Override
       Filter makeFilter(String fname, BytesRef[] byteRefs) {
-        BooleanQuery bq = new BooleanQuery(true);
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
+        bq.setDisableCoord(true);
         for (BytesRef byteRef : byteRefs) {
           bq.add(new TermQuery(new Term(fname, byteRef)), BooleanClause.Occur.SHOULD);
         }
-        return new QueryWrapperFilter(bq);
+        return new QueryWrapperFilter(bq.build());
       }
     },
     automaton {
@@ -114,7 +116,7 @@ public class TermsQParserPlugin extends QParserPlugin {
         if (sepIsSpace)
           qstr = qstr.trim();
         if (qstr.length() == 0)
-          return new BooleanQuery();//Matches nothing.
+          return new MatchNoDocsQuery();
         final String[] splitVals = sepIsSpace ? qstr.split("\\s+") : qstr.split(Pattern.quote(separator), -1);
         assert splitVals.length > 0;
 

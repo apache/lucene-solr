@@ -172,19 +172,19 @@ public class TestFilteredQuery extends LuceneTestCase {
     Filter f = newStaticFilterA();
     
     float boost = 2.5f;
-    BooleanQuery bq1 = new BooleanQuery();
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
     TermQuery tq = new TermQuery (new Term ("field", "one"));
     tq.setBoost(boost);
     bq1.add(tq, Occur.MUST);
     bq1.add(new TermQuery (new Term ("field", "five")), Occur.MUST);
     
-    BooleanQuery bq2 = new BooleanQuery();
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     tq = new TermQuery (new Term ("field", "one"));
     filteredquery = new FilteredQuery(tq, f, randomFilterStrategy(random(), useRandomAccess));
     filteredquery.setBoost(boost);
     bq2.add(filteredquery, Occur.MUST);
     bq2.add(new TermQuery (new Term ("field", "five")), Occur.MUST);
-    assertScoreEquals(bq1, bq2);
+    assertScoreEquals(bq1.build(), bq2.build());
     
     assertEquals(boost, filteredquery.getBoost(), 0);
     assertEquals(1.0f, tq.getBoost(), 0); // the boost value of the underlying query shouldn't have changed 
@@ -248,12 +248,12 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
 
   private void tBooleanMUST(final boolean useRandomAccess) throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     Query query = new FilteredQuery(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(0), randomFilterStrategy(random(), useRandomAccess));
     bq.add(query, BooleanClause.Occur.MUST);
     query = new FilteredQuery(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(1), randomFilterStrategy(random(), useRandomAccess));
     bq.add(query, BooleanClause.Occur.MUST);
-    ScoreDoc[] hits = searcher.search(bq, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(bq.build(), 1000).scoreDocs;
     assertEquals(0, hits.length);
     QueryUtils.check(random(), query,searcher);    
   }
@@ -266,12 +266,12 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
 
   private void tBooleanSHOULD(final boolean useRandomAccess) throws Exception {
-    BooleanQuery bq = new BooleanQuery();
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     Query query = new FilteredQuery(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(0), randomFilterStrategy(random(), useRandomAccess));
     bq.add(query, BooleanClause.Occur.SHOULD);
     query = new FilteredQuery(new TermQuery(new Term("field", "one")), new SingleDocTestFilter(1), randomFilterStrategy(random(), useRandomAccess));
     bq.add(query, BooleanClause.Occur.SHOULD);
-    ScoreDoc[] hits = searcher.search(bq, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(bq.build(), 1000).scoreDocs;
     assertEquals(2, hits.length);
     QueryUtils.check(random(), query,searcher);    
   }
@@ -286,10 +286,10 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
 
   private void tBoolean2(final boolean useRandomAccess) throws Exception {
-    BooleanQuery bq = new BooleanQuery();
-    Query query = new FilteredQuery(bq, new SingleDocTestFilter(0), randomFilterStrategy(random(), useRandomAccess));
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "one")), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
+    Query query = new FilteredQuery(bq.build(), new SingleDocTestFilter(0), randomFilterStrategy(random(), useRandomAccess));
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), query, searcher);    

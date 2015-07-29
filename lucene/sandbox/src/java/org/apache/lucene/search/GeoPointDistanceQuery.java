@@ -72,7 +72,7 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   @Override
   public Query rewrite(IndexReader reader) {
     if (maxLon < minLon) {
-      BooleanQuery bq = new BooleanQuery();
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
 
       GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(-180.0D, maxLon,
           minLat, maxLat));
@@ -82,7 +82,7 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
           minLat, maxLat));
       right.setBoost(getBoost());
       bq.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
-      return bq;
+      return bq.build();
     }
     return new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(this.minLon, this.maxLon, this.minLat, this.maxLat));
   }

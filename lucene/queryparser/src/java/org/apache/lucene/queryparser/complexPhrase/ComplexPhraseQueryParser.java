@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.complexPhrase;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -216,7 +217,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     private final boolean inOrder;
 
-    private Query contents;
+    private final Query[] contents = new Query[1];
 
     public ComplexPhraseQuery(String field, String phrasedQueryStringContents,
         int slopFactor, boolean inOrder) {
@@ -241,7 +242,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
       try {
         //temporarily set the QueryParser to be parsing the default field for this phrase e.g author:"fred* smith"
         qp.field = this.field;
-        contents = qp.parse(phrasedQueryStringContents);
+        contents[0] = qp.parse(phrasedQueryStringContents);
       }
       finally {
         qp.field = oldDefaultParserField;
@@ -250,6 +251,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
+      final Query contents = this.contents[0];
       // ArrayList spanClauses = new ArrayList();
       if (contents instanceof TermQuery) {
         return contents;
@@ -265,15 +267,15 @@ public class ComplexPhraseQueryParser extends QueryParser {
             + "\"");
       }
       BooleanQuery bq = (BooleanQuery) contents;
-      BooleanClause[] bclauses = bq.getClauses();
-      SpanQuery[] allSpanClauses = new SpanQuery[bclauses.length];
+      SpanQuery[] allSpanClauses = new SpanQuery[bq.clauses().size()];
       // For all clauses e.g. one* two~
-      for (int i = 0; i < bclauses.length; i++) {
+      int i = 0;
+      for (BooleanClause clause : bq) {
         // HashSet bclauseterms=new HashSet();
-        Query qc = bclauses[i].getQuery();
+        Query qc = clause.getQuery();
         // Rewrite this clause e.g one* becomes (one OR onerous)
         qc = new IndexSearcher(reader).rewrite(qc);
-        if (bclauses[i].getOccur().equals(BooleanClause.Occur.MUST_NOT)) {
+        if (clause.getOccur().equals(BooleanClause.Occur.MUST_NOT)) {
           numNegatives++;
         }
 
@@ -301,6 +303,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
           }
 
         }
+        i += 1;
       }
       if (numNegatives == 0) {
         // The simple case - no negative elements in phrase
@@ -310,10 +313,12 @@ public class ComplexPhraseQueryParser extends QueryParser {
       // sequence.
       // Need to return a SpanNotQuery
       ArrayList<SpanQuery> positiveClauses = new ArrayList<>();
-      for (int j = 0; j < allSpanClauses.length; j++) {
-        if (!bclauses[j].getOccur().equals(BooleanClause.Occur.MUST_NOT)) {
-          positiveClauses.add(allSpanClauses[j]);
+      i = 0;
+      for (BooleanClause clause : bq) {
+        if (!clause.getOccur().equals(BooleanClause.Occur.MUST_NOT)) {
+          positiveClauses.add(allSpanClauses[i]);
         }
+        i += 1;
       }
 
       SpanQuery[] includeClauses = positiveClauses
@@ -338,15 +343,14 @@ public class ComplexPhraseQueryParser extends QueryParser {
     private void addComplexPhraseClause(List<SpanQuery> spanClauses, BooleanQuery qc) {
       ArrayList<SpanQuery> ors = new ArrayList<>();
       ArrayList<SpanQuery> nots = new ArrayList<>();
-      BooleanClause[] bclauses = qc.getClauses();
 
       // For all clauses e.g. one* two~
-      for (int i = 0; i < bclauses.length; i++) {
-        Query childQuery = bclauses[i].getQuery();
+      for (BooleanClause clause : qc) {
+        Query childQuery = clause.getQuery();
 
         // select the list to which we will add these options
         ArrayList<SpanQuery> chosenList = ors;
-        if (bclauses[i].getOccur() == BooleanClause.Occur.MUST_NOT) {
+        if (clause.getOccur() == BooleanClause.Occur.MUST_NOT) {
           chosenList = nots;
         }
 
