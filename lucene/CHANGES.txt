@@ -32,9 +32,6 @@ API Changes
 * LUCENE-6067: Accountable.getChildResources has a default
   implementation returning the empty list.  (Robert Muir)
 
-* LUCENE-6570: BooleanQuery is now immutable and can be built using the
-  BooleanQuery.Builder class. (Adrien Grand)
-
 * LUCENE-6583: FilteredQuery has been removed. Instead, you can construct a
   BooleanQuery with one MUST clause for the query, and one FILTER clause for
   the filter. (Adrien Grand)
@@ -211,6 +208,9 @@ API Changes
 
 * LUCENE-6531: PhraseQuery is now immutable and can be built using the
   PhraseQuery.Builder class. (Adrien Grand)
+
+* LUCENE-6570: BooleanQuery is now immutable and can be built using the
+  BooleanQuery.Builder class. (Adrien Grand)
 
 Bug fixes
 
