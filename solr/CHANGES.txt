@@ -253,6 +253,8 @@ Bug Fixes
 * SOLR-7842: ZK connection loss or session expiry events should not fire config directory listeners.
   (noble, shalin)
 
+* SOLR-6357: Allow delete documents by doing a score join query. (Mikhail Khludnev, Timothy Potter)
+
 Optimizations
 ----------------------
 

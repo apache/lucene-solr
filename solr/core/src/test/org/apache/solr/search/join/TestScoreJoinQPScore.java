@@ -115,6 +115,15 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     dir.close();*/
   }
 
+  public void testDeleteByScoreJoinQuery() throws Exception {
+    indexDataForScorring();
+    String joinQuery = "{!join from=" + toField + " to=" + idField + " score=Max}title:random";
+    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'4'}]}");
+    assertU(delQ(joinQuery));
+    assertU(commit());
+    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':0,'start':0,'docs':[]}");
+  }
+
   public void testSimpleWithScoring() throws Exception {
     indexDataForScorring();
 
