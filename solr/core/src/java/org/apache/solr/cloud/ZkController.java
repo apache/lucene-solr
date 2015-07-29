@@ -2333,6 +2333,10 @@ public final class ZkController {
 
     @Override
     public void process(WatchedEvent event) {
+      if (event.getState() == Event.KeeperState.Disconnected || event.getState() == Event.KeeperState.Expired)  {
+        return;
+      }
+
       Stat stat = null;
       try {
         stat = zkClient.exists(zkDir, null, true);
