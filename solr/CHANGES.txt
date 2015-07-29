@@ -250,6 +250,9 @@ Bug Fixes
 * SOLR-7829: Fixed a bug in distributed pivot faceting that could result in a facet.missing=true count
   which was lower then the correct count if facet.sort=index and facet.pivot.mincount > 1 (hossman)
 
+* SOLR-7842: ZK connection loss or session expiry events should not fire config directory listeners.
+  (noble, shalin)
+
 Optimizations
 ----------------------
 
