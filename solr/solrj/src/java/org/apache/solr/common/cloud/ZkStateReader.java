@@ -428,7 +428,7 @@ public class ZkStateReader implements Closeable {
         if (watchedCollections.contains(s)) {
           DocCollection live = getCollectionLive(this, s);
           if (live != null) {
-            watchedCollectionStates.put(s, live);
+            updateWatchedCollection(live);
             // if it is a watched collection, add too
             result.put(s, new ClusterState.CollectionRef(live));
           }
@@ -506,15 +506,6 @@ public class ZkStateReader implements Closeable {
         }
         this.clusterState = clusterState;
       }
-      synchronized (ZkStateReader.this) {
-        for (String watchedCollection : watchedCollections) {
-          DocCollection live = getCollectionLive(this, watchedCollection);
-          if (live != null) {
-            updateWatchedCollection(live);
-          }
-        }
-      }
-
     } else {
       if (clusterStateUpdateScheduled) {
         log.debug("Cloud state update for ZooKeeper already scheduled");
@@ -946,9 +937,7 @@ public class ZkStateReader implements Closeable {
   
   private void updateWatchedCollection(DocCollection newState) {
     watchedCollectionStates.put(newState.getName(), newState);
-    log.info("Updating data for {} to ver {} ", newState.getName(),
-        newState.getZNodeVersion());
-    
+    log.info("Updating data for {} to ver {} ", newState.getName(), newState.getZNodeVersion());
     this.clusterState = clusterState.copyWith(newState.getName(), newState);
   }
   

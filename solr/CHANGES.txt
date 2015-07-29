@@ -272,7 +272,8 @@ Optimizations
   For Example: The facet request  {type:terms, field:field1, facet:{x:"unique(field2)"}}
   saw a 7x improvement when field1 and 1M unique terms and field2 had 1000 unique terms.
   (yonik)
-  
+
+* SOLR-7840: ZkStateReader.updateClusterState fetches watched collections twice from ZK. (shalin)
 
 Other Changes
 ----------------------
