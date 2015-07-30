@@ -395,10 +395,10 @@ public class HttpClientUtil {
     }
 
     public static DefaultHttpClient createHttpClient(ClientConnectionManager cm) {
-      Constructor<? extends DefaultHttpClient> productConstructor;
+      Constructor<? extends DefaultHttpClient> constructor;
       try {
-        productConstructor = defaultHttpClientClass.getDeclaredConstructor(new Class[]{ClientConnectionManager.class});
-        return productConstructor.newInstance(new Object[]{cm});
+        constructor = defaultHttpClientClass.getDeclaredConstructor(new Class[]{ClientConnectionManager.class});
+        return constructor.newInstance(new Object[]{cm});
       } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create HttpClient instance, registered class is: " + defaultHttpClientClass, e);
       }

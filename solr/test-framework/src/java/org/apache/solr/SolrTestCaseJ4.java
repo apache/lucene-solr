@@ -100,6 +100,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
+import org.apache.solr.util.SolrHttpClient;
 import org.apache.solr.util.TestHarness;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
@@ -139,6 +140,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms
+
+  static {
+    HttpClientUtil.HttpClientFactory.setHttpClientImpl(SolrHttpClient.SolrDefaultHttpClient.class, SolrHttpClient.SolrSystemDefaultHttpClient.class);
+  }
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
