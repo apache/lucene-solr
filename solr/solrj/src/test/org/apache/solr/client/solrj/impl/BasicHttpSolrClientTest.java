@@ -723,6 +723,9 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     } catch (IOException ex) {
       throw new RuntimeException(ex);
+    } finally {
+      HttpClientUtil.removeRequestInterceptor(changeRequestInterceptor);
+      HttpClientUtil.removeRequestInterceptor(cookieSettingRequestInterceptor);    
     }
   }
 
