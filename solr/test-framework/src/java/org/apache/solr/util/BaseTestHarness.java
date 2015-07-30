@@ -16,6 +16,7 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
 import org.w3c.dom.Document;
@@ -38,6 +39,10 @@ import java.nio.charset.StandardCharsets;
 abstract public class BaseTestHarness {
   private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
   private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<>();
+
+  static {
+    HttpClientUtil.HttpClientFactory.setHttpClientImpl(SolrHttpClient.SolrDefaultHttpClient.class, SolrHttpClient.SolrSystemDefaultHttpClient.class);
+  }
 
   public static DocumentBuilder getXmlDocumentBuilder() {
     try {
