@@ -119,7 +119,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (this.cores.getAuthenticationPlugin() != null) {
         HttpClientConfigurer configurer = this.cores.getAuthenticationPlugin().getDefaultConfigurer();
         if (configurer != null) {
-          configurer.configure((DefaultHttpClient)httpClient, new ModifiableSolrParams());
+          configurer.configure((DefaultHttpClient) httpClient, new ModifiableSolrParams());
         }
       }
 

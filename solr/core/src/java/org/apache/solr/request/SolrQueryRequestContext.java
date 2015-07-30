@@ -26,19 +26,19 @@ import org.apache.solr.client.solrj.impl.SolrHttpContext;
  */
 public class SolrQueryRequestContext extends SolrHttpContext {
   final private SolrQueryRequest solrQueryRequest;
-  
+
   public SolrQueryRequestContext(SolrQueryRequest solrQueryRequest) {
     this.solrQueryRequest = solrQueryRequest;
     setAttribute(SolrHttpContext.class.getName(), this);
   }
-  
+
   public SolrQueryRequest getSolrQueryRequest() {
     return solrQueryRequest;
   }
-  
+
   @Override
   public String toString() {
-    return "[SolrQueryRequestContext contains: "+solrQueryRequest+"]";
+    return "[SolrQueryRequestContext contains: " + solrQueryRequest + "]";
   }
 }
 

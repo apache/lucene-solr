@@ -169,7 +169,7 @@ public class ExecutorUtil {
       StringBuilder contextString = new StringBuilder();
       if (submitterContext != null) {
         Collection<String> values = submitterContext.values();
-        
+
         for (String value : values) {
           contextString.append(value + " ");
         }
@@ -177,13 +177,13 @@ public class ExecutorUtil {
           contextString.setLength(contextString.length() - 1);
         }
       }
-      
+
       String ctxStr = contextString.toString().replace("/", "//");
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
       final Exception submitterStackTrace = new Exception("Submitter stack trace");
       final List<InheritableThreadLocalProvider> providersCopy = providers;
-      final ArrayList<AtomicReference> ctx = providersCopy.isEmpty()? null: new ArrayList<>(providersCopy.size());
-      if(ctx != null) {
+      final ArrayList<AtomicReference> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
+      if (ctx != null) {
         for (int i = 0; i < providers.size(); i++) {
           AtomicReference reference = new AtomicReference();
           ctx.add(reference);
@@ -193,7 +193,7 @@ public class ExecutorUtil {
       super.execute(new Runnable() {
         @Override
         public void run() {
-          if(ctx != null) {
+          if (ctx != null) {
             for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).set(ctx.get(i));
           }
           Map<String, String> threadContext = MDC.getCopyOfContextMap();
@@ -208,7 +208,7 @@ public class ExecutorUtil {
           try {
             command.run();
           } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError)  {
+            if (t instanceof OutOfMemoryError) {
               throw t;
             }
             log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName(), submitterStackTrace);
@@ -219,7 +219,7 @@ public class ExecutorUtil {
             } else {
               MDC.clear();
             }
-            if(ctx != null) {
+            if (ctx != null) {
               for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).clean(ctx.get(i));
             }
             currentThread.setName(oldName);
