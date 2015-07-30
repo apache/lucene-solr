@@ -137,7 +137,7 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     ContextQuery contextQuery = new ContextQuery(query);
     contextQuery.addContext("type1", 6);
     contextQuery.addContext("type3", 7);
-    contextQuery.addContext("*");
+    contextQuery.addAllContexts();
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(contextQuery, 5);
     assertSuggestions(suggest,
         new Entry("sduggestion", "type1", 5 * 6),

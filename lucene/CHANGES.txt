@@ -212,6 +212,11 @@ API Changes
 * LUCENE-6570: BooleanQuery is now immutable and can be built using the
   BooleanQuery.Builder class. (Adrien Grand)
 
+* LUCENE-6702: NRTSuggester: Add a method to inject context values at index time
+  in ContextSuggestField. Simplify ContextQuery logic for extracting contexts and
+  add dedicated method to consider all context values at query time.
+  (Areek Zillur, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call

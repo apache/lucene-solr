@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,7 +32,6 @@ import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
-import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.Util;
 
 /**
@@ -60,9 +58,9 @@ import org.apache.lucene.util.fst.Util;
  *    or {@link FuzzyCompletionQuery} query.
  *   </li>
  *   <li>
- *     To suggest across all contexts with the same boost,
- *     use '*' as the context in {@link #addContext(CharSequence)})}.
- *     This can be combined with specific contexts with different boosts.
+ *     To suggest across all contexts, use {@link #addAllContexts()}.
+ *     When no context is added, the default behaviour is to suggest across
+ *     all contexts.
  *   </li>
  *   <li>
  *     To apply the same boost to multiple contexts sharing the same prefix,
@@ -77,9 +75,11 @@ import org.apache.lucene.util.fst.Util;
  * @lucene.experimental
  */
 public class ContextQuery extends CompletionQuery {
-  private Map<CharSequence, ContextMetaData> contexts;
+  private IntsRefBuilder scratch = new IntsRefBuilder();
+  private Map<IntsRef, ContextMetaData> contexts;
+  private boolean matchAllContexts = false;
   /** Inner completion query */
-  protected CompletionQuery query;
+  protected CompletionQuery innerQuery;
 
   /**
    * Constructs a context completion query that matches
@@ -94,7 +94,7 @@ public class ContextQuery extends CompletionQuery {
       throw new IllegalArgumentException("'query' parameter must not be of type "
               + this.getClass().getSimpleName());
     }
-    this.query = query;
+    this.innerQuery = query;
     contexts = new HashMap<>();
   }
 
@@ -126,20 +126,28 @@ public class ContextQuery extends CompletionQuery {
             + Integer.toHexString((int) context.charAt(i))+ "] at position " + i + " is a reserved character");
       }
     }
-    contexts.put(context, new ContextMetaData(boost, exact));
+    contexts.put(IntsRef.deepCopyOf(Util.toIntsRef(new BytesRef(context), scratch)), new ContextMetaData(boost, exact));
+  }
+
+  /**
+   * Add all contexts with a boost of 1f
+   */
+  public void addAllContexts() {
+    matchAllContexts = true;
   }
 
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    for (CharSequence context : contexts.keySet()) {
+    BytesRefBuilder scratch = new BytesRefBuilder();
+    for (IntsRef context : contexts.keySet()) {
       if (buffer.length() != 0) {
         buffer.append(",");
       } else {
         buffer.append("contexts");
         buffer.append(":[");
       }
-      buffer.append(context);
+      buffer.append(Util.toBytesRef(context, scratch).utf8ToString());
       ContextMetaData metaData = contexts.get(context);
       if (metaData.exact == false) {
         buffer.append("*");
@@ -153,52 +161,27 @@ public class ContextQuery extends CompletionQuery {
       buffer.append("]");
       buffer.append(",");
     }
-    return buffer.toString() + query.toString(field);
+    return buffer.toString() + innerQuery.toString(field);
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    IntsRefBuilder scratch = new IntsRefBuilder();
-    final Map<IntsRef, Float> contextMap = new HashMap<>(contexts.size());
-    final TreeSet<Integer> contextLengths = new TreeSet<>();
-    final CompletionWeight innerWeight = ((CompletionWeight) query.createWeight(searcher, needsScores));
-    Automaton contextsAutomaton = null;
-    Automaton gap = Automata.makeChar(ContextSuggestField.CONTEXT_SEPARATOR);
+    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, needsScores));
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well
-    gap = Operations.concatenate(gap, Operations.optional(Automata.makeChar(CompletionAnalyzer.SEP_LABEL)));
-    final Automaton prefixAutomaton = Operations.concatenate(gap, innerWeight.getAutomaton());
-    final Automaton matchAllAutomaton = new RegExp(".*").toAutomaton();
-    for (Map.Entry<CharSequence, ContextMetaData> entry : contexts.entrySet()) {
-      Automaton contextAutomaton;
-      if (entry.getKey().equals("*")) {
-        contextAutomaton = Operations.concatenate(matchAllAutomaton, prefixAutomaton);
-      } else {
-        BytesRef ref = new BytesRef(entry.getKey());
-        ContextMetaData contextMetaData = entry.getValue();
-        contextMap.put(IntsRef.deepCopyOf(Util.toIntsRef(ref, scratch)), contextMetaData.boost);
-        contextLengths.add(scratch.length());
-        contextAutomaton = Automata.makeString(entry.getKey().toString());
-        if (contextMetaData.exact) {
-          contextAutomaton = Operations.concatenate(contextAutomaton, prefixAutomaton);
-        } else {
-          contextAutomaton = Operations.concatenate(Arrays.asList(contextAutomaton,
-              matchAllAutomaton,
-              prefixAutomaton));
-        }
-      }
-      if (contextsAutomaton == null) {
-        contextsAutomaton = contextAutomaton;
-      } else {
-        contextsAutomaton = Operations.union(contextsAutomaton, contextAutomaton);
-      }
-    }
-    if (contexts.size() == 0) {
-      addContext("*");
-      contextsAutomaton = Operations.concatenate(matchAllAutomaton, prefixAutomaton);
-    }
+    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(CompletionAnalyzer.SEP_LABEL));
+    Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerWeight.getAutomaton());
+    Automaton contextsAutomaton = Operations.concatenate(toContextAutomaton(contexts, matchAllContexts), prefixAutomaton);
     contextsAutomaton = Operations.determinize(contextsAutomaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+
+    final Map<IntsRef, Float> contextMap = new HashMap<>(contexts.size());
+    final TreeSet<Integer> contextLengths = new TreeSet<>();
+    for (Map.Entry<IntsRef, ContextMetaData> entry : contexts.entrySet()) {
+      ContextMetaData contextMetaData = entry.getValue();
+      contextMap.put(entry.getKey(), contextMetaData.boost);
+      contextLengths.add(entry.getKey().length);
+    }
     int[] contextLengthArray = new int[contextLengths.size()];
     final Iterator<Integer> iterator = contextLengths.descendingIterator();
     for (int i = 0; iterator.hasNext(); i++) {
@@ -207,8 +190,47 @@ public class ContextQuery extends CompletionQuery {
     return new ContextCompletionWeight(this, contextsAutomaton, innerWeight, contextMap, contextLengthArray);
   }
 
+  private static Automaton toContextAutomaton(final Map<IntsRef, ContextMetaData> contexts, final boolean matchAllContexts) {
+    final Automaton matchAllAutomaton = Operations.repeat(Automata.makeAnyString());
+    final Automaton sep = Automata.makeChar(ContextSuggestField.CONTEXT_SEPARATOR);
+    if (matchAllContexts || contexts.size() == 0) {
+      return Operations.concatenate(matchAllAutomaton, sep);
+    } else {
+      Automaton contextsAutomaton = null;
+      for (Map.Entry<IntsRef, ContextMetaData> entry : contexts.entrySet()) {
+        final ContextMetaData contextMetaData = entry.getValue();
+        final IntsRef ref = entry.getKey();
+        Automaton contextAutomaton = Automata.makeString(ref.ints, ref.offset, ref.length);
+        if (contextMetaData.exact == false) {
+          contextAutomaton = Operations.concatenate(contextAutomaton, matchAllAutomaton);
+        }
+        contextAutomaton = Operations.concatenate(contextAutomaton, sep);
+        if (contextsAutomaton == null) {
+          contextsAutomaton = contextAutomaton;
+        } else {
+          contextsAutomaton = Operations.union(contextsAutomaton, contextAutomaton);
+        }
+      }
+      return contextsAutomaton;
+    }
+  }
+
+  /**
+   * Holder for context value meta data
+   */
   private static class ContextMetaData {
+
+    /**
+     * Boost associated with a
+     * context value
+     */
     private final float boost;
+
+    /**
+     * flag to indicate whether the context
+     * value should be treated as an exact
+     * value or a context prefix
+     */
     private final boolean exact;
 
     private ContextMetaData(float boost, boolean exact) {
@@ -237,7 +259,7 @@ public class ContextQuery extends CompletionQuery {
     }
 
     @Override
-    protected void setNextMatch(IntsRef pathPrefix) {
+    protected void setNextMatch(final IntsRef pathPrefix) {
       IntsRef ref = pathPrefix.clone();
 
       // check if the pathPrefix matches any
@@ -250,44 +272,36 @@ public class ContextQuery extends CompletionQuery {
         if (contextMap.containsKey(ref)) {
           currentBoost = contextMap.get(ref);
           ref.length = pathPrefix.length;
-          ref.offset = contextLength;
-          while (ref.ints[ref.offset] != ContextSuggestField.CONTEXT_SEPARATOR) {
-            ref.offset++;
-            assert ref.offset < ref.length;
-          }
-          assert ref.ints[ref.offset] == ContextSuggestField.CONTEXT_SEPARATOR :
-              "expected CONTEXT_SEPARATOR at offset=" + ref.offset;
-          if (ref.offset > pathPrefix.offset) {
-            currentContext = Util.toBytesRef(new IntsRef(pathPrefix.ints, pathPrefix.offset, ref.offset), scratch).utf8ToString();
-          } else {
-            currentContext = null;
-          }
-          ref.offset++;
-          if (ref.ints[ref.offset] == CompletionAnalyzer.SEP_LABEL) {
-            ref.offset++;
-          }
-          innerWeight.setNextMatch(ref);
+          setInnerWeight(ref, contextLength);
           return;
         }
       }
       // unknown context
       ref.length = pathPrefix.length;
-      currentBoost = contexts.get("*").boost;
-      for (int i = pathPrefix.offset; i < pathPrefix.length; i++) {
-        if (pathPrefix.ints[i] == ContextSuggestField.CONTEXT_SEPARATOR) {
-          if (i > pathPrefix.offset) {
-            currentContext = Util.toBytesRef(new IntsRef(pathPrefix.ints, pathPrefix.offset, i), scratch).utf8ToString();
+      currentBoost = 0f;
+      setInnerWeight(ref, 0);
+    }
+
+    private void setInnerWeight(IntsRef ref, int offset) {
+      IntsRefBuilder refBuilder = new IntsRefBuilder();
+      for (int i = offset; i < ref.length; i++) {
+        if (ref.ints[ref.offset + i] == ContextSuggestField.CONTEXT_SEPARATOR) {
+          if (i > 0) {
+            refBuilder.copyInts(ref.ints, ref.offset, i);
+            currentContext = Util.toBytesRef(refBuilder.get(), scratch).utf8ToString();
           } else {
             currentContext = null;
           }
           ref.offset = ++i;
           assert ref.offset < ref.length : "input should not end with the context separator";
-          if (pathPrefix.ints[i] == CompletionAnalyzer.SEP_LABEL) {
+          if (ref.ints[i] == CompletionAnalyzer.SEP_LABEL) {
             ref.offset++;
             assert ref.offset < ref.length : "input should not end with a context separator followed by SEP_LABEL";
           }
-          ref.length -= ref.offset;
-          innerWeight.setNextMatch(ref);
+          ref.length = ref.length - ref.offset;
+          refBuilder.copyInts(ref.ints, ref.offset, ref.length);
+          innerWeight.setNextMatch(refBuilder.get());
+          return;
         }
       }
     }
