@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 solrAdminApp.controller('IndexController', ['$scope', 'System', 'Cores', function($scope, System, Cores) {
-  $scope.resetMenu("index");
+  $scope.resetMenu("index", true);
   $scope.reload = function() {
     System.get(function(data) {
       $scope.system = data;
