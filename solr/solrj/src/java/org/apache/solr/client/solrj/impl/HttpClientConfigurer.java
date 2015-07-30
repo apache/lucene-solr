@@ -18,8 +18,13 @@ package org.apache.solr.client.solrj.impl;
  */
 
 
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.protocol.HttpContext;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 
 /**
@@ -76,6 +81,18 @@ public class HttpClientConfigurer {
     if(sslCheckPeerName == false) {
       HttpClientUtil.setHostNameVerifier(httpClient, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
     }
+
+    // Intercept every request made through httpclient and validate it has a SolrHttpContext object.
+    httpClient.addRequestInterceptor(new HttpRequestInterceptor() {
+      @Override
+      public void process(final HttpRequest request, final HttpContext context) {
+        // Verify that a context object was passed in
+        final Object solrContext = context.getAttribute(SolrHttpContext.SOLR_CONTEXT_KEY);
+        if (solrContext == null || solrContext instanceof SolrHttpContext == false) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "A SolrHttpContext object must be passed in as context. Context: " + context);
+        }
+      }
+    });
   }
   
   public static boolean toBooleanDefaultIfNull(Boolean bool, boolean valueIfNull) {

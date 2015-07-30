@@ -21,23 +21,39 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.params.HttpClientParams;
+import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.cookie.CookieSpec;
+import org.apache.http.cookie.CookieSpecRegistry;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.RequestWrapper;
+import org.apache.http.impl.cookie.BasicClientCookie;
+import org.apache.http.protocol.HttpContext;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -57,9 +73,13 @@ import org.apache.solr.util.SSLTestConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BasicHttpSolrClientTest extends SolrJettyTestBase {
-  
+
+  private static Logger log = LoggerFactory.getLogger(BasicHttpSolrClientTest.class);
+
   public static class RedirectServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -85,6 +105,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       parameters = null;
       errorCode = null;
       queryString = null;
+      cookies = null;
     }
     
     public static Integer errorCode = null;
@@ -92,16 +113,30 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     public static HashMap<String,String> headers = null;
     public static Map<String,String[]> parameters = null;
     public static String queryString = null;
+    public static javax.servlet.http.Cookie[] cookies = null;
     
     public static void setErrorCode(Integer code) {
       errorCode = code;
     }
     
-
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+      lastMethod = "delete";
+      recordRequest(req, resp);
+    }
+    
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
       lastMethod = "get";
+      recordRequest(req, resp);
+    }
+    
+    @Override
+    protected void doHead(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+      lastMethod = "head";
       recordRequest(req, resp);
     }
     
@@ -123,6 +158,11 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       queryString = req.getQueryString();
     }
 
+    private void setCookies(HttpServletRequest req) {
+      javax.servlet.http.Cookie[] ck = req.getCookies();
+      cookies = req.getCookies();
+    }
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
@@ -141,6 +181,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       setHeaders(req);
       setParameters(req);
       setQueryString(req);
+      setCookies(req);
       if (null != errorCode) {
         try { 
           resp.sendError(errorCode); 
@@ -593,6 +634,97 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
                   SSLTestConfig.TEST_KEYSTORE);
   }
 
+  /**
+   * An interceptor changing the request
+   */
+  HttpRequestInterceptor changeRequestInterceptor = new HttpRequestInterceptor() {
+
+    @Override
+    public void process(HttpRequest request, HttpContext context) throws HttpException,
+    IOException {
+      log.info("Intercepted params: "+context);
+
+      RequestWrapper wrapper = (RequestWrapper) request;
+      URIBuilder uribuilder = new URIBuilder(wrapper.getURI());
+      uribuilder.addParameter("b", "\u4321");
+      try {
+        wrapper.setURI(uribuilder.build());
+      } catch (URISyntaxException ex) {
+        throw new HttpException("Invalid request URI", ex);
+      }
+    }
+  };
+
+  public static final String cookieName = "cookieName";
+  public static final String cookieValue = "cookieValue";
+
+  /**
+   * An interceptor setting a cookie
+   */
+  HttpRequestInterceptor cookieSettingRequestInterceptor = new HttpRequestInterceptor() {    
+    @Override
+    public void process(HttpRequest request, HttpContext context) throws HttpException,
+    IOException {
+      BasicClientCookie cookie = new BasicClientCookie(cookieName, cookieValue);
+      cookie.setVersion(0);
+      cookie.setPath("/");
+      cookie.setDomain(jetty.getBaseUrl().getHost());
+
+      CookieStore cookieStore = new BasicCookieStore();        
+      CookieSpecRegistry registry = (CookieSpecRegistry) context.getAttribute(ClientContext.COOKIESPEC_REGISTRY);
+      String policy = HttpClientParams.getCookiePolicy(request.getParams());
+      CookieSpec cookieSpec = registry.getCookieSpec(policy, request.getParams());
+      // Add the cookies to the request
+      List<Header> headers = cookieSpec.formatCookies(Collections.singletonList(cookie));
+      for (Header header : headers) {
+        request.addHeader(header);
+      }
+      context.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
+      context.setAttribute(ClientContext.COOKIE_SPEC, cookieSpec);
+    }
+  };
+
+
+  /**
+   * Set cookies via interceptor
+   * Change the request via an interceptor
+   * Ensure cookies are actually set and that request is actually changed
+   */
+  @Test
+  public void testInterceptors() {
+    DebugServlet.clear();
+    HttpClientUtil.addRequestInterceptor(changeRequestInterceptor);
+    HttpClientUtil.addRequestInterceptor(cookieSettingRequestInterceptor);    
+
+    try(HttpSolrClient server = new HttpSolrClient(jetty.getBaseUrl().toString() +
+        "/debug/foo")) {
+
+      SolrQuery q = new SolrQuery("foo");
+      q.setParam("a", "\u1234");
+      try {
+        server.query(q, random().nextBoolean()?METHOD.POST:METHOD.GET);
+      } catch (Throwable t) {}
+
+      // Assert cookies from UseContextCallback 
+      assertNotNull(DebugServlet.cookies);
+      boolean foundCookie = false;
+      for (javax.servlet.http.Cookie cookie : DebugServlet.cookies) {
+        if (cookieName.equals(cookie.getName())
+            && cookieValue.equals(cookie.getValue())) {
+          foundCookie = true;
+          break;
+        }
+      }
+      assertTrue(foundCookie);
+
+      // Assert request changes by ChangeRequestCallback
+      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+      assertEquals("\u4321", DebugServlet.parameters.get("b")[0]);
+
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
 
   private Set<String> setOf(String... keys) {
     Set<String> set = new TreeSet<>();
