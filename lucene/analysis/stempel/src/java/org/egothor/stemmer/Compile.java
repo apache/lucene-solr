@@ -120,8 +120,6 @@ public class Compile {
       LineNumberReader in;
       // System.out.println("[" + args[i] + "]");
       Diff diff = new Diff();
-      int stems = 0;
-      int words = 0;
       
       allocTrie();
       
@@ -134,13 +132,11 @@ public class Compile {
           String stem = st.nextToken();
           if (storeorig) {
             trie.add(stem, "-a");
-            words++;
           }
           while (st.hasMoreTokens()) {
             String token = st.nextToken();
             if (token.equals(stem) == false) {
               trie.add(token, diff.exec(token, stem));
-              words++;
             }
           }
         } catch (java.util.NoSuchElementException x) {
