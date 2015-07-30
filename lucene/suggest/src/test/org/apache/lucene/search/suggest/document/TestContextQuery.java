@@ -249,7 +249,7 @@ public class TestContextQuery extends LuceneTestCase {
 
     ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type4", 10);
-    query.addContext("*");
+    query.addAllContexts();
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5);
     assertSuggestions(suggest,
         new Entry("suggestion4", "type4", 1 * 10),
@@ -319,13 +319,13 @@ public class TestContextQuery extends LuceneTestCase {
     ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type1", 7);
     query.addContext("type2", 6);
-    query.addContext("*", 5);
+    query.addAllContexts();
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5);
     assertSuggestions(suggest,
         new Entry("suggestion1", "type1", 4 * 7),
         new Entry("suggestion2", "type2", 3 * 6),
-        new Entry("suggestion3", "type3", 2 * 5),
-        new Entry("suggestion4", "type4", 1 * 5)
+        new Entry("suggestion3", "type3", 2),
+        new Entry("suggestion4", "type4", 1)
     );
 
     reader.close();
