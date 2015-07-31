@@ -149,15 +149,16 @@
   </macrodef>
 
   <!-- 
-    - We don't test HDFS on Java 7 because it causes permgen errors. Java 8 no longer has permgen.
-    - We don't want to run HDFS tests on Windows, because they require Cygwin.
+    We don't want to run HDFS tests on Windows, because they require Cygwin.
     If you have Cygwin or manually raised permgen, you can override this property on command line:
   -->
   <condition property="tests.disableHdfs" value="true">
-    <or>
-      <equals arg1="${build.java.runtime}" arg2="1.7"/>
-      <os family="windows"/>
-    </or>
+    <os family="windows"/>
+  </condition>
+
+  <!-- SOLR needs extra PermGen space to run tests, but only on Java 7: -->
+  <condition property="tests.memory.args" value="-XX:MaxPermSize=192m">
+    <equals arg1="${build.java.runtime}" arg2="1.7"/>
   </condition>
 
   <target name="validate" depends="compile-tools">

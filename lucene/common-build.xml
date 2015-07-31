@@ -145,8 +145,6 @@
     <isset property="run.clover"/>
   </condition>
 
-  <property name="tests.heapdump.args" value=""/>
-
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
   <property name="tests.useSimpleNames" value="false" />
@@ -926,6 +924,9 @@
         <property name="tests.dups"  value="1" />
         <property name="tests.useSecurityManager"  value="true" />
 
+        <property name="tests.heapdump.args" value=""/>
+        <property name="tests.memory.args" value=""/>
+
         <!-- turn on security manager? -->
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
           <istrue value="${tests.useSecurityManager}"/>
@@ -1007,6 +1008,7 @@
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
             <jvmarg line="${tests.heapdump.args}"/>
+            <jvmarg line="${tests.memory.args}"/>
             <jvmarg line="${tests.clover.args}"/>
             <jvmarg line="@{additional.vm.args}"/>
             <jvmarg line="${tests.asserts.args}"/>
