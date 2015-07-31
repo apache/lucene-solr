@@ -156,9 +156,15 @@
     <os family="windows"/>
   </condition>
 
-  <!-- SOLR needs extra PermGen space to run tests, but only on Java 7: -->
+  <!-- SOLR needs extra PermGen space to run tests, but only on Java 7 (Oracle, OpenJDK): -->
   <condition property="tests.memory.args" value="-XX:MaxPermSize=192m">
-    <equals arg1="${build.java.runtime}" arg2="1.7"/>
+    <and>
+      <equals arg1="${build.java.runtime}" arg2="1.7"/>
+      <or>
+        <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
+      </or>
+    </and>
   </condition>
 
   <target name="validate" depends="compile-tools">
