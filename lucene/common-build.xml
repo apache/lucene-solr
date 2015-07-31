@@ -145,8 +145,6 @@
     <isset property="run.clover"/>
   </condition>
 
-  <property name="tests.heapdump.args" value=""/>
-
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
   <property name="tests.useSimpleNames" value="false" />
@@ -907,6 +905,8 @@
         <property name="tests.iters" value="" />
         <property name="tests.dups"  value="1" />
         <property name="tests.useSecurityManager"  value="true" />
+
+        <property name="tests.heapdump.args" value=""/>
 
         <!-- turn on security manager? -->
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">

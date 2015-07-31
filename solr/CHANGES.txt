@@ -379,6 +379,8 @@ Other Changes
 * SOLR-6625: Enable registering interceptors for the calls made using HttpClient and make the
   request object available at the interceptor context ( Ishan Chattopadhyay, Gregory Chanan, noble, Anshum Gupta)
 
+* SOLR-5022: On Java 7 raise permgen for running tests.  (Uwe Schindler)
+  
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
