@@ -166,6 +166,9 @@ New Features
 
 * SOLR-7742: Support for Immutable ConfigSets (Gregory Chanan)
 
+* SOLR-2522: new two argument option for the existing field() function; picks the min/max value of a
+  docValues field to use as a ValueSource: "field(field_name,min)" and "field(field_name,max)"  (hossman)
+
 Bug Fixes
 ----------------------
 

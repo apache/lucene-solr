@@ -817,6 +817,28 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("field(\"foo_i\")", 
                      "field('foo_i\')", 
                      "foo_i");
+    
+    // simple VS of single valued field should be same as asking for min/max on that field
+    assertFuncEquals("field(\"foo_i\")", 
+                     "field('foo_i',min)", 
+                     "field(foo_i,'min')", 
+                     "field('foo_i',max)", 
+                     "field(foo_i,'max')", 
+                     "foo_i");
+
+    // multivalued field with selector
+    String multif = "multi_int_with_docvals";
+    SolrQueryRequest req = req("my_field", multif);
+    // this test is only viable if it's a multivalued field, sanity check the schema
+    assertTrue(multif + " is no longer multivalued, who broke this schema?",
+               req.getSchema().getField(multif).multiValued());
+    assertFuncEquals(req,
+                     "field($my_field,'MIN')", 
+                     "field('"+multif+"',min)");
+    assertFuncEquals(req,
+                     "field($my_field,'max')", 
+                     "field('"+multif+"',Max)"); 
+    
   }
   public void testFuncCurrency() throws Exception {
     assertFuncEquals("currency(\"amount\")", 

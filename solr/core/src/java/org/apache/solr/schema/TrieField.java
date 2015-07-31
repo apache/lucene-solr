@@ -42,6 +42,7 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
@@ -244,7 +245,50 @@ public class TrieField extends PrimitiveFieldType {
     }
   }
 
+  @Override
+  public final ValueSource getSingleValueSource(MultiValueSelector choice, SchemaField field, QParser parser) {
+    // trivial base case
+    if (!field.multiValued()) {
+      // single value matches any selector
+      return getValueSource(field, parser);
+    }
 
+    // See LUCENE-6709
+    if (! field.hasDocValues()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                              "docValues='true' is required to select '" + choice.toString() +
+                              "' value from multivalued field ("+ field.getName() +") at query time");
+    }
+    
+    // multivalued Trie fields all use SortedSetDocValues, so we give a clean error if that's
+    // not supported by the specified choice, else we delegate to a helper
+    SortedSetSelector.Type selectorType = choice.getSortedSetSelectorType();
+    if (null == selectorType) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                              choice.toString() + " is not a supported option for picking a single value"
+                              + " from the multivalued field: " + field.getName() +
+                              " (type: " + this.getTypeName() + ")");
+    }
+    
+    return getSingleValueSource(selectorType, field);
+  }
+
+  /**
+   * Helper method that will only be called for multivalued Trie fields that have doc values.
+   * Default impl throws an error indicating that selecting a single value from this multivalued 
+   * field is not supported for this field type
+   *
+   * @param choice the selector Type to use, will never be null
+   * @param field the field to use, garunteed to be multivalued.
+   * @see #getSingleValueSource(MultiValueSelector,SchemaField,QParser) 
+   */
+  protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                            "Can not select a single value for multivalued field: " + field.getName()
+                            + " (single valued field selection not supported for type: " + this.getTypeName()
+                            + ")");
+  }
+  
   @Override
   public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeVal(name, toObject(f));
