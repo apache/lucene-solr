@@ -1875,7 +1875,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
 
-  protected String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
+  static String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
       throws IOException, SolrServerException {
     String state = null;
     long maxWait = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
@@ -1893,11 +1893,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return state;
   }
 
-  protected String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
+  static String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
     return getRequestState(String.valueOf(requestId), client);
   }
 
-  protected String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
+  static String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
     CollectionAdminRequest.RequestStatus requestStatusRequest = new CollectionAdminRequest.RequestStatus();
     requestStatusRequest.setRequestId(requestId);
     CollectionAdminResponse response = requestStatusRequest.process(client);
