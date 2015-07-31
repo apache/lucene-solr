@@ -648,7 +648,6 @@ File | Project Structure | Platform Settings | SDKs):
     <or>
       <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
       <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
-      <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
     </or>
   </condition>
 
