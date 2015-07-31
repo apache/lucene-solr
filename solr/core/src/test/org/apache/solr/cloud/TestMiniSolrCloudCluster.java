@@ -95,6 +95,8 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     jettyConfig.waitForLoadingCoresToFinish(null);
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir().toFile(), solrXml, jettyConfig.build());
 
+    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+
     try {
       assertNotNull(miniCluster.getZkServer());
       List<JettySolrRunner> jettys = miniCluster.getJettySolrRunners();
@@ -127,7 +129,11 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       collectionProperties.put("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
       collectionProperties.put("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
       collectionProperties.put("solr.directoryFactory", "solr.RAMDirectoryFactory");
-      miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, collectionProperties);
+      final String asyncId = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
+      miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, asyncId, collectionProperties);
+      if (asyncId != null) {
+        assertEquals("did not see async createCollection completion", "completed", AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 330, cloudSolrClient));
+      }
 
       try (SolrZkClient zkClient = new SolrZkClient
           (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null);
@@ -135,7 +141,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
         // modify/query collection
-        CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
         cloudSolrClient.setDefaultCollection(collectionName);
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField("id", "1");

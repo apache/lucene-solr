@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -306,12 +307,20 @@ public class MiniSolrCloudCluster {
   
   public NamedList<Object> createCollection(String name, int numShards, int replicationFactor, 
       String configName, Map<String, String> collectionProperties) throws SolrServerException, IOException {
+    return createCollection(name, numShards, replicationFactor, configName, null, collectionProperties);
+  }
+
+  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor,
+      String configName, String asyncId, Map<String, String> collectionProperties) throws SolrServerException, IOException {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CollectionAction.CREATE.name());
     params.set(CoreAdminParams.NAME, name);
     params.set("numShards", numShards);
     params.set("replicationFactor", replicationFactor);
     params.set("collection.configName", configName);
+    if (null != asyncId) {
+      params.set(CommonAdminParams.ASYNC, asyncId);
+    }
     if(collectionProperties != null) {
       for(Map.Entry<String, String> property : collectionProperties.entrySet()){
         params.set(CoreAdminParams.PROPERTY_PREFIX + property.getKey(), property.getValue());

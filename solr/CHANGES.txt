@@ -381,6 +381,9 @@ Other Changes
 
 * SOLR-5022: On Java 7 raise permgen for running tests.  (Uwe Schindler)
   
+* SOLR-7823: TestMiniSolrCloudCluster.testCollectionCreateSearchDelete async collection-creation (sometimes)
+  (Christine Poerschke)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
