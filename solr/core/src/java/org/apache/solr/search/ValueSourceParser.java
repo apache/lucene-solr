@@ -398,6 +398,17 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         String fieldName = fp.parseArg();
         SchemaField f = fp.getReq().getSchema().getField(fieldName);
+        if (fp.hasMoreArguments()) {
+          // multivalued selector option
+          String s = fp.parseArg();
+          FieldType.MultiValueSelector selector = FieldType.MultiValueSelector.lookup(s);
+          if (null == selector) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "Multi-Valued field selector '"+s+"' not spported");
+          }
+          return f.getType().getSingleValueSource(selector, f, fp);
+        }
+        // simple field ValueSource
         return f.getType().getValueSource(f, fp);
       }
     });
@@ -563,6 +574,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new MinFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
+
     addParser("sqedist", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {

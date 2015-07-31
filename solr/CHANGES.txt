@@ -103,6 +103,9 @@ New Features
 
 * SOLR-6234: Scoring for query time join (Mikhail Khludnev)
 
+* SOLR-2522: new two argument option for the existing field() function; picks the min/max value of a
+  docValues field to use as a ValueSource: "field(field_name,min)" and "field(field_name,max)"  (hossman)
+
 Bug Fixes
 ----------------------
 
