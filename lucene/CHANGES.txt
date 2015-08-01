@@ -141,6 +141,12 @@ New Features
 * LUCENE-6695: Added a new BlendedTermQuery to blend statistics across several
   terms. (Simon Willnauer, Adrien Grand)
 
+* LUCENE-6697: Add experimental range tree doc values format and
+  queries, based on a 1D version of the spatial BKD tree, for a faster
+  and smaller alternative to postings-based numeric and binary term
+  filtering.  Range trees can also handle values larger than 64 bits.
+  (Adrien Grand, Mike McCandless)
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
