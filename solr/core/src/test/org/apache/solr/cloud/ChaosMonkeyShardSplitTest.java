@@ -202,7 +202,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     for (int i = 0; i < 30; i++) {
       Thread.sleep(3000);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection collection1 = clusterState.getCollection("collection1");
       Slice slice = collection1.getSlice("shard1");

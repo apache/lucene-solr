@@ -571,7 +571,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     NamedList results = new NamedList();
     try {
       // force update the cluster state
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(operation);
       if (action == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
@@ -1807,7 +1807,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
         return;
       }
       Thread.sleep(1000);
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
     }
     throw new SolrException(ErrorCode.SERVER_ERROR,
         "Could not find new slice " + sliceName + " in collection " + collectionName

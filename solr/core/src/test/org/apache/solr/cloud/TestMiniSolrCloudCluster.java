@@ -152,7 +152,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         assertEquals(1, rsp.getResults().getNumFound());
 
         // remove a server not hosting any replicas
-        zkStateReader.updateClusterState(true);
+        zkStateReader.updateClusterState();
         ClusterState clusterState = zkStateReader.getClusterState();
         HashMap<String, JettySolrRunner> jettyMap = new HashMap<String, JettySolrRunner>();
         for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {

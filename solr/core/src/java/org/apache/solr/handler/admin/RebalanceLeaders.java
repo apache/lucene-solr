@@ -74,7 +74,7 @@ class RebalanceLeaders {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "The " + COLLECTION_PROP + " is required for the REASSIGNLEADERS command."));
     }
-    coreContainer.getZkController().getZkStateReader().updateClusterState(true);
+    coreContainer.getZkController().getZkStateReader().updateClusterState();
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
     DocCollection dc = clusterState.getCollection(collectionName);
     if (dc == null) {

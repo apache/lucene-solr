@@ -98,7 +98,7 @@ public class CollectionTooManyReplicasTest extends AbstractFullDistribZkTestBase
     assertEquals(0, response.getStatus());
 
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
-    zkStateReader.updateClusterState(true);
+    zkStateReader.updateClusterState();
     Slice slice = zkStateReader.getClusterState().getSlicesMap(collectionName).get("shard1");
 
     Replica rep = null;
@@ -195,7 +195,7 @@ public class CollectionTooManyReplicasTest extends AbstractFullDistribZkTestBase
     // And finally, insure that there are all the replcias we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
-    zkStateReader.updateClusterState(true);
+    zkStateReader.updateClusterState();
     Map<String, Slice> slices = zkStateReader.getClusterState().getSlicesMap(collectionName);
     assertEquals("There should be exaclty four slices", slices.size(), 4);
     assertNotNull("shardstart should exist", slices.get("shardstart"));
@@ -276,7 +276,7 @@ public class CollectionTooManyReplicasTest extends AbstractFullDistribZkTestBase
 
   private List<String> getAllNodeNames(String collectionName) throws KeeperException, InterruptedException {
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
-    zkStateReader.updateClusterState(true);
+    zkStateReader.updateClusterState();
     Slice slice = zkStateReader.getClusterState().getSlicesMap(collectionName).get("shard1");
 
     List<String> nodes = new ArrayList<>();

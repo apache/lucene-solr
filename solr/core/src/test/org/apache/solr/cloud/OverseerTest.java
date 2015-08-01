@@ -422,7 +422,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       int cloudStateSliceCount = 0;
       for (int i = 0; i < 40; i++) {
         cloudStateSliceCount = 0;
-        reader.updateClusterState(true);
+        reader.updateClusterState();
         ClusterState state = reader.getClusterState();
         Map<String,Slice> slices = state.getSlicesMap("collection1");
         if (slices != null) {
@@ -507,7 +507,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private void waitForCollections(ZkStateReader stateReader, String... collections) throws InterruptedException, KeeperException {
     int maxIterations = 100;
     while (0 < maxIterations--) {
-      stateReader.updateClusterState(true);
+      stateReader.updateClusterState();
       final ClusterState state = stateReader.getClusterState();
       Set<String> availableCollections = state.getCollections();
       int availableCount = 0;
@@ -604,7 +604,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private void verifyShardLeader(ZkStateReader reader, String collection, String shard, String expectedCore) throws InterruptedException, KeeperException {
     int maxIterations = 200;
     while(maxIterations-->0) {
-      reader.updateClusterState(true); // poll state
+      reader.updateClusterState(); // poll state
       ZkNodeProps props =  reader.getClusterState().getLeader(collection, shard);
       if(props!=null) {
         if(expectedCore.equals(props.getStr(ZkStateReader.CORE_NAME_PROP))) {
@@ -895,7 +895,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       while (version == getClusterStateVersion(controllerClient));
       
-      reader.updateClusterState(true);
+      reader.updateClusterState();
       ClusterState state = reader.getClusterState();
       
       int numFound = 0;
@@ -1036,7 +1036,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         assertTrue(overseers.size() > 0);
 
         while (true)  {
-          reader.updateClusterState(true);
+          reader.updateClusterState();
           ClusterState state = reader.getClusterState();
           if (state.hasCollection("perf_sentinel")) {
             break;

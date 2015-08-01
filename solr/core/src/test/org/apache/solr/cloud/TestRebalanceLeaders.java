@@ -303,7 +303,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
     long start = System.currentTimeMillis();
     while (System.currentTimeMillis() - start < timeoutMs) {
       goAgain = false;
-      cloudClient.getZkStateReader().updateClusterState(true);
+      cloudClient.getZkStateReader().updateClusterState();
       Map<String, Slice> slices = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
 
       for (Map.Entry<String, Replica> ent : expected.entrySet()) {

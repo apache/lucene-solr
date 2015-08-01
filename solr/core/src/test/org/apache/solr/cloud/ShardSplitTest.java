@@ -385,7 +385,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int i = 0;
     for (i = 0; i < 10; i++) {
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       clusterState = zkStateReader.getClusterState();
       slice1_0 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_0");
       slice1_1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1");

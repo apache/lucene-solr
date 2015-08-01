@@ -947,7 +947,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
                   waitForState + "; forcing ClusterState update from ZooKeeper");
             
             // force a cluster state update
-            coreContainer.getZkController().getZkStateReader().updateClusterState(true);
+            coreContainer.getZkController().getZkStateReader().updateClusterState();
           }
 
           if (maxTries == 0) {
