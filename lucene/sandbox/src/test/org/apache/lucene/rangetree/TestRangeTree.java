@@ -143,7 +143,7 @@ public class TestRangeTree extends LuceneTestCase {
     }
     IndexReader r = w.getReader();
     w.close();
-    // We can't wrap with "exotic" readers because the NumericRangeTreeQuery must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the NumericRangeTreeQuery must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
     int iters = atLeast(100);
@@ -230,7 +230,7 @@ public class TestRangeTree extends LuceneTestCase {
     }
     IndexReader r = w.getReader();
     w.close();
-    // We can't wrap with "exotic" readers because the NumericRangeTreeQuery must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the NumericRangeTreeQuery must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
     int iters = atLeast(100);
@@ -407,7 +407,7 @@ public class TestRangeTree extends LuceneTestCase {
     final IndexReader r = DirectoryReader.open(w, true);
     w.close();
 
-    // We can't wrap with "exotic" readers because the NumericRangeTreeQuery must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the NumericRangeTreeQuery must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
     int numThreads = TestUtil.nextInt(random(), 2, 5);
@@ -545,7 +545,7 @@ public class TestRangeTree extends LuceneTestCase {
     w.addDocument(doc);
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
     // Need to run a query so the DV field is really loaded:
     TopDocs hits = s.search(new NumericRangeTreeQuery("value", -30L, true, 187L, true), 1);
@@ -570,7 +570,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
     assertEquals(1, s.count(new NumericRangeTreeQuery("value", Long.MIN_VALUE, true, 0L, true)));
@@ -595,7 +595,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
     assertEquals(1, s.count(new SortedSetRangeTreeQuery("value", new BytesRef("aaa"), true, new BytesRef("bbb"), true)));
@@ -628,7 +628,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
     assertEquals(2, s.count(new NumericRangeTreeQuery("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
@@ -656,7 +656,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
     assertEquals(2, s.count(new SortedSetRangeTreeQuery("value", longToBytes(Long.MIN_VALUE), true, longToBytes(Long.MAX_VALUE), true)));
@@ -684,7 +684,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
     assertEquals(0, s.count(new SortedSetRangeTreeQuery("value", new BytesRef("m"), true, new BytesRef("n"), false)));
 
@@ -708,7 +708,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
     assertEquals(0, s.count(new NumericRangeTreeQuery("value", 17L, true, 13L, false)));
 
@@ -725,7 +725,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     IndexReader r = w.getReader();
 
-    // We can't wrap with "exotic" readers because the query must see the NumericTreeDVFormat:
+    // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
     assertEquals(0, s.count(new NumericRangeTreeQuery("value", 17L, true, 13L, false)));
 
