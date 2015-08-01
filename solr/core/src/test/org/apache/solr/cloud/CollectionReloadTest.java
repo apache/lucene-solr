@@ -103,7 +103,7 @@ public class CollectionReloadTest extends AbstractFullDistribZkTestBase {
     timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutSecs, TimeUnit.SECONDS);
     while (System.nanoTime() < timeout) {
       // state of leader should be active after session loss recovery - see SOLR-7338
-      cloudClient.getZkStateReader().updateClusterState(true);
+      cloudClient.getZkStateReader().updateClusterState();
       ClusterState cs = cloudClient.getZkStateReader().getClusterState();
       Slice slice = cs.getSlice(testCollectionName, shardId);
       replicaState = slice.getReplica(leader.getName()).getStr(ZkStateReader.STATE_PROP);

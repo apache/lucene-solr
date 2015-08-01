@@ -59,7 +59,7 @@ public class ClusterStatus {
   @SuppressWarnings("unchecked")
   public  void getClusterStatus(NamedList results)
       throws KeeperException, InterruptedException {
-    zkStateReader.updateClusterState(true);
+    zkStateReader.updateClusterState();
 
 
     // read aliases

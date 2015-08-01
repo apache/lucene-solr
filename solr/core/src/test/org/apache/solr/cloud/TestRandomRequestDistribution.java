@@ -76,7 +76,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     waitForRecoveriesToFinish("a1x2", true);
     waitForRecoveriesToFinish("b1x1", true);
 
-    cloudClient.getZkStateReader().updateClusterState(true);
+    cloudClient.getZkStateReader().updateClusterState();
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection b1x1 = clusterState.getCollection("b1x1");

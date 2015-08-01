@@ -523,7 +523,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     long startMs = System.currentTimeMillis();
 
     ZkStateReader zkr = cloudClient.getZkStateReader();
-    zkr.updateClusterState(true); // force the state to be fresh
+    zkr.updateClusterState(); // force the state to be fresh
 
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
@@ -533,7 +533,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     while (waitMs < maxWaitMs && !allReplicasUp) {
       // refresh state every 2 secs
       if (waitMs % 2000 == 0)
-        cloudClient.getZkStateReader().updateClusterState(true);
+        cloudClient.getZkStateReader().updateClusterState();
 
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);

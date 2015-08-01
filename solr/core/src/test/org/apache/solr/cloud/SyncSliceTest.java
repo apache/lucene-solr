@@ -219,7 +219,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     for (int i = 0; i < 60; i++) { 
       Thread.sleep(3000);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection collection1 = clusterState.getCollection("collection1");
       Slice slice = collection1.getSlice("shard1");

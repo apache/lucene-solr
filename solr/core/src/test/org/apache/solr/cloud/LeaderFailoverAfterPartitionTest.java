@@ -155,7 +155,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     while (System.nanoTime() < timeout) {
-      cloudClient.getZkStateReader().updateClusterState(true);
+      cloudClient.getZkStateReader().updateClusterState();
 
       List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
       if (activeReps.size() >= 2) break;

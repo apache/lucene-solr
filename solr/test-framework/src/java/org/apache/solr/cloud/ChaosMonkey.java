@@ -403,7 +403,7 @@ public class ChaosMonkey {
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       
       // get latest cloud state
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       
       Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
           .get(slice);
@@ -427,7 +427,7 @@ public class ChaosMonkey {
   
   public SolrClient getRandomClient(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
-    zkStateReader.updateClusterState(true);
+    zkStateReader.updateClusterState();
 
     // get random shard
     List<SolrClient> clients = shardToClient.get(slice);

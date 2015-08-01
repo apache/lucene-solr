@@ -357,7 +357,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       throws IOException, SolrServerException {
     ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
     try {
-      zkController.getZkStateReader().updateClusterState(true);
+      zkController.getZkStateReader().updateClusterState();
     } catch (Exception e) {
       log.warn("Error when updating cluster state", e);
     }

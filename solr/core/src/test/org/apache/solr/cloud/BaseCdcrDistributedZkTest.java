@@ -598,7 +598,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     try {
       cloudClient.connect();
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection coll = clusterState.getCollection(collection);
 

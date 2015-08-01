@@ -355,7 +355,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         byte[] bytes = Utils.toJSON(state);
         zkController.getZkClient().makePath(ZkStateReader.getCollectionPath("testPublishAndWaitForDownStates"), bytes, CreateMode.PERSISTENT, true);
 
-        zkController.getZkStateReader().updateClusterState(true);
+        zkController.getZkStateReader().updateClusterState();
         assertTrue(zkController.getZkStateReader().getClusterState().hasCollection("testPublishAndWaitForDownStates"));
         assertNotNull(zkController.getZkStateReader().getClusterState().getCollection("testPublishAndWaitForDownStates"));
 

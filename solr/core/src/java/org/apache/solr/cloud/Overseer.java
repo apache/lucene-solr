@@ -151,7 +151,7 @@ public class Overseer implements Closeable {
 
           if (refreshClusterState) {
             try {
-              reader.updateClusterState(true);
+              reader.updateClusterState();
               clusterState = reader.getClusterState();
               refreshClusterState = false;
 

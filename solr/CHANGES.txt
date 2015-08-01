@@ -387,6 +387,8 @@ Other Changes
 * SOLR-7823: TestMiniSolrCloudCluster.testCollectionCreateSearchDelete async collection-creation (sometimes)
   (Christine Poerschke)
 
+* SOLR-7854: Remove unused ZkStateReader.updateClusterState(false) method. (Scott Blum via shalin)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
