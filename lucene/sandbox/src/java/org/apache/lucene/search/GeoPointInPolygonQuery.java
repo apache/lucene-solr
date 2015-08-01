@@ -169,7 +169,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     }
 
     @Override
-    protected boolean cellIntersects(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+    protected boolean cellIntersectsMBR(final double minLon, final double minLat, final double maxLon, final double maxLat) {
       return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, GeoPointInPolygonQuery.this.minLon,
           GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
     }
@@ -185,15 +185,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
      * @return match status
      */
     @Override
-    protected AcceptStatus accept(BytesRef term) {
-      // first filter by bounding box
-      AcceptStatus status = super.accept(term);
-      assert status != AcceptStatus.YES_AND_SEEK;
-
-      if (status != AcceptStatus.YES) {
-        return status;
-      }
-
+    protected AcceptStatus postFilterBoundary(BytesRef term) {
       final long val = NumericUtils.prefixCodedToLong(term);
       final double lon = GeoUtils.mortonUnhashLon(val);
       final double lat = GeoUtils.mortonUnhashLat(val);
