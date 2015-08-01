@@ -94,7 +94,8 @@ public final class BitUtil {
   private static final long MAGIC[] = {
       0x5555555555555555L, 0x3333333333333333L,
       0x0F0F0F0F0F0F0F0FL, 0x00FF00FF00FF00FFL,
-      0x0000FFFF0000FFFFL, 0x00000000FFFFFFFFL
+      0x0000FFFF0000FFFFL, 0x00000000FFFFFFFFL,
+      0xAAAAAAAAAAAAAAAAL
   };
   // shift values for bit interleaving
   private static final short SHIFT[] = {1, 2, 4, 8, 16};
@@ -233,6 +234,13 @@ public final class BitUtil {
     b = (b ^ (b >>> SHIFT[3])) & MAGIC[4];
     b = (b ^ (b >>> SHIFT[4])) & MAGIC[5];
     return b;
+  }
+
+  /**
+   * flip flops odd with even bits
+   */
+  public static final long flipFlop(final long b) {
+    return ((b & MAGIC[6]) >>> 1) | ((b & MAGIC[0]) << 1 );
   }
 
    /** Same as {@link #zigZagEncode(long)} but on integers. */
