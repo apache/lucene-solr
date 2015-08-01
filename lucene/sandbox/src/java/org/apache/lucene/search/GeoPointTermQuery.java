@@ -20,10 +20,12 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.GeoUtils;
 
 /**
- * Abstract base class used by {@code GeoPointInBBoxQueryImpl}
+ * TermQuery for GeoPointField for overriding {@link org.apache.lucene.search.MultiTermQuery} methods specific to
+ * Geospatial operations
  *
  * @lucene.experimental
  */
+
 // TODO: remove this?  Just absorb into its base class
 abstract class GeoPointTermQuery extends MultiTermQuery {
   // simple bounding box optimization - no objects used to avoid dependencies

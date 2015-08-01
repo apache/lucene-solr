@@ -41,6 +41,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.GeoDistanceUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -63,7 +64,9 @@ public class TestGeoPointQuery extends LuceneTestCase {
   private static final String FIELD_NAME = "geoField";
 
   // error threshold for point-distance queries (in meters)
-  private static final int DISTANCE_ERR = 700;
+  // @todo haversine is sloppy, would be good to have a better heuristic for
+  // determining the possible haversine error
+  private static final int DISTANCE_ERR = 1000;
 
   // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
   private static double originLat;
@@ -118,6 +121,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
          new GeoPointField(FIELD_NAME, -14.796283808944777, -62.455081198245665, storedPoint),
          new GeoPointField(FIELD_NAME, -178.8538113027811, 32.94823588839368, storedPoint),
          new GeoPointField(FIELD_NAME, 178.8538113027811, 32.94823588839368, storedPoint),
+         new GeoPointField(FIELD_NAME, -73.998776, 40.720611, storedPoint),
          new GeoPointField(FIELD_NAME, -179.5, -44.5, storedPoint)};
 
     for (GeoPointField p : pts) {
@@ -202,7 +206,13 @@ public class TestGeoPointQuery extends LuceneTestCase {
   @Test
   public void testWholeMap() throws Exception {
     TopDocs td = bboxQuery(-179.9, -89.9, 179.9, 89.9, 20);
-    assertEquals("testWholeMap failed", 14, td.totalHits);
+    assertEquals("testWholeMap failed", 15, td.totalHits);
+  }
+
+  @Test
+  public void smallTest() throws Exception {
+    TopDocs td = geoDistanceQuery(-73.998776, 40.720611, 1, 20);
+    assertEquals("smallTest failed", 1, td.totalHits);
   }
 
   @Test
@@ -219,6 +229,15 @@ public class TestGeoPointQuery extends LuceneTestCase {
   public void testGeoDistanceQuery() throws Exception {
     TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 6000, 20);
     assertEquals("GeoDistanceQuery failed", 1, td.totalHits);
+  }
+
+  /**
+   * LUCENE-6704
+   */
+  @Nightly
+  public void testGeoDistanceQueryHuge() throws Exception {
+    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 1000000, 20);
+    assertEquals("GeoDistanceQuery failed", 6, td.totalHits);
   }
 
   @Test
@@ -425,8 +444,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
                 double centerLon = bbox.minLon + ((bbox.maxLon - bbox.minLon)/2.0);
 
                 // radius (in meters) as a function of the random generated bbox
-                // TODO: change 100 back to 1000
-                final double radius = SloppyMath.haversin(centerLat, centerLon, bbox.minLat, centerLon)*100;
+                final double radius = GeoDistanceUtils.vincentyDistance(centerLon, centerLat, centerLon, bbox.minLat);
+                //final double radius = SloppyMath.haversin(centerLat, centerLon, bbox.minLat, centerLon)*1000;
                 if (VERBOSE) {
                   System.out.println("\t radius = " + radius);
                 }

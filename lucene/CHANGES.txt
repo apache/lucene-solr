@@ -296,6 +296,9 @@ Bug fixes
   more than one value in a multi-valued field. (Chris Earle, Nik Everett
   via Mike McCandless)
 
+* LUCENE-6704: GeoPointDistanceQuery was visiting too many term ranges,
+  consuming too much heap for a large radius (Nick Knize via Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
