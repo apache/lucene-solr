@@ -46,6 +46,7 @@ import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
+import org.apache.lucene.util.TestGeoUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -68,37 +69,10 @@ public class TestGeoPointQuery extends LuceneTestCase {
   // determining the possible haversine error
   private static final int DISTANCE_ERR = 1000;
 
-  // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
-  private static double originLat;
-  private static double originLon;
-//  private static double range;
-  private static double lonRange;
-  private static double latRange;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
 
-    // when we randomly test the full lat/lon space it can result in very very slow query times, this is due to the
-    // number of ranges that can be created in degenerate cases.
-
-    // Between 1.0 and 3.0:
-//    range = 2*(random().nextDouble() + 0.5);
-    // Between 1.0 and 90.0
-    //lonRange = 1.0 + (90.0 - 1.0) * random().nextDouble();
-    //latRange = 1.0 + (45.0 - 1.0) * random().nextDouble();
-
-    // Between 1.0 and 3.0:
-    lonRange = 2*(random().nextDouble() + 0.5);
-    latRange = 2*(random().nextDouble() + 0.5);
-
-    originLon = GeoUtils.MIN_LON_INCL + lonRange + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2*lonRange) * random().nextDouble();
-    originLon = GeoUtils.normalizeLon(originLon);
-    originLat = GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2*latRange) * random().nextDouble();
-    originLat = GeoUtils.normalizeLat(originLat);
-    if (VERBOSE) {
-      System.out.println("TEST: originLon=" + originLon + " lonRange= " + lonRange + " originLat=" + originLat + " latRange=" + latRange);
-    }
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
             newIndexWriterConfig(new MockAnalyzer(random()))
                     .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
@@ -306,13 +280,13 @@ public class TestGeoPointQuery extends LuceneTestCase {
         if (x == 0) {
           // Identical lat to old point
           lats[docID] = lats[oldDocID];
-          lons[docID] = randomLon();
+          lons[docID] = TestGeoUtils.randomLon();
           if (VERBOSE) {
             //System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat as doc=" + oldDocID + ")");
           }
         } else if (x == 1) {
           // Identical lon to old point
-          lats[docID] = randomLat();
+          lats[docID] = TestGeoUtils.randomLat();
           lons[docID] = lons[oldDocID];
           if (VERBOSE) {
             //System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lon as doc=" + oldDocID + ")");
@@ -327,8 +301,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
           }
         }
       } else {
-        lats[docID] = randomLat();
-        lons[docID] = randomLon();
+        lats[docID] = TestGeoUtils.randomLat();
+        lons[docID] = TestGeoUtils.randomLon();
         haveRealDoc = true;
         if (VERBOSE) {
           //System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID]);
@@ -618,19 +592,11 @@ public class TestGeoPointQuery extends LuceneTestCase {
          || (tMaxLon - tLon) == 0 || (tMaxLat - tLat) == 0);
   }
 
-  private static double randomLat() {
-    return GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
-  }
-
-  private static double randomLon() {
-    return GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
-  }
-
   private static GeoBoundingBox randomBBox() {
-    double lat0 = randomLat();
-    double lat1 = randomLat();
-    double lon0 = randomLon();
-    double lon1 = randomLon();
+    double lat0 = TestGeoUtils.randomLat();
+    double lat1 = TestGeoUtils.randomLat();
+    double lon0 = TestGeoUtils.randomLon();
+    double lon1 = TestGeoUtils.randomLon();
 
     if (lat1 < lat0) {
       double x = lat0;

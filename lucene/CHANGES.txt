@@ -147,6 +147,9 @@ New Features
   filtering.  Range trees can also handle values larger than 64 bits.
   (Adrien Grand, Mike McCandless)
 
+* LUCENE-6647: Add GeoHash string utility APIs (Nick Knize, Mike
+  McCandless).
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
