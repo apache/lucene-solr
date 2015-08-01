@@ -78,7 +78,7 @@ class RangeTreeDocValuesProducer extends DocValuesProducer {
     merging = false;
   }
 
-  // clone for merge: we don't hang onto the NumericTrees we load
+  // clone for merge: we don't hang onto the RangeTrees we load
   RangeTreeDocValuesProducer(RangeTreeDocValuesProducer orig) throws IOException {
     assert Thread.holdsLock(orig);
     datIn = orig.datIn.clone();

@@ -65,12 +65,12 @@ import java.io.IOException;
 
 public class RangeTreeDocValuesFormat extends DocValuesFormat {
 
-  static final String DATA_CODEC_NAME = "NumericTreeData";
+  static final String DATA_CODEC_NAME = "RangeTreeData";
   static final int DATA_VERSION_START = 0;
   static final int DATA_VERSION_CURRENT = DATA_VERSION_START;
   static final String DATA_EXTENSION = "ndd";
 
-  static final String META_CODEC_NAME = "NumericTreeMeta";
+  static final String META_CODEC_NAME = "RangeTreeMeta";
   static final int META_VERSION_START = 0;
   static final int META_VERSION_CURRENT = META_VERSION_START;
   static final String META_EXTENSION = "ndm";
@@ -94,7 +94,7 @@ public class RangeTreeDocValuesFormat extends DocValuesFormat {
    *
    * @lucene.experimental */
   public RangeTreeDocValuesFormat(int maxPointsInLeafNode, int maxPointsSortInHeap) {
-    super("NumericTree");
+    super("RangeTree");
     RangeTreeWriter.verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
