@@ -239,6 +239,13 @@ public class TestGeoPointQuery extends LuceneTestCase {
     doTestRandom(10000);
   }
 
+  @Test
+  public void testMortonEncoding() throws Exception {
+    long hash = GeoUtils.mortonHash(180, 90);
+    assertEquals(180.0, GeoUtils.mortonUnhashLon(hash), 0);
+    assertEquals(90.0, GeoUtils.mortonUnhashLat(hash), 0);
+  }
+
   @Nightly
   public void testRandomBig() throws Exception {
     doTestRandom(200000);

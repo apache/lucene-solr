@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,7 +68,13 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
    */
   private final void computeRange(long term, final short shift) {
     final long split = term | (0x1L<<shift);
-    final long upperMax = term | ((0x1L<<(shift+1))-1);
+    assert shift < 64;
+    final long upperMax;
+    if (shift < 63) {
+      upperMax = term | ((1L << (shift+1))-1);
+    } else {
+      upperMax = 0xffffffffffffffffL;
+    }
     final long lowerMax = split-1;
 
     relateAndRecurse(term, lowerMax, shift);
@@ -88,7 +95,7 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
     final double maxLon = GeoUtils.mortonUnhashLon(end);
     final double maxLat = GeoUtils.mortonUnhashLat(end);
 
-    final short level = (short)(62-res>>>1);
+    final short level = (short)((GeoUtils.BITS<<1)-res>>>1);
 
     // if cell is within and a factor of the precision step, or it crosses the edge of the shape add the range
     final boolean within = res % GeoPointField.PRECISION_STEP == 0 && cellWithin(minLon, minLat, maxLon, maxLat);
