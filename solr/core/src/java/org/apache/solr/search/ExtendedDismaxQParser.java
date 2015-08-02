@@ -299,7 +299,7 @@ public class ExtendedDismaxQParser extends QParser {
     if (query instanceof BooleanQuery) {
       BooleanQuery.Builder t = new BooleanQuery.Builder();
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery)query);
-      SolrPluginUtils.setMinShouldMatch(t, config.minShouldMatch);
+      SolrPluginUtils.setMinShouldMatch(t, config.minShouldMatch, config.mmAutoRelax);
       query = t.build();
     }
     return query;
@@ -341,7 +341,7 @@ public class ExtendedDismaxQParser extends QParser {
     // were explicit operators (except for AND).
     boolean doMinMatched = doMinMatched(clauses, config.lowercaseOperators);
     if (doMinMatched && query instanceof BooleanQuery) {
-      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, config.minShouldMatch);
+      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, config.minShouldMatch, config.mmAutoRelax);
     }
     return query;
   }
@@ -1238,7 +1238,7 @@ public class ExtendedDismaxQParser extends QParser {
             if (query instanceof BooleanQuery) {
               BooleanQuery bq = (BooleanQuery) query;
               if (!bq.isCoordDisabled()) {
-                query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch);
+                query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
               }
             }
             if (query instanceof PhraseQuery) {
@@ -1490,6 +1490,8 @@ public class ExtendedDismaxQParser extends QParser {
     protected int qslop;
     
     protected boolean stopwords;
+
+    protected boolean mmAutoRelax;
     
     protected String altQ;
     
@@ -1527,6 +1529,8 @@ public class ExtendedDismaxQParser extends QParser {
       qslop = solrParams.getInt(DisMaxParams.QS, 0);
       
       stopwords = solrParams.getBool(DMP.STOPWORDS, true);
+
+      mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
       
       altQ = solrParams.get( DisMaxParams.ALTQ );
       

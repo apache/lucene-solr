@@ -50,6 +50,11 @@ Upgrading from Solr 5.x
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-3085: New edismax param mm.autoRelax which helps in certain cases of the stopwords/zero-hits issue (janhoy)
+
 Other Changes
 ----------------------
 

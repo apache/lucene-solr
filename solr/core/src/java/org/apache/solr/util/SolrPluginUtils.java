@@ -560,11 +560,14 @@ public class SolrPluginUtils {
     return out;
   }
 
-
   /**
    * Checks the number of optional clauses in the query, and compares it
    * with the specification string to determine the proper value to use.
-   *
+   * <p>
+   * If mmAutoRelax=true, we'll perform auto relaxation of mm if tokens
+   * are removed from some but not all DisMax clauses, as can happen when
+   * stopwords or punctuation tokens are removed in analysis.
+   * </p>
    * <p>
    * Details about the specification format can be found
    * <a href="doc-files/min-should-match.html">here</a>
@@ -589,29 +592,54 @@ public class SolrPluginUtils {
    * <p>:TODO: should optimize the case where number is same
    * as clauses to just make them all "required"
    * </p>
+   *
+   * @param q The query as a BooleanQuery.Builder
+   * @param spec The mm spec
+   * @param mmAutoRelax whether to perform auto relaxation of mm if tokens are removed from some but not all DisMax clauses
    */
-  public static void setMinShouldMatch(BooleanQuery.Builder q, String spec) {
+  public static void setMinShouldMatch(BooleanQuery.Builder q, String spec, boolean mmAutoRelax) {
 
     int optionalClauses = 0;
+    int maxDisjunctsSize = 0;
+    int optionalDismaxClauses = 0;
     for (BooleanClause c : q.build().clauses()) {
       if (c.getOccur() == Occur.SHOULD) {
-        optionalClauses++;
+        if (mmAutoRelax && c.getQuery() instanceof DisjunctionMaxQuery) {
+          int numDisjuncts = ((DisjunctionMaxQuery)c.getQuery()).getDisjuncts().size();
+          if (numDisjuncts>maxDisjunctsSize) {
+            maxDisjunctsSize = numDisjuncts;
+            optionalDismaxClauses = 1;
+          }
+          else if (numDisjuncts == maxDisjunctsSize) {
+            optionalDismaxClauses++;
+          }
+        } else {
+          optionalClauses++;
+        }
       }
     }
 
-    int msm = calculateMinShouldMatch(optionalClauses, spec);
+    int msm = calculateMinShouldMatch(optionalClauses + optionalDismaxClauses, spec);
     if (0 < msm) {
       q.setMinimumNumberShouldMatch(msm);
     }
   }
 
+  public static void setMinShouldMatch(BooleanQuery.Builder q, String spec) {
+    setMinShouldMatch(q, spec, false);
+  }
+
   public static BooleanQuery setMinShouldMatch(BooleanQuery q, String spec) {
+    return setMinShouldMatch(q, spec, false);
+  }
+
+  public static BooleanQuery setMinShouldMatch(BooleanQuery q, String spec, boolean mmAutoRelax) {
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
     builder.setDisableCoord(q.isCoordDisabled());
     for (BooleanClause clause : q) {
       builder.add(clause);
     }
-    setMinShouldMatch(builder, spec);
+    setMinShouldMatch(builder, spec, mmAutoRelax);
     return builder.build();
   }
 
