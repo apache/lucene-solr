@@ -27,9 +27,9 @@ import java.util.ArrayList;
 public final class GeoUtils {
   private static final short MIN_LON = -180;
   private static final short MIN_LAT = -90;
-  public static final short BITS = 31;
-  private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
-  private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
+  public static final short BITS = 32;
+  private static final double LON_SCALE = ((0x1L<<BITS)-1)/360.0D;
+  private static final double LAT_SCALE = ((0x1L<<BITS)-1)/180.0D;
   public static final double TOLERANCE = 1E-6;
 
   /** Minimum longitude value. */
