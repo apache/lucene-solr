@@ -432,63 +432,68 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
   @Test
   public void testClosingOutputStreamAfterLogReplay() throws Exception {
     this.clearCore();
+    try {
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
 
-    DirectUpdateHandler2.commitOnClose = false;
-    final Semaphore logReplay = new Semaphore(0);
-    final Semaphore logReplayFinish = new Semaphore(0);
-
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+      UpdateLog.testing_logReplayHook = new Runnable() {
+        @Override
+        public void run() {
+          try {
+            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
         }
-      }
-    };
+      };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+      UpdateLog.testing_logReplayFinishHook = new Runnable() {
+        @Override
+        public void run() {
+          logReplayFinish.release();
+        }
+      };
 
-    Deque<Long> versions = new ArrayDeque<>();
-    versions.addFirst(addAndGetVersion(sdoc("id", "A11"), null));
-    versions.addFirst(addAndGetVersion(sdoc("id", "A12"), null));
-    versions.addFirst(addAndGetVersion(sdoc("id", "A13"), null));
+      Deque<Long> versions = new ArrayDeque<>();
+      versions.addFirst(addAndGetVersion(sdoc("id", "A11"), null));
+      versions.addFirst(addAndGetVersion(sdoc("id", "A12"), null));
+      versions.addFirst(addAndGetVersion(sdoc("id", "A13"), null));
 
-    assertJQ(req("q", "*:*"), "/response/numFound==0");
+      assertJQ(req("q", "*:*"), "/response/numFound==0");
 
-    assertJQ(req("qt", "/get", "getVersions", "" + versions.size()), "/versions==" + versions);
+      assertJQ(req("qt", "/get", "getVersions", "" + versions.size()), "/versions==" + versions);
 
-    h.close();
-    createCore();
-    // Solr should kick this off now
-    // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
+      h.close();
+      createCore();
+      // Solr should kick this off now
+      // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
-    // verify that previous close didn't do a commit
-    // recovery should be blocked by our hook
-    assertJQ(req("q", "*:*"), "/response/numFound==0");
+      // verify that previous close didn't do a commit
+      // recovery should be blocked by our hook
+      assertJQ(req("q", "*:*"), "/response/numFound==0");
 
-    // unblock recovery
-    logReplay.release(1000);
+      // unblock recovery
+      logReplay.release(1000);
 
-    // wait until recovery has finished
-    assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      // wait until recovery has finished
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
-    assertJQ(req("q", "*:*"), "/response/numFound==3");
+      assertJQ(req("q", "*:*"), "/response/numFound==3");
 
-    // The transaction log should have written a commit and close its output stream
-    UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-    assertEquals(0, ulog.logs.peekLast().refcount.get());
-    assertNull(ulog.logs.peekLast().channel);
+      // The transaction log should have written a commit and close its output stream
+      UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
+      assertEquals(0, ulog.logs.peekLast().refcount.get());
+      assertNull(ulog.logs.peekLast().channel);
 
-    ulog.logs.peekLast().incref(); // reopen the output stream to check if its ends with a commit
-    assertTrue(ulog.logs.peekLast().endsWithCommit());
-    ulog.logs.peekLast().decref();
+      ulog.logs.peekLast().incref(); // reopen the output stream to check if its ends with a commit
+      assertTrue(ulog.logs.peekLast().endsWithCommit());
+      ulog.logs.peekLast().decref();
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true; // reset
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
   }
 
   /**
