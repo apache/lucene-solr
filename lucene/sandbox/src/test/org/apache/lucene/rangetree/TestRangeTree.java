@@ -402,6 +402,9 @@ public class TestRangeTree extends LuceneTestCase {
       }
     }
     if (random().nextBoolean()) {
+      if (VERBOSE) {
+        System.out.println("  forceMerge(1)");
+      }
       w.forceMerge(1);
     }
     final IndexReader r = DirectoryReader.open(w, true);
@@ -514,16 +517,20 @@ public class TestRangeTree extends LuceneTestCase {
   }
 
   private static boolean matches(long lower, boolean includeLower, long upper, boolean includeUpper, long value) {
-    if (value > lower && value < upper) {
-      return true;
+    if (includeLower == false) {
+      if (lower == Long.MAX_VALUE) {
+        return false;
+      }
+      lower++;
     }
-    if (value == lower && includeLower) {
-      return true;
+    if (includeUpper == false) {
+      if (upper == Long.MIN_VALUE) {
+        return false;
+      }
+      upper--;
     }
-    if (value == upper && includeUpper) {
-      return true;
-    }
-    return false;
+
+    return value >= lower && value <= upper;
   }
 
   private static long randomValue() {
