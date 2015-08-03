@@ -46,6 +46,14 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
   public static final String TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
       " Truth is, Amazon may know more.";
+
+  public static final String STRONG_TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
+      " Truth is, Amazon may know more. This technology observation is extracted from the internet.";
+
+  public static final String SUPER_STRONG_TECHNOLOGY_INPUT = "More than 400 million people trust Google with their e-mail, and 50 million store files" +
+      " in the cloud using the Dropbox service. People manage their bank accounts, pay bills, trade stocks and " +
+      "generally transfer or store huge volumes of personal data online. traveling seeks raises some questions Republican presidential. ";
+
   public static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
 
   private RandomIndexWriter indexWriter;
@@ -86,8 +94,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
     LeafReader leafReader = null;
     try {
-      populateSampleIndex(analyzer);
-      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+      leafReader = populateSampleIndex(analyzer);
       classifier.train(leafReader, textFieldName, classFieldName, analyzer, query);
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
@@ -105,8 +112,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   protected void checkOnlineClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
     LeafReader leafReader = null;
     try {
-      populateSampleIndex(analyzer);
-      leafReader = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+      leafReader = populateSampleIndex(analyzer);
       classifier.train(leafReader, textFieldName, classFieldName, analyzer, query);
       ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
@@ -123,7 +129,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     }
   }
 
-  private void populateSampleIndex(Analyzer analyzer) throws IOException {
+  protected LeafReader populateSampleIndex(Analyzer analyzer) throws IOException {
     indexWriter.close();
     indexWriter = new RandomIndexWriter(random(), dir, newIndexWriterConfig(analyzer).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     indexWriter.commit();
@@ -198,6 +204,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     indexWriter.addDocument(doc);
 
     indexWriter.commit();
+    return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
   }
 
   protected void checkPerformance(Classifier<T> classifier, Analyzer analyzer, String classFieldName) throws Exception {

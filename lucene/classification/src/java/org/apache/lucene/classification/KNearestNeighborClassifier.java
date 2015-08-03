@@ -17,6 +17,7 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
@@ -58,7 +59,6 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   /**
    * Create a {@link Classifier} using kNN algorithm
    *
-   * @param k the number of neighbors to analyze as an <code>int</code>
    */
   public KNearestNeighborClassifier(int k) {
     this.k = k;
@@ -82,17 +82,17 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
-    TopDocs topDocs=knnSearcher(text);
-    List<ClassificationResult<BytesRef>> doclist=buildListFromTopDocs(topDocs);
-    ClassificationResult<BytesRef> retval=null;
-    double maxscore=-Double.MAX_VALUE;
-    for(ClassificationResult<BytesRef> element:doclist){
-      if(element.getScore()>maxscore){
-        retval=element;
-        maxscore=element.getScore();
+    TopDocs knnResults = knnSearcher(text);
+    List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
+    ClassificationResult<BytesRef> assignedClass = null;
+    double maxscore = -Double.MAX_VALUE;
+    for (ClassificationResult<BytesRef> cl : assignedClasses) {
+      if (cl.getScore() > maxscore) {
+        assignedClass = cl;
+        maxscore = cl.getScore();
       }
     }
-    return retval;
+    return assignedClass;
   }
 
   /**
@@ -100,10 +100,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
-    TopDocs topDocs=knnSearcher(text);
-    List<ClassificationResult<BytesRef>> doclist=buildListFromTopDocs(topDocs);
-    Collections.sort(doclist);
-    return doclist;
+    TopDocs knnResults = knnSearcher(text);
+    List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
+    Collections.sort(assignedClasses);
+    return assignedClasses;
   }
   
   /**
@@ -111,10 +111,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
-    TopDocs topDocs=knnSearcher(text);
-    List<ClassificationResult<BytesRef>> doclist=buildListFromTopDocs(topDocs);
-    Collections.sort(doclist);
-    return doclist.subList(0, max);
+    TopDocs knnResults = knnSearcher(text);
+    List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
+    Collections.sort(assignedClasses);
+    return assignedClasses.subList(0, max);
   }
 
   private TopDocs knnSearcher(String text) throws IOException{
@@ -122,8 +122,19 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       throw new IOException("You must first call Classifier#train");
     }
     BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
-    for (String textFieldName : textFieldNames) {
-      mltQuery.add(new BooleanClause(mlt.like(textFieldName, new StringReader(text)), BooleanClause.Occur.SHOULD));
+    for (String fieldName : textFieldNames) {
+      String boost = null;
+      mlt.setBoost(true); //terms boost actually helps in MLT queries
+      if (fieldName.contains("^")) {
+        String[] field2boost = fieldName.split("\\^");
+        fieldName = field2boost[0];
+        boost = field2boost[1];
+      }
+      if (boost != null) {
+        mlt.setBoostFactor(Float.parseFloat(boost));//if we have a field boost, we add it
+      }
+      mltQuery.add(new BooleanClause(mlt.like(fieldName, new StringReader(text)), BooleanClause.Occur.SHOULD));
+      mlt.setBoostFactor(1);// restore neutral boost for next field
     }
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));
@@ -132,36 +143,53 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     }
     return indexSearcher.search(mltQuery.build(), k);
   }
-  
+
+  //ranking of classes must be taken in consideration
   private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
+    Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
+    float maxScore = topDocs.getMaxScore();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-        BytesRef cl = new BytesRef(indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue());
+      IndexableField storableField = indexSearcher.doc(scoreDoc.doc).getField(classFieldName);
+      if (storableField != null) {
+        BytesRef cl = new BytesRef(storableField.stringValue());
+        //update count
         Integer count = classCounts.get(cl);
         if (count != null) {
-            classCounts.put(cl, count + 1);
+          classCounts.put(cl, count + 1);
         } else {
-            classCounts.put(cl, 1);
+          classCounts.put(cl, 1);
         }
+        //update boost, the boost is based on the best score
+        Double totalBoost = classBoosts.get(cl);
+        double singleBoost = scoreDoc.score / maxScore;
+        if (totalBoost != null) {
+          classBoosts.put(cl, totalBoost + singleBoost);
+        } else {
+          classBoosts.put(cl, singleBoost);
+        }
+      }
     }
     List<ClassificationResult<BytesRef>> returnList = new ArrayList<>();
-    int sumdoc=0;
+    List<ClassificationResult<BytesRef>> temporaryList = new ArrayList<>();
+    int sumdoc = 0;
     for (Map.Entry<BytesRef, Integer> entry : classCounts.entrySet()) {
-        Integer count = entry.getValue();
-        returnList.add(new ClassificationResult<>(entry.getKey().clone(), count / (double) k));
-        sumdoc+=count;
-
+      Integer count = entry.getValue();
+      Double normBoost = classBoosts.get(entry.getKey()) / count; //the boost is normalized to be 0<b<1
+      temporaryList.add(new ClassificationResult<>(entry.getKey().clone(), (count * normBoost) / (double) k));
+      sumdoc += count;
     }
-    
+
     //correction
-    if(sumdoc<k){
-      for(ClassificationResult<BytesRef> cr:returnList){
-        cr.setScore(cr.getScore()*(double)k/(double)sumdoc);
+    if (sumdoc < k) {
+      for (ClassificationResult<BytesRef> cr : temporaryList) {
+        returnList.add(new ClassificationResult<>(cr.getAssignedClass(), cr.getScore() * k / (double) sumdoc));
       }
+    } else {
+      returnList = temporaryList;
     }
     return returnList;
   }
-
   /**
    * {@inheritDoc}
    */
