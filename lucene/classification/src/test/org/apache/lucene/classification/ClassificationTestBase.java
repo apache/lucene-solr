@@ -46,6 +46,14 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
   public static final String TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
           " Truth is, Amazon may know more.";
+
+  public static final String STRONG_TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
+      " Truth is, Amazon may know more. This technology observation is extracted from the internet.";
+
+  public static final String SUPER_STRONG_TECHNOLOGY_INPUT = "More than 400 million people trust Google with their e-mail, and 50 million store files" +
+      " in the cloud using the Dropbox service. People manage their bank accounts, pay bills, trade stocks and " +
+      "generally transfer or store huge volumes of personal data online. traveling seeks raises some questions Republican presidential. ";
+
   public static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
 
   protected RandomIndexWriter indexWriter;
