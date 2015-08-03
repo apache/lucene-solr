@@ -394,6 +394,8 @@ Other Changes
 
 * SOLR-7854: Remove unused ZkStateReader.updateClusterState(false) method. (Scott Blum via shalin)
 
+* SOLR-7863: Lowercase the CLUSTERPROP command in ZkCLI for consistency, print error for unknown cmd (janhoy)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

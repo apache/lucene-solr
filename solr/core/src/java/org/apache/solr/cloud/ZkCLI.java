@@ -1,6 +1,5 @@
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonParams.*;
 
 import org.apache.commons.cli.CommandLine;
@@ -18,7 +17,6 @@ import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -65,17 +63,16 @@ public class ZkCLI {
   private static final String LINKCONFIG = "linkconfig";
   private static final String CONFDIR = "confdir";
   private static final String CONFNAME = "confname";
-  private static final String REVERSE = "reverse";
   private static final String ZKHOST = "zkhost";
   private static final String RUNZK = "runzk";
   private static final String SOLRHOME = "solrhome";
   private static final String BOOTSTRAP = "bootstrap";
-  private static final String SOLR_XML = "solr.xml";
   private static final String UPCONFIG = "upconfig";
   private static final String COLLECTION = "collection";
   private static final String CLEAR = "clear";
   private static final String LIST = "list";
   private static final String CMD = "cmd";
+  private static final String CLUSTERPROP = "clusterprop";
   
   /**
    * Allows you to perform a variety of zookeeper related tasks, such as:
@@ -187,7 +184,7 @@ public class ZkCLI {
               public void command() {}
             });
         
-        if (line.getOptionValue(CMD).equals(BOOTSTRAP)) {
+        if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
             System.out.println("-" + SOLRHOME
                 + " is required for " + BOOTSTRAP);
@@ -206,7 +203,7 @@ public class ZkCLI {
           // No need to close the CoreContainer, as it wasn't started
           // up in the first place...
           
-        } else if (line.getOptionValue(CMD).equals(UPCONFIG)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(UPCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
             System.out.println("-" + CONFDIR + " and -" + CONFNAME
                 + " are required for " + UPCONFIG);
@@ -221,7 +218,7 @@ public class ZkCLI {
           }
           ZkConfigManager configManager = new ZkConfigManager(zkClient);
           configManager.uploadConfigDir(Paths.get(confDir), confName);
-        } else if (line.getOptionValue(CMD).equals(DOWNCONFIG)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(DOWNCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
             System.out.println("-" + CONFDIR + " and -" + CONFNAME
                 + " are required for " + DOWNCONFIG);
@@ -231,7 +228,7 @@ public class ZkCLI {
           String confName = line.getOptionValue(CONFNAME);
           ZkConfigManager configManager = new ZkConfigManager(zkClient);
           configManager.downloadConfigDir(confName, Paths.get(confDir));
-        } else if (line.getOptionValue(CMD).equals(LINKCONFIG)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(LINKCONFIG)) {
           if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
             System.out.println("-" + COLLECTION + " and -" + CONFNAME
                 + " are required for " + LINKCONFIG);
@@ -241,23 +238,23 @@ public class ZkCLI {
           String confName = line.getOptionValue(CONFNAME);
           
           ZkController.linkConfSet(zkClient, collection, confName);
-        } else if (line.getOptionValue(CMD).equals(LIST)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(LIST)) {
           zkClient.printLayoutToStdOut();
-        } else if (line.getOptionValue(CMD).equals(CLEAR)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLEAR)) {
           List arglist = line.getArgList();
           if (arglist.size() != 1) {
             System.out.println("-" + CLEAR + " requires one arg - the path to clear");
             System.exit(1);
           }
           zkClient.clean(arglist.get(0).toString());
-        } else if (line.getOptionValue(CMD).equals(MAKEPATH)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(MAKEPATH)) {
           List arglist = line.getArgList();
           if (arglist.size() != 1) {
             System.out.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
           zkClient.makePath(arglist.get(0).toString(), true);
-        } else if (line.getOptionValue(CMD).equals(PUT)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
             System.out.println("-" + PUT + " requires two args - the path to create and the data string");
@@ -269,7 +266,7 @@ public class ZkCLI {
           } else {
             zkClient.create(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
           }
-        } else if (line.getOptionValue(CMD).equals(PUT_FILE)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
             System.out.println("-" + PUT_FILE + " requires two args - the path to create in ZK and the path to the local file");
@@ -288,7 +285,7 @@ public class ZkCLI {
             IOUtils.closeQuietly(is);
           }
 
-        } else if (line.getOptionValue(CMD).equals(GET)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
           List arglist = line.getArgList();
           if (arglist.size() != 1) {
             System.out.println("-" + GET + " requires one arg - the path to get");
@@ -296,7 +293,7 @@ public class ZkCLI {
           }
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           System.out.println(new String(data, StandardCharsets.UTF_8));
-        } else if (line.getOptionValue(CMD).equals(GET_FILE)) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
           List arglist = line.getArgList();
           if (arglist.size() != 2) {
             System.out.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
@@ -304,7 +301,7 @@ public class ZkCLI {
           }
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
-        } else if (CollectionAction.get(line.getOptionValue(CMD)) == CLUSTERPROP) {
+        } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
           if(!line.hasOption(NAME)) {
             System.out.println("-" + NAME + " is required for " + CLUSTERPROP);
           }
@@ -335,6 +332,10 @@ public class ZkCLI {
           } finally {
             reader.close();
           }
+        } else {
+          // If not cmd matches
+          System.out.println("Unknown command "+ line.getOptionValue(CMD) + ". Use -h to get help.");
+          System.exit(1);
         }
       } finally {
         if (solrPort != null) {
