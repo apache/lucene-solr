@@ -176,6 +176,9 @@ New Features
 
 * SOLR-5882: score local parameter for block join query parser {!parent} (Andrey Kudryavtsev, Mikhail Khludnev)
 
+* SOLR-7799: Added includeIndexFieldFlags (backwards compatible default is true) to /admin/luke.
+  When there are many fields in the index, setting this flag to false can dramatically speed up requests. (ehatcher)
+
 Bug Fixes
 ----------------------
 
