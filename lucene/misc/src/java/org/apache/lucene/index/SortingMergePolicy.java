@@ -204,6 +204,8 @@ public final class SortingMergePolicy extends MergePolicy {
       if (diagnostics != null) {
         return diagnostics.get(SORTER_ID_PROP);
       }
+    } else if (reader instanceof FilterLeafReader) {
+      return getSortDescription(FilterLeafReader.unwrap(reader));
     }
     return null;
   }
