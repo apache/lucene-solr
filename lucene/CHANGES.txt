@@ -40,6 +40,9 @@ API Changes
   abstract and has no reflection-based default implementation anymore.
   (Uwe Schindler)
 
+* LUCENE-6706: PayloadTermQuery and PayloadNearQuery have been removed.
+  Instead, use PayloadScoreQuery to wrap any SpanQuery. (Alan Woodward)
+
 ======================= Lucene 5.3.0 =======================
 
 New Features

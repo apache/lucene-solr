@@ -1,11 +1,12 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.payloads.AveragePayloadFunction;
-import org.apache.lucene.search.payloads.PayloadTermQuery;
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.payloads.AveragePayloadFunction;
+import org.apache.lucene.search.payloads.PayloadScoreQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.w3c.dom.Element;
 
 /*
@@ -26,7 +27,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- * Builder for {@link PayloadTermQuery}
+ * Builder for {@link PayloadScoreQuery}
  */
 public class BoostingTermBuilder extends SpanBuilderBase {
 
@@ -35,7 +36,8 @@ public class BoostingTermBuilder extends SpanBuilderBase {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);
 
-    PayloadTermQuery btq = new PayloadTermQuery(new Term(fieldName, value), new AveragePayloadFunction());
+    PayloadScoreQuery btq = new PayloadScoreQuery(new SpanTermQuery(new Term(fieldName, value)),
+        new AveragePayloadFunction());
     btq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
     return btq;
   }
