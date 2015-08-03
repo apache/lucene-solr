@@ -135,7 +135,7 @@ while [ $# -gt 0 ]; do
         shift
         COLLECTION="$1"
       elif [[ "$1" == "-p" ]]; then
-        # -p => -port for convenience and compatability with bin/solr start
+        # -p alias for -port for convenience and compatibility with `bin/solr start`
         shift
         PROPS+=("-Dport=$1")
       elif [[ ("$1" == "-d" || "$1" == "--data" || "$1" == "-") ]]; then
@@ -156,6 +156,9 @@ while [ $# -gt 0 ]; do
         shift
 #       echo "$1: PROP"
         PROPS+=("-D$key=$1")
+        if [[ "$key" == "url" ]]; then
+          SOLR_URL=$1
+        fi
       fi
     else
       echo -e "\nUnrecognized argument: $1\n"
@@ -167,8 +170,8 @@ while [ $# -gt 0 ]; do
 done
 
 # Check for errors
-if [[ $COLLECTION == "" ]]; then
-  echo -e "\nCollection must be specified.  Use -c <collection name> or set DEFAULT_SOLR_COLLECTION in your environment.\n"
+if [[ $COLLECTION == "" && $SOLR_URL == "" ]]; then
+  echo -e "\nCollection or URL must be specified.  Use -c <collection name> or set DEFAULT_SOLR_COLLECTION in your environment, or use -url instead.\n"
   echo -e "See '$THIS_SCRIPT -h' for usage instructions.\n"
   exit 1
 fi
