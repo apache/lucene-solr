@@ -370,6 +370,11 @@ Changes in Runtime Behavior
   TestEarlyTerminatingSortingCollector.testTerminatedEarly test added.
   (Christine Poerschke)
 
+* LUCENE-6609: Add getSortField impls to many subclasses of FieldCacheSource which return
+  the most direct SortField implementation.  In many trivial sort by ValueSource usages, this
+  will result in less RAM, and more precise sorting of extreme values due to no longer
+  converting to double. (hossman)
+
 Optimizations
 
 * LUCENE-6548: Some optimizations for BlockTree's intersect with very

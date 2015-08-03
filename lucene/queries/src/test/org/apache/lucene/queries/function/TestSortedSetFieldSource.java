@@ -26,6 +26,9 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -47,12 +50,24 @@ public class TestSortedSetFieldSource extends LuceneTestCase {
     writer.close();
 
     DirectoryReader ir = DirectoryReader.open(dir);
+    IndexSearcher searcher = newSearcher(ir);
     LeafReader ar = getOnlySegmentReader(ir);
     
     ValueSource vs = new SortedSetFieldSource("value");
     FunctionValues values = vs.getValues(Collections.emptyMap(), ar.getContext());
     assertEquals("baz", values.strVal(0));
-    assertEquals("bar", values.strVal(1)); 
+    assertEquals("bar", values.strVal(1));
+
+    // test SortField optimization
+    final boolean reverse = random().nextBoolean();
+    SortField vssf = vs.getSortField(reverse);
+    SortField sf = new SortedSetSortField("value", reverse);
+    assertEquals(sf, vssf);
+
+    vssf = vssf.rewrite(searcher);
+    sf = sf.rewrite(searcher);
+    assertEquals(sf, vssf);
+      
     ir.close();
     dir.close();
   }
