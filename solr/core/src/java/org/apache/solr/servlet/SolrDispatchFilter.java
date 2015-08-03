@@ -52,7 +52,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
-import org.apache.solr.util.SolrHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,8 +92,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void init(FilterConfig config) throws ServletException
   {
     log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
-
-    HttpClientUtil.HttpClientFactory.setHttpClientImpl(SolrHttpClient.SolrDefaultHttpClient.class, SolrHttpClient.SolrSystemDefaultHttpClient.class);
 
     String exclude = config.getInitParameter("excludePatterns");
     if(exclude != null) {

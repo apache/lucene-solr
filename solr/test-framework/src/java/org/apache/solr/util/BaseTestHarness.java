@@ -40,10 +40,6 @@ abstract public class BaseTestHarness {
   private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
   private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<>();
 
-  static {
-    HttpClientUtil.HttpClientFactory.setHttpClientImpl(SolrHttpClient.SolrDefaultHttpClient.class, SolrHttpClient.SolrSystemDefaultHttpClient.class);
-  }
-
   public static DocumentBuilder getXmlDocumentBuilder() {
     try {
       DocumentBuilder builder = builderTL.get();
