@@ -18,10 +18,6 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -207,15 +203,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
   }
 
-  final static Map<String, ScoreMode> lowercase = Collections.unmodifiableMap( new HashMap<String, ScoreMode>() {
-    {
-      for (ScoreMode s : ScoreMode.values()) {
-        put(s.name().toLowerCase(Locale.ROOT), s);
-        put(s.name(), s);
-      }
-    }
-  });
-
   @Override
   public void init(NamedList args) {
   }
@@ -229,7 +216,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         final String fromField = localParams.get("from");
         final String fromIndex = localParams.get("fromIndex");
         final String toField = localParams.get("to");
-        final ScoreMode scoreMode = parseScore();
+        final ScoreMode scoreMode = ScoreModeParser.parse(getParam(SCORE));
 
         final String v = localParams.get(CommonParams.VALUE);
 
@@ -279,16 +266,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           return new SameCoreJoinQuery(fromQuery, fromField, toField, scoreMode);
         }
       }
-
-      private ScoreMode parseScore() {
-
-        String score = getParam(SCORE);
-        final ScoreMode scoreMode = lowercase.get(score);
-        if (scoreMode == null) {
-          throw new IllegalArgumentException("Unable to parse ScoreMode from: " + score);
-        }
-        return scoreMode;
-      }
     };
   }
 }
+
+

@@ -109,6 +109,8 @@ New Features
 * SOLR-2522: new two argument option for the existing field() function; picks the min/max value of a
   docValues field to use as a ValueSource: "field(field_name,min)" and "field(field_name,max)"  (hossman)
 
+* SOLR-5882: score local parameter for block join query parser {!parent} (Andrey Kudryavtsev, Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 

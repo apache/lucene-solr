@@ -55,6 +55,7 @@ class BlockJoinParentQParser extends QParser {
   @Override
   public Query parse() throws SyntaxError {
     String filter = localParams.get(getParentFilterLocalParamName());
+    String scoreMode = localParams.get("score", ScoreMode.None.name());
     QParser parentParser = subQuery(filter, null);
     Query parentQ = parentParser.getQuery();
 
@@ -67,11 +68,12 @@ class BlockJoinParentQParser extends QParser {
     }
     QParser childrenParser = subQuery(queryText, null);
     Query childrenQuery = childrenParser.getQuery();
-    return createQuery(parentQ, childrenQuery);
+    return createQuery(parentQ, childrenQuery, scoreMode);
   }
 
-  protected Query createQuery(Query parentList, Query query) {
-    return new ToParentBlockJoinQuery(query, getFilter(parentList).filter, ScoreMode.None);
+  protected Query createQuery(Query parentList, Query query, String scoreMode) throws SyntaxError {
+    return new ToParentBlockJoinQuery(query, getFilter(parentList).filter, 
+        ScoreModeParser.parse(scoreMode));
   }
 
   BitDocIdSetFilterWrapper getFilter(Query parentList) {

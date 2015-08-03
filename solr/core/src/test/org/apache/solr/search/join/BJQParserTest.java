@@ -17,9 +17,12 @@
 
 package org.apache.solr.search.join;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,6 +32,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
+
+import javax.xml.namespace.QName;
+import javax.xml.xpath.XPathConstants;
 
 public class BJQParserTest extends SolrTestCaseJ4 {
   
@@ -164,7 +171,53 @@ public class BJQParserTest extends SolrTestCaseJ4 {
             "parent_s:(e b)", "chq", "child_s:l", "pq", "parent_s:[* TO *]"),
         beParents);
   }
+
+  public void testScoreNoneScoringForParent() throws Exception {
+    assertQ("score=none yields 0.0 score",
+        req("q", "{!parent which=\"parent_s:[* TO *]\" "+(
+            rarely()? "":(rarely()? "score=None":"score=none")
+            )+"}child_s:l","fl","score"),
+        "//*[@numFound='6']",
+        "(//float[@name='score'])["+(random().nextInt(6)+1)+"]=0.0");
+  }
+
+  public void testWrongScoreExceptionForParent() throws Exception {
+    final String aMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)].name();
+    final String wrongMode = rarely()? "":(rarely()? " ":
+      rarely()? aMode.substring(1):aMode.toUpperCase(Locale.ROOT));
+    assertQEx("wrong score mode", 
+        req("q", "{!parent which=\"parent_s:[* TO *]\" score="+wrongMode+"}child_s:l","fl","score")
+        , SolrException.ErrorCode.BAD_REQUEST.code);
+  }
+
+  public void testScoresForParent() throws Exception{
+    final ArrayList<ScoreMode> noNone = new ArrayList<>(Arrays.asList(ScoreMode.values()));
+    noNone.remove(ScoreMode.None);
+    final String notNoneMode = (noNone.get(random().nextInt(noNone.size()))).name();
+    
+    String leastScore = getLeastScore("child_s:l");
+    assertTrue(leastScore+" > 0.0", Float.parseFloat(leastScore)>0.0);
+    final String notNoneLower = usually() ? notNoneMode: notNoneMode.toLowerCase(Locale.ROOT);
+    
+    assertQ(req("q", "{!parent which=\"parent_s:[* TO *]\" score="+notNoneLower+"}child_s:l","fl","score"),
+        "//*[@numFound='6']","(//float[@name='score'])["+(random().nextInt(6)+1)+"]>='"+leastScore+"'");
+  }
   
+  public void testScoresForChild() throws Exception{ 
+    String leastScore = getLeastScore("parent_s:a");
+      assertTrue(leastScore+" > 0.0", Float.parseFloat(leastScore)>0.0);
+      assertQ(
+          req("q", "{!child of=\"parent_s:[* TO *]\"}parent_s:a","fl","score"), 
+          "//*[@numFound='6']","(//float[@name='score'])["+(random().nextInt(6)+1)+"]>='"+leastScore+"'");
+  }
+  
+  private String getLeastScore(String query) throws Exception {
+    final String resp = h.query(req("q",query, "sort","score asc", "fl","score"));
+    return (String) BaseTestHarness.
+        evaluateXPath(resp,"(//float[@name='score'])[1]/text()", 
+            XPathConstants.STRING);
+  }
+
   @Test
   public void testFq() {
     assertQ(
