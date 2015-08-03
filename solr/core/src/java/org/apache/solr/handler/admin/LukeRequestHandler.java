@@ -390,8 +390,8 @@ public class LukeRequestHandler extends RequestHandlerBase
               log.warn("error reading field: " + fieldName);
             }
           }
-          fieldMap.add("docs", terms.getDocCount());
         }
+        fieldMap.add("docs", terms.getDocCount());
       }
       if (fields != null && (fields.contains(fieldName) || fields.contains("*"))) {
         getDetailedFieldInfo(req, fieldName, fieldMap);
