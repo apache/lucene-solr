@@ -98,6 +98,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static Logger log = LoggerFactory.getLogger(LukeRequestHandler.class);
 
   public static final String NUMTERMS = "numTerms";
+  public static final String INCLUDE_INDEX_FIELD_FLAGS = "includeIndexFieldFlags";
   public static final String DOC_ID = "docId";
   public static final String ID = "id";
   public static final int DEFAULT_COUNT = 10;
@@ -372,29 +373,25 @@ public class LukeRequestHandler extends RequestHandlerBase
       }
 
       if(sfield != null && sfield.indexed() ) {
-        // In the pre-4.0 days, this did a veeeery expensive range query. But we can be much faster now,
-        // so just do this all the time.
-        Document doc = getFirstLiveDoc(terms, reader);
-
-
-        if( doc != null ) {
-          // Found a document with this field
-          try {
-            IndexableField fld = doc.getField( fieldName );
-            if( fld != null ) {
-              fieldMap.add("index", getFieldFlags(fld));
+        if (params.getBool(INCLUDE_INDEX_FIELD_FLAGS,true)) {
+          Document doc = getFirstLiveDoc(terms, reader);
+          if (doc != null) {
+            // Found a document with this field
+            try {
+              IndexableField fld = doc.getField(fieldName);
+              if (fld != null) {
+                fieldMap.add("index", getFieldFlags(fld));
+              } else {
+                // it is a non-stored field...
+                fieldMap.add("index", "(unstored field)");
+              }
+            } catch (Exception ex) {
+              log.warn("error reading field: " + fieldName);
             }
-            else {
-              // it is a non-stored field...
-              fieldMap.add("index", "(unstored field)");
-            }
-          }
-          catch( Exception ex ) {
-            log.warn( "error reading field: "+fieldName );
           }
         }
-        fieldMap.add("docs", terms.getDocCount());
 
+        fieldMap.add("docs", terms.getDocCount());
       }
       if (fields != null && (fields.contains(fieldName) || fields.contains("*"))) {
         getDetailedFieldInfo(req, fieldName, fieldMap);
