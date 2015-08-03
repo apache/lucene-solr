@@ -403,6 +403,8 @@ Other Changes
 
 * SOLR-7863: Lowercase the CLUSTERPROP command in ZkCLI for consistency, print error for unknown cmd (janhoy)
 
+* SOLR-7832: bin/post now allows either -url or -c, rather than requiring both. (ehatcher)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
