@@ -18,17 +18,20 @@ package org.apache.lucene.search.payloads;
  */
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.BaseExplanationTestCase;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * TestExplanations subclass focusing on payload queries
  */
 public class TestPayloadExplanations extends BaseExplanationTestCase {
-  private PayloadFunction functions[] = new PayloadFunction[] { 
+
+  private static PayloadFunction functions[] = new PayloadFunction[] {
       new AveragePayloadFunction(),
       new MinPayloadFunction(),
       new MaxPayloadFunction(),
@@ -89,4 +92,45 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
   }
 
   // TODO: test the payloadnear query too!
+
+  /*
+    protected static final String[] docFields = {
+    "w1 w2 w3 w4 w5",
+    "w1 w3 w2 w3 zz",
+    "w1 xx w2 yy w3",
+    "w1 w3 xx w2 yy w3 zz"
+  };
+   */
+
+  public void testAllFunctions(SpanQuery query, int[] expected) throws Exception {
+    for (PayloadFunction fn : functions) {
+      qtest(new PayloadScoreQuery(query, fn), expected);
+    }
+  }
+
+  public void testSimpleTerm() throws Exception {
+    SpanTermQuery q = new SpanTermQuery(new Term(FIELD, "w2"));
+    testAllFunctions(q, new int[]{ 0, 1, 2, 3});
+  }
+
+  public void testOrTerm() throws Exception {
+    SpanOrQuery q = new SpanOrQuery(
+        new SpanTermQuery(new Term(FIELD, "xx")), new SpanTermQuery(new Term(FIELD, "yy"))
+    );
+    testAllFunctions(q, new int[]{ 2, 3 });
+  }
+
+  public void testOrderedNearQuery() throws Exception {
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+            new SpanTermQuery(new Term(FIELD, "w3")), new SpanTermQuery(new Term(FIELD, "w2"))
+        }, 1, true);
+    testAllFunctions(q, new int[]{ 1, 3 });
+  }
+
+  public void testUnorderedNearQuery() throws Exception {
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+        new SpanTermQuery(new Term(FIELD, "w2")), new SpanTermQuery(new Term(FIELD, "w3"))
+    }, 1, false);
+    testAllFunctions(q, new int[]{ 0, 1, 2, 3 });
+  }
 }

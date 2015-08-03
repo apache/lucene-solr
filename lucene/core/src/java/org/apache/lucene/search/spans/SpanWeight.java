@@ -33,7 +33,6 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.util.Bits;
 
 /**
  * Expert-only.  Public for use by other weight implementations
@@ -143,8 +142,12 @@ public abstract class SpanWeight extends Weight {
     }
 
     Spans spans = getSpans(context, Postings.POSITIONS);
-    Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
+    Similarity.SimScorer simScorer = getSimScorer(context);
     return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
+  }
+
+  public Similarity.SimScorer getSimScorer(LeafReaderContext context) throws IOException {
+    return simWeight == null ? null : similarity.simScorer(simWeight, context);
   }
 
   @Override
