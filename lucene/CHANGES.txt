@@ -357,6 +357,11 @@ Changes in Runtime Behavior
   when an unexpected, tragic exception strikes while merging. (Robert
   Muir, Mike McCandless) 
 
+* LUCENE-6691: SortingMergePolicy.isSorted now considers FilterLeafReader instances.
+  EarlyTerminatingSortingCollector.terminatedEarly accessor added.
+  TestEarlyTerminatingSortingCollector.testTerminatedEarly test added.
+  (Christine Poerschke)
+
 Optimizations
 
 * LUCENE-6548: Some optimizations for BlockTree's intersect with very
