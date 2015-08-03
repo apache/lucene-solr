@@ -502,6 +502,19 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         reader = DirectoryReader.open(dir);
         fail("DirectoryReader.open should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
+        if (e.getReason() != null) {
+          assertNull(e.getVersion());
+          assertNull(e.getMinVersion());
+          assertNull(e.getMaxVersion());
+          assertEquals(e.getMessage(), new IndexFormatTooOldException(e.getResourceDescription(), e.getReason()).getMessage());
+        } else {
+          assertNotNull(e.getVersion());
+          assertNotNull(e.getMinVersion());
+          assertNotNull(e.getMaxVersion());
+          assertTrue(e.getMessage(), e.getMaxVersion() >= e.getMinVersion());
+          assertTrue(e.getMessage(), e.getMaxVersion() < e.getVersion() || e.getVersion() < e.getMinVersion());
+          assertEquals(e.getMessage(), new IndexFormatTooOldException(e.getResourceDescription(), e.getVersion(), e.getMinVersion(), e.getMaxVersion()).getMessage());
+        }
         // pass
         if (VERBOSE) {
           System.out.println("TEST: got expected exc:");
@@ -516,6 +529,19 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setCommitOnClose(false));
         fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
+        if (e.getReason() != null) {
+          assertNull(e.getVersion());
+          assertNull(e.getMinVersion());
+          assertNull(e.getMaxVersion());
+          assertEquals(e.getMessage(), new IndexFormatTooOldException(e.getResourceDescription(), e.getReason()).getMessage());
+        } else {
+          assertNotNull(e.getVersion());
+          assertNotNull(e.getMinVersion());
+          assertNotNull(e.getMaxVersion());
+          assertTrue(e.getMessage(), e.getMaxVersion() >= e.getMinVersion());
+          assertTrue(e.getMessage(), e.getMaxVersion() < e.getVersion() || e.getVersion() < e.getMinVersion());
+          assertEquals(e.getMessage(), new IndexFormatTooOldException(e.getResourceDescription(), e.getVersion(), e.getMinVersion(), e.getMaxVersion()).getMessage());
+        }
         // pass
         if (VERBOSE) {
           System.out.println("TEST: got expected exc:");

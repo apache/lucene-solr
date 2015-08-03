@@ -98,6 +98,7 @@ public class BuildMaxPositionIndex {
     try {
       w.forceMerge(1);
     } catch (CorruptIndexException cie) {
+      assertEquals(cie.getMessage(), new CorruptIndexException(cie.getOriginalMessage(), cie.getResourceDescription()).getMessage());
       // SerialMergeScheduler
       assertTrue("got message " + cie.getMessage(),
                  cie.getMessage().contains("position=2147483647 is too large (> IndexWriter.MAX_POSITION=2147483519), field=\"foo\" doc=0 (resource=PerFieldPostings(segment=_0 formats=1)"));
