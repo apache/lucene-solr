@@ -179,6 +179,8 @@ New Features
 * SOLR-7799: Added includeIndexFieldFlags (backwards compatible default is true) to /admin/luke.
   When there are many fields in the index, setting this flag to false can dramatically speed up requests. (ehatcher)
 
+* SOLR-7769: Add bin/post -p alias for -port parameter.  (ehatcher)
+
 Bug Fixes
 ----------------------
 
