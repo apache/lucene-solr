@@ -141,6 +141,9 @@ New Features
 * LUCENE-6695: Added a new BlendedTermQuery to blend statistics across several
   terms. (Simon Willnauer, Adrien Grand)
 
+* LUCENE-6706: Added a new PayloadScoreQuery that generalises the behaviour of
+  PayloadTermQuery and PayloadNearQuery to all Span queries. (Alan Woodward)
+
 * LUCENE-6697: Add experimental range tree doc values format and
   queries, based on a 1D version of the spatial BKD tree, for a faster
   and smaller alternative to postings-based numeric and binary term

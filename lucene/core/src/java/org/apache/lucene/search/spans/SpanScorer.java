@@ -17,12 +17,12 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Public for extension only.
@@ -76,9 +76,11 @@ public class SpanScorer extends Scorer {
    * <p>
    * This will be called at most once per document.
    */
-  protected void setFreqCurrentDoc() throws IOException {
+  protected final void setFreqCurrentDoc() throws IOException {
     freq = 0.0f;
     numMatches = 0;
+
+    doStartCurrentDoc();
 
     assert spans.startPosition() == -1 : "incorrect initial start position, spans="+spans;
     assert spans.endPosition() == -1 : "incorrect initial end position, spans="+spans;
@@ -100,6 +102,7 @@ public class SpanScorer extends Scorer {
         return;
       }
       freq += docScorer.computeSlopFactor(spans.width());
+      doCurrentSpans();
       prevStartPos = startPos;
       prevEndPos = endPos;
       startPos = spans.nextStartPosition();
@@ -108,6 +111,16 @@ public class SpanScorer extends Scorer {
     assert spans.startPosition() == Spans.NO_MORE_POSITIONS : "incorrect final start position, spans="+spans;
     assert spans.endPosition() == Spans.NO_MORE_POSITIONS : "incorrect final end position, spans="+spans;
   }
+
+  /**
+   * Called before the current doc's frequency is calculated
+   */
+  protected void doStartCurrentDoc() throws IOException {}
+
+  /**
+   * Called each time the scorer's Spans is advanced during frequency calculation
+   */
+  protected void doCurrentSpans() throws IOException {}
   
   /**
    * Score the current doc. The default implementation scores the doc 

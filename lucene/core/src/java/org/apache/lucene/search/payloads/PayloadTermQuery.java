@@ -17,6 +17,11 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -34,11 +39,6 @@ import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-
 /**
  * This class is very similar to
  * {@link org.apache.lucene.search.spans.SpanTermQuery} except that it factors
@@ -51,6 +51,8 @@ import java.util.Objects;
  * <p>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
  * @see org.apache.lucene.search.similarities.Similarity.SimScorer#computePayloadFactor(int, int, int, BytesRef)
+ *
+ * @deprecated use {@link PayloadScoreQuery} to wrap {@link SpanTermQuery}
  **/
 public class PayloadTermQuery extends SpanTermQuery {
   protected PayloadFunction function;
@@ -114,27 +116,16 @@ public class PayloadTermQuery extends SpanTermQuery {
       }
 
       @Override
-      protected void setFreqCurrentDoc() throws IOException {
-        freq = 0.0f;
-        numMatches = 0;
+      protected void doStartCurrentDoc() throws IOException {
         payloadScore = 0;
         payloadsSeen = 0;
-        int startPos = spans.nextStartPosition();
-        assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, spans="+spans;
-        do {
-          int matchLength = spans.endPosition() - startPos;
-          if (docScorer == null) {
-            freq = 1;
-            return;
-          }
-          freq += docScorer.computeSlopFactor(matchLength);
-          numMatches++;
-          payloadCollector.reset();
-          spans.collect(payloadCollector);
-          processPayload();
+      }
 
-          startPos = spans.nextStartPosition();
-        } while (startPos != Spans.NO_MORE_POSITIONS);
+      @Override
+      protected void doCurrentSpans() throws IOException {
+        payloadCollector.reset();
+        spans.collect(payloadCollector);
+        processPayload();
       }
 
       protected void processPayload() throws IOException {
