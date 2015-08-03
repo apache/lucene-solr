@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.ExternalPaths;
-import org.apache.solr.util.SolrHttpClient;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,10 +42,6 @@ import java.util.SortedMap;
 abstract public class SolrJettyTestBase extends SolrTestCaseJ4 
 {
   private static Logger log = LoggerFactory.getLogger(SolrJettyTestBase.class);
-
-  static {
-    HttpClientUtil.HttpClientFactory.setHttpClientImpl(SolrHttpClient.SolrDefaultHttpClient.class, SolrHttpClient.SolrSystemDefaultHttpClient.class);
-  }
 
   @BeforeClass
   public static void beforeSolrJettyTestBase() throws Exception {
