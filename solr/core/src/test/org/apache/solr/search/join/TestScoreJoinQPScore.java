@@ -27,6 +27,7 @@ import java.util.Random;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -245,14 +246,11 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
       assertEquals("lowercase shouldn't change anything", resp, repeat);
 
-      try {
-        h.query(req("q", "{!join from=" + from + " to=" + to + " score=" + score.substring(0, score.length() - 1) +
-                "}" + q, "fl", "id", "omitHeader", "true")
-        );
-        fail("excpecting exception");
-      } catch (IllegalArgumentException e) {
-        assertTrue(e.getMessage().contains("ScoreMode"));
-      }
+        final String aMod = score.substring(0, score.length() - 1);
+        assertQEx("exception on "+aMod, "ScoreMode", 
+            req("q", "{!join from=" + from + " to=" + to + " score=" + aMod +
+                "}" + q, "fl", "id", "omitHeader", "true"), 
+                SolrException.ErrorCode.BAD_REQUEST);
     }
     // this queries are not overlap, with other in this test case. 
     // however it might be better to extract this method into the separate suite

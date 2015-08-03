@@ -307,6 +307,8 @@ Bug fixes
 
 * LUCENE-6704: GeoPointDistanceQuery was visiting too many term ranges,
   consuming too much heap for a large radius (Nick Knize via Mike McCandless)
+  
+* SOLR-5882: fix ScoreMode.Min at ToParentBlockJoinQuery (Mikhail Khludnev)
 
 Changes in Runtime Behavior
 
