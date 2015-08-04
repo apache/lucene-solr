@@ -79,4 +79,22 @@ public class TestSpanNearQuery extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  public void testBuilder() throws Exception {
+
+    // Can't add subclauses from different fields
+    try {
+      SpanNearQuery.newOrderedNearQuery("field1").addClause(new SpanTermQuery(new Term("field2", "term")));
+      fail("Expected an error when adding a clause with a different field");
+    }
+    catch (IllegalArgumentException e) {}
+
+    // Can't add gaps to unordered queries
+    try {
+      SpanNearQuery.newUnorderedNearQuery("field1").addGap(1);
+      fail("Expected an error when adding a gap to an unordered query");
+    }
+    catch (IllegalArgumentException e) {}
+
+  }
 }

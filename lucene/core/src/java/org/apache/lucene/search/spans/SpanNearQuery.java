@@ -20,8 +20,10 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -38,6 +40,77 @@ import org.apache.lucene.util.ToStringUtils;
  * matches are required to be in-order.
  */
 public class SpanNearQuery extends SpanQuery implements Cloneable {
+
+  /**
+   * A builder for SpanNearQueries
+   */
+  public static class Builder {
+    private final boolean ordered;
+    private final String field;
+    private final List<SpanQuery> clauses = new LinkedList<>();
+    private int slop;
+
+    /**
+     * Construct a new builder
+     * @param field the field to search in
+     * @param ordered whether or not clauses must be in-order to match
+     */
+    public Builder(String field, boolean ordered) {
+      this.field = field;
+      this.ordered = ordered;
+    }
+
+    /**
+     * Add a new clause
+     */
+    public Builder addClause(SpanQuery clause) {
+      if (Objects.equals(clause.getField(), field) == false)
+        throw new IllegalArgumentException("Cannot add clause " + clause + " to SpanNearQuery for field " + field);
+      this.clauses.add(clause);
+      return this;
+    }
+
+    /**
+     * Add a gap after the previous clause of a defined width
+     */
+    public Builder addGap(int width) {
+      if (!ordered)
+        throw new IllegalArgumentException("Gaps can only be added to ordered near queries");
+      this.clauses.add(new SpanGapQuery(field, width));
+      return this;
+    }
+
+    /**
+     * Set the slop for this query
+     */
+    public Builder setSlop(int slop) {
+      this.slop = slop;
+      return this;
+    }
+
+    /**
+     * Build the query
+     */
+    public SpanNearQuery build() {
+      return new SpanNearQuery(clauses.toArray(new SpanQuery[clauses.size()]), slop, ordered);
+    }
+
+  }
+
+  /**
+   * Returns a {@link Builder} for an ordered query on a particular field
+   */
+  public static Builder newOrderedNearQuery(String field) {
+    return new Builder(field, true);
+  }
+
+  /**
+   * Returns a {@link Builder} for an unordered query on a particular field
+   */
+  public static Builder newUnorderedNearQuery(String field) {
+    return new Builder(field, false);
+  }
+
   protected List<SpanQuery> clauses;
   protected int slop;
   protected boolean inOrder;
@@ -221,4 +294,115 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     int fac = 1 + (inOrder ? 8 : 4);
     return fac * result;
   }
+
+  private static class SpanGapQuery extends SpanQuery {
+
+    private final String field;
+    private final int width;
+
+    public SpanGapQuery(String field, int width) {
+      this.field = field;
+      this.width = width;
+    }
+
+    @Override
+    public String getField() {
+      return field;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "SpanGap(" + field + ":" + width + ")";
+    }
+
+    @Override
+    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new SpanGapWeight(searcher);
+    }
+
+    private class SpanGapWeight extends SpanWeight {
+
+      SpanGapWeight(IndexSearcher searcher) throws IOException {
+        super(SpanGapQuery.this, searcher, null);
+      }
+
+      @Override
+      public void extractTermContexts(Map<Term, TermContext> contexts) {
+
+      }
+
+      @Override
+      public Spans getSpans(LeafReaderContext ctx, Postings requiredPostings) throws IOException {
+        return new GapSpans(width);
+      }
+
+      @Override
+      public void extractTerms(Set<Term> terms) {
+
+      }
+    }
+  }
+
+  static class GapSpans extends Spans {
+
+    int doc = -1;
+    int pos = -1;
+    final int width;
+
+    GapSpans(int width) {
+      this.width = width;
+    }
+
+    @Override
+    public int nextStartPosition() throws IOException {
+      return ++pos;
+    }
+
+    public int skipToPosition(int position) throws IOException {
+      return pos = position;
+    }
+
+    @Override
+    public int startPosition() {
+      return pos;
+    }
+
+    @Override
+    public int endPosition() {
+      return pos + width;
+    }
+
+    @Override
+    public int width() {
+      return width;
+    }
+
+    @Override
+    public void collect(SpanCollector collector) throws IOException {
+
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      pos = -1;
+      return ++doc;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      pos = -1;
+      return doc = target;
+    }
+
+    @Override
+    public long cost() {
+      return 0;
+    }
+  }
+
 }

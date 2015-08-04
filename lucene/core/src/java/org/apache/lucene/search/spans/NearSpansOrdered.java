@@ -104,18 +104,25 @@ public class NearSpansOrdered extends NearSpans {
       Spans spans = subSpans[i];
       assert spans.startPosition() != NO_MORE_POSITIONS;
       assert spans.endPosition() != NO_MORE_POSITIONS;
-
-      while (prevSpans.endPosition() > spans.startPosition()) { // while overlapping spans
-        if (spans.nextStartPosition() == NO_MORE_POSITIONS) {
-          oneExhaustedInCurrentDoc = true;
-          return false;
-        }
+      if (advancePosition(spans, prevSpans.endPosition()) == NO_MORE_POSITIONS) {
+        oneExhaustedInCurrentDoc = true;
+        return false;
       }
       matchWidth += (spans.startPosition() - prevSpans.endPosition());
       prevSpans = spans;
     }
     matchEnd = subSpans[subSpans.length - 1].endPosition();
     return true; // all subSpans ordered and non overlapping
+  }
+
+  private static int advancePosition(Spans spans, int position) throws IOException {
+    if (spans instanceof SpanNearQuery.GapSpans) {
+      return ((SpanNearQuery.GapSpans)spans).skipToPosition(position);
+    }
+    while (spans.startPosition() < position) {
+      spans.nextStartPosition();
+    }
+    return spans.startPosition();
   }
 
   @Override

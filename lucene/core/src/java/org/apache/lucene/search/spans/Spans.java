@@ -102,4 +102,5 @@ public abstract class Spans extends DocIdSetIterator {
     sb.append(")");
     return sb.toString();
   }
+
 }

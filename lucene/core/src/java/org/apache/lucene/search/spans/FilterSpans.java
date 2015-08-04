@@ -17,10 +17,10 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.TwoPhaseIterator;
-
 import java.io.IOException;
 import java.util.Objects;
+
+import org.apache.lucene.search.TwoPhaseIterator;
 
 /**
  * A {@link Spans} implementation wrapping another spans instance,
