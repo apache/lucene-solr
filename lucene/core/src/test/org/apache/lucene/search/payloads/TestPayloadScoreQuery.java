@@ -29,6 +29,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
@@ -207,6 +208,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new PayloadAnalyzer())
+            .setMergePolicy(NoMergePolicy.INSTANCE)
             .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 300; i++) {
