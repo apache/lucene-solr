@@ -22,7 +22,7 @@ import org.junit.BeforeClass;
 
 /**
  *
- *
+ * @see TestSortByMinMaxFunction
  **/
 public class SortByFunctionTest extends AbstractSolrTestCase {
 
@@ -129,11 +129,23 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
             "//result/doc[4]/int[@name='id'][.='1']"
     );
   }
+  
+  /**
+   * The sort clauses to test in <code>testFieldSortSpecifiedAsFunction</code>.
+   *
+   * @see #testFieldSortSpecifiedAsFunction
+   */
+  protected String[] getFieldFunctionClausesToTest() {
+    return new String[] { "primary_tl1", "field(primary_tl1)" };
+  }
+  
 
   /**
    * Sort by function normally compares the double value, but if a function is specified that identifies
    * a single field, we should use the underlying field's SortField to save of a lot of type converstion 
    * (and RAM), and keep the sort precision as high as possible
+   *
+   * @see #getFieldFunctionClausesToTest
    */
   public void testFieldSortSpecifiedAsFunction() throws Exception {
     final long A = Long.MIN_VALUE;
@@ -170,8 +182,9 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
     assertU(commit());
 
     // all of these sorts should result in the exact same order
-    for (String primarySort : new String[] { "primary_tl1", "field(primary_tl1)",
-                                             "field(multi_l_dv,max)", "field(multi_l_dv,min)" }) {
+    // min/max of a field is tested in TestSortByMinMaxFunction
+    for (String primarySort : getFieldFunctionClausesToTest()) {
+
       assertQ(req("q", "*:*",
                   "sort", primarySort + " asc, secondary_tl1 asc")
               , "//*[@numFound='9']"
