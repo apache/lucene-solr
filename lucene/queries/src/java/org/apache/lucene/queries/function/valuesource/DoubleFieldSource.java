@@ -25,6 +25,8 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
@@ -44,6 +46,11 @@ public class DoubleFieldSource extends FieldCacheSource {
     return "double(" + field + ')';
   }
 
+  @Override
+  public SortField getSortField(boolean reverse) {
+    return new SortField(field, Type.DOUBLE, reverse);
+  }
+  
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
