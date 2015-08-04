@@ -159,6 +159,9 @@ New Features
 * LUCENE-6710: GeoPointField now uses full 64 bits (up from 62) to encode
   lat/lon (Nick Knize via Mike McCandless).
 
+* LUCENE-6580: SpanNearQuery now allows defined-width gaps in its subqueries
+  (Alan Woodward, Adrien Grand).
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 
