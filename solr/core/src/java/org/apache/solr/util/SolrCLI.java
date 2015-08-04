@@ -2151,19 +2151,24 @@ public class SolrCLI {
 
         if (exampledocsDir.isDirectory()) {
           File postJarFile = new File(exampledocsDir, "post.jar");
+          String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
+          echo("Indexing tech product example docs from "+exampledocsDir.getAbsolutePath());
           if (postJarFile.isFile()) {
-            echo("Indexing tech product example docs from "+exampledocsDir.getAbsolutePath());
-
             String javaHome = System.getProperty("java.home");
             String java = javaHome+"/bin/java";
-            String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
-
             String postCmd = String.format(Locale.ROOT, "%s -Durl=\"%s\" -jar %s \"%s\"/*.xml",
                 java, updateUrl, postJarFile.getAbsolutePath(), exampledocsDir.getAbsolutePath());
-
             executor.execute(org.apache.commons.exec.CommandLine.parse(postCmd));
           } else {
-            echo("example/exampledocs/post.jar not found, skipping indexing step for the techproducts example");
+            // a bit hacky, but just use SimplePostTool directly
+            String currentPropVal = System.getProperty("url");
+            System.setProperty("url", updateUrl);
+            SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath()+"/*.xml"});
+            if (currentPropVal != null) {
+              System.setProperty("url", currentPropVal); // reset
+            } else {
+              System.clearProperty("url");
+            }
           }
         } else {
           echo("exampledocs directory not found, skipping indexing step for the techproducts example");
@@ -2558,7 +2563,7 @@ public class SolrCLI {
       String mode = (nodeStatus.get("cloud") != null) ? "cloud" : "standalone";
       if (verbose)
         echo("\nSolr is running on "+solrURL.getPort()+" in " + mode + " mode with status:\n" + arr.toString());
-      
+
       return nodeStatus;
     }
 
