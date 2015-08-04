@@ -405,6 +405,9 @@ Other Changes
 
 * SOLR-7832: bin/post now allows either -url or -c, rather than requiring both. (ehatcher)
 
+* SOLR-7847: Implement run example logic in Java instead of OS-specific scripts in 
+  bin/solr and bin\solr.cmd (Timothy Potter)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

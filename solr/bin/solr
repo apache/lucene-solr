@@ -809,12 +809,14 @@ fi
 FG="false"
 noprompt=false
 SOLR_OPTS=($SOLR_OPTS)
+PASS_TO_RUN_EXAMPLE=
 
 if [ $# -gt 0 ]; then
   while true; do  
     case "$1" in
         -c|-cloud)
             SOLR_MODE="solrcloud"
+            PASS_TO_RUN_EXAMPLE+=" -c"
             shift
         ;;
         -d|-dir)
@@ -864,6 +866,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_HOST="$2"
+            PASS_TO_RUN_EXAMPLE+=" -h $SOLR_HOST"
             shift 2
         ;;
         -m|-memory)
@@ -872,6 +875,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_HEAP="$2"
+            PASS_TO_RUN_EXAMPLE+=" -m $SOLR_HEAP"
             shift 2
         ;;
         -p|-port)
@@ -880,6 +884,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_PORT="$2"
+            PASS_TO_RUN_EXAMPLE+=" -p $SOLR_PORT"
             shift 2
         ;;
         -z|-zkhost)
@@ -889,10 +894,12 @@ if [ $# -gt 0 ]; then
             fi
             ZK_HOST="$2"
             SOLR_MODE="solrcloud"
+            PASS_TO_RUN_EXAMPLE+=" -z $ZK_HOST"
             shift 2
         ;;
         -a|-addlopts)
             ADDITIONAL_CMD_OPTS="$2"
+            PASS_TO_RUN_EXAMPLE+=" -a \"$ADDITIONAL_CMD_OPTS\""
             shift 2
         ;;
         -k|-key)
@@ -905,10 +912,12 @@ if [ $# -gt 0 ]; then
         ;;
         -noprompt)
             noprompt=true
+            PASS_TO_RUN_EXAMPLE+=" -noprompt"
             shift
         ;;
         -V|-verbose)
             verbose=true
+            PASS_TO_RUN_EXAMPLE+=" --verbose"
             shift
         ;;
         -all)
@@ -923,6 +932,7 @@ if [ $# -gt 0 ]; then
             if [ "${1:0:2}" == "-D" ]; then
               # pass thru any opts that begin with -D (java system props)
               SOLR_OPTS+=("$1")
+              PASS_TO_RUN_EXAMPLE+=" $1"
               shift
             else
               if [ "$1" != "" ]; then
@@ -937,6 +947,31 @@ if [ $# -gt 0 ]; then
   done
 fi
 
+if [ -z "$SOLR_SERVER_DIR" ]; then
+  SOLR_SERVER_DIR="$DEFAULT_SERVER_DIR"
+fi
+
+if [ ! -e "$SOLR_SERVER_DIR" ]; then
+  echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
+  exit 1
+fi
+
+if [[ "$FG" == 'true' && "$EXAMPLE" != "" ]]; then
+  FG='false'
+  echo -e "\nWARNING: Foreground mode (-f) not supported when running examples.\n"
+fi
+
+#
+# If the user specified an example to run, invoke the run_example tool (Java app) and exit
+# otherwise let this script proceed to process the user request
+#
+if [ -n "$EXAMPLE" ] && [ "$SCRIPT_CMD" == "start" ]; then
+  run_tool run_example -e $EXAMPLE -d "$SOLR_SERVER_DIR" -urlScheme $SOLR_URL_SCHEME $PASS_TO_RUN_EXAMPLE
+  exit $?
+fi
+
+############# start/stop logic below here ################
+
 if $verbose ; then
   echo "Using Solr root directory: $SOLR_TIP"
   echo "Using Java: $JAVA"
@@ -947,137 +982,6 @@ if [ "$SOLR_HOST" != "" ]; then
   SOLR_HOST_ARG=("-Dhost=$SOLR_HOST")
 else
   SOLR_HOST_ARG=()
-fi
-
-if [ -z "$SOLR_SERVER_DIR" ]; then
-  SOLR_SERVER_DIR="$DEFAULT_SERVER_DIR"
-fi
-
-if [ ! -e "$SOLR_SERVER_DIR" ]; then
-  echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
-  exit 1
-fi
-
-CLOUD_NUM_NODES=2
-declare -a CLOUD_PORTS=('8983' '7574' '8984' '7575');
-
-# select solr.solr.home based on the desired example
-if [ "$EXAMPLE" != "" ]; then
-    case $EXAMPLE in
-        cloud)
-            #
-            # Engage in an interactive session with user to setup the SolrCloud example
-            #
-            echo -e "\nWelcome to the SolrCloud example!\n\n"
-            if $noprompt ; then
-              CLOUD_NUM_NODES=2
-              echo -e "Starting up $CLOUD_NUM_NODES Solr nodes for your example SolrCloud cluster."
-            else
-              echo -e "This interactive session will help you launch a SolrCloud cluster on your local workstation.\n"
-              read -e -p "To begin, how many Solr nodes would you like to run in your local cluster? (specify 1-4 nodes) [2] " USER_INPUT
-              while true
-              do
-                CLOUD_NUM_NODES=`echo $USER_INPUT | tr -d ' '`
-                if [ -z "$CLOUD_NUM_NODES" ]; then
-                  CLOUD_NUM_NODES=2
-                fi
-                if [[ $CLOUD_NUM_NODES > 4 || $CLOUD_NUM_NODES < 1 ]]; then
-                  read -e -p "Please provide a node count between 1 and 4 [2] " USER_INPUT
-                else
-                  break;
-                fi
-              done
-              
-              echo -e "Ok, let's start up $CLOUD_NUM_NODES Solr nodes for your example SolrCloud cluster.\n"
-              for (( s=0; s<$CLOUD_NUM_NODES; s++ ))
-              do
-                read -e -p "Please enter the port for node$[$s+1] [${CLOUD_PORTS[$s]}] " USER_INPUT
-                while true
-                do
-                  # trim whitespace out of the user input
-                  CLOUD_PORT=`echo $USER_INPUT | tr -d ' '`
-                  
-                  # handle the default selection or empty input
-                  if [ -z "$CLOUD_PORT" ]; then
-                    CLOUD_PORT=${CLOUD_PORTS[$s]}
-                  fi
-                                  
-                  # check to see if something is already bound to that port
-                  if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
-                    PORT_IN_USE=`lsof -PniTCP:$CLOUD_PORT -sTCP:LISTEN`
-                    if [ "$PORT_IN_USE" != "" ]; then
-                      read -e -p "Oops! Looks like port $CLOUD_PORT is already being used by another process. Please choose a different port. " USER_INPUT
-                    else
-                      CLOUD_PORTS[$s]=$CLOUD_PORT
-                      echo $CLOUD_PORT
-                      break;
-                    fi
-                  else
-                    CLOUD_PORTS[$s]=$CLOUD_PORT
-                    echo $CLOUD_PORT
-                    break;
-                  fi
-                done
-              done
-            fi       
-
-            # setup a unqiue solr.solr.home directory for each node
-            CLOUD_EXAMPLE_DIR="$SOLR_TIP/example/cloud"
-            if [ ! -d "$CLOUD_EXAMPLE_DIR/node1/solr" ]; then
-              echo "Creating Solr home directory $CLOUD_EXAMPLE_DIR/node1/solr"
-              mkdir -p "$CLOUD_EXAMPLE_DIR/node1/solr"
-              cp "$DEFAULT_SERVER_DIR/solr/solr.xml" "$CLOUD_EXAMPLE_DIR/node1/solr/"
-              cp "$DEFAULT_SERVER_DIR/solr/zoo.cfg" "$CLOUD_EXAMPLE_DIR/node1/solr/"
-            fi
-
-            for (( s=1; s<$CLOUD_NUM_NODES; s++ ))
-            do
-              ndx=$[$s+1]
-              if [ ! -d "$CLOUD_EXAMPLE_DIR/node$ndx" ]; then
-                echo "Cloning Solr home directory $CLOUD_EXAMPLE_DIR/node1 into $CLOUD_EXAMPLE_DIR/node$ndx"
-                cp -r "$CLOUD_EXAMPLE_DIR/node1" "$CLOUD_EXAMPLE_DIR/node$ndx"
-              fi
-            done
-            SOLR_MODE="solrcloud"
-            SOLR_SERVER_DIR="$SOLR_TIP/server"
-            SOLR_HOME="$CLOUD_EXAMPLE_DIR/node1/solr"
-            SOLR_PORT="${CLOUD_PORTS[0]}"
-            shift
-        ;;
-        techproducts)
-            SOLR_HOME="$SOLR_TIP/example/techproducts/solr"
-            mkdir -p "$SOLR_HOME"
-            if [ ! -f "$SOLR_HOME/solr.xml" ]; then
-              cp "$DEFAULT_SERVER_DIR/solr/solr.xml" "$SOLR_HOME/solr.xml"
-              cp "$DEFAULT_SERVER_DIR/solr/zoo.cfg" "$SOLR_HOME/zoo.cfg"
-            fi
-            EXAMPLE_CONFIGSET='sample_techproducts_configs'
-            shift
-        ;;
-        dih)
-            SOLR_HOME="$SOLR_TIP/example/example-DIH/solr"
-            shift
-        ;;
-        schemaless)
-            SOLR_HOME="$SOLR_TIP/example/schemaless/solr"
-            mkdir -p "$SOLR_HOME"
-            if [ ! -f "$SOLR_HOME/solr.xml" ]; then
-              cp "$DEFAULT_SERVER_DIR/solr/solr.xml" "$SOLR_HOME/solr.xml"
-              cp "$DEFAULT_SERVER_DIR/solr/zoo.cfg" "$SOLR_HOME/zoo.cfg"
-            fi
-            EXAMPLE_CONFIGSET='data_driven_schema_configs'
-            shift
-        ;;
-        *)
-            print_usage "start" "Unsupported example $EXAMPLE! Please choose one of: cloud, dih, schemaless, or techproducts"
-            exit 1
-        ;;
-    esac
-fi
-
-if [[ "$FG" == 'true' && "$EXAMPLE" != "" ]]; then
-  FG='false'
-  echo -e "\nWARNING: Foreground mode (-f) not supported when running examples.\n"
 fi
 
 if [ -z "$STOP_KEY" ]; then
@@ -1409,7 +1313,7 @@ function launch_solr() {
 
     # no lsof on cygwin though
     if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
-      echo -n "Waiting to see Solr listening on port $SOLR_PORT"
+      echo -n "Waiting up to 30 seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
@@ -1441,152 +1345,6 @@ function launch_solr() {
   fi
 }
 
-if [ "$EXAMPLE" != "cloud" ]; then
-  launch_solr "$FG" "$ADDITIONAL_CMD_OPTS"
-
-  # create the core/collection for the requested example after launching Solr
-  if [[ "$EXAMPLE" == "schemaless" || "$EXAMPLE" == "techproducts" ]]; then
-
-    if [ "$EXAMPLE" == "schemaless" ]; then
-      EXAMPLE_NAME=gettingstarted
-    else
-      EXAMPLE_NAME="$EXAMPLE"
-    fi
-
-    run_tool create -name "$EXAMPLE_NAME" -shards 1 -replicationFactor 1 \
-      -confname "$EXAMPLE_NAME" -confdir "$EXAMPLE_CONFIGSET" \
-      -configsetsDir "$SOLR_TIP/server/solr/configsets" -solrUrl $SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr
-    if [ $? -ne 0 ]; then
-      exit 1
-    fi
-
-    if [ "$EXAMPLE" == "techproducts" ]; then
-      echo "Indexing tech product example docs from $SOLR_TIP/example/exampledocs"
-      "$JAVA" $SOLR_SSL_OPTS -Durl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr/$EXAMPLE/update" \
-	-jar "$SOLR_TIP/example/exampledocs/post.jar" "$SOLR_TIP/example/exampledocs"/*.xml
-    fi
-
-    echo -e "\nSolr $EXAMPLE example launched successfully. Direct your Web browser to $SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr to visit the Solr Admin UI\n"
-  fi
-else
-  #
-  # SolrCloud example is a bit involved so needs special handling here
-  #
-  SOLR_SERVER_DIR="$SOLR_TIP/server"
-  SOLR_HOME="$SOLR_TIP/example/cloud/node1/solr"
-  SOLR_PORT="${CLOUD_PORTS[0]}"
-
-  if [ "$ZK_HOST" != "" ]; then
-    DASHZ="-z $ZK_HOST"
-  fi
-
-  if [ "$SOLR_HEAP" != "" ]; then
-    DASHM="-m $SOLR_HEAP"
-  fi
-
-  if [ "$ADDITIONAL_CMD_OPTS" != "" ]; then
-    DASHA="-a $ADDITIONAL_CMD_OPTS"
-  fi
-
-  echo -e "\nStarting up SolrCloud node1 on port ${CLOUD_PORTS[0]} using command:\n"
-  echo -e "solr start -cloud -s example/cloud/node1/solr -p $SOLR_PORT $DASHZ $DASHM $DASHA\n\n"
-    
-  # can't launch this node in the foreground else we can't run anymore commands
-  launch_solr "false" "$ADDITIONAL_CMD_OPTS"
-
-  # if user did not define a specific -z parameter, assume embedded in first cloud node we launched above
-  zk_host="$ZK_HOST"
-  if [ -z "$zk_host" ]; then
-    zk_port=$[$SOLR_PORT+1000]
-    zk_host="localhost:$zk_port"
-  fi
-
-  for (( s=1; s<$CLOUD_NUM_NODES; s++ ))
-  do
-    ndx=$[$s+1]
-    next_port="${CLOUD_PORTS[$s]}"
-    echo -e "\n\nStarting node$ndx on port $next_port using command:\n"
-    echo -e "solr start -cloud -s example/cloud/node$ndx/solr -p $next_port -z $zk_host $DASHM $DASHA \n\n"
-    # call this script again with correct args for next node    
-    "$SOLR_TIP/bin/solr" start -cloud -s "$SOLR_TIP/example/cloud/node$ndx/solr" -p "$next_port" -z "$zk_host" $DASHM $DASHA
-  done
-  
-  # TODO: better (shorter) name??
-  CLOUD_COLLECTION='gettingstarted'
-    
-  if $noprompt ; then
-    CLOUD_NUM_SHARDS=2
-    CLOUD_REPFACT=2
-    CLOUD_CONFIG='data_driven_schema_configs'
-  else
-    echo -e "\nNow let's create a new collection for indexing documents in your $CLOUD_NUM_NODES-node cluster.\n"
-    read -e -p "Please provide a name for your new collection: [gettingstarted] " USER_INPUT
-    # trim whitespace out of the user input
-    CLOUD_COLLECTION=`echo "$USER_INPUT" | tr -d ' '`
-
-    # handle the default selection or empty input
-    if [ -z "$CLOUD_COLLECTION" ]; then
-      CLOUD_COLLECTION='gettingstarted'
-    fi                    
-    echo $CLOUD_COLLECTION
-
-    USER_INPUT=
-    read -e -p "How many shards would you like to split $CLOUD_COLLECTION into? [2] " USER_INPUT
-    # trim whitespace out of the user input
-    CLOUD_NUM_SHARDS=`echo "$USER_INPUT" | tr -d ' '`
-
-    # handle the default selection or empty input
-    if [ -z "$CLOUD_NUM_SHARDS" ]; then
-      CLOUD_NUM_SHARDS=2
-    fi                    
-    echo $CLOUD_NUM_SHARDS
-    
-    USER_INPUT=
-    read -e -p "How many replicas per shard would you like to create? [2] " USER_INPUT
-    # trim whitespace out of the user input
-    CLOUD_REPFACT=`echo $USER_INPUT | tr -d ' '`
-    
-    # handle the default selection or empty input
-    if [ -z "$CLOUD_REPFACT" ]; then
-      CLOUD_REPFACT=2
-    fi                    
-    echo $CLOUD_REPFACT
-
-    USER_INPUT=
-    echo "Please choose a configuration for the $CLOUD_COLLECTION collection, available options are:"
-    read -e -p "basic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
-    while true
-    do
-      # trim whitespace out of the user input
-      CLOUD_CONFIG=`echo "$USER_INPUT" | tr -d ' '`
-
-      # handle the default selection or empty input
-      if [ -z "$CLOUD_CONFIG" ]; then
-        CLOUD_CONFIG='data_driven_schema_configs'
-      fi
-
-      # validate the confdir arg
-      if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CLOUD_CONFIG" && ! -d "$CLOUD_CONFIG" ]]; then
-        echo -e "\nOops! Specified configuration $CLOUD_CONFIG not found!"
-        read -e -p "Choose one of: basic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs] " USER_INPUT
-        CLOUD_CONFIG=
-      else
-        break;
-      fi
-    done
-
-  fi
-   
-  run_tool create_collection -name "$CLOUD_COLLECTION" -shards $CLOUD_NUM_SHARDS -replicationFactor $CLOUD_REPFACT \
-    -confname "$CLOUD_COLLECTION" -confdir "$CLOUD_CONFIG" \
-    -configsetsDir "$SOLR_TIP/server/solr/configsets" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr"
-
-  # enable soft-autocommits for the gettingstarted collection
-  echo -e "\nEnabling auto soft-commits with maxTime 3 secs using the Config API"
-  run_tool config -collection "$CLOUD_COLLECTION" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr" \
-    -property updateHandler.autoSoftCommit.maxTime -value 3000
-
-  echo -e "\n\nSolrCloud example running, please visit $SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$SOLR_PORT/solr \n\n"
-fi
+launch_solr "$FG" "$ADDITIONAL_CMD_OPTS"
 
 exit $?

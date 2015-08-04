@@ -18,6 +18,8 @@
 
 IF "%OS%"=="Windows_NT" setlocal enabledelayedexpansion enableextensions
 
+set "PASS_TO_RUN_EXAMPLE="
+
 REM Determine top-level Solr directory
 set SDIR=%~dp0
 IF "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
@@ -378,6 +380,7 @@ goto parse_args
 
 :set_verbose
 set verbose=1
+set "PASS_TO_RUN_EXAMPLE=--verbose !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 goto parse_args
 
@@ -461,6 +464,7 @@ IF "%firstChar%"=="-" (
 )
 
 set SOLR_HEAP=%~2
+set "PASS_TO_RUN_EXAMPLE=-m %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
 goto parse_args
@@ -479,6 +483,7 @@ IF "%firstChar%"=="-" (
 )
 
 set SOLR_HOST=%~2
+set "PASS_TO_RUN_EXAMPLE=-h %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
 goto parse_args
@@ -497,6 +502,7 @@ IF "%firstChar%"=="-" (
 )
 
 set SOLR_PORT=%~2
+set "PASS_TO_RUN_EXAMPLE=-p %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
 goto parse_args
@@ -538,6 +544,7 @@ IF "%firstChar%"=="-" (
 )
 
 set "ZK_HOST=%~2"
+set "PASS_TO_RUN_EXAMPLE=-z %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
 goto parse_args
@@ -556,12 +563,15 @@ IF NOT "%SOLR_OPTS%"=="" (
 ) ELSE (
   set "SOLR_OPTS=%PASSTHRU%"
 )
+set "PASS_TO_RUN_EXAMPLE=%PASSTHRU% !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
 goto parse_args
 
 :set_noprompt
 set NO_USER_PROMPT=1
+set "PASS_TO_RUN_EXAMPLE=-noprompt !PASS_TO_RUN_EXAMPLE!"
+
 SHIFT
 goto parse_args
 
@@ -588,37 +598,7 @@ IF NOT EXIST "%SOLR_SERVER_DIR%" (
   goto err
 )
 
-IF "%EXAMPLE%"=="" (
-  REM SOLR_HOME just becomes serverDir/solr
-) ELSE IF "%EXAMPLE%"=="techproducts" (
-  mkdir "%SOLR_TIP%\example\techproducts\solr"
-  set "SOLR_HOME=%SOLR_TIP%\example\techproducts\solr"
-  IF NOT EXIST "!SOLR_HOME!\solr.xml" (
-    copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "!SOLR_HOME!\solr.xml"
-  )
-  IF NOT EXIST "!SOLR_HOME!\zoo.cfg" (
-    copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "!SOLR_HOME!\zoo.cfg"
-  )
-) ELSE IF "%EXAMPLE%"=="cloud" (
-  set SOLR_MODE=solrcloud
-  goto cloud_example_start
-) ELSE IF "%EXAMPLE%"=="dih" (
-  set "SOLR_HOME=%SOLR_TIP%\example\example-DIH\solr"
-) ELSE IF "%EXAMPLE%"=="schemaless" (
-  mkdir "%SOLR_TIP%\example\schemaless\solr"
-  set "SOLR_HOME=%SOLR_TIP%\example\schemaless\solr"
-  IF NOT EXIST "!SOLR_HOME!\solr.xml" (
-    copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "!SOLR_HOME!\solr.xml"
-  )
-  IF NOT EXIST "!SOLR_HOME!\zoo.cfg" (
-    copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "!SOLR_HOME!\zoo.cfg"
-  )
-) ELSE (
-  @echo.
-  @echo 'Unrecognized example %EXAMPLE%!'
-  @echo.
-  goto start_usage
-)
+IF NOT "%EXAMPLE%"=="" goto run_example
 
 :start_solr
 IF "%SOLR_HOME%"=="" set "SOLR_HOME=%SOLR_SERVER_DIR%\solr"
@@ -900,9 +880,6 @@ IF "%JAVA_VENDOR%" == "IBM J9" (
   set "GCLOG_OPT=-Xloggc"
 )
 
-@echo.
-CALL :safe_echo "Starting Solr on port %SOLR_PORT% from %SOLR_SERVER_DIR%"
-@echo.
 IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
@@ -913,210 +890,24 @@ IF "%FG%"=="1" (
   START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" "%JAVA%" %SERVEROPT% -Xss256k %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT%:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
-)
 
-set EXAMPLE_NAME=%EXAMPLE%
-set CREATE_EXAMPLE_CONFIG=
-IF "%EXAMPLE%"=="schemaless" (
-  set EXAMPLE_NAME=gettingstarted
-  set CREATE_EXAMPLE_CONFIG=data_driven_schema_configs
+  REM now wait to see Solr come online ...
+  "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    org.apache.solr.util.SolrCLI status -maxWaitSecs 30 -solr !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr
 )
-IF "%EXAMPLE%"=="techproducts" (
-  set CREATE_EXAMPLE_CONFIG=sample_techproducts_configs
-)
-
-IF NOT "!CREATE_EXAMPLE_CONFIG!"=="" (
-  timeout /T 10
-  IF "%SOLR_MODE%"=="solrcloud" (
-    "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-      -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI create_collection -name !EXAMPLE_NAME! -shards 1 -replicationFactor 1 ^
-      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr
-  ) ELSE (
-    "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-      -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-      org.apache.solr.util.SolrCLI create_core -name !EXAMPLE_NAME! -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr ^
-      -confdir !CREATE_EXAMPLE_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets"
-  )
-)
-
-IF "%EXAMPLE%"=="techproducts" (
-  @echo.
-  @echo Indexing tech product example docs from "%SOLR_TIP%\example\exampledocs"
-  "%JAVA%" %SOLR_SSL_OPTS% -Durl=!SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr/%EXAMPLE%/update -jar "%SOLR_TIP%/example/exampledocs/post.jar" "%SOLR_TIP%/example/exampledocs/*.xml"
-)
-
-@echo.
-IF NOT "%EXAMPLE%"=="" (
-  @echo Solr %EXAMPLE% example launched successfully.
-)
-@echo Direct your Web browser to !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr to visit the Solr Admin UI
-@echo.
 
 goto done
 
-:cloud_example_start
-REM Launch interactive session to guide the user through the SolrCloud example
+:run_example
+REM Run the requested example
 
-CLS
-@echo.
-@echo Welcome to the SolrCloud example
-@echo.
-@echo.
-
-IF "%NO_USER_PROMPT%"=="1" (
-  set CLOUD_NUM_NODES=2
-  @echo Starting up %CLOUD_NUM_NODES% Solr nodes for your example SolrCloud cluster.
-  goto start_cloud_nodes
-) ELSE (
-  @echo This interactive session will help you launch a SolrCloud cluster on your local workstation.
-  @echo.
-  SET /P "USER_INPUT=To begin, how many Solr nodes would you like to run in your local cluster (specify 1-4 nodes) [2]: "
-  goto while_num_nodes_not_valid
-)
-
-:while_num_nodes_not_valid
-IF "%USER_INPUT%"=="" set USER_INPUT=2
-SET /A INPUT_AS_NUM=!USER_INPUT!*1
-IF %INPUT_AS_NUM% GEQ 1 IF %INPUT_AS_NUM% LEQ 4 set CLOUD_NUM_NODES=%INPUT_AS_NUM%
-IF NOT DEFINED CLOUD_NUM_NODES (
-  SET USER_INPUT=
-  SET /P "USER_INPUT=Please enter a number between 1 and 4 [2]: "
-  goto while_num_nodes_not_valid
-)
-@echo Ok, let's start up %CLOUD_NUM_NODES% Solr nodes for your example SolrCloud cluster.
-
-:start_cloud_nodes
-
-set "CLOUD_EXAMPLE_DIR=%SOLR_TIP%\example\cloud"
-
-@echo Creating Solr home "%CLOUD_EXAMPLE_DIR%\node1\solr"
-mkdir "%CLOUD_EXAMPLE_DIR%\node1\solr"
-copy "%DEFAULT_SERVER_DIR%\solr\solr.xml" "%CLOUD_EXAMPLE_DIR%\node1\solr\solr.xml"
-copy "%DEFAULT_SERVER_DIR%\solr\zoo.cfg" "%CLOUD_EXAMPLE_DIR%\node1\solr\zoo.cfg"
-
-for /l %%x in (2, 1, !CLOUD_NUM_NODES!) do (
-  IF NOT EXIST "%SOLR_TIP%\node%%x" (
-    @echo Cloning "%CLOUD_EXAMPLE_DIR%\node1" into "%CLOUD_EXAMPLE_DIR%\node%%x"
-    xcopy /Q /E /I "%CLOUD_EXAMPLE_DIR%\node1" "%CLOUD_EXAMPLE_DIR%\node%%x"
-  )
-)
-
-for /l %%x in (1, 1, !CLOUD_NUM_NODES!) do (
-  set USER_INPUT=
-  set /A idx=%%x-1
-  set DEF_PORT=8983
-  IF %%x EQU 2 (
-    set DEF_PORT=7574
-  ) ELSE (
-    IF %%x EQU 3 (
-    set DEF_PORT=8984
-    ) ELSE (
-      IF %%x EQU 4 (
-        set DEF_PORT=7575
-      )
-    )
-  )
-
-  IF "%NO_USER_PROMPT%"=="1" (
-    set NODE_PORT=!DEF_PORT!
-  ) ELSE (
-    set /P "USER_INPUT=Please enter the port for node%%x [!DEF_PORT!]: "
-    IF "!USER_INPUT!"=="" set USER_INPUT=!DEF_PORT!
-    set NODE_PORT=!USER_INPUT!
-    echo node%%x port: !NODE_PORT!
-    @echo.
-  )
-
-  IF NOT "!SOLR_HEAP!"=="" (
-    set "DASHM=-m !SOLR_HEAP!"
-  ) ELSE (
-    set "DASHM="
-  )
-
-  IF %%x EQU 1 (
-    set EXAMPLE=
-    IF NOT "!ZK_HOST!"=="" (
-      set "DASHZ=-z !ZK_HOST!"
-    ) ELSE (
-      set "DASHZ="
-    )
-    @echo Starting node1 on port !NODE_PORT! using command:
-    @echo solr -cloud -p !NODE_PORT! -s example\node1\solr !DASHZ! !DASHM!
-    START "Solr-!NODE_PORT!" /D "%SDIR%" solr -f -cloud -p !NODE_PORT! !DASHZ! !DASHM! -s "%CLOUD_EXAMPLE_DIR%\node1\solr"
-    set NODE1_PORT=!NODE_PORT!
-    echo !NODE_PORT!>"%SOLR_TIP%"\bin\solr-!NODE_PORT!.port
-  ) ELSE (
-    IF "!ZK_HOST!"=="" (
-      set /A ZK_PORT=!NODE1_PORT!+1000
-      set "ZK_HOST=localhost:!ZK_PORT!"
-    )
-    @echo Starting node%%x on port !NODE_PORT! using command:
-    @echo solr -cloud -p !NODE_PORT! -s example\node%%x\solr -z !ZK_HOST! !DASHM!
-    START "Solr-!NODE_PORT!" /D "%SDIR%" solr -f -cloud -p !NODE_PORT! -z !ZK_HOST! !DASHM! -s "%CLOUD_EXAMPLE_DIR%\node%%x\solr"
-    echo !NODE_PORT!>"%SOLR_TIP%"\bin\solr-!NODE_PORT!.port
-  )
-
-  timeout /T 10
-)
-
-set USER_INPUT=
-echo.
-echo Now let's create a new collection for indexing documents in your %CLOUD_NUM_NODES%-node cluster.
-IF "%NO_USER_PROMPT%"=="1" (
-  set CLOUD_COLLECTION=gettingstarted
-  set CLOUD_NUM_SHARDS=2
-  set CLOUD_REPFACT=2
-  set CLOUD_CONFIG=data_driven_schema_configs
-  goto create_collection
-) ELSE (
-  goto get_create_collection_params
-)
-
-:get_create_collection_params
-set /P "USER_INPUT=Please provide a name for your new collection: [gettingstarted] "
-IF "!USER_INPUT!"=="" set USER_INPUT=gettingstarted
-set CLOUD_COLLECTION=!USER_INPUT!
-echo !CLOUD_COLLECTION!
-set USER_INPUT=
-echo.
-set /P "USER_INPUT=How many shards would you like to split !CLOUD_COLLECTION! into? [2] "
-IF "!USER_INPUT!"=="" set USER_INPUT=2
-set CLOUD_NUM_SHARDS=!USER_INPUT!
-echo !CLOUD_NUM_SHARDS!
-set USER_INPUT=
-echo.
-set /P "USER_INPUT=How many replicas per shard would you like to create? [2] "
-IF "!USER_INPUT!"=="" set USER_INPUT=2
-set CLOUD_REPFACT=!USER_INPUT!
-echo !CLOUD_REPFACT!
-set USER_INPUT=
-echo.
-set /P "USER_INPUT=Please choose a configuration for the !CLOUD_COLLECTION! collection, available options are: basic_configs, data_driven_schema_configs, or sample_techproducts_configs [data_driven_schema_configs]"
-IF "!USER_INPUT!"=="" set USER_INPUT=data_driven_schema_configs
-set CLOUD_CONFIG=!USER_INPUT!
-echo !CLOUD_CONFIG!
-goto create_collection
-
-:create_collection
 "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI create_collection -name !CLOUD_COLLECTION! -shards !CLOUD_NUM_SHARDS! -replicationFactor !CLOUD_REPFACT! ^
-  -confdir !CLOUD_CONFIG! -configsetsDir "%SOLR_SERVER_DIR%\solr\configsets" -zkHost %zk_host%
+  org.apache.solr.util.SolrCLI run_example -script "%SDIR%\solr.cmd" -e %EXAMPLE% -d "%SOLR_SERVER_DIR%" -urlScheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
-@echo.
-echo Enabling auto soft-commits with maxTime 3 secs using the Config API
-"%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI config -collection !CLOUD_COLLECTION! -property updateHandler.autoSoftCommit.maxTime -value 3000 -zkHost %zk_host%
-
-echo.
-echo SolrCloud example is running, please visit !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%NODE1_PORT%/solr"
-echo.
-
-REM End of interactive cloud example
+REM End of run_example
 goto done
-
 
 :get_info
 REM Find all Java processes, correlate with those listening on a port
@@ -1383,10 +1174,8 @@ goto done
 exit /b 1
 
 :done
-
 ENDLOCAL
-
-GOTO :eof
+exit /b 0
 
 REM Tests what Java we have and sets some global variables
 :resolve_java_info
