@@ -31,6 +31,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -47,6 +49,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
@@ -66,6 +69,7 @@ import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -530,6 +534,25 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     searcher.getIndexReader().close();
+    dir.close();
+  }
+
+  public void testRewrite() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("join_field", new BytesRef("abc")));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new SortedDocValuesField("join_field", new BytesRef("abd")));
+    w.addDocument(doc);
+    IndexReader reader = w.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    OrdinalMap ordMap = OrdinalMap.build(null, new SortedDocValues[0], 0f);
+    Query joinQuery = JoinUtil.createJoinQuery("join_field", new MatchNoDocsQuery(), new MatchNoDocsQuery(), searcher, RandomPicks.randomFrom(random(), ScoreMode.values()), ordMap, 0, Integer.MAX_VALUE);
+    searcher.search(joinQuery, 1); // no exception due to missing rewrites
+    reader.close();
+    w.close();
     dir.close();
   }
 

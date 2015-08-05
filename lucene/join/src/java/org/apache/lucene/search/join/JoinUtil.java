@@ -180,6 +180,7 @@ public final class JoinUtil {
     }
 
     final Query rewrittenFromQuery = searcher.rewrite(fromQuery);
+    final Query rewrittenToQuery = searcher.rewrite(toQuery);
     GlobalOrdinalsWithScoreCollector globalOrdinalsWithScoreCollector;
     switch (scoreMode) {
       case Total:
@@ -198,7 +199,7 @@ public final class JoinUtil {
         if (min <= 0 && max == Integer.MAX_VALUE) {
           GlobalOrdinalsCollector globalOrdinalsCollector = new GlobalOrdinalsCollector(joinField, ordinalMap, valueCount);
           searcher.search(rewrittenFromQuery, globalOrdinalsCollector);
-          return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, toQuery, rewrittenFromQuery, indexReader);
+          return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, rewrittenToQuery, rewrittenFromQuery, indexReader);
         } else {
           globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.NoScore(joinField, ordinalMap, valueCount, min, max);
           break;
@@ -207,7 +208,7 @@ public final class JoinUtil {
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
     }
     searcher.search(rewrittenFromQuery, globalOrdinalsWithScoreCollector);
-    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, joinField, ordinalMap, toQuery, rewrittenFromQuery, min, max, indexReader);
+    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, joinField, ordinalMap, rewrittenToQuery, rewrittenFromQuery, min, max, indexReader);
   }
 
 }
