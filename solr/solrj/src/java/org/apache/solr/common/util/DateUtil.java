@@ -147,7 +147,7 @@ public class DateUtil {
     while (formatIter.hasNext()) {
       String format = (String) formatIter.next();
       if (dateParser == null) {
-        dateParser = new SimpleDateFormat(format, Locale.ROOT);
+        dateParser = new SimpleDateFormat(format, Locale.ENGLISH);
         dateParser.setTimeZone(GMT);
         dateParser.set2DigitYearStart(startDate);
       } else {
