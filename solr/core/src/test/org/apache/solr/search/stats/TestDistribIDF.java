@@ -138,6 +138,50 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testMultiCollectionQuery() throws Exception {
+    // collection1 and collection2 are collections which have distributed idf enabled
+    // collection1_local and collection2_local don't have distributed idf available
+    // Only one doc has cat:football in each collection
+    // When doing queries across collections we want to test that the query takes into account
+    // distributed idf for the collection=collection1,collection2 query.
+    // The way we verify is that score should be the same when querying across collection1 and collection2
+    // But should be different when querying across collection1_local and collection2_local
+    // since the idf is calculated per shard
+
+    createCollection("collection1", "conf1");
+    createCollection("collection1_local", "conf2");
+    createCollection("collection2", "conf1");
+    createCollection("collection2_local", "conf2");
+
+    addDocsRandomly();
+
+    //Test against all nodes
+    for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
+      SolrClient solrClient = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
+      SolrClient solrClient_local = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
+
+      SolrQuery query = new SolrQuery("cat:football");
+      query.setFields("*,score").add("collection", "collection1,collection2");
+      QueryResponse queryResponse = solrClient.query("collection1", query);
+      assertEquals(2, queryResponse.getResults().getNumFound());
+      float score1 = (float) queryResponse.getResults().get(0).get("score");
+      float score2 = (float) queryResponse.getResults().get(1).get("score");
+      assertEquals("Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
+
+
+      query = new SolrQuery("cat:football");
+      query.setFields("*,score").add("collection", "collection1_local,collection2_local");
+      queryResponse = solrClient_local.query("collection1_local", query);
+      assertEquals(2, queryResponse.getResults().getNumFound());
+      assertEquals(2, queryResponse.getResults().get(0).get("id"));
+      assertEquals(1, queryResponse.getResults().get(1).get("id"));
+      float score1_local = (float) queryResponse.getResults().get(0).get("score");
+      float score2_local = (float) queryResponse.getResults().get(1).get("score");
+      assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1, Float.compare(score1_local, score2_local));
+    }
+  }
+
   private void createCollection(String name, String config) throws Exception {
     createCollection(name, config, CompositeIdRouter.NAME);
   }
