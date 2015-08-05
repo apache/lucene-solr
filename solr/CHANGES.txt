@@ -272,6 +272,9 @@ Bug Fixes
 
 * SOLR-6357: Allow delete documents by doing a score join query. (Mikhail Khludnev, Timothy Potter)
 
+* SOLR-7756: ExactStatsCache and LRUStatsCache will throw an NPE when a term is not present on a shard.
+  (Varun Thacker, Anshum Gupta)
+
 Optimizations
 ----------------------
 
