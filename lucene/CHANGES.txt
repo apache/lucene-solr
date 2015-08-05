@@ -162,6 +162,10 @@ New Features
 * LUCENE-6580: SpanNearQuery now allows defined-width gaps in its subqueries
   (Alan Woodward, Adrien Grand).
 
+* LUCENE-6712: Use doc values to post-filter GeoPointField hits that
+  fall in boundary cells, resulting in smaller index, faster searches
+  and less heap used for each query (Nick Knize via Mike McCandless).
+
 API Changes
 
 * LUCENE-6508: Simplify Lock api, there is now just 

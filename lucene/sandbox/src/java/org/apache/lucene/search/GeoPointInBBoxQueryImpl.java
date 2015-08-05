@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.ToStringUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
@@ -44,12 +45,45 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
 
   @Override @SuppressWarnings("unchecked")
   protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    return new GeoPointTermsEnum(terms.iterator(), minLon, minLat, maxLon, maxLat);
+    return new GeoPointInBBoxTermsEnum(terms.iterator(), minLon, minLat, maxLon, maxLat);
   }
 
   @Override
   public void setRewriteMethod(RewriteMethod method) {
     throw new UnsupportedOperationException("cannot change rewrite method");
+  }
+
+  protected class GeoPointInBBoxTermsEnum extends GeoPointTermsEnum {
+    protected GeoPointInBBoxTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
+                            final double maxLon, final double maxLat) {
+      super(tenum, minLon, minLat, maxLon, maxLat);
+    }
+
+    /**
+     * Determine whether the quad-cell crosses the shape
+     */
+    @Override
+    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoUtils.rectCrosses(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+    }
+
+    /**
+     * Determine whether quad-cell is within the shape
+     */
+    @Override
+    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoUtils.rectWithin(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+    }
+
+    @Override
+    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return cellIntersectsMBR(minLon, minLat, maxLon, maxLat);
+    }
+
+    @Override
+    protected boolean postFilter(final double lon, final double lat) {
+      return GeoUtils.bboxContains(lon, lat, minLon, minLat, maxLon, maxLat);
+    }
   }
 
   @Override

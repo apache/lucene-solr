@@ -27,18 +27,16 @@ import org.apache.lucene.util.ToStringUtils;
  * like {@code GeoPointInBBoxQueryImpl} candidate terms are queried using the numeric ranges based on
  * the morton codes of the min and max lat/lon pairs that intersect the boundary of the point-radius
  * circle (see {@link org.apache.lucene.util.GeoUtils#lineCrossesSphere}. Terms
- * passing this initial filter are then passed to a secondary filter that verifies whether the
+ * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
  * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversin}.
  * All morton value comparisons are subject to the same precision tolerance defined in
  * {@value org.apache.lucene.util.GeoUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
  * haversine formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
  *
- * NOTE: This query works best for point-radius queries that do not cross the dateline, there is a penalty for crossing
- * the dateline as the bounding box is effectively split into two separate queries, and the point-radius is converted
- * to a euclidean spherical search to handle a wrapping coordinate system (TODO split the point radius at the dateline?)
  *
- * This query also currently uses haversine which is a sloppy distance calculation. For large queries one can expect
- * upwards of 400m error. Vincenty shrinks this to ~40m error but pays a penalty for computing using the spheroid
+ * Note: This query currently uses haversine which is a sloppy distance calculation (see above reference). For large
+ * queries one can expect upwards of 400m error. Vincenty shrinks this to ~40m error but pays a penalty for computing
+ * using the spheroid
  *
  *    @lucene.experimental
  */

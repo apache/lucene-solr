@@ -20,9 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -169,9 +167,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     }
 
     @Override
-    protected boolean cellIntersectsMBR(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, GeoPointInPolygonQuery.this.minLon,
-          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
+    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return cellWithin(minLon, minLat, maxLon, maxLat) || cellCrosses(minLon, minLat, maxLon, maxLat);
     }
 
     /**
@@ -180,20 +177,10 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
      * {@link org.apache.lucene.util.GeoUtils#pointInPolygon} method.
-     *
-     * @param term term for candidate document
-     * @return match status
      */
     @Override
-    protected AcceptStatus postFilterBoundary(BytesRef term) {
-      final long val = NumericUtils.prefixCodedToLong(term);
-      final double lon = GeoUtils.mortonUnhashLon(val);
-      final double lat = GeoUtils.mortonUnhashLat(val);
-      // post-filter by point in polygon
-      if (!GeoUtils.pointInPolygon(x, y, lat, lon)) {
-        return AcceptStatus.NO;
-      }
-      return AcceptStatus.YES;
+    protected boolean postFilter(final double lon, final double lat) {
+      return GeoUtils.pointInPolygon(x, y, lat, lon);
     }
   }
 

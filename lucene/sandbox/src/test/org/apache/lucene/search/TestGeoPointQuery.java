@@ -82,11 +82,12 @@ public class TestGeoPointQuery extends LuceneTestCase {
     final FieldType storedPoint = new FieldType(GeoPointField.TYPE_STORED);
     // this is a simple systematic test
     GeoPointField[] pts = new GeoPointField[] {
-         new GeoPointField(FIELD_NAME, -96.4538113027811, 32.94823588839368, storedPoint),
+         new GeoPointField(FIELD_NAME, -96.774, 32.763420, storedPoint),
          new GeoPointField(FIELD_NAME, -96.7759895324707, 32.7559529921407, storedPoint),
          new GeoPointField(FIELD_NAME, -96.77701950073242, 32.77866942010977, storedPoint),
          new GeoPointField(FIELD_NAME, -96.7706036567688, 32.7756745755423, storedPoint),
          new GeoPointField(FIELD_NAME, -139.73458170890808, 27.703618681345585, storedPoint),
+         new GeoPointField(FIELD_NAME, -96.4538113027811, 32.94823588839368, storedPoint),
          new GeoPointField(FIELD_NAME, -96.65084838867188, 33.06047141970814, storedPoint),
          new GeoPointField(FIELD_NAME, -96.7772, 32.778650, storedPoint),
          new GeoPointField(FIELD_NAME, -83.99724648980559, 58.29438379542874, storedPoint),
@@ -103,6 +104,15 @@ public class TestGeoPointQuery extends LuceneTestCase {
         doc.add(p);
         writer.addDocument(doc);
     }
+
+    // add explicit multi-valued docs
+    for (int i=0; i<pts.length; i+=2) {
+      Document doc = new Document();
+      doc.add(pts[i]);
+      doc.add(pts[i+1]);
+      writer.addDocument(doc);
+    }
+
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
@@ -135,7 +145,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
   @Test
   public void testBBoxQuery() throws Exception {
     TopDocs td = bboxQuery(-96.7772, 32.778650, -96.77690000, 32.778950, 5);
-    assertEquals("GeoBoundingBoxQuery failed", 2, td.totalHits);
+    assertEquals("GeoBoundingBoxQuery failed", 4, td.totalHits);
   }
 
   @Test
@@ -144,7 +154,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
             -96.6041564, -96.7449188, -96.76826477, -96.7682647},
         new double[]{33.073130, 32.9942669, 32.938386, 33.0374494,
             33.1369762, 33.1162747, 33.073130, 33.073130}, 5);
-    assertEquals("GeoPolygonQuery failed", 1, td.totalHits);
+    assertEquals("GeoPolygonQuery failed", 2, td.totalHits);
   }
 
   @Test
@@ -174,19 +184,19 @@ public class TestGeoPointQuery extends LuceneTestCase {
   @Test
   public void testBBoxCrossDateline() throws Exception {
     TopDocs td = bboxQuery(179.0, -45.0, -179.0, -44.0, 20);
-    assertEquals("BBoxCrossDateline query failed", 1, td.totalHits);
+    assertEquals("BBoxCrossDateline query failed", 2, td.totalHits);
   }
 
   @Test
   public void testWholeMap() throws Exception {
     TopDocs td = bboxQuery(-179.9, -89.9, 179.9, 89.9, 20);
-    assertEquals("testWholeMap failed", 15, td.totalHits);
+    assertEquals("testWholeMap failed", 24, td.totalHits);
   }
 
   @Test
   public void smallTest() throws Exception {
     TopDocs td = geoDistanceQuery(-73.998776, 40.720611, 1, 20);
-    assertEquals("smallTest failed", 1, td.totalHits);
+    assertEquals("smallTest failed", 2, td.totalHits);
   }
 
   @Test
@@ -202,22 +212,29 @@ public class TestGeoPointQuery extends LuceneTestCase {
   @Test
   public void testGeoDistanceQuery() throws Exception {
     TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 6000, 20);
-    assertEquals("GeoDistanceQuery failed", 1, td.totalHits);
+    assertEquals("GeoDistanceQuery failed", 2, td.totalHits);
+  }
+
+  @Test
+  public void testMultiValuedQuery() throws Exception {
+    TopDocs td = bboxQuery(-96.4538113027811, 32.7559529921407, -96.7706036567688, 32.7756745755423, 20);
+    // 3 single valued docs + 2 multi-valued docs
+    assertEquals("testMultiValuedQuery failed", 5, td.totalHits);
   }
 
   /**
-   * LUCENE-6704
+   * Explicitly large
    */
   @Nightly
   public void testGeoDistanceQueryHuge() throws Exception {
-    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 1000000, 20);
-    assertEquals("GeoDistanceQuery failed", 6, td.totalHits);
+    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 2000000, 20);
+    assertEquals("GeoDistanceQuery failed", 13, td.totalHits);
   }
 
   @Test
   public void testGeoDistanceQueryCrossDateline() throws Exception {
     TopDocs td = geoDistanceQuery(-179.9538113027811, 32.94823588839368, 120000, 20);
-    assertEquals("GeoDistanceQuery failed", 2, td.totalHits);
+    assertEquals("GeoDistanceQuery failed", 3, td.totalHits);
   }
 
   @Test

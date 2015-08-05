@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.math.BigInteger;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,18 +35,21 @@ import org.apache.lucene.util.NumericUtils;
  *
  *  @lucene.experimental
  */
-class GeoPointTermsEnum extends FilteredTermsEnum {
+abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   protected final double minLon;
   protected final double minLat;
   protected final double maxLon;
   protected final double maxLat;
 
   protected Range currentRange;
-  private BytesRef currentLowerBound, currentUpperBound;
+  private BytesRef currentCell;
 
   private final List<Range> rangeBounds = new LinkedList<>();
 
-  protected static final short DETAIL_LEVEL = 16;
+  // detail level should be a factor of PRECISION_STEP limiting the depth of recursion (and number of ranges)
+  // in this case a factor of 4 brings the detail level to ~0.002/0.001 degrees lon/lat respectively (or ~222m/111m)
+  private static final short MAX_SHIFT = GeoPointField.PRECISION_STEP * 4;
+  protected static final short DETAIL_LEVEL = ((GeoUtils.BITS<<1)-MAX_SHIFT)/2;
 
   GeoPointTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
                     final double maxLon, final double maxLat) {
@@ -100,7 +102,7 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
     // if cell is within and a factor of the precision step, or it crosses the edge of the shape add the range
     final boolean within = res % GeoPointField.PRECISION_STEP == 0 && cellWithin(minLon, minLat, maxLon, maxLat);
     if (within || (level == DETAIL_LEVEL && cellIntersectsShape(minLon, minLat, maxLon, maxLat))) {
-      rangeBounds.add(new Range(start, end, res, level, !within));
+      rangeBounds.add(new Range(start, res, level, !within));
     } else if (level < DETAIL_LEVEL && cellIntersectsMBR(minLon, minLat, maxLon, maxLat)) {
       computeRange(start, (short) (res - 1));
     }
@@ -109,15 +111,23 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
   /**
    * Determine whether the quad-cell crosses the shape
    */
-  protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoUtils.rectCrosses(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
-  }
+  protected abstract boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat);
 
   /**
    * Determine whether quad-cell is within the shape
    */
-  protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoUtils.rectWithin(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+  protected abstract boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat);
+
+  /**
+   * Default shape is a rectangle, so this returns the same as {@code cellIntersectsMBR}
+   */
+  protected abstract boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat);
+
+  /**
+   * Primary driver for cells intersecting shape boundaries
+   */
+  protected boolean cellIntersectsMBR(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+    return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 
   /**
@@ -127,27 +137,16 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
     return GeoUtils.rectWithin(this.minLon, this.minLat, this.maxLon, this.maxLat, minLon, minLat, maxLon, maxLat);
   }
 
-  /**
-   * Default shape is a rectangle, so this returns the same as {@code cellIntersectsMBR}
-   */
-  protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return cellIntersectsMBR(minLon, minLat, maxLon, maxLat);
-  }
-
-  /**
-   * Primary driver for cells intersecting shape boundaries
-   */
-  protected boolean cellIntersectsMBR(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+  public boolean boundaryTerm() {
+    if (currentRange == null) {
+      throw new IllegalStateException("GeoPointTermsEnum empty or not initialized");
+    }
+    return currentRange.boundary;
   }
 
   private void nextRange() {
     currentRange = rangeBounds.remove(0);
-    currentLowerBound = currentRange.lower;
-    assert currentUpperBound == null || currentUpperBound.compareTo(currentRange.lower) <= 0 :
-        "The current upper bound must be <= the new lower bound";
-
-    currentUpperBound = currentRange.upper;
+    currentCell = currentRange.cell;
   }
 
   @Override
@@ -158,20 +157,20 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
       }
 
       // if the new upper bound is before the term parameter, the sub-range is never a hit
-      if (term != null && term.compareTo(currentUpperBound) > 0) {
+      if (term != null && term.compareTo(currentCell) > 0) {
         nextRange();
         if (!rangeBounds.isEmpty()) {
           continue;
         }
       }
       // never seek backwards, so use current term if lower bound is smaller
-      return (term != null && term.compareTo(currentLowerBound) > 0) ?
-          term : currentLowerBound;
+      return (term != null && term.compareTo(currentCell) > 0) ?
+          term : currentCell;
     }
 
     // no more sub-range enums available
     assert rangeBounds.isEmpty();
-    currentLowerBound = currentUpperBound = null;
+    currentCell = null;
     return null;
   }
 
@@ -186,58 +185,43 @@ class GeoPointTermsEnum extends FilteredTermsEnum {
   @Override
   protected AcceptStatus accept(BytesRef term) {
     // validate value is in range
-    while (currentUpperBound == null || term.compareTo(currentUpperBound) > 0) {
+    while (currentCell == null || term.compareTo(currentCell) > 0) {
       if (rangeBounds.isEmpty()) {
         return AcceptStatus.END;
       }
       // peek next sub-range, only seek if the current term is smaller than next lower bound
-      if (term.compareTo(rangeBounds.get(0).lower) < 0) {
+      if (term.compareTo(rangeBounds.get(0).cell) < 0) {
         return AcceptStatus.NO_AND_SEEK;
       }
-      // step forward to next range without seeking, as next lower range bound is less or equal current term
+      // step forward to next range without seeking, as next range is less or equal current term
       nextRange();
     }
 
-    if (currentRange.boundary) {
-      return postFilterBoundary(term);
-    }
-
     return AcceptStatus.YES;
   }
 
-  protected AcceptStatus postFilterBoundary(BytesRef term) {
-    final long val = NumericUtils.prefixCodedToLong(term);
-    final double lon = GeoUtils.mortonUnhashLon(val);
-    final double lat = GeoUtils.mortonUnhashLat(val);
-    if (!GeoUtils.bboxContains(lon, lat, minLon, minLat, maxLon, maxLat)) {
-      return AcceptStatus.NO;
-    }
-    return AcceptStatus.YES;
-  }
+  protected abstract boolean postFilter(final double lon, final double lat);
 
   /**
    * Internal class to represent a range along the space filling curve
    */
   protected final class Range implements Comparable<Range> {
-    final BytesRef lower;
-    final BytesRef upper;
+    final BytesRef cell;
     final short level;
     final boolean boundary;
 
-    Range(final long lower, final long upper, final short res, final short level, boolean boundary) {
+    Range(final long lower, final short res, final short level, boolean boundary) {
       this.level = level;
       this.boundary = boundary;
 
       BytesRefBuilder brb = new BytesRefBuilder();
-      NumericUtils.longToPrefixCodedBytes(lower, boundary ? 0 : res, brb);
-      this.lower = brb.get();
-      NumericUtils.longToPrefixCodedBytes(upper, boundary ? 0 : res, (brb = new BytesRefBuilder()));
-      this.upper = brb.get();
+      NumericUtils.longToPrefixCodedBytes(lower, res, brb);
+      this.cell = brb.get();
     }
 
     @Override
     public int compareTo(Range other) {
-      return this.lower.compareTo(other.lower);
+      return this.cell.compareTo(other.cell);
     }
   }
 }

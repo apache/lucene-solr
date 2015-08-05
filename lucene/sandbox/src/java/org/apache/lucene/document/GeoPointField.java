@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.GeoUtils;
 
@@ -41,7 +42,7 @@ import org.apache.lucene.util.GeoUtils;
  * @lucene.experimental
  */
 public final class GeoPointField extends Field {
-  public static final int PRECISION_STEP = 6;
+  public static final int PRECISION_STEP = 9;
 
   /**
    * Type for an GeoPointField that is not stored:
@@ -52,6 +53,7 @@ public final class GeoPointField extends Field {
     TYPE_NOT_STORED.setTokenized(false);
     TYPE_NOT_STORED.setOmitNorms(true);
     TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
+    TYPE_NOT_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
     TYPE_NOT_STORED.setNumericType(FieldType.NumericType.LONG);
     TYPE_NOT_STORED.setNumericPrecisionStep(PRECISION_STEP);
     TYPE_NOT_STORED.freeze();
@@ -66,6 +68,7 @@ public final class GeoPointField extends Field {
     TYPE_STORED.setTokenized(false);
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
+    TYPE_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
     TYPE_STORED.setNumericType(FieldType.NumericType.LONG);
     TYPE_STORED.setNumericPrecisionStep(PRECISION_STEP);
     TYPE_STORED.setStored(true);
