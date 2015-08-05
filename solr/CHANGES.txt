@@ -185,6 +185,8 @@ New Features
 
 * SOLR-7849: Solr-managed inter-node authentication when authentication enabled (Noble Paul)
 
+* SOLR-7220: Nested C-style comments in queries. (yonik)
+
 Bug Fixes
 ----------------------
 

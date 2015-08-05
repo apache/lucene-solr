@@ -184,4 +184,36 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     req.close();
   }
 
+  @Test
+  public void testComments() throws Exception {
+    assertJQ(req("q","id:1 id:2 /* *:* */ id:3")
+        ,"/response/numFound==3"
+    );
+
+    //
+    assertJQ(req("q","id:1 /**.*/")
+        ,"/response/numFound==1"  // if it matches more than one, it's being treated as a regex.
+    );
+
+
+    // don't match comment start in string
+    assertJQ(req("q"," \"/*\" id:1 id:2 \"*/\" id:3")
+        ,"/response/numFound==3"
+    );
+
+    // don't match an end of comment within  a string
+    // assertJQ(req("q","id:1 id:2 /* \"*/\" *:* */ id:3")
+    //     ,"/response/numFound==3"
+    // );
+    // removed this functionality - there's more of a danger to thinking we're in a string.
+    //   can't do it */  ......... '
+
+    // nested comments
+    assertJQ(req("q","id:1 /* id:2 /* */ /* /**/ id:3 */ id:10 */ id:11")
+        ,"/response/numFound==2"
+    );
+
+  }
+
+
 }
