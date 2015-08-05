@@ -52,6 +52,10 @@ public class Base64 {
           35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
   };
 
+  public static String byteArrayToBase64(byte[] a) {
+    return byteArrayToBase64(a, 0, a.length);
+  }
+
   public static String byteArrayToBase64(byte[] a, int offset, int len) {
     int aLen = len;
     int numFullGroups = aLen / 3;

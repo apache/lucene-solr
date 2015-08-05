@@ -29,6 +29,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -158,7 +159,7 @@ public class SolrRequestParsers
     // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
-    SolrQueryRequest sreq = buildRequestFrom( core, params, streams, getRequestTimer(req) );
+    SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
@@ -170,14 +171,13 @@ public class SolrRequestParsers
     }
     return sreq;
   }
-  
-  public SolrQueryRequest buildRequestFrom( SolrCore core, SolrParams params, Collection<ContentStream> streams ) throws Exception
-  {
-    return buildRequestFrom( core, params, streams, new RTimer() );
+
+  public SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams) throws Exception {
+    return buildRequestFrom(core, params, streams, new RTimer(), null);
   }
 
-  private SolrQueryRequest buildRequestFrom( SolrCore core, SolrParams params, Collection<ContentStream> streams, RTimer requestTimer ) throws Exception
-  {
+  private SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams,
+                                            RTimer requestTimer, final HttpServletRequest req) throws Exception {
     // The content type will be applied to all streaming content
     String contentType = params.get( CommonParams.STREAM_CONTENTTYPE );
       
@@ -222,8 +222,13 @@ public class SolrRequestParsers
         streams.add( stream );
       }
     }
-    
-    SolrQueryRequestBase q = new SolrQueryRequestBase( core, params, requestTimer ) { };
+
+    SolrQueryRequestBase q = new SolrQueryRequestBase(core, params, requestTimer) {
+      @Override
+      public Principal getUserPrincipal() {
+        return req == null ? null : req.getUserPrincipal();
+      }
+    };
     if( streams != null && streams.size() > 0 ) {
       q.setContentStreams( streams );
     }

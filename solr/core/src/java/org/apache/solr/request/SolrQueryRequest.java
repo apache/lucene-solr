@@ -25,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
+import java.security.Principal;
 import java.util.Map;
 
 /**
@@ -97,6 +98,8 @@ public interface SolrQueryRequest {
   public Map<String,Object> getJSON();
 
   public void setJSON(Map<String,Object> json);
+
+  public Principal getUserPrincipal();
 }
 
 

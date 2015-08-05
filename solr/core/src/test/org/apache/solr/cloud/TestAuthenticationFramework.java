@@ -35,6 +35,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.HttpClientInterceptorPlugin;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -110,7 +111,7 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     super.tearDown();
   }
   
-  public static class MockAuthenticationPlugin extends AuthenticationPlugin {
+  public static class MockAuthenticationPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
     private static Logger log = LoggerFactory.getLogger(MockAuthenticationPlugin.class);
 
     public static String expectedUsername = "solr";
@@ -135,7 +136,7 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     }
 
     @Override
-    public HttpClientConfigurer getDefaultConfigurer() {
+    public HttpClientConfigurer getClientConfigurer() {
       return new MockClientConfigurer();
     }
 

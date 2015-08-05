@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * limitations under the License.
  */
 
-public class KerberosPlugin extends AuthenticationPlugin {
+public class KerberosPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
   static final Logger log = LoggerFactory.getLogger(KerberosPlugin.class);
 
   HttpClientConfigurer kerberosConfigurer = new Krb5HttpClientConfigurer();
@@ -121,7 +121,7 @@ public class KerberosPlugin extends AuthenticationPlugin {
   }
 
   @Override
-  public HttpClientConfigurer getDefaultConfigurer() {
+  public HttpClientConfigurer getClientConfigurer() {
     return kerberosConfigurer;
   }
 

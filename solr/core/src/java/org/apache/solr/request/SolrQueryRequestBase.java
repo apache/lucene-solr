@@ -27,6 +27,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
 import java.io.Closeable;
+import java.security.Principal;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -175,4 +176,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     this.json = json;
   }
 
+  @Override
+  public Principal getUserPrincipal() {
+    return null;
+  }
 }

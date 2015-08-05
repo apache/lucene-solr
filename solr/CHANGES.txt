@@ -183,6 +183,8 @@ New Features
 
 * SOLR-7766: support creation of a coreless collection via createNodeSet=EMPTY (Christine Poerschke)
 
+* SOLR-7849: Solr-managed inter-node authentication when authentication enabled (Noble Paul)
+
 Bug Fixes
 ----------------------
 

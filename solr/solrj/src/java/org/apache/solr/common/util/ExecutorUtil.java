@@ -193,6 +193,7 @@ public class ExecutorUtil {
       super.execute(new Runnable() {
         @Override
         public void run() {
+          isServerPool.set(Boolean.TRUE);
           if (ctx != null) {
             for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).set(ctx.get(i));
           }
@@ -214,6 +215,7 @@ public class ExecutorUtil {
             log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName(), submitterStackTrace);
             throw t;
           } finally {
+            isServerPool.remove();
             if (threadContext != null && !threadContext.isEmpty()) {
               MDC.setContextMap(threadContext);
             } else {
@@ -228,4 +230,11 @@ public class ExecutorUtil {
       });
     }
   }
+
+  private static final ThreadLocal<Boolean> isServerPool = new ThreadLocal<>();
+
+  public static boolean isSolrServerThread() {
+    return Boolean.TRUE.equals(isServerPool.get());
+  }
+
 }
