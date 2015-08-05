@@ -181,6 +181,8 @@ New Features
 
 * SOLR-7769: Add bin/post -p alias for -port parameter.  (ehatcher)
 
+* SOLR-7766: support creation of a coreless collection via createNodeSet=EMPTY (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 

@@ -85,15 +85,17 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     requestUsername = MockAuthenticationPlugin.expectedUsername;
     requestPassword = MockAuthenticationPlugin.expectedPassword;
     
+    final String collectionName = "testAuthenticationFrameworkCollection";
+    
     // Should pass
-    testCollectionCreateSearchDelete();
+    testCollectionCreateSearchDelete(collectionName);
     
     requestUsername = MockAuthenticationPlugin.expectedUsername;
     requestPassword = "junkpassword";
     
     // Should fail with 401
     try {
-      testCollectionCreateSearchDelete();
+      testCollectionCreateSearchDelete(collectionName);
       fail("Should've returned a 401 error");
     } catch (Exception ex) {
       if (!ex.getMessage().contains("Error 401")) {
