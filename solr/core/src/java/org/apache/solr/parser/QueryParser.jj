@@ -54,6 +54,10 @@ public class QueryParser extends SolrQueryParserBase {
 
 PARSER_END(QueryParser)
 
+TOKEN_MGR_DECLS : {
+  int commentNestingDepth ;
+}
+
 /* ***************** */
 /* Token Definitions */
 /* ***************** */
@@ -72,9 +76,23 @@ PARSER_END(QueryParser)
  | <#_SQUOTED_CHAR:  ( ~[ "'", "\\" ] | <_ESCAPED_CHAR> ) >
 }
 
-<DEFAULT, Range> SKIP : {
+<DEFAULT, COMMENT> SKIP : {
+   < <_WHITESPACE>>
+  | "/*" {commentNestingDepth++;} : COMMENT
+ }
+
+<COMMENT> SKIP : {
+  // trying to avoid matching end-of-comment in string leads to more problems (incorrectly thinking we are in a string due
+  // to the simplistic matching in this state.
+  // < ("\"" (<_QUOTED_CHAR>)* "\"") >
+  "*/" { commentNestingDepth -= 1; SwitchTo( commentNestingDepth==0 ? DEFAULT : COMMENT ); }
+  | < ~[]>
+}
+
+<Range> SKIP : {
   < <_WHITESPACE>>
 }
+
 
 <DEFAULT> TOKEN : {
   <AND:       ("AND" | "&&") >
@@ -93,7 +111,7 @@ PARSER_END(QueryParser)
  | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
  | <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
  | <WILDTERM:  (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
- | <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
+ | <REGEXPTERM: "/" (~["*","/"]) (~[ "/" ] | "\\/" )* "/" >
  | <RANGEIN_START: "[" > : Range
  | <RANGEEX_START: "{" > : Range
 // TODO: consider using token states instead of inlining SQUOTED

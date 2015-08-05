@@ -418,6 +418,12 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     finally { jj_save(0, xla); }
   }
 
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -431,12 +437,6 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
-    return false;
-  }
-
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
     return false;
   }
 
@@ -458,10 +458,10 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x600,0x600,0x3800,0x3800,0x3fb4fe00,0x240000,0x80000,0x80000,0x3fb4c000,0x23a44000,0x400000,0x400000,0x80000,0xc000000,0x0,0x40000000,0x0,0x80000000,0x80000,0x400000,0x80000,0x2fb44000,};
+      jj_la1_0 = new int[] {0x6000,0x6000,0x38000,0x38000,0xfb4fe000,0x2400000,0x800000,0x800000,0xfb4c0000,0x3a440000,0x4000000,0x4000000,0x800000,0xc0000000,0x0,0x0,0x0,0x0,0x800000,0x4000000,0x800000,0xfb440000,};
    }
    private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x6,0x0,0x6,0x1,0x0,0x0,0x0,0x0,};
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x3,0x0,0x0,0x0,0x3,0x2,0x0,0x0,0x0,0x0,0x60,0x4,0x60,0x18,0x0,0x0,0x0,0x2,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -615,7 +615,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[35];
+    boolean[] la1tokens = new boolean[39];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -632,7 +632,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         }
       }
     }
-    for (int i = 0; i < 35; i++) {
+    for (int i = 0; i < 39; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
