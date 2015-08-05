@@ -1,11 +1,19 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
 import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.attribute.UserPrincipal;
+import java.security.Principal;
 import java.util.Map;
 
+import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 
 /*
@@ -31,11 +39,27 @@ import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
  */
 public abstract class AuthenticationPlugin implements Closeable {
 
+  final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
+
   /**
    * This is called upon loading up of a plugin, used for setting it up.
    * @param pluginConfig Config parameters, possibly from a ZK source
    */
   public abstract void init(Map<String, Object> pluginConfig);
+
+  protected void forward(String user, ServletRequest  req, ServletResponse rsp,
+                                    FilterChain chain) throws IOException, ServletException {
+    if(user != null) {
+      final Principal p = new BasicUserPrincipal(user);
+      req = new HttpServletRequestWrapper((HttpServletRequest) req) {
+        @Override
+        public Principal getUserPrincipal() {
+          return p;
+        }
+      };
+    }
+    chain.doFilter(req,rsp);
+  }
  
   /**
    * This method must authenticate the request. Upon a successful authentication, this 
@@ -51,13 +75,5 @@ public abstract class AuthenticationPlugin implements Closeable {
   public abstract void doAuthenticate(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws Exception;
 
-  /**
-   * 
-   * @return Returns an instance of a HttpClientConfigurer to be used for configuring the
-   * httpclients for use with SolrJ clients.
-   * 
-   * @lucene.experimental
-   */
-  public abstract HttpClientConfigurer getDefaultConfigurer();
 
 }

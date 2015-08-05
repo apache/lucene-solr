@@ -52,6 +52,8 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.HttpClientInterceptorPlugin;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
@@ -60,6 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 
 /**
@@ -93,6 +96,8 @@ public class CoreContainer {
   protected CollectionsHandler collectionsHandler = null;
   private InfoHandler infoHandler;
 
+  private PKIAuthenticationPlugin pkiAuthenticationPlugin;
+
   protected Properties containerProperties;
 
   private ConfigSetService coreConfigService;
@@ -122,8 +127,6 @@ public class CoreContainer {
   public static final String CORES_HANDLER_PATH = "/admin/cores";
   public static final String COLLECTIONS_HANDLER_PATH = "/admin/collections";
   public static final String INFO_HANDLER_PATH = "/admin/info";
-
-  final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
 
   private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
@@ -263,9 +266,15 @@ public class CoreContainer {
     }
     if (authenticationPlugin != null) {
       authenticationPlugin.init(authenticationConfig);
+      addHttpConfigurer(authenticationPlugin);
+    }
+  }
 
+  private void addHttpConfigurer(Object authcPlugin) {
+    log.info("addHttpConfigurer()");//TODO no commit
+    if (authcPlugin instanceof HttpClientInterceptorPlugin) {
       // Setup HttpClient to use the plugin's configurer for internode communication
-      HttpClientConfigurer configurer = authenticationPlugin.getDefaultConfigurer();
+      HttpClientConfigurer configurer = ((HttpClientInterceptorPlugin) authcPlugin).getClientConfigurer();
       HttpClientUtil.setConfigurer(configurer);
 
       // The default http client of the core container's shardHandlerFactory has already been created and
@@ -273,9 +282,14 @@ public class CoreContainer {
       // http client configurer to set it up for internode communication.
       log.info("Reconfiguring the shard handler factory and update shard handler.");
       if (getShardHandlerFactory() instanceof HttpShardHandlerFactory) {
-        ((HttpShardHandlerFactory)getShardHandlerFactory()).reconfigureHttpClient(configurer);
+        ((HttpShardHandlerFactory) getShardHandlerFactory()).reconfigureHttpClient(configurer);
       }
       getUpdateShardHandler().reconfigureHttpClient(configurer);
+    } else {
+      if (pkiAuthenticationPlugin != null) {
+        log.info("PKIAuthenticationPlugin is managing internode requests");
+        addHttpConfigurer(pkiAuthenticationPlugin);
+      }
     }
   }
 
@@ -316,6 +330,10 @@ public class CoreContainer {
     return containerProperties;
   }
 
+  public PKIAuthenticationPlugin getPkiAuthenticationPlugin() {
+    return pkiAuthenticationPlugin;
+  }
+
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -347,6 +365,7 @@ public class CoreContainer {
     hostName = cfg.getNodeName();
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
+    if(isZooKeeperAware())  pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName());
 
     initializeAuthenticationPlugin();
 
@@ -360,6 +379,8 @@ public class CoreContainer {
     containerHandlers.put(INFO_HANDLER_PATH, infoHandler);
     coreAdminHandler   = createHandler(cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     containerHandlers.put(CORES_HANDLER_PATH, coreAdminHandler);
+    if(pkiAuthenticationPlugin != null)
+      containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
 
     coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
 

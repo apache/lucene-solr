@@ -116,6 +116,8 @@ New Features
 
 * SOLR-7769: Add bin/post -p alias for -port parameter.  (ehatcher)
 
+* SOLR-7849: Solr-managed inter-node authentication when authentication enabled (Noble Paul)
+
 Bug Fixes
 ----------------------
 

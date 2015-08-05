@@ -104,6 +104,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
@@ -417,7 +418,7 @@ public class HttpSolrCall {
        1. Authorization is enabled, and
        2. The requested resource is not a known static file
         */
-      if (cores.getAuthorizationPlugin() != null) {
+      if (cores.getAuthorizationPlugin() != null && shouldAuthorize()) {
         AuthorizationContext context = getAuthCtx();
         log.info(context.toString());
         AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
@@ -482,6 +483,15 @@ public class HttpSolrCall {
       MDCLoggingContext.clear();
     }
 
+  }
+
+  private boolean shouldAuthorize() {
+    if(PKIAuthenticationPlugin.PATH.equals(path)) return false;
+    //admin/info/key is the path where public key is exposed . it is always unsecured
+    if( cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null){
+      return cores.getPkiAuthenticationPlugin().needsAuthorization(req);
+    }
+    return true;
   }
 
   void destroy() {

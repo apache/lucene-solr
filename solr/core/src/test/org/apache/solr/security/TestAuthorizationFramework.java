@@ -45,6 +45,8 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
   @Test
   public void authorizationFrameworkTest() throws Exception {
+    MockAuthorizationPlugin.denyUsers.add("user1");
+    MockAuthorizationPlugin.denyUsers.add("user1");
     waitForThingsToLevelOut(10);
     log.info("Starting test");
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -59,5 +61,12 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
       fail("This should have failed");
     } catch (Exception e) {}
     log.info("Ending test");
+  }
+
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
+    MockAuthorizationPlugin.denyUsers.clear();
+
   }
 }

@@ -24,7 +24,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,16 +33,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
@@ -52,6 +46,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +61,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected volatile CoreContainer cores;
 
   protected String abortErrorMessage = null;
-  protected final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+  protected HttpClient httpClient;
   private ArrayList<Pattern> excludePatterns;
 
   /**
@@ -112,14 +107,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
 
       this.cores = createCoreContainer(solrHome, extraProperties);
-
-      if (this.cores.getAuthenticationPlugin() != null) {
-        HttpClientConfigurer configurer = this.cores.getAuthenticationPlugin().getDefaultConfigurer();
-        if (configurer != null) {
-          configurer.configure((DefaultHttpClient) httpClient, new ModifiableSolrParams());
-        }
-      }
-
+      this.httpClient = cores.getUpdateShardHandler().getHttpClient();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -180,13 +168,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
-    try {
-      if (cores != null) {
-        cores.shutdown();
-        cores = null;
-      }
-    } finally {
-      IOUtils.closeQuietly(httpClient);
+    if (cores != null) {
+      cores.shutdown();
+      cores = null;
     }
   }
   
@@ -198,7 +182,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if (!(request instanceof HttpServletRequest)) return;
 
-    AtomicReference<ServletRequest> wrappedRequest = new AtomicReference();
+    AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();
     if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
       return;
     }
@@ -254,6 +238,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
+      //special case when solr is securing inter-node requests
+      String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
+      if (header != null && cores.getPkiAuthenticationPlugin() != null)
+        authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.

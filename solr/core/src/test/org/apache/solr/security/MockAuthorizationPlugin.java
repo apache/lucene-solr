@@ -20,19 +20,34 @@ package org.apache.solr.security;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.function.Predicate;
 
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MockAuthorizationPlugin implements AuthorizationPlugin{
 
   private Logger log = LoggerFactory.getLogger(MockAuthorizationPlugin.class);
-  HashSet<String> denyUsers;
-  
+  static final HashSet<String> denyUsers = new HashSet<>();
+  static Predicate<AuthorizationContext> predicate;
+
   @Override
   public AuthorizationResponse authorize(AuthorizationContext context) {
-    log.info("User request: " + context.getParams().get("uname"));
-    if(denyUsers.contains(context.getParams().get("uname")))
+    String uname = context.getUserPrincipal()== null? null : context.getUserPrincipal().getName();
+    if(predicate != null){
+      try {
+        predicate.test(context);
+        return new AuthorizationResponse(200);
+      } catch (SolrException e) {
+        return new AuthorizationResponse(e.code());
+      }
+    }
+
+
+    if(uname == null) uname = context.getParams().get("uname");
+    log.info("User request: " + uname);
+    if(denyUsers.contains(uname))
       return new AuthorizationResponse(403);
     else
       return new AuthorizationResponse(200);
@@ -40,9 +55,6 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin{
 
   @Override
   public void init(Map<String, Object> initInfo) {
-    denyUsers = new HashSet();
-    denyUsers.add("user1");
-    denyUsers.add("user2");
   }
 
   @Override
