@@ -20,7 +20,6 @@ package org.apache.solr.security;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
