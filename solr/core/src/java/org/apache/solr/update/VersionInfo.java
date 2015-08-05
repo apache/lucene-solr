@@ -232,9 +232,6 @@ public class VersionInfo {
     if (versionField.indexed()) {
       Terms versionTerms = searcher.getLeafReader().terms(versionFieldName);
       if (versionTerms != null) {
-
-        log.info("\n\n versionTerms is a "+versionTerms.getClass().getName()+", versionTerms.size() = "+versionTerms.size()+" \n\n");
-
         maxVersionInIndex = NumericUtils.getMaxLong(versionTerms);
         log.info("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
       } else {

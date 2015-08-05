@@ -44,7 +44,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,10 +300,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
   }
 
-  /**
-   * Fails intermittently on jenkins! Need to investigate this more.
-   */
-  @Ignore
   @Test
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
