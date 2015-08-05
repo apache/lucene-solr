@@ -195,7 +195,7 @@ public class StatsUtil {
     if (data == null || data.trim().length() == 0) {
       return null;
     }
-    Map<String,TermStats> map = new HashMap<String,TermStats>();
+    Map<String,TermStats> map = new HashMap<>();
     String[] entries = data.split("!");
     for (String es : entries) {
       TermStats termStats = termStatsFromString(es, null);

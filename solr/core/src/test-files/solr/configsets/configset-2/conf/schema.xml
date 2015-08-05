@@ -18,8 +18,12 @@
 <schema name="minimal" version="1.1">
  <types>
   <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
  </types>
  <fields>
+   <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="_root_" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
    <dynamicField name="*" type="string" indexed="true" stored="true" />
  </fields>
+ <uniqueKey>id</uniqueKey>
 </schema>

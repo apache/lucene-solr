@@ -54,8 +54,7 @@ import org.slf4j.LoggerFactory;
  * that is updated with the global statistics on every request.
  */
 public class LRUStatsCache extends ExactStatsCache {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(LRUStatsCache.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LRUStatsCache.class);
   
   // local stats obtained from shard servers
   private final Map<String,SolrCache<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
@@ -88,21 +87,18 @@ public class LRUStatsCache extends ExactStatsCache {
   }
   
   @Override
-  protected void addToPerShardColStats(SolrQueryRequest req, String shard,
-      Map<String,CollectionStats> colStats) {
+  protected void addToPerShardColStats(SolrQueryRequest req, String shard, Map<String,CollectionStats> colStats) {
     perShardColStats.put(shard, colStats);
   }
   
   @Override
-  protected Map<String,CollectionStats> getPerShardColStats(ResponseBuilder rb,
-      String shard) {
+  protected Map<String,CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
     return perShardColStats.get(shard);
   }
   
   @Override
   protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
-    Map<String,TermStats> termStats = StatsUtil
-        .termStatsMapFromString(termStatsString);
+    Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
       SolrCache<String,TermStats> cache = perShardTermStats.get(shard);
       if (cache == null) { // initialize
@@ -119,12 +115,11 @@ public class LRUStatsCache extends ExactStatsCache {
   @Override
   protected TermStats getPerShardTermStats(SolrQueryRequest req, String t, String shard) {
     SolrCache<String,TermStats> cache = perShardTermStats.get(shard);
-    return cache.get(t);
+    return (cache != null) ? cache.get(t) : null; //Term doesn't exist in shard
   }
   
   @Override
-  protected void addToGlobalColStats(SolrQueryRequest req,
-      Entry<String,CollectionStats> e) {
+  protected void addToGlobalColStats(SolrQueryRequest req, Entry<String,CollectionStats> e) {
     currentGlobalColStats.put(e.getKey(), e.getValue());
   }
 
@@ -137,8 +132,7 @@ public class LRUStatsCache extends ExactStatsCache {
     private final SolrCache<String,TermStats> termStatsCache;
     private final Map<String,CollectionStats> colStatsCache;
     
-    public LRUStatsSource(SolrCache<String,TermStats> termStatsCache,
-        Map<String,CollectionStats> colStatsCache) {
+    public LRUStatsSource(SolrCache<String,TermStats> termStatsCache, Map<String,CollectionStats> colStatsCache) {
       this.termStatsCache = termStatsCache;
       this.colStatsCache = colStatsCache;
     }
