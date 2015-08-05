@@ -326,6 +326,9 @@ Bug fixes
 * LUCENE-6713: TooComplexToDeterminizeException claims to be serializable
   but wasn't (Simon Willnauer, Mike McCandless)
 
+* LUCENE-6723: Fix date parsing problems in Java 9 with date formats using
+  English weekday/month names.  (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
