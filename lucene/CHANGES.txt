@@ -316,6 +316,9 @@ Bug fixes
   
 * SOLR-5882: fix ScoreMode.Min at ToParentBlockJoinQuery (Mikhail Khludnev)
 
+* LUCENE-6718: JoinUtil.createJoinQuery failed to rewrite queries before
+  creating a Weight. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
