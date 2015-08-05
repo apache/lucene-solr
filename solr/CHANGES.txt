@@ -420,6 +420,9 @@ Other Changes
 * SOLR-7847: Implement run example logic in Java instead of OS-specific scripts in 
   bin/solr and bin\solr.cmd (Timothy Potter)
 
+* SOLR-7877: TestAuthenticationFramework.testBasics to preserve/restore the original request(Username|Password)
+  (Christine Poerschke)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
