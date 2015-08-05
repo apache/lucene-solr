@@ -25,7 +25,6 @@ import javax.servlet.ServletResponse;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
-import java.util.function.Predicate;
 
 public class MockAuthenticationPlugin extends AuthenticationPlugin {
   static Predicate<ServletRequest> predicate;

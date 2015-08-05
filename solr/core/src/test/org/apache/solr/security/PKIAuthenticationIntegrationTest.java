@@ -22,7 +22,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.QueryRequest;
