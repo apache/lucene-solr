@@ -427,6 +427,10 @@ Optimizations
   egothor/stemmer/Compile.java
   (Rishabh Patel via Christine Poerschke)
 
+* SOLR-7730: Speed up SlowCompositeReaderWrapper.getSortedSetDocValues() by
+  avoiding merging FieldInfos just to check doc value type.
+  (Mikhail Khludnev, yonik)
+
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
