@@ -323,6 +323,9 @@ Bug fixes
 * LUCENE-6718: JoinUtil.createJoinQuery failed to rewrite queries before
   creating a Weight. (Adrien Grand)
 
+* LUCENE-6713: TooComplexToDeterminizeException claims to be serializable
+  but wasn't (Simon Willnauer, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6501: The subreader structure in ParallelCompositeReader
