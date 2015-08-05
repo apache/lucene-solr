@@ -22,9 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
 
 /** Package private implementation for the public facing GeoPointDistanceQuery delegate class.
@@ -67,30 +65,19 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return (cellCrosses(minLon, minLat, maxLon, maxLat) || cellContains(minLon, minLat, maxLon, maxLat)
-          || cellWithin(minLon, minLat, maxLon, maxLat));
+      return (cellContains(minLon, minLat, maxLon, maxLat)
+          || cellWithin(minLon, minLat, maxLon, maxLat) || cellCrosses(minLon, minLat, maxLon, maxLat));
     }
 
     /**
-     * The two-phase query approach. The parent
-     * {@link org.apache.lucene.search.GeoPointTermsEnum#accept} method is called to match
-     * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
-     * bounding box filter are then compared to the provided distance using the
+     * The two-phase query approach. The parent {@link org.apache.lucene.search.GeoPointTermsEnum} class matches
+     * encoded terms that fall within the minimum bounding box of the point-radius circle. Those documents that pass
+     * the initial bounding box filter are then post filter compared to the provided distance using the
      * {@link org.apache.lucene.util.SloppyMath#haversin} method.
-     *
-     * @param term term for candidate document
-     * @return match status
      */
     @Override
-    protected AcceptStatus postFilterBoundary(BytesRef term) {
-      final long val = NumericUtils.prefixCodedToLong(term);
-      final double lon = GeoUtils.mortonUnhashLon(val);
-      final double lat = GeoUtils.mortonUnhashLat(val);
-      // post-filter by distance
-      if (SloppyMath.haversin(query.centerLat, query.centerLon, lat, lon) * 1000.0 > query.radius) {
-        return AcceptStatus.NO;
-      }
-      return AcceptStatus.YES;
+    protected boolean postFilter(final double lon, final double lat) {
+      return (SloppyMath.haversin(query.centerLat, query.centerLon, lat, lon) * 1000.0 <= query.radius);
     }
   }
 
