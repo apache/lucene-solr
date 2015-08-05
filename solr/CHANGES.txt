@@ -275,6 +275,9 @@ Bug Fixes
 * SOLR-7756: ExactStatsCache and LRUStatsCache will throw an NPE when a term is not present on a shard.
   (Varun Thacker, Anshum Gupta)
 
+* SOLR-7818: Distributed stats is only calculated with the terms that are present in the last shard
+  of a distributed request. (Varun Thacker, Anshum Gupta)
+
 Optimizations
 ----------------------
 

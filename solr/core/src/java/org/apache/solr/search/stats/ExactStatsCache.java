@@ -17,6 +17,7 @@ package org.apache.solr.search.stats;
  * limitations under the License.
  */
 
+import com.google.common.collect.Lists;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -91,6 +92,7 @@ public class ExactStatsCache extends StatsCache {
 
   @Override
   public void mergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses) {
+    Set<Object> allTerms = new HashSet<>();
     for (ShardResponse r : responses) {
       LOG.debug("Merging to global stats, shard={}, response={}", r.getShard(), r.getSolrResponse().getResponse());
       String shard = r.getShard();
@@ -103,15 +105,15 @@ public class ExactStatsCache extends StatsCache {
         addToPerShardTermStats(req, shard, termStatsString);
       }
       List<Object> terms = nl.getAll(TERMS_KEY);
-      if (terms != null) {
-        req.getContext().put(TERMS_KEY, terms);
-      }
-
+      allTerms.addAll(terms);
       String colStatsString = (String) nl.get(COL_STATS_KEY);
       Map<String,CollectionStats> colStats = StatsUtil.colStatsMapFromString(colStatsString);
       if (colStats != null) {
         addToPerShardColStats(req, shard, colStats);
       }
+    }
+    if (allTerms.size() > 0) {
+      req.getContext().put(TERMS_KEY, Lists.newArrayList(allTerms));
     }
     if (LOG.isDebugEnabled()) printStats(req);
   }
