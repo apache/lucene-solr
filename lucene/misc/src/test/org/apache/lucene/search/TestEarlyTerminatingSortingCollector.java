@@ -83,7 +83,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     return doc;
   }
 
-  private void createRandomIndex(Integer maxSegmentCount) throws IOException {
+  private void createRandomIndex(boolean singleSortedSegment) throws IOException {
     dir = newDirectory();
     numDocs = atLeast(150);
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
@@ -110,8 +110,12 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
         iw.deleteDocuments(new Term("s", term));
       }
     }
-    if (maxSegmentCount != null) {
-      iw.forceMerge(maxSegmentCount.intValue());
+    if (singleSortedSegment) {
+      // because of deletions, there might still be a single flush segment in
+      // the index, although want want a sorted segment so it needs to be merged
+      iw.getReader().close(); // refresh
+      iw.addDocument(new Document());
+      iw.forceMerge(1);
     }
     else if (random().nextBoolean()) {
       iw.forceMerge(forceMergeMaxSegmentCount);
@@ -128,7 +132,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   public void testEarlyTermination() throws IOException {
     final int iters = atLeast(8);
     for (int i = 0; i < iters; ++i) {
-      createRandomIndex(null);
+      createRandomIndex(false);
       for (int j = 0; j < iters; ++j) {
         final IndexSearcher searcher = newSearcher(reader);
         final int numHits = TestUtil.nextInt(random(), 1, numDocs);
@@ -185,7 +189,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   }
 
   public void testEarlyTerminationDifferentSorter() throws IOException {
-    createRandomIndex(null);
+    createRandomIndex(false);
     final int iters = atLeast(3);
     for (int i = 0; i < iters; ++i) {
       final IndexSearcher searcher = newSearcher(reader);
@@ -275,7 +279,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   public void testTerminatedEarly() throws IOException {
     final int iters = atLeast(8);
     for (int i = 0; i < iters; ++i) {
-      createRandomIndex(1);
+      createRandomIndex(true);
 
       final IndexSearcher searcher = newSearcherForTestTerminatedEarly(reader); // future TODO: use newSearcher(reader);
       final Query query = new MatchAllDocsQuery(); // search for everything/anything
