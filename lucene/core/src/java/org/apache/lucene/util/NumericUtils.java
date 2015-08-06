@@ -552,34 +552,46 @@ public final class NumericUtils {
       };
   }
     
-  /** Returns the minimum int value indexed into this
-   *  numeric field. */
-  public static int getMinInt(Terms terms) throws IOException {
+  /**
+   * Returns the minimum int value indexed into this
+   * numeric field or null if no terms exist.
+   */
+  public static Integer getMinInt(Terms terms) throws IOException {
     // All shift=0 terms are sorted first, so we don't need
     // to filter the incoming terms; we can just get the
-    // min: 
-    return NumericUtils.prefixCodedToInt(terms.getMin());
+    // min:
+    BytesRef min = terms.getMin();
+    return (min != null) ? NumericUtils.prefixCodedToInt(min) : null;
   }
 
-  /** Returns the maximum int value indexed into this
-   *  numeric field. */
-  public static int getMaxInt(Terms terms) throws IOException {
-    return NumericUtils.prefixCodedToInt(intTerms(terms).getMax());
+  /**
+   * Returns the maximum int value indexed into this
+   * numeric field or null if no terms exist.
+   */
+  public static Integer getMaxInt(Terms terms) throws IOException {
+    BytesRef max = intTerms(terms).getMax();
+    return (max != null) ? NumericUtils.prefixCodedToInt(max) : null;
   }
 
-  /** Returns the minimum long value indexed into this
-   *  numeric field. */
-  public static long getMinLong(Terms terms) throws IOException {
+  /**
+   * Returns the minimum long value indexed into this
+   * numeric field or null if no terms exist.
+   */
+  public static Long getMinLong(Terms terms) throws IOException {
     // All shift=0 terms are sorted first, so we don't need
     // to filter the incoming terms; we can just get the
-    // min: 
-    return NumericUtils.prefixCodedToLong(terms.getMin());
+    // min:
+    BytesRef min = terms.getMin();
+    return (min != null) ? NumericUtils.prefixCodedToLong(min) : null;
   }
 
-  /** Returns the maximum long value indexed into this
-   *  numeric field. */
-  public static long getMaxLong(Terms terms) throws IOException {
-    return NumericUtils.prefixCodedToLong(longTerms(terms).getMax());
+  /**
+   * Returns the maximum long value indexed into this
+   * numeric field or null if no terms exist.
+   */
+  public static Long getMaxLong(Terms terms) throws IOException {
+    BytesRef max = longTerms(terms).getMax();
+    return (max != null) ? NumericUtils.prefixCodedToLong(max) : null;
   }
   
 }
