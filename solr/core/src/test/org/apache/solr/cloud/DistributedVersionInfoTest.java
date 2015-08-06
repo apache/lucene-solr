@@ -88,6 +88,11 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, shardId, 1, rf, maxWaitSecsToSeeAllActive);
 
+    // start by reloading the empty collection so we try to calculate the max from an empty index
+    reloadCollection(leader, testCollectionName);
+    notLeaders =
+        ensureAllReplicasAreActive(testCollectionName, shardId, 1, rf, maxWaitSecsToSeeAllActive);
+
     sendDoc(1);
     cloudClient.commit();
 
