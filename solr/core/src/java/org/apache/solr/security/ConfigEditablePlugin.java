@@ -17,25 +17,23 @@ package org.apache.solr.security;
  * limitations under the License.
  */
 
-/* This class currently only stores an int statusCode (HttpStatus) value and a message but can 
-   be used to return ACLs and other information from the authorization plugin.
+import java.util.List;
+import java.util.Map;
+
+import org.apache.solr.util.CommandOperation;
+
+/**An interface to be implemented by a Plugin whose Configuration is runtime editable
+ *
  */
-public class AuthorizationResponse {
-  public static final AuthorizationResponse OK = new AuthorizationResponse(200);
-  public static final AuthorizationResponse FORBIDDEN = new AuthorizationResponse(403);
-  public static final AuthorizationResponse PROMPT = new AuthorizationResponse(401);
-  public final int statusCode;
-  String message;
+public interface ConfigEditablePlugin {
 
-  public AuthorizationResponse(int httpStatusCode) {
-    this.statusCode = httpStatusCode;
-  }
-  
-  public String getMessage() {
-    return message;
-  }
 
-  public void setMessage(String message) {
-    this.message = message;
-  }
+  /** Operate the commands on the latest conf and return a new conf object
+   * If there are errors in the commands , throw a SolrException. return a null
+   * if no changes are to be made as a result of this edit. It is the responsibility
+   * of the implementation to ensure that the returned config is valid . The framework
+   * does no validation of the data
+   */
+  public Map<String,Object> edit(Map<String,Object> latestConf, List<CommandOperation> commands);
+
 }

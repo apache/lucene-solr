@@ -194,6 +194,10 @@ New Features
 
 * SOLR-7220: Nested C-style comments in queries. (yonik)
 
+* SOLR-7757: Improved security framework where security components can be edited/reloaded, Solr
+  now watches /security.json. Components can choose to make their config editable
+  (Noble Paul, Anshum Gupta, Ishan Chattopadhyaya)
+
 Bug Fixes
 ----------------------
 

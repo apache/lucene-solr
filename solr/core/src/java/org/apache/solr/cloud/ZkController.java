@@ -381,7 +381,12 @@ public final class ZkController {
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
     cmdExecutor = new ZkCmdExecutor(clientTimeout);
     leaderElector = new LeaderElector(zkClient);
-    zkStateReader = new ZkStateReader(zkClient);
+    zkStateReader = new ZkStateReader(zkClient, new Runnable() {
+      @Override
+      public void run() {
+        if(cc!=null) cc.securityNodeChanged();
+      }
+    });
 
     this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
@@ -629,6 +634,7 @@ public final class ZkController {
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.CLUSTER_STATE, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH,"{}".getBytes(StandardCharsets.UTF_8),CreateMode.PERSISTENT, zkClient);
   }
 
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
