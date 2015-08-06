@@ -201,6 +201,9 @@ New Features
 * SOLR-7838: An authorizationPlugin interface where the access control rules are stored/managed in
   ZooKeeper (Noble Paul, Anshum Gupta, Ishan Chattopadhyaya)
 
+* SOLR-7837: An AuthenticationPlugin which implements the HTTP BasicAuth protocol and stores credentials
+  securely in ZooKeeper (Noble Paul, Anshum Gupta,Ishan Chattopadhyaya)
+
 
 Bug Fixes
 ----------------------
