@@ -44,21 +44,19 @@ public class PKIAuthenticationIntegrationTest extends AbstractFullDistribZkTestB
 
   static final int TIMEOUT = 10000;
 
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
+  @Test
+  public void testPkiAuth() throws Exception {
+    waitForThingsToLevelOut(10);
 
     byte[] bytes = Utils.toJSON(makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
         "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
 
     try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
         TIMEOUT, TIMEOUT)) {
-      zkStateReader.getZkClient().create(ZkStateReader.SOLR_SECURITY_CONF_PATH, bytes, CreateMode.PERSISTENT, true);
+      zkStateReader.getZkClient().setData(ZkStateReader.SOLR_SECURITY_CONF_PATH, bytes, true);
     }
-  }
-
-  @Test
-  public void testPkiAuth() throws Exception {
-    waitForThingsToLevelOut(10);
+    String baseUrl = jettys.get(0).getBaseUrl().toString();
+    TestAuthorizationFramework.verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
     log.info("Starting test");
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
@@ -93,12 +91,6 @@ public class PKIAuthenticationIntegrationTest extends AbstractFullDistribZkTestB
       }
     };
     QueryRequest query = new QueryRequest(params);
-    LocalSolrQueryRequest lsqr = new LocalSolrQueryRequest(null, new ModifiableSolrParams()) {
-      @Override
-      public Principal getUserPrincipal() {
-        return null;
-      }
-    };
     query.process(cloudClient);
     log.info("count :{}", count);
     assertTrue(count.get() > 2);

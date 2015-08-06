@@ -54,6 +54,8 @@ public abstract class AuthorizationContext {
   
   public abstract String getResource();
 
+  public abstract String getHttpMethod();
+
   public enum RequestType {READ, WRITE, ADMIN, UNKNOWN}
 
 }

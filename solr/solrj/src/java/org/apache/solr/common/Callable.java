@@ -1,4 +1,4 @@
-package org.apache.solr.security;
+package org.apache.solr.common;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,25 +17,6 @@ package org.apache.solr.security;
  * limitations under the License.
  */
 
-/* This class currently only stores an int statusCode (HttpStatus) value and a message but can 
-   be used to return ACLs and other information from the authorization plugin.
- */
-public class AuthorizationResponse {
-  public static final AuthorizationResponse OK = new AuthorizationResponse(200);
-  public static final AuthorizationResponse FORBIDDEN = new AuthorizationResponse(403);
-  public static final AuthorizationResponse PROMPT = new AuthorizationResponse(401);
-  public final int statusCode;
-  String message;
-
-  public AuthorizationResponse(int httpStatusCode) {
-    this.statusCode = httpStatusCode;
-  }
-  
-  public String getMessage() {
-    return message;
-  }
-
-  public void setMessage(String message) {
-    this.message = message;
-  }
+public interface Callable<T> {
+  public void call(T data);  // data depends on the context
 }

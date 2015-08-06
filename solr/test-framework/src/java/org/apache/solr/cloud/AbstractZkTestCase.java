@@ -37,7 +37,7 @@ import java.util.Map;
 public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   
-  static final int TIMEOUT = 10000;
+  public static final int TIMEOUT = 10000;
 
   private static final boolean DEBUG = false;
 

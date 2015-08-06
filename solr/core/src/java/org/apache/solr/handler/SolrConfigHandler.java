@@ -245,20 +245,8 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
 
     private void handlePOST() throws IOException {
-      Iterable<ContentStream> streams = req.getContentStreams();
-      if (streams == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
-      }
-      ArrayList<CommandOperation> ops = new ArrayList<>();
-
-      for (ContentStream stream : streams)
-        ops.addAll(CommandOperation.parse(stream.getReader()));
-      List<Map> errList = CommandOperation.captureErrors(ops);
-      if (!errList.isEmpty()) {
-        resp.add(CommandOperation.ERR_MSGS, errList);
-        return;
-      }
-
+      List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp);
+      if (ops == null) return;
       try {
         for (; ; ) {
           ArrayList<CommandOperation> opsCopy = new ArrayList<>(ops.size());
@@ -406,7 +394,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
                   overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create") || prefix.equals("add"));
                 }
               } else {
-                op.addError(formatString("Unknown operation ''{0}'' ", op.name));
+                op.unknownOperation();
               }
             }
           }
@@ -592,7 +580,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
     return null;
   }
 
-  static void setWt(SolrQueryRequest req, String wt) {
+  public static void setWt(SolrQueryRequest req, String wt) {
     SolrParams params = req.getParams();
     if (params.get(CommonParams.WT) != null) return;//wt is set by user
     Map<String, String> map = new HashMap<>(1);

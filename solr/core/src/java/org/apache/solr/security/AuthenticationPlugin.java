@@ -76,4 +76,10 @@ public abstract class AuthenticationPlugin implements Closeable {
       FilterChain filterChain) throws Exception;
 
 
+  /**
+   * Cleanup any per request  data
+   */
+  public void closeRequest() {
+  }
+
 }
