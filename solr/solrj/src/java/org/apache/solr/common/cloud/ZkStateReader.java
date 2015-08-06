@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.Closeable;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javafx.beans.NamedArg;
 import javafx.util.Pair;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
@@ -438,6 +440,26 @@ public class ZkStateReader implements Closeable {
       });
     }
   }
+
+  static public class Pair<K, V> implements Serializable {
+    private K key;
+
+    public K getKey() {
+      return key;
+    }
+
+    private V value;
+
+    public V getValue() {
+      return value;
+    }
+
+    public Pair(K key, V value) {
+      this.key = key;
+      this.value = value;
+    }
+  }
+
 
   private void addSecuritynodeWatcher(final String path, final Callable<Pair<byte[], Stat>> callback)
       throws KeeperException, InterruptedException {
