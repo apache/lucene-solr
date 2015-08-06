@@ -43,6 +43,13 @@ API Changes
 * LUCENE-6706: PayloadTermQuery and PayloadNearQuery have been removed.
   Instead, use PayloadScoreQuery to wrap any SpanQuery. (Alan Woodward)
 
+======================= Lucene 5.4.0 =======================
+
+Optimizations
+
+* LUCENE-6708: TopFieldCollector does not compute the score several times on the
+  same document anymore. (Adrien Grand)
+
 ======================= Lucene 5.3.0 =======================
 
 New Features
