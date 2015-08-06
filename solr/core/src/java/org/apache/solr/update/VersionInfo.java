@@ -231,8 +231,9 @@ public class VersionInfo {
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
       Terms versionTerms = searcher.getLeafReader().terms(versionFieldName);
-      if (versionTerms != null) {
-        maxVersionInIndex = NumericUtils.getMaxLong(versionTerms);
+      Long max = (versionTerms != null) ? NumericUtils.getMaxLong(versionTerms) : null;
+      if (max != null) {
+        maxVersionInIndex = max.longValue();
         log.info("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
       } else {
         log.info("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);

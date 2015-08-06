@@ -282,6 +282,9 @@ Bug Fixes
 * SOLR-7818: Fixed distributed stats to be calculated for all the query terms. Earlier the stats were calculated with
   the terms that are present in the last shard of a distributed request. (Varun Thacker, Anshum Gupta)
 
+* SOLR-7866: VersionInfo caused an unhandled NPE when trying to determine the max value for the
+  version field. (Timothy Potter)
+
 Optimizations
 ----------------------
 
