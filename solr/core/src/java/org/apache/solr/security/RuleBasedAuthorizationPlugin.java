@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.SolrException;
@@ -444,6 +443,14 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   public static void main(String[] args) {
     System.out.println(Utils.toJSONString(well_known_permissions));
 
+  }
+  /**For making the code work in Java 7.
+   * In trunk it uses the Predicate interface in jdk
+   * //todo remove when upgrading to java 8
+   */
+  public interface Predicate<T> {
+
+    boolean test(T t);
   }
 
 }
