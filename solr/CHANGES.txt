@@ -72,7 +72,11 @@ Other Changes
   (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
   
 ==================  5.4.0 ==================
-(No Changes)
+
+Other Changes
+----------------------
+
+* SOLR-7831: Start Scripts: Allow a configurable stack size [-Xss] (Steve Davids via Mark Miller)
 
 ==================  5.3.0 ==================
 

@@ -1289,7 +1289,7 @@ function launch_solr() {
     exit 1
   fi
 
-  SOLR_START_OPTS=('-server' '-Xss256k' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
+  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
