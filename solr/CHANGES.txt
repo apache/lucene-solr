@@ -285,6 +285,9 @@ Bug Fixes
 * SOLR-7866: VersionInfo caused an unhandled NPE when trying to determine the max value for the
   version field. (Timothy Potter)
 
+* SOLR-7666 (and linked tickets): Many fixes to AngularJS Admin UI bringing it close to feature 
+  parity with existing UI. (Upayavira)
+
 Optimizations
 ----------------------
 
