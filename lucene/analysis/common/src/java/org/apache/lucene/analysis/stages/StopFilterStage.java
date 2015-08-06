@@ -19,22 +19,22 @@ package org.apache.lucene.analysis.stages;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.DeletedAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
+import org.apache.lucene.analysis.stages.attributes.DeletedAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 /** Marks stop words as deleted */
 public class StopFilterStage extends Stage {
 
   private final CharArraySet stopWords;
-  private final CharTermAttribute termAtt;
+  private final TermAttribute termAtt;
   private final DeletedAttribute delAttIn;
   private final DeletedAttribute delAttOut;
 
   public StopFilterStage(Stage prevStage, CharArraySet stopWords) {
     super(prevStage);
     this.stopWords = stopWords;
-    termAtt = prevStage.get(CharTermAttribute.class);
+    termAtt = prevStage.get(TermAttribute.class);
     delAttIn = prevStage.get(DeletedAttribute.class);
     delAttOut = create(DeletedAttribute.class);
   }
@@ -42,7 +42,7 @@ public class StopFilterStage extends Stage {
   @Override
   public boolean next() throws IOException {
     if (prevStage.next()) {
-      if ((delAttIn != null && delAttIn.deleted()) || stopWords.contains(termAtt.buffer(), 0, termAtt.length())) {
+      if ((delAttIn != null && delAttIn.deleted()) || stopWords.contains(termAtt.get())) {
         delAttOut.set(true);
       } else {
         delAttOut.set(false);

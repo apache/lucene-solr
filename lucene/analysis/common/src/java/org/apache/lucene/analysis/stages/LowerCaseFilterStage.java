@@ -19,37 +19,36 @@ package org.apache.lucene.analysis.stages;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.Version;
 
 public class LowerCaseFilterStage extends Stage {
   private final CharacterUtils charUtils;
-  private final CharTermAttribute termAttOut;
-  private final CharTermAttribute termAttIn;
+  private final TermAttribute termAttOut;
+  private final TermAttribute termAttIn;
 
   public LowerCaseFilterStage(Version version, Stage prevStage) {
     super(prevStage);
     charUtils = CharacterUtils.getInstance(version);
-    termAttIn = prevStage.get(CharTermAttribute.class);
-    termAttOut = create(CharTermAttribute.class);
+    termAttIn = prevStage.get(TermAttribute.class);
+    termAttOut = create(TermAttribute.class);
   }
   
   @Override
   public final boolean next() throws IOException {
     if (prevStage.next()) {
-      final char[] buffer = termAttIn.buffer();
-      final int length = termAttIn.length();
-      final char[] bufferOut = termAttOut.resizeBuffer(length);
+      final String term = termAttIn.get();
+      int length = term.length();
+      final char[] bufferOut = new char[length];
       for (int i = 0; i < length;) {
         // nocommit correct?
         i += Character.toChars(
                 Character.toLowerCase(
-                   charUtils.codePointAt(buffer, i, length)), bufferOut, i);
+                   charUtils.codePointAt(term, i)), bufferOut, i);
       }
-      termAttOut.setLength(length);
+      termAttOut.set(new String(bufferOut));
       return true;
     } else {
       return false;

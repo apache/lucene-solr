@@ -17,23 +17,21 @@ package org.apache.lucene.analysis.stages;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-
-import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.ArcAttributeImpl;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
+import org.apache.lucene.analysis.stages.attributes.ArcAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Attribute;
+
+import java.io.IOException;
+import java.io.Reader;
 
 /** Simple example of decompounder-as-filter, just dividing
  *  a word at its dashes and keeping the original. */
 public class SplitOnDashFilterStage extends Stage {
 
   // We change the term:
-  private final CharTermAttribute termAttIn;
-  private final CharTermAttribute termAttOut;
+  private final TermAttribute termAttIn;
+  private final TermAttribute termAttOut;
 
   // We change the to/from:
   private final ArcAttribute arcAttIn;
@@ -44,8 +42,8 @@ public class SplitOnDashFilterStage extends Stage {
 
   public SplitOnDashFilterStage(Stage prevStage) {
     super(prevStage);
-    termAttIn = prevStage.get(CharTermAttribute.class);
-    termAttOut = create(CharTermAttribute.class);
+    termAttIn = prevStage.get(TermAttribute.class);
+    termAttOut = create(TermAttribute.class);
     arcAttIn = prevStage.get(ArcAttribute.class);
     arcAttOut = create(ArcAttribute.class);
   }
@@ -60,8 +58,7 @@ public class SplitOnDashFilterStage extends Stage {
   public boolean next() throws IOException {
     if (parts != null) {
 
-      termAttOut.setEmpty();
-      termAttOut.append(parts[nextPart]);
+      termAttOut.set(parts[nextPart]);
       int from;
       if (nextPart == 0) {
         from = arcAttIn.from();
@@ -90,8 +87,7 @@ public class SplitOnDashFilterStage extends Stage {
     if (prevStage.next()) {
 
       // nocommit copyTo?
-      termAttOut.setEmpty();
-      termAttOut.append(termAttIn);
+      termAttOut.set(termAttIn.get());
       arcAttOut.set(arcAttIn.from(), arcAttIn.to());
       
       parts = termAttIn.toString().split("-");

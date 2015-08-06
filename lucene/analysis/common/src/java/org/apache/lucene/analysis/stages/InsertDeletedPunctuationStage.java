@@ -17,18 +17,18 @@ package org.apache.lucene.analysis.stages;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.DeletedAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.stages.attributes.ArcAttribute;
+import org.apache.lucene.analysis.stages.attributes.DeletedAttribute;
+import org.apache.lucene.analysis.stages.attributes.OffsetAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 
-/** Uses a CharFilter to detect when punction occurs in the
+import java.io.IOException;
+import java.io.Reader;
+
+/** Uses a CharFilter to detect when punctuation occurs in the
  *  input in between two tokens, and then as a Stage it will
  *  re-insert [deleted] tokens when it notices the tokenizer
  *  had deleted the punctuation.  E.g. this can be used to
@@ -38,12 +38,12 @@ public class InsertDeletedPunctuationStage extends Stage {
 
   private final DeletedAttribute delAttIn;
   private final ArcAttribute arcAttIn;
-  private final CharTermAttribute termAttIn;
+  private final TermAttribute termAttIn;
   private final OffsetAttribute offsetAttIn;
 
   private final ArcAttribute arcAttOut;
   private final DeletedAttribute delAttOut;
-  private final CharTermAttribute termAttOut;
+  private final TermAttribute termAttOut;
   private final OffsetAttribute offsetAttOut;
 
   private final String punctToken;
@@ -55,12 +55,12 @@ public class InsertDeletedPunctuationStage extends Stage {
     delAttIn = prevStage.get(DeletedAttribute.class);
     offsetAttIn = prevStage.get(OffsetAttribute.class);
     arcAttIn = prevStage.get(ArcAttribute.class);
-    termAttIn = prevStage.get(CharTermAttribute.class);
+    termAttIn = prevStage.get(TermAttribute.class);
 
     delAttOut = create(DeletedAttribute.class);
     offsetAttOut = create(OffsetAttribute.class);
     arcAttOut = create(ArcAttribute.class);
-    termAttOut = create(CharTermAttribute.class);
+    termAttOut = create(TermAttribute.class);
   }
 
   private static class FindPunctuationCharFilter extends CharFilter {
@@ -146,8 +146,7 @@ public class InsertDeletedPunctuationStage extends Stage {
         delAttOut.set(true);
         offsetAttOut.setOffset(lastEndOffset, startOffset);
         // nocommit: should we copy over the actual punct chars...?
-        termAttOut.setEmpty();
-        termAttOut.append(punctToken);
+        termAttOut.set(punctToken);
         nodeOffset++;
       } else {
         copyToken();
@@ -165,8 +164,7 @@ public class InsertDeletedPunctuationStage extends Stage {
     } else {
       delAttOut.set(false);
     }
-    termAttOut.setEmpty();
-    termAttOut.append(termAttIn);
+    termAttOut.set(termAttIn.get());
     offsetAttOut.setOffset(offsetAttIn.startOffset(), offsetAttIn.endOffset());
     arcAttOut.set(arcAttIn.from()+nodeOffset, arcAttIn.to() + nodeOffset);
   }

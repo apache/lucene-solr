@@ -17,17 +17,17 @@ package org.apache.lucene.analysis.stages;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.stages.attributes.ArcAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-
 class AssertingStage extends Stage {
   final ArcAttribute arcAtt;
-  final CharTermAttribute termAtt;
+  final TermAttribute termAtt;
   private int lastFrom;
   private int lastTo;
 
@@ -37,7 +37,7 @@ class AssertingStage extends Stage {
   public AssertingStage(Stage prevStage) {
     super(prevStage);
     arcAtt = prevStage.get(ArcAttribute.class);
-    termAtt = prevStage.get(CharTermAttribute.class);
+    termAtt = prevStage.get(TermAttribute.class);
   }
 
   @Override

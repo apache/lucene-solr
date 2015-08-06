@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.tokenattributes;
+package org.apache.lucene.analysis.stages.attributes;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,27 +19,20 @@ package org.apache.lucene.analysis.tokenattributes;
 
 import org.apache.lucene.util.Attribute;
 
-/**
- * The from/to nodes for a token: every token is one edge in
- * the growing graph.  All leaving tokens for a given node
- * must be enumerated at once; once the tokenizer moves
- * beyond that node then it's done.  Nodes are numbered with
- * integers, but these are not positions!  Positions are
- * assigned at the end of tokenization.
- */
-public interface ArcAttribute extends Attribute {
-  /** 
-   * Returns this Token's from node.
-   */
-  public int from();
+// TODO: CharSequence again?
+public class TermAttribute implements Attribute {
+  private String term;
 
-  /** 
-   * Returns this Token's to node.
-   */
-  public int to();
+  public void set(String term) {
+    this.term = term;
+  }
 
-  /** 
-   * Set the dest.
-   */
-  public void set(int from, int to);
+  public String get() {
+    return term;
+  }
+
+  @Override
+  public String toString() {
+    return term;
+  }
 }

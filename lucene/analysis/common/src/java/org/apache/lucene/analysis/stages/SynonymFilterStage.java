@@ -17,22 +17,22 @@ package org.apache.lucene.analysis.stages;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
+import org.apache.lucene.analysis.stages.attributes.ArcAttribute;
+import org.apache.lucene.analysis.stages.attributes.OffsetAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
 import org.apache.lucene.analysis.synonym.SynonymMap;
-import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.FST;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 // nocommit does not do keepOrig
 
@@ -47,8 +47,8 @@ import org.apache.lucene.util.fst.FST;
 public class SynonymFilterStage extends Stage {
 
   // We change the term:
-  private final CharTermAttribute termAttIn;
-  private final CharTermAttribute termAttOut;
+  private final TermAttribute termAttIn;
+  private final TermAttribute termAttOut;
 
   // We change the to/from:
   private final ArcAttribute arcAttIn;
@@ -113,8 +113,8 @@ public class SynonymFilterStage extends Stage {
 
   public SynonymFilterStage(Stage prevStage, SynonymMap synonyms, boolean ignoreCase) {
     super(prevStage);
-    termAttIn = prevStage.get(CharTermAttribute.class);
-    termAttOut = create(CharTermAttribute.class);
+    termAttIn = prevStage.get(TermAttribute.class);
+    termAttOut = create(TermAttribute.class);
     arcAttIn = prevStage.get(ArcAttribute.class);
     arcAttOut = create(ArcAttribute.class);
     offsetAttIn = prevStage.get(OffsetAttribute.class);
@@ -151,11 +151,10 @@ public class SynonymFilterStage extends Stage {
       output = fst.outputs.getNoOutput();
     }
 
-    char[] buffer = termAttIn.buffer();
-    int bufferLen = termAttIn.length();
+    int bufferLen = termAttIn.get().length();
     int bufUpto = 0;
     while(bufUpto < bufferLen) {
-      final int codePoint = Character.codePointAt(buffer, bufUpto, bufferLen);
+      final int codePoint = Character.codePointAt(termAttIn.get(), bufUpto);
       if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc, fstReader) == null) {
         return;
       }
@@ -297,8 +296,7 @@ public class SynonymFilterStage extends Stage {
     if (token != null) {
       //System.out.println("  insert output token! text=" + token.text + " offset=" + token.startOffset + "/" + token.endOffset);
       // We still have outputs pending from previous match:
-      termAttOut.setEmpty();
-      termAttOut.append(token.text);
+      termAttOut.set(token.text);
       offsetAttOut.setOffset(token.startOffset, token.endOffset);
       arcAttOut.set(token.fromNode, token.toNode);
       return true;
@@ -319,8 +317,7 @@ public class SynonymFilterStage extends Stage {
       match();
       
       // nocommit copy?
-      termAttOut.setEmpty();
-      termAttOut.append(termAttIn);
+      termAttOut.set(termAttIn.get());
 
       offsetAttOut.setOffset(offsetAttIn.startOffset(),
                              offsetAttIn.endOffset());

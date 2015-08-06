@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.tokenattributes;
+package org.apache.lucene.analysis.stages.attributes;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,33 +17,28 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.Attribute;
 
-/** Default implementation of {@link ArcAttribute}. */
-public class ArcAttributeImpl extends AttributeImpl implements ArcAttribute, Cloneable {
+public class ArcAttribute implements Attribute, Cloneable {
   private int from;
   private int to;
   
-  /** Initialize this attribute with from=0, to=0. */
-  public ArcAttributeImpl() {}
+  public ArcAttribute() {
+  }
 
-  @Override
   public int from() {
     return from;
   }
 
-  @Override
   public int to() {
     return to;
   }
 
-  @Override
   public void set(int from, int to) {
     this.from = from;
     this.to = to;
   }
 
-  @Override
   public void clear() {
     from = 0;
     to = 0;
@@ -55,8 +50,8 @@ public class ArcAttributeImpl extends AttributeImpl implements ArcAttribute, Clo
       return true;
     }
     
-    if (other instanceof ArcAttributeImpl) {
-      ArcAttributeImpl o = (ArcAttributeImpl) other;
+    if (other instanceof ArcAttribute) {
+      ArcAttribute o = (ArcAttribute) other;
       return o.from == from && o.to == to;
     }
     
@@ -70,8 +65,7 @@ public class ArcAttributeImpl extends AttributeImpl implements ArcAttribute, Clo
     return code;
   } 
   
-  @Override
-  public void copyTo(AttributeImpl target) {
+  public void copyTo(Attribute target) {
     ArcAttribute t = (ArcAttribute) target;
     t.set(from, to);
   }  

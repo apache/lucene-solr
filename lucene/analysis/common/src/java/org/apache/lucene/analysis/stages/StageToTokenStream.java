@@ -17,19 +17,19 @@ package org.apache.lucene.analysis.stages;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.stages.attributes.ArcAttribute;
+import org.apache.lucene.analysis.stages.attributes.DeletedAttribute;
+import org.apache.lucene.analysis.stages.attributes.OffsetAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.ArrayUtil;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.DeletedAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.util.ArrayUtil;
 
 // TODO
 //   - is there an adversary here?  that can cause
@@ -41,21 +41,27 @@ import org.apache.lucene.util.ArrayUtil;
 // current indexer ... eg use captureState/restoreState to
 // pass through any custom atts too
 
-/** Takes a Stage as input and produces a TokenStream as
- *  output that can be consumed for indexing.  This is not
- *  general purpose: it currently only sets the attributes
- *  that the (core, no custom indexing chain) indexer
+/** This is a compatibility class, to map the new {@link Stage} API to
+ *  the legacy {@link TokenStream} API currently used/required by
+ *  consumers like {@link IndexWriter} and query parsers.  It takes
+ *  a {@link Stage} as input and produces a {@link TokenStream} as
+ *  output.  This is not general purpose: it currently only sets
+ *  the attributes that the (core, no custom indexing chain) indexer 
  *  requires. */
+
 public class StageToTokenStream extends TokenStream {
 
-  private final Stage prevStage;
+  // nocommit: cutover to the approach from SausageGraphFilter
+
+  private final Stage stage;
   private final DeletedAttribute delAtt;
-  private final CharTermAttribute termAttIn;
-  private final CharTermAttribute termAttOut;
+  private final TermAttribute termAttIn;
   private final ArcAttribute arcAttIn;
-  private final PositionIncrementAttribute posIncAttOut;
   private final OffsetAttribute offsetAttIn;
-  private final OffsetAttribute offsetAttOut;
+
+  private final org.apache.lucene.analysis.tokenattributes.CharTermAttribute termAttOut;
+  private final org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute posIncAttOut;
+  private final org.apache.lucene.analysis.tokenattributes.OffsetAttribute offsetAttOut;
 
   protected boolean resetCalled;
   protected boolean closeCalled = true;
@@ -99,15 +105,15 @@ public class StageToTokenStream extends TokenStream {
     }
   }
 
-  public StageToTokenStream(Stage prevStage) {
-    this.prevStage = prevStage;
-    termAttIn = prevStage.get(CharTermAttribute.class);
-    termAttOut = addAttribute(CharTermAttribute.class);
-    posIncAttOut = addAttribute(PositionIncrementAttribute.class);
-    offsetAttIn = prevStage.get(OffsetAttribute.class);
-    offsetAttOut = addAttribute(OffsetAttribute.class);
-    arcAttIn = prevStage.get(ArcAttribute.class);
-    delAtt = prevStage.get(DeletedAttribute.class);
+  public StageToTokenStream(Stage stage) {
+    this.stage = stage;
+    termAttIn = stage.get(TermAttribute.class);
+    termAttOut = addAttribute(org.apache.lucene.analysis.tokenattributes.CharTermAttribute.class);
+    posIncAttOut = addAttribute(org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute.class);
+    offsetAttIn = stage.get(OffsetAttribute.class);
+    offsetAttOut = addAttribute(org.apache.lucene.analysis.tokenattributes.OffsetAttribute.class);
+    arcAttIn = stage.get(ArcAttribute.class);
+    delAtt = stage.get(DeletedAttribute.class);
   }
 
   private Node getNode(Map<Integer,Node> nodes, int node) {
@@ -205,8 +211,8 @@ public class StageToTokenStream extends TokenStream {
       // buffered token(s) were deleted (holes)
     }
 
-    if (prevStage.next()) {
-      if (prevStage.nodes.anyNodesCanChange()) {
+    if (stage.next()) {
+      if (stage.nodes.anyNodesCanChange()) {
         System.out.println("  now buffer: " + termAttIn);
         Map<Integer,Node> nodes = new HashMap<Integer,Node>();
         nodes.put(arcAttIn.from(), new Node());
@@ -216,14 +222,14 @@ public class StageToTokenStream extends TokenStream {
         // until it un-clumps itself:
         saveToken(nodes);
         while (true) {
-          boolean result = prevStage.next();
+          boolean result = stage.next();
           // So long as there are still nodes that can
           // change, there must be more tokens (hmm is this
           // really true...):
           assert result: "Stage.next ended without freezing all nodes";
           saveToken(nodes);
-          System.out.println("  buffer again: " + termAttIn + "; " + prevStage.anyNodesCanChange() + " " + frontierNodeCount);
-          if (!prevStage.anyNodesCanChange() && frontierNodeCount == 1) {
+          System.out.println("  buffer again: " + termAttIn + "; " + stage.anyNodesCanChange() + " " + frontierNodeCount);
+          if (!stage.anyNodesCanChange() && frontierNodeCount == 1) {
             System.out.println("  clump done");
             break;
           }
@@ -247,7 +253,7 @@ public class StageToTokenStream extends TokenStream {
         System.out.println("  pass through");
         // Fast path (pass through): no buffering necessary:
         termAttOut.setEmpty();
-        termAttOut.append(termAttIn);
+        termAttOut.append(termAttIn.get());
         offsetAttOut.setOffset(offsetAttIn.startOffset(),
                                offsetAttIn.endOffset());
         posIncAttOut.setPositionIncrement(1 + pendingPosInc);

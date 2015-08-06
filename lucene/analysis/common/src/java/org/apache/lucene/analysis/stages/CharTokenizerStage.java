@@ -17,24 +17,25 @@ package org.apache.lucene.analysis.stages;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.stages.attributes.ArcAttribute;
+import org.apache.lucene.analysis.stages.attributes.OffsetAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
+import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
+import org.apache.lucene.analysis.util.CharacterUtils;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.Version;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-
-import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
-import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.Version;
 
 public abstract class CharTokenizerStage extends Stage {
   private static final int MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;
 
   private Reader input;
-  private final CharTermAttribute termAtt;
+  private final TermAttribute termAtt;
   private final OffsetAttribute offsetAtt;
   private final ArcAttribute arcAtt;
 
@@ -52,9 +53,11 @@ public abstract class CharTokenizerStage extends Stage {
 
   private int lastNode;
 
+  private char[] buffer = new char[10];
+
   public CharTokenizerStage() {
     super(null);
-    termAtt = create(CharTermAttribute.class);
+    termAtt = create(TermAttribute.class);
     offsetAtt = create(OffsetAttribute.class);
     arcAtt = create(ArcAttribute.class);
   }
@@ -75,7 +78,6 @@ public abstract class CharTokenizerStage extends Stage {
     int length = 0;
     int start = -1; // this variable is always initialized
     int end = -1;
-    char[] buffer = termAtt.buffer();
     while (true) {
       if (bufferIndex >= dataLen) {
         offset += dataLen;
@@ -105,7 +107,7 @@ public abstract class CharTokenizerStage extends Stage {
           start = offset + bufferIndex - charCount;
           end = start;
         } else if (length >= buffer.length-1) { // check if a supplementary could run out of bounds
-          buffer = termAtt.resizeBuffer(2+length); // make sure a supplementary fits in the buffer
+          buffer = ArrayUtil.grow(buffer, 2+length); // make sure a supplementary fits in the buffer
         }
         end += charCount;
         length += Character.toChars(normalize(c), buffer, length); // buffer it, normalized
@@ -117,7 +119,7 @@ public abstract class CharTokenizerStage extends Stage {
       }
     }
 
-    termAtt.setLength(length);
+    termAtt.set(new String(buffer, 0, length));
 
     offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
 

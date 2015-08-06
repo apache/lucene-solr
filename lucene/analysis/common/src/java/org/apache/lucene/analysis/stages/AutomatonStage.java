@@ -17,17 +17,17 @@ package org.apache.lucene.analysis.stages;
 * limitations under the License.
 */
 
-import java.io.IOException;
-import java.io.Reader;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.analysis.stages.attributes.ArcAttribute;
+import org.apache.lucene.analysis.stages.attributes.TermAttribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Pass-through stage that builds an Automaton from the
  *  input tokens it sees. */
@@ -44,12 +44,12 @@ public class AutomatonStage extends Stage {
   private Map<Integer,State> toStates;
   private Map<Integer,State> fromStates;
   private final ArcAttribute arcAtt;
-  private final TermToBytesRefAttribute termAtt;
+  private final TermAttribute termAtt;
 
   public AutomatonStage(Stage prevStage) {
     super(prevStage);
     arcAtt = prevStage.get(ArcAttribute.class);
-    termAtt = prevStage.get(TermToBytesRefAttribute.class);
+    termAtt = prevStage.get(TermAttribute.class);
   }
 
   @Override
@@ -96,20 +96,19 @@ public class AutomatonStage extends Stage {
   @Override
   public boolean next() throws IOException {
     if (prevStage.next()) {
-      BytesRef term = termAtt.getBytesRef();
-      termAtt.fillBytesRef();
-      if (term.length == 0) {
+      String term = termAtt.get();
+      if (term.length() == 0) {
         throw new IllegalStateException("cannot handle empty-string term");
       }
       State lastState = getFromState(arcAtt.from());
-      for(int i=0;i<term.length;i++) {
+      for(int i=0;i<term.length();i++) {
         State toState;
-        if (i == term.length-1) {
+        if (i == term.length()-1) {
           toState = getToState(arcAtt.to());
         } else {
           toState = new State();
         }
-        lastState.addTransition(new Transition(term.bytes[term.offset + i], toState));
+        lastState.addTransition(new Transition(term.charAt(i), toState));
         lastState = toState;
       }    
       return true;

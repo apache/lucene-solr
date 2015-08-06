@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.tokenattributes;
+package org.apache.lucene.analysis.stages.attributes;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,25 +17,22 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.Attribute;
 
-/** Default implementation of {@link DeletedAttribute}. */
-public class DeletedAttributeImpl extends AttributeImpl implements DeletedAttribute, Cloneable {
+public class DeletedAttribute implements Attribute, Cloneable {
   private boolean deleted;
   
-  public DeletedAttributeImpl() {}
+  public DeletedAttribute() {
+  }
 
-  @Override
   public boolean deleted() {
     return deleted;
   }
 
-  @Override
   public void set(boolean deleted) {
     this.deleted = deleted;
   }
 
-  @Override
   public void clear() {
     deleted = false;
   }
@@ -46,8 +43,8 @@ public class DeletedAttributeImpl extends AttributeImpl implements DeletedAttrib
       return true;
     }
     
-    if (other instanceof DeletedAttributeImpl) {
-      DeletedAttributeImpl o = (DeletedAttributeImpl) other;
+    if (other instanceof DeletedAttribute) {
+      DeletedAttribute o = (DeletedAttribute) other;
       return o.deleted == deleted;
     }
     
@@ -59,8 +56,7 @@ public class DeletedAttributeImpl extends AttributeImpl implements DeletedAttrib
     return deleted ? 31 : 57;
   } 
   
-  @Override
-  public void copyTo(AttributeImpl target) {
+  public void copyTo(Attribute target) {
     DeletedAttribute t = (DeletedAttribute) target;
     t.set(deleted);
   }  
