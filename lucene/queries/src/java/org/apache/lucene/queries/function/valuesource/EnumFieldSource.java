@@ -20,9 +20,9 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
@@ -143,7 +143,7 @@ public class EnumFieldSource extends FieldCacheSource {
 
         return new ValueSourceScorer(reader, this) {
           @Override
-          public boolean matchesValue(int doc) {
+          public boolean matches(int doc) {
             int val = intVal(doc);
             // only check for deleted if it's the default value
             // if (val==0 && reader.isDeleted(doc)) return false;
