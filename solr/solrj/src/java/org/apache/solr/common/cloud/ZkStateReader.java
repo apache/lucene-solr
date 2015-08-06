@@ -437,6 +437,7 @@ public class ZkStateReader implements Closeable {
     }
   }
 
+  //todo remove when we move to java 8
   static public class Pair<K, V> implements Serializable {
     private K key;
 
