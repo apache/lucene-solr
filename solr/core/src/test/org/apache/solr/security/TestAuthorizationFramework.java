@@ -20,7 +20,6 @@ package org.apache.solr.security;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.commons.io.Charsets;
 import org.apache.http.client.HttpClient;
