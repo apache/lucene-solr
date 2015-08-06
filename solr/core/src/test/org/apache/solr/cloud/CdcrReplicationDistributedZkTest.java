@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
@@ -31,6 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 
 @Slow
+@Nightly
 public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest {
 
   @Override
