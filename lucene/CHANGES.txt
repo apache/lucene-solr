@@ -242,6 +242,11 @@ API Changes
   add dedicated method to consider all context values at query time.
   (Areek Zillur, Mike McCandless)
 
+* LUCENE-6719: NumericUtils getMinInt, getMaxInt, getMinLong, getMaxLong now
+  return null if there are no terms for the specified field, previously these
+  methods returned primitive values and raised an undocumented NullPointerException
+  if there were no terms for the field. (hossman, Timothy Potter)
+
 Bug fixes
 
 * LUCENE-6500: ParallelCompositeReader did not always call
