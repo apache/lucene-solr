@@ -66,6 +66,9 @@ set ENABLE_REMOTE_JMX_OPTS=false
 REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
 
+REM Set the thread stack size
+set SOLR_OPTS=%SOLR_OPTS% -Xss256k
+
 REM Anything you add to the SOLR_OPTS variable will be included in the java
 REM start command line as-is, in ADDITION to other options. If you specify the
 REM -a option on start script, those options will be appended as well. Examples:
@@ -93,5 +96,5 @@ REM Uncomment if you want to override previously defined SSL values for HTTP cli
 REM otherwise keep them commented and the above values will automatically be set for HTTP clients
 REM set SOLR_SSL_CLIENT_KEY_STORE=
 REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
-REM setSOLR_SSL_CLIENT_TRUST_STORE=
+REM set SOLR_SSL_CLIENT_TRUST_STORE=
 REM setSOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
