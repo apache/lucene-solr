@@ -17,6 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
@@ -44,14 +52,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Test of the MiniSolrCloudCluster functionality. Keep in mind, 
@@ -194,6 +194,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
           assertTrue(e.code() >= 500 && e.code() < 600);
         }
 
+        doExtraTests(miniCluster, zkClient, zkStateReader,cloudSolrClient, collectionName);
         // delete the collection we created earlier
         miniCluster.deleteCollection(collectionName);
         AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
@@ -203,6 +204,9 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       miniCluster.shutdown();
     }
   }
+
+  protected void doExtraTests(MiniSolrCloudCluster miniCluster, SolrZkClient zkClient, ZkStateReader zkStateReader, CloudSolrClient cloudSolrClient,
+                            String defaultCollName) throws Exception { /*do nothing*/ }
 
   @Test
   public void testErrorsInStartup() throws Exception {

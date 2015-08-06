@@ -73,7 +73,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
           if (key.toString().startsWith(s)) {
             List<Permission> l = super.get(s);
             if (l != null) {
-              result = result == null ? new ArrayList<>() : new ArrayList<>(result);
+              result = result == null ? new ArrayList<Permission>() : new ArrayList<>(result);
               result.addAll(l);
             }
           }
