@@ -198,6 +198,10 @@ New Features
   now watches /security.json. Components can choose to make their config editable
   (Noble Paul, Anshum Gupta, Ishan Chattopadhyaya)
 
+* SOLR-7838: An authorizationPlugin interface where the access control rules are stored/managed in
+  ZooKeeper (Noble Paul, Anshum Gupta, Ishan Chattopadhyaya)
+
+
 Bug Fixes
 ----------------------
 
