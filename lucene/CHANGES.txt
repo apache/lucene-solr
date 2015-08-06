@@ -452,7 +452,7 @@ Optimizations
 
 * SOLR-7730: Speed up SlowCompositeReaderWrapper.getSortedSetDocValues() by
   avoiding merging FieldInfos just to check doc value type.
-  (Mikhail Khludnev, yonik)
+  (Paul Vasilyev, Yuriy Pakhomov, Mikhail Khludnev, yonik)
 
 Build
 
