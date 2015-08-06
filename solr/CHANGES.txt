@@ -328,6 +328,9 @@ Optimizations
 
 * SOLR-7840: ZkStateReader.updateClusterState fetches watched collections twice from ZK. (shalin)
 
+* SOLR-7875: Speedup SolrQueryTimeoutImpl. Avoid setting a timeout time when timeAllowed
+  parameter is not set. (Tomás Fernández Löbbe)
+
 Other Changes
 ----------------------
 
