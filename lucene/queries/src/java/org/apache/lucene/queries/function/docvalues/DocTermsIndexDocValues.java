@@ -19,9 +19,9 @@ package org.apache.lucene.queries.function.docvalues;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -124,7 +124,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
     return new ValueSourceScorer(reader, this) {
       @Override
-      public boolean matchesValue(int doc) {
+      public boolean matches(int doc) {
         int ord = termsIndex.getOrd(doc);
         return ord >= ll && ord <= uu;
       }

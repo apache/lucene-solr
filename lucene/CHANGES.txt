@@ -45,10 +45,18 @@ API Changes
 
 ======================= Lucene 5.4.0 =======================
 
+New Features
+
+* LUCENE-6720: New FunctionRangeQuery wrapper around ValueSourceScorer
+  (returned from ValueSource/FunctionValues.getRangeScorer()). (David Smiley)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the
   same document anymore. (Adrien Grand)
+
+* LUCENE-6720: ValueSourceScorer, returned from
+  FunctionValues.getRangeScorer(), now uses TwoPhaseIterator. (David Smiley)
 
 ======================= Lucene 5.3.0 =======================
 

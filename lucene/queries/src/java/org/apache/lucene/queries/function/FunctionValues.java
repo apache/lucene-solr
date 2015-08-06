@@ -17,8 +17,9 @@ package org.apache.lucene.queries.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
@@ -136,10 +137,23 @@ public abstract class FunctionValues {
     return Explanation.match(floatVal(doc), toString(doc));
   }
 
+  /**
+   * Yields a {@link Scorer} that matches all documents,
+   * and that which produces scores equal to {@link #floatVal(int)}.
+   */
   public ValueSourceScorer getScorer(IndexReader reader) {
-    return new ValueSourceScorer(reader, this);
+    return new ValueSourceScorer(reader, this) {
+      @Override
+      public boolean matches(int doc) {
+        return true;
+      }
+    };
   }
 
+  /**
+   * Yields a {@link Scorer} that matches documents with values between the specified range,
+   * and that which produces scores equal to {@link #floatVal(int)}.
+   */
   // A RangeValueSource can't easily be a ValueSource that takes another ValueSource
   // because it needs different behavior depending on the type of fields.  There is also
   // a setup cost - parsing and normalizing params, and doing a binary search on the StringIndex.
@@ -165,7 +179,7 @@ public abstract class FunctionValues {
     if (includeLower && includeUpper) {
       return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           float docVal = floatVal(doc);
           return docVal >= l && docVal <= u;
         }
@@ -174,7 +188,7 @@ public abstract class FunctionValues {
     else if (includeLower && !includeUpper) {
        return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           float docVal = floatVal(doc);
           return docVal >= l && docVal < u;
         }
@@ -183,7 +197,7 @@ public abstract class FunctionValues {
     else if (!includeLower && includeUpper) {
        return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           float docVal = floatVal(doc);
           return docVal > l && docVal <= u;
         }
@@ -192,7 +206,7 @@ public abstract class FunctionValues {
     else {
        return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           float docVal = floatVal(doc);
           return docVal > l && docVal < u;
         }

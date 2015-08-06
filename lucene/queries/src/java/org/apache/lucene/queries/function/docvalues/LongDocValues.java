@@ -112,7 +112,7 @@ public abstract class LongDocValues extends FunctionValues {
 
     return new ValueSourceScorer(reader, this) {
       @Override
-      public boolean matchesValue(int doc) {
+      public boolean matches(int doc) {
         long val = longVal(doc);
         // only check for deleted if it's the default value
         // if (val==0 && reader.isDeleted(doc)) return false;
