@@ -319,7 +319,7 @@ public class MiniSolrCloudCluster {
     params.set("replicationFactor", replicationFactor);
     params.set("collection.configName", configName);
     if (null != createNodeSet) {
-      params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSet);
+      params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSet);
     }
     if (null != asyncId) {
       params.set(CommonAdminParams.ASYNC, asyncId);

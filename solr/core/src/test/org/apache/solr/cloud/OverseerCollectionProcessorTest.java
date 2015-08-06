@@ -106,7 +106,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         DistributedQueue workQueue, DistributedMap runningMap,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), null, new OverseerNodePrioritizer(zkStateReader, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -407,14 +407,14 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
         "collection.configName", CONFIG_NAME,
-        OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
+        OverseerCollectionMessageHandler.NUM_SLICES, numberOfSlices.toString(),
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode.toString()
     );
     if (sendCreateNodeList) {
-      propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET,
+      propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET,
           (createNodeList != null)?StrUtils.join(createNodeList, ','):null);
-      if (OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE_DEFAULT != createNodeSetShuffle || random().nextBoolean()) {
-        propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE, createNodeSetShuffle);
+      if (OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT != createNodeSetShuffle || random().nextBoolean()) {
+        propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE, createNodeSetShuffle);
       }
     }
 
@@ -590,7 +590,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }
     
-    if (random().nextBoolean()) Collections.shuffle(createNodeList, OverseerCollectionProcessor.RANDOM);
+    if (random().nextBoolean()) Collections.shuffle(createNodeList, OverseerCollectionMessageHandler.RANDOM);
     
     List<SubmitCapture> submitCaptures = null;
     if (collectionExceptedToBeCreated) {

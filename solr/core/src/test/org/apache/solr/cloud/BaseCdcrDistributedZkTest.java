@@ -45,7 +45,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.*;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.*;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -398,7 +398,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     }
     Integer replicationFactor = (Integer) collectionProps.get(REPLICATION_FACTOR);
     if (replicationFactor == null) {
-      replicationFactor = (Integer) OverseerCollectionProcessor.COLL_PROPS.get(REPLICATION_FACTOR);
+      replicationFactor = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(REPLICATION_FACTOR);
     }
 
     if (confSetName != null) {
