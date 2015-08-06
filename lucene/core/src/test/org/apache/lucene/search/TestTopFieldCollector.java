@@ -17,13 +17,21 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestTopFieldCollector extends LuceneTestCase {
   private IndexSearcher is;
@@ -166,5 +174,99 @@ public class TestTopFieldCollector extends LuceneTestCase {
       assertEquals(0, td.totalHits);
       assertTrue(Float.isNaN(td.getMaxScore()));
     }
-  }  
+  }
+
+  public void testComputeScoresOnlyOnce() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    StringField text = new StringField("text", "foo", Store.NO);
+    doc.add(text);
+    NumericDocValuesField relevance = new NumericDocValuesField("relevance", 1);
+    doc.add(relevance);
+    w.addDocument(doc);
+    text.setStringValue("bar");
+    w.addDocument(doc);
+    text.setStringValue("baz");
+    w.addDocument(doc);
+    IndexReader reader = w.getReader();
+    TermQuery foo = new TermQuery(new Term("text", "foo"));
+    TermQuery bar = new TermQuery(new Term("text", "bar"));
+    bar.setBoost(2);
+    TermQuery baz = new TermQuery(new Term("text", "baz"));
+    baz.setBoost(3);
+    Query query = new BooleanQuery.Builder()
+        .add(foo, Occur.SHOULD)
+        .add(bar, Occur.SHOULD)
+        .add(baz, Occur.SHOULD)
+        .build();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    for (Sort sort : new Sort[] {new Sort(SortField.FIELD_SCORE), new Sort(new SortField("f", SortField.Type.SCORE))}) {
+      for (boolean doDocScores : new boolean[] {false, true}) {
+        for (boolean doMaxScore : new boolean[] {false, true}) {
+          final TopFieldCollector topCollector = TopFieldCollector.create(sort, TestUtil.nextInt(random(), 1, 2), true, doDocScores, doMaxScore);
+          final Collector assertingCollector = new Collector() {
+            @Override
+            public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+              final LeafCollector in = topCollector.getLeafCollector(context);
+              return new FilterLeafCollector(in) {
+                @Override
+                public void setScorer(final Scorer scorer) throws IOException {
+                  Scorer s = new Scorer(null) {
+
+                    int lastComputedDoc = -1;
+                    
+                    @Override
+                    public float score() throws IOException {
+                      if (lastComputedDoc == docID()) {
+                        throw new AssertionError("Score computed twice on " + docID());
+                      }
+                      lastComputedDoc = docID();
+                      return scorer.score();
+                    }
+
+                    @Override
+                    public int freq() throws IOException {
+                      return scorer.freq();
+                    }
+
+                    @Override
+                    public int docID() {
+                      return scorer.docID();
+                    }
+
+                    @Override
+                    public int nextDoc() throws IOException {
+                      return scorer.nextDoc();
+                    }
+
+                    @Override
+                    public int advance(int target) throws IOException {
+                      return scorer.advance(target);
+                    }
+
+                    @Override
+                    public long cost() {
+                      return scorer.cost();
+                    }
+                    
+                  };
+                  super.setScorer(s);
+                }
+              };
+            }
+            @Override
+            public boolean needsScores() {
+              return topCollector.needsScores();
+            }
+          };
+          searcher.search(query, assertingCollector);
+        }
+      }
+    }
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
 }
