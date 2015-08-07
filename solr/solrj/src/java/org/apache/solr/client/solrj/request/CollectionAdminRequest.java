@@ -1033,6 +1033,29 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       return this;
     }
   }
+
+  // DELETEREPLICAPROP request
+  public static class MigrateClusterState extends CollectionShardAdminRequest<MigrateClusterState> {
+
+    public MigrateClusterState() {
+      this.action = CollectionAction.MIGRATESTATEFORMAT;
+    }
+
+    @Override
+    public MigrateClusterState setShardName(String shard) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getShardName() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected MigrateClusterState getThis() {
+      return this;
+    }
+  }
   
   // BALANCESHARDUNIQUE request
   public static class BalanceShardUnique extends CollectionAdminRequest<BalanceShardUnique> {

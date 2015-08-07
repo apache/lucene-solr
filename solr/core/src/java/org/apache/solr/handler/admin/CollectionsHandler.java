@@ -700,6 +700,13 @@ public class CollectionsHandler extends RequestHandlerBase {
         verifyRuleParams(h.coreContainer, m);
         return m;
       }
+    },
+    MIGRATESTATEFORMAT_OP(MIGRATESTATEFORMAT) {
+      @Override
+      Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler)
+          throws Exception {
+        return req.getParams().required().getAll(null, COLLECTION_PROP);
+      }
     };
     CollectionAction action;
     long timeOut;

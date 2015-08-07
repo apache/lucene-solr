@@ -90,7 +90,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -113,10 +112,12 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CR
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATESTATEFORMAT;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 
 public class OverseerCollectionMessageHandler implements OverseerMessageHandler {
@@ -272,6 +273,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
           break;
         case MODIFYCOLLECTION:
           overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+          break;
+        case MIGRATESTATEFORMAT:
+          migrateStateFormat(message, results);
           break;
         default:
           throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
@@ -805,6 +809,36 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
             + collection, e);
       }
     }
+  }
+
+  private void migrateStateFormat(ZkNodeProps message, NamedList results)
+      throws KeeperException, InterruptedException {
+    final String collectionName = message.getStr(COLLECTION_PROP);
+
+    // wait for a while until the state format changes
+    long now = System.nanoTime();
+    long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    boolean firstLoop = true;
+    while (System.nanoTime() < timeout) {
+      DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+      if (collection == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + collectionName + " not found");
+      }
+      if (collection.getStateFormat() == 2) {
+        // Done.
+        results.add("success", new SimpleOrderedMap<>());
+        return;
+      }
+
+      if (firstLoop) {
+        // Actually queue the migration command.
+        firstLoop = false;
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, MIGRATESTATEFORMAT.toLower(), COLLECTION_PROP, collectionName);
+        Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+      }
+      Thread.sleep(100);
+    }
+    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not migrate state format for collection: " + collectionName);
   }
 
   private void createAlias(Aliases aliases, ZkNodeProps message) {

@@ -1520,8 +1520,8 @@ public final class ZkController {
 
       publish(cd, Replica.State.DOWN, false, true);
       DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
-      if (collection != null && collection.getStateFormat() > 1) {
-        log.info("Registering watch for external collection {}", cd.getCloudDescriptor().getCollectionName());
+      if (collection != null) {
+        log.info("Registering watch for collection {}", cd.getCloudDescriptor().getCollectionName());
         zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
       }
     } catch (KeeperException e) {

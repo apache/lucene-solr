@@ -19,6 +19,8 @@ package org.apache.solr.common.params;
 
 import java.util.Locale;
 
+import org.apache.solr.common.SolrException;
+
 public interface CollectionParams 
 {
   /** What action **/
@@ -51,7 +53,8 @@ public interface CollectionParams
     DELETEREPLICAPROP(true),
     BALANCESHARDUNIQUE(true),
     REBALANCELEADERS(true),
-    MODIFYCOLLECTION(true);
+    MODIFYCOLLECTION(true),
+    MIGRATESTATEFORMAT(true);
     
     public final boolean isWrite;
 

@@ -335,7 +335,9 @@ public class ClusterState implements JSONWriter.Writable {
    * The version of clusterstate.json in ZooKeeper.
    * 
    * @return null if ClusterState was created for publication, not consumption
+   * @deprecated true cluster state spans many ZK nodes, stop depending on the version number of the shared node!
    */
+  @Deprecated
   public Integer getZkClusterStateVersion() {
     return znodeVersion;
   }

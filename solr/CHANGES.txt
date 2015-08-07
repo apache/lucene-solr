@@ -93,6 +93,13 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-5756: A utility Collection API to move a collection from shared clusterstate.json (stateFormat=1,
+  default until 4.x) to the per-collection state.json stored in ZooKeeper (stateFormat=2,
+  default since 5.0) seamlessly without any application down-time.
+  Example:
+  http://localhost:8983/solr/admin/collections?action=MIGRATESTATEFORMAT&collection=<collection_name>
+  (Noble Paul, Scott Blum, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -103,6 +110,10 @@ Other Changes
 ----------------------
 
 * SOLR-7831: Start Scripts: Allow a configurable stack size [-Xss] (Steve Davids via Mark Miller)
+
+* SOLR-7870: Write a test which asserts that requests to stateFormat=2 collection succeed on a node
+  even after all local replicas of that collection have been removed.
+  (Scott Blum via shalin)
 
 ==================  5.3.0 ==================
 
