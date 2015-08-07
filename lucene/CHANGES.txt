@@ -50,6 +50,9 @@ New Features
 * LUCENE-6720: New FunctionRangeQuery wrapper around ValueSourceScorer
   (returned from ValueSource/FunctionValues.getRangeScorer()). (David Smiley)
 
+* LUCENE-6724: Add utility APIs to GeoHashUtils to compute neighbor
+  geohash cells (Nick Knize via Mike McCandless).
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the
