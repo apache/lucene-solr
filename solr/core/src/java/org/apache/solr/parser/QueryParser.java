@@ -127,6 +127,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       case RANGEIN_START:
       case RANGEEX_START:
       case LPARAMS:
+      case FILTER:
       case NUMBER:
         ;
         break;
@@ -198,8 +199,10 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         ;
       }
       break;
-    case LPARAMS:
-      localParams = jj_consume_token(LPARAMS);
+    case FILTER:
+      jj_consume_token(FILTER);
+      q = Query(field);
+      jj_consume_token(RPAREN);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case CARAT:
         jj_consume_token(CARAT);
@@ -209,10 +212,23 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         jj_la1[7] = jj_gen;
         ;
       }
+                                                                   q=getFilter(q);
+      break;
+    case LPARAMS:
+      localParams = jj_consume_token(LPARAMS);
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case CARAT:
+        jj_consume_token(CARAT);
+        boost = jj_consume_token(NUMBER);
+        break;
+      default:
+        jj_la1[8] = jj_gen;
+        ;
+      }
                                                           q=getLocalParams(field, localParams.image);
       break;
     default:
-      jj_la1[8] = jj_gen;
+      jj_la1[9] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -265,7 +281,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
                           term.image = term.image.substring(0,1);
         break;
       default:
-        jj_la1[9] = jj_gen;
+        jj_la1[10] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -275,7 +291,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
                                fuzzy=true;
         break;
       default:
-        jj_la1[10] = jj_gen;
+        jj_la1[11] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -288,12 +304,12 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
                                                         fuzzy=true;
           break;
         default:
-          jj_la1[11] = jj_gen;
+          jj_la1[12] = jj_gen;
           ;
         }
         break;
       default:
-        jj_la1[12] = jj_gen;
+        jj_la1[13] = jj_gen;
         ;
       }
       q = handleBareTokenQuery(getField(field), term, fuzzySlop, prefix, wildcard, fuzzy, regexp);
@@ -309,7 +325,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         jj_consume_token(RANGEEX_START);
         break;
       default:
-        jj_la1[13] = jj_gen;
+        jj_la1[14] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -321,7 +337,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         goop1 = jj_consume_token(RANGE_QUOTED);
         break;
       default:
-        jj_la1[14] = jj_gen;
+        jj_la1[15] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -330,7 +346,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         jj_consume_token(RANGE_TO);
         break;
       default:
-        jj_la1[15] = jj_gen;
+        jj_la1[16] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -341,7 +357,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         goop2 = jj_consume_token(RANGE_QUOTED);
         break;
       default:
-        jj_la1[16] = jj_gen;
+        jj_la1[17] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -354,7 +370,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         jj_consume_token(RANGEEX_END);
         break;
       default:
-        jj_la1[17] = jj_gen;
+        jj_la1[18] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -364,7 +380,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         boost = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[18] = jj_gen;
+        jj_la1[19] = jj_gen;
         ;
       }
          boolean startOpen=false;
@@ -388,7 +404,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         fuzzySlop = jj_consume_token(FUZZY_SLOP);
         break;
       default:
-        jj_la1[19] = jj_gen;
+        jj_la1[20] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -397,13 +413,13 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         boost = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[20] = jj_gen;
+        jj_la1[21] = jj_gen;
         ;
       }
         q = handleQuotedTerm(getField(field), term, fuzzySlop);
       break;
     default:
-      jj_la1[21] = jj_gen;
+      jj_la1[22] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -450,7 +466,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   private Token jj_scanpos, jj_lastpos;
   private int jj_la;
   private int jj_gen;
-  final private int[] jj_la1 = new int[22];
+  final private int[] jj_la1 = new int[23];
   static private int[] jj_la1_0;
   static private int[] jj_la1_1;
   static {
@@ -458,10 +474,10 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x6000,0x6000,0x38000,0x38000,0xfb4fe000,0x2400000,0x800000,0x800000,0xfb4c0000,0x3a440000,0x4000000,0x4000000,0x800000,0xc0000000,0x0,0x0,0x0,0x0,0x800000,0x4000000,0x800000,0xfb440000,};
+      jj_la1_0 = new int[] {0x6000,0x6000,0x38000,0x38000,0xfb4fe000,0x2400000,0x800000,0x800000,0x800000,0xfb4c0000,0x3a440000,0x4000000,0x4000000,0x800000,0xc0000000,0x0,0x0,0x0,0x0,0x800000,0x4000000,0x800000,0xfb440000,};
    }
    private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x3,0x0,0x0,0x0,0x3,0x2,0x0,0x0,0x0,0x0,0x60,0x4,0x60,0x18,0x0,0x0,0x0,0x2,};
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x7,0x0,0x0,0x0,0x0,0x7,0x4,0x0,0x0,0x0,0x0,0xc0,0x8,0xc0,0x30,0x0,0x0,0x0,0x4,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -473,7 +489,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 22; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 23; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -483,7 +499,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 22; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 23; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -493,7 +509,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 22; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 23; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -503,7 +519,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 22; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 23; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -615,12 +631,12 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[39];
+    boolean[] la1tokens = new boolean[40];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
     }
-    for (int i = 0; i < 22; i++) {
+    for (int i = 0; i < 23; i++) {
       if (jj_la1[i] == jj_gen) {
         for (int j = 0; j < 32; j++) {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
@@ -632,7 +648,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         }
       }
     }
-    for (int i = 0; i < 39; i++) {
+    for (int i = 0; i < 40; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

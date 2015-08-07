@@ -100,6 +100,11 @@ New Features
   http://localhost:8983/solr/admin/collections?action=MIGRATESTATEFORMAT&collection=<collection_name>
   (Noble Paul, Scott Blum, shalin)
 
+* SOLR-7219: filterCache access added to the solr query syntax.
+  Example: description:HDTV OR filter(+promotion:tv +promotion_date:[NOW/DAY TO NOW/DAY+7DAY])
+  (yonik)
+
+
 Bug Fixes
 ----------------------
 

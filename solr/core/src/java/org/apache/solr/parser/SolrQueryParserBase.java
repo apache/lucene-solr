@@ -48,11 +48,13 @@ import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.parser.QueryParser.Operator;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
 /** This class is overridden by QueryParser in QueryParser.jj
@@ -566,13 +568,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (boost == null || boost.image.length()==0 || q == null) {
       return q;
     }
-
     if (boost.image.charAt(0) == '=') {
       // syntax looks like foo:x^=3
       float val = Float.parseFloat(boost.image.substring(1));
       Query newQ = q;
-      if (// q instanceof FilterQuery ||  // TODO: fix this when FilterQuery is introduced to avoid needless wrapping: SOLR-7219
-          q instanceof ConstantScoreQuery) {
+      if (q instanceof FilterQuery || q instanceof ConstantScoreQuery || q instanceof SolrConstantScoreQuery) {
         newQ.setBoost(val);
       } else {
         newQ = new ConstantScoreQuery(q);
@@ -849,6 +849,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query getLocalParams(String qfield, String lparams) throws SyntaxError {
     QParser nested = parser.subQuery(lparams, null);
     return nested.getQuery();
+  }
+
+  // called from parser for filter(query)
+  Query getFilter(Query q) {
+    return new FilterQuery(q);
   }
 
 }

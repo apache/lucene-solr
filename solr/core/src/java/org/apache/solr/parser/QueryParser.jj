@@ -118,6 +118,7 @@ TOKEN_MGR_DECLS : {
 //  | <SQUOTED:     "'" (<_SQUOTED_CHAR>)* "'">
 //  | <LPARAMS:     ("{!" ( (<_WHITESPACE>)* (~["=","}"])+ ( "=" (<QUOTED> | <SQUOTED> | (~[" ","}"])+ )? )? )* "}")+  (~[")"," ","\t","\n","{","^"])*  >
   | <LPARAMS:     ("{!" ( (<_WHITESPACE>)* (~["=","}"])+ ( "=" (<QUOTED> | ("'" (<_SQUOTED_CHAR>)* "'") | (~[" ","}"])+ )? )? )* "}")+  (~[")"," ","\t","\n","{","^"])*  >
+  | <FILTER:      "filter(" >
 }
 
 <Boost> TOKEN : {
@@ -215,6 +216,7 @@ Query Clause(String field) throws SyntaxError : {
   (
    q=Term(field)
    | <LPAREN> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)?
+   | (<FILTER> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)? { q=getFilter(q); }  )
    | (localParams = <LPARAMS> (<CARAT> boost=<NUMBER>)? { q=getLocalParams(field, localParams.image); }  )
   )
     {  return handleBoost(q, boost); }
