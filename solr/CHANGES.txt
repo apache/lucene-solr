@@ -163,6 +163,7 @@ New Features
 * SOLR-7837: An AuthenticationPlugin which implements the HTTP BasicAuth protocol and stores credentials
   securely in ZooKeeper (Noble Paul, Anshum Gupta,Ishan Chattopadhyaya)
 
+* SOLR-7766: support creation of a coreless collection via createNodeSet=EMPTY (Christine Poerschke)
 
 Bug Fixes
 ----------------------

@@ -307,17 +307,20 @@ public class MiniSolrCloudCluster {
   
   public NamedList<Object> createCollection(String name, int numShards, int replicationFactor, 
       String configName, Map<String, String> collectionProperties) throws SolrServerException, IOException {
-    return createCollection(name, numShards, replicationFactor, configName, null, collectionProperties);
+    return createCollection(name, numShards, replicationFactor, configName, null, null, collectionProperties);
   }
 
-  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor,
-      String configName, String asyncId, Map<String, String> collectionProperties) throws SolrServerException, IOException {
+  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor, 
+      String configName, String createNodeSet, String asyncId, Map<String, String> collectionProperties) throws SolrServerException, IOException {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CollectionAction.CREATE.name());
     params.set(CoreAdminParams.NAME, name);
     params.set("numShards", numShards);
     params.set("replicationFactor", replicationFactor);
     params.set("collection.configName", configName);
+    if (null != createNodeSet) {
+      params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSet);
+    }
     if (null != asyncId) {
       params.set(CommonAdminParams.ASYNC, asyncId);
     }
