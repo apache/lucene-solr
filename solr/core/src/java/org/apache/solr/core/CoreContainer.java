@@ -306,8 +306,11 @@ public class CoreContainer {
       getUpdateShardHandler().reconfigureHttpClient(configurer);
     } else {
       if (pkiAuthenticationPlugin != null) {
+        //this happened due to an authc plugin reload. no need to register the pkiAuthc plugin again
+        if(pkiAuthenticationPlugin.isInterceptorRegistered()) return;
         log.info("PKIAuthenticationPlugin is managing internode requests");
         addHttpConfigurer(pkiAuthenticationPlugin);
+        pkiAuthenticationPlugin.setInterceptorRegistered();
       }
     }
   }

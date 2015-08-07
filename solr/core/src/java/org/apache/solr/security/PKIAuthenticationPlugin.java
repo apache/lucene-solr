@@ -66,6 +66,16 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private int maxValidity = 5000;
   private final String myNodeName;
 
+  private boolean interceptorRegistered = false;
+
+  public void setInterceptorRegistered(){
+    this.interceptorRegistered = true;
+  }
+
+  public boolean isInterceptorRegistered(){
+    return interceptorRegistered;
+  }
+
   public PKIAuthenticationPlugin(CoreContainer cores, String nodeName) {
     this.cores = cores;
     myNodeName = nodeName;
