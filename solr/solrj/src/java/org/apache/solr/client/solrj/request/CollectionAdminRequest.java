@@ -1034,7 +1034,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     }
   }
 
-  // DELETEREPLICAPROP request
+  // MIGRATECLUSTERSTATE request
   public static class MigrateClusterState extends CollectionShardAdminRequest<MigrateClusterState> {
 
     public MigrateClusterState() {
