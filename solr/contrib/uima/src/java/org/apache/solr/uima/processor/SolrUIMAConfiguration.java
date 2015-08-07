@@ -60,7 +60,7 @@ public class SolrUIMAConfiguration {
     return fieldsMerging;
   }
 
-  Map<String, Map<String, MapField>> getTypesFeaturesFieldsMapping() {
+  public Map<String, Map<String, MapField>> getTypesFeaturesFieldsMapping() {
     return typesFeaturesFieldsMapping;
   }
 
@@ -80,7 +80,7 @@ public class SolrUIMAConfiguration {
     return logField;
   }
   
-  static final class MapField {
+  public static final class MapField {
     
     private String fieldName;
     private final String fieldNameFeature;
@@ -104,11 +104,11 @@ public class SolrUIMAConfiguration {
       }
     }
     
-    String getFieldNameFeature(){
+    public String getFieldNameFeature(){
       return fieldNameFeature;
     }
     
-    String getFieldName(String featureValue){
+    public String getFieldName(String featureValue){
       if(fieldNameFeature != null){
         return prefix ? fieldName + featureValue : featureValue + fieldName;
       }

@@ -45,7 +45,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   private final Logger log = LoggerFactory
       .getLogger(UIMAUpdateRequestProcessor.class);
   
-  SolrUIMAConfiguration solrUIMAConfiguration;
+  private SolrUIMAConfiguration solrUIMAConfiguration;
   
   private AnalysisEngine ae;
   
@@ -175,5 +175,12 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
       log.debug("Text processing completed");
     }
   }
-  
+
+  /**
+   * @return the configuration object for this request processor
+   */
+  public SolrUIMAConfiguration getConfiguration()
+  {
+    return solrUIMAConfiguration;
+  }
 }
