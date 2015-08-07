@@ -24,6 +24,7 @@ import java.security.Principal;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -55,8 +56,10 @@ public class PKIAuthenticationIntegrationTest extends AbstractFullDistribZkTestB
         TIMEOUT, TIMEOUT)) {
       zkStateReader.getZkClient().setData(ZkStateReader.SOLR_SECURITY_CONF_PATH, bytes, true);
     }
-    String baseUrl = jettys.get(0).getBaseUrl().toString();
-    TestAuthorizationFramework.verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
+    for (JettySolrRunner jetty : jettys) {
+      String baseUrl = jetty.getBaseUrl().toString();
+      TestAuthorizationFramework.verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
+    }
     log.info("Starting test");
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
@@ -92,8 +95,7 @@ public class PKIAuthenticationIntegrationTest extends AbstractFullDistribZkTestB
     };
     QueryRequest query = new QueryRequest(params);
     query.process(cloudClient);
-    log.info("count :{}", count);
-    assertTrue(count.get() > 2);
+    assertTrue("all nodes must get the user solr , no:of nodes got solr : " + count.get(),count.get() > 2);
   }
 
   @Override
