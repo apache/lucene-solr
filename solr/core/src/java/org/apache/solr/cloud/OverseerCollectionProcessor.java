@@ -133,6 +133,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   
   static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
   public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
+  public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
   public static final String CREATE_NODE_SET = "createNodeSet";
 
   public static final String ROUTER = "router";
@@ -2231,7 +2232,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     List<String> nodeList;
 
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
-    final List<String> createNodeList = (createNodeSetStr == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
+    final List<String> createNodeList = (createNodeSetStr == null)?null:StrUtils.splitSmart((CREATE_NODE_SET_EMPTY.equals(createNodeSetStr)?"":createNodeSetStr), ",", true);
 
     if (createNodeList != null) {
       nodeList = new ArrayList<>(createNodeList);
@@ -2248,7 +2249,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
   }
 
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
-    String collectionName = message.getStr(NAME);
+    final String collectionName = message.getStr(NAME);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
@@ -2297,50 +2298,61 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       // but (for now) require that each core goes on a distinct node.
 
       final List<String> nodeList = getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, RANDOM);
+      Map<Position, String> positionVsNodes;
+      if (nodeList.isEmpty()) {
+        log.warn("It is unusual to create a collection ("+collectionName+") without cores.");
 
-      if (repFactor > nodeList.size()) {
-        log.warn("Specified "
-            + REPLICATION_FACTOR
-            + " of "
-            + repFactor
-            + " on collection "
-            + collectionName
-            + " is higher than or equal to the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
-            + nodeList.size()
-            + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
+        positionVsNodes = new HashMap<>();
+      } else {
+        if (repFactor > nodeList.size()) {
+          log.warn("Specified "
+              + REPLICATION_FACTOR
+              + " of "
+              + repFactor
+              + " on collection "
+              + collectionName
+              + " is higher than or equal to the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
+              + nodeList.size()
+              + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
+        }
+        
+        int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
+        int requestedShardsToCreate = numSlices * repFactor;
+        if (maxShardsAllowedToCreate < requestedShardsToCreate) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
+              + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
+              + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
+              + ". This allows a maximum of " + maxShardsAllowedToCreate
+              + " to be created. Value of " + NUM_SLICES + " is " + numSlices
+              + " and value of " + REPLICATION_FACTOR + " is " + repFactor
+              + ". This requires " + requestedShardsToCreate
+              + " shards to be created (higher than the allowed number)");
+        }
+
+        positionVsNodes = identifyNodes(clusterState, nodeList, message, shardNames, repFactor);
       }
 
-      int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
-      int requestedShardsToCreate = numSlices * repFactor;
-      if (maxShardsAllowedToCreate < requestedShardsToCreate) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
-            + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
-            + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
-            + ". This allows a maximum of " + maxShardsAllowedToCreate
-            + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-            + " and value of " + REPLICATION_FACTOR + " is " + repFactor
-            + ". This requires " + requestedShardsToCreate
-            + " shards to be created (higher than the allowed number)");
-      }
-
-      Map<Position, String> positionVsNodes = identifyNodes(clusterState, nodeList, message, shardNames, repFactor);
       boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader.getClusterProps());
 
       createConfNode(configName, collectionName, isLegacyCloud);
 
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
-      // wait for a while until we don't see the collection
+      // wait for a while until we do see the collection
       long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
       boolean created = false;
       while (System.nanoTime() < waitUntil) {
         Thread.sleep(100);
-        created = zkStateReader.getClusterState().getCollections().contains(message.getStr(NAME));
+        created = zkStateReader.getClusterState().getCollections().contains(collectionName);
         if(created) break;
       }
       if (!created)
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully create collection: " + message.getStr(NAME));
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
 
+      if (nodeList.isEmpty()) {
+        log.info("Finished create command for collection: {}", collectionName);
+        return;
+      }
       // For tracking async calls.
       HashMap<String, String> requestMap = new HashMap<String, String>();
 
