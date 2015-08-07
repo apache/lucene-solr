@@ -18,11 +18,12 @@ package org.apache.lucene.expressions.js;
 
 import java.text.ParseException;
 
+import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestJavascriptCompiler extends LuceneTestCase {
-  
+
   public void testValidCompiles() throws Exception {
     assertNotNull(JavascriptCompiler.compile("100"));
     assertNotNull(JavascriptCompiler.compile("valid0+100"));
@@ -96,6 +97,15 @@ public class TestJavascriptCompiler extends LuceneTestCase {
     }
     catch (ParseException expected) {
       //expected
+    }
+  }
+
+  public void testInvalidLexer() throws Exception {
+    try {
+      JavascriptCompiler.compile("\n .");
+      fail();
+    } catch (ParseException pe) {
+      assertTrue(pe.getMessage().contains("unexpected character '.' on line (2) position (1)"));
     }
   }
 

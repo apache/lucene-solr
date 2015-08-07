@@ -22,7 +22,7 @@
     <conf name="compile" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="org.antlr" name="antlr-runtime" rev="${/org.antlr/antlr-runtime}" conf="compile"/>
+    <dependency org="org.antlr" name="antlr4-runtime" rev="${/org.antlr/antlr4-runtime}" conf="compile"/>
     <dependency org="org.ow2.asm" name="asm" rev="${/org.ow2.asm/asm}" conf="compile"/>
     <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile"/>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
