@@ -17,6 +17,10 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -80,6 +84,121 @@ public class TestGeoUtils extends LuceneTestCase {
       assertEquals(GeoUtils.mortonUnhashLat(mortonLongFromGHString), GeoUtils.mortonUnhashLat(mortonLongFromGHLong), 0);
       assertEquals(GeoUtils.mortonUnhashLon(mortonLongFromGHString), GeoUtils.mortonUnhashLon(mortonLongFromGHLong), 0);
     }
+  }
+
+  /**
+   * Pass condition: lat=42.6, lng=-5.6 should be encoded as "ezs42e44yx96",
+   * lat=57.64911 lng=10.40744 should be encoded as "u4pruydqqvj8"
+   */
+  @Test
+  public void testEncode() {
+    String hash = GeoHashUtils.stringEncode(-5.6, 42.6, 12);
+    assertEquals("ezs42e44yx96", hash);
+
+    hash = GeoHashUtils.stringEncode(10.40744, 57.64911, 12);
+    assertEquals("u4pruydqqvj8", hash);
+  }
+
+  /**
+   * Pass condition: lat=52.3738007, lng=4.8909347 should be encoded and then
+   * decoded within 0.00001 of the original value
+   */
+  @Test
+  public void testDecodePreciseLongitudeLatitude() {
+    final String geohash = GeoHashUtils.stringEncode(4.8909347, 52.3738007);
+    final long hash = GeoHashUtils.mortonEncode(geohash);
+
+    assertEquals(52.3738007, GeoUtils.mortonUnhashLat(hash), 0.00001D);
+    assertEquals(4.8909347, GeoUtils.mortonUnhashLon(hash), 0.00001D);
+  }
+
+  /**
+   * Pass condition: lat=84.6, lng=10.5 should be encoded and then decoded
+   * within 0.00001 of the original value
+   */
+  @Test
+  public void testDecodeImpreciseLongitudeLatitude() {
+    final String geohash = GeoHashUtils.stringEncode(10.5, 84.6);
+
+    final long hash = GeoHashUtils.mortonEncode(geohash);
+
+    assertEquals(84.6, GeoUtils.mortonUnhashLat(hash), 0.00001D);
+    assertEquals(10.5, GeoUtils.mortonUnhashLon(hash), 0.00001D);
+  }
+
+  @Test
+  public void testDecodeEncode() {
+    final String geoHash = "u173zq37x014";
+    assertEquals(geoHash, GeoHashUtils.stringEncode(4.8909347, 52.3738007));
+    final long mortonHash = GeoHashUtils.mortonEncode(geoHash);
+    final double lon = GeoUtils.mortonUnhashLon(mortonHash);
+    final double lat = GeoUtils.mortonUnhashLat(mortonHash);
+    assertEquals(52.37380061d, GeoUtils.mortonUnhashLat(mortonHash), 0.000001d);
+    assertEquals(4.8909343d, GeoUtils.mortonUnhashLon(mortonHash), 0.000001d);
+
+    assertEquals(geoHash, GeoHashUtils.stringEncode(lon, lat));
+  }
+
+  @Test
+  public void testNeighbors() {
+    String geohash = "gcpv";
+    List<String> expectedNeighbors = new ArrayList<>();
+    expectedNeighbors.add("gcpw");
+    expectedNeighbors.add("gcpy");
+    expectedNeighbors.add("u10n");
+    expectedNeighbors.add("gcpt");
+    expectedNeighbors.add("u10j");
+    expectedNeighbors.add("gcps");
+    expectedNeighbors.add("gcpu");
+    expectedNeighbors.add("u10h");
+    Collection<? super String> neighbors = new ArrayList<>();
+    GeoHashUtils.addNeighbors(geohash, neighbors );
+    assertEquals(expectedNeighbors, neighbors);
+
+    // Border odd geohash
+    geohash = "u09x";
+    expectedNeighbors = new ArrayList<>();
+    expectedNeighbors.add("u0c2");
+    expectedNeighbors.add("u0c8");
+    expectedNeighbors.add("u0cb");
+    expectedNeighbors.add("u09r");
+    expectedNeighbors.add("u09z");
+    expectedNeighbors.add("u09q");
+    expectedNeighbors.add("u09w");
+    expectedNeighbors.add("u09y");
+    neighbors = new ArrayList<>();
+    GeoHashUtils.addNeighbors(geohash, neighbors);
+    assertEquals(expectedNeighbors, neighbors);
+
+    // Border even geohash
+    geohash = "u09tv";
+    expectedNeighbors = new ArrayList<>();
+    expectedNeighbors.add("u09wh");
+    expectedNeighbors.add("u09wj");
+    expectedNeighbors.add("u09wn");
+    expectedNeighbors.add("u09tu");
+    expectedNeighbors.add("u09ty");
+    expectedNeighbors.add("u09ts");
+    expectedNeighbors.add("u09tt");
+    expectedNeighbors.add("u09tw");
+    neighbors = new ArrayList<>();
+    GeoHashUtils.addNeighbors(geohash, neighbors );
+    assertEquals(expectedNeighbors, neighbors);
+
+    // Border even and odd geohash
+    geohash = "ezzzz";
+    expectedNeighbors = new ArrayList<>();
+    expectedNeighbors.add("gbpbn");
+    expectedNeighbors.add("gbpbp");
+    expectedNeighbors.add("u0000");
+    expectedNeighbors.add("ezzzy");
+    expectedNeighbors.add("spbpb");
+    expectedNeighbors.add("ezzzw");
+    expectedNeighbors.add("ezzzx");
+    expectedNeighbors.add("spbp8");
+    neighbors = new ArrayList<>();
+    GeoHashUtils.addNeighbors(geohash, neighbors );
+    assertEquals(expectedNeighbors, neighbors);
   }
 
   public static double randomLatFullRange() {
