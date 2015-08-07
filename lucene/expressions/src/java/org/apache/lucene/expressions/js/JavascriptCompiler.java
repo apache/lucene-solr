@@ -24,18 +24,18 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.antlr.runtime.ANTLRStringStream;
-import org.antlr.runtime.CharStream;
-import org.antlr.runtime.CommonTokenStream;
-import org.antlr.runtime.RecognitionException;
-import org.antlr.runtime.tree.Tree;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.IOUtils;
@@ -44,6 +44,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
+
+import static org.apache.lucene.expressions.js.JavascriptParser.ExpressionContext;
 
 /**
  * An expression compiler for javascript expressions.
@@ -73,7 +75,6 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * @lucene.experimental
  */
 public class JavascriptCompiler {
-
   static final class Loader extends ClassLoader {
     Loader(ClassLoader parent) {
       super(parent);
@@ -91,13 +92,14 @@ public class JavascriptCompiler {
   private static final String COMPILED_EXPRESSION_CLASS = JavascriptCompiler.class.getName() + "$CompiledExpression";
   private static final String COMPILED_EXPRESSION_INTERNAL = COMPILED_EXPRESSION_CLASS.replace('.', '/');
   
-  private static final Type EXPRESSION_TYPE = Type.getType(Expression.class);
-  private static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
+  static final Type EXPRESSION_TYPE = Type.getType(Expression.class);
+  static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
 
   private static final org.objectweb.asm.commons.Method
     EXPRESSION_CTOR = getMethod("void <init>(String, String[])"),
-    EVALUATE_METHOD = getMethod("double evaluate(int, " + FunctionValues.class.getName() + "[])"),
-    DOUBLE_VAL_METHOD = getMethod("double doubleVal(int)");
+    EVALUATE_METHOD = getMethod("double evaluate(int, " + FunctionValues.class.getName() + "[])");
+
+  static final org.objectweb.asm.commons.Method DOUBLE_VAL_METHOD = getMethod("double doubleVal(int)");
   
   // to work around import clash:
   private static org.objectweb.asm.commons.Method getMethod(String method) {
@@ -108,12 +110,12 @@ public class JavascriptCompiler {
   // rcmuir: "If your ranking function is that large you need to check yourself into a mental institution!"
   private static final int MAX_SOURCE_LENGTH = 16384;
   
-  private final String sourceText;
-  private final Map<String, Integer> externalsMap = new LinkedHashMap<>();
-  private final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-  private GeneratorAdapter gen;
+  final String sourceText;
+  final Map<String, Integer> externalsMap = new LinkedHashMap<>();
+  final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+  GeneratorAdapter gen;
   
-  private final Map<String,Method> functions;
+  final Map<String,Method> functions;
   
   /**
    * Compiles the given expression.
@@ -188,21 +190,45 @@ public class JavascriptCompiler {
    */
   private Expression compileExpression(ClassLoader parent) throws ParseException {
     try {
-      Tree antlrTree = getAntlrComputedExpressionTree();
-      
+      ParseTree parseTree = getAntlrParseTree();
+
       beginCompile();
-      recursiveCompile(antlrTree, Type.DOUBLE_TYPE);
+      internalCompile(parseTree);
       endCompile();
       
-      Class<? extends Expression> evaluatorClass = new Loader(parent)
+      final Class<? extends Expression> evaluatorClass = new Loader(parent)
         .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
-      Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
+      final Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
+
       return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
   }
-  
+
+  /**
+   * Parses the sourceText into an ANTLR 4 parse tree
+   *
+   * @return The ANTLR parse tree
+   * @throws ParseException on failure to parse
+   */
+  private ParseTree getAntlrParseTree() throws ParseException {
+    try {
+      final ANTLRInputStream antlrInputStream = new ANTLRInputStream(sourceText);
+      final JavascriptErrorHandlingLexer javascriptLexer = new JavascriptErrorHandlingLexer(antlrInputStream);
+      javascriptLexer.removeErrorListeners();
+      final JavascriptParser javascriptParser = new JavascriptParser(new CommonTokenStream(javascriptLexer));
+      javascriptParser.removeErrorListeners();
+      javascriptParser.setErrorHandler(new JavascriptParserErrorStrategy());
+      return javascriptParser.compile();
+    } catch (RuntimeException re) {
+      if (re.getCause() instanceof ParseException) {
+        throw (ParseException)re.getCause();
+      }
+      throw re;
+    }
+  }
+
   private void beginCompile() {
     classWriter.visit(CLASSFILE_VERSION,
         Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
@@ -223,253 +249,431 @@ public class JavascriptCompiler {
     gen = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
         EVALUATE_METHOD, null, null, classWriter);
   }
-  
-  private void recursiveCompile(Tree current, Type expected) {
-    int type = current.getType();
-    String text = current.getText();
-    
-    switch (type) {
-      case JavascriptParser.AT_CALL:
-        Tree identifier = current.getChild(0);
-        String call = identifier.getText();
-        int arguments = current.getChildCount() - 1;
-        
-        Method method = functions.get(call);
-        if (method == null && (arguments > 0 || !call.contains("."))) {
-          throw new IllegalArgumentException("Unrecognized function call (" + call + ").");
-        } else if (method != null) {
+
+  // internalCompile is used to create an anonymous inner class around the ANTLR listener
+  // to completely hide the implementation details of expression compilation
+  private void internalCompile(ParseTree parseTree) {
+    new JavascriptBaseVisitor<Void>() {
+      private final Deque<Type> typeStack = new ArrayDeque<>();
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitCompile(JavascriptParser.CompileContext ctx) {
+        typeStack.push(Type.DOUBLE_TYPE);
+        visit(ctx.expression());
+        typeStack.pop();
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitPrecedence(JavascriptParser.PrecedenceContext ctx) {
+        visit(ctx.expression());
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitNumeric(JavascriptParser.NumericContext ctx) {
+        if (ctx.HEX() != null) {
+          pushLong(Long.parseLong(ctx.HEX().getText().substring(2), 16));
+        } else if (ctx.OCTAL() != null) {
+          pushLong(Long.parseLong(ctx.OCTAL().getText().substring(1), 8));
+        } else if (ctx.DECIMAL() != null) {
+          gen.push(Double.parseDouble(ctx.DECIMAL().getText()));
+          gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
+        } else {
+          throw new IllegalStateException("Unknown operation specified: " + ctx.getText());
+        }
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitExternal(JavascriptParser.ExternalContext ctx) {
+        String text = ctx.VARIABLE().getText();
+        int arguments = ctx.expression().size();
+        boolean parens = ctx.LP() != null && ctx.RP() != null;
+        Method method = parens ? functions.get(text) : null;
+
+        if (method != null) {
           int arity = method.getParameterTypes().length;
+
           if (arguments != arity) {
-            throw new IllegalArgumentException("Expected (" + arity + ") arguments for function call (" +
-                call + "), but found (" + arguments + ").");
+            throw new IllegalArgumentException(
+                "Expected (" + arity + ") arguments for function call (" + text + "), but found (" + arguments + ").");
           }
 
-          for (int argument = 1; argument <= arguments; ++argument) {
-            recursiveCompile(current.getChild(argument), Type.DOUBLE_TYPE);
+          typeStack.push(Type.DOUBLE_TYPE);
+
+          for (int argument = 0; argument < arguments; ++argument) {
+            visit(ctx.expression(argument));
           }
+
+          typeStack.pop();
 
           gen.invokeStatic(Type.getType(method.getDeclaringClass()),
               org.objectweb.asm.commons.Method.getMethod(method));
 
-          gen.cast(Type.DOUBLE_TYPE, expected);
-          break;
-        } else {
-          text = call + "()";
-          // intentionally fall through to the variable case to allow this non-static
-          // method to be forwarded to the bindings for processing
-        }
-      case JavascriptParser.VARIABLE:
-        int index;
+          gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
+        } else if (!parens || arguments == 0 && text.contains(".")) {
+          int index;
 
-        text = normalizeQuotes(text);
-        
-        if (externalsMap.containsKey(text)) {
-          index = externalsMap.get(text);
+          text = normalizeQuotes(ctx.getText());
+
+          if (externalsMap.containsKey(text)) {
+            index = externalsMap.get(text);
+          } else {
+            index = externalsMap.size();
+            externalsMap.put(text, index);
+          }
+
+          gen.loadArg(1);
+          gen.push(index);
+          gen.arrayLoad(FUNCTION_VALUES_TYPE);
+          gen.loadArg(0);
+          gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
+          gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
         } else {
-          index = externalsMap.size();
-          externalsMap.put(text, index);
+          throw new IllegalArgumentException("Unrecognized function call (" + text + ").");
         }
-        
-        gen.loadArg(1);
-        gen.push(index);
-        gen.arrayLoad(FUNCTION_VALUES_TYPE);
-        gen.loadArg(0);
-        gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
-        gen.cast(Type.DOUBLE_TYPE, expected);
-        break;
-      case JavascriptParser.HEX:
-        pushLong(expected, Long.parseLong(text.substring(2), 16));
-        break;
-      case JavascriptParser.OCTAL:
-        pushLong(expected, Long.parseLong(text.substring(1), 8));
-        break;
-      case JavascriptParser.DECIMAL:
-        gen.push(Double.parseDouble(text));
-        gen.cast(Type.DOUBLE_TYPE, expected);
-        break;
-      case JavascriptParser.AT_NEGATE:
-        recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-        gen.visitInsn(Opcodes.DNEG);
-        gen.cast(Type.DOUBLE_TYPE, expected);
-        break;
-      case JavascriptParser.AT_ADD:
-        pushArith(Opcodes.DADD, current, expected);
-        break;
-      case JavascriptParser.AT_SUBTRACT:
-        pushArith(Opcodes.DSUB, current, expected);
-        break;
-      case JavascriptParser.AT_MULTIPLY:
-        pushArith(Opcodes.DMUL, current, expected);
-        break;
-      case JavascriptParser.AT_DIVIDE:
-        pushArith(Opcodes.DDIV, current, expected);
-        break;
-      case JavascriptParser.AT_MODULO:
-        pushArith(Opcodes.DREM, current, expected);
-        break;
-      case JavascriptParser.AT_BIT_SHL:
-        pushShift(Opcodes.LSHL, current, expected);
-        break;
-      case JavascriptParser.AT_BIT_SHR:
-        pushShift(Opcodes.LSHR, current, expected);
-        break;
-      case JavascriptParser.AT_BIT_SHU:
-        pushShift(Opcodes.LUSHR, current, expected);
-        break;
-      case JavascriptParser.AT_BIT_AND:
-        pushBitwise(Opcodes.LAND, current, expected);
-        break;
-      case JavascriptParser.AT_BIT_OR:
-        pushBitwise(Opcodes.LOR, current, expected);           
-        break;
-      case JavascriptParser.AT_BIT_XOR:
-        pushBitwise(Opcodes.LXOR, current, expected);           
-        break;
-      case JavascriptParser.AT_BIT_NOT:
-        recursiveCompile(current.getChild(0), Type.LONG_TYPE);
-        gen.push(-1L);
-        gen.visitInsn(Opcodes.LXOR);
-        gen.cast(Type.LONG_TYPE, expected);
-        break;
-      case JavascriptParser.AT_COMP_EQ:
-        pushCond(GeneratorAdapter.EQ, current, expected);
-        break;
-      case JavascriptParser.AT_COMP_NEQ:
-        pushCond(GeneratorAdapter.NE, current, expected);
-        break;
-      case JavascriptParser.AT_COMP_LT:
-        pushCond(GeneratorAdapter.LT, current, expected);
-        break;
-      case JavascriptParser.AT_COMP_GT:
-        pushCond(GeneratorAdapter.GT, current, expected);
-        break;
-      case JavascriptParser.AT_COMP_LTE:
-        pushCond(GeneratorAdapter.LE, current, expected);
-        break;
-      case JavascriptParser.AT_COMP_GTE:
-        pushCond(GeneratorAdapter.GE, current, expected);
-        break;
-      case JavascriptParser.AT_BOOL_NOT:
-        Label labelNotTrue = new Label();
-        Label labelNotReturn = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.INT_TYPE);
-        gen.visitJumpInsn(Opcodes.IFEQ, labelNotTrue);
-        pushBoolean(expected, false);
-        gen.goTo(labelNotReturn);
-        gen.visitLabel(labelNotTrue);
-        pushBoolean(expected, true);
-        gen.visitLabel(labelNotReturn);
-        break;
-      case JavascriptParser.AT_BOOL_AND:
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitUnary(JavascriptParser.UnaryContext ctx) {
+        if (ctx.BOOLNOT() != null) {
+          Label labelNotTrue = new Label();
+          Label labelNotReturn = new Label();
+
+          typeStack.push(Type.INT_TYPE);
+          visit(ctx.expression());
+          typeStack.pop();
+          gen.visitJumpInsn(Opcodes.IFEQ, labelNotTrue);
+          pushBoolean(false);
+          gen.goTo(labelNotReturn);
+          gen.visitLabel(labelNotTrue);
+          pushBoolean(true);
+          gen.visitLabel(labelNotReturn);
+
+        } else if (ctx.BWNOT() != null) {
+          typeStack.push(Type.LONG_TYPE);
+          visit(ctx.expression());
+          typeStack.pop();
+          gen.push(-1L);
+          gen.visitInsn(Opcodes.LXOR);
+          gen.cast(Type.LONG_TYPE, typeStack.peek());
+
+        } else if (ctx.ADD() != null) {
+          visit(ctx.expression());
+
+        } else if (ctx.SUB() != null) {
+          typeStack.push(Type.DOUBLE_TYPE);
+          visit(ctx.expression());
+          typeStack.pop();
+          gen.visitInsn(Opcodes.DNEG);
+          gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
+
+        } else {
+          throw new IllegalStateException("Unknown operation specified: " + ctx.getText());
+        }
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitMuldiv(JavascriptParser.MuldivContext ctx) {
+        int opcode;
+
+        if (ctx.MUL() != null) {
+          opcode = Opcodes.DMUL;
+        } else if (ctx.DIV() != null) {
+          opcode = Opcodes.DDIV;
+        } else if (ctx.REM() != null) {
+          opcode = Opcodes.DREM;
+        } else {
+          throw new IllegalStateException("Unknown operation specified: " + ctx.getText());
+        }
+
+        pushArith(opcode, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitAddsub(JavascriptParser.AddsubContext ctx) {
+        int opcode;
+
+        if (ctx.ADD() != null) {
+          opcode = Opcodes.DADD;
+        } else if (ctx.SUB() != null) {
+          opcode = Opcodes.DSUB;
+        } else {
+          throw new IllegalStateException("Unknown operation specified: " + ctx.getText());
+        }
+
+        pushArith(opcode, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBwshift(JavascriptParser.BwshiftContext ctx) {
+        int opcode;
+
+        if (ctx.LSH() != null) {
+          opcode = Opcodes.LSHL;
+        } else if (ctx.RSH() != null) {
+          opcode = Opcodes.LSHR;
+        } else if (ctx.USH() != null) {
+          opcode = Opcodes.LUSHR;
+        } else {
+          throw new IllegalStateException("Unknown operation specified: " + ctx.getText());
+        }
+
+        pushShift(opcode, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBoolcomp(JavascriptParser.BoolcompContext ctx) {
+        int opcode;
+
+        if (ctx.LT() != null) {
+          opcode = GeneratorAdapter.LT;
+        } else if (ctx.LTE() != null) {
+          opcode = GeneratorAdapter.LE;
+        } else if (ctx.GT() != null) {
+          opcode = GeneratorAdapter.GT;
+        } else if (ctx.GTE() != null) {
+          opcode = GeneratorAdapter.GE;
+        } else {
+          throw new IllegalStateException("Unknown operation specified: " + ctx.getText());
+        }
+
+        pushCond(opcode, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBooleqne(JavascriptParser.BooleqneContext ctx) {
+        int opcode;
+
+        if (ctx.EQ() != null) {
+          opcode = GeneratorAdapter.EQ;
+        } else if (ctx.NE() != null) {
+          opcode = GeneratorAdapter.NE;
+        } else {
+          throw new IllegalStateException("Unknown operation specified: " + ctx.getText());
+        }
+
+        pushCond(opcode, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBwand(JavascriptParser.BwandContext ctx) {
+        pushBitwise(Opcodes.LAND, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBwxor(JavascriptParser.BwxorContext ctx) {
+        pushBitwise(Opcodes.LXOR, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBwor(JavascriptParser.BworContext ctx) {
+        pushBitwise(Opcodes.LOR, ctx.expression(0), ctx.expression(1));
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBooland(JavascriptParser.BoolandContext ctx) {
         Label andFalse = new Label();
         Label andEnd = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.INT_TYPE);
+
+        typeStack.push(Type.INT_TYPE);
+        visit(ctx.expression(0));
         gen.visitJumpInsn(Opcodes.IFEQ, andFalse);
-        recursiveCompile(current.getChild(1), Type.INT_TYPE);
+        visit(ctx.expression(1));
         gen.visitJumpInsn(Opcodes.IFEQ, andFalse);
-        pushBoolean(expected, true);
+        typeStack.pop();
+        pushBoolean(true);
         gen.goTo(andEnd);
         gen.visitLabel(andFalse);
-        pushBoolean(expected, false);
+        pushBoolean(false);
         gen.visitLabel(andEnd);
-        break;
-      case JavascriptParser.AT_BOOL_OR:
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitBoolor(JavascriptParser.BoolorContext ctx) {
         Label orTrue = new Label();
         Label orEnd = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.INT_TYPE);
+
+        typeStack.push(Type.INT_TYPE);
+        visit(ctx.expression(0));
         gen.visitJumpInsn(Opcodes.IFNE, orTrue);
-        recursiveCompile(current.getChild(1), Type.INT_TYPE);
+        visit(ctx.expression(1));
         gen.visitJumpInsn(Opcodes.IFNE, orTrue);
-        pushBoolean(expected, false);
+        typeStack.pop();
+        pushBoolean(false);
         gen.goTo(orEnd);
         gen.visitLabel(orTrue);
-        pushBoolean(expected, true);
+        pushBoolean(true);
         gen.visitLabel(orEnd);
-        break;
-      case JavascriptParser.AT_COND_QUE:
+
+        return null;
+      }
+
+      /**
+       * For internal compiler use only, do NOT use
+       */
+      @Override
+      public Void visitConditional(JavascriptParser.ConditionalContext ctx) {
         Label condFalse = new Label();
         Label condEnd = new Label();
-        
-        recursiveCompile(current.getChild(0), Type.INT_TYPE);
+
+        typeStack.push(Type.INT_TYPE);
+        visit(ctx.expression(0));
+        typeStack.pop();
         gen.visitJumpInsn(Opcodes.IFEQ, condFalse);
-        recursiveCompile(current.getChild(1), expected);
+        visit(ctx.expression(1));
         gen.goTo(condEnd);
         gen.visitLabel(condFalse);
-        recursiveCompile(current.getChild(2), expected);
+        visit(ctx.expression(2));
         gen.visitLabel(condEnd);
-        break;
-      default:
-        throw new IllegalStateException("Unknown operation specified: (" + current.getText() + ").");
-    }
-  }
 
-  private void pushArith(int operator, Tree current, Type expected) {
-    pushBinaryOp(operator, current, expected, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE);
-  }
-  
-  private void pushShift(int operator, Tree current, Type expected) {
-    pushBinaryOp(operator, current, expected, Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE);
-  }
-  
-  private void pushBitwise(int operator, Tree current, Type expected) {
-    pushBinaryOp(operator, current, expected, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-  }
-  
-  private void pushBinaryOp(int operator, Tree current, Type expected, Type arg1, Type arg2, Type returnType) {
-    recursiveCompile(current.getChild(0), arg1);
-    recursiveCompile(current.getChild(1), arg2);
-    gen.visitInsn(operator);
-    gen.cast(returnType, expected);
-  }
-  
-  private void pushCond(int operator, Tree current, Type expected) {
-    Label labelTrue = new Label();
-    Label labelReturn = new Label();
-    
-    recursiveCompile(current.getChild(0), Type.DOUBLE_TYPE);
-    recursiveCompile(current.getChild(1), Type.DOUBLE_TYPE);
-    
-    gen.ifCmp(Type.DOUBLE_TYPE, operator, labelTrue);
-    pushBoolean(expected, false);
-    gen.goTo(labelReturn);
-    gen.visitLabel(labelTrue);
-    pushBoolean(expected, true);
-    gen.visitLabel(labelReturn);    
-  }
-  
-  private void pushBoolean(Type expected, boolean truth) {
-    switch (expected.getSort()) {
-      case Type.INT:
-        gen.push(truth);
-        break;
-      case Type.LONG:
-        gen.push(truth ? 1L : 0L);
-        break;
-      case Type.DOUBLE:
-        gen.push(truth ? 1. : 0.);
-        break;
-      default:
-        throw new IllegalStateException("Invalid expected type: " + expected);
-    }
-  }
-  
-  private void pushLong(Type expected, long i) {
-    switch (expected.getSort()) {
-      case Type.INT:
-        gen.push((int) i);
-        break;
-      case Type.LONG:
-        gen.push(i);
-        break;
-      case Type.DOUBLE:
-        gen.push((double) i);
-        break;
-      default:
-        throw new IllegalStateException("Invalid expected type: " + expected);
-    }
+        return null;
+      }
+
+      private void pushArith(int operator, ExpressionContext left, ExpressionContext right) {
+        pushBinaryOp(operator, left, right, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE);
+      }
+
+      private void pushShift(int operator, ExpressionContext left, ExpressionContext right) {
+        pushBinaryOp(operator, left, right, Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE);
+      }
+
+      private void pushBitwise(int operator, ExpressionContext left, ExpressionContext right) {
+        pushBinaryOp(operator, left, right, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
+      }
+
+      private void pushBinaryOp(int operator, ExpressionContext left, ExpressionContext right,
+                                Type leftType, Type rightType, Type returnType) {
+        typeStack.push(leftType);
+        visit(left);
+        typeStack.pop();
+        typeStack.push(rightType);
+        visit(right);
+        typeStack.pop();
+        gen.visitInsn(operator);
+        gen.cast(returnType, typeStack.peek());
+      }
+
+      private void pushCond(int operator, ExpressionContext left, ExpressionContext right) {
+        Label labelTrue = new Label();
+        Label labelReturn = new Label();
+
+        typeStack.push(Type.DOUBLE_TYPE);
+        visit(left);
+        visit(right);
+        typeStack.pop();
+
+        gen.ifCmp(Type.DOUBLE_TYPE, operator, labelTrue);
+        pushBoolean(false);
+        gen.goTo(labelReturn);
+        gen.visitLabel(labelTrue);
+        pushBoolean(true);
+        gen.visitLabel(labelReturn);
+      }
+
+      private void pushBoolean(boolean truth) {
+        switch (typeStack.peek().getSort()) {
+          case Type.INT:
+            gen.push(truth);
+            break;
+          case Type.LONG:
+            gen.push(truth ? 1L : 0L);
+            break;
+          case Type.DOUBLE:
+            gen.push(truth ? 1. : 0.);
+            break;
+          default:
+            throw new IllegalStateException("Invalid expected type: " + typeStack.peek());
+        }
+      }
+
+      private void pushLong(long i) {
+        switch (typeStack.peek().getSort()) {
+          case Type.INT:
+            gen.push((int) i);
+            break;
+          case Type.LONG:
+            gen.push(i);
+            break;
+          case Type.DOUBLE:
+            gen.push((double) i);
+            break;
+          default:
+            throw new IllegalStateException("Invalid expected type: " + typeStack.peek());
+        }
+      }
+    }.visit(parseTree);
   }
   
   private void endCompile() {
@@ -479,26 +683,7 @@ public class JavascriptCompiler {
     classWriter.visitEnd();
   }
 
-  private Tree getAntlrComputedExpressionTree() throws ParseException {
-    CharStream input = new ANTLRStringStream(sourceText);
-    JavascriptLexer lexer = new JavascriptLexer(input);
-    CommonTokenStream tokens = new CommonTokenStream(lexer);
-    JavascriptParser parser = new JavascriptParser(tokens);
-
-    try {
-      return parser.expression().tree;
-
-    } catch (RecognitionException exception) {
-      throw new IllegalArgumentException(exception);
-    } catch (RuntimeException exception) {
-      if (exception.getCause() instanceof ParseException) {
-        throw (ParseException)exception.getCause();
-      }
-      throw exception;
-    }
-  }
-
-  private static String normalizeQuotes(String text) {
+  static String normalizeQuotes(String text) {
     StringBuilder out = new StringBuilder(text.length());
     boolean inDoubleQuotes = false;
     for (int i = 0; i < text.length(); ++i) {
@@ -527,7 +712,7 @@ public class JavascriptCompiler {
     return out.toString();
   }
 
-  private static int findSingleQuoteStringEnd(String text, int start) {
+  static int findSingleQuoteStringEnd(String text, int start) {
     ++start; // skip beginning
     while (text.charAt(start) != '\'') {
       if (text.charAt(start) == '\\') {

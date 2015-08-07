@@ -1,1971 +1,749 @@
 // ANTLR GENERATED CODE: DO NOT EDIT
-
 package org.apache.lucene.expressions.js;
-    
-import java.text.ParseException;
-
-
-import org.antlr.runtime.*;
-import java.util.Stack;
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
 import java.util.List;
+import java.util.Iterator;
 import java.util.ArrayList;
 
-import org.antlr.runtime.tree.*;
-
-
-@SuppressWarnings("all")
+@SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 class JavascriptParser extends Parser {
-  public static final String[] tokenNames = new String[] {
-    "<invalid>", "<EOR>", "<DOWN>", "<UP>", "ARRAY", "AT_ADD", "AT_BIT_AND", 
-    "AT_BIT_NOT", "AT_BIT_OR", "AT_BIT_SHL", "AT_BIT_SHR", "AT_BIT_SHU", "AT_BIT_XOR", 
-    "AT_BOOL_AND", "AT_BOOL_NOT", "AT_BOOL_OR", "AT_CALL", "AT_COLON", "AT_COMMA", 
-    "AT_COMP_EQ", "AT_COMP_GT", "AT_COMP_GTE", "AT_COMP_LT", "AT_COMP_LTE", 
-    "AT_COMP_NEQ", "AT_COND_QUE", "AT_DIVIDE", "AT_DOT", "AT_LPAREN", "AT_MODULO", 
-    "AT_MULTIPLY", "AT_NEGATE", "AT_RPAREN", "AT_SUBTRACT", "DECIMAL", "DECIMALDIGIT", 
-    "DECIMALINTEGER", "DOUBLE_STRING_CHAR", "EXPONENT", "HEX", "HEXDIGIT", 
-    "ID", "OBJECT", "OCTAL", "OCTALDIGIT", "SINGLE_STRING_CHAR", "STRING", 
-    "VARIABLE", "WS"
+  static { RuntimeMetaData.checkVersion("4.5", RuntimeMetaData.VERSION); }
+
+  protected static final DFA[] _decisionToDFA;
+  protected static final PredictionContextCache _sharedContextCache =
+    new PredictionContextCache();
+  public static final int
+    LP=1, RP=2, COMMA=3, BOOLNOT=4, BWNOT=5, MUL=6, DIV=7, REM=8, ADD=9, SUB=10, 
+    LSH=11, RSH=12, USH=13, LT=14, LTE=15, GT=16, GTE=17, EQ=18, NE=19, BWAND=20, 
+    BWXOR=21, BWOR=22, BOOLAND=23, BOOLOR=24, COND=25, COLON=26, WS=27, VARIABLE=28, 
+    OCTAL=29, HEX=30, DECIMAL=31;
+  public static final int
+    RULE_compile = 0, RULE_expression = 1;
+  public static final String[] ruleNames = {
+    "compile", "expression"
   };
-  public static final int EOF=-1;
-  public static final int ARRAY=4;
-  public static final int AT_ADD=5;
-  public static final int AT_BIT_AND=6;
-  public static final int AT_BIT_NOT=7;
-  public static final int AT_BIT_OR=8;
-  public static final int AT_BIT_SHL=9;
-  public static final int AT_BIT_SHR=10;
-  public static final int AT_BIT_SHU=11;
-  public static final int AT_BIT_XOR=12;
-  public static final int AT_BOOL_AND=13;
-  public static final int AT_BOOL_NOT=14;
-  public static final int AT_BOOL_OR=15;
-  public static final int AT_CALL=16;
-  public static final int AT_COLON=17;
-  public static final int AT_COMMA=18;
-  public static final int AT_COMP_EQ=19;
-  public static final int AT_COMP_GT=20;
-  public static final int AT_COMP_GTE=21;
-  public static final int AT_COMP_LT=22;
-  public static final int AT_COMP_LTE=23;
-  public static final int AT_COMP_NEQ=24;
-  public static final int AT_COND_QUE=25;
-  public static final int AT_DIVIDE=26;
-  public static final int AT_DOT=27;
-  public static final int AT_LPAREN=28;
-  public static final int AT_MODULO=29;
-  public static final int AT_MULTIPLY=30;
-  public static final int AT_NEGATE=31;
-  public static final int AT_RPAREN=32;
-  public static final int AT_SUBTRACT=33;
-  public static final int DECIMAL=34;
-  public static final int DECIMALDIGIT=35;
-  public static final int DECIMALINTEGER=36;
-  public static final int DOUBLE_STRING_CHAR=37;
-  public static final int EXPONENT=38;
-  public static final int HEX=39;
-  public static final int HEXDIGIT=40;
-  public static final int ID=41;
-  public static final int OBJECT=42;
-  public static final int OCTAL=43;
-  public static final int OCTALDIGIT=44;
-  public static final int SINGLE_STRING_CHAR=45;
-  public static final int STRING=46;
-  public static final int VARIABLE=47;
-  public static final int WS=48;
 
-  // delegates
-  public Parser[] getDelegates() {
-    return new Parser[] {};
+  private static final String[] _LITERAL_NAMES = {
+    null, null, null, null, null, null, null, null, null, null, null, "'<<'", 
+    "'>>'", "'>>>'", null, "'<='", null, "'>='", "'=='", "'!='", null, null, 
+    null, "'&&'", "'||'"
+  };
+  private static final String[] _SYMBOLIC_NAMES = {
+    null, "LP", "RP", "COMMA", "BOOLNOT", "BWNOT", "MUL", "DIV", "REM", "ADD", 
+    "SUB", "LSH", "RSH", "USH", "LT", "LTE", "GT", "GTE", "EQ", "NE", "BWAND", 
+    "BWXOR", "BWOR", "BOOLAND", "BOOLOR", "COND", "COLON", "WS", "VARIABLE", 
+    "OCTAL", "HEX", "DECIMAL"
+  };
+  public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+
+  /**
+   * @deprecated Use {@link #VOCABULARY} instead.
+   */
+  @Deprecated
+  public static final String[] tokenNames;
+  static {
+    tokenNames = new String[_SYMBOLIC_NAMES.length];
+    for (int i = 0; i < tokenNames.length; i++) {
+      tokenNames[i] = VOCABULARY.getLiteralName(i);
+      if (tokenNames[i] == null) {
+        tokenNames[i] = VOCABULARY.getSymbolicName(i);
+      }
+
+      if (tokenNames[i] == null) {
+        tokenNames[i] = "<INVALID>";
+      }
+    }
   }
-
-  // delegators
-
-
-  public JavascriptParser(TokenStream input) {
-    this(input, new RecognizerSharedState());
-  }
-  public JavascriptParser(TokenStream input, RecognizerSharedState state) {
-    super(input, state);
-  }
-
-  protected TreeAdaptor adaptor = new CommonTreeAdaptor();
-
-  public void setTreeAdaptor(TreeAdaptor adaptor) {
-    this.adaptor = adaptor;
-  }
-  public TreeAdaptor getTreeAdaptor() {
-    return adaptor;
-  }
-  @Override public String[] getTokenNames() { return JavascriptParser.tokenNames; }
-  @Override public String getGrammarFileName() { return "src/java/org/apache/lucene/expressions/js/Javascript.g"; }
-
-
 
   @Override
-  public void displayRecognitionError(String[] tokenNames, RecognitionException re) {
-      String message;
-
-      if (re.token == null) {
-          message = " unknown error (missing token).";
-      }
-      else if (re instanceof UnwantedTokenException) {
-          message = " extraneous " + getReadableTokenString(re.token)
-                  +  " at position (" + re.charPositionInLine + ").";
-      }
-      else if (re instanceof MissingTokenException) {
-          message = " missing " + getReadableTokenString(re.token)
-                  +  " at position (" + re.charPositionInLine + ").";
-      }
-      else if (re instanceof NoViableAltException) {
-          switch (re.token.getType()) {
-          case EOF:
-              message = " unexpected end of expression.";
-              break;
-          default:
-              message = " invalid sequence of tokens near " + getReadableTokenString(re.token)
-                      +  " at position (" + re.charPositionInLine + ").";
-              break;
-          }
-      }
-      else {
-          message = " unexpected token " + getReadableTokenString(re.token) 
-                  +  " at position (" + re.charPositionInLine + ").";
-      }
-      ParseException parseException = new ParseException(message, re.charPositionInLine);
-      parseException.initCause(re);
-      throw new RuntimeException(parseException);
+  @Deprecated
+  public String[] getTokenNames() {
+    return tokenNames;
   }
 
-  public static String getReadableTokenString(Token token) {
-      if (token == null) {
-          return "unknown token";
-      }
+  @Override
 
-      switch (token.getType()) {
-      case AT_LPAREN:
-          return "open parenthesis '('";
-      case AT_RPAREN:
-          return "close parenthesis ')'";
-      case AT_COMP_LT:
-          return "less than '<'";
-      case AT_COMP_LTE:
-          return "less than or equal '<='";
-      case AT_COMP_GT:
-          return "greater than '>'";
-      case AT_COMP_GTE:
-          return "greater than or equal '>='";
-      case AT_COMP_EQ:
-          return "equal '=='";
-      case AT_NEGATE:
-          return "negate '!='";
-      case AT_BOOL_NOT:
-          return "boolean not '!'";
-      case AT_BOOL_AND:
-          return "boolean and '&&'";
-      case AT_BOOL_OR:
-          return "boolean or '||'";
-      case AT_COND_QUE:
-          return "conditional '?'";
-      case AT_ADD:
-          return "addition '+'";
-      case AT_SUBTRACT:
-          return "subtraction '-'";
-      case AT_MULTIPLY:
-          return "multiplication '*'";
-      case AT_DIVIDE:
-          return "division '/'";
-      case AT_MODULO:
-          return "modulo '%'";
-      case AT_BIT_SHL:
-          return "bit shift left '<<'";
-      case AT_BIT_SHR:
-          return "bit shift right '>>'";
-      case AT_BIT_SHU:
-          return "unsigned bit shift right '>>>'";
-      case AT_BIT_AND:
-          return "bitwise and '&'";
-      case AT_BIT_OR:
-          return "bitwise or '|'";
-      case AT_BIT_XOR:
-          return "bitwise xor '^'";
-      case AT_BIT_NOT:
-          return "bitwise not '~'";
-      case ID:
-          return "identifier '" + token.getText() + "'";
-      case DECIMAL:
-          return "decimal '" + token.getText() + "'";
+  public Vocabulary getVocabulary() {
+    return VOCABULARY;
+  }
+
+  @Override
+  public String getGrammarFileName() { return "Javascript.g"; }
+
+  @Override
+  public String[] getRuleNames() { return ruleNames; }
+
+  @Override
+  public String getSerializedATN() { return _serializedATN; }
+
+  @Override
+  public ATN getATN() { return _ATN; }
+
+  public JavascriptParser(TokenStream input) {
+    super(input);
+    _interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
+  }
+  public static class CompileContext extends ParserRuleContext {
+    public ExpressionContext expression() {
+      return getRuleContext(ExpressionContext.class,0);
+    }
+    public TerminalNode EOF() { return getToken(JavascriptParser.EOF, 0); }
+    public CompileContext(ParserRuleContext parent, int invokingState) {
+      super(parent, invokingState);
+    }
+    @Override public int getRuleIndex() { return RULE_compile; }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitCompile(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+
+  public final CompileContext compile() throws RecognitionException {
+    CompileContext _localctx = new CompileContext(_ctx, getState());
+    enterRule(_localctx, 0, RULE_compile);
+    try {
+      enterOuterAlt(_localctx, 1);
+      {
+      setState(4);
+      expression(0);
+      setState(5);
+      match(EOF);
+      }
+    }
+    catch (RecognitionException re) {
+      _localctx.exception = re;
+      _errHandler.reportError(this, re);
+      _errHandler.recover(this, re);
+    }
+    finally {
+      exitRule();
+    }
+    return _localctx;
+  }
+
+  public static class ExpressionContext extends ParserRuleContext {
+    public ExpressionContext(ParserRuleContext parent, int invokingState) {
+      super(parent, invokingState);
+    }
+    @Override public int getRuleIndex() { return RULE_expression; }
+   
+    public ExpressionContext() { }
+    public void copyFrom(ExpressionContext ctx) {
+      super.copyFrom(ctx);
+    }
+  }
+  public static class ConditionalContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode COND() { return getToken(JavascriptParser.COND, 0); }
+    public TerminalNode COLON() { return getToken(JavascriptParser.COLON, 0); }
+    public ConditionalContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitConditional(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BoolorContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode BOOLOR() { return getToken(JavascriptParser.BOOLOR, 0); }
+    public BoolorContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBoolor(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BoolcompContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode LT() { return getToken(JavascriptParser.LT, 0); }
+    public TerminalNode LTE() { return getToken(JavascriptParser.LTE, 0); }
+    public TerminalNode GT() { return getToken(JavascriptParser.GT, 0); }
+    public TerminalNode GTE() { return getToken(JavascriptParser.GTE, 0); }
+    public BoolcompContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBoolcomp(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class NumericContext extends ExpressionContext {
+    public TerminalNode OCTAL() { return getToken(JavascriptParser.OCTAL, 0); }
+    public TerminalNode HEX() { return getToken(JavascriptParser.HEX, 0); }
+    public TerminalNode DECIMAL() { return getToken(JavascriptParser.DECIMAL, 0); }
+    public NumericContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitNumeric(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class AddsubContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode ADD() { return getToken(JavascriptParser.ADD, 0); }
+    public TerminalNode SUB() { return getToken(JavascriptParser.SUB, 0); }
+    public AddsubContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitAddsub(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class UnaryContext extends ExpressionContext {
+    public ExpressionContext expression() {
+      return getRuleContext(ExpressionContext.class,0);
+    }
+    public TerminalNode BOOLNOT() { return getToken(JavascriptParser.BOOLNOT, 0); }
+    public TerminalNode BWNOT() { return getToken(JavascriptParser.BWNOT, 0); }
+    public TerminalNode ADD() { return getToken(JavascriptParser.ADD, 0); }
+    public TerminalNode SUB() { return getToken(JavascriptParser.SUB, 0); }
+    public UnaryContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitUnary(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class PrecedenceContext extends ExpressionContext {
+    public TerminalNode LP() { return getToken(JavascriptParser.LP, 0); }
+    public ExpressionContext expression() {
+      return getRuleContext(ExpressionContext.class,0);
+    }
+    public TerminalNode RP() { return getToken(JavascriptParser.RP, 0); }
+    public PrecedenceContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitPrecedence(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class MuldivContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode MUL() { return getToken(JavascriptParser.MUL, 0); }
+    public TerminalNode DIV() { return getToken(JavascriptParser.DIV, 0); }
+    public TerminalNode REM() { return getToken(JavascriptParser.REM, 0); }
+    public MuldivContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitMuldiv(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class ExternalContext extends ExpressionContext {
+    public TerminalNode VARIABLE() { return getToken(JavascriptParser.VARIABLE, 0); }
+    public TerminalNode LP() { return getToken(JavascriptParser.LP, 0); }
+    public TerminalNode RP() { return getToken(JavascriptParser.RP, 0); }
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public List<TerminalNode> COMMA() { return getTokens(JavascriptParser.COMMA); }
+    public TerminalNode COMMA(int i) {
+      return getToken(JavascriptParser.COMMA, i);
+    }
+    public ExternalContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitExternal(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BwshiftContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode LSH() { return getToken(JavascriptParser.LSH, 0); }
+    public TerminalNode RSH() { return getToken(JavascriptParser.RSH, 0); }
+    public TerminalNode USH() { return getToken(JavascriptParser.USH, 0); }
+    public BwshiftContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBwshift(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BworContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode BWOR() { return getToken(JavascriptParser.BWOR, 0); }
+    public BworContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBwor(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BoolandContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode BOOLAND() { return getToken(JavascriptParser.BOOLAND, 0); }
+    public BoolandContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBooland(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BwxorContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode BWXOR() { return getToken(JavascriptParser.BWXOR, 0); }
+    public BwxorContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBwxor(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BwandContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode BWAND() { return getToken(JavascriptParser.BWAND, 0); }
+    public BwandContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBwand(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+  public static class BooleqneContext extends ExpressionContext {
+    public List<ExpressionContext> expression() {
+      return getRuleContexts(ExpressionContext.class);
+    }
+    public ExpressionContext expression(int i) {
+      return getRuleContext(ExpressionContext.class,i);
+    }
+    public TerminalNode EQ() { return getToken(JavascriptParser.EQ, 0); }
+    public TerminalNode NE() { return getToken(JavascriptParser.NE, 0); }
+    public BooleqneContext(ExpressionContext ctx) { copyFrom(ctx); }
+    @Override
+    public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+      if ( visitor instanceof JavascriptVisitor ) return ((JavascriptVisitor<? extends T>)visitor).visitBooleqne(this);
+      else return visitor.visitChildren(this);
+    }
+  }
+
+  public final ExpressionContext expression() throws RecognitionException {
+    return expression(0);
+  }
+
+  private ExpressionContext expression(int _p) throws RecognitionException {
+    ParserRuleContext _parentctx = _ctx;
+    int _parentState = getState();
+    ExpressionContext _localctx = new ExpressionContext(_ctx, _parentState);
+    ExpressionContext _prevctx = _localctx;
+    int _startState = 2;
+    enterRecursionRule(_localctx, 2, RULE_expression, _p);
+    int _la;
+    try {
+      int _alt;
+      enterOuterAlt(_localctx, 1);
+      {
+      setState(30);
+      switch (_input.LA(1)) {
+      case BOOLNOT:
+      case BWNOT:
+      case ADD:
+      case SUB:
+        {
+        _localctx = new UnaryContext(_localctx);
+        _ctx = _localctx;
+        _prevctx = _localctx;
+
+        setState(8);
+        _la = _input.LA(1);
+        if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << BOOLNOT) | (1L << BWNOT) | (1L << ADD) | (1L << SUB))) != 0)) ) {
+        _errHandler.recoverInline(this);
+        } else {
+          consume();
+        }
+        setState(9);
+        expression(12);
+        }
+        break;
+      case LP:
+        {
+        _localctx = new PrecedenceContext(_localctx);
+        _ctx = _localctx;
+        _prevctx = _localctx;
+        setState(10);
+        match(LP);
+        setState(11);
+        expression(0);
+        setState(12);
+        match(RP);
+        }
+        break;
       case OCTAL:
-          return "octal '" + token.getText() + "'";
       case HEX:
-          return "hex '" + token.getText() + "'";
-      case EOF:
-          return "end of expression";
-      default:
-          return "'" + token.getText() + "'";
-      }
-  }
-
-
-
-  public static class expression_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "expression"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:250:1: expression : conditional EOF !;
-  public final JavascriptParser.expression_return expression() throws RecognitionException {
-    JavascriptParser.expression_return retval = new JavascriptParser.expression_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token EOF2=null;
-    ParserRuleReturnScope conditional1 =null;
-
-    CommonTree EOF2_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:251:5: ( conditional EOF !)
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:251:7: conditional EOF !
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_conditional_in_expression737);
-      conditional1=conditional();
-      state._fsp--;
-
-      adaptor.addChild(root_0, conditional1.getTree());
-
-      EOF2=(Token)match(input,EOF,FOLLOW_EOF_in_expression739); 
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "expression"
-
-
-  public static class conditional_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "conditional"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:254:1: conditional : logical_or ( AT_COND_QUE ^ conditional AT_COLON ! conditional )? ;
-  public final JavascriptParser.conditional_return conditional() throws RecognitionException {
-    JavascriptParser.conditional_return retval = new JavascriptParser.conditional_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_COND_QUE4=null;
-    Token AT_COLON6=null;
-    ParserRuleReturnScope logical_or3 =null;
-    ParserRuleReturnScope conditional5 =null;
-    ParserRuleReturnScope conditional7 =null;
-
-    CommonTree AT_COND_QUE4_tree=null;
-    CommonTree AT_COLON6_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:255:5: ( logical_or ( AT_COND_QUE ^ conditional AT_COLON ! conditional )? )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:255:7: logical_or ( AT_COND_QUE ^ conditional AT_COLON ! conditional )?
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_logical_or_in_conditional757);
-      logical_or3=logical_or();
-      state._fsp--;
-
-      adaptor.addChild(root_0, logical_or3.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:255:18: ( AT_COND_QUE ^ conditional AT_COLON ! conditional )?
-      int alt1=2;
-      int LA1_0 = input.LA(1);
-      if ( (LA1_0==AT_COND_QUE) ) {
-        alt1=1;
-      }
-      switch (alt1) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:255:19: AT_COND_QUE ^ conditional AT_COLON ! conditional
-          {
-          AT_COND_QUE4=(Token)match(input,AT_COND_QUE,FOLLOW_AT_COND_QUE_in_conditional760); 
-          AT_COND_QUE4_tree = (CommonTree)adaptor.create(AT_COND_QUE4);
-          root_0 = (CommonTree)adaptor.becomeRoot(AT_COND_QUE4_tree, root_0);
-
-          pushFollow(FOLLOW_conditional_in_conditional763);
-          conditional5=conditional();
-          state._fsp--;
-
-          adaptor.addChild(root_0, conditional5.getTree());
-
-          AT_COLON6=(Token)match(input,AT_COLON,FOLLOW_AT_COLON_in_conditional765); 
-          pushFollow(FOLLOW_conditional_in_conditional768);
-          conditional7=conditional();
-          state._fsp--;
-
-          adaptor.addChild(root_0, conditional7.getTree());
-
-          }
-          break;
-
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "conditional"
-
-
-  public static class logical_or_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "logical_or"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:258:1: logical_or : logical_and ( AT_BOOL_OR ^ logical_and )* ;
-  public final JavascriptParser.logical_or_return logical_or() throws RecognitionException {
-    JavascriptParser.logical_or_return retval = new JavascriptParser.logical_or_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_BOOL_OR9=null;
-    ParserRuleReturnScope logical_and8 =null;
-    ParserRuleReturnScope logical_and10 =null;
-
-    CommonTree AT_BOOL_OR9_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:259:5: ( logical_and ( AT_BOOL_OR ^ logical_and )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:259:7: logical_and ( AT_BOOL_OR ^ logical_and )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_logical_and_in_logical_or787);
-      logical_and8=logical_and();
-      state._fsp--;
-
-      adaptor.addChild(root_0, logical_and8.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:259:19: ( AT_BOOL_OR ^ logical_and )*
-      loop2:
-      while (true) {
-        int alt2=2;
-        int LA2_0 = input.LA(1);
-        if ( (LA2_0==AT_BOOL_OR) ) {
-          alt2=1;
-        }
-
-        switch (alt2) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:259:20: AT_BOOL_OR ^ logical_and
-          {
-          AT_BOOL_OR9=(Token)match(input,AT_BOOL_OR,FOLLOW_AT_BOOL_OR_in_logical_or790); 
-          AT_BOOL_OR9_tree = (CommonTree)adaptor.create(AT_BOOL_OR9);
-          root_0 = (CommonTree)adaptor.becomeRoot(AT_BOOL_OR9_tree, root_0);
-
-          pushFollow(FOLLOW_logical_and_in_logical_or793);
-          logical_and10=logical_and();
-          state._fsp--;
-
-          adaptor.addChild(root_0, logical_and10.getTree());
-
-          }
-          break;
-
-        default :
-          break loop2;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "logical_or"
-
-
-  public static class logical_and_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "logical_and"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:262:1: logical_and : bitwise_or ( AT_BOOL_AND ^ bitwise_or )* ;
-  public final JavascriptParser.logical_and_return logical_and() throws RecognitionException {
-    JavascriptParser.logical_and_return retval = new JavascriptParser.logical_and_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_BOOL_AND12=null;
-    ParserRuleReturnScope bitwise_or11 =null;
-    ParserRuleReturnScope bitwise_or13 =null;
-
-    CommonTree AT_BOOL_AND12_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:263:5: ( bitwise_or ( AT_BOOL_AND ^ bitwise_or )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:263:7: bitwise_or ( AT_BOOL_AND ^ bitwise_or )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_bitwise_or_in_logical_and812);
-      bitwise_or11=bitwise_or();
-      state._fsp--;
-
-      adaptor.addChild(root_0, bitwise_or11.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:263:18: ( AT_BOOL_AND ^ bitwise_or )*
-      loop3:
-      while (true) {
-        int alt3=2;
-        int LA3_0 = input.LA(1);
-        if ( (LA3_0==AT_BOOL_AND) ) {
-          alt3=1;
-        }
-
-        switch (alt3) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:263:19: AT_BOOL_AND ^ bitwise_or
-          {
-          AT_BOOL_AND12=(Token)match(input,AT_BOOL_AND,FOLLOW_AT_BOOL_AND_in_logical_and815); 
-          AT_BOOL_AND12_tree = (CommonTree)adaptor.create(AT_BOOL_AND12);
-          root_0 = (CommonTree)adaptor.becomeRoot(AT_BOOL_AND12_tree, root_0);
-
-          pushFollow(FOLLOW_bitwise_or_in_logical_and818);
-          bitwise_or13=bitwise_or();
-          state._fsp--;
-
-          adaptor.addChild(root_0, bitwise_or13.getTree());
-
-          }
-          break;
-
-        default :
-          break loop3;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "logical_and"
-
-
-  public static class bitwise_or_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "bitwise_or"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:266:1: bitwise_or : bitwise_xor ( AT_BIT_OR ^ bitwise_xor )* ;
-  public final JavascriptParser.bitwise_or_return bitwise_or() throws RecognitionException {
-    JavascriptParser.bitwise_or_return retval = new JavascriptParser.bitwise_or_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_BIT_OR15=null;
-    ParserRuleReturnScope bitwise_xor14 =null;
-    ParserRuleReturnScope bitwise_xor16 =null;
-
-    CommonTree AT_BIT_OR15_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:267:5: ( bitwise_xor ( AT_BIT_OR ^ bitwise_xor )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:267:7: bitwise_xor ( AT_BIT_OR ^ bitwise_xor )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_bitwise_xor_in_bitwise_or837);
-      bitwise_xor14=bitwise_xor();
-      state._fsp--;
-
-      adaptor.addChild(root_0, bitwise_xor14.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:267:19: ( AT_BIT_OR ^ bitwise_xor )*
-      loop4:
-      while (true) {
-        int alt4=2;
-        int LA4_0 = input.LA(1);
-        if ( (LA4_0==AT_BIT_OR) ) {
-          alt4=1;
-        }
-
-        switch (alt4) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:267:20: AT_BIT_OR ^ bitwise_xor
-          {
-          AT_BIT_OR15=(Token)match(input,AT_BIT_OR,FOLLOW_AT_BIT_OR_in_bitwise_or840); 
-          AT_BIT_OR15_tree = (CommonTree)adaptor.create(AT_BIT_OR15);
-          root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_OR15_tree, root_0);
-
-          pushFollow(FOLLOW_bitwise_xor_in_bitwise_or843);
-          bitwise_xor16=bitwise_xor();
-          state._fsp--;
-
-          adaptor.addChild(root_0, bitwise_xor16.getTree());
-
-          }
-          break;
-
-        default :
-          break loop4;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "bitwise_or"
-
-
-  public static class bitwise_xor_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "bitwise_xor"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:270:1: bitwise_xor : bitwise_and ( AT_BIT_XOR ^ bitwise_and )* ;
-  public final JavascriptParser.bitwise_xor_return bitwise_xor() throws RecognitionException {
-    JavascriptParser.bitwise_xor_return retval = new JavascriptParser.bitwise_xor_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_BIT_XOR18=null;
-    ParserRuleReturnScope bitwise_and17 =null;
-    ParserRuleReturnScope bitwise_and19 =null;
-
-    CommonTree AT_BIT_XOR18_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:271:5: ( bitwise_and ( AT_BIT_XOR ^ bitwise_and )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:271:7: bitwise_and ( AT_BIT_XOR ^ bitwise_and )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_bitwise_and_in_bitwise_xor862);
-      bitwise_and17=bitwise_and();
-      state._fsp--;
-
-      adaptor.addChild(root_0, bitwise_and17.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:271:19: ( AT_BIT_XOR ^ bitwise_and )*
-      loop5:
-      while (true) {
-        int alt5=2;
-        int LA5_0 = input.LA(1);
-        if ( (LA5_0==AT_BIT_XOR) ) {
-          alt5=1;
-        }
-
-        switch (alt5) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:271:20: AT_BIT_XOR ^ bitwise_and
-          {
-          AT_BIT_XOR18=(Token)match(input,AT_BIT_XOR,FOLLOW_AT_BIT_XOR_in_bitwise_xor865); 
-          AT_BIT_XOR18_tree = (CommonTree)adaptor.create(AT_BIT_XOR18);
-          root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_XOR18_tree, root_0);
-
-          pushFollow(FOLLOW_bitwise_and_in_bitwise_xor868);
-          bitwise_and19=bitwise_and();
-          state._fsp--;
-
-          adaptor.addChild(root_0, bitwise_and19.getTree());
-
-          }
-          break;
-
-        default :
-          break loop5;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "bitwise_xor"
-
-
-  public static class bitwise_and_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "bitwise_and"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:274:1: bitwise_and : equality ( AT_BIT_AND ^ equality )* ;
-  public final JavascriptParser.bitwise_and_return bitwise_and() throws RecognitionException {
-    JavascriptParser.bitwise_and_return retval = new JavascriptParser.bitwise_and_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_BIT_AND21=null;
-    ParserRuleReturnScope equality20 =null;
-    ParserRuleReturnScope equality22 =null;
-
-    CommonTree AT_BIT_AND21_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:275:5: ( equality ( AT_BIT_AND ^ equality )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:275:8: equality ( AT_BIT_AND ^ equality )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_equality_in_bitwise_and888);
-      equality20=equality();
-      state._fsp--;
-
-      adaptor.addChild(root_0, equality20.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:275:17: ( AT_BIT_AND ^ equality )*
-      loop6:
-      while (true) {
-        int alt6=2;
-        int LA6_0 = input.LA(1);
-        if ( (LA6_0==AT_BIT_AND) ) {
-          alt6=1;
-        }
-
-        switch (alt6) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:275:18: AT_BIT_AND ^ equality
-          {
-          AT_BIT_AND21=(Token)match(input,AT_BIT_AND,FOLLOW_AT_BIT_AND_in_bitwise_and891); 
-          AT_BIT_AND21_tree = (CommonTree)adaptor.create(AT_BIT_AND21);
-          root_0 = (CommonTree)adaptor.becomeRoot(AT_BIT_AND21_tree, root_0);
-
-          pushFollow(FOLLOW_equality_in_bitwise_and894);
-          equality22=equality();
-          state._fsp--;
-
-          adaptor.addChild(root_0, equality22.getTree());
-
-          }
-          break;
-
-        default :
-          break loop6;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "bitwise_and"
-
-
-  public static class equality_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "equality"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:278:1: equality : relational ( ( AT_COMP_EQ | AT_COMP_NEQ ) ^ relational )* ;
-  public final JavascriptParser.equality_return equality() throws RecognitionException {
-    JavascriptParser.equality_return retval = new JavascriptParser.equality_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token set24=null;
-    ParserRuleReturnScope relational23 =null;
-    ParserRuleReturnScope relational25 =null;
-
-    CommonTree set24_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:279:5: ( relational ( ( AT_COMP_EQ | AT_COMP_NEQ ) ^ relational )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:279:7: relational ( ( AT_COMP_EQ | AT_COMP_NEQ ) ^ relational )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_relational_in_equality913);
-      relational23=relational();
-      state._fsp--;
-
-      adaptor.addChild(root_0, relational23.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:279:18: ( ( AT_COMP_EQ | AT_COMP_NEQ ) ^ relational )*
-      loop7:
-      while (true) {
-        int alt7=2;
-        int LA7_0 = input.LA(1);
-        if ( (LA7_0==AT_COMP_EQ||LA7_0==AT_COMP_NEQ) ) {
-          alt7=1;
-        }
-
-        switch (alt7) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:279:19: ( AT_COMP_EQ | AT_COMP_NEQ ) ^ relational
-          {
-          set24=input.LT(1);
-          set24=input.LT(1);
-          if ( input.LA(1)==AT_COMP_EQ||input.LA(1)==AT_COMP_NEQ ) {
-            input.consume();
-            root_0 = (CommonTree)adaptor.becomeRoot((CommonTree)adaptor.create(set24), root_0);
-            state.errorRecovery=false;
-          }
-          else {
-            MismatchedSetException mse = new MismatchedSetException(null,input);
-            throw mse;
-          }
-          pushFollow(FOLLOW_relational_in_equality925);
-          relational25=relational();
-          state._fsp--;
-
-          adaptor.addChild(root_0, relational25.getTree());
-
-          }
-          break;
-
-        default :
-          break loop7;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "equality"
-
-
-  public static class relational_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "relational"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:282:1: relational : shift ( ( AT_COMP_LT | AT_COMP_GT | AT_COMP_LTE | AT_COMP_GTE ) ^ shift )* ;
-  public final JavascriptParser.relational_return relational() throws RecognitionException {
-    JavascriptParser.relational_return retval = new JavascriptParser.relational_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token set27=null;
-    ParserRuleReturnScope shift26 =null;
-    ParserRuleReturnScope shift28 =null;
-
-    CommonTree set27_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:283:5: ( shift ( ( AT_COMP_LT | AT_COMP_GT | AT_COMP_LTE | AT_COMP_GTE ) ^ shift )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:283:7: shift ( ( AT_COMP_LT | AT_COMP_GT | AT_COMP_LTE | AT_COMP_GTE ) ^ shift )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_shift_in_relational944);
-      shift26=shift();
-      state._fsp--;
-
-      adaptor.addChild(root_0, shift26.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:283:13: ( ( AT_COMP_LT | AT_COMP_GT | AT_COMP_LTE | AT_COMP_GTE ) ^ shift )*
-      loop8:
-      while (true) {
-        int alt8=2;
-        int LA8_0 = input.LA(1);
-        if ( ((LA8_0 >= AT_COMP_GT && LA8_0 <= AT_COMP_LTE)) ) {
-          alt8=1;
-        }
-
-        switch (alt8) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:283:14: ( AT_COMP_LT | AT_COMP_GT | AT_COMP_LTE | AT_COMP_GTE ) ^ shift
-          {
-          set27=input.LT(1);
-          set27=input.LT(1);
-          if ( (input.LA(1) >= AT_COMP_GT && input.LA(1) <= AT_COMP_LTE) ) {
-            input.consume();
-            root_0 = (CommonTree)adaptor.becomeRoot((CommonTree)adaptor.create(set27), root_0);
-            state.errorRecovery=false;
-          }
-          else {
-            MismatchedSetException mse = new MismatchedSetException(null,input);
-            throw mse;
-          }
-          pushFollow(FOLLOW_shift_in_relational964);
-          shift28=shift();
-          state._fsp--;
-
-          adaptor.addChild(root_0, shift28.getTree());
-
-          }
-          break;
-
-        default :
-          break loop8;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "relational"
-
-
-  public static class shift_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "shift"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:286:1: shift : additive ( ( AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU ) ^ additive )* ;
-  public final JavascriptParser.shift_return shift() throws RecognitionException {
-    JavascriptParser.shift_return retval = new JavascriptParser.shift_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token set30=null;
-    ParserRuleReturnScope additive29 =null;
-    ParserRuleReturnScope additive31 =null;
-
-    CommonTree set30_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:287:5: ( additive ( ( AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU ) ^ additive )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:287:7: additive ( ( AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU ) ^ additive )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_additive_in_shift983);
-      additive29=additive();
-      state._fsp--;
-
-      adaptor.addChild(root_0, additive29.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:287:16: ( ( AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU ) ^ additive )*
-      loop9:
-      while (true) {
-        int alt9=2;
-        int LA9_0 = input.LA(1);
-        if ( ((LA9_0 >= AT_BIT_SHL && LA9_0 <= AT_BIT_SHU)) ) {
-          alt9=1;
-        }
-
-        switch (alt9) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:287:17: ( AT_BIT_SHL | AT_BIT_SHR | AT_BIT_SHU ) ^ additive
-          {
-          set30=input.LT(1);
-          set30=input.LT(1);
-          if ( (input.LA(1) >= AT_BIT_SHL && input.LA(1) <= AT_BIT_SHU) ) {
-            input.consume();
-            root_0 = (CommonTree)adaptor.becomeRoot((CommonTree)adaptor.create(set30), root_0);
-            state.errorRecovery=false;
-          }
-          else {
-            MismatchedSetException mse = new MismatchedSetException(null,input);
-            throw mse;
-          }
-          pushFollow(FOLLOW_additive_in_shift999);
-          additive31=additive();
-          state._fsp--;
-
-          adaptor.addChild(root_0, additive31.getTree());
-
-          }
-          break;
-
-        default :
-          break loop9;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "shift"
-
-
-  public static class additive_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "additive"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:290:1: additive : multiplicative ( ( AT_ADD | AT_SUBTRACT ) ^ multiplicative )* ;
-  public final JavascriptParser.additive_return additive() throws RecognitionException {
-    JavascriptParser.additive_return retval = new JavascriptParser.additive_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token set33=null;
-    ParserRuleReturnScope multiplicative32 =null;
-    ParserRuleReturnScope multiplicative34 =null;
-
-    CommonTree set33_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:291:5: ( multiplicative ( ( AT_ADD | AT_SUBTRACT ) ^ multiplicative )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:291:7: multiplicative ( ( AT_ADD | AT_SUBTRACT ) ^ multiplicative )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_multiplicative_in_additive1018);
-      multiplicative32=multiplicative();
-      state._fsp--;
-
-      adaptor.addChild(root_0, multiplicative32.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:291:22: ( ( AT_ADD | AT_SUBTRACT ) ^ multiplicative )*
-      loop10:
-      while (true) {
-        int alt10=2;
-        int LA10_0 = input.LA(1);
-        if ( (LA10_0==AT_ADD||LA10_0==AT_SUBTRACT) ) {
-          alt10=1;
-        }
-
-        switch (alt10) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:291:23: ( AT_ADD | AT_SUBTRACT ) ^ multiplicative
-          {
-          set33=input.LT(1);
-          set33=input.LT(1);
-          if ( input.LA(1)==AT_ADD||input.LA(1)==AT_SUBTRACT ) {
-            input.consume();
-            root_0 = (CommonTree)adaptor.becomeRoot((CommonTree)adaptor.create(set33), root_0);
-            state.errorRecovery=false;
-          }
-          else {
-            MismatchedSetException mse = new MismatchedSetException(null,input);
-            throw mse;
-          }
-          pushFollow(FOLLOW_multiplicative_in_additive1030);
-          multiplicative34=multiplicative();
-          state._fsp--;
-
-          adaptor.addChild(root_0, multiplicative34.getTree());
-
-          }
-          break;
-
-        default :
-          break loop10;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "additive"
-
-
-  public static class multiplicative_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "multiplicative"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:294:1: multiplicative : unary ( ( AT_MULTIPLY | AT_DIVIDE | AT_MODULO ) ^ unary )* ;
-  public final JavascriptParser.multiplicative_return multiplicative() throws RecognitionException {
-    JavascriptParser.multiplicative_return retval = new JavascriptParser.multiplicative_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token set36=null;
-    ParserRuleReturnScope unary35 =null;
-    ParserRuleReturnScope unary37 =null;
-
-    CommonTree set36_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:295:5: ( unary ( ( AT_MULTIPLY | AT_DIVIDE | AT_MODULO ) ^ unary )* )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:295:7: unary ( ( AT_MULTIPLY | AT_DIVIDE | AT_MODULO ) ^ unary )*
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      pushFollow(FOLLOW_unary_in_multiplicative1049);
-      unary35=unary();
-      state._fsp--;
-
-      adaptor.addChild(root_0, unary35.getTree());
-
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:295:13: ( ( AT_MULTIPLY | AT_DIVIDE | AT_MODULO ) ^ unary )*
-      loop11:
-      while (true) {
-        int alt11=2;
-        int LA11_0 = input.LA(1);
-        if ( (LA11_0==AT_DIVIDE||(LA11_0 >= AT_MODULO && LA11_0 <= AT_MULTIPLY)) ) {
-          alt11=1;
-        }
-
-        switch (alt11) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:295:14: ( AT_MULTIPLY | AT_DIVIDE | AT_MODULO ) ^ unary
-          {
-          set36=input.LT(1);
-          set36=input.LT(1);
-          if ( input.LA(1)==AT_DIVIDE||(input.LA(1) >= AT_MODULO && input.LA(1) <= AT_MULTIPLY) ) {
-            input.consume();
-            root_0 = (CommonTree)adaptor.becomeRoot((CommonTree)adaptor.create(set36), root_0);
-            state.errorRecovery=false;
-          }
-          else {
-            MismatchedSetException mse = new MismatchedSetException(null,input);
-            throw mse;
-          }
-          pushFollow(FOLLOW_unary_in_multiplicative1065);
-          unary37=unary();
-          state._fsp--;
-
-          adaptor.addChild(root_0, unary37.getTree());
-
-          }
-          break;
-
-        default :
-          break loop11;
-        }
-      }
-
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "multiplicative"
-
-
-  public static class unary_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "unary"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:298:1: unary : ( postfix | AT_ADD ! unary | unary_operator ^ unary );
-  public final JavascriptParser.unary_return unary() throws RecognitionException {
-    JavascriptParser.unary_return retval = new JavascriptParser.unary_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_ADD39=null;
-    ParserRuleReturnScope postfix38 =null;
-    ParserRuleReturnScope unary40 =null;
-    ParserRuleReturnScope unary_operator41 =null;
-    ParserRuleReturnScope unary42 =null;
-
-    CommonTree AT_ADD39_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:299:5: ( postfix | AT_ADD ! unary | unary_operator ^ unary )
-      int alt12=3;
-      switch ( input.LA(1) ) {
-      case AT_LPAREN:
       case DECIMAL:
-      case HEX:
-      case OCTAL:
+        {
+        _localctx = new NumericContext(_localctx);
+        _ctx = _localctx;
+        _prevctx = _localctx;
+        setState(14);
+        _la = _input.LA(1);
+        if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << OCTAL) | (1L << HEX) | (1L << DECIMAL))) != 0)) ) {
+        _errHandler.recoverInline(this);
+        } else {
+          consume();
+        }
+        }
+        break;
       case VARIABLE:
         {
-        alt12=1;
-        }
-        break;
-      case AT_ADD:
-        {
-        alt12=2;
-        }
-        break;
-      case AT_BIT_NOT:
-      case AT_BOOL_NOT:
-      case AT_SUBTRACT:
-        {
-        alt12=3;
-        }
-        break;
-      default:
-        NoViableAltException nvae =
-          new NoViableAltException("", 12, 0, input);
-        throw nvae;
-      }
-      switch (alt12) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:299:7: postfix
+        _localctx = new ExternalContext(_localctx);
+        _ctx = _localctx;
+        _prevctx = _localctx;
+        setState(15);
+        match(VARIABLE);
+        setState(28);
+        switch ( getInterpreter().adaptivePredict(_input,2,_ctx) ) {
+        case 1:
           {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          pushFollow(FOLLOW_postfix_in_unary1084);
-          postfix38=postfix();
-          state._fsp--;
-
-          adaptor.addChild(root_0, postfix38.getTree());
-
-          }
-          break;
-        case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:300:7: AT_ADD ! unary
-          {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          AT_ADD39=(Token)match(input,AT_ADD,FOLLOW_AT_ADD_in_unary1092); 
-          pushFollow(FOLLOW_unary_in_unary1095);
-          unary40=unary();
-          state._fsp--;
-
-          adaptor.addChild(root_0, unary40.getTree());
-
-          }
-          break;
-        case 3 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:301:7: unary_operator ^ unary
-          {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          pushFollow(FOLLOW_unary_operator_in_unary1103);
-          unary_operator41=unary_operator();
-          state._fsp--;
-
-          root_0 = (CommonTree)adaptor.becomeRoot(unary_operator41.getTree(), root_0);
-          pushFollow(FOLLOW_unary_in_unary1106);
-          unary42=unary();
-          state._fsp--;
-
-          adaptor.addChild(root_0, unary42.getTree());
-
-          }
-          break;
-
-      }
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "unary"
-
-
-  public static class unary_operator_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "unary_operator"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:304:1: unary_operator : ( AT_SUBTRACT -> AT_NEGATE | AT_BIT_NOT | AT_BOOL_NOT );
-  public final JavascriptParser.unary_operator_return unary_operator() throws RecognitionException {
-    JavascriptParser.unary_operator_return retval = new JavascriptParser.unary_operator_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_SUBTRACT43=null;
-    Token AT_BIT_NOT44=null;
-    Token AT_BOOL_NOT45=null;
-
-    CommonTree AT_SUBTRACT43_tree=null;
-    CommonTree AT_BIT_NOT44_tree=null;
-    CommonTree AT_BOOL_NOT45_tree=null;
-    RewriteRuleTokenStream stream_AT_SUBTRACT=new RewriteRuleTokenStream(adaptor,"token AT_SUBTRACT");
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:305:5: ( AT_SUBTRACT -> AT_NEGATE | AT_BIT_NOT | AT_BOOL_NOT )
-      int alt13=3;
-      switch ( input.LA(1) ) {
-      case AT_SUBTRACT:
-        {
-        alt13=1;
-        }
-        break;
-      case AT_BIT_NOT:
-        {
-        alt13=2;
-        }
-        break;
-      case AT_BOOL_NOT:
-        {
-        alt13=3;
-        }
-        break;
-      default:
-        NoViableAltException nvae =
-          new NoViableAltException("", 13, 0, input);
-        throw nvae;
-      }
-      switch (alt13) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:305:7: AT_SUBTRACT
-          {
-          AT_SUBTRACT43=(Token)match(input,AT_SUBTRACT,FOLLOW_AT_SUBTRACT_in_unary_operator1123);  
-          stream_AT_SUBTRACT.add(AT_SUBTRACT43);
-
-          // AST REWRITE
-          // elements: 
-          // token labels: 
-          // rule labels: retval
-          // token list labels: 
-          // rule list labels: 
-          // wildcard labels: 
-          retval.tree = root_0;
-          RewriteRuleSubtreeStream stream_retval=new RewriteRuleSubtreeStream(adaptor,"rule retval",retval!=null?retval.getTree():null);
-
-          root_0 = (CommonTree)adaptor.nil();
-          // 305:19: -> AT_NEGATE
-          {
-            adaptor.addChild(root_0, (CommonTree)adaptor.create(AT_NEGATE, "AT_NEGATE"));
-          }
-
-
-          retval.tree = root_0;
-
-          }
-          break;
-        case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:306:7: AT_BIT_NOT
-          {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          AT_BIT_NOT44=(Token)match(input,AT_BIT_NOT,FOLLOW_AT_BIT_NOT_in_unary_operator1135); 
-          AT_BIT_NOT44_tree = (CommonTree)adaptor.create(AT_BIT_NOT44);
-          adaptor.addChild(root_0, AT_BIT_NOT44_tree);
-
-          }
-          break;
-        case 3 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:307:7: AT_BOOL_NOT
-          {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          AT_BOOL_NOT45=(Token)match(input,AT_BOOL_NOT,FOLLOW_AT_BOOL_NOT_in_unary_operator1143); 
-          AT_BOOL_NOT45_tree = (CommonTree)adaptor.create(AT_BOOL_NOT45);
-          adaptor.addChild(root_0, AT_BOOL_NOT45_tree);
-
-          }
-          break;
-
-      }
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "unary_operator"
-
-
-  public static class postfix_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "postfix"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:310:1: postfix : ( primary | VARIABLE arguments -> ^( AT_CALL VARIABLE ( arguments )? ) );
-  public final JavascriptParser.postfix_return postfix() throws RecognitionException {
-    JavascriptParser.postfix_return retval = new JavascriptParser.postfix_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token VARIABLE47=null;
-    ParserRuleReturnScope primary46 =null;
-    ParserRuleReturnScope arguments48 =null;
-
-    CommonTree VARIABLE47_tree=null;
-    RewriteRuleTokenStream stream_VARIABLE=new RewriteRuleTokenStream(adaptor,"token VARIABLE");
-    RewriteRuleSubtreeStream stream_arguments=new RewriteRuleSubtreeStream(adaptor,"rule arguments");
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:311:5: ( primary | VARIABLE arguments -> ^( AT_CALL VARIABLE ( arguments )? ) )
-      int alt14=2;
-      int LA14_0 = input.LA(1);
-      if ( (LA14_0==VARIABLE) ) {
-        int LA14_1 = input.LA(2);
-        if ( (LA14_1==EOF||(LA14_1 >= AT_ADD && LA14_1 <= AT_BIT_AND)||(LA14_1 >= AT_BIT_OR && LA14_1 <= AT_BOOL_AND)||LA14_1==AT_BOOL_OR||(LA14_1 >= AT_COLON && LA14_1 <= AT_DIVIDE)||(LA14_1 >= AT_MODULO && LA14_1 <= AT_MULTIPLY)||(LA14_1 >= AT_RPAREN && LA14_1 <= AT_SUBTRACT)) ) {
-          alt14=1;
-        }
-        else if ( (LA14_1==AT_LPAREN) ) {
-          alt14=2;
-        }
-
-        else {
-          int nvaeMark = input.mark();
-          try {
-            input.consume();
-            NoViableAltException nvae =
-              new NoViableAltException("", 14, 1, input);
-            throw nvae;
-          } finally {
-            input.rewind(nvaeMark);
-          }
-        }
-
-      }
-      else if ( (LA14_0==AT_LPAREN||LA14_0==DECIMAL||LA14_0==HEX||LA14_0==OCTAL) ) {
-        alt14=1;
-      }
-
-      else {
-        NoViableAltException nvae =
-          new NoViableAltException("", 14, 0, input);
-        throw nvae;
-      }
-
-      switch (alt14) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:311:7: primary
-          {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          pushFollow(FOLLOW_primary_in_postfix1160);
-          primary46=primary();
-          state._fsp--;
-
-          adaptor.addChild(root_0, primary46.getTree());
-
-          }
-          break;
-        case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:312:7: VARIABLE arguments
-          {
-          VARIABLE47=(Token)match(input,VARIABLE,FOLLOW_VARIABLE_in_postfix1168);  
-          stream_VARIABLE.add(VARIABLE47);
-
-          pushFollow(FOLLOW_arguments_in_postfix1170);
-          arguments48=arguments();
-          state._fsp--;
-
-          stream_arguments.add(arguments48.getTree());
-          // AST REWRITE
-          // elements: VARIABLE, arguments
-          // token labels: 
-          // rule labels: retval
-          // token list labels: 
-          // rule list labels: 
-          // wildcard labels: 
-          retval.tree = root_0;
-          RewriteRuleSubtreeStream stream_retval=new RewriteRuleSubtreeStream(adaptor,"rule retval",retval!=null?retval.getTree():null);
-
-          root_0 = (CommonTree)adaptor.nil();
-          // 312:26: -> ^( AT_CALL VARIABLE ( arguments )? )
-          {
-            // src/java/org/apache/lucene/expressions/js/Javascript.g:312:29: ^( AT_CALL VARIABLE ( arguments )? )
+          setState(16);
+          match(LP);
+          setState(25);
+          _la = _input.LA(1);
+          if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LP) | (1L << BOOLNOT) | (1L << BWNOT) | (1L << ADD) | (1L << SUB) | (1L << VARIABLE) | (1L << OCTAL) | (1L << HEX) | (1L << DECIMAL))) != 0)) {
             {
-            CommonTree root_1 = (CommonTree)adaptor.nil();
-            root_1 = (CommonTree)adaptor.becomeRoot((CommonTree)adaptor.create(AT_CALL, "AT_CALL"), root_1);
-            adaptor.addChild(root_1, stream_VARIABLE.nextNode());
-            // src/java/org/apache/lucene/expressions/js/Javascript.g:312:48: ( arguments )?
-            if ( stream_arguments.hasNext() ) {
-              adaptor.addChild(root_1, stream_arguments.nextTree());
+            setState(17);
+            expression(0);
+            setState(22);
+            _errHandler.sync(this);
+            _la = _input.LA(1);
+            while (_la==COMMA) {
+              {
+              {
+              setState(18);
+              match(COMMA);
+              setState(19);
+              expression(0);
+              }
+              }
+              setState(24);
+              _errHandler.sync(this);
+              _la = _input.LA(1);
             }
-            stream_arguments.reset();
-
-            adaptor.addChild(root_0, root_1);
             }
-
           }
 
-
-          retval.tree = root_0;
-
+          setState(27);
+          match(RP);
           }
           break;
-
-      }
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "postfix"
-
-
-  public static class primary_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "primary"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:315:1: primary : ( VARIABLE | numeric | AT_LPAREN ! conditional AT_RPAREN !);
-  public final JavascriptParser.primary_return primary() throws RecognitionException {
-    JavascriptParser.primary_return retval = new JavascriptParser.primary_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token VARIABLE49=null;
-    Token AT_LPAREN51=null;
-    Token AT_RPAREN53=null;
-    ParserRuleReturnScope numeric50 =null;
-    ParserRuleReturnScope conditional52 =null;
-
-    CommonTree VARIABLE49_tree=null;
-    CommonTree AT_LPAREN51_tree=null;
-    CommonTree AT_RPAREN53_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:316:5: ( VARIABLE | numeric | AT_LPAREN ! conditional AT_RPAREN !)
-      int alt15=3;
-      switch ( input.LA(1) ) {
-      case VARIABLE:
-        {
-        alt15=1;
         }
-        break;
-      case DECIMAL:
-      case HEX:
-      case OCTAL:
-        {
-        alt15=2;
-        }
-        break;
-      case AT_LPAREN:
-        {
-        alt15=3;
         }
         break;
       default:
-        NoViableAltException nvae =
-          new NoViableAltException("", 15, 0, input);
-        throw nvae;
+        throw new NoViableAltException(this);
       }
-      switch (alt15) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:316:7: VARIABLE
+      _ctx.stop = _input.LT(-1);
+      setState(70);
+      _errHandler.sync(this);
+      _alt = getInterpreter().adaptivePredict(_input,5,_ctx);
+      while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
+        if ( _alt==1 ) {
+          if ( _parseListeners!=null ) triggerExitRuleEvent();
+          _prevctx = _localctx;
           {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          VARIABLE49=(Token)match(input,VARIABLE,FOLLOW_VARIABLE_in_primary1198); 
-          VARIABLE49_tree = (CommonTree)adaptor.create(VARIABLE49);
-          adaptor.addChild(root_0, VARIABLE49_tree);
-
-          }
-          break;
-        case 2 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:317:7: numeric
-          {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          pushFollow(FOLLOW_numeric_in_primary1206);
-          numeric50=numeric();
-          state._fsp--;
-
-          adaptor.addChild(root_0, numeric50.getTree());
-
-          }
-          break;
-        case 3 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:318:7: AT_LPAREN ! conditional AT_RPAREN !
-          {
-          root_0 = (CommonTree)adaptor.nil();
-
-
-          AT_LPAREN51=(Token)match(input,AT_LPAREN,FOLLOW_AT_LPAREN_in_primary1214); 
-          pushFollow(FOLLOW_conditional_in_primary1217);
-          conditional52=conditional();
-          state._fsp--;
-
-          adaptor.addChild(root_0, conditional52.getTree());
-
-          AT_RPAREN53=(Token)match(input,AT_RPAREN,FOLLOW_AT_RPAREN_in_primary1219); 
-          }
-          break;
-
-      }
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
-    }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
-  }
-  // $ANTLR end "primary"
-
-
-  public static class arguments_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "arguments"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:321:1: arguments : AT_LPAREN ! ( conditional ( AT_COMMA ! conditional )* )? AT_RPAREN !;
-  public final JavascriptParser.arguments_return arguments() throws RecognitionException {
-    JavascriptParser.arguments_return retval = new JavascriptParser.arguments_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token AT_LPAREN54=null;
-    Token AT_COMMA56=null;
-    Token AT_RPAREN58=null;
-    ParserRuleReturnScope conditional55 =null;
-    ParserRuleReturnScope conditional57 =null;
-
-    CommonTree AT_LPAREN54_tree=null;
-    CommonTree AT_COMMA56_tree=null;
-    CommonTree AT_RPAREN58_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:322:5: ( AT_LPAREN ! ( conditional ( AT_COMMA ! conditional )* )? AT_RPAREN !)
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:322:7: AT_LPAREN ! ( conditional ( AT_COMMA ! conditional )* )? AT_RPAREN !
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      AT_LPAREN54=(Token)match(input,AT_LPAREN,FOLLOW_AT_LPAREN_in_arguments1237); 
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:322:18: ( conditional ( AT_COMMA ! conditional )* )?
-      int alt17=2;
-      int LA17_0 = input.LA(1);
-      if ( (LA17_0==AT_ADD||LA17_0==AT_BIT_NOT||LA17_0==AT_BOOL_NOT||LA17_0==AT_LPAREN||(LA17_0 >= AT_SUBTRACT && LA17_0 <= DECIMAL)||LA17_0==HEX||LA17_0==OCTAL||LA17_0==VARIABLE) ) {
-        alt17=1;
-      }
-      switch (alt17) {
-        case 1 :
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:322:19: conditional ( AT_COMMA ! conditional )*
-          {
-          pushFollow(FOLLOW_conditional_in_arguments1241);
-          conditional55=conditional();
-          state._fsp--;
-
-          adaptor.addChild(root_0, conditional55.getTree());
-
-          // src/java/org/apache/lucene/expressions/js/Javascript.g:322:31: ( AT_COMMA ! conditional )*
-          loop16:
-          while (true) {
-            int alt16=2;
-            int LA16_0 = input.LA(1);
-            if ( (LA16_0==AT_COMMA) ) {
-              alt16=1;
+          setState(68);
+          switch ( getInterpreter().adaptivePredict(_input,4,_ctx) ) {
+          case 1:
+            {
+            _localctx = new MuldivContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(32);
+            if (!(precpred(_ctx, 11))) throw new FailedPredicateException(this, "precpred(_ctx, 11)");
+            setState(33);
+            _la = _input.LA(1);
+            if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << MUL) | (1L << DIV) | (1L << REM))) != 0)) ) {
+            _errHandler.recoverInline(this);
+            } else {
+              consume();
             }
-
-            switch (alt16) {
-            case 1 :
-              // src/java/org/apache/lucene/expressions/js/Javascript.g:322:32: AT_COMMA ! conditional
-              {
-              AT_COMMA56=(Token)match(input,AT_COMMA,FOLLOW_AT_COMMA_in_arguments1244); 
-              pushFollow(FOLLOW_conditional_in_arguments1247);
-              conditional57=conditional();
-              state._fsp--;
-
-              adaptor.addChild(root_0, conditional57.getTree());
-
-              }
-              break;
-
-            default :
-              break loop16;
+            setState(34);
+            expression(12);
             }
+            break;
+          case 2:
+            {
+            _localctx = new AddsubContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(35);
+            if (!(precpred(_ctx, 10))) throw new FailedPredicateException(this, "precpred(_ctx, 10)");
+            setState(36);
+            _la = _input.LA(1);
+            if ( !(_la==ADD || _la==SUB) ) {
+            _errHandler.recoverInline(this);
+            } else {
+              consume();
+            }
+            setState(37);
+            expression(11);
+            }
+            break;
+          case 3:
+            {
+            _localctx = new BwshiftContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(38);
+            if (!(precpred(_ctx, 9))) throw new FailedPredicateException(this, "precpred(_ctx, 9)");
+            setState(39);
+            _la = _input.LA(1);
+            if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LSH) | (1L << RSH) | (1L << USH))) != 0)) ) {
+            _errHandler.recoverInline(this);
+            } else {
+              consume();
+            }
+            setState(40);
+            expression(10);
+            }
+            break;
+          case 4:
+            {
+            _localctx = new BoolcompContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(41);
+            if (!(precpred(_ctx, 8))) throw new FailedPredicateException(this, "precpred(_ctx, 8)");
+            setState(42);
+            _la = _input.LA(1);
+            if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LT) | (1L << LTE) | (1L << GT) | (1L << GTE))) != 0)) ) {
+            _errHandler.recoverInline(this);
+            } else {
+              consume();
+            }
+            setState(43);
+            expression(9);
+            }
+            break;
+          case 5:
+            {
+            _localctx = new BooleqneContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(44);
+            if (!(precpred(_ctx, 7))) throw new FailedPredicateException(this, "precpred(_ctx, 7)");
+            setState(45);
+            _la = _input.LA(1);
+            if ( !(_la==EQ || _la==NE) ) {
+            _errHandler.recoverInline(this);
+            } else {
+              consume();
+            }
+            setState(46);
+            expression(8);
+            }
+            break;
+          case 6:
+            {
+            _localctx = new BwandContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(47);
+            if (!(precpred(_ctx, 6))) throw new FailedPredicateException(this, "precpred(_ctx, 6)");
+            setState(48);
+            match(BWAND);
+            setState(49);
+            expression(7);
+            }
+            break;
+          case 7:
+            {
+            _localctx = new BwxorContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(50);
+            if (!(precpred(_ctx, 5))) throw new FailedPredicateException(this, "precpred(_ctx, 5)");
+            setState(51);
+            match(BWXOR);
+            setState(52);
+            expression(6);
+            }
+            break;
+          case 8:
+            {
+            _localctx = new BworContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(53);
+            if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
+            setState(54);
+            match(BWOR);
+            setState(55);
+            expression(5);
+            }
+            break;
+          case 9:
+            {
+            _localctx = new BoolandContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(56);
+            if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
+            setState(57);
+            match(BOOLAND);
+            setState(58);
+            expression(4);
+            }
+            break;
+          case 10:
+            {
+            _localctx = new BoolorContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(59);
+            if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
+            setState(60);
+            match(BOOLOR);
+            setState(61);
+            expression(3);
+            }
+            break;
+          case 11:
+            {
+            _localctx = new ConditionalContext(new ExpressionContext(_parentctx, _parentState));
+            pushNewRecursionContext(_localctx, _startState, RULE_expression);
+            setState(62);
+            if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
+            setState(63);
+            match(COND);
+            setState(64);
+            expression(0);
+            setState(65);
+            match(COLON);
+            setState(66);
+            expression(1);
+            }
+            break;
           }
-
-          }
-          break;
-
+          } 
+        }
+        setState(72);
+        _errHandler.sync(this);
+        _alt = getInterpreter().adaptivePredict(_input,5,_ctx);
       }
-
-      AT_RPAREN58=(Token)match(input,AT_RPAREN,FOLLOW_AT_RPAREN_in_arguments1253); 
       }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
     }
     catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
+      _localctx.exception = re;
+      _errHandler.reportError(this, re);
+      _errHandler.recover(this, re);
     }
     finally {
-      // do for sure before leaving
+      unrollRecursionContexts(_parentctx);
     }
-    return retval;
+    return _localctx;
   }
-  // $ANTLR end "arguments"
 
-
-  public static class numeric_return extends ParserRuleReturnScope {
-    CommonTree tree;
-    @Override
-    public CommonTree getTree() { return tree; }
-  };
-
-
-  // $ANTLR start "numeric"
-  // src/java/org/apache/lucene/expressions/js/Javascript.g:325:1: numeric : ( HEX | OCTAL | DECIMAL );
-  public final JavascriptParser.numeric_return numeric() throws RecognitionException {
-    JavascriptParser.numeric_return retval = new JavascriptParser.numeric_return();
-    retval.start = input.LT(1);
-
-    CommonTree root_0 = null;
-
-    Token set59=null;
-
-    CommonTree set59_tree=null;
-
-    try {
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:326:5: ( HEX | OCTAL | DECIMAL )
-      // src/java/org/apache/lucene/expressions/js/Javascript.g:
-      {
-      root_0 = (CommonTree)adaptor.nil();
-
-
-      set59=input.LT(1);
-      if ( input.LA(1)==DECIMAL||input.LA(1)==HEX||input.LA(1)==OCTAL ) {
-        input.consume();
-        adaptor.addChild(root_0, (CommonTree)adaptor.create(set59));
-        state.errorRecovery=false;
-      }
-      else {
-        MismatchedSetException mse = new MismatchedSetException(null,input);
-        throw mse;
-      }
-      }
-
-      retval.stop = input.LT(-1);
-
-      retval.tree = (CommonTree)adaptor.rulePostProcessing(root_0);
-      adaptor.setTokenBoundaries(retval.tree, retval.start, retval.stop);
-
+  public boolean sempred(RuleContext _localctx, int ruleIndex, int predIndex) {
+    switch (ruleIndex) {
+    case 1:
+      return expression_sempred((ExpressionContext)_localctx, predIndex);
     }
-    catch (RecognitionException re) {
-      reportError(re);
-      recover(input,re);
-      retval.tree = (CommonTree)adaptor.errorNode(input, retval.start, input.LT(-1), re);
-    }
-    finally {
-      // do for sure before leaving
-    }
-    return retval;
+    return true;
   }
-  // $ANTLR end "numeric"
+  private boolean expression_sempred(ExpressionContext _localctx, int predIndex) {
+    switch (predIndex) {
+    case 0:
+      return precpred(_ctx, 11);
+    case 1:
+      return precpred(_ctx, 10);
+    case 2:
+      return precpred(_ctx, 9);
+    case 3:
+      return precpred(_ctx, 8);
+    case 4:
+      return precpred(_ctx, 7);
+    case 5:
+      return precpred(_ctx, 6);
+    case 6:
+      return precpred(_ctx, 5);
+    case 7:
+      return precpred(_ctx, 4);
+    case 8:
+      return precpred(_ctx, 3);
+    case 9:
+      return precpred(_ctx, 2);
+    case 10:
+      return precpred(_ctx, 1);
+    }
+    return true;
+  }
 
-  // Delegated rules
-
-
-
-  public static final BitSet FOLLOW_conditional_in_expression737 = new BitSet(new long[]{0x0000000000000000L});
-  public static final BitSet FOLLOW_EOF_in_expression739 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_logical_or_in_conditional757 = new BitSet(new long[]{0x0000000002000002L});
-  public static final BitSet FOLLOW_AT_COND_QUE_in_conditional760 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_conditional_in_conditional763 = new BitSet(new long[]{0x0000000000020000L});
-  public static final BitSet FOLLOW_AT_COLON_in_conditional765 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_conditional_in_conditional768 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_logical_and_in_logical_or787 = new BitSet(new long[]{0x0000000000008002L});
-  public static final BitSet FOLLOW_AT_BOOL_OR_in_logical_or790 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_logical_and_in_logical_or793 = new BitSet(new long[]{0x0000000000008002L});
-  public static final BitSet FOLLOW_bitwise_or_in_logical_and812 = new BitSet(new long[]{0x0000000000002002L});
-  public static final BitSet FOLLOW_AT_BOOL_AND_in_logical_and815 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_bitwise_or_in_logical_and818 = new BitSet(new long[]{0x0000000000002002L});
-  public static final BitSet FOLLOW_bitwise_xor_in_bitwise_or837 = new BitSet(new long[]{0x0000000000000102L});
-  public static final BitSet FOLLOW_AT_BIT_OR_in_bitwise_or840 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_bitwise_xor_in_bitwise_or843 = new BitSet(new long[]{0x0000000000000102L});
-  public static final BitSet FOLLOW_bitwise_and_in_bitwise_xor862 = new BitSet(new long[]{0x0000000000001002L});
-  public static final BitSet FOLLOW_AT_BIT_XOR_in_bitwise_xor865 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_bitwise_and_in_bitwise_xor868 = new BitSet(new long[]{0x0000000000001002L});
-  public static final BitSet FOLLOW_equality_in_bitwise_and888 = new BitSet(new long[]{0x0000000000000042L});
-  public static final BitSet FOLLOW_AT_BIT_AND_in_bitwise_and891 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_equality_in_bitwise_and894 = new BitSet(new long[]{0x0000000000000042L});
-  public static final BitSet FOLLOW_relational_in_equality913 = new BitSet(new long[]{0x0000000001080002L});
-  public static final BitSet FOLLOW_set_in_equality916 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_relational_in_equality925 = new BitSet(new long[]{0x0000000001080002L});
-  public static final BitSet FOLLOW_shift_in_relational944 = new BitSet(new long[]{0x0000000000F00002L});
-  public static final BitSet FOLLOW_set_in_relational947 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_shift_in_relational964 = new BitSet(new long[]{0x0000000000F00002L});
-  public static final BitSet FOLLOW_additive_in_shift983 = new BitSet(new long[]{0x0000000000000E02L});
-  public static final BitSet FOLLOW_set_in_shift986 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_additive_in_shift999 = new BitSet(new long[]{0x0000000000000E02L});
-  public static final BitSet FOLLOW_multiplicative_in_additive1018 = new BitSet(new long[]{0x0000000200000022L});
-  public static final BitSet FOLLOW_set_in_additive1021 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_multiplicative_in_additive1030 = new BitSet(new long[]{0x0000000200000022L});
-  public static final BitSet FOLLOW_unary_in_multiplicative1049 = new BitSet(new long[]{0x0000000064000002L});
-  public static final BitSet FOLLOW_set_in_multiplicative1052 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_unary_in_multiplicative1065 = new BitSet(new long[]{0x0000000064000002L});
-  public static final BitSet FOLLOW_postfix_in_unary1084 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_ADD_in_unary1092 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_unary_in_unary1095 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_unary_operator_in_unary1103 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_unary_in_unary1106 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_SUBTRACT_in_unary_operator1123 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_BIT_NOT_in_unary_operator1135 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_BOOL_NOT_in_unary_operator1143 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_primary_in_postfix1160 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_VARIABLE_in_postfix1168 = new BitSet(new long[]{0x0000000010000000L});
-  public static final BitSet FOLLOW_arguments_in_postfix1170 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_VARIABLE_in_primary1198 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_numeric_in_primary1206 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_LPAREN_in_primary1214 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_conditional_in_primary1217 = new BitSet(new long[]{0x0000000100000000L});
-  public static final BitSet FOLLOW_AT_RPAREN_in_primary1219 = new BitSet(new long[]{0x0000000000000002L});
-  public static final BitSet FOLLOW_AT_LPAREN_in_arguments1237 = new BitSet(new long[]{0x00008887100040A0L});
-  public static final BitSet FOLLOW_conditional_in_arguments1241 = new BitSet(new long[]{0x0000000100040000L});
-  public static final BitSet FOLLOW_AT_COMMA_in_arguments1244 = new BitSet(new long[]{0x00008886100040A0L});
-  public static final BitSet FOLLOW_conditional_in_arguments1247 = new BitSet(new long[]{0x0000000100040000L});
-  public static final BitSet FOLLOW_AT_RPAREN_in_arguments1253 = new BitSet(new long[]{0x0000000000000002L});
+  public static final String _serializedATN =
+    "\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3!L\4\2\t\2\4\3\t\3"+
+    "\3\2\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3\27"+
+    "\n\3\f\3\16\3\32\13\3\5\3\34\n\3\3\3\5\3\37\n\3\5\3!\n\3\3\3\3\3\3\3\3"+
+    "\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3"+
+    "\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3G\n\3"+
+    "\f\3\16\3J\13\3\3\3\2\3\4\4\2\4\2\t\4\2\6\7\13\f\3\2\37!\3\2\b\n\3\2\13"+
+    "\f\3\2\r\17\3\2\20\23\3\2\24\25Z\2\6\3\2\2\2\4 \3\2\2\2\6\7\5\4\3\2\7"+
+    "\b\7\2\2\3\b\3\3\2\2\2\t\n\b\3\1\2\n\13\t\2\2\2\13!\5\4\3\16\f\r\7\3\2"+
+    "\2\r\16\5\4\3\2\16\17\7\4\2\2\17!\3\2\2\2\20!\t\3\2\2\21\36\7\36\2\2\22"+
+    "\33\7\3\2\2\23\30\5\4\3\2\24\25\7\5\2\2\25\27\5\4\3\2\26\24\3\2\2\2\27"+
+    "\32\3\2\2\2\30\26\3\2\2\2\30\31\3\2\2\2\31\34\3\2\2\2\32\30\3\2\2\2\33"+
+    "\23\3\2\2\2\33\34\3\2\2\2\34\35\3\2\2\2\35\37\7\4\2\2\36\22\3\2\2\2\36"+
+    "\37\3\2\2\2\37!\3\2\2\2 \t\3\2\2\2 \f\3\2\2\2 \20\3\2\2\2 \21\3\2\2\2"+
+    "!H\3\2\2\2\"#\f\r\2\2#$\t\4\2\2$G\5\4\3\16%&\f\f\2\2&\'\t\5\2\2\'G\5\4"+
+    "\3\r()\f\13\2\2)*\t\6\2\2*G\5\4\3\f+,\f\n\2\2,-\t\7\2\2-G\5\4\3\13./\f"+
+    "\t\2\2/\60\t\b\2\2\60G\5\4\3\n\61\62\f\b\2\2\62\63\7\26\2\2\63G\5\4\3"+
+    "\t\64\65\f\7\2\2\65\66\7\27\2\2\66G\5\4\3\b\678\f\6\2\289\7\30\2\29G\5"+
+    "\4\3\7:;\f\5\2\2;<\7\31\2\2<G\5\4\3\6=>\f\4\2\2>?\7\32\2\2?G\5\4\3\5@"+
+    "A\f\3\2\2AB\7\33\2\2BC\5\4\3\2CD\7\34\2\2DE\5\4\3\3EG\3\2\2\2F\"\3\2\2"+
+    "\2F%\3\2\2\2F(\3\2\2\2F+\3\2\2\2F.\3\2\2\2F\61\3\2\2\2F\64\3\2\2\2F\67"+
+    "\3\2\2\2F:\3\2\2\2F=\3\2\2\2F@\3\2\2\2GJ\3\2\2\2HF\3\2\2\2HI\3\2\2\2I"+
+    "\5\3\2\2\2JH\3\2\2\2\b\30\33\36 FH";
+  public static final ATN _ATN =
+    new ATNDeserializer().deserialize(_serializedATN.toCharArray());
+  static {
+    _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+    for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+      _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+    }
+  }
 }

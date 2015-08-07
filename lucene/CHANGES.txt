@@ -58,6 +58,11 @@ Optimizations
 * LUCENE-6720: ValueSourceScorer, returned from
   FunctionValues.getRangeScorer(), now uses TwoPhaseIterator. (David Smiley)
 
+Other
+
+* LUCENE-6417: Upgrade ANTLR used in expressions module to version 4.5.
+  (Jack Conradson via Uwe Schindler)
+
 ======================= Lucene 5.3.0 =======================
 
 New Features

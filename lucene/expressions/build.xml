@@ -51,7 +51,7 @@
   <target name="regenerate" depends="run-antlr"/>
 
   <target name="resolve-antlr" xmlns:ivy="antlib:org.apache.ivy.ant">
-    <ivy:cachepath organisation="org.antlr" module="antlr" revision="3.5"
+    <ivy:cachepath organisation="org.antlr" module="antlr4" revision="4.5"
                   inline="true" conf="default" type="jar" pathid="antlr.classpath"/>
   </target>
 
@@ -97,13 +97,15 @@
       <replace-value property="grammar.matchpath" value="${grammar.path}${file.separator}" from="\" to="\\"/>
       <property name="-grammar.relative.path" location="${grammar.path}" relative="true"/>
       <replace-value property="grammar.relative.path" value="${-grammar.relative.path}${file.separator}" from="${file.separator}" to="/"/>
-      <java classname="org.antlr.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
+      <java classname="org.antlr.v4.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
         <sysproperty key="file.encoding" value="UTF-8"/>
         <sysproperty key="user.language" value="en"/>
         <sysproperty key="user.country" value="US"/>
         <sysproperty key="user.variant" value=""/>
-        <arg value="-verbose"/>
-        <arg value="-make"/>
+        <arg value="-package"/>
+        <arg value="org.apache.lucene.expressions.@{package}"/>
+        <arg value="-no-listener"/>
+        <arg value="-visitor"/>
         <arg value="-o"/>
         <arg path="${grammar.path}"/>
         <arg path="${grammar.path}/@{grammar}.g"/>
@@ -111,18 +113,28 @@
       <!-- replace absolute paths by relative ones -->
       <replace file="${grammar.path}/@{grammar}Parser.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
       <replace file="${grammar.path}/@{grammar}Lexer.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
-      <!-- make the generated classes package private (it's an antlr option with 4.0) -->
+      <replace file="${grammar.path}/@{grammar}Visitor.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
+      <replace file="${grammar.path}/@{grammar}BaseVisitor.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
+      <!-- make the generated classes package private -->
       <replace file="${grammar.path}/@{grammar}Parser.java" token="public class @{grammar}Parser" value="class @{grammar}Parser" encoding="UTF-8"/>
       <replace file="${grammar.path}/@{grammar}Lexer.java" token="public class @{grammar}Lexer" value="class @{grammar}Lexer" encoding="UTF-8"/>
+      <replace file="${grammar.path}/@{grammar}Visitor.java" token="public interface @{grammar}Visitor" value="interface @{grammar}Visitor" encoding="UTF-8"/>
+      <replace file="${grammar.path}/@{grammar}BaseVisitor.java" token="public class @{grammar}BaseVisitor" value="class @{grammar}BaseVisitor" encoding="UTF-8"/>
       <!-- nuke timestamps in generated files -->
       <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
       <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
+      <replaceregexp file="${grammar.path}/@{grammar}Visitor.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
+      <replaceregexp file="${grammar.path}/@{grammar}BaseVisitor.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
       <!-- remove tabs in antlr generated files -->
       <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
       <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
+      <replaceregexp file="${grammar.path}/@{grammar}Visitor.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
+      <replaceregexp file="${grammar.path}/@{grammar}BaseVisitor.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
       <!-- fix line endings -->
       <fixcrlf file="${grammar.path}/@{grammar}Parser.java"/>
       <fixcrlf file="${grammar.path}/@{grammar}Lexer.java"/>
+      <fixcrlf file="${grammar.path}/@{grammar}Visitor.java"/>
+      <fixcrlf file="${grammar.path}/@{grammar}BaseVisitor.java"/>
     </sequential>
   </macrodef>
 </project>
