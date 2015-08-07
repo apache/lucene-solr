@@ -115,6 +115,8 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       // the index, although want want a sorted segment so it needs to be merged
       iw.getReader().close(); // refresh
       iw.addDocument(new Document());
+      iw.commit();
+      iw.addDocument(new Document());
       iw.forceMerge(1);
     }
     else if (random().nextBoolean()) {
