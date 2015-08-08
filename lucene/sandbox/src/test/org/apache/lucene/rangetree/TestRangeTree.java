@@ -124,7 +124,7 @@ public class TestRangeTree extends LuceneTestCase {
     // We rely on docID order:
     iwc.setMergePolicy(newLogMergePolicy());
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), 1024, 1024*1024);
+    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     Codec codec = TestUtil.alwaysDocValuesFormat(new RangeTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap));
     iwc.setCodec(codec);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
