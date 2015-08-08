@@ -80,6 +80,8 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.update.SolrIndexSplitter;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.stats.Snapshot;
 import org.apache.solr.util.stats.Timer;
 import org.apache.zookeeper.CreateMode;
@@ -722,9 +724,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   private boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
-    long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
+    TimeOut timeout = new TimeOut(timeoutms, TimeUnit.MILLISECONDS);
     boolean deleted = false;
-    while (System.nanoTime() < waitUntil) {
+    while (! timeout.hasTimedOut()) {
       Thread.sleep(100);
       DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
       if(docCollection != null) {
@@ -775,10 +777,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
           Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
-      long now = System.nanoTime();
-      long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
       boolean removed = false;
-      while (System.nanoTime() < timeout) {
+      while (! timeout.hasTimedOut()) {
         Thread.sleep(100);
         removed = !zkStateReader.getClusterState().hasCollection(collection);
         if (removed) {
@@ -815,11 +816,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       throws KeeperException, InterruptedException {
     final String collectionName = message.getStr(COLLECTION_PROP);
 
-    // wait for a while until the state format changes
-    long now = System.nanoTime();
-    long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
     boolean firstLoop = true;
-    while (System.nanoTime() < timeout) {
+    // wait for a while until the state format changes
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
+    while (! timeout.hasTimedOut()) {
       DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
       if (collection == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + collectionName + " not found");
@@ -875,11 +875,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   private void checkForAlias(String name, String value) {
 
-    long now = System.nanoTime();
-    long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
     boolean success = false;
     Aliases aliases = null;
-    while (System.nanoTime() < timeout) {
+    while (! timeout.hasTimedOut()) {
       aliases = zkStateReader.getAliases();
       String collections = aliases.getCollectionAlias(name);
       if (collections != null && collections.equals(value)) {
@@ -894,11 +893,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   private void checkForAliasAbsence(String name) {
 
-    long now = System.nanoTime();
-    long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
     boolean success = false;
     Aliases aliases = null;
-    while (System.nanoTime() < timeout) {
+    while (! timeout.hasTimedOut()) {
       aliases = zkStateReader.getAliases();
       String collections = aliases.getCollectionAlias(name);
       if (collections == null) {
@@ -959,9 +957,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
     // wait for a while until we see the shard
-    long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
     boolean created = false;
-    while (System.nanoTime() < waitUntil) {
+    while (! timeout.hasTimedOut()) {
       Thread.sleep(100);
       created = zkStateReader.getClusterState().getCollection(collectionName).getSlice(sliceName) != null;
       if (created) break;
@@ -1460,7 +1458,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   private void waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
     log.info("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
-    long startTime = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     int retryCount = 320;
     while (retryCount-- > 0) {
       DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
@@ -1470,8 +1468,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       }
       Slice slice = collection.getSlice(sliceName);
       if (slice != null) {
-        log.info("Waited for {} seconds for slice {} of collection {} to be available",
-            (System.currentTimeMillis() - startTime) / 1000, sliceName, collectionName);
+        log.info("Waited for {}ms for slice {} of collection {} to be available",
+            timer.getTime(), sliceName, collectionName);
         return;
       }
       Thread.sleep(1000);
@@ -1479,7 +1477,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     throw new SolrException(ErrorCode.SERVER_ERROR,
         "Could not find new slice " + sliceName + " in collection " + collectionName
-            + " even after waiting for " + (System.currentTimeMillis() - startTime) / 1000 + " seconds"
+            + " even after waiting for " + timer.getTime() + "ms"
     );
   }
 
@@ -1541,10 +1539,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
       
       // wait for a while until we don't see the shard
-      long now = System.nanoTime();
-      long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
       boolean removed = false;
-      while (System.nanoTime() < timeout) {
+      while (! timeout.hasTimedOut()) {
         Thread.sleep(100);
         removed = zkStateReader.getClusterState().getSlice(collection, sliceId) == null;
         if (removed) {
@@ -1672,17 +1669,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         "routeKey", SolrIndexSplitter.getRouteKey(splitKey) + "!",
         "range", splitRange.toString(),
         "targetCollection", targetCollection.getName(),
-        // TODO: look at using nanoTime here?
-        "expireAt", String.valueOf(System.currentTimeMillis() + timeout));
+        "expireAt", RoutingRule.makeExpiryAt(timeout));
     log.info("Adding routing rule: " + m);
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(
         Utils.toJSON(m));
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");
-    long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
+    TimeOut waitUntil = new TimeOut(60, TimeUnit.SECONDS);
     boolean added = false;
-    while (System.nanoTime() < waitUntil) {
+    while (! waitUntil.hasTimedOut()) {
       Thread.sleep(100);
       Map<String, RoutingRule> rules = zkStateReader.getClusterState().getSlice(sourceCollection.getName(), sourceSlice.getName()).getRoutingRules();
       if (rules != null) {
@@ -2006,9 +2002,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
       // wait for a while until we don't see the collection
-      long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+      TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS);
       boolean created = false;
-      while (System.nanoTime() < waitUntil) {
+      while (! waitUntil.hasTimedOut()) {
         Thread.sleep(100);
         created = zkStateReader.getClusterState().getCollections().contains(collectionName);
         if(created) break;
@@ -2142,7 +2138,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   private Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
     Map<String, Replica> result = new HashMap<>();
-    long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
     while (true) {
       DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
       for (String coreName : coreNames) {
@@ -2160,7 +2156,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       if (result.size() == coreNames.size()) {
         return result;
       }
-      if (System.nanoTime() > endTime) {
+      if (timeout.hasTimedOut()) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state.");
       }
       

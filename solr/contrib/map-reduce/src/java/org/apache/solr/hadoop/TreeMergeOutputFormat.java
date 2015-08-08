@@ -40,6 +40,7 @@ import org.apache.lucene.misc.IndexMergeTool;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,38 +134,37 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
 
         context.setStatus("Logically merging " + shards.size() + " shards into one shard");
         LOG.info("Logically merging " + shards.size() + " shards into one shard: " + workDir);
-        long start = System.nanoTime();
+        RTimer timer = new RTimer();
         
         writer.addIndexes(indexes); 
         // TODO: avoid intermediate copying of files into dst directory; rename the files into the dir instead (cp -> rename) 
         // This can improve performance and turns this phase into a true "logical" merge, completing in constant time.
         // See https://issues.apache.org/jira/browse/LUCENE-4746
-        
+
+        timer.stop();
         if (LOG.isDebugEnabled()) {
-          context.getCounter(SolrCounters.class.getName(), SolrCounters.LOGICAL_TREE_MERGE_TIME.toString()).increment(System.currentTimeMillis() - start);
+          context.getCounter(SolrCounters.class.getName(), SolrCounters.LOGICAL_TREE_MERGE_TIME.toString()).increment((long) timer.getTime());
         }
-        float secs = (System.nanoTime() - start) / (float)(10^9);
-        LOG.info("Logical merge took {} secs", secs);        
+        LOG.info("Logical merge took {}ms", timer.getTime());
         int maxSegments = context.getConfiguration().getInt(TreeMergeMapper.MAX_SEGMENTS_ON_TREE_MERGE, Integer.MAX_VALUE);
         context.setStatus("Optimizing Solr: forcing mtree merge down to " + maxSegments + " segments");
         LOG.info("Optimizing Solr: forcing tree merge down to {} segments", maxSegments);
-        start = System.nanoTime();
+        timer = new RTimer();
         if (maxSegments < Integer.MAX_VALUE) {
           writer.forceMerge(maxSegments); 
           // TODO: consider perf enhancement for no-deletes merges: bulk-copy the postings data 
           // see http://lucene.472066.n3.nabble.com/Experience-with-large-merge-factors-tp1637832p1647046.html
         }
+        timer.stop();
         if (LOG.isDebugEnabled()) {
-          context.getCounter(SolrCounters.class.getName(), SolrCounters.PHYSICAL_TREE_MERGE_TIME.toString()).increment(System.currentTimeMillis() - start);
+          context.getCounter(SolrCounters.class.getName(), SolrCounters.PHYSICAL_TREE_MERGE_TIME.toString()).increment((long) timer.getTime());
         }
-        secs = (System.nanoTime() - start) / (float)(10^9);
-        LOG.info("Optimizing Solr: done forcing tree merge down to {} segments in {} secs", maxSegments, secs);
-        
-        start = System.nanoTime();
+        LOG.info("Optimizing Solr: done forcing tree merge down to {} segments in {}ms", maxSegments, timer.getTime());
+
+        timer = new RTimer();
         LOG.info("Optimizing Solr: Closing index writer");
         writer.close();
-        secs = (System.nanoTime() - start) / (float)(10^9);
-        LOG.info("Optimizing Solr: Done closing index writer in {} secs", secs);
+        LOG.info("Optimizing Solr: Done closing index writer in {}ms", timer.getTime());
         context.setStatus("Done");
       } finally {
         heartBeater.cancelHeartBeat();

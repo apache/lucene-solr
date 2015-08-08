@@ -40,6 +40,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.RTimer;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -520,7 +521,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void waitToSeeReplicasActive(String testCollectionName, String shardId, Set<String> replicasToCheck, int maxWaitSecs) throws Exception {
-    long startMs = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     ZkStateReader zkr = cloudClient.getZkStateReader();
     zkr.updateClusterState(); // force the state to be fresh
@@ -565,7 +566,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       fail("Didn't see replicas "+ replicasToCheck +
           " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo(testCollectionName));
 
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info("Took " + diffMs + " ms to see replicas ["+replicasToCheck+"] become active.");
+    log.info("Took {} ms to see replicas [{}] become active.", timer.getTime(), replicasToCheck);
   }
 }

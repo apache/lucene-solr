@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -37,6 +38,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
 public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
@@ -66,9 +68,9 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
       StringBuilder sb = new StringBuilder();
       Replica replica1 = null;
       Slice shard1 = null;
-      long timeout = System.currentTimeMillis() + 3000;
+      TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
       DocCollection testcoll = null;
-      while (!stopped && System.currentTimeMillis() < timeout) {
+      while (!stopped && ! timeout.hasTimedOut()) {
         testcoll = client.getZkStateReader().getClusterState().getCollection(collectionName);
         for (JettySolrRunner jetty : jettys)
           sb.append(jetty.getBaseUrl()).append(",");
@@ -102,9 +104,9 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
             + " jettys: " + sb);
       }
 
-      long endAt = System.currentTimeMillis() + 3000;
+      timeout = new TimeOut(20, TimeUnit.SECONDS);
       boolean success = false;
-      while (System.currentTimeMillis() < endAt) {
+      while (! timeout.hasTimedOut()) {
         testcoll = client.getZkStateReader()
             .getClusterState().getCollection(collectionName);
         if (testcoll.getSlice(shard1.getName()).getReplica(replica1.getName()).getState() != Replica.State.ACTIVE) {

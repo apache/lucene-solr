@@ -155,11 +155,12 @@ public class CloudSolrClient extends SolrClient {
 
     ExpiringCachedDocCollection(DocCollection cached) {
       this.cached = cached;
-      this.cachedAt = System.currentTimeMillis();
+      this.cachedAt = System.nanoTime();
     }
 
-    boolean isExpired(long timeToLive) {
-      return (System.currentTimeMillis() - cachedAt) > timeToLive;
+    boolean isExpired(long timeToLiveMs) {
+      return (System.nanoTime() - cachedAt)
+          > TimeUnit.NANOSECONDS.convert(timeToLiveMs, TimeUnit.MILLISECONDS);
     }
   }
 

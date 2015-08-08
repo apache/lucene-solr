@@ -48,7 +48,6 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
   public void testCallMBeanInfo() throws Exception {
     List<Class> classes = new ArrayList<>();
     classes.addAll(getClassesForPackage(StandardRequestHandler.class.getPackage().getName()));
-    classes.addAll(getClassesForPackage(SearchHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(SearchComponent.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(LukeRequestHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(DefaultSolrHighlighter.class.getPackage().getName()));

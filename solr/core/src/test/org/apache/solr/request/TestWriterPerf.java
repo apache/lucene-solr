@@ -31,6 +31,7 @@ import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +110,7 @@ public class TestWriterPerf extends AbstractSolrTestCase {
     ByteArrayOutputStream out=null;
 
     System.gc();
-    long start = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     for (int i=0; i<encIter; i++) {
     if (w instanceof BinaryQueryResponseWriter) {
       BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) w;
@@ -126,11 +127,11 @@ public class TestWriterPerf extends AbstractSolrTestCase {
     }
     }
 
-    long encodeTime = Math.max(System.currentTimeMillis() - start, 1);
+    double encodeTime = timer.getTime();
 
     byte[] arr = out.toByteArray();
 
-    start = System.currentTimeMillis();
+    timer = new RTimer();
     writerName = writerName.intern();
     for (int i=0; i<decIter; i++) {
       ResponseParser rp = null;
@@ -145,9 +146,9 @@ public class TestWriterPerf extends AbstractSolrTestCase {
       rp.processResponse(in, "UTF-8");      
     }
 
-    long decodeTime = Math.max(System.currentTimeMillis() - start, 1);
+    double decodeTime = timer.getTime();
 
-    log.info("writer "+writerName+", size="+out.size()+", encodeRate="+(encodeTime==1 ? "N/A":  ""+(encIter*1000L/encodeTime)) + ", decodeRate="+(decodeTime==1 ? "N/A":  ""+(decIter*1000L/decodeTime)) );
+    log.info("writer "+writerName+", size="+out.size()+", encodeRate="+(encIter*1000L/encodeTime) + ", decodeRate="+(decIter*1000L/decodeTime));
 
     req.close();
   }

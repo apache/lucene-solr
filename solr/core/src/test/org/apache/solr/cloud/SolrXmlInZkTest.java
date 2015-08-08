@@ -24,7 +24,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -74,7 +73,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     System.setProperty("zkClientTimeout", "8000");
 
     zkDir = tmpDir.getAbsolutePath() + File.separator
-        + "zookeeper" + System.currentTimeMillis() + "/server1/data";
+        + "zookeeper" + System.nanoTime() + "/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());

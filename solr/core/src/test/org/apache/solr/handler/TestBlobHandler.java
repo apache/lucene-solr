@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -120,7 +121,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     String url;
     Map map = null;
     List l;
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
     int i = 0;
     for (; i < 150; i++) {//15 secs
       url = baseUrl + "/.system/blob/" + blobName;
@@ -137,7 +138,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       return;
     }
     fail(StrUtils.formatString("Could not successfully add blob after {0} attempts. Expecting {1} items. time elapsed {2}  output  for url is {3}",
-        i, count, System.currentTimeMillis() - start, getAsString(map)));
+        i, count, timer.getTime(), getAsString(map)));
   }
 
   public static String getAsString(Map map) {

@@ -47,6 +47,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -212,7 +213,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName,
                                                      int schemaZkVersion, ZkController zkController, int maxWaitSecs)
   {
-    long startMs = System.currentTimeMillis();
+    RTimer timer = new RTimer();
 
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
@@ -271,9 +272,8 @@ public final class ManagedIndexSchema extends IndexSchema {
         parallelExecutor.shutdownNow();
     }
 
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info("Took "+Math.round(diffMs/1000d)+" secs for "+concurrentTasks.size()+
-        " replicas to apply schema update version "+schemaZkVersion+" for collection "+collection);
+    log.info("Took {}ms for {} replicas to apply schema update version {} for collection {}",
+        timer.getTime(), concurrentTasks.size(), schemaZkVersion, collection);
   }
 
   protected static List<String> getActiveReplicaCoreUrls(ZkController zkController, String collection, String localCoreNodeName) {

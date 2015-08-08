@@ -27,6 +27,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
@@ -153,7 +154,7 @@ public final class HttpCacheHeaderUtil {
       lastMod =
         LastModFrom.DIRLASTMOD == lastModFrom
         ? IndexDeletionPolicyWrapper.getCommitTimestamp(searcher.getIndexReader().getIndexCommit())
-        : searcher.getOpenTime();
+        : searcher.getOpenTimeStamp().getTime();
     } catch (IOException e) {
       // we're pretty freaking screwed if this happens
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -162,6 +163,11 @@ public final class HttpCacheHeaderUtil {
     // We get rid of the milliseconds because the HTTP header has only
     // second granularity
     return lastMod - (lastMod % 1000L);
+  }
+
+  @SuppressForbidden(reason = "Need currentTimeMillis to send out cache control headers externally")
+  private static long timeNowForHeader() {
+    return System.currentTimeMillis();
   }
 
   /**
@@ -183,8 +189,7 @@ public final class HttpCacheHeaderUtil {
     }
     Long maxAge = conf.getHttpCachingConfig().getMaxAge();
     if (null != maxAge) {
-      resp.setDateHeader("Expires", System.currentTimeMillis()
-                         + (maxAge * 1000L));
+      resp.setDateHeader("Expires", timeNowForHeader() + (maxAge * 1000L));
     }
 
     return;
@@ -330,11 +335,12 @@ public final class HttpCacheHeaderUtil {
     // As long as no time machines get invented this is safe
     resp.setHeader("Expires", "Sat, 01 Jan 2000 01:00:00 GMT");
 
+    long timeNowForHeader = timeNowForHeader();
     // We signal "just modified" just in case some broken
     // proxy cache does not follow the above headers
-    resp.setDateHeader("Last-Modified", System.currentTimeMillis());
+    resp.setDateHeader("Last-Modified", timeNowForHeader);
     
     // We override the ETag with something different
-    resp.setHeader("ETag", '"'+Long.toHexString(System.currentTimeMillis())+'"');
+    resp.setHeader("ETag", '"'+Long.toHexString(timeNowForHeader)+'"');
   } 
 }

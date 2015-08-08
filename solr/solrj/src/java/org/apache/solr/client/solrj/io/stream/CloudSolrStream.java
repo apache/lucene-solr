@@ -294,7 +294,6 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         throw new Exception("Collection not found:"+this.collection);
       }
 
-      long time = System.currentTimeMillis();
       params.put("distrib","false"); // We are the aggregator.
 
       for(Slice slice : slices) {
@@ -304,7 +303,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
           shuffler.add(replica);
         }
 
-        Collections.shuffle(shuffler, new Random(time));
+        Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
         String url = zkProps.getCoreUrl();

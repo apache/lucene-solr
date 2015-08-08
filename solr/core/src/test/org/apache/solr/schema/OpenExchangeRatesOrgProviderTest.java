@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Before;
 import org.junit.Test;
@@ -86,6 +87,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     assertEquals("USD", oerp.rates.getBaseCurrency());
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to construct rates file contents")
   @Test
   public void testReload() {
     // reminder: interval is in minutes

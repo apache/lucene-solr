@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.util.RTimer;
 import org.junit.Test;
 
 import java.io.File;
@@ -157,13 +158,12 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
   protected void sendCommitWithRetry(Replica replica) throws Exception {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: "+replicaCoreUrl);
-    long startMs = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
     try (HttpSolrClient client = new HttpSolrClient(replicaCoreUrl)) {
       try {
         client.commit();
 
-        long tookMs = System.currentTimeMillis() - startMs;
-        log.info("Sent commit request to "+replicaCoreUrl+" OK, took: "+tookMs);
+        log.info("Sent commit request to {} OK, took {}ms", replicaCoreUrl, timer.getTime());
       } catch (Exception exc) {
         Throwable rootCause = SolrException.getRootCause(exc);
         if (rootCause instanceof NoHttpResponseException) {

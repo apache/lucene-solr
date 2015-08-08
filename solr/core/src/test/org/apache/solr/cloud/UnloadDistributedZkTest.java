@@ -33,6 +33,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
 import java.io.File;
@@ -108,9 +109,9 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
       // there should be only one shard
       int slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(collection).size();
-      long timeoutAt = System.currentTimeMillis() + 45000;
+      final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
       while (slices != 1) {
-        if (System.currentTimeMillis() > timeoutAt) {
+        if (timeout.hasTimedOut()) {
           printLayout();
           fail("Expected to find only one slice in " + collection);
         }
@@ -127,9 +128,9 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
     //printLayout();
     // the collection should be gone
-    long timeoutAt = System.currentTimeMillis() + 30000;
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
     while (getCommonCloudSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
-      if (System.currentTimeMillis() > timeoutAt) {
+      if (timeout.hasTimedOut()) {
         printLayout();
         fail("Still found collection");
       }
@@ -145,7 +146,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
   private void testCoreUnloadAndLeaders() throws Exception {
     File tmpDir = createTempDir().toFile();
 
-    String core1DataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_1n";
+    String core1DataDir = tmpDir.getAbsolutePath() + File.separator + System.nanoTime() + "unloadcollection1" + "_1n";
 
     // create a new collection collection
     SolrClient client = clients.get(0);
@@ -175,7 +176,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       Create createCmd = new Create();
       createCmd.setCoreName("unloadcollection2");
       createCmd.setCollection("unloadcollection");
-      String core2dataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_2n";
+      String core2dataDir = tmpDir.getAbsolutePath() + File.separator + System.nanoTime() + "unloadcollection1" + "_2n";
       createCmd.setDataDir(getDataDir(core2dataDir));
       adminClient.request(createCmd);
     }
@@ -212,7 +213,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       Create createCmd = new Create();
       createCmd.setCoreName("unloadcollection3");
       createCmd.setCollection("unloadcollection");
-      String core3dataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_3n";
+      String core3dataDir = tmpDir.getAbsolutePath() + File.separator + System.nanoTime() + "unloadcollection" + "_3n";
       createCmd.setDataDir(getDataDir(core3dataDir));
       adminClient.request(createCmd);
     }
@@ -282,7 +283,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       Create createCmd = new Create();
       createCmd.setCoreName("unloadcollection4");
       createCmd.setCollection("unloadcollection");
-      String core4dataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_4n";
+      String core4dataDir = tmpDir.getAbsolutePath() + File.separator + System.nanoTime() + "unloadcollection" + "_4n";
       createCmd.setDataDir(getDataDir(core4dataDir));
       adminClient.request(createCmd);
     }

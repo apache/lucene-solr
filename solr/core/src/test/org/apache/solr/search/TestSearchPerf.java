@@ -27,6 +27,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 
 import java.util.*;
@@ -139,7 +140,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
 
     SolrIndexSearcher searcher = req.getSearcher();
 
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     int ret = 0;
     for (int i=0; i<iter; i++) {
@@ -147,8 +148,8 @@ public class TestSearchPerf extends AbstractSolrTestCase {
       ret += set.size();
     }
 
-    long end = System.currentTimeMillis();
-    System.out.println("ret="+ret+ " time="+(end-start)+" throughput="+iter*1000/(end-start+1));
+    double elapsed = timer.getTime();
+    System.out.println("ret="+ret+ " time="+elapsed+" throughput="+iter*1000/(elapsed+1));
 
     req.close();
     assertTrue(ret>0);  // make sure we did some work
@@ -160,7 +161,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
 
     SolrIndexSearcher searcher = req.getSearcher();
 
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     // These aren't public in SolrIndexSearcher
     int NO_CHECK_QCACHE       = 0x80000000;
@@ -174,8 +175,8 @@ public class TestSearchPerf extends AbstractSolrTestCase {
       ret += l.matches();
     }
 
-    long end = System.currentTimeMillis();
-    System.out.println("ret="+ret+ " time="+(end-start)+" throughput="+iter*1000/(end-start+1));
+    double elapsed = timer.getTime();
+    System.out.println("ret="+ret+ " time="+elapsed+" throughput="+iter*1000/(elapsed+1));
 
     req.close();
     assertTrue(ret>0);  // make sure we did some work

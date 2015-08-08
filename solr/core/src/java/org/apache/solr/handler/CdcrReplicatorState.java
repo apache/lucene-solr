@@ -98,7 +98,7 @@ class CdcrReplicatorState {
       errorCounters.put(error, 0l);
     }
     errorCounters.put(error, errorCounters.get(error) + 1);
-    errorsQueue.add(new ErrorQueueEntry(error, System.currentTimeMillis()));
+    errorsQueue.add(new ErrorQueueEntry(error, new Date()));
     consecutiveErrors++;
   }
 
@@ -133,7 +133,7 @@ class CdcrReplicatorState {
       Iterator<ErrorQueueEntry> it = errorsQueue.iterator();
       while (it.hasNext()) {
         ErrorQueueEntry entry = it.next();
-        lastErrors.add(new String[]{DateFormatUtil.formatExternal(new Date(entry.timestamp)), entry.type.toLower()});
+        lastErrors.add(new String[]{DateFormatUtil.formatExternal(entry.timestamp), entry.type.toLower()});
       }
     }
     return lastErrors;
@@ -240,9 +240,9 @@ class CdcrReplicatorState {
   private class ErrorQueueEntry {
 
     private ErrorType type;
-    private long timestamp;
+    private Date timestamp;
 
-    private ErrorQueueEntry(ErrorType type, long timestamp) {
+    private ErrorQueueEntry(ErrorType type, Date timestamp) {
       this.type = type;
       this.timestamp = timestamp;
     }

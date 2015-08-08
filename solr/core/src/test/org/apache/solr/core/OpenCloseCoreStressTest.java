@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -40,6 +41,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -309,8 +311,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 }
 
 class Indexer {
-  static volatile long stopTime;
-
   static AtomicInteger idUnique = new AtomicInteger(0);
 
   static AtomicInteger errors = new AtomicInteger(0);
@@ -322,13 +322,15 @@ class Indexer {
   static AtomicInteger updateCounts = new AtomicInteger(0);
 
   static volatile int lastCount;
-  static volatile long nextTime;
+
+  static volatile TimeOut stopTimeout;
+  private static volatile TimeOut nextTimeout;
 
   ArrayList<OneIndexer> _threads = new ArrayList<>();
 
   public Indexer(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrClient> clients, int numThreads, int secondsToRun, Random random) {
-    stopTime = System.currentTimeMillis() + (secondsToRun * 1000);
-    nextTime = System.currentTimeMillis() + 60000;
+    stopTimeout = new TimeOut(secondsToRun, TimeUnit.SECONDS);
+    nextTimeout = new TimeOut(60, TimeUnit.SECONDS);
     docsThisCycle.set(0);
     qTimesAccum.set(0);
     updateCounts.set(0);
@@ -358,11 +360,11 @@ class Indexer {
   }
 
   synchronized static void progress(int myId, String core) {
-    if (nextTime - System.currentTimeMillis() <= 0) {
+    if (nextTimeout.hasTimedOut()) {
       SolrTestCaseJ4.log.info(String.format(Locale.ROOT, " s indexed: [run %,8d] [cycle %,8d] [last minute %,8d] Last core updated: %s. Seconds left in cycle %,4d",
-          myId, docsThisCycle.get(), myId - lastCount, core, stopTime - (System.currentTimeMillis() / 1000)));
+          myId, docsThisCycle.get(), myId - lastCount, core, stopTimeout.timeLeft(TimeUnit.SECONDS)));
       lastCount = myId;
-      nextTime += (System.currentTimeMillis() / 1000) * 60;
+      nextTimeout = new TimeOut(60, TimeUnit.SECONDS);
     }
   }
 
@@ -385,7 +387,7 @@ class OneIndexer extends Thread {
   public void run() {
     SolrTestCaseJ4.log.info(String.format(Locale.ROOT, "Starting indexing thread: " + getId()));
 
-    while (Indexer.stopTime > System.currentTimeMillis()) {
+    while (! Indexer.stopTimeout.hasTimedOut()) {
       int myId = Indexer.idUnique.incrementAndGet();
       Indexer.docsThisCycle.incrementAndGet();
       String core = OCCST.getRandomCore(random);

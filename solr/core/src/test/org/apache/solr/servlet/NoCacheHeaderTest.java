@@ -22,6 +22,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -58,7 +59,8 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     doCacheControl("HEAD");
     doCacheControl("POST");
   }
-  
+
+  @SuppressForbidden(reason = "Needs currentTimeMillis for testing caching headers")
   @Override
   protected void doLastModified(String method) throws Exception {
     // We do a first request to get the last modified

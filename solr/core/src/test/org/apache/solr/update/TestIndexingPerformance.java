@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.util.RTimer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -100,7 +101,7 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
     };
    ***/
 
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     AddUpdateCommand add = new AddUpdateCommand(req);
     add.overwrite = overwrite;
@@ -116,9 +117,9 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
       }
       updateHandler.addDoc(add);
     }
-    long end = System.currentTimeMillis();
     log.info("doc="+ Arrays.toString(fields));
-    log.info("iter="+iter +" time=" + (end-start) + " throughput=" + ((long)iter*1000)/(end-start));
+    double elapsed = timer.getTime();
+    log.info("iter="+iter +" time=" + elapsed + " throughput=" + ((long)iter*1000)/elapsed);
 
     //discard all the changes
     updateHandler.rollback(new RollbackUpdateCommand(req));

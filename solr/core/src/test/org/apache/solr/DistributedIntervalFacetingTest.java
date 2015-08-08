@@ -192,7 +192,7 @@ public class DistributedIntervalFacetingTest extends
   }
 
   private String getFieldWithKey(String field) {
-    return "{!key='_some_key_for_" + field + "_" + System.currentTimeMillis() + "'}" + field;
+    return "{!key='_some_key_for_" + field + "_" + random().nextInt() + "'}" + field;
   }
 
   /**

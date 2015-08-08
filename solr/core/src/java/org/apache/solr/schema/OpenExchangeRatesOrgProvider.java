@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.noggit.JSONParser;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -84,12 +85,9 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     if (sourceCurrencyCode == null || targetCurrencyCode == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot get exchange rate; currency was null.");
     }
-    
-    if ((rates.getTimestamp() + refreshIntervalSeconds)*1000 < System.currentTimeMillis()) {
-      log.debug("Refresh interval has expired. Refreshing exchange rates.");
-      reload();
-    }
-    
+
+    reloadIfExpired();
+
     Double source = (Double) rates.getRates().get(sourceCurrencyCode);
     Double target = (Double) rates.getRates().get(targetCurrencyCode);
 
@@ -100,6 +98,14 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     }
     
     return target / source;  
+  }
+
+  @SuppressForbidden(reason = "Need currentTimeMillis, for comparison with stamp in an external file")
+  private void reloadIfExpired() {
+    if ((rates.getTimestamp() + refreshIntervalSeconds)*1000 < System.currentTimeMillis()) {
+      log.debug("Refresh interval has expired. Refreshing exchange rates.");
+      reload();
+    }
   }
 
   @Override

@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -165,6 +166,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
     return result;
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to set modified time for a file")
   public static File createFile(File tmpdir, String name, byte[] content,
                                 boolean changeModifiedTime) throws IOException {
     File file = new File(tmpdir.getAbsolutePath() + File.separator + name);

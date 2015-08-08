@@ -17,17 +17,6 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.TFIDFSimilarity;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.Ignore;
-
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -36,6 +25,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -49,7 +45,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   
   String base = "external_foo_extf";
-  static long start = System.currentTimeMillis();
+
+  static long start = System.nanoTime();
   
   void makeExternalFile(String field, String contents) {
     String dir = h.getCore().getDataDir();

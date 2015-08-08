@@ -87,6 +87,10 @@ Jetty 9.2.11.v20150529
 Upgrading from Solr 5.3
 -----------------------
 
+* SOLR-7859: The following APIs are now deprecated:
+  - SolrCore.getStartTime: Use SolrCore.getStartTimeStamp instead.
+  - SolrIndexSearcher.getOpenTime: Use SolrIndexSearcher.getOpenTimeStamp instead.
+
 Detailed Change List
 ----------------------
 
@@ -107,6 +111,9 @@ New Features
 
 Bug Fixes
 ----------------------
+
+* SOLR-7859: Fix usage of currentTimeMillis instead of nanoTime in multiple places,
+  whitelist valid uses of currentTimeMillis (Ramkumar Aiyengar)
 
 Optimizations
 ----------------------
@@ -345,7 +352,7 @@ Bug Fixes
 * SOLR-7866: VersionInfo caused an unhandled NPE when trying to determine the max value for the
   version field. (Timothy Potter)
 
-* SOLR-7666 (and linked tickets): Many fixes to AngularJS Admin UI bringing it close to feature 
+* SOLR-7666 (and linked tickets): Many fixes to AngularJS Admin UI bringing it close to feature
   parity with existing UI. (Upayavira)
 
 Optimizations

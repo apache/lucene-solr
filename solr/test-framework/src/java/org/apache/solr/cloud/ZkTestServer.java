@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -56,6 +57,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class ZkTestServer {
   public static final int TICK_TIME = 1000;
@@ -521,8 +523,8 @@ public class ZkTestServer {
     }
   }
   
-  public static boolean waitForServerDown(String hp, long timeout) {
-    long start = System.currentTimeMillis();
+  public static boolean waitForServerDown(String hp, long timeoutMs) {
+    final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
     while (true) {
       try {
         HostPort hpobj = parseHostPortList(hp).get(0);
@@ -531,7 +533,7 @@ public class ZkTestServer {
         return true;
       }
       
-      if (System.currentTimeMillis() > start + timeout) {
+      if (timeout.hasTimedOut()) {
         break;
       }
       try {
