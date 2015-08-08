@@ -23,6 +23,7 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -217,6 +218,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore
   public void testFilter() throws Exception {
 
     // normal test "solrconfig.xml" has autowarm set to 2...
