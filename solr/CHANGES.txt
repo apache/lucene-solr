@@ -57,6 +57,7 @@ New Features
 
 * SOLR-7560: Parallel SQL Support (Joel Bernstein)
 
+
 Other Changes
 ----------------------
 
@@ -72,7 +73,9 @@ Other Changes
 
 * SOLR-7624: Remove deprecated zkCredientialsProvider element in solrcloud section of solr.xml.
   (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
-  
+
+* SOLR-7513: Add Equalitors to Streaming Expressions (Dennis Gove, Joel Bernstein)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
