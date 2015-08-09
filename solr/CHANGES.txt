@@ -57,6 +57,8 @@ New Features
 
 * SOLR-7560: Parallel SQL Support (Joel Bernstein)
 
+* SOLR-7707: Add StreamExpression Support to RollupStream (Dennis Gove, Joel Bernstein)
+
 
 Other Changes
 ----------------------
