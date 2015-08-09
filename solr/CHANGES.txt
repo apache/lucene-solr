@@ -115,6 +115,9 @@ Bug Fixes
 * SOLR-7859: Fix usage of currentTimeMillis instead of nanoTime in multiple places,
   whitelist valid uses of currentTimeMillis (Ramkumar Aiyengar)
 
+* SOLR-7836: Possible deadlock when closing refcounted index writers.
+  (Jessica Cheng Mallet, Erick Erickson)
+
 Optimizations
 ----------------------
 

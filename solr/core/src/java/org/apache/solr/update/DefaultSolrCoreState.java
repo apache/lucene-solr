@@ -100,27 +100,24 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Already closed");
         }
       }
-      
+
       if (core == null) {
         // core == null is a signal to just return the current writer, or null
         // if none.
         initRefCntWriter();
         if (refCntWriter == null) return null;
-        writerFree = false;
-        writerPauseLock.notifyAll();
-        if (refCntWriter != null) refCntWriter.incref();
-        
-        return refCntWriter;
+      } else {
+        if (indexWriter == null) {
+          indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
+        }
+        initRefCntWriter();
       }
-      
-      if (indexWriter == null) {
-        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
-      }
-      initRefCntWriter();
+
       writerFree = false;
-      writerPauseLock.notifyAll();
       refCntWriter.incref();
+      writerPauseLock.notifyAll();
       return refCntWriter;
+
     }
   }
 
@@ -152,18 +149,18 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       pauseWriter = true;
       // then lets wait until it's out of use
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
-      
-      while (!writerFree) {
-        try {
-          writerPauseLock.wait(100);
-        } catch (InterruptedException e) {}
-        
-        if (closed) {
-          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCoreState already closed");
-        }
-      }
 
       try {
+        while (!writerFree) {
+          try {
+            writerPauseLock.wait(100);
+          } catch (InterruptedException e) {
+          }
+          if (closed) {
+            throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCoreState already closed");
+          }
+        }
+
         if (indexWriter != null) {
           if (!rollback) {
             try {
@@ -188,7 +185,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         // we need to null this so it picks up the new writer next get call
         refCntWriter = null;
       } finally {
-        
         pauseWriter = false;
         writerPauseLock.notifyAll();
       }
@@ -210,39 +206,44 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       pauseWriter = true;
       // then lets wait until it's out of use
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
-      
-      while (!writerFree) {
-        try {
-          writerPauseLock.wait(100);
-        } catch (InterruptedException e) {}
-        
-        if (closed) {
-          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-              "SolrCoreState already closed");
-        }
-      }
-      
-      if (indexWriter != null) {
-        if (!rollback) {
+      try {
+        while (!writerFree) {
           try {
-            log.info("Closing old IndexWriter... core=" + coreName);
-            indexWriter.close();
-          } catch (Exception e) {
-            SolrException.log(log, "Error closing old IndexWriter. core="
-                + coreName, e);
+            writerPauseLock.wait(100);
+          } catch (InterruptedException e) {
           }
-        } else {
-          try {
-            log.info("Rollback old IndexWriter... core=" + coreName);
-            indexWriter.rollback();
-          } catch (Exception e) {
-            SolrException.log(log, "Error rolling back old IndexWriter. core="
-                + coreName, e);
+
+          if (closed) {
+            throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+                "SolrCoreState already closed");
           }
         }
+
+        if (indexWriter != null) {
+          if (!rollback) {
+            try {
+              log.info("Closing old IndexWriter... core=" + coreName);
+              indexWriter.close();
+            } catch (Exception e) {
+              SolrException.log(log, "Error closing old IndexWriter. core="
+                  + coreName, e);
+            }
+          } else {
+            try {
+              log.info("Rollback old IndexWriter... core=" + coreName);
+              indexWriter.rollback();
+            } catch (Exception e) {
+              SolrException.log(log, "Error rolling back old IndexWriter. core="
+                  + coreName, e);
+            }
+          }
+        }
+      } finally {
+        pauseWriter = false;
+        writerPauseLock.notifyAll();
       }
-      
     }
+
   }
   
   @Override
