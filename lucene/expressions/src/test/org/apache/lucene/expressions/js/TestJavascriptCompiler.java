@@ -18,7 +18,6 @@ package org.apache.lucene.expressions.js;
 
 import java.text.ParseException;
 
-import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.util.LuceneTestCase;
 
