@@ -100,6 +100,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
@@ -422,6 +423,13 @@ public class HttpSolrCall {
         AuthorizationContext context = getAuthCtx();
         log.info(context.toString());
         AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
+        if (authResponse.statusCode == AuthorizationResponse.PROMPT.statusCode) {
+          Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
+          if (headers != null) {
+            for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
+          }
+          log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+        }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
@@ -506,6 +514,8 @@ public class HttpSolrCall {
       } finally {
         SolrRequestInfo.clearRequestInfo();
       }
+      AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
+      if (authcPlugin != null) authcPlugin.closeRequest();
     }
   }
 
@@ -980,7 +990,12 @@ public class HttpSolrCall {
       public String getResource() {
         return path;
       }
-      
+
+      @Override
+      public String getHttpMethod() {
+        return getReq().getMethod();
+      }
+
       @Override
       public String toString() {
         StringBuilder response = new StringBuilder("userPrincipal: [").append(getUserPrincipal()).append("]")

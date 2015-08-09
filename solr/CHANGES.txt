@@ -120,6 +120,17 @@ New Features
 
 * SOLR-7766: support creation of a coreless collection via createNodeSet=EMPTY (Christine Poerschke)
 
+* SOLR-7757: Improved security framework where security components can be edited/reloaded, Solr
+  now watches /security.json. Components can choose to make their config editable
+  (Noble Paul, Anshum Gupta, Ishan Chattopadhyaya)
+
+* SOLR-7838: An authorizationPlugin interface where the access control rules are stored/managed in
+  ZooKeeper (Noble Paul, Anshum Gupta, Ishan Chattopadhyaya)
+
+* SOLR-7837: An AuthenticationPlugin which implements the HTTP BasicAuth protocol and stores credentials
+  securely in ZooKeeper (Noble Paul, Anshum Gupta,Ishan Chattopadhyaya)
+
+
 Bug Fixes
 ----------------------
 

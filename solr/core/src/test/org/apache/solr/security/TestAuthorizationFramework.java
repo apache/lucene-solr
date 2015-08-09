@@ -17,12 +17,20 @@ package org.apache.solr.security;
  * limitations under the License.
  */
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.commons.io.Charsets;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.zookeeper.CreateMode;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,27 +41,26 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
   static final int TIMEOUT = 10000;
 
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
-        TIMEOUT, TIMEOUT)) {
-      zkStateReader.getZkClient().create(ZkStateReader.SOLR_SECURITY_CONF_PATH,
-          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(Charsets.UTF_8),
-          CreateMode.PERSISTENT, true);
-    }
-  }
 
   @Test
   public void authorizationFrameworkTest() throws Exception {
     MockAuthorizationPlugin.denyUsers.add("user1");
     MockAuthorizationPlugin.denyUsers.add("user1");
     waitForThingsToLevelOut(10);
+    try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
+        TIMEOUT, TIMEOUT)) {
+      zkStateReader.getZkClient().setData(ZkStateReader.SOLR_SECURITY_CONF_PATH,
+          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(Charsets.UTF_8),
+          true);
+    }
+    String baseUrl = jettys.get(0).getBaseUrl().toString();
+    verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
     log.info("Starting test");
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
     // This should work fine.
     cloudClient.query(params);
-    
+
     // This user is blacklisted in the mock. The request should return a 403.
     params.add("uname", "user1");
     try {
@@ -67,6 +74,32 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   public void distribTearDown() throws Exception {
     super.distribTearDown();
     MockAuthorizationPlugin.denyUsers.clear();
+
+  }
+
+  public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
+    boolean success = false;
+    String s = null;
+    List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
+    for (int i = 0; i < count; i++) {
+      HttpGet get = new HttpGet(url);
+      s = EntityUtils.toString(cl.execute(get).getEntity());
+      Map m = (Map) Utils.fromJSONString(s);
+
+      Object actual = Utils.getObjectByPath(m, true, hierarchy);
+      if (expected instanceof Predicate) {
+        Predicate predicate = (Predicate) expected;
+        if (predicate.test(actual)) {
+          success = true;
+          break;
+        }
+      } else if (Objects.equals(String.valueOf(actual), expected)) {
+        success = true;
+        break;
+      }
+      Thread.sleep(50);
+    }
+    assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
 
   }
 }
