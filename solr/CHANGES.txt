@@ -80,6 +80,9 @@ Other Changes
 
 * SOLR-7554: Add checks in Streams for incoming stream order (Dennis Gove, Joel Bernstein)
 
+* SOLR-7441: Improve overall robustness of the Streaming stack: Streaming API,
+             Streaming Expressions, Parallel SQL (Joel Bernstein)
+
 
 ==================  5.4.0 ==================
 
