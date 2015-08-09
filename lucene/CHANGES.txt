@@ -64,7 +64,7 @@ Optimizations
 Other
 
 * LUCENE-6417: Upgrade ANTLR used in expressions module to version 4.5.
-  (Jack Conradson via Uwe Schindler)
+  (Jack Conradson, Uwe Schindler)
 
 ======================= Lucene 5.3.0 =======================
 

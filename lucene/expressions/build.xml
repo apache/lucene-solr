@@ -21,9 +21,6 @@
     Dynamically computed values to sort/facet/search on based on a pluggable grammar.
   </description>
 
-  <!-- some files for testing that do not have license headers -->
-  <property name="rat.excludes" value="**/*.tokens"/>
-
   <import file="../module-build.xml"/>
 
   <path id="classpath">
@@ -81,22 +78,19 @@
     <attribute name="package" />
     <attribute name="grammar" />
     <sequential>
-      <!-- delete parser and lexer so files will be generated -->
-      <delete>
-        <fileset dir="src/java/org/apache/lucene/expressions/@{package}">
-          <include name="@{grammar}Lexer.java" />
-          <include name="@{grammar}Parser.java" />
-        </fileset>
-      </delete>
       <local name="grammar.path"/>
-      <local name="grammar.matchpath"/>
-      <local name="-grammar.relative.path"/>
-      <local name="grammar.relative.path"/>
+      <patternset id="grammar.@{grammar}.patternset">
+        <include name="@{grammar}Lexer.java" />
+        <include name="@{grammar}Parser.java" />
+        <include name="@{grammar}Visitor.java" />
+        <include name="@{grammar}BaseVisitor.java" />
+      </patternset>
       <property name="grammar.path" location="src/java/org/apache/lucene/expressions/@{package}"/>
-      <!-- this is a hack for windows, because antlr writes absolute paths with double backslashes (no idea why...): -->
-      <replace-value property="grammar.matchpath" value="${grammar.path}${file.separator}" from="\" to="\\"/>
-      <property name="-grammar.relative.path" location="${grammar.path}" relative="true"/>
-      <replace-value property="grammar.relative.path" value="${-grammar.relative.path}${file.separator}" from="${file.separator}" to="/"/>
+      <!-- delete parser and lexer so files will be generated -->
+      <delete dir="${grammar.path}">
+        <patternset refid="grammar.@{grammar}.patternset"/>
+      </delete>
+      <!-- invoke ANTLR4 -->
       <java classname="org.antlr.v4.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
         <sysproperty key="file.encoding" value="UTF-8"/>
         <sysproperty key="user.language" value="en"/>
@@ -108,33 +102,30 @@
         <arg value="-visitor"/>
         <arg value="-o"/>
         <arg path="${grammar.path}"/>
-        <arg path="${grammar.path}/@{grammar}.g"/>
+        <arg path="${grammar.path}/@{grammar}.g4"/>
       </java>
-      <!-- replace absolute paths by relative ones -->
-      <replace file="${grammar.path}/@{grammar}Parser.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
-      <replace file="${grammar.path}/@{grammar}Lexer.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
-      <replace file="${grammar.path}/@{grammar}Visitor.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
-      <replace file="${grammar.path}/@{grammar}BaseVisitor.java" token="${grammar.matchpath}" value="${grammar.relative.path}" encoding="UTF-8"/>
+      <!-- fileset with files to edit -->
+      <fileset id="grammar.fileset" dir="${grammar.path}">
+        <patternset refid="grammar.@{grammar}.patternset"/>
+      </fileset>
+      <!-- remove files that are not needed to compile or at runtime -->
+      <delete dir="${grammar.path}" includes="@{grammar}*.tokens"/>
       <!-- make the generated classes package private -->
-      <replace file="${grammar.path}/@{grammar}Parser.java" token="public class @{grammar}Parser" value="class @{grammar}Parser" encoding="UTF-8"/>
-      <replace file="${grammar.path}/@{grammar}Lexer.java" token="public class @{grammar}Lexer" value="class @{grammar}Lexer" encoding="UTF-8"/>
-      <replace file="${grammar.path}/@{grammar}Visitor.java" token="public interface @{grammar}Visitor" value="interface @{grammar}Visitor" encoding="UTF-8"/>
-      <replace file="${grammar.path}/@{grammar}BaseVisitor.java" token="public class @{grammar}BaseVisitor" value="class @{grammar}BaseVisitor" encoding="UTF-8"/>
-      <!-- nuke timestamps in generated files -->
-      <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
-      <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
-      <replaceregexp file="${grammar.path}/@{grammar}Visitor.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
-      <replaceregexp file="${grammar.path}/@{grammar}BaseVisitor.java" match=".*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8"/>
+      <replaceregexp match="public ((interface|class) \Q@{grammar}\E\w+)" replace="\1" encoding="UTF-8">
+        <fileset refid="grammar.fileset"/>
+      </replaceregexp>
+      <!-- nuke timestamps/filenames in generated files -->
+      <replaceregexp match="\Q// Generated from \E.*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8">
+        <fileset refid="grammar.fileset"/>
+      </replaceregexp>
       <!-- remove tabs in antlr generated files -->
-      <replaceregexp file="${grammar.path}/@{grammar}Parser.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
-      <replaceregexp file="${grammar.path}/@{grammar}Lexer.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
-      <replaceregexp file="${grammar.path}/@{grammar}Visitor.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
-      <replaceregexp file="${grammar.path}/@{grammar}BaseVisitor.java" match="\t" flags="g" replace="  " encoding="UTF-8"/>
+      <replaceregexp match="\t" flags="g" replace="  " encoding="UTF-8">
+        <fileset refid="grammar.fileset"/>
+      </replaceregexp>
       <!-- fix line endings -->
-      <fixcrlf file="${grammar.path}/@{grammar}Parser.java"/>
-      <fixcrlf file="${grammar.path}/@{grammar}Lexer.java"/>
-      <fixcrlf file="${grammar.path}/@{grammar}Visitor.java"/>
-      <fixcrlf file="${grammar.path}/@{grammar}BaseVisitor.java"/>
+      <fixcrlf srcdir="${grammar.path}">
+        <patternset refid="grammar.@{grammar}.patternset"/>
+      </fixcrlf>
     </sequential>
   </macrodef>
 </project>
