@@ -222,7 +222,7 @@ public final class JavascriptCompiler {
     }
   }
 
-  private void generateClass(ParseTree parseTree, ClassWriter classWriter, Map<String, Integer> externalsMap) {
+  private void generateClass(final ParseTree parseTree, final ClassWriter classWriter, final Map<String, Integer> externalsMap) {
     classWriter.visit(CLASSFILE_VERSION,
         Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
         COMPILED_EXPRESSION_INTERNAL,
