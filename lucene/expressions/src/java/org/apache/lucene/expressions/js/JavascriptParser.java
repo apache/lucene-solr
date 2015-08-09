@@ -72,7 +72,7 @@ class JavascriptParser extends Parser {
   }
 
   @Override
-  public String getGrammarFileName() { return "Javascript.g"; }
+  public String getGrammarFileName() { return "Javascript.g4"; }
 
   @Override
   public String[] getRuleNames() { return ruleNames; }
