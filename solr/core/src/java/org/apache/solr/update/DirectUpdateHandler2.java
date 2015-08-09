@@ -178,124 +178,154 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    */
   private int addDoc0(AddUpdateCommand cmd) throws IOException {
     int rc = -1;
+
+    addCommands.incrementAndGet();
+    addCommandsCumulative.incrementAndGet();
+
+    // if there is no ID field, don't overwrite
+    if (idField == null) {
+      cmd.overwrite = false;
+    }
+    try {
+      if (cmd.overwrite) {
+        // Check for delete by query commands newer (i.e. reordered). This
+        // should always be null on a leader
+        List<UpdateLog.DBQ> deletesAfter = null;
+        if (ulog != null && cmd.version > 0) {
+          deletesAfter = ulog.getDBQNewer(cmd.version);
+        }
+
+        if (deletesAfter != null) {
+          addAndDelete(cmd, deletesAfter);
+        } else {
+          doNormalUpdate(cmd);
+        }
+      } else {
+        allowDuplicateUpdate(cmd);
+      }
+
+      if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
+        if (commitWithinSoftCommit) {
+          commitTracker.addedDocument(-1);
+          softCommitTracker.addedDocument(cmd.commitWithin);
+        } else {
+          softCommitTracker.addedDocument(-1);
+          commitTracker.addedDocument(cmd.commitWithin);
+        }
+      }
+
+      rc = 1;
+    } finally {
+      if (rc != 1) {
+        numErrors.incrementAndGet();
+        numErrorsCumulative.incrementAndGet();
+      } else {
+        numDocsPending.incrementAndGet();
+      }
+    }
+
+    return rc;
+  }
+
+  private void allowDuplicateUpdate(AddUpdateCommand cmd) throws IOException {
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-      addCommands.incrementAndGet();
-      addCommandsCumulative.incrementAndGet();
-      
-      // if there is no ID field, don't overwrite
-      if (idField == null) {
-        cmd.overwrite = false;
-      }
-      
-      try {
-        IndexSchema schema = cmd.getReq().getSchema();
-        
-        if (cmd.overwrite) {
-          
-          // Check for delete by query commands newer (i.e. reordered). This
-          // should always be null on a leader
-          List<UpdateLog.DBQ> deletesAfter = null;
-          if (ulog != null && cmd.version > 0) {
-            deletesAfter = ulog.getDBQNewer(cmd.version);
-          }
-          
-          if (deletesAfter != null) {
-            log.info("Reordered DBQs detected.  Update=" + cmd + " DBQs="
-                + deletesAfter);
-            List<Query> dbqList = new ArrayList<>(deletesAfter.size());
-            for (UpdateLog.DBQ dbq : deletesAfter) {
-              try {
-                DeleteUpdateCommand tmpDel = new DeleteUpdateCommand(cmd.req);
-                tmpDel.query = dbq.q;
-                tmpDel.version = -dbq.version;
-                dbqList.add(getQuery(tmpDel));
-              } catch (Exception e) {
-                log.error("Exception parsing reordered query : " + dbq, e);
-              }
-            }
-            
-            addAndDelete(cmd, dbqList);
-          } else {
-            // normal update
-            
-            Term updateTerm;
-            Term idTerm = new Term(cmd.isBlock() ? "_root_" : idField.getName(), cmd.getIndexedId());
-            boolean del = false;
-            if (cmd.updateTerm == null) {
-              updateTerm = idTerm;
-            } else {
-              // this is only used by the dedup update processor
-              del = true;
-              updateTerm = cmd.updateTerm;
-            }
 
-            if (cmd.isBlock()) {
-              writer.updateDocuments(updateTerm, cmd);
-            } else {
-              Document luceneDocument = cmd.getLuceneDocument();
-              // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
-              writer.updateDocument(updateTerm, luceneDocument);
-            }
-            // SolrCore.verbose("updateDocument",updateTerm,"DONE");
-            
-            if (del) { // ensure id remains unique
-              BooleanQuery.Builder bq = new BooleanQuery.Builder();
-              bq.add(new BooleanClause(new TermQuery(updateTerm),
-                  Occur.MUST_NOT));
-              bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
-              writer.deleteDocuments(new DeleteByQueryWrapper(bq.build(), core.getLatestSchema()));
-            }
-            
-            // Add to the transaction log *after* successfully adding to the
-            // index, if there was no error.
-            // This ordering ensures that if we log it, it's definitely been
-            // added to the the index.
-            // This also ensures that if a commit sneaks in-between, that we
-            // know everything in a particular
-            // log version was definitely committed.
-            if (ulog != null) ulog.add(cmd);
-          }
-          
-        } else {
-          // allow duplicates
-          if (cmd.isBlock()) {
-            writer.addDocuments(cmd);
-          } else {
-            writer.addDocument(cmd.getLuceneDocument());
-          }
-
-          if (ulog != null) ulog.add(cmd);
-        }
-        
-        if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-          if (commitWithinSoftCommit) {
-            commitTracker.addedDocument(-1);
-            softCommitTracker.addedDocument(cmd.commitWithin);
-          } else {
-            softCommitTracker.addedDocument(-1);
-            commitTracker.addedDocument(cmd.commitWithin);
-          }
-        }
-        
-        rc = 1;
-      } finally {
-        if (rc != 1) {
-          numErrors.incrementAndGet();
-          numErrorsCumulative.incrementAndGet();
-        } else {
-          numDocsPending.incrementAndGet();
-        }
+      if (cmd.isBlock()) {
+        writer.addDocuments(cmd);
+      } else {
+        writer.addDocument(cmd.getLuceneDocument());
       }
-      
     } finally {
       iw.decref();
     }
-    
-    return rc;
+
+    if (ulog != null) ulog.add(cmd);
   }
-  
+
+  private void doNormalUpdate(AddUpdateCommand cmd) throws IOException {
+    Term updateTerm;
+    Term idTerm = new Term(cmd.isBlock() ? "_root_" : idField.getName(), cmd.getIndexedId());
+    boolean del = false;
+    if (cmd.updateTerm == null) {
+      updateTerm = idTerm;
+    } else {
+      // this is only used by the dedup update processor
+      del = true;
+      updateTerm = cmd.updateTerm;
+    }
+
+    RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+    try {
+      IndexWriter writer = iw.get();
+
+      if (cmd.isBlock()) {
+        writer.updateDocuments(updateTerm, cmd);
+      } else {
+        Document luceneDocument = cmd.getLuceneDocument();
+        // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
+        writer.updateDocument(updateTerm, luceneDocument);
+      }
+      // SolrCore.verbose("updateDocument",updateTerm,"DONE");
+
+      if (del) { // ensure id remains unique
+        BooleanQuery.Builder bq = new BooleanQuery.Builder();
+        bq.add(new BooleanClause(new TermQuery(updateTerm),
+            Occur.MUST_NOT));
+        bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
+        writer.deleteDocuments(new DeleteByQueryWrapper(bq.build(), core.getLatestSchema()));
+      }
+    } finally {
+      iw.decref();
+    }
+
+    // Add to the transaction log *after* successfully adding to the
+    // index, if there was no error.
+    // This ordering ensures that if we log it, it's definitely been
+    // added to the the index.
+    // This also ensures that if a commit sneaks in-between, that we
+    // know everything in a particular
+    // log version was definitely committed.
+    if (ulog != null) ulog.add(cmd);
+  }
+
+  private void addAndDelete(AddUpdateCommand cmd, List<UpdateLog.DBQ> deletesAfter) throws IOException {
+
+    log.info("Reordered DBQs detected.  Update=" + cmd + " DBQs="
+        + deletesAfter);
+    List<Query> dbqList = new ArrayList<>(deletesAfter.size());
+    for (UpdateLog.DBQ dbq : deletesAfter) {
+      try {
+        DeleteUpdateCommand tmpDel = new DeleteUpdateCommand(cmd.req);
+        tmpDel.query = dbq.q;
+        tmpDel.version = -dbq.version;
+        dbqList.add(getQuery(tmpDel));
+      } catch (Exception e) {
+        log.error("Exception parsing reordered query : " + dbq, e);
+      }
+    }
+
+    Document luceneDocument = cmd.getLuceneDocument();
+    Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
+
+    RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
+    try {
+      IndexWriter writer = iw.get();
+
+      // see comment in deleteByQuery
+      synchronized (solrCoreState.getUpdateLock()) {
+        writer.updateDocument(idTerm, luceneDocument);
+        for (Query q : dbqList) {
+          writer.deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));
+        }
+      }
+    } finally {
+      iw.decref();
+    }
+    if (ulog != null) ulog.add(cmd, true);
+  }
+
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
     if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
       if (commitWithinSoftCommit) {
@@ -425,35 +455,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
     }
   }
-
-
-
-  /** Add a document execute the deletes as atomically as possible */
-  private void addAndDelete(AddUpdateCommand cmd, List<Query> dbqList)
-      throws IOException {
-    Document luceneDocument = cmd.getLuceneDocument();
-    Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
-    
-    // see comment in deleteByQuery
-    synchronized (solrCoreState.getUpdateLock()) {
-      RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
-      try {
-        IndexWriter writer = iw.get();
-        writer.updateDocument(idTerm, luceneDocument);
-        
-        for (Query q : dbqList) {
-          writer.deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));
-        }
-      } finally {
-        iw.decref();
-      }
-      
-      if (ulog != null) ulog.add(cmd, true);
-    }
-    
-  }
-
-
 
 
   @Override

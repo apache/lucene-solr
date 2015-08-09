@@ -39,6 +39,9 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-7836: Possible deadlock when closing refcounted index writers.
+  (Jessica Cheng Mallet, Erick Erickson)
+
 Optimizations
 ----------------------
 
