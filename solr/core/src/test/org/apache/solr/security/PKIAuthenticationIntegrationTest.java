@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.security.TestAuthorizationFramework.verifySecurityStatus;
 
 @SolrTestCaseJ4.SuppressSSL
 public class PKIAuthenticationIntegrationTest extends AbstractFullDistribZkTestBase {
@@ -58,7 +59,8 @@ public class PKIAuthenticationIntegrationTest extends AbstractFullDistribZkTestB
     }
     for (JettySolrRunner jetty : jettys) {
       String baseUrl = jetty.getBaseUrl().toString();
-      TestAuthorizationFramework.verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
+      verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
+      verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authentication", "authentication.enabled", "true", 20);
     }
     log.info("Starting test");
     ModifiableSolrParams params = new ModifiableSolrParams();
