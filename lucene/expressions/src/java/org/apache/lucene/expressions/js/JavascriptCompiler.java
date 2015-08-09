@@ -19,7 +19,6 @@ package org.apache.lucene.expressions.js;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +36,7 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.js.JavascriptParser.ExpressionContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.IOUtils;
 import org.objectweb.asm.ClassWriter;
@@ -44,8 +44,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
-
-import static org.apache.lucene.expressions.js.JavascriptParser.ExpressionContext;
 
 /**
  * An expression compiler for javascript expressions.
@@ -74,7 +72,7 @@ import static org.apache.lucene.expressions.js.JavascriptParser.ExpressionContex
  * 
  * @lucene.experimental
  */
-public class JavascriptCompiler {
+public final class JavascriptCompiler {
   static final class Loader extends ClassLoader {
     Loader(ClassLoader parent) {
       super(parent);
@@ -111,10 +109,6 @@ public class JavascriptCompiler {
   private static final int MAX_SOURCE_LENGTH = 16384;
   
   final String sourceText;
-  final Map<String, Integer> externalsMap = new LinkedHashMap<>();
-  final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-  GeneratorAdapter gen;
-  
   final Map<String,Method> functions;
   
   /**
@@ -189,19 +183,18 @@ public class JavascriptCompiler {
    * @throws ParseException on failure to compile
    */
   private Expression compileExpression(ClassLoader parent) throws ParseException {
+    final Map<String, Integer> externalsMap = new LinkedHashMap<>();
+    final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+    
+    generateClass(getAntlrParseTree(), classWriter, externalsMap);
+    
     try {
-      ParseTree parseTree = getAntlrParseTree();
-
-      beginCompile();
-      internalCompile(parseTree);
-      endCompile();
-      
       final Class<? extends Expression> evaluatorClass = new Loader(parent)
         .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       final Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
 
       return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));
-    } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException exception) {
+    } catch (ReflectiveOperationException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
   }
@@ -229,16 +222,16 @@ public class JavascriptCompiler {
     }
   }
 
-  private void beginCompile() {
+  private void generateClass(ParseTree parseTree, ClassWriter classWriter, Map<String, Integer> externalsMap) {
     classWriter.visit(CLASSFILE_VERSION,
         Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
         COMPILED_EXPRESSION_INTERNAL,
         null, EXPRESSION_TYPE.getInternalName(), null);
-    String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ?
+    final String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ?
         sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
     classWriter.visitSource(clippedSourceText, null);
     
-    GeneratorAdapter constructor = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+    final GeneratorAdapter constructor = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
         EXPRESSION_CTOR, null, null, classWriter);
     constructor.loadThis();
     constructor.loadArgs();
@@ -246,13 +239,10 @@ public class JavascriptCompiler {
     constructor.returnValue();
     constructor.endMethod();
     
-    gen = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+    final GeneratorAdapter gen = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
         EVALUATE_METHOD, null, null, classWriter);
-  }
 
-  // internalCompile is used to create an anonymous inner class around the ANTLR listener
-  // to completely hide the implementation details of expression compilation
-  private void internalCompile(ParseTree parseTree) {
+    // to completely hide the ANTLR visitor we use an anonymous impl:
     new JavascriptBaseVisitor<Void>() {
       private final Deque<Type> typeStack = new ArrayDeque<>();
 
@@ -674,9 +664,7 @@ public class JavascriptCompiler {
         }
       }
     }.visit(parseTree);
-  }
-  
-  private void endCompile() {
+    
     gen.returnValue();
     gen.endMethod();
     
