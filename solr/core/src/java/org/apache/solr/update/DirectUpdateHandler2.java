@@ -240,8 +240,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     } finally {
       iw.decref();
     }
-
-    if (ulog != null) ulog.add(cmd);
+    synchronized (solrCoreState.getUpdateLock()) {
+      if (ulog != null) ulog.add(cmd);
+    }
   }
 
   private void doNormalUpdate(AddUpdateCommand cmd) throws IOException {
@@ -287,7 +288,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     // This also ensures that if a commit sneaks in-between, that we
     // know everything in a particular
     // log version was definitely committed.
-    if (ulog != null) ulog.add(cmd);
+    synchronized (solrCoreState.getUpdateLock()) {
+      if (ulog != null) ulog.add(cmd);
+    }
   }
 
   private void addAndDelete(AddUpdateCommand cmd, List<UpdateLog.DBQ> deletesAfter) throws IOException {
@@ -323,7 +326,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     } finally {
       iw.decref();
     }
-    if (ulog != null) ulog.add(cmd, true);
+    synchronized (solrCoreState.getUpdateLock()) {
+      if (ulog != null) ulog.add(cmd, true);
+    }
   }
 
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
