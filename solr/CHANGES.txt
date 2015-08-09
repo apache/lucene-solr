@@ -76,6 +76,9 @@ Other Changes
 
 * SOLR-7513: Add Equalitors to Streaming Expressions (Dennis Gove, Joel Bernstein)
 
+* SOLR-7528: Simplify Interfaces used in Streaming Expressions (Dennis Gove, Joel Bernstein)
+
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
