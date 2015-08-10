@@ -220,9 +220,8 @@ if [[ -n "$RECURSIVE" ]]; then
   PROPS+=('-Drecursive=yes')
 fi
 
-SOLRJ_JAR=("$SOLR_TIP/dist"/solr-solrj-*.jar)
-echo "$JAVA" -classpath "${TOOL_JAR[0]}:${SOLRJ_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
-"$JAVA" -classpath "${TOOL_JAR[0]}:${SOLRJ_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
+echo "$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
+"$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
 
 # post smoker:
 # bin/post -c signals -out yes -type application/json -d '[{"id": 2, "val": 0.47}]'
