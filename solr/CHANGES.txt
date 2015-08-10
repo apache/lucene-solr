@@ -376,6 +376,9 @@ Bug Fixes
 * SOLR-7666 (and linked tickets): Many fixes to AngularJS Admin UI bringing it close to feature
   parity with existing UI. (Upayavira)
 
+* SOLR-7908: SegmentsInfoRequestHandler gets a ref counted IndexWriter and does not properly release it.
+  (Mark Miller, shalin)
+
 Optimizations
 ----------------------
 
