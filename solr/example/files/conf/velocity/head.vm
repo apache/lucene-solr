@@ -1,5 +1,3 @@
- ## <head> section of the layout
-
 <title>Solr browse: #core_name</title>
 
 <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
@@ -8,31 +6,46 @@
 <link rel="shortcut icon" type="image/x-icon" href="#{url_root}/img/favicon.ico"/>
 
 <script type="text/javascript" src="#{url_root}/js/lib/jquery-1.7.2.min.js"></script>
-<script type="text/javascript" src="#{url_for_solr}/admin/file?file=/velocity/jquery.tx3-tag-cloud.js&contentType=text/javascript"></script>
-   <script type="text/javascript" src="#{url_for_solr}/admin/file?file=/velocity/dropit.js&contentType=text/javascript"></script>
+<script type="text/javascript" src="#{url_for_solr}/admin/file?file=/velocity/js/jquery.tx3-tag-cloud.js&contentType=text/javascript"></script>
+<script type="text/javascript" src="#{url_for_solr}/admin/file?file=/velocity/js/dropit.js&contentType=text/javascript"></script>
+<script type="text/javascript" src="#{url_for_solr}/admin/file?file=/velocity/js/jquery.autocomplete.js&contentType=text/javascript"></script>
 
 <script type="text/javascript">
-  $(document).ready(function(){
+  $(document).ready(function() {
 
     $("#tagcloud").tx3TagCloud({
-      multiplier: 5
+      multiplier: 1
     });
 
     $('.menu').dropit();
 
     $( document ).ajaxComplete(function() {
-        $("#tagcloud").tx3TagCloud({
+      $("#tagcloud").tx3TagCloud({
         multiplier: 5
-        });
+      });
     });
 
     $('\#q').keyup(function() {
       $('#browse_results').load('#{url_for_home}?#lensNoQ&v.layout.enabled=false&v.template=results&q='+encodeURI($('\#q').val()));
+
+      $("\#q").autocomplete('#{url_for_solr}/suggest', {
+        extraParams: {
+          'suggest.q': function() { return $("\#q").val();},
+          'suggest.build': 'true',
+          'wt': 'json',
+        }
+      }).keydown(function(e) {
+        if (e.keyCode === 13){
+          $("#query-form").trigger('submit');
+        }
+      });
     });
+
   });
 </script>
 
 <style>
+
   html {
     background-color: #F0F8FF;
   }
@@ -47,9 +60,8 @@
     font-size: 20pt;
   }
 
-  #header2{
-
-  margin-left:1200px;
+  #header2 {
+    margin-left:1200px;
   }
 
   #logo {
@@ -61,8 +73,9 @@
   a {
     color: #305CB3;
   }
-  a.hidden{
-  display:none;
+
+  a.hidden {
+    display:none;
   }
 
   em {
@@ -89,7 +102,6 @@
     font-weight: normal;
   }
 
-
   #admin {
     text-align: right;
     vertical-align: top;
@@ -115,6 +127,8 @@
   #tabs li a { border-radius: 20px; border: 2px solid #C1CDCD; padding: 10px;color: #42454a; background-color: #dedbde;}
   #tabs li a:hover { background-color: #f1f0ee; }
   #tabs li a.selected { color: #000; background-color: #f1f0ee; font-weight: bold; padding: 5px }
+  #tabs li a.no_results { color: #000; background-color: #838B8B; font-style: italic; padding: 5px; pointer-events: none;
+  cursor: default; text-decoration: none;}
 
   .pagination {
     width: 305px;
@@ -187,6 +201,10 @@
     padding: 2px;
   }
 
+  div.facet_field {
+    clear: left;
+  }
+
   ul.tx3-tag-cloud { }
   ul.tx3-tag-cloud li {
     display: block;
@@ -210,24 +228,63 @@
   }
 
   .dropit {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
   .dropit .dropit-trigger { position: relative; }
   .dropit .dropit-submenu {
-  position: absolute;
-  top: 100%;
-  left: 0; /* dropdown left or right */
-  z-index: 1000;
-  display: none;
-  min-width: 150px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
+    position: absolute;
+    top: 100%;
+    left: 0; /* dropdown left or right */
+    z-index: 1000;
+    display: none;
+    min-width: 150px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
   .dropit .dropit-open .dropit-submenu { display: block; }
 
 
-  
+  <!--autocomplete css-->
+  .ac_results {
+    padding: 0px;
+    border: 1px solid black;
+    background-color: white;
+    overflow: hidden;
+    z-index: 99999;
+  }
+
+  .ac_results ul {
+    width: 100%;
+    list-style-position: outside;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .ac_results li {
+    margin: 0px;
+    padding: 2px 5px;
+    cursor: default;
+    display: block;
+    font: menu;
+    font-size: 12px;
+    line-height: 16px;
+    overflow: hidden;
+  }
+
+  .ac_loading {
+//    background: white url('˜indicator.gif') right center no-repeat;
+  }
+
+  .ac_odd {
+    background-color: #eee;
+  }
+
+  .ac_over {
+    background-color: #0A246A;
+    color: white;
+  }
 </style>
