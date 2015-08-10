@@ -359,6 +359,8 @@ public class Overseer implements Closeable {
           case MODIFYCOLLECTION:
             CollectionsHandler.verifyRuleParams(zkController.getCoreContainer() ,message.getProperties());
             return new CollectionMutator(reader).modifyCollection(clusterState,message);
+          case MIGRATESTATEFORMAT:
+            return new ClusterStateMutator(reader).migrateStateFormat(clusterState, message);
           default:
             throw new RuntimeException("unknown operation:" + operation
                 + " contents:" + message.getProperties());

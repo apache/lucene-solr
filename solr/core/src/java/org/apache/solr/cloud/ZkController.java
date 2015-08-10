@@ -17,8 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
@@ -46,6 +44,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
@@ -98,7 +97,13 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Strings;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /**
  * Handle ZooKeeper interactions.
@@ -1524,8 +1529,8 @@ public final class ZkController {
 
       publish(cd, Replica.State.DOWN, false, true);
       DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
-      if(collection !=null && collection.getStateFormat()>1  ){
-        log.info("Registering watch for external collection {}",cd.getCloudDescriptor().getCollectionName());
+      if (collection != null) {
+        log.info("Registering watch for external collection {}", cd.getCloudDescriptor().getCollectionName());
         zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
       }
     } catch (KeeperException e) {
@@ -2359,7 +2364,7 @@ public final class ZkController {
           if (Event.EventType.None.equals(event.getType())) {
             log.info("A node got unwatched for {}", zkDir);
           } else {
-            if(resetWatcher) setConfWatcher(zkDir,this,stat);
+            if(resetWatcher) setConfWatcher(zkDir, this, stat);
           }
         }
       }
