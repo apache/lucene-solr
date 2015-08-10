@@ -218,7 +218,6 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore
   public void testFilter() throws Exception {
 
     // normal test "solrconfig.xml" has autowarm set to 2...
