@@ -104,6 +104,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     this.maxDoc = state.segmentInfo.maxDoc();
     merging = false;
+    ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     
     int version = -1;
     int numFields = -1;
@@ -151,8 +152,6 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
         IOUtils.closeWhileHandlingException(this.data);
       }
     }
-    
-    ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
   }
 
   private void readSortedField(FieldInfo info, IndexInput meta) throws IOException {
@@ -339,6 +338,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
         for (int i = 0; i < uniqueValues; ++i) {
           entry.table[i] = meta.readLong();
         }
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(entry.table));
         entry.bitsPerValue = meta.readVInt();
         break;
       case DELTA_COMPRESSED:
@@ -396,6 +396,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
       for (int i = 0; i < totalTableLength; ++i) {
         entry.table[i] = meta.readLong();
       }
+      ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(entry.table));
       final int tableSize = meta.readInt();
       if (tableSize > totalTableLength + 1) { // +1 because of the empty set
         throw new CorruptIndexException("SORTED_SET_TABLE cannot have more set ids than ords in its dictionary, got " + totalTableLength + " ords and " + tableSize + " sets", meta);
@@ -404,6 +405,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
       for (int i = 1; i < entry.tableOffsets.length; ++i) {
         entry.tableOffsets[i] = entry.tableOffsets[i - 1] + meta.readInt();
       }
+      ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(entry.tableOffsets));
     } else if (entry.format != SORTED_SINGLE_VALUED && entry.format != SORTED_WITH_ADDRESSES) {
       throw new CorruptIndexException("Unknown format: " + entry.format, meta);
     }
