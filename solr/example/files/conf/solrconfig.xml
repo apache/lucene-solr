@@ -82,6 +82,7 @@
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
 
   <lib dir="${solr.install.dir:../../../..}/contrib/velocity/lib" regex=".*\.jar" />
+  <!-- browse-resources must come before solr-velocity JAR in order to override localized resources -->
   <lib path="${solr.install.dir:../../../..}/example/files/browse-resources"/>
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-velocity-\d.*\.jar" />
   <!-- an exact 'path' can be used instead of a 'dir' to specify a 
@@ -841,6 +842,10 @@
     <lst name="defaults">
       <str name="echoParams">explicit</str>
     </lst>
+
+    <lst name="appends">
+      <str name="fq">{!switch v=$type tag=type case='*:*' case.all='*:*' case.unknown='-doc_type:[* TO *]' default=$type_fq}</str>
+    </lst>
   </requestHandler>
 
 
@@ -1387,6 +1392,14 @@
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
         <str name="fieldType">tdoubles</str>
+      </lst>
+    </processor>
+
+
+    <processor class="org.apache.solr.update.processor.LangDetectLanguageIdentifierUpdateProcessorFactory">
+      <lst name="defaults">
+        <str name="langid.fl">content</str>
+        <str name="langid.langField">language</str>
       </lst>
     </processor>
 

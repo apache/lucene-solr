@@ -523,6 +523,9 @@ Other Changes
 * SOLR-7877: TestAuthenticationFramework.testBasics to preserve/restore the original request(Username|Password)
   (Christine Poerschke)
 
+* SOLR-7900: example/files improvements - added language detection and faceting, added title field, relocated .js files.
+  (Esther Quansah and Erik Hatcher)
+
 ==================  5.2.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
