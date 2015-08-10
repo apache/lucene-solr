@@ -17,13 +17,12 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.RTimerTree;
 
 import java.security.Principal;
 import java.util.Map;
@@ -72,7 +71,7 @@ public interface SolrQueryRequest {
   public long getStartTime();
 
   /** The timer for this request, created when the request started being processed */
-  public RTimer getRequestTimer();
+  public RTimerTree getRequestTimer();
 
   /** The index searcher associated with this request */
   public SolrIndexSearcher getSearcher();

@@ -20,7 +20,7 @@ package org.apache.solr.util;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 
-public class TestRTimer extends LuceneTestCase {
+public class TestRTimerTree extends LuceneTestCase {
 
   private static class MockTimerImpl implements RTimer.TimerImpl {
     static private long systemTime;
@@ -37,19 +37,19 @@ public class TestRTimer extends LuceneTestCase {
     }
   }
 
-  private class MockRTimer extends RTimer {
+  private class MockRTimerTree extends RTimerTree {
     @Override
     protected TimerImpl newTimerImpl() {
       return new MockTimerImpl();
     }
     @Override
-    protected RTimer newTimer() {
-      return new MockRTimer();
+    protected RTimerTree newTimer() {
+      return new MockRTimerTree();
     }
   }
 
   public void test() {
-    RTimer rt = new MockRTimer(), subt, st;
+    RTimerTree rt = new MockRTimerTree(), subt, st;
 
     MockTimerImpl.incrementSystemTime(100);
     assertEquals(100, (int) rt.getTime());
