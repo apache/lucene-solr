@@ -87,12 +87,13 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     dir.close();
   }
 
-  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult) throws Exception {
+  protected ClassificationResult<T> checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult) throws Exception {
     ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
     assertNotNull(classificationResult.getAssignedClass());
     assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
     double score = classificationResult.getScore();
     assertTrue("score should be between 0 and 1, got:" + score, score <= 1 && score >= 0);
+    return classificationResult;
   }
 
   protected void checkOnlineClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName) throws Exception {

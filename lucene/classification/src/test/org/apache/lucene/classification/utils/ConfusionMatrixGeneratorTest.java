@@ -73,7 +73,7 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase {
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = populateSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new KNearestNeighborClassifier(reader, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName);
+      Classifier<BytesRef> classifier = new KNearestNeighborClassifier(reader, null, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName);
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader, classifier, categoryFieldName, textFieldName);
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
