@@ -47,9 +47,12 @@
     <ant dir="webapp" target="dist" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-    <jar destfile="${example}/exampledocs/post.jar"
-         basedir="${dest}/solr-core/classes/java"
-         includes="org/apache/solr/util/SimplePostTool*.class">
+    <jar destfile="${example}/exampledocs/post.jar">
+      <fileset dir="${dest}/solr-core/classes/java">
+        <include name="org/apache/solr/util/SimplePostTool*.class"/>
+        <include name="org/apache/solr/util/RTimer.class"/>
+        <include name="org/apache/solr/util/RTimer$*.class"/>
+      </fileset>
       <manifest>
         <attribute name="Main-Class" value="org.apache.solr.util.SimplePostTool"/>
       </manifest>
