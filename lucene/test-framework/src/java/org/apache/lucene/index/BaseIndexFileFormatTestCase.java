@@ -118,17 +118,19 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       // something like a Collections.newSetFromMap(new HashMap<>()) uses quite
       // some memory... So for now the test ignores the overhead of such
       // collections but can we do better?
+      long v;
       if (o instanceof Collection) {
         Collection<?> coll = (Collection<?>) o;
         queue.addAll((Collection<?>) o);
-        return (long) coll.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+        v = (long) coll.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
       } else if (o instanceof Map) {
         final Map<?, ?> map = (Map<?,?>) o;
         queue.addAll(map.keySet());
         queue.addAll(map.values());
-        return 2L * map.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+        v = 2L * map.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+      } else {
+        v = super.accumulateObject(o, shallowSize, fieldValues, queue);
       }
-      long v = super.accumulateObject(o, shallowSize, fieldValues, queue);
       // System.out.println(o.getClass() + "=" + v);
       return v;
     }
