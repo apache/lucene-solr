@@ -299,7 +299,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
       // create collection
       final String asyncId = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
-      createCollection(miniCluster, collectionName, OverseerCollectionProcessor.CREATE_NODE_SET_EMPTY, asyncId);
+      createCollection(miniCluster, collectionName, OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY, asyncId);
       if (asyncId != null) {
         assertEquals("did not see async createCollection completion", "completed", AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 330, cloudSolrClient));
       }

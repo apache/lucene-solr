@@ -50,7 +50,7 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
     String message;
     params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
-    params.set(OverseerCollectionProcessor.REQUESTID, asyncId);
+    params.set(OverseerCollectionMessageHandler.REQUESTID, asyncId);
     // This task takes long enough to run. Also check for the current state of the task to be running.
     message = sendStatusRequestWithRetry(params, 5);
     assertEquals("found " + asyncId + " in running tasks", message);

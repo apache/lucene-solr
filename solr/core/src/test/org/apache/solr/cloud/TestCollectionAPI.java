@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
 
 public class TestCollectionAPI extends ReplicaPropertiesBase {
 

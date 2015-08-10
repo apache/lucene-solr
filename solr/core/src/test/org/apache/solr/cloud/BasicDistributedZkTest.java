@@ -571,10 +571,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
-    params.set(OverseerCollectionProcessor.NUM_SLICES, numShards);
+    params.set(OverseerCollectionMessageHandler.NUM_SLICES, numShards);
     params.set(ZkStateReader.REPLICATION_FACTOR, numReplicas);
     params.set(ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-    if (createNodeSetStr != null) params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
+    if (createNodeSetStr != null) params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr);
 
     int clientIndex = clients.size() > 1 ? random().nextInt(2) : 0;
     List<Integer> list = new ArrayList<>();
