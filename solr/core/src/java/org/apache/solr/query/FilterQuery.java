@@ -27,6 +27,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQueryBase;
+import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 
 public class FilterQuery extends ExtendedQueryBase {
@@ -91,7 +92,7 @@ public class FilterQuery extends ExtendedQueryBase {
     DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
-    ConstantScoreQuery csq = new ConstantScoreQuery( docs.getTopFilter() );
+    SolrConstantScoreQuery csq = new SolrConstantScoreQuery( docs.getTopFilter() );
     csq.setBoost( this.getBoost() );
     return csq.createWeight(searcher, needScores);
   }
