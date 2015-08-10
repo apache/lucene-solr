@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -374,27 +375,6 @@ public class ZkStateReader implements Closeable {
       });
     }
   }
-
-  //todo remove when we move to java 8
-  static public class Pair<K, V> implements Serializable {
-    private K key;
-
-    public K getKey() {
-      return key;
-    }
-
-    private V value;
-
-    public V getValue() {
-      return value;
-    }
-
-    public Pair(K key, V value) {
-      this.key = key;
-      this.value = value;
-    }
-  }
-
 
   private void addSecuritynodeWatcher(final String path, final Callable<Pair<byte[], Stat>> callback)
       throws KeeperException, InterruptedException {
