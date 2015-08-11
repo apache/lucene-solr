@@ -131,7 +131,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
     r = cl.execute(httpPost);
     assertEquals(200, r.getStatusLine().getStatusCode());
 
-    verifySecurityStatus(cl, baseUrl+"/admin/authorization", "authorization/permissions/x-update/collection", "x", 20);
+    verifySecurityStatus(cl, baseUrl+"/admin/authorization", "authorization/permissions[1]/collection", "x", 20);
 
   }
 
@@ -206,5 +206,5 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
       "  'authorization':{\n" +
       "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +
       "    'user-role':{'solr':'admin'},\n" +
-      "    'permissions':{'security-edit':{'role':'admin'}}}}";
+      "    'permissions':[{'name':'security-edit','role':'admin'}]}}";
 }

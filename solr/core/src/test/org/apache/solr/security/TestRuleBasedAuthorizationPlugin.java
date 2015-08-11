@@ -19,6 +19,7 @@ package org.apache.solr.security;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -44,21 +45,18 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "    joe: [user]," +
         "    noble:[dev,user]" +
         "  }," +
-        "  permissions : {" +
-        "    schema-edit :{" +
-        "      role:admin" +
-        "    }," +
-        "    collection-admin-read :{" +
-        "      role:null" +
-        "    }," +
-        "    collection-admin-edit :{" +
-        "      role:admin" +
-        "    }," +
-        "    mycoll_update: {" +
+        "  permissions : [" +
+        "    {name:'schema-edit'," +
+        "     role:admin}," +
+        "    {name:'collection-admin-read'," +
+        "    role:null}," +
+        "    {name:collection-admin-edit ," +
+        "    role:admin}," +
+        "    {name:mycoll_update," +
         "      collection:mycoll," +
         "      path:'/update/*'," +
         "      role:[dev,admin]" +
-        "    }}}" ;
+        "    }]}" ;
     Map initConfig = (Map) Utils.fromJSON(jsonRules.getBytes(StandardCharsets.UTF_8));
 
     RuleBasedAuthorizationPlugin plugin= new RuleBasedAuthorizationPlugin();
@@ -97,6 +95,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals(FORBIDDEN,authResp.statusCode);
 
     values.put("resource","/admin/collections");
+    values.put("collectionRequests",new ArrayList<>());
     values.put("params", new MapSolrParams(Collections.singletonMap("action", "LIST")));
     values.put("httpMethod","GET");
     authResp = plugin.authorize(context);
