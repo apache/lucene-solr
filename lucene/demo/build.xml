@@ -47,9 +47,9 @@
       <links>
         <link href="../analyzers-common"/>
         <link href="../queryparser"/>
-      	<link href="../queries"/>
-      	<link href="../facet"/>
-      	<link href="../expressions"/>
+        <link href="../queries"/>
+        <link href="../facet"/>
+        <link href="../expressions"/>
       </links>
     </invoke-module-javadoc>
   </target>

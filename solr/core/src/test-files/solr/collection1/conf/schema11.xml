@@ -336,46 +336,46 @@ valued. -->
         EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.  -->
-   <dynamicField name="*_s"  	type="string"  indexed="true"  stored="true"/>
+   <dynamicField name="*_s"    type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_s_dv"  type="string"  indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_ss"  	type="string"  indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_sS" 	type="string"  indexed="false" stored="true"/>
-   <dynamicField name="*_i"  	type="int"    indexed="true"  stored="true"/>
-   <dynamicField name="*_ii" 	type="int"    indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_l"  	type="long"   indexed="true"  stored="true"/>
-   <dynamicField name="*_f"  	type="float"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"  	type="double" indexed="true"  stored="true"/>
+   <dynamicField name="*_ss"    type="string"  indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_sS"   type="string"  indexed="false" stored="true"/>
+   <dynamicField name="*_i"    type="int"    indexed="true"  stored="true"/>
+   <dynamicField name="*_ii"   type="int"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_l"    type="long"   indexed="true"  stored="true"/>
+   <dynamicField name="*_f"    type="float"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"    type="double" indexed="true"  stored="true"/>
 
-   <dynamicField name="*_ti"  		type="tint"    indexed="true"  stored="true"/>
-   <dynamicField name="*_ti_dv" 	type="int"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_ti_ni_dv" 	type="int"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_tl"  		type="tlong"   indexed="true"  stored="true"/>
-   <dynamicField name="*_tl_dv"  	type="tlong"   indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_tl_ni_dv" 	type="tlong"   indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_tf"  		type="tfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_tf_dv"  	type="tfloat"  indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_tf_ni_dv" 	type="tfloat"  indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_td"  		type="tdouble" indexed="true"  stored="true"/>
-   <dynamicField name="*_td_dv"  	type="tdouble" indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_td_ni_dv" 	type="tdouble" indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_tdt" 		type="tdate"   indexed="true"  stored="true"/>
-   <dynamicField name="*_tdt_dv" 	type="tdate"   indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_tdt_ni_dv"	type="tdate"   indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_ti"      type="tint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_ti_dv"   type="int"    indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_ti_ni_dv"   type="int"    indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tl"      type="tlong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tl_dv"    type="tlong"   indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tl_ni_dv"   type="tlong"   indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_tf"      type="tfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_tf_dv"    type="tfloat"  indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tf_ni_dv"   type="tfloat"  indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_td"      type="tdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_td_dv"    type="tdouble" indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_td_ni_dv"   type="tdouble" indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_tdt"     type="tdate"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tdt_dv"   type="tdate"   indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tdt_ni_dv"  type="tdate"   indexed="false"  stored="true" docValues="true"/>
 
-   <dynamicField name="*_tis"  		type="tints"    indexed="true"  stored="true"/>
-   <dynamicField name="*_tis_dv"  	type="tints"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_tis_ni_dv"	type="tints"    indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_tls"  		type="tlongs"   indexed="true"  stored="true"/>
-   <dynamicField name="*_tls_dv"  	type="tlongs"   indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_tls_ni_dv"	type="tlongs"   indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_tfs"  		type="tfloats"  indexed="true"  stored="true"/>
-   <dynamicField name="*_tfs_dv"  	type="tfloats"  indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tis"      type="tints"    indexed="true"  stored="true"/>
+   <dynamicField name="*_tis_dv"    type="tints"    indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tis_ni_dv"  type="tints"    indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_tls"      type="tlongs"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tls_dv"    type="tlongs"   indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tls_ni_dv"  type="tlongs"   indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_tfs"      type="tfloats"  indexed="true"  stored="true"/>
+   <dynamicField name="*_tfs_dv"    type="tfloats"  indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_tfs_ni_dv" type="tfloats"  indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_tds"  		type="tdoubles" indexed="true"  stored="true"/>
-   <dynamicField name="*_tds_dv"  	type="tdoubles" indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tds"      type="tdoubles" indexed="true"  stored="true"/>
+   <dynamicField name="*_tds_dv"    type="tdoubles" indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_tds_ni_dv" type="tdoubles" indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_tdts" 		type="tdates"   indexed="true"  stored="true"/>
-   <dynamicField name="*_tdts_dv" 	type="tdates"   indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_tdts"     type="tdates"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tdts_dv"   type="tdates"   indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_tdts_ni_dv" type="tdates"   indexed="false"  stored="true" docValues="true"/>
 
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>

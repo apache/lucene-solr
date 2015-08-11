@@ -16,21 +16,21 @@
  limitations under the License.
 -->
 <!--
-	This query was added to demonstrate nested boolean queries - there
-	was a bug in the XML parser which added ALL child <Clause> tags to 
-	the top level tags ie. took child and grandchild elements instead
-	of just child elements. This was due to the use of the 
-	Element.getElementsByTagName() call in BooleanQueryBuilder
--->	
-<BooleanQuery fieldName="contents">	
-	<Clause occurs="should">
-		<BooleanQuery fieldName="contents">
-			<Clause occurs="must">
-				<TermQuery>doesNotExistButShouldBeOKBecauseOtherClauseExists</TermQuery>
-			</Clause>
-		</BooleanQuery>
-	</Clause>
-	<Clause occurs="should">
-		<TermQuery>bank</TermQuery>
-	</Clause>
+  This query was added to demonstrate nested boolean queries - there
+  was a bug in the XML parser which added ALL child <Clause> tags to 
+  the top level tags ie. took child and grandchild elements instead
+  of just child elements. This was due to the use of the 
+  Element.getElementsByTagName() call in BooleanQueryBuilder
+-->  
+<BooleanQuery fieldName="contents">  
+  <Clause occurs="should">
+    <BooleanQuery fieldName="contents">
+      <Clause occurs="must">
+        <TermQuery>doesNotExistButShouldBeOKBecauseOtherClauseExists</TermQuery>
+      </Clause>
+    </BooleanQuery>
+  </Clause>
+  <Clause occurs="should">
+    <TermQuery>bank</TermQuery>
+  </Clause>
 </BooleanQuery>

@@ -16,31 +16,31 @@
  limitations under the License.
 -->
 <FilteredQuery>
-	<Query>
-		<BooleanQuery fieldName="contents">
-			<Clause occurs="should">
-				<TermQuery>merger</TermQuery>
-			</Clause>
-			<Clause occurs="must">
-				<TermQuery>bank</TermQuery> 
-			</Clause>
-		</BooleanQuery>	
-	</Query>
-	<Filter>
-		<!-- TermsFilter uses an analyzer to tokenize Field text and creates a filter for docs which 
-			have ANY of the supplied terms. Unlike a RangeFilter this can be used for filtering on 
-			multiple terms that are not necessarily in a sequence. An example might be a list of primary
-			keys from a database query result or perhaps a choice of "category" labels picked by the end 
-			user.
-			As a filter, this is much faster than the equivalent query (a BooleanQuery with many 
-			"should" TermQueries)
-			
-			This example might be just a list of Saturdays ie not a contiguous range of values
-			which can be handled by rangefilter
-		-->
-		<TermsFilter fieldName="date">			
-			19870601 19870608 19870615
-		</TermsFilter> 
-	</Filter>
-	
+  <Query>
+    <BooleanQuery fieldName="contents">
+      <Clause occurs="should">
+        <TermQuery>merger</TermQuery>
+      </Clause>
+      <Clause occurs="must">
+        <TermQuery>bank</TermQuery> 
+      </Clause>
+    </BooleanQuery>  
+  </Query>
+  <Filter>
+    <!-- TermsFilter uses an analyzer to tokenize Field text and creates a filter for docs which 
+      have ANY of the supplied terms. Unlike a RangeFilter this can be used for filtering on 
+      multiple terms that are not necessarily in a sequence. An example might be a list of primary
+      keys from a database query result or perhaps a choice of "category" labels picked by the end 
+      user.
+      As a filter, this is much faster than the equivalent query (a BooleanQuery with many 
+      "should" TermQueries)
+      
+      This example might be just a list of Saturdays ie not a contiguous range of values
+      which can be handled by rangefilter
+    -->
+    <TermsFilter fieldName="date">      
+      19870601 19870608 19870615
+    </TermsFilter> 
+  </Filter>
+  
 </FilteredQuery>

@@ -37,9 +37,9 @@
 
   <!-- Log retrievedDocs -->
   <requestHandler name="withlog" class="org.apache.solr.handler.component.SearchHandler">
-	<lst name="defaults">
-		<str name="defType">dismax</str>
-	</lst>
+  <lst name="defaults">
+    <str name="defType">dismax</str>
+  </lst>
     <arr name="last-components">
       <str>responselog</str>
     </arr>

@@ -16,16 +16,16 @@
  limitations under the License.
 -->
 <BooleanQuery fieldName="contents">
-	<Clause occurs="should">
-		<TermQuery>merger</TermQuery>
-	</Clause>
-	<Clause occurs="mustnot">
-		<TermQuery >sumitomo</TermQuery>		
-	</Clause>
-	<Clause occurs="must">
-		<TermQuery>bank</TermQuery>
-	</Clause>
-	<Clause occurs="must">
-		<NumericRangeQuery fieldName="date2" lowerTerm="19870409" upperTerm="19870412"/>
-	</Clause>
+  <Clause occurs="should">
+    <TermQuery>merger</TermQuery>
+  </Clause>
+  <Clause occurs="mustnot">
+    <TermQuery >sumitomo</TermQuery>    
+  </Clause>
+  <Clause occurs="must">
+    <TermQuery>bank</TermQuery>
+  </Clause>
+  <Clause occurs="must">
+    <NumericRangeQuery fieldName="date2" lowerTerm="19870409" upperTerm="19870412"/>
+  </Clause>
 </BooleanQuery>

@@ -31,17 +31,17 @@
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
   
-  <!--	Enables JMX if and only if an existing MBeanServer is found, use 
-  		this if you want to configure JMX through JVM parameters. Remove
-  		this to disable exposing Solr configuration and statistics to JMX.
-  		
-		If you want to connect to a particular server, specify the agentId
-		e.g. <jmx agentId="myAgent" />
-		
-		If you want to start a new MBeanServer, specify the serviceUrl
-		e.g <jmx serviceurl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr" />
-		
-		For more details see http://wiki.apache.org/solr/SolrJmx
+  <!--  Enables JMX if and only if an existing MBeanServer is found, use 
+      this if you want to configure JMX through JVM parameters. Remove
+      this to disable exposing Solr configuration and statistics to JMX.
+      
+    If you want to connect to a particular server, specify the agentId
+    e.g. <jmx agentId="myAgent" />
+    
+    If you want to start a new MBeanServer, specify the serviceUrl
+    e.g <jmx serviceurl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr" />
+    
+    For more details see http://wiki.apache.org/solr/SolrJmx
   -->
   <jmx />
 

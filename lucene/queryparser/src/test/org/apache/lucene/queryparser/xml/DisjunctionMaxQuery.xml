@@ -17,8 +17,8 @@
 -->
 
 <DisjunctionMaxQuery>
-	<TermQuery fieldName="a">merger</TermQuery>
-	<DisjunctionMaxQuery tieBreaker="1.2">
-		<TermQuery fieldName="b">verger</TermQuery>
-	</DisjunctionMaxQuery>
+  <TermQuery fieldName="a">merger</TermQuery>
+  <DisjunctionMaxQuery tieBreaker="1.2">
+    <TermQuery fieldName="b">verger</TermQuery>
+  </DisjunctionMaxQuery>
 </DisjunctionMaxQuery>

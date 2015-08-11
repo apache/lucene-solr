@@ -31,7 +31,7 @@ catalyst.filter('timeago', function() {
             if (input === undefined) {
               return "-";
             }
-		
+    
             var substitute = function (stringOrFunction, number, strings) {
                     var string = angular.isFunction(stringOrFunction) ? stringOrFunction(number, dateDifference) : stringOrFunction;
                     var value = (strings.numbers && strings.numbers[number]) || number;
@@ -89,11 +89,11 @@ catalyst.filter('timeago', function() {
             days < 365 && substitute(strings.months, Math.round(days / 30), strings) ||
             years < 1.5 && substitute(strings.year, 1, strings) ||
             substitute(strings.years, Math.round(years), strings);
-			console.log(prefix+words+suffix+separator);
-			prefix.replace(/ /g, '')
-			words.replace(/ /g, '')
-			suffix.replace(/ /g, '')
-			return (prefix+' '+words+' '+suffix+' '+separator);
+            console.log(prefix+words+suffix+separator);
+            prefix.replace(/ /g, '')
+            words.replace(/ /g, '')
+            suffix.replace(/ /g, '')
+            return (prefix+' '+words+' '+suffix+' '+separator);
             
         };
     });

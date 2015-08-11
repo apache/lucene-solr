@@ -30,7 +30,7 @@
                          classpath.property="solr-dataimporthandler.jar"/>
 
   <target name="compile-solr-dataimporthandler" unless="solr-dataimporthandler.uptodate">
-  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-core" inheritAll="false">
+    <ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -40,7 +40,7 @@
        we should probably fix this, the same issue exists in modules
    -->
   <target name="compile-solr-dataimporthandler-tests">
-  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-test" inheritAll="false">
+    <ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-test" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>

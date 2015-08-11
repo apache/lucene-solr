@@ -1,246 +1,246 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <analyticsRequestEnvelope stats="true" olap="true">
- 	<analyticsRequest>
- 		<name>Add Request</name>
- 		
- 		<statistic>
- 			<expression>sum(add(int(int_id),float(float_fd)))</expression>
- 			<name>sum</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(double(add_if_dd))</expression>
- 			<name>sum calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(add(long(long_ld),double(double_dd),float(float_fd)))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		<statistic>
- 			<expression>mean(double(add_ldf_dd))</expression>
- 			<name>mean calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Multiply Request</name>
- 		
- 		<statistic>
- 			<expression>sum(mult(int(int_id),float(float_fd)))</expression>
- 			<name>sum</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(double(mult_if_dd))</expression>
- 			<name>sum calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(mult(long(long_ld),double(double_dd),float(float_fd)))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		<statistic>
- 			<expression>mean(double(mult_ldf_dd))</expression>
- 			<name>mean calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Divide Request</name>
- 		
- 		<statistic>
- 			<expression>sum(div(int(int_id),float(float_fd)))</expression>
- 			<name>sum</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(double(div_if_dd))</expression>
- 			<name>sum calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(div(long(long_ld),double(double_dd)))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(double(div_ld_dd))</expression>
- 			<name>mean calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Power Request</name>
- 		
- 		<statistic>
- 			<expression>sum(pow(int(int_id),float(float_fd))</expression>
- 			<name>sum</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(double(pow_if_dd))</expression>
- 			<name>sum calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(pow(long(long_ld),double(double_dd)))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(double(pow_ld_dd))</expression>
- 			<name>mean calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Negate Request</name>
- 		
- 		<statistic>
- 			<expression>sum(neg(int(int_id)))</expression>
- 			<name>sum</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(double(neg_i_dd))</expression>
- 			<name>sum calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(neg(long(long_ld)))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		<statistic>
- 			<expression>mean(double(neg_l_dd))</expression>
- 			<name>mean calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Const Num Request</name>
- 		
- 		<statistic>
- 			<expression>sum(const_num(8))</expression>
- 			<name>sum</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(double(const_8_dd))</expression>
- 			<name>sum calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>mean(const_num(10))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		<statistic>
- 			<expression>mean(double(const_10_dd))</expression>
- 			<name>mean calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Date Math Request</name>
- 		
- 		<statistic>
- 			<expression>median(date_math(date(date_dtd),const_str(+2YEARS)))</expression>
- 			<name>median</name>
- 		</statistic>
- 		<statistic>
- 			<expression>median(date(dm_2y_dtd))</expression>
- 			<name>median calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>max(date_math(date(date_dtd),const_str(+2MONTHS)))</expression>
- 			<name>max</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(date(dm_2m_dtd))</expression>
- 			<name>max calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Constant Date Request</name>
- 		
- 		<statistic>
- 			<expression>median(const_date(1800-06-30T23:59:59Z))</expression>
- 			<name>median</name>
- 		</statistic>
- 		<statistic>
- 			<expression>median(date(const_00_dtd))</expression>
- 			<name>median calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>max(const_date(1804-06-30T23:59:59Z))</expression>
- 			<name>max</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(date(const_04_dtd))</expression>
- 			<name>max calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Constant String Request</name>
- 		
- 		<statistic>
- 			<expression>min(const_str(this is the first))</expression>
- 			<name>min</name>
- 		</statistic>
- 		<statistic>
- 			<expression>min(str(const_first_sd))</expression>
- 			<name>min calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>max(const_str(this is the second))</expression>
- 			<name>max</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(str(const_second_sd))</expression>
- 			<name>max calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Concatenate Request</name>
- 		
- 		<statistic>
- 			<expression>min(concat(const_str(this is the first),str(string_sd)))</expression>
- 			<name>min</name>
- 		</statistic>
- 		<statistic>
- 			<expression>min(str(concat_first_sd))</expression>
- 			<name>min calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>max(concat(const_str(this is the second),str(string_sd)))</expression>
- 			<name>max</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(str(concat_second_sd))</expression>
- 			<name>max calced</name>
- 		</statistic>
- 	</analyticsRequest>
- 	
- 	<analyticsRequest>
- 		<name>Reverse Request</name>
- 		
- 		<statistic>
- 			<expression>min(rev(str(string_sd)))</expression>
- 			<name>min</name>
- 		</statistic>
- 		<statistic>
- 			<expression>min(str(rev_sd))</expression>
- 			<name>min calced</name>
- 		</statistic>
- 		
- 		<statistic>
- 			<expression>max(rev(str(string_sd)))</expression>
- 			<name>max</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(str(rev_sd))</expression>
- 			<name>max calced</name>
- 		</statistic>
- 	</analyticsRequest>
+   <analyticsRequest>
+     <name>Add Request</name>
+     
+     <statistic>
+       <expression>sum(add(int(int_id),float(float_fd)))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>sum(double(add_if_dd))</expression>
+       <name>sum calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(add(long(long_ld),double(double_dd),float(float_fd)))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>mean(double(add_ldf_dd))</expression>
+       <name>mean calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Multiply Request</name>
+     
+     <statistic>
+       <expression>sum(mult(int(int_id),float(float_fd)))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>sum(double(mult_if_dd))</expression>
+       <name>sum calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(mult(long(long_ld),double(double_dd),float(float_fd)))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>mean(double(mult_ldf_dd))</expression>
+       <name>mean calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Divide Request</name>
+     
+     <statistic>
+       <expression>sum(div(int(int_id),float(float_fd)))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>sum(double(div_if_dd))</expression>
+       <name>sum calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(div(long(long_ld),double(double_dd)))</expression>
+       <name>mean</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(double(div_ld_dd))</expression>
+       <name>mean calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Power Request</name>
+     
+     <statistic>
+       <expression>sum(pow(int(int_id),float(float_fd))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>sum(double(pow_if_dd))</expression>
+       <name>sum calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(pow(long(long_ld),double(double_dd)))</expression>
+       <name>mean</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(double(pow_ld_dd))</expression>
+       <name>mean calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Negate Request</name>
+     
+     <statistic>
+       <expression>sum(neg(int(int_id)))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>sum(double(neg_i_dd))</expression>
+       <name>sum calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(neg(long(long_ld)))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>mean(double(neg_l_dd))</expression>
+       <name>mean calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Const Num Request</name>
+     
+     <statistic>
+       <expression>sum(const_num(8))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>sum(double(const_8_dd))</expression>
+       <name>sum calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(const_num(10))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>mean(double(const_10_dd))</expression>
+       <name>mean calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Date Math Request</name>
+     
+     <statistic>
+       <expression>median(date_math(date(date_dtd),const_str(+2YEARS)))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>median(date(dm_2y_dtd))</expression>
+       <name>median calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>max(date_math(date(date_dtd),const_str(+2MONTHS)))</expression>
+       <name>max</name>
+     </statistic>
+     <statistic>
+       <expression>max(date(dm_2m_dtd))</expression>
+       <name>max calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Constant Date Request</name>
+     
+     <statistic>
+       <expression>median(const_date(1800-06-30T23:59:59Z))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>median(date(const_00_dtd))</expression>
+       <name>median calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>max(const_date(1804-06-30T23:59:59Z))</expression>
+       <name>max</name>
+     </statistic>
+     <statistic>
+       <expression>max(date(const_04_dtd))</expression>
+       <name>max calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Constant String Request</name>
+     
+     <statistic>
+       <expression>min(const_str(this is the first))</expression>
+       <name>min</name>
+     </statistic>
+     <statistic>
+       <expression>min(str(const_first_sd))</expression>
+       <name>min calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>max(const_str(this is the second))</expression>
+       <name>max</name>
+     </statistic>
+     <statistic>
+       <expression>max(str(const_second_sd))</expression>
+       <name>max calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Concatenate Request</name>
+     
+     <statistic>
+       <expression>min(concat(const_str(this is the first),str(string_sd)))</expression>
+       <name>min</name>
+     </statistic>
+     <statistic>
+       <expression>min(str(concat_first_sd))</expression>
+       <name>min calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>max(concat(const_str(this is the second),str(string_sd)))</expression>
+       <name>max</name>
+     </statistic>
+     <statistic>
+       <expression>max(str(concat_second_sd))</expression>
+       <name>max calced</name>
+     </statistic>
+   </analyticsRequest>
+   
+   <analyticsRequest>
+     <name>Reverse Request</name>
+     
+     <statistic>
+       <expression>min(rev(str(string_sd)))</expression>
+       <name>min</name>
+     </statistic>
+     <statistic>
+       <expression>min(str(rev_sd))</expression>
+       <name>min calced</name>
+     </statistic>
+     
+     <statistic>
+       <expression>max(rev(str(string_sd)))</expression>
+       <name>max</name>
+     </statistic>
+     <statistic>
+       <expression>max(str(rev_sd))</expression>
+       <name>max calced</name>
+     </statistic>
+   </analyticsRequest>
 </analyticsRequestEnvelope> 

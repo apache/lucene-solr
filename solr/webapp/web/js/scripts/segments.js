@@ -44,12 +44,12 @@ var get_entry_item = function(name, dims, tooltip, isMergeCandidate) {
     '    <dt><div>' + name + '</div></dt>' + "\n" +
     '    <dd>';
     entry += '<div class="live' + ((isMergeCandidate)?' merge-candidate':'') + 
-    		 '" style="width: ' + dims['alive_doc_size'] + '%;">&nbsp;</div>';
+         '" style="width: ' + dims['alive_doc_size'] + '%;">&nbsp;</div>';
     entry += '<div class="toolitp">' + tooltip +'</div>';
       
     if (dims['deleted_doc_size'] > 0.001) {
      entry += '<div class="deleted" style="width:' + dims['deleted_doc_size']  
-     		+ '%;margin-left:' + dims['alive_doc_size'] + '%;">&nbsp;</div>';
+         + '%;margin-left:' + dims['alive_doc_size'] + '%;">&nbsp;</div>';
     }
     entry += '</dd></dl></li>';
     return entry;

@@ -22,7 +22,7 @@
   <description>
     Analysis integration with Apache UIMA
   </description>
-	
+  
   <property name="tests.userdir" value="src/test-files"/>
   <!-- TODO: why is this limited to one JVM? -->
   <property name="tests.jvms.override" value="1" />

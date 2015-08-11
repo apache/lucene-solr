@@ -17,32 +17,32 @@
 -->
 <oaidc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oaidc="http://www.openarchives.org/OAI/2.0/oai_dc/">
 
-	<dc:title>Tika test document</dc:title>
+  <dc:title>Tika test document</dc:title>
 
-	<dc:creator>Rida Benjelloun</dc:creator>
+  <dc:creator>Rida Benjelloun</dc:creator>
 
-	<dc:subject>Java</dc:subject>
+  <dc:subject>Java</dc:subject>
 
-	<dc:subject>XML</dc:subject>
+  <dc:subject>XML</dc:subject>
 
-	<dc:subject>XSLT</dc:subject>
+  <dc:subject>XSLT</dc:subject>
 
-	<dc:subject>JDOM</dc:subject>
+  <dc:subject>JDOM</dc:subject>
  
-	<dc:subject>Indexation</dc:subject>
+  <dc:subject>Indexation</dc:subject>
 
-	<dc:description>Framework d'indexation des documents XML, HTML, PDF etc.. </dc:description>
+  <dc:description>Framework d'indexation des documents XML, HTML, PDF etc.. </dc:description>
 
-	<dc:identifier>http://www.apache.org</dc:identifier>
+  <dc:identifier>http://www.apache.org</dc:identifier>
 
-	<dc:date>2000-12-01T00:00:00.000Z</dc:date>
+  <dc:date>2000-12-01T00:00:00.000Z</dc:date>
 
-	<dc:type>test</dc:type>
+  <dc:type>test</dc:type>
 
-	<dc:format>application/msword</dc:format>
+  <dc:format>application/msword</dc:format>
 
-	<dc:language>Fr</dc:language>
+  <dc:language>Fr</dc:language>
 
-	<dc:rights>Archimède et Lius à Châteauneuf testing chars en été</dc:rights>	
+  <dc:rights>Archimède et Lius à Châteauneuf testing chars en été</dc:rights>  
 
 </oaidc:dc>
