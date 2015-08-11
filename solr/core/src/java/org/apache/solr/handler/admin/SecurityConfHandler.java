@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -141,9 +142,14 @@ public class SecurityConfHandler extends RequestHandlerBase {
   }
 
   public static Map<String, Object> getMapValue(Map<String, Object> lookupMap, String key) {
-    Map<String, Object> roleMap = (Map<String, Object>) lookupMap.get(key);
-    if (roleMap == null) lookupMap.put(key, roleMap = new LinkedHashMap<>());
-    return roleMap;
+    Map<String, Object> m = (Map<String, Object>) lookupMap.get(key);
+    if (m == null) lookupMap.put(key, m = new LinkedHashMap<>());
+    return m;
+  }
+  public static List getListValue(Map<String, Object> lookupMap, String key) {
+    List l = (List) lookupMap.get(key);
+    if (l == null) lookupMap.put(key, l= new ArrayList());
+    return l;
   }
 
   @Override

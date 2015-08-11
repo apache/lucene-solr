@@ -97,13 +97,56 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     List tomRoles = (List) userRoles.get("tom");
     assertTrue(tomRoles.contains("admin"));
     assertTrue(tomRoles.contains("dev"));
-    Map permissions = (Map) authzconf.get("permissions");
+    List<Map> permissions = (List<Map>) authzconf.get("permissions");
     assertEquals(2, permissions.size());
-    for (Object p : permissions.entrySet()) {
-      Map.Entry e = (Map.Entry) p;
-      assertEquals("some-permission", e.getKey());
+    for (Map p : permissions) {
+      assertEquals("some-permission", p.get("name"));
       break;
     }
+
+
+    command = "{\n" +
+        "'set-permission':{'name': 'security-edit',\n" +
+        "                  'role': ['admin','dev']\n" +
+        "                  }}";
+    req = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
+    req.getContext().put("httpMethod","POST");
+    req.getContext().put("path","/admin/authorization");
+    o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8),"");
+    req.setContentStreams(Collections.singletonList(o));
+    rsp = new SolrQueryResponse();
+    handler.handleRequestBody(req, rsp);
+    authzconf = (Map) ((ConfigData) handler.m.get("/security.json")).data.get("authorization");
+    permissions = (List<Map>) authzconf.get("permissions");
+
+    Map p = permissions.get(1);
+    assertEquals("security-edit", p.get("name"));
+    List rol = (List) p.get("role");
+    assertEquals( "admin", rol.get(0));
+    assertEquals( "dev", rol.get(1));
+
+    command = "{\n" +
+        "'update-permission':{'name': 'some-permission',\n" +
+        "                  'role': ['guest','admin']\n" +
+        "                  }}";
+    req = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
+    req.getContext().put("httpMethod","POST");
+    req.getContext().put("path","/admin/authorization");
+    o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8),"");
+    req.setContentStreams(Collections.singletonList(o));
+    rsp = new SolrQueryResponse();
+    handler.handleRequestBody(req, rsp);
+    authzconf = (Map) ((ConfigData) handler.m.get("/security.json")).data.get("authorization");
+    permissions = (List<Map>) authzconf.get("permissions");
+
+    p = permissions.get(0);
+    assertEquals("some-permission", p.get("name"));
+    rol = (List) p.get("role");
+    assertEquals( "guest", rol.get(0));
+    assertEquals( "admin", rol.get(1));
+
+
+
     command = "{\n" +
         "'delete-permission': 'some-permission',\n" +
         "'set-user-role':{'tom':null}\n" +
@@ -119,12 +162,15 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     authzconf = (Map) ((ConfigData) handler.m.get("/security.json")).data.get("authorization");
     userRoles = (Map) authzconf.get("user-role");
     assertEquals(0, userRoles.size());
-    permissions = (Map) authzconf.get("permissions");
+    permissions = (List<Map>) authzconf.get("permissions");
     assertEquals(1, permissions.size());
-    assertNull(permissions.get("some-permission"));
+
+    for (Map permission : permissions) {
+      assertFalse("some-permission".equals(permission.get("name")));
+    }
     command = "{\n" +
         "'set-permission':{'name': 'security-edit',\n" +
-        "                  'method':'POST',"+ // security edit is a well-known permission , only role attribute should be provided
+        "                  'method':'POST',"+ // -ve test security edit is a well-known permission , only role attribute should be provided
         "                  'role': 'admin'\n" +
         "                  }}";
     req = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
@@ -136,7 +182,6 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req, rsp);
     List l = (List) ((Map) ((List)rsp.getValues().get("errorMessages")).get(0)).get("errorMessages");
     assertEquals(1, l.size());
-
   }
 
 

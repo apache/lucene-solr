@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.junit.Assert;
 
 /**
@@ -153,5 +154,27 @@ public class TestUtils extends SolrTestCaseJ4 {
     sortable = NumberUtils.long2sortableStr( num );
     assertEquals( num, NumberUtils.SortableStr2long(sortable, 0, sortable.length() ) );
     assertEquals( Long.toString(num), NumberUtils.SortableStr2long(sortable) );
+  }
+  
+  public void testUtilsJSPath(){
+    
+    String json = "{\n" +
+        "  'authorization':{\n" +
+        "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +
+        "    'user-role':{\n" +
+        "      'solr':'admin',\n" +
+        "      'harry':'admin'},\n" +
+        "    'permissions':[{\n" +
+        "        'name':'security-edit',\n" +
+        "        'role':'admin'},\n" +
+        "      {\n" +
+        "        'name':'x-update',\n" +
+        "        'collection':'x',\n" +
+        "        'path':'/update/*',\n" +
+        "        'role':'dev'}],\n" +
+        "    '':{'v':4}}}";
+    Map m = (Map) Utils.fromJSONString(json);
+    assertEquals("x-update", Utils.getObjectByPath(m,false, "authorization/permissions[1]/name"));
+    
   }
 }

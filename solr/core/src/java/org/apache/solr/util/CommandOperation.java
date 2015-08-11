@@ -59,6 +59,9 @@ public class CommandOperation {
     Object o = getMapVal(key);
     return o == null ? def : String.valueOf(o);
   }
+  public void setCommandData(Object o){
+    commandData = o;
+  }
 
   public Map<String,Object> getDataMap() {
     if (commandData instanceof Map) {
