@@ -27,17 +27,17 @@
   <import file="../module-build.xml"/>
 
   <path id="classpath">
-  	<fileset dir="lib" />
+    <fileset dir="lib" />
     <pathelement path="${facet.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-	<target name="resolve" depends="common.resolve">
-		<sequential>
-	    <!-- javax.servlet jar -->
-	    <ivy:retrieve conf="servlet" log="download-only" type="orbit" symlink="${ivy.symlink}"/>
-		</sequential>
-	</target>
+  <target name="resolve" depends="common.resolve">
+    <sequential>
+      <!-- javax.servlet jar -->
+      <ivy:retrieve conf="servlet" log="download-only" type="orbit" symlink="${ivy.symlink}"/>
+    </sequential>
+  </target>
 
   <target name="init" depends="module-build.init,jar-facet"/>
 

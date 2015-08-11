@@ -28,7 +28,7 @@
   <property name="rat.additional-includes" value="src/tools/**"/>
 
   <import file="../analysis-module-build.xml"/>
-	
+  
   <target name="jflex" depends="-install-jflex,clean-jflex,-jflex-StandardAnalyzer,-jflex-UAX29URLEmailTokenizer,
                                 -jflex-wiki-tokenizer,-jflex-HTMLStripCharFilter"/>
 
@@ -122,7 +122,7 @@
       fork="true"
       failonerror="true">
       <classpath>
-      	<pathelement location="${build.dir}/classes/tools"/>
+        <pathelement location="${build.dir}/classes/tools"/>
       </classpath>
       <arg value="${tld.zones}"/>
       <arg value="${tld.output}"/>

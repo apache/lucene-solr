@@ -31,23 +31,23 @@
     </fieldType>
     
     <fieldType name="phrase_suggest" class="solr.TextField">
-	  <analyzer>
-	    <tokenizer class="solr.KeywordTokenizerFactory"/>
-	    <filter class="solr.PatternReplaceFilterFactory"
-	            pattern="([^\p{L}\p{M}\p{N}\p{Cs}]*[\p{L}\p{M}\p{N}\p{Cs}\_]+:)|([^\p{L}\p{M}\p{N}\p{Cs}])+"
-	            replacement=" " replace="all"/>
-	    <filter class="solr.LowerCaseFilterFactory"/>
-	    <filter class="solr.TrimFilterFactory"/>
-	  </analyzer>
-	</fieldType>
-	
-	<fieldType name="ja_suggest" class="solr.TextField">
-	  <analyzer>
-	    <tokenizer class="solr.JapaneseTokenizerFactory" mode="normal"/>
-	    <filter class="solr.CJKWidthFilterFactory"/>
-	    <filter class="solr.JapaneseReadingFormFilterFactory" useRomaji="true"/>
-	  </analyzer>
-	</fieldType>
+    <analyzer>
+      <tokenizer class="solr.KeywordTokenizerFactory"/>
+      <filter class="solr.PatternReplaceFilterFactory"
+              pattern="([^\p{L}\p{M}\p{N}\p{Cs}]*[\p{L}\p{M}\p{N}\p{Cs}\_]+:)|([^\p{L}\p{M}\p{N}\p{Cs}])+"
+              replacement=" " replace="all"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.TrimFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  
+  <fieldType name="ja_suggest" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.JapaneseTokenizerFactory" mode="normal"/>
+      <filter class="solr.CJKWidthFilterFactory"/>
+      <filter class="solr.JapaneseReadingFormFilterFactory" useRomaji="true"/>
+    </analyzer>
+  </fieldType>
   </types>
 
   <fields>

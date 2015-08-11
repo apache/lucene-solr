@@ -78,7 +78,7 @@
 
   <!-- Validation here depends on compile-tools: but we want to compile modules' tools too -->
   <target name="compile-tools" depends="common.compile-tools">
-  	<modules-crawl target="compile-tools" failonerror="true"/>
+    <modules-crawl target="compile-tools" failonerror="true"/>
   </target>
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
@@ -97,7 +97,7 @@
     <lib-versions-check-macro dir="${common.dir}/.."
                               centralized.versions.file="${common.dir}/ivy-versions.properties"
                               ivy.settings.file="${common.dir}/ivy-settings.xml"
-    	                      ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
+                              ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
                               common.build.dir="${common.build.dir}"
                               ignore.conflicts.file="${common.dir}/ivy-ignore-conflicts.properties"/>
   </target>
@@ -237,7 +237,7 @@
       <fileset dir="site/html"/>
     </copy>
   </target>
-	
+  
   <target name="javadocs-modules" description="Generate javadoc for modules classes">
     <modules-crawl target="javadocs"
                    failonerror="true"/>
@@ -281,7 +281,7 @@
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
     </zip>
-	<make-checksums file="${dist.dir}/lucene-${version}.zip"/>
+    <make-checksums file="${dist.dir}/lucene-${version}.zip"/>
   </target>
 
   <!-- ================================================================== -->
@@ -435,7 +435,7 @@
       <modules-crawl target="-validate-maven-dependencies"/>
     </sequential>
   </target>
-	
+  
   <!-- ================================================================== -->
   <!-- support for signing the artifacts using gpg                        -->
   <!-- ================================================================== -->

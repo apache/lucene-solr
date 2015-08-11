@@ -1,496 +1,496 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <analyticsRequestEnvelope stats="true" olap="true">
- 	<analyticsRequest>
- 		<name>sum</name>
- 		
- 		<statistic>
- 			<expression>sum(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sum(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>mean</name>
- 		
- 		<statistic>
- 			<expression>mean(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>mean(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>mean(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>mean(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>sumOfSquares</name>
- 		
- 		<statistic>
- 			<expression>sumofsquares(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sumofsquares(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sumofsquares(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>sumofsquares(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>stddev</name>
- 		
- 		<statistic>
- 			<expression>stddev(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>stddev(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>stddev(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>stddev(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>median</name>
- 		
- 		<statistic>
- 			<expression>median(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>median(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>median(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>median(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>perc_20 numeric</name>
- 		
- 		<statistic>
- 			<expression>perc(20,int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(20,long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(20,float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(20,double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>perc_20</name>
- 		
- 		<statistic>
- 			<expression>perc(20,str(string_sd))</expression>
- 			<name>str</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(20,date(date_dtd))</expression>
- 			<name>date</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>int_id</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>long_ld</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>perc_60 numeric</name>
- 		
- 		<statistic>
- 			<expression>perc(60,int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(60,long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(60,float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(60,double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>perc_60</name>
- 		
- 		<statistic>
- 			<expression>perc(60,str(string_sd))</expression>
- 			<name>str</name>
- 		</statistic>
- 		<statistic>
- 			<expression>perc(60,date(date_dtd))</expression>
- 			<name>date</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>int_id</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>long_ld</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>min numeric</name>
- 		
- 		<statistic>
- 			<expression>min(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>min(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>min(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>min(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>min</name>
- 		
- 		<statistic>
- 			<expression>min(str(string_sd))</expression>
- 			<name>str</name>
- 		</statistic>
- 		<statistic>
- 			<expression>min(date(date_dtd))</expression>
- 			<name>date</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>int_id</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>long_ld</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>max numeric</name>
- 		
- 		<statistic>
- 			<expression>max(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>max</name>
- 		
- 		<statistic>
- 			<expression>max(str(string_sd))</expression>
- 			<name>str</name>
- 		</statistic>
- 		<statistic>
- 			<expression>max(date(date_dtd))</expression>
- 			<name>date</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>int_id</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>long_ld</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>count numeric</name>
- 		
- 		<statistic>
- 			<expression>count(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>count(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>count(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>count(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>count</name>
- 		
- 		<statistic>
- 			<expression>count(str(string_sd))</expression>
- 			<name>str</name>
- 		</statistic>
- 		<statistic>
- 			<expression>count(date(date_dtd))</expression>
- 			<name>date</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>int_id</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>long_ld</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>unique numeric</name>
- 		
- 		<statistic>
- 			<expression>unique(int(int_id))</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>unique(long(long_ld))</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>unique(float(float_fd))</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>unique(double(double_dd))</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>unique</name>
- 		
- 		<statistic>
- 			<expression>unique(str(string_sd))</expression>
- 			<name>str</name>
- 		</statistic>
- 		<statistic>
- 			<expression>unique(date(date_dtd))</expression>
- 			<name>date</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>int_id</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>long_ld</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>missing numeric</name>
- 		
- 		<statistic>
- 			<expression>missing(int{int_id})</expression>
- 			<name>int</name>
- 		</statistic>
- 		<statistic>
- 			<expression>missing(long{long_ld})</expression>
- 			<name>long</name>
- 		</statistic>
- 		<statistic>
- 			<expression>missing(float{float_fd})</expression>
- 			<name>float</name>
- 		</statistic>
- 		<statistic>
- 			<expression>missing(double{double_dd})</expression>
- 			<name>double</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>missing</name>
- 		
- 		<statistic>
- 			<expression>missing(str{string_sd})</expression>
- 			<name>str</name>
- 		</statistic>
- 		<statistic>
- 			<expression>missing(date{date_dtd})</expression>
- 			<name>date</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>int_id</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>long_ld</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>multivalued</name>
- 		
- 		<statistic>
- 			<expression>mean(int(int_id))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>long_ldm</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>string_sdm</field>
- 		</fieldFacet>
- 		<fieldFacet>
- 			<field>date_dtdm</field>
- 		</fieldFacet>
- 	</analyticsRequest>
- 	<analyticsRequest>
- 		<name>missing facet</name>
+   <analyticsRequest>
+     <name>sum</name>
+     
+     <statistic>
+       <expression>sum(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>sum(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>sum(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>sum(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>mean</name>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>mean(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>mean(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>mean(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>sumOfSquares</name>
+     
+     <statistic>
+       <expression>sumofsquares(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>stddev</name>
+     
+     <statistic>
+       <expression>stddev(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>stddev(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>stddev(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>stddev(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>median</name>
+     
+     <statistic>
+       <expression>median(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>median(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>median(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>median(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>perc_20 numeric</name>
+     
+     <statistic>
+       <expression>perc(20,int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>perc(20,long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>perc(20,float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>perc(20,double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>perc_20</name>
+     
+     <statistic>
+       <expression>perc(20,str(string_sd))</expression>
+       <name>str</name>
+     </statistic>
+     <statistic>
+       <expression>perc(20,date(date_dtd))</expression>
+       <name>date</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>int_id</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>long_ld</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>perc_60 numeric</name>
+     
+     <statistic>
+       <expression>perc(60,int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>perc(60,long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>perc(60,float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>perc(60,double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>perc_60</name>
+     
+     <statistic>
+       <expression>perc(60,str(string_sd))</expression>
+       <name>str</name>
+     </statistic>
+     <statistic>
+       <expression>perc(60,date(date_dtd))</expression>
+       <name>date</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>int_id</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>long_ld</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>min numeric</name>
+     
+     <statistic>
+       <expression>min(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>min(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>min(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>min(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>min</name>
+     
+     <statistic>
+       <expression>min(str(string_sd))</expression>
+       <name>str</name>
+     </statistic>
+     <statistic>
+       <expression>min(date(date_dtd))</expression>
+       <name>date</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>int_id</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>long_ld</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>max numeric</name>
+     
+     <statistic>
+       <expression>max(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>max(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>max(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>max(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>max</name>
+     
+     <statistic>
+       <expression>max(str(string_sd))</expression>
+       <name>str</name>
+     </statistic>
+     <statistic>
+       <expression>max(date(date_dtd))</expression>
+       <name>date</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>int_id</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>long_ld</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>count numeric</name>
+     
+     <statistic>
+       <expression>count(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>count(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>count(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>count(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>count</name>
+     
+     <statistic>
+       <expression>count(str(string_sd))</expression>
+       <name>str</name>
+     </statistic>
+     <statistic>
+       <expression>count(date(date_dtd))</expression>
+       <name>date</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>int_id</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>long_ld</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>unique numeric</name>
+     
+     <statistic>
+       <expression>unique(int(int_id))</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>unique(long(long_ld))</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>unique(float(float_fd))</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>unique(double(double_dd))</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>unique</name>
+     
+     <statistic>
+       <expression>unique(str(string_sd))</expression>
+       <name>str</name>
+     </statistic>
+     <statistic>
+       <expression>unique(date(date_dtd))</expression>
+       <name>date</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>int_id</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>long_ld</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>missing numeric</name>
+     
+     <statistic>
+       <expression>missing(int{int_id})</expression>
+       <name>int</name>
+     </statistic>
+     <statistic>
+       <expression>missing(long{long_ld})</expression>
+       <name>long</name>
+     </statistic>
+     <statistic>
+       <expression>missing(float{float_fd})</expression>
+       <name>float</name>
+     </statistic>
+     <statistic>
+       <expression>missing(double{double_dd})</expression>
+       <name>double</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>missing</name>
+     
+     <statistic>
+       <expression>missing(str{string_sd})</expression>
+       <name>str</name>
+     </statistic>
+     <statistic>
+       <expression>missing(date{date_dtd})</expression>
+       <name>date</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>int_id</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>long_ld</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>multivalued</name>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>long_ldm</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>string_sdm</field>
+     </fieldFacet>
+     <fieldFacet>
+       <field>date_dtdm</field>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>missing facet</name>
 
- 		<statistic>
- 			<expression>mean(int(int_id))</expression>
- 			<name>mean</name>
- 		</statistic>
- 		
- 		<fieldFacet>
- 			<field>date_dtd</field>
- 		</fieldFacet>
- 		<fieldFacet showMissing="true">
- 			<field>string_sd</field>
- 		</fieldFacet>
- 		<fieldFacet showMissing="true">
- 			<field>date_dtdm</field>
- 		</fieldFacet>
- 	</analyticsRequest>
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>date_dtd</field>
+     </fieldFacet>
+     <fieldFacet showMissing="true">
+       <field>string_sd</field>
+     </fieldFacet>
+     <fieldFacet showMissing="true">
+       <field>date_dtdm</field>
+     </fieldFacet>
+   </analyticsRequest>
 </analyticsRequestEnvelope>

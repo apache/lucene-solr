@@ -38,8 +38,8 @@
 
     <deletionPolicy class="org.apache.solr.core.FakeDeletionPolicy">
       <str name="var1">value1</str>
-		  <str name="var2">value2</str>
-	  </deletionPolicy>
+      <str name="var2">value2</str>
+    </deletionPolicy>
   </indexConfig>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>

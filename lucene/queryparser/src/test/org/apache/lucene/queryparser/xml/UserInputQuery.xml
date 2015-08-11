@@ -16,10 +16,10 @@
  limitations under the License.
 -->
 <BooleanQuery>
-	<Clause occurs="must">
-		<UserQuery>"Bank of England"</UserQuery>
-	</Clause>
-	<Clause occurs="filter">
-		<RangeQuery fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
-	</Clause>
+  <Clause occurs="must">
+    <UserQuery>"Bank of England"</UserQuery>
+  </Clause>
+  <Clause occurs="filter">
+    <RangeQuery fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
+  </Clause>
 </BooleanQuery>

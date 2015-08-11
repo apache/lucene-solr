@@ -22,7 +22,7 @@
   <description>
     Auto-suggest and Spellchecking support
   </description>
-	
+  
   <!-- just a list of words for testing suggesters -->
   <property name="rat.excludes" value="**/Top50KWiki.utf8,**/stop-snowball.txt"/>
 
@@ -40,8 +40,8 @@
     <invoke-module-javadoc>
       <links>
         <link href="../analyzers-common"/>
-      	<link href="../queries"/>
-      	<link href="../misc"/>
+        <link href="../queries"/>
+        <link href="../misc"/>
       </links>
     </invoke-module-javadoc>
   </target>

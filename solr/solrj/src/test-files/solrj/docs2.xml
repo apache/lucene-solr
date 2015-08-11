@@ -24,7 +24,7 @@
   <field name="manu_id_s">corsair</field>
   <field name="cat">electronics</field>
   <field name="cat">memory</field>
-  <field name="features">CAS latency 2,	2-3-3-6 timing, 2.75v, unbuffered, heat-spreader</field>
+  <field name="features">CAS latency 2,  2-3-3-6 timing, 2.75v, unbuffered, heat-spreader</field>
   <field name="price">185</field>
   <field name="popularity">5</field>
   <field name="inStock">true</field>
@@ -62,7 +62,7 @@
   <field name="manu_id_s">corsair</field>
   <field name="cat">electronics</field>
   <field name="cat">memory</field>
-  <field name="features">CAS latency 3,	 2.7v</field>
+  <field name="features">CAS latency 3,   2.7v</field>
   <!-- note: price & popularity is missing on this one -->
   <field name="popularity">0</field>
   <field name="inStock">true</field>

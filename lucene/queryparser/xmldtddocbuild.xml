@@ -19,7 +19,7 @@
 
 <project name="DTDDocAnt" default="main">
 
-	<import file="../../lucene/module-build.xml"/>
+  <import file="../../lucene/module-build.xml"/>
 
     <description>
     This file generates DTDdocumentation

@@ -20,7 +20,7 @@
   <info organisation="org.apache.lucene" module="replicator"/>
 
   <configurations defaultconfmapping="http->master;jetty->master;start->master;servlet->master;logging->master">
-  	<conf name="http" description="httpclient jars" transitive="false"/>
+    <conf name="http" description="httpclient jars" transitive="false"/>
     <conf name="jetty" description="jetty jars" transitive="false"/>
     <conf name="start" description="jetty start jar" transitive="false"/>
     <conf name="servlet" description="servlet-api jar" transitive="false"/>

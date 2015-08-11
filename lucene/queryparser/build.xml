@@ -63,19 +63,19 @@
 
       <!-- Change the incorrect public ctors for QueryParser to be protected instead -->
       <replaceregexp file="src/java/org/apache/lucene/queryparser/classic/QueryParser.java"
-		     byline="true"
-		     match="public QueryParser\(CharStream "
-		     replace="protected QueryParser(CharStream "/>
+         byline="true"
+         match="public QueryParser\(CharStream "
+         replace="protected QueryParser(CharStream "/>
       <replaceregexp file="src/java/org/apache/lucene/queryparser/classic/QueryParser.java"
-		     byline="true"
-		     match="public QueryParser\(QueryParserTokenManager "
-		     replace="protected QueryParser(QueryParserTokenManager "/>
+         byline="true"
+         match="public QueryParser\(QueryParserTokenManager "
+         replace="protected QueryParser(QueryParserTokenManager "/>
       <generalReplaces dir="src/java/org/apache/lucene/queryparser/classic"/>
     </sequential>
   </target>
 
   <target name="javacc-surround" depends="resolve-javacc" description="generate surround query parser">
-  	<invoke-javacc target="src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj"
+    <invoke-javacc target="src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj"
                    outputDir="src/java/org/apache/lucene/queryparser/surround/parser"
     />
     <generalReplaces dir="src/java/org/apache/lucene/queryparser/surround/parser"/>

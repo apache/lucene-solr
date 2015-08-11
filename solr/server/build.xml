@@ -40,7 +40,7 @@
     <sequential>
     <!-- jetty libs in lib/ -->
     <ivy:retrieve conf="jetty,servlet" type="jar" log="download-only" symlink="${ivy.symlink}"
-    	          pattern="lib/[artifact]-[revision].[ext]" sync="true"/>
+                pattern="lib/[artifact]-[revision].[ext]" sync="true"/>
     <ivy:retrieve conf="logging" type="jar,bundle" log="download-only" symlink="${ivy.symlink}"
                   pattern="lib/ext/[artifact]-[revision].[ext]" sync="true"/>
     <!-- start.jar - we don't use sync=true here, we don't own the dir, but

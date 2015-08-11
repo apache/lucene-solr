@@ -25,13 +25,13 @@
         
         query="SELECT CODE, COUNTRY_NAME FROM COUNTRIES"
       >
-      	<field column="CODE" name="DO_NOT_INDEX" />
+        <field column="CODE" name="DO_NOT_INDEX" />
       </entity>
          
       <entity 
         name="Sports"
         processor="SqlEntityProcessor"
-        dataSource="hsqldb"             	
+        dataSource="hsqldb"               
         query="SELECT PERSON_ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE PERSON_ID=${People.ID}"
       />
 

@@ -21,12 +21,12 @@
 
   <description>
     Additional Analyzers
-      - common:	Additional Analyzers
+      - common: Additional Analyzers
       - icu: Analyzers that use functionality from ICU
-      - kuromoji:       Japanese Morphological Analyzer
-      - morfologik:	Morfologik Stemmer
-      - smartcn:	Smart Analyzer for Simplified Chinese Text
-      - stempel:	Algorithmic Stemmer for Polish
+      - kuromoji: Japanese Morphological Analyzer
+      - morfologik: Morfologik Stemmer
+      - smartcn: Smart Analyzer for Simplified Chinese Text
+      - stempel: Algorithmic Stemmer for Polish
       - uima: UIMA Analysis module
   </description>
 
@@ -120,15 +120,15 @@
 
   <target name="-dist-maven">
     <forall-analyzers target="-dist-maven"/>
-  </target>  	
+  </target>
 
   <target name="-validate-maven-dependencies">
     <forall-analyzers target="-validate-maven-dependencies"/>
-  </target>  	
+  </target>
 
   <target name="javadocs">
     <forall-analyzers target="javadocs"/>
-  </target>  	
+  </target>
 
   <target name="javadocs-index.html">
     <forall-analyzers target="javadocs-index.html"/>
@@ -149,7 +149,7 @@
   <target name="-append-module-dependencies-properties">
     <forall-analyzers target="-append-module-dependencies-properties"/>
   </target>
-	
+  
   <target name="check-forbidden-apis">
     <forall-analyzers target="check-forbidden-apis"/>
   </target>

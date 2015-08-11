@@ -131,8 +131,7 @@
       import org.apache.tools.ant.BuildException;
       
       def extensions = [
-        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html'
-        // TODO: js, xml
+        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js', 'xml'
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
@@ -170,6 +169,7 @@
             include(name: '*.' + it)
           }
           exclude(name: '**/build/**')
+          exclude(name: 'build.xml') // ourselves :-)
         }
       }.each{ f ->
         def text = f.getText('UTF-8');

@@ -15,12 +15,12 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-		<!-- TermsQuery uses an analyzer to tokenize text and creates a BooleanQuery with nested
-			"should" TermQueries for each of the tokens encountered. This can be used for user input
-			which may include content or characters that would otherwise be illegal query syntax when
-			using the standard lucene query parser. Of course the downside is that none of the query 
-			operators (AND NOT ~ ^ : etc) will have an effect. For some scenarios queries are
-			not formed by people familiar with Lucene query syntax and they can inadvertently type illegal
-			query syntax so in these cases this is an appropriate and simple alternative
-		--> 
+    <!-- TermsQuery uses an analyzer to tokenize text and creates a BooleanQuery with nested
+      "should" TermQueries for each of the tokens encountered. This can be used for user input
+      which may include content or characters that would otherwise be illegal query syntax when
+      using the standard lucene query parser. Of course the downside is that none of the query 
+      operators (AND NOT ~ ^ : etc) will have an effect. For some scenarios queries are
+      not formed by people familiar with Lucene query syntax and they can inadvertently type illegal
+      query syntax so in these cases this is an appropriate and simple alternative
+    --> 
 <TermsQuery fieldName="contents">sumitomo bank</TermsQuery>

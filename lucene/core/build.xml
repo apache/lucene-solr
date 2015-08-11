@@ -65,20 +65,20 @@
   <target name="-dist-maven" depends="-dist-maven-src-java"/>
 
   <macrodef name="createLevAutomaton">
-  	<attribute name="n"/>
-  	<sequential>
+      <attribute name="n"/>
+      <sequential>
       <exec dir="src/java/org/apache/lucene/util/automaton"
             executable="${python.exe}" failonerror="true">
-	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
-	 <arg value="-B"/>
+        <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+        <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
         <arg value="@{n}"/>
         <arg value="True"/>
       </exec>
       <exec dir="src/java/org/apache/lucene/util/automaton"
             executable="${python.exe}" failonerror="true">
-	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
-	 <arg value="-B"/>
+        <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+        <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
         <arg value="@{n}"/>
         <arg value="False"/>

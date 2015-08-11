@@ -29,6 +29,6 @@
     <pathelement path="${analyzers-common.jar}"/>
     <path refid="base.classpath"/>
   </path>
-	
+  
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core"/>
 </project>
