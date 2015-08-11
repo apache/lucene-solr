@@ -24,6 +24,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -79,38 +81,7 @@ public class BKDPointInBBoxQuery extends Query {
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
 
-    return new Weight(this) {
-      private float queryNorm;
-      private float queryWeight;
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-      }
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        queryWeight = getBoost();
-        return queryWeight * queryWeight;
-      }
-
-      @Override
-      public void normalize(float norm, float topLevelBoost) {
-        queryNorm = norm * topLevelBoost;
-        queryWeight *= queryNorm;
-      }
-
-      @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        final Scorer s = scorer(context);
-        final boolean exists = s != null && s.advance(doc) == doc;
-
-        if (exists) {
-          return Explanation.match(queryWeight, BKDPointInBBoxQuery.this.toString() + ", product of:",
-              Explanation.match(getBoost(), "boost"), Explanation.match(queryNorm, "queryNorm"));
-        } else {
-          return Explanation.noMatch(BKDPointInBBoxQuery.this.toString() + " doesn't match id " + doc);
-        }
-      }
+    return new ConstantScoreWeight(this) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -131,38 +102,7 @@ public class BKDPointInBBoxQuery extends Query {
 
         final DocIdSetIterator disi = result.iterator();
 
-        return new Scorer(this) {
-
-          @Override
-          public float score() throws IOException {
-            return queryWeight;
-          }
-
-          @Override
-          public int freq() throws IOException {
-            return 1;
-          }
-
-          @Override
-          public int docID() {
-            return disi.docID();
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return disi.nextDoc();
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            return disi.advance(target);
-          }
-
-          @Override
-          public long cost() {
-            return disi.cost();
-          }
-        };
+        return new ConstantScoreScorer(this, score(), disi);
       }
     };
   }

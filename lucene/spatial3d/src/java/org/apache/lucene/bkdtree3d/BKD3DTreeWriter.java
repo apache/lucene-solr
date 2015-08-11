@@ -1,4 +1,4 @@
-package org.apache.lucene.bkdtree;
+package org.apache.lucene.bkdtree3d;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,9 +38,6 @@ import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO
-//   - could we just "use postings" to map leaf -> docIDs?
-//   - the polygon query really should be 2-phase
-//   - if we could merge trees, we could drop delegating to wrapped DV?
 //   - we could also index "auto-prefix terms" here, and use better compression, and maybe only use for the "fully contained" case so we'd
 //     only index docIDs
 //   - the index could be efficiently encoded as an FST, so we don't have wasteful
@@ -51,8 +48,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 //   - we could use threads while building; the higher nodes are very parallelizable
 //   - generalize to N dimenions? i think there are reasonable use cases here, e.g.
 //     2 dimensional points to store houses, plus e.g. 3rd dimension for "household income"
-//   - geo3d integration should be straightforward?  better accuracy, faster performance for small-poly-with-bbox cases?  right now the poly
-//     check is very costly...
 
 /** Recursively builds a BKD tree to assign all incoming points to smaller
  *  and smaller rectangles until the number of points in a given
@@ -73,12 +68,13 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental */
 
-class BKDTreeWriter {
+class BKD3DTreeWriter {
 
-  // latEnc (int) + lonEnc (int) + ord (long) + docID (int)
-  static final int BYTES_PER_DOC = RamUsageEstimator.NUM_BYTES_LONG + 3 * RamUsageEstimator.NUM_BYTES_INT;
+  // x (int), y (int), z (int) + ord (long) + docID (int)
+  static final int BYTES_PER_DOC = RamUsageEstimator.NUM_BYTES_LONG + 4 * RamUsageEstimator.NUM_BYTES_INT;
 
-  //static final boolean DEBUG = false;
+  // nocommit removeme
+  static final boolean DEBUG = false;
 
   public static final int DEFAULT_MAX_POINTS_IN_LEAF_NODE = 1024;
 
@@ -89,7 +85,7 @@ class BKDTreeWriter {
   private final ByteArrayDataOutput scratchBytesOutput = new ByteArrayDataOutput(scratchBytes);
 
   private OfflineSorter.ByteSequencesWriter writer;
-  private GrowingHeapLatLonWriter heapWriter;
+  private GrowingHeapWriter heapWriter;
 
   private Path tempInput;
   private Path tempDir;
@@ -97,19 +93,25 @@ class BKDTreeWriter {
   private final int maxPointsSortInHeap;
 
   private long pointCount;
+  private int globalMinX = Integer.MAX_VALUE;
+  private int globalMaxX = Integer.MIN_VALUE;
+  private int globalMinY = Integer.MAX_VALUE;
+  private int globalMaxY = Integer.MIN_VALUE;
+  private int globalMinZ = Integer.MAX_VALUE;
+  private int globalMaxZ = Integer.MIN_VALUE;
 
-  public BKDTreeWriter() throws IOException {
+  public BKD3DTreeWriter() throws IOException {
     this(DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_POINTS_SORT_IN_HEAP);
   }
 
   // TODO: instead of maxPointsSortInHeap, change to maxMBHeap ... the mapping is non-obvious:
-  public BKDTreeWriter(int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
+  public BKD3DTreeWriter(int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
     verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
 
     // We write first maxPointsSortInHeap in heap, then cutover to offline for additional points:
-    heapWriter = new GrowingHeapLatLonWriter(maxPointsSortInHeap);
+    heapWriter = new GrowingHeapWriter(maxPointsSortInHeap);
   }
 
   public static void verifyParams(int maxPointsInLeafNode, int maxPointsSortInHeap) {
@@ -127,32 +129,20 @@ class BKDTreeWriter {
     }
   }
 
-  public void add(double lat, double lon, int docID) throws IOException {
-
-    if (validLat(lat) == false) {
-      throw new IllegalArgumentException("invalid lat: " + lat);
-    }
-    if (validLon(lon) == false) {
-      throw new IllegalArgumentException("invalid lon: " + lon);
-    }
-
-    // Quantize to 32 bit precision, which is plenty: ~.0093 meter precision (longitude) at the equator
-    add(encodeLat(lat), encodeLon(lon), docID);
-  }
-
   /** If the current segment has too many points then we switchover to temp files / offline sort. */
   private void switchToOffline() throws IOException {
 
     // OfflineSorter isn't thread safe, but our own private tempDir works around this:
-    tempDir = Files.createTempDirectory(OfflineSorter.defaultTempDir(), BKDTreeWriter.class.getSimpleName());
+    tempDir = Files.createTempDirectory(OfflineSorter.defaultTempDir(), BKD3DTreeWriter.class.getSimpleName());
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
     tempInput = tempDir.resolve("in");
     writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     for(int i=0;i<pointCount;i++) {
       scratchBytesOutput.reset(scratchBytes);
-      scratchBytesOutput.writeInt(heapWriter.latEncs[i]);
-      scratchBytesOutput.writeInt(heapWriter.lonEncs[i]);
+      scratchBytesOutput.writeInt(heapWriter.xs[i]);
+      scratchBytesOutput.writeInt(heapWriter.ys[i]);
+      scratchBytesOutput.writeInt(heapWriter.zs[i]);
       scratchBytesOutput.writeVInt(heapWriter.docIDs[i]);
       scratchBytesOutput.writeVLong(i);
       // TODO: can/should OfflineSorter optimize the fixed-width case?
@@ -162,40 +152,43 @@ class BKDTreeWriter {
     heapWriter = null;
   }
 
-  void add(int latEnc, int lonEnc, int docID) throws IOException {
-    assert latEnc > Integer.MIN_VALUE;
-    assert latEnc < Integer.MAX_VALUE;
-    assert lonEnc > Integer.MIN_VALUE;
-    assert lonEnc < Integer.MAX_VALUE;
+  public void add(int x, int y, int z, int docID) throws IOException {
 
     if (pointCount >= maxPointsSortInHeap) {
       if (writer == null) {
         switchToOffline();
       }
       scratchBytesOutput.reset(scratchBytes);
-      scratchBytesOutput.writeInt(latEnc);
-      scratchBytesOutput.writeInt(lonEnc);
+      scratchBytesOutput.writeInt(x);
+      scratchBytesOutput.writeInt(y);
+      scratchBytesOutput.writeInt(z);
       scratchBytesOutput.writeVInt(docID);
       scratchBytesOutput.writeVLong(pointCount);
       writer.write(scratchBytes, 0, scratchBytes.length);
     } else {
       // Not too many points added yet, continue using heap:
-      heapWriter.append(latEnc, lonEnc, pointCount, docID);
+      heapWriter.append(x, y, z, pointCount, docID);
     }
 
     pointCount++;
+    globalMinX = Math.min(globalMinX, x);
+    globalMaxX = Math.max(globalMaxX, x);
+    globalMinY = Math.min(globalMinY, y);
+    globalMaxY = Math.max(globalMaxY, y);
+    globalMinZ = Math.min(globalMinZ, z);
+    globalMaxZ = Math.max(globalMaxZ, z);
   }
 
   /** Changes incoming {@link ByteSequencesWriter} file to to fixed-width-per-entry file, because we need to be able to slice
    *  as we recurse in {@link #build}. */
-  private LatLonWriter convertToFixedWidth(Path in) throws IOException {
+  private Writer convertToFixedWidth(Path in) throws IOException {
     BytesRefBuilder scratch = new BytesRefBuilder();
     scratch.grow(BYTES_PER_DOC);
     BytesRef bytes = scratch.get();
     ByteArrayDataInput dataReader = new ByteArrayDataInput();
 
     OfflineSorter.ByteSequencesReader reader = null;
-    LatLonWriter sortedWriter = null;
+    Writer sortedWriter = null;
     boolean success = false;
     try {
       reader = new OfflineSorter.ByteSequencesReader(in);
@@ -204,16 +197,13 @@ class BKDTreeWriter {
         boolean result = reader.read(scratch);
         assert result;
         dataReader.reset(bytes.bytes, bytes.offset, bytes.length);
-        int latEnc = dataReader.readInt();
-        int lonEnc = dataReader.readInt();
+        int x = dataReader.readInt();
+        int y = dataReader.readInt();
+        int z = dataReader.readInt();
         int docID = dataReader.readVInt();
         long ord = dataReader.readVLong();
         assert docID >= 0: "docID=" + docID;
-        assert latEnc > Integer.MIN_VALUE;
-        assert latEnc < Integer.MAX_VALUE;
-        assert lonEnc > Integer.MIN_VALUE;
-        assert lonEnc < Integer.MAX_VALUE;
-        sortedWriter.append(latEnc, lonEnc, ord, docID);
+        sortedWriter.append(x, y, z, ord, docID);
       }
       success = true;
     } finally {
@@ -232,7 +222,8 @@ class BKDTreeWriter {
     return sortedWriter;
   }
 
-  private LatLonWriter sort(boolean lon) throws IOException {
+  /** dim: 0=x, 1=y, 2=z */
+  private Writer sort(int dim) throws IOException {
     if (heapWriter != null) {
 
       assert pointCount < Integer.MAX_VALUE;
@@ -249,22 +240,28 @@ class BKDTreeWriter {
           heapWriter.ords[i] = heapWriter.ords[j];
           heapWriter.ords[j] = ord;
 
-          int latEnc = heapWriter.latEncs[i];
-          heapWriter.latEncs[i] = heapWriter.latEncs[j];
-          heapWriter.latEncs[j] = latEnc;
+          int x = heapWriter.xs[i];
+          heapWriter.xs[i] = heapWriter.xs[j];
+          heapWriter.xs[j] = x;
 
-          int lonEnc = heapWriter.lonEncs[i];
-          heapWriter.lonEncs[i] = heapWriter.lonEncs[j];
-          heapWriter.lonEncs[j] = lonEnc;
+          int y = heapWriter.ys[i];
+          heapWriter.ys[i] = heapWriter.ys[j];
+          heapWriter.ys[j] = y;
+
+          int z = heapWriter.zs[i];
+          heapWriter.zs[i] = heapWriter.zs[j];
+          heapWriter.zs[j] = z;
         }
 
         @Override
         protected int compare(int i, int j) {
           int cmp;
-          if (lon) {
-            cmp = Integer.compare(heapWriter.lonEncs[i], heapWriter.lonEncs[j]);
+          if (dim == 0) {
+            cmp = Integer.compare(heapWriter.xs[i], heapWriter.xs[j]);
+          } else if (dim == 1) {
+            cmp = Integer.compare(heapWriter.ys[i], heapWriter.ys[j]);
           } else {
-            cmp = Integer.compare(heapWriter.latEncs[i], heapWriter.latEncs[j]);
+            cmp = Integer.compare(heapWriter.zs[i], heapWriter.zs[j]);
           }
           if (cmp != 0) {
             return cmp;
@@ -280,10 +277,18 @@ class BKDTreeWriter {
         }
       }.sort(0, (int) pointCount);
 
-      HeapLatLonWriter sorted = new HeapLatLonWriter((int) pointCount);
+      HeapWriter sorted = new HeapWriter((int) pointCount);
+      //System.out.println("sorted dim=" + dim);
       for(int i=0;i<pointCount;i++) {
-        sorted.append(heapWriter.latEncs[i],
-                      heapWriter.lonEncs[i],
+        /*
+        System.out.println("  docID=" + heapWriter.docIDs[i] + 
+                           " x=" + heapWriter.xs[i] +
+                           " y=" + heapWriter.ys[i] +
+                           " z=" + heapWriter.zs[i]);
+        */
+        sorted.append(heapWriter.xs[i],
+                      heapWriter.ys[i],
+                      heapWriter.zs[i],
                       heapWriter.ords[i],
                       heapWriter.docIDs[i]);
       }
@@ -301,22 +306,26 @@ class BKDTreeWriter {
         @Override
         public int compare(BytesRef a, BytesRef b) {
           reader.reset(a.bytes, a.offset, a.length);
-          final int latAEnc = reader.readInt();
-          final int lonAEnc = reader.readInt();
+          final int xa = reader.readInt();
+          final int ya = reader.readInt();
+          final int za = reader.readInt();
           final int docIDA = reader.readVInt();
           final long ordA = reader.readVLong();
 
           reader.reset(b.bytes, b.offset, b.length);
-          final int latBEnc = reader.readInt();
-          final int lonBEnc = reader.readInt();
+          final int xb = reader.readInt();
+          final int yb = reader.readInt();
+          final int zb = reader.readInt();
           final int docIDB = reader.readVInt();
           final long ordB = reader.readVLong();
 
           int cmp;
-          if (lon) {
-            cmp = Integer.compare(lonAEnc, lonBEnc);
+          if (dim == 0) {
+            cmp = Integer.compare(xa, xb);
+          } else if (dim == 1) {
+            cmp = Integer.compare(ya, yb);
           } else {
-            cmp = Integer.compare(latAEnc, latBEnc);
+            cmp = Integer.compare(za, zb);
           }
           if (cmp != 0) {
             return cmp;
@@ -335,9 +344,9 @@ class BKDTreeWriter {
       Path sorted = tempDir.resolve("sorted");
       boolean success = false;
       try {
-        OfflineSorter latSorter = new OfflineSorter(cmp, OfflineSorter.BufferSize.automatic(), tempDir, OfflineSorter.MAX_TEMPFILES);
-        latSorter.sort(tempInput, sorted);
-        LatLonWriter writer = convertToFixedWidth(sorted);
+        OfflineSorter sorter = new OfflineSorter(cmp, OfflineSorter.BufferSize.automatic(), tempDir, OfflineSorter.MAX_TEMPFILES);
+        sorter.sort(tempInput, sorted);
+        Writer writer = convertToFixedWidth(sorted);
         success = true;
         return writer;
       } finally {
@@ -377,6 +386,7 @@ class BKDTreeWriter {
     innerNodeCount--;
 
     int numLeaves = (int) (innerNodeCount+1);
+    //System.out.println("  numLeaves=" + numLeaves);
 
     // Indexed by nodeID, but first (root) nodeID is 1
     int[] splitValues = new int[numLeaves];
@@ -388,40 +398,48 @@ class BKDTreeWriter {
     assert pointCount / splitValues.length <= maxPointsInLeafNode: "pointCount=" + pointCount + " splitValues.length=" + splitValues.length + " maxPointsInLeafNode=" + maxPointsInLeafNode;
     //System.out.println("  avg pointsPerLeaf=" + (pointCount/splitValues.length));
 
-    // Sort all docs once by lat, once by lon:
-    LatLonWriter latSortedWriter = null;
-    LatLonWriter lonSortedWriter = null;
+    // Sort all docs once by x, once by y, once by z:
+    Writer xSortedWriter = null;
+    Writer ySortedWriter = null;
+    Writer zSortedWriter = null;
 
     boolean success = false;
     try {
-      lonSortedWriter = sort(true);
-      latSortedWriter = sort(false);
+      xSortedWriter = sort(0);
+      ySortedWriter = sort(1);
+      zSortedWriter = sort(2);
       heapWriter = null;
 
-      // nocommit use the actual min/max from all points here:
-      build(1, numLeaves, new PathSlice(latSortedWriter, 0, pointCount),
-            new PathSlice(lonSortedWriter, 0, pointCount),
+      build(1, numLeaves,
+            new PathSlice(xSortedWriter, 0, pointCount),
+            new PathSlice(ySortedWriter, 0, pointCount),
+            new PathSlice(zSortedWriter, 0, pointCount),
             bitSet, out,
-            Integer.MIN_VALUE, Integer.MAX_VALUE,
-            Integer.MIN_VALUE, Integer.MAX_VALUE,
-            //encodeLat(-90.0), encodeLat(Math.nextAfter(90.0, Double.POSITIVE_INFINITY)),
-            //encodeLon(-180.0), encodeLon(Math.nextAfter(180.0, Double.POSITIVE_INFINITY)),
+            globalMinX, globalMaxX,
+            globalMinY, globalMaxY,
+            globalMinZ, globalMaxZ,
             splitValues,
             leafBlockFPs);
       success = true;
     } finally {
       if (success) {
-        latSortedWriter.destroy();
-        lonSortedWriter.destroy();
+        xSortedWriter.destroy();
+        ySortedWriter.destroy();
+        zSortedWriter.destroy();
         IOUtils.rm(tempInput);
       } else {
         try {
-          latSortedWriter.destroy();
+          xSortedWriter.destroy();
         } catch (Throwable t) {
           // Suppress to keep throwing original exc
         }
         try {
-          lonSortedWriter.destroy();
+          ySortedWriter.destroy();
+        } catch (Throwable t) {
+          // Suppress to keep throwing original exc
+        }
+        try {
+          zSortedWriter.destroy();
         } catch (Throwable t) {
           // Suppress to keep throwing original exc
         }
@@ -433,6 +451,13 @@ class BKDTreeWriter {
 
     // Write index:
     long indexFP = out.getFilePointer();
+    //System.out.println("indexFP=" + indexFP);
+    out.writeInt(globalMinX);
+    out.writeInt(globalMaxX);
+    out.writeInt(globalMinY);
+    out.writeInt(globalMaxY);
+    out.writeInt(globalMinZ);
+    out.writeInt(globalMaxZ);
     out.writeVInt(numLeaves);
 
     // NOTE: splitValues[0] is unused, because nodeID is 1-based:
@@ -467,11 +492,11 @@ class BKDTreeWriter {
 
   /** Sliced reference to points in an OfflineSorter.ByteSequencesWriter file. */
   private static final class PathSlice {
-    final LatLonWriter writer;
+    final Writer writer;
     final long start;
     final long count;
 
-    public PathSlice(LatLonWriter writer, long start, long count) {
+    public PathSlice(Writer writer, long start, long count) {
       this.writer = writer;
       this.start = start;
       this.count = count;
@@ -484,33 +509,38 @@ class BKDTreeWriter {
   }
 
   /** Marks bits for the ords (points) that belong in the left sub tree. */
-  private long markLeftTree(int splitDim, PathSlice source, LongBitSet bitSet, int[] splitValueRet,
-                            int minLatEnc, int maxLatEnc, int minLonEnc, int maxLonEnc) throws IOException {
+  private int markLeftTree(int splitDim, PathSlice source, LongBitSet bitSet,
+                           int minX, int maxX,
+                           int minY, int maxY,
+                           int minZ, int maxZ) throws IOException {
 
-    // This is the initital size of our left tree, but we may lower it below for == case:
+    // This is the size of our left tree
     long leftCount = source.count / 2;
 
     // Read the split value:
     //if (DEBUG) System.out.println("  leftCount=" + leftCount + " vs " + source.count);
-    LatLonReader reader = source.writer.getReader(source.start + leftCount);
+    Reader reader = source.writer.getReader(source.start + leftCount);
     boolean success = false;
     int splitValue;
     try {
       boolean result = reader.next();
       assert result;
 
-      int latSplitEnc = reader.latEnc();
-      assert latSplitEnc >= minLatEnc && latSplitEnc < maxLatEnc: "latSplitEnc=" + latSplitEnc + " minLatEnc=" + minLatEnc + " maxLatEnc=" + maxLatEnc;
+      int x = reader.x();
+      assert x >= minX && x <= maxX: "x=" + x + " minX=" + minX + " maxX=" + maxX;
 
-      int lonSplitEnc = reader.lonEnc();
-      assert lonSplitEnc >= minLonEnc && lonSplitEnc < maxLonEnc: "lonSplitEnc=" + lonSplitEnc + " minLonEnc=" + minLonEnc + " maxLonEnc=" + maxLonEnc;
+      int y = reader.y();
+      assert y >= minY && y <= maxY: "y=" + y + " minY=" + minY + " maxY=" + maxY;
+
+      int z = reader.z();
+      assert z >= minZ && z <= maxZ: "z=" + z + " minZ=" + minZ + " maxZ=" + maxZ;
 
       if (splitDim == 0) {
-        splitValue = latSplitEnc;
-        //if (DEBUG) System.out.println("  splitValue=" + decodeLat(splitValue));
+        splitValue = x;
+      } else if (splitDim == 1) {
+        splitValue = y;
       } else {
-        splitValue = lonSplitEnc;
-        //if (DEBUG) System.out.println("  splitValue=" + decodeLon(splitValue));
+        splitValue = z;
       }
       success = true;
     } finally {
@@ -520,8 +550,6 @@ class BKDTreeWriter {
         IOUtils.closeWhileHandlingException(reader);
       }
     }
-
-    splitValueRet[0] = splitValue;
 
     // Mark ords that fall into the left half, and also handle the == boundary case:
     assert bitSet.cardinality() == 0: "cardinality=" + bitSet.cardinality();
@@ -533,27 +561,24 @@ class BKDTreeWriter {
       for (int i=0;i<leftCount;i++) {
         boolean result = reader.next();
         assert result;
-        int latEnc = reader.latEnc();
-        int lonEnc = reader.lonEnc();
+        int x = reader.x();
+        int y = reader.y();
+        int z = reader.z();
 
         int value;
         if (splitDim == 0) {
-          value = latEnc;
+          value = x;
+        } else if (splitDim == 1) {
+          value = y;
         } else {
-          value = lonEnc;
+          value = z;
         }
 
         // Our input source is supposed to be sorted on the incoming dimension:
         assert value >= lastValue;
         lastValue = value;
 
-        if (value == splitValue) {
-          // TODO: we could simplify this, by allowing splitValue to be on either side?
-          // If we have identical points at the split, we move the count back to before the identical points:
-          leftCount = i;
-          break;
-        }
-        assert value < splitValue: "i=" + i + " value=" + value + " vs splitValue=" + splitValue;
+        assert value <= splitValue: "i=" + i + " value=" + value + " vs splitValue=" + splitValue;
         long ord = reader.ord();
         int docID = reader.docID();
         assert docID >= 0: "docID=" + docID + " reader=" + reader;
@@ -573,73 +598,65 @@ class BKDTreeWriter {
 
     assert leftCount == bitSet.cardinality(): "leftCount=" + leftCount + " cardinality=" + bitSet.cardinality();
 
-    return leftCount;
+    return splitValue;
+  }
+
+  // Split on the dim with the largest range:
+  static int getSplitDim(int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
+    long xRange = (long) maxX - (long) minX;
+    long yRange = (long) maxY - (long) minY;
+    long zRange = (long) maxZ - (long) minZ;
+
+    if (xRange > yRange) {
+      if (xRange > zRange) {
+        return 0;
+      } else {
+        return 2;
+      }
+    } else if (yRange > zRange) {
+      return 1;
+    } else {
+      return 2;
+    }
   }
 
   /** The incoming PathSlice for the dim we will split is already partitioned/sorted. */
   private void build(int nodeID, int leafNodeOffset,
-                     PathSlice lastLatSorted,
-                     PathSlice lastLonSorted,
+                     PathSlice lastXSorted,
+                     PathSlice lastYSorted,
+                     PathSlice lastZSorted,
                      LongBitSet bitSet,
                      IndexOutput out,
-                     int minLatEnc, int maxLatEnc, int minLonEnc, int maxLonEnc,
+                     int minX, int maxX,
+                     int minY, int maxY,
+                     int minZ, int maxZ,
                      int[] splitValues,
                      long[] leafBlockFPs) throws IOException {
 
-    PathSlice source;
-    PathSlice nextSource;
+    assert lastXSorted.count == lastYSorted.count;
+    assert lastXSorted.count == lastZSorted.count;
 
-    long latRange = (long) maxLatEnc - (long) minLatEnc;
-    long lonRange = (long) maxLonEnc - (long) minLonEnc;
-
-    assert lastLatSorted.count == lastLonSorted.count;
-
-    // Compute which dim we should split on at this level:
-    int splitDim;
-    if (latRange >= lonRange) {
-      // Split by lat:
-      splitDim = 0;
-      source = lastLatSorted;
-      nextSource = lastLonSorted;
-    } else {
-      // Split by lon:
-      splitDim = 1;
-      source = lastLonSorted;
-      nextSource = lastLatSorted;
-    }
-
-    long count = source.count;
-
-    //if (DEBUG) System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + " splitDim=" + splitDim + "\n  lastLatSorted=" + lastLatSorted + "\n  lastLonSorted=" + lastLonSorted + "\n  count=" + count + " lat=" + decodeLat(minLatEnc) + " TO " + decodeLat(maxLatEnc) + " lon=" + decodeLon(minLonEnc) + " TO " + decodeLon(maxLonEnc));
-
-    if (count == 0) {
-      // Dead end in the tree, due to adversary cases, e.g. many identical points:
-      if (nodeID < splitValues.length) {
-        // Sentinel used to mark that the tree is dead under here:
-        splitValues[nodeID] = Integer.MAX_VALUE;
-      }
-      //if (DEBUG) System.out.println("  dead-end sub-tree");
-      return;
-    }
+    if (DEBUG) System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + "\n  lastXSorted=" + lastXSorted + "\n  lastYSorted=" + lastYSorted + "\n  lastZSorted=" + lastZSorted + "\n  count=" + lastXSorted.count + " x=" + minX + " TO " + maxX + " y=" + minY + " TO " + maxY + " z=" + minZ + " TO " + maxZ);
 
     if (nodeID >= leafNodeOffset) {
       // Leaf node: write block
-      //if (DEBUG) System.out.println("  leaf");
-      assert maxLatEnc > minLatEnc;
-      assert maxLonEnc > minLonEnc;
+      if (DEBUG) System.out.println("  leaf");
+      assert maxX > minX;
+      assert maxY > minY;
+      assert maxZ > minZ;
 
       //System.out.println("\nleaf:\n  lat range: " + ((long) maxLatEnc-minLatEnc));
       //System.out.println("  lon range: " + ((long) maxLonEnc-minLonEnc));
 
       // Sort by docID in the leaf so we get sequentiality at search time (may not matter?):
-      LatLonReader reader = source.writer.getReader(source.start);
+      Reader reader = lastXSorted.writer.getReader(lastXSorted.start);
 
-      // nocommit we can reuse this
-      int[] docIDs = new int[(int) count];
+      // nocommit we can reuse this?
+      int[] docIDs = new int[(int) lastXSorted.count];
 
       boolean success = false;
       try {
-        for (int i=0;i<source.count;i++) {
+        for (int i=0;i<lastXSorted.count;i++) {
 
           // NOTE: we discard ord at this point; we only needed it temporarily
           // during building to uniquely identify each point to properly handle
@@ -674,7 +691,7 @@ class BKDTreeWriter {
           lastDocID = docID;
         }
       }
-      assert uniqueCount <= count;
+      assert uniqueCount <= lastXSorted.count;
 
       long startFP = out.getFilePointer();
       out.writeVInt(uniqueCount);
@@ -692,137 +709,233 @@ class BKDTreeWriter {
         int docID = docIDs[i];
         if (docID != lastDocID) {
           out.writeInt(docID);
+          //System.out.println("  write docID=" + docID);
           lastDocID = docID;
         }
       }
       //long endFP = out.getFilePointer();
       //System.out.println("  bytes/doc: " + ((endFP - startFP) / count));
     } else {
+
+      int splitDim = getSplitDim(minX, maxX, minY, maxY, minZ, maxZ);
+      //System.out.println("  splitDim=" + splitDim);
+
+      PathSlice source;
+
+      if (splitDim == 0) {
+        source = lastXSorted;
+      } else if (splitDim == 1) {
+        source = lastYSorted;
+      } else {
+        source = lastZSorted;
+      }
+
+      long count = source.count;
+
+      // We let ties go to either side, so we should never get down to count == 0, even
+      // in adversarial case (all values are the same):
+      assert count > 0;
+
       // Inner node: partition/recurse
+      if (DEBUG) System.out.println("  non-leaf");
 
       assert nodeID < splitValues.length: "nodeID=" + nodeID + " splitValues.length=" + splitValues.length;
 
-      int[] splitValueArray = new int[1];
-
-      long leftCount = markLeftTree(splitDim, source, bitSet, splitValueArray,
-                                    minLatEnc, maxLatEnc, minLonEnc, maxLonEnc);
-      int splitValue = splitValueArray[0];
+      int splitValue = markLeftTree(splitDim, source, bitSet,
+                                    minX, maxX,
+                                    minY, maxY,
+                                    minZ, maxZ);
+      long leftCount = count/2;
 
       // TODO: we could save split value in here so we don't have to re-open file later:
 
-      // Partition nextSource into sorted left and right sets, so we can recurse.  This is somewhat hairy: we partition the next lon set
-      // according to how we had just partitioned the lat set, and vice/versa:
+      // Partition the other (not split) dims into sorted left and right sets, so we can recurse.
+      // This is somewhat hairy: we partition the next X, Y set according to how we had just
+      // partitioned the Z set, etc.
 
-      LatLonWriter leftWriter = null;
-      LatLonWriter rightWriter = null;
-      LatLonReader reader = null;
+      Writer[] leftWriters = new Writer[3];
+      Writer[] rightWriters = new Writer[3];
 
-      boolean success = false;
+      for(int dim=0;dim<3;dim++) {
+        if (dim == splitDim) {
+          continue;
+        }
 
-      int nextLeftCount = 0;
+        Writer leftWriter = null;
+        Writer rightWriter = null;
+        Reader reader = null;
 
-      try {
-        leftWriter = getWriter(leftCount);
-        rightWriter = getWriter(count - leftCount);
+        boolean success = false;
 
-        //if (DEBUG) System.out.println("  partition:\n    splitValueEnc=" + splitValue + "\n    " + nextSource + "\n      --> leftSorted=" + leftWriter + "\n      --> rightSorted=" + rightWriter + ")");
-        reader = nextSource.writer.getReader(nextSource.start);
+        int nextLeftCount = 0;
 
-        // TODO: we could compute the split value here for each sub-tree and save an O(N) pass on recursion, but makes code hairier and only
-        // changes the constant factor of building, not the big-oh:
-        for (int i=0;i<count;i++) {
-          boolean result = reader.next();
-          assert result;
-          int latEnc = reader.latEnc();
-          int lonEnc = reader.lonEnc();
-          long ord = reader.ord();
-          int docID = reader.docID();
-          assert docID >= 0: "docID=" + docID + " reader=" + reader;
-          if (bitSet.get(ord)) {
-            if (splitDim == 0) {
-              assert latEnc < splitValue: "latEnc=" + latEnc + " splitValue=" + splitValue;
+        PathSlice nextSource;
+        if (dim == 0) {
+          nextSource = lastXSorted;
+        } else if (dim == 1) {
+          nextSource = lastYSorted;
+        } else {
+          nextSource = lastZSorted;
+        }
+
+        try {
+          leftWriter = getWriter(leftCount);
+          rightWriter = getWriter(nextSource.count - leftCount);
+
+          assert nextSource.count == count;
+          reader = nextSource.writer.getReader(nextSource.start);
+
+          // TODO: we could compute the split value here for each sub-tree and save an O(N) pass on recursion, but makes code hairier and only
+          // changes the constant factor of building, not the big-oh:
+          for (int i=0;i<count;i++) {
+            boolean result = reader.next();
+            assert result;
+            int x = reader.x();
+            int y = reader.y();
+            int z = reader.z();
+            long ord = reader.ord();
+            int docID = reader.docID();
+            assert docID >= 0: "docID=" + docID + " reader=" + reader;
+            //System.out.println("  i=" + i + " x=" + x + " ord=" + ord + " docID=" + docID);
+            if (bitSet.get(ord)) {
+              if (splitDim == 0) {
+                assert x <= splitValue: "x=" + x + " splitValue=" + splitValue;
+              } else if (splitDim == 1) {
+                assert y <= splitValue: "y=" + y + " splitValue=" + splitValue;
+              } else {
+                assert z <= splitValue: "z=" + z + " splitValue=" + splitValue;
+              }
+              leftWriter.append(x, y, z, ord, docID);
+              nextLeftCount++;
             } else {
-              assert lonEnc < splitValue: "lonEnc=" + lonEnc + " splitValue=" + splitValue;
+              if (splitDim == 0) {
+                assert x >= splitValue: "x=" + x + " splitValue=" + splitValue;
+              } else if (splitDim == 1) {
+                assert y >= splitValue: "y=" + y + " splitValue=" + splitValue;
+              } else {
+                assert z >= splitValue: "z=" + z + " splitValue=" + splitValue;
+              }
+              rightWriter.append(x, y, z, ord, docID);
             }
-            leftWriter.append(latEnc, lonEnc, ord, docID);
-            nextLeftCount++;
+          }
+          success = true;
+        } finally {
+          if (success) {
+            IOUtils.close(reader, leftWriter, rightWriter);
           } else {
-            if (splitDim == 0) {
-              assert latEnc >= splitValue: "latEnc=" + latEnc + " splitValue=" + splitValue;
-            } else {
-              assert lonEnc >= splitValue: "lonEnc=" + lonEnc + " splitValue=" + splitValue;
-            }
-            rightWriter.append(latEnc, lonEnc, ord, docID);
+            IOUtils.closeWhileHandlingException(reader, leftWriter, rightWriter);
           }
         }
-        bitSet.clear(0, pointCount);
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(reader, leftWriter, rightWriter);
-        } else {
-          IOUtils.closeWhileHandlingException(reader, leftWriter, rightWriter);
-        }
+
+        assert leftCount == nextLeftCount: "leftCount=" + leftCount + " nextLeftCount=" + nextLeftCount;
+        leftWriters[dim] = leftWriter;
+        rightWriters[dim] = rightWriter;
       }
+      bitSet.clear(0, pointCount);
 
-      assert leftCount == nextLeftCount: "leftCount=" + leftCount + " nextLeftCount=" + nextLeftCount;
+      long rightCount = count - leftCount;
 
-      success = false;
+      boolean success = false;
       try {
         if (splitDim == 0) {
-          //if (DEBUG) System.out.println("  recurse left");
           build(2*nodeID, leafNodeOffset,
                 new PathSlice(source.writer, source.start, leftCount),
-                new PathSlice(leftWriter, 0, leftCount),
+                new PathSlice(leftWriters[1], 0, leftCount),
+                new PathSlice(leftWriters[2], 0, leftCount),
                 bitSet,
                 out,
-                minLatEnc, splitValue, minLonEnc, maxLonEnc,
+                minX, splitValue,
+                minY, maxY,
+                minZ, maxZ,
                 splitValues, leafBlockFPs);
-          leftWriter.destroy();
+          leftWriters[1].destroy();
+          leftWriters[2].destroy();
 
-          //if (DEBUG) System.out.println("  recurse right");
           build(2*nodeID+1, leafNodeOffset,
-                new PathSlice(source.writer, source.start+leftCount, count-leftCount),
-                new PathSlice(rightWriter, 0, count - leftCount),
+                new PathSlice(source.writer, source.start+leftCount, rightCount),
+                new PathSlice(rightWriters[1], 0, rightCount),
+                new PathSlice(rightWriters[2], 0, rightCount),
                 bitSet,
                 out,
-                splitValue, maxLatEnc, minLonEnc, maxLonEnc,
+                splitValue, maxX,
+                minY, maxY,
+                minZ, maxZ,
                 splitValues, leafBlockFPs);
-          rightWriter.destroy();
+          rightWriters[1].destroy();
+          rightWriters[2].destroy();
+        } else if (splitDim == 1) {
+          build(2*nodeID, leafNodeOffset,
+                new PathSlice(leftWriters[0], 0, leftCount),
+                new PathSlice(source.writer, source.start, leftCount),
+                new PathSlice(leftWriters[2], 0, leftCount),
+                bitSet,
+                out,
+                minX, maxX,
+                minY, splitValue,
+                minZ, maxZ,
+                splitValues, leafBlockFPs);
+          leftWriters[0].destroy();
+          leftWriters[2].destroy();
+
+          build(2*nodeID+1, leafNodeOffset,
+                new PathSlice(rightWriters[0], 0, rightCount),
+                new PathSlice(source.writer, source.start+leftCount, rightCount),    
+                new PathSlice(rightWriters[2], 0, rightCount),
+                bitSet,
+                out,
+                minX, maxX,
+                splitValue, maxY,
+                minZ, maxZ,
+                splitValues, leafBlockFPs);
+          rightWriters[0].destroy();
+          rightWriters[2].destroy();
         } else {
-          //if (DEBUG) System.out.println("  recurse left");
           build(2*nodeID, leafNodeOffset,
-                new PathSlice(leftWriter, 0, leftCount),
+                new PathSlice(leftWriters[0], 0, leftCount),
+                new PathSlice(leftWriters[1], 0, leftCount),
                 new PathSlice(source.writer, source.start, leftCount),
                 bitSet,
                 out,
-                minLatEnc, maxLatEnc, minLonEnc, splitValue,
+                minX, maxX,
+                minY, maxY,
+                minZ, splitValue,
                 splitValues, leafBlockFPs);
+          leftWriters[0].destroy();
+          leftWriters[1].destroy();
 
-          leftWriter.destroy();
-
-          //if (DEBUG) System.out.println("  recurse right");
           build(2*nodeID+1, leafNodeOffset,
-                new PathSlice(rightWriter, 0, count-leftCount),
-                new PathSlice(source.writer, source.start+leftCount, count-leftCount),    
+                new PathSlice(rightWriters[0], 0, rightCount),
+                new PathSlice(rightWriters[1], 0, rightCount),
+                new PathSlice(source.writer, source.start+leftCount, rightCount),    
                 bitSet,
                 out,
-                minLatEnc, maxLatEnc, splitValue, maxLonEnc,
+                minX, maxX,
+                minY, maxY,
+                splitValue, maxZ,
                 splitValues, leafBlockFPs);
-          rightWriter.destroy();
+          rightWriters[0].destroy();
+          rightWriters[1].destroy();
         }
         success = true;
       } finally {
         if (success == false) {
-          try {
-            leftWriter.destroy();
-          } catch (Throwable t) {
-            // Suppress to keep throwing original exc
+          for(Writer writer : leftWriters) {
+            if (writer != null) {
+              try {
+                writer.destroy();
+              } catch (Throwable t) {
+                // Suppress to keep throwing original exc
+              }
+            }
           }
-          try {
-            rightWriter.destroy();
-          } catch (Throwable t) {
-            // Suppress to keep throwing original exc
+          for(Writer writer : rightWriters) {
+            if (writer != null) {
+              try {
+                writer.destroy();
+              } catch (Throwable t) {
+                // Suppress to keep throwing original exc
+              }
+            }
           }
         }
       }
@@ -831,66 +944,11 @@ class BKDTreeWriter {
     }
   }
 
-  LatLonWriter getWriter(long count) throws IOException {
+  Writer getWriter(long count) throws IOException {
     if (count < maxPointsSortInHeap) {
-      return new HeapLatLonWriter((int) count);
+      return new HeapWriter((int) count);
     } else {
-      return new OfflineLatLonWriter(tempDir, count);
+      return new OfflineWriter(tempDir, count);
     }
-  }
-
-  // TODO: move/share all this into GeoUtils
-
-  // We allow one iota over the true max:
-  static final double MAX_LAT_INCL = Math.nextAfter(90.0D, Double.POSITIVE_INFINITY);
-  static final double MAX_LON_INCL = Math.nextAfter(180.0D, Double.POSITIVE_INFINITY);
-  static final double MIN_LAT_INCL = -90.0D;
-  static final double MIN_LON_INCL = -180.0D;
-
-  static boolean validLat(double lat) {
-    return Double.isNaN(lat) == false && lat >= MIN_LAT_INCL && lat <= MAX_LAT_INCL;
-  }
-
-  static boolean validLon(double lon) {
-    return Double.isNaN(lon) == false && lon >= MIN_LON_INCL && lon <= MAX_LON_INCL;
-  }
-
-  private static final int BITS = 32;
-
-  // -3 so valid lat/lon never hit the Integer.MIN_VALUE nor Integer.MAX_VALUE:
-  private static final double LON_SCALE = ((0x1L<<BITS)-3)/360.0D;
-  private static final double LAT_SCALE = ((0x1L<<BITS)-3)/180.0D;
-
-  /** Max quantization error for both lat and lon when encoding/decoding into 32 bits */
-  public static final double TOLERANCE = 1E-7;
-
-  /** Quantizes double (64 bit) latitude into 32 bits */
-  static int encodeLat(double lat) {
-    assert validLat(lat): "lat=" + lat;
-    long x = (long) (lat * LAT_SCALE);
-    // We use Integer.MAX_VALUE as a sentinel:
-    assert x < Integer.MAX_VALUE: "lat=" + lat + " mapped to Integer.MAX_VALUE + " + (x - Integer.MAX_VALUE);
-    assert x > Integer.MIN_VALUE: "lat=" + lat + " mapped to Integer.MIN_VALUE";
-    return (int) x;
-  }
-
-  /** Quantizes double (64 bit) longitude into 32 bits */
-  static int encodeLon(double lon) {
-    assert validLon(lon): "lon=" + lon;
-    long x = (long) (lon * LON_SCALE);
-    // We use Integer.MAX_VALUE as a sentinel:
-    assert x < Integer.MAX_VALUE;
-    assert x > Integer.MIN_VALUE;
-    return (int) x;
-  }
-
-  /** Turns quantized value from {@link #encodeLat} back into a double. */
-  static double decodeLat(int x) {
-    return x / LAT_SCALE;
-  }
-
-  /** Turns quantized value from {@link #encodeLon} back into a double. */
-  static double decodeLon(int x) {
-    return x / LON_SCALE;
   }
 }

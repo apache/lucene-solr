@@ -41,6 +41,7 @@ final class BKDTreeReader implements Accountable {
   enum Relation {INSIDE, CROSSES, OUTSIDE};
 
   interface LatLonFilter {
+    // nocommit pass docID instead; DVs should not be down in here
     boolean accept(double lat, double lon);
     Relation compare(double latMin, double latMax, double lonMin, double lonMax);
   }
@@ -93,10 +94,7 @@ final class BKDTreeReader implements Accountable {
     }
   }
 
-  public DocIdSet intersect(double latMin, double latMax, double lonMin, double lonMax, SortedNumericDocValues sndv) throws IOException {
-    return intersect(latMin, latMax, lonMin, lonMax, null, sndv);
-  }
-
+  // nocommit lat/lon encoding should be moved out above here
   public DocIdSet intersect(double latMin, double latMax, double lonMin, double lonMax, LatLonFilter filter, SortedNumericDocValues sndv) throws IOException {
     if (BKDTreeWriter.validLat(latMin) == false) {
       throw new IllegalArgumentException("invalid latMin: " + latMin);
@@ -115,10 +113,6 @@ final class BKDTreeReader implements Accountable {
     int latMaxEnc = BKDTreeWriter.encodeLat(latMax);
     int lonMinEnc = BKDTreeWriter.encodeLon(lonMin);
     int lonMaxEnc = BKDTreeWriter.encodeLon(lonMax);
-
-    // TODO: we should use a sparse bit collector here, but BitDocIdSet.Builder is 2.4X slower than straight FixedBitSet.
-    // Maybe we should use simple int[] (not de-duping) up until size X, then cutover.  Or maybe SentinelIntSet when it's
-    // small.
 
     QueryState state = new QueryState(in.clone(), maxDoc,
                                       latMinEnc, latMaxEnc,
@@ -158,9 +152,7 @@ final class BKDTreeReader implements Accountable {
         // Dead end node (adversary case):
         return 0;
       }
-      //IndexInput in = leafDISI.in;
       state.in.seek(fp);
-      //allLeafDISI.reset(fp);
       
       //System.out.println("    seek to leafFP=" + fp);
       // How many points are stored in this leaf cell:
@@ -171,8 +163,6 @@ final class BKDTreeReader implements Accountable {
         state.docs.add(docID);
       }
 
-      //bits.or(allLeafDISI);
-      //return allLeafDISI.getHitCount();
       return count;
     } else {
       int splitValue = splitValues[nodeID];
@@ -199,10 +189,10 @@ final class BKDTreeReader implements Accountable {
 
     // 2.06 sec -> 1.52 sec for 225 OSM London queries:
     if (state.latLonFilter != null) {
-      if (cellLatMinEnc > state.latMinEnc ||
-          cellLatMaxEnc < state.latMaxEnc ||
-          cellLonMinEnc > state.lonMinEnc ||
-          cellLonMaxEnc < state.lonMaxEnc) {
+      if (cellLatMinEnc >= state.latMinEnc ||
+          cellLatMaxEnc <= state.latMaxEnc ||
+          cellLonMinEnc >= state.lonMinEnc ||
+          cellLonMaxEnc <= state.lonMaxEnc) {
         Relation r = state.latLonFilter.compare(BKDTreeWriter.decodeLat(cellLatMinEnc),
                                                 BKDTreeWriter.decodeLat(cellLatMaxEnc),
                                                 BKDTreeWriter.decodeLon(cellLonMinEnc),
@@ -218,6 +208,7 @@ final class BKDTreeReader implements Accountable {
           // The cell crosses the shape boundary, so we fall through and do full filtering
         }
       }
+    // nocommit clean this up: the bbox case should also just be a filter, and we should assert filter != null at the start
     } else if (state.latMinEnc <= cellLatMinEnc && state.latMaxEnc >= cellLatMaxEnc && state.lonMinEnc <= cellLonMinEnc && state.lonMaxEnc >= cellLonMaxEnc) {
       // Optimize the case when the query fully contains this cell: we can
       // recursively add all points without checking if they match the query:
@@ -241,7 +232,6 @@ final class BKDTreeReader implements Accountable {
       //System.out.println("    intersect leaf nodeID=" + nodeID + " vs leafNodeOffset=" + leafNodeOffset + " fp=" + leafBlockFPs[nodeID-leafNodeOffset]);
       int hitCount = 0;
 
-      //IndexInput in = leafDISI.in;
       long fp = leafBlockFPs[nodeID-leafNodeOffset];
       if (fp == 0) {
         // Dead end node (adversary case):
@@ -289,12 +279,6 @@ final class BKDTreeReader implements Accountable {
       }
 
       return hitCount;
-
-      // this (using BitDocIdSet.Builder) is 3.4X slower!
-      /*
-      //bits.or(leafDISI);
-      //return leafDISI.getHitCount();
-      */
 
     } else {
 
