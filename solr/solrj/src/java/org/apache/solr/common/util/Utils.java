@@ -30,6 +30,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrException;
 import org.noggit.CharArr;
@@ -121,16 +123,37 @@ public class Utils {
     }
   }
 
+  public static Object getObjectByPath(Map root, boolean onlyPrimitive, String hierarchy) {
+    return getObjectByPath(root, onlyPrimitive, StrUtils.splitSmart(hierarchy, '/'));
+  }
+
   public static Object getObjectByPath(Map root, boolean onlyPrimitive, List<String> hierarchy) {
     Map obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
+      int idx = -1;
       String s = hierarchy.get(i);
+      if (s.endsWith("]")) {
+        Matcher matcher = ARRAY_ELEMENT_INDEX.matcher(s);
+        if (matcher.find()) {
+          s = matcher.group(1);
+          idx = Integer.parseInt(matcher.group(2));
+        }
+      }
       if (i < hierarchy.size() - 1) {
-        if (!(obj.get(s) instanceof Map)) return null;
-        obj = (Map) obj.get(s);
-        if (obj == null) return null;
+        Object o = obj.get(s);
+        if (o == null) return null;
+        if (idx > -1) {
+          List l = (List) o;
+          o = idx < l.size() ? l.get(idx) : null;
+        }
+        if (!(o instanceof Map)) return null;
+        obj = (Map) o;
       } else {
         Object val = obj.get(s);
+        if (idx > -1) {
+          List l = (List) val;
+          val = idx < l.size() ? l.get(idx) : null;
+        }
         if (onlyPrimitive && val instanceof Map) {
           return null;
         }
@@ -140,4 +163,7 @@ public class Utils {
 
     return false;
   }
+
+  public static final Pattern ARRAY_ELEMENT_INDEX = Pattern
+      .compile("(\\S*?)\\[(\\d+)\\]");
 }
