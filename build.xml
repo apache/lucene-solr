@@ -131,7 +131,7 @@
       import org.apache.tools.ant.BuildException;
       
       def extensions = [
-        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js', 'xml'
+        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js', 'xml', 'xsl'
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
