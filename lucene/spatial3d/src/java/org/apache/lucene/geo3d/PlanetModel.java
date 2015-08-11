@@ -97,6 +97,48 @@ public class PlanetModel {
     return Math.max(this.ab, this.c);
   }
   
+  /** Find the minimum x value.
+   *@return the minimum X value.
+   */
+  public double getMinimumXValue() {
+    return -this.ab;
+  }
+  
+  /** Find the maximum x value.
+   *@return the maximum X value.
+   */
+  public double getMaximumXValue() {
+    return this.ab;
+  }
+
+  /** Find the minimum y value.
+   *@return the minimum Y value.
+   */
+  public double getMinimumYValue() {
+    return -this.ab;
+  }
+  
+  /** Find the maximum y value.
+   *@return the maximum Y value.
+   */
+  public double getMaximumYValue() {
+    return this.ab;
+  }
+  
+  /** Find the minimum z value.
+   *@return the minimum Z value.
+   */
+  public double getMinimumZValue() {
+    return -this.c;
+  }
+  
+  /** Find the maximum z value.
+   *@return the maximum Z value.
+   */
+  public double getMaximumZValue() {
+    return this.c;
+  }
+
   /** Compute surface distance between two points.
    * @param p1 is the first point.
    * @param p2 is the second point.

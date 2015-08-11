@@ -86,6 +86,20 @@ public class SidedPlane extends Plane implements Membership {
     sigNum = Math.signum(evaluate(p));
   }
 
+  /**
+   * Construct a sided plane with a normal vector and offset.
+   *
+   * @param pX X coord of point to evaluate.
+   * @param pY Y coord of point to evaluate.
+   * @param pZ Z coord of point to evaluate.
+   * @param v is the normal vector.
+   * @param D is the origin offset for the plan.
+   */
+  public SidedPlane(double pX, double pY, double pZ, Vector v, double D) {
+    super(v, D);
+    sigNum = Math.signum(evaluate(pX,pY,pZ));
+  }
+
   /** Construct a sided plane from two points and a third normal vector.
    */
   public static SidedPlane constructNormalizedPerpendicularSidedPlane(final Vector insidePoint,
