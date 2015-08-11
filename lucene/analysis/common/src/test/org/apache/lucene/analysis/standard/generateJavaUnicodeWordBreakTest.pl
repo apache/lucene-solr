@@ -42,7 +42,7 @@ my $output_filename = "${class_name}.java";
 my $header =<<"__HEADER__";
 package org.apache.lucene.analysis.core;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.

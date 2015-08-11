@@ -45,20 +45,20 @@ Child of <a href='#Clause'>Clause</a>, <a href='#Query'>Query</a>, <a href='#Cac
 </td></tr></table>
 <p>BooleanQuerys implement Boolean logic which controls how multiple Clauses should be interpreted.
 Some clauses may represent optional Query criteria while others represent mandatory criteria.</p><p><span class='inTextTitle'>Example:</span> <em>Find articles about banks, preferably talking about mergers but nothing to do with "sumitomo"</em>
-</p><pre>	          
+</p><pre>            
             &lt;BooleanQuery fieldName="contents"&gt;
-	             &lt;Clause occurs="should"&gt;
-		              &lt;TermQuery&gt;merger&lt;/TermQuery&gt;
-	             &lt;/Clause&gt;
-	             &lt;Clause occurs="mustnot"&gt;
-		              &lt;TermQuery&gt;sumitomo&lt;/TermQuery&gt;
-	             &lt;/Clause&gt;
-	             &lt;Clause occurs="must"&gt;
-		              &lt;TermQuery&gt;bank&lt;/TermQuery&gt;
-	             &lt;/Clause&gt;
+               &lt;Clause occurs="should"&gt;
+                  &lt;TermQuery&gt;merger&lt;/TermQuery&gt;
+               &lt;/Clause&gt;
+               &lt;Clause occurs="mustnot"&gt;
+                  &lt;TermQuery&gt;sumitomo&lt;/TermQuery&gt;
+               &lt;/Clause&gt;
+               &lt;Clause occurs="must"&gt;
+                  &lt;TermQuery&gt;bank&lt;/TermQuery&gt;
+               &lt;/Clause&gt;
             &lt;/BooleanQuery&gt;
 
-	         </pre><p></p><blockquote><table summary='element info'><tr>
+           </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;BooleanQuery&gt;'s children">
 <thead>
 <tr><th class='title' colspan='2'>&lt;BooleanQuery&gt;'s children</th></tr>
@@ -150,18 +150,18 @@ Bitsets at a cost of 1 bit per document in the index. The memory cost of a cache
 Queries that are cached as filters obviously retain none of the scoring information associated with results - they retain just
 a Boolean yes/no record of which documents matched.</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about banks from the last 10 years - caching the commonly-used "last 10 year" filter as a BitSet in
 RAM to eliminate the cost of building this filter from disk for every query</em>
-</p><pre>	          
+</p><pre>            
             &lt;FilteredQuery&gt;
                &lt;Query&gt;
                   &lt;UserQuery&gt;bank&lt;/UserQuery&gt;
-               &lt;/Query&gt;	
+               &lt;/Query&gt;  
                &lt;Filter&gt;
                   &lt;CachedFilter&gt;
                      &lt;RangeFilter fieldName="date" lowerTerm="19970101" upperTerm="20070101"/&gt;
                   &lt;/CachedFilter&gt;
-               &lt;/Filter&gt;	
+               &lt;/Filter&gt;  
             &lt;/FilteredQuery&gt;
-	         </pre><p></p><blockquote><table summary='element info'><tr>
+           </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;CachedFilter&gt;'s children">
 <thead>
 <tr><th class='title' colspan='2'>&lt;CachedFilter&gt;'s children</th></tr>
@@ -194,9 +194,9 @@ RAM to eliminate the cost of building this filter from disk for every query</em>
 Child of <a href='#Clause'>Clause</a>, <a href='#Query'>Query</a>, <a href='#CachedFilter'>CachedFilter</a>
 </td></tr></table>
 <p>Passes content directly through to the standard LuceneQuery parser see "Lucene Query Syntax"</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about John Smith or John Doe using standard LuceneQuerySyntax</em>
-</p><pre>	          
+</p><pre>            
                &lt;UserQuery&gt;"John Smith" OR "John Doe"&lt;/UserQuery&gt;
-	         </pre><p></p><blockquote><table summary='element info'><tr>
+           </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table  summary="&lt;UserQuery&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;UserQuery&gt;'s attributes</th>
 </tr>
@@ -227,24 +227,24 @@ is a "mustNot" match (Lucene requires at least one positive clause) and..</li>
 <li> in a FilteredQuery where a Filter tag is effectively being
 used to select content rather than its usual role of filtering the results of a query.</li>
 </ol></p><p><span class='inTextTitle'>Example:</span> <em>Effectively use a Filter as a query </em>
-</p><pre>	          
+</p><pre>            
                &lt;FilteredQuery&gt;
                  &lt;Query&gt;
                     &lt;MatchAllDocsQuery/&gt;
                  &lt;/Query&gt;
                  &lt;Filter&gt;
                      &lt;RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/&gt;
-                 &lt;/Filter&gt;	
-               &lt;/FilteredQuery&gt;	         
-	       </pre><p></p><p class='emptyTagNote'>This element is always empty.</p><a name='TermQuery'></a>
+                 &lt;/Filter&gt;  
+               &lt;/FilteredQuery&gt;           
+         </pre><p></p><p class='emptyTagNote'>This element is always empty.</p><a name='TermQuery'></a>
 <br /><table class='elementTitle' summary="TermQuery"><tr><td class='leftElementTitle'>
 &lt;TermQuery&gt;</td><td class='rightElementTitle'>
 Child of <a href='#Clause'>Clause</a>, <a href='#Query'>Query</a>, <a href='#CachedFilter'>CachedFilter</a>
 </td></tr></table>
 <p>a single term query - no analysis is done of the child text</p><p><span class='inTextTitle'>Example:</span> <em>Match on a primary key</em>
-</p><pre>	          
+</p><pre>            
                &lt;TermQuery fieldName="primaryKey"&gt;13424&lt;/TermQuery&gt;
-	       </pre><p></p><blockquote><table summary='element info'><tr>
+         </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table  summary="&lt;TermQuery&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;TermQuery&gt;'s attributes</th>
 </tr>
@@ -288,9 +288,9 @@ Child text is analyzed using a field-specific choice of Analyzer to produce a se
 Unlike UserQuery element, this does not parse any special characters to control fuzzy/phrase/boolean logic and as such is incapable
 of producing a Query parse error given any user input</p><p><span class='inTextTitle'>Example:</span> <em>Match on text from a database description (which may contain characters that
 are illegal characters in the standard Lucene Query syntax used in the UserQuery tag</em>
-</p><pre>	          
+</p><pre>            
                &lt;TermsQuery fieldName="description"&gt;Smith & Sons (Ltd) : incorporated 1982&lt;/TermsQuery&gt;
-	       </pre><p></p><blockquote><table summary='element info'><tr>
+         </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table  summary="&lt;TermsQuery&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;TermsQuery&gt;'s attributes</th>
 </tr>
@@ -325,16 +325,16 @@ Attribute of <a href='#TermsQuery'>TermsQuery</a>
 Child of <a href='#Clause'>Clause</a>, <a href='#Query'>Query</a>, <a href='#CachedFilter'>CachedFilter</a>
 </td></tr></table>
 <p>Runs a Query and filters results to only those query matches that also match the Filter element.</p><p><span class='inTextTitle'>Example:</span> <em>Find all documents about Lucene that have a status of "published"</em>
-</p><pre>	          
+</p><pre>            
                &lt;FilteredQuery&gt;
                  &lt;Query&gt;
                     &lt;UserQuery&gt;Lucene&lt;/UserQuery&gt;
                  &lt;/Query&gt;
                  &lt;Filter&gt;
                      &lt;TermsFilter fieldName="status"&gt;published&lt;/TermsFilter&gt;
-                 &lt;/Filter&gt;	
-               &lt;/FilteredQuery&gt;	         
-	       </pre><p></p><blockquote><table summary='element info'><tr>
+                 &lt;/Filter&gt;  
+               &lt;/FilteredQuery&gt;           
+         </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;FilteredQuery&gt;'s children">
 <thead>
 <tr><th class='title' colspan='2'>&lt;FilteredQuery&gt;'s children</th></tr>
@@ -409,16 +409,16 @@ Child of <a href='#FilteredQuery'>FilteredQuery</a>
 Child of <a href='#Clause'>Clause</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>, <a href='#Filter'>Filter</a>, <a href='#CachedFilter'>CachedFilter</a>
 </td></tr></table>
 <p>Filter used to limit query results to documents matching a range of field values</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about banks from the last 10 years</em>
-</p><pre>	          
+</p><pre>            
             &lt;FilteredQuery&gt;
                &lt;Query&gt;
                   &lt;UserQuery&gt;bank&lt;/UserQuery&gt;
-               &lt;/Query&gt;	
+               &lt;/Query&gt;  
                &lt;Filter&gt;
                      &lt;RangeFilter fieldName="date" lowerTerm="19970101" upperTerm="20070101"/&gt;
-               &lt;/Filter&gt;	
+               &lt;/Filter&gt;  
             &lt;/FilteredQuery&gt;
-	         </pre><p></p><blockquote>
+           </pre><p></p><blockquote>
 <table  summary="&lt;RangeFilter&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;RangeFilter&gt;'s attributes</th>
 </tr>
@@ -458,9 +458,9 @@ Attribute of <a href='#RangeFilter'>RangeFilter</a>
 Child of <a href='#Clause'>Clause</a>, <a href='#Query'>Query</a>, <a href='#CachedFilter'>CachedFilter</a>
 </td></tr></table>
 <p>A Query that matches numeric values within a specified range.</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about people who are aged 20-25</em>
-</p><pre>	          
+</p><pre>            
             &lt;NumericRangeQuery fieldName="age" lowerTerm="20" upperTerm="25" /&gt;
-	         </pre><p></p><blockquote>
+           </pre><p></p><blockquote>
 <table  summary="&lt;NumericRangeQuery&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;NumericRangeQuery&gt;'s attributes</th>
 </tr>
@@ -510,16 +510,16 @@ Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
 Child of <a href='#Clause'>Clause</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>, <a href='#Filter'>Filter</a>, <a href='#CachedFilter'>CachedFilter</a>
 </td></tr></table>
 <p>A Filter that only accepts numeric values within a specified range</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about people who are aged 20-25</em>
-</p><pre>	          
+</p><pre>            
             &lt;FilteredQuery&gt;
                &lt;Query&gt;
                   &lt;UserQuery&gt;person&lt;/UserQuery&gt;
-               &lt;/Query&gt;	
+               &lt;/Query&gt;  
                &lt;Filter&gt;
                      &lt;NumericRangeFilter fieldName="age" lowerTerm="20" upperTerm="25"/&gt;
-               &lt;/Filter&gt;	
+               &lt;/Filter&gt;  
             &lt;/FilteredQuery&gt;
-	         </pre><p></p><blockquote>
+           </pre><p></p><blockquote>
 <table  summary="&lt;NumericRangeFilter&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;NumericRangeFilter&gt;'s attributes</th>
 </tr>
@@ -570,19 +570,19 @@ Child of <a href='#Include'>Include</a>, <a href='#Clause'>Clause</a>, <a href='
 </td></tr></table>
 <p>A single term used in a SpanQuery. These clauses are the building blocks for more complex "span" queries which test word proximity</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms close to each other about mining and accidents</em>
 </p><pre>
-	      &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;		
-			&lt;SpanOr&gt;
-				&lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
-			&lt;/SpanOr&gt;
-			&lt;SpanOr&gt;
-				&lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
-			&lt;/SpanOr&gt;
-	      &lt;/SpanNear&gt;
-	      </pre><p></p><blockquote><table summary='element info'><tr>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table  summary="&lt;SpanTerm&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;SpanTerm&gt;'s attributes</th>
 </tr>
@@ -604,11 +604,11 @@ Child of <a href='#Include'>Include</a>, <a href='#Clause'>Clause</a>, <a href='
 <p>A field-specific analyzer is used here to parse the child text provided in this tag. The SpanTerms produced are ORed in terms of Boolean logic</p><p><span class='inTextTitle'>Example:</span> <em>Use SpanOrTerms as a more convenient/succinct way of expressing multiple choices of SpanTerms. This example looks for reports
 using words describing a fatality near to references to miners</em>
 </p><pre>
-	      &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;		
-			&lt;SpanOrTerms&gt;killed died death dead deaths&lt;/SpanOrTerms&gt;
-			&lt;SpanOrTerms&gt;miner mining miners&lt;/SpanOrTerms&gt;
-	      &lt;/SpanNear&gt;
-	      </pre><p></p><blockquote><table summary='element info'><tr>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOrTerms&gt;killed died death dead deaths&lt;/SpanOrTerms&gt;
+      &lt;SpanOrTerms&gt;miner mining miners&lt;/SpanOrTerms&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table  summary="&lt;SpanOrTerms&gt;'s attributes"><tr>
 <th class='title' colspan='3'>&lt;SpanOrTerms&gt;'s attributes</th>
 </tr>
@@ -629,19 +629,19 @@ Child of <a href='#Include'>Include</a>, <a href='#Clause'>Clause</a>, <a href='
 </td></tr></table>
 <p>Takes any number of child queries from the Span family</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms close to each other about mining and accidents</em>
 </p><pre>
-	      &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;		
-			&lt;SpanOr&gt;
-				&lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
-			&lt;/SpanOr&gt;
-			&lt;SpanOr&gt;
-				&lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
-			&lt;/SpanOr&gt;
-	      &lt;/SpanNear&gt;
-	      </pre><p></p><blockquote><table summary='element info'><tr>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;SpanOr&gt;'s children">
 <thead>
 <tr><th class='title' colspan='2'>&lt;SpanOr&gt;'s children</th></tr>
@@ -692,19 +692,19 @@ Attribute of <a href='#SpanNear'>SpanNear</a>
 </td></tr></table>
 <p>defines the maximum distance between Span elements where distance is expressed as word number, not byte offset</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms within 8 words of each other talking about mining and accidents</em>
 </p><pre>
-	      &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;		
-			&lt;SpanOr&gt;
-				&lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
-			&lt;/SpanOr&gt;
-			&lt;SpanOr&gt;
-				&lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
-				&lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
-			&lt;/SpanOr&gt;
-	      &lt;/SpanNear&gt;
-	      </pre><p></p><p><span class='inTextTitle'>Required</span></p><a name='SpanNear_inOrder'></a>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><p><span class='inTextTitle'>Required</span></p><a name='SpanNear_inOrder'></a>
 <br /><table class='attributeTitle' summary="inOrder"><tr><td class='leftAttributeTitle'>
 @inOrder</td><td class='rightAttributeTitle'>
 Attribute of <a href='#SpanNear'>SpanNear</a>
@@ -715,11 +715,11 @@ Attribute of <a href='#SpanNear'>SpanNear</a>
 Child of <a href='#Include'>Include</a>, <a href='#Clause'>Clause</a>, <a href='#Query'>Query</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#Exclude'>Exclude</a>, <a href='#CachedFilter'>CachedFilter</a>
 </td></tr></table>
 <p>Looks for a SpanQuery match occuring near the beginning of a document</p><p><span class='inTextTitle'>Example:</span> <em>Find letters where the first 50 words talk about a resignation:</em>
-</p><pre>	          
-	         &lt;SpanFirst end="50"&gt;
-	               &lt;SpanOrTerms fieldName="text"&gt;resigning resign leave&lt;/SpanOrTerms&gt;
-	         &lt;/SpanFirst&gt;
-	         </pre><p></p><blockquote><table summary='element info'><tr>
+</p><pre>            
+           &lt;SpanFirst end="50"&gt;
+                 &lt;SpanOrTerms fieldName="text"&gt;resigning resign leave&lt;/SpanOrTerms&gt;
+           &lt;/SpanFirst&gt;
+           </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;SpanFirst&gt;'s children">
 <thead>
 <tr><th class='title' colspan='2'>&lt;SpanFirst&gt;'s children</th></tr>
@@ -761,16 +761,16 @@ Child of <a href='#Include'>Include</a>, <a href='#Clause'>Clause</a>, <a href='
 </p><pre>
           &lt;SpanNot fieldName="text"&gt;
              &lt;Include&gt;
-                &lt;SpanNear slop="2" inOrder="true"&gt;		
+                &lt;SpanNear slop="2" inOrder="true"&gt;    
                      &lt;SpanTerm&gt;social&lt;/SpanTerm&gt;
                      &lt;SpanTerm&gt;services&lt;/SpanTerm&gt;
-                &lt;/SpanNear&gt;				
+                &lt;/SpanNear&gt;        
              &lt;/Include&gt;
              &lt;Exclude&gt;
                 &lt;SpanTerm&gt;public&lt;/SpanTerm&gt;
              &lt;/Exclude&gt;
           &lt;/SpanNot&gt;
-	      </pre><p></p><blockquote><table summary='element info'><tr>
+        </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;SpanNot&gt;'s children">
 <thead>
 <tr><th class='title' colspan='2'>&lt;SpanNot&gt;'s children</th></tr>
@@ -832,8 +832,8 @@ Child of <a href='#Clause'>Clause</a>, <a href='#Query'>Query</a>, <a href='#Cac
 </p><pre>
      &lt;ConstantScoreQuery&gt;
            &lt;RangeFilter fieldName="date" lowerTerm="19970101" upperTerm="20070101"/&gt;
-     &lt;/ConstantScoreQuery&gt;	
-	</pre><p></p><blockquote><table summary='element info'><tr>
+     &lt;/ConstantScoreQuery&gt;  
+  </pre><p></p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;ConstantScoreQuery&gt;'s children">
 <thead>
 <tr><th class='title' colspan='2'>&lt;ConstantScoreQuery&gt;'s children</th></tr>

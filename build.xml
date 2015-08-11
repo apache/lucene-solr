@@ -124,32 +124,75 @@
     </subant>
   </target>
   
-  <target name="-validate-source-patterns" unless="disable.source-patterns">
-    <!-- check that there are no @author javadoc tags, tabs, svn keywords or nocommits: -->
-    <property name="validate.currDir" location="."/>
-    <pathconvert pathsep="${line.separator}" dirsep="/" property="validate.patternsFound" setonempty="false">
-      <fileset dir="${validate.currDir}">
-        <include name="**/*.java"/>
-        <include name="**/*.py"/>
-        <or>
-          <containsregexp expression="@author\b" casesensitive="yes"/>
-          <containsregexp expression="\bno(n|)commit\b" casesensitive="no"/>
-          <containsregexp expression="\bTOOD:" casesensitive="yes"/>
-          <containsregexp expression="\t" casesensitive="no"/>
-          <containsregexp expression="\$(?:LastChanged)?Date\b" casesensitive="yes"/>
-          <containsregexp expression="\$(?:(?:LastChanged)?Revision|Rev)\b" casesensitive="yes"/>
-          <containsregexp expression="\$(?:LastChangedBy|Author)\b" casesensitive="yes"/>
-          <containsregexp expression="\$(?:Head)?URL\b" casesensitive="yes"/>
-          <containsregexp expression="\$Id\b" casesensitive="yes"/>
-          <containsregexp expression="\$Header\b" casesensitive="yes"/>
-          <containsregexp expression="\$Source\b" casesensitive="yes"/>
-        </or>
-      </fileset>
-      <map from="${validate.currDir}${file.separator}" to="* "/>
-    </pathconvert>
-    <fail if="validate.patternsFound">The following files contain @author tags, tabs, TOODs, svn keywords or nocommits:${line.separator}${validate.patternsFound}</fail>
+  <target name="-validate-source-patterns" unless="disable.source-patterns" depends="resolve-groovy">
+    <!-- check that there are no @author javadoc tags, tabs, svn keywords, javadoc-style licenses, or nocommits: -->
+    <property name="validate.baseDir" location="."/>
+    <groovy taskname="source-patterns"><![CDATA[
+      import org.apache.tools.ant.BuildException;
+      
+      def extensions = [
+        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html'
+        // TODO: js, xml
+      ];
+      def invalidPatterns = [
+        (~$/@author\b/$) : '@author javadoc tag',
+        (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
+        (~$/\bTOOD:/$) : 'TOOD instead TODO',
+        (~$/\t/$) : 'tabs instead spaces',
+        (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
+        (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
+        (~$/\$$(?:LastChangedBy|Author)\b/$) : 'svn keyword',
+        (~$/\$$(?:Head)?URL\b/$) : 'svn keyword',
+        (~$/\$$Id\b/$) : 'svn keyword',
+        (~$/\$$Header\b/$) : 'svn keyword',
+        (~$/\$$Source\b/$) : 'svn keyword',
+      ];
+      def licenseOuterPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
+      def licenseInnerPattern = ~$/\bLicensed\s+(to|under)\b/$;
+      
+      def baseDir = properties['validate.baseDir'];
+      def baseDirLen = baseDir.length() + 1;
+      
+      def found = 0;
+      def violations = new TreeSet();
+      def reportViolation = { f, name ->
+        task.log(name + ': ' + f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'));
+        violations.add(name);
+        found++;
+      }
+      
+      ant.fileScanner{
+        fileset(dir: baseDir){
+          extensions.each{
+            include(name: 'lucene/**/*.' + it)
+            include(name: 'solr/**/*.' + it)
+            include(name: 'dev-tools/**/*.' + it)
+            include(name: '*.' + it)
+          }
+          exclude(name: '**/build/**')
+        }
+      }.each{ f ->
+        def text = f.getText('UTF-8');
+        invalidPatterns.each{ pattern,name ->
+          if (pattern.matcher(text).find()) {
+            reportViolation(f, name);
+          }
+        }
+        def m = licenseOuterPattern.matcher(text);
+        while (m.find()) {
+          if (licenseInnerPattern.matcher(m.group(1)).find()) {
+            reportViolation(f, 'javadoc-style license header');
+          }
+        }
+      };
+      
+      if (found) {
+        throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
+          found, violations.join(', ')));
+      }
+    ]]></groovy>
   </target>
-	
+  
   <target name="rat-sources" description="Runs rat across all sources and tests" depends="common.rat-sources">
     <subant target="rat-sources" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
