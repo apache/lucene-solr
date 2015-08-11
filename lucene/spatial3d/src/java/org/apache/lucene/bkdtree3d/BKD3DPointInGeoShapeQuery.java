@@ -17,7 +17,10 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
+import org.apache.lucene.geo3d.GeoArea;
 import org.apache.lucene.geo3d.GeoShape;
+import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.geo3d.XYZSolid;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -62,11 +65,13 @@ public class BKD3DPointInGeoShapeQuery extends Query {
   final int maxY;
   final int minZ;
   final int maxZ;
+  final PlanetModel planetModel;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
-  public BKD3DPointInGeoShapeQuery(String field, GeoShape shape) {
+  public BKD3DPointInGeoShapeQuery(PlanetModel planetModel, String field, GeoShape shape) {
     this.field = field;
     this.shape = shape;
+    this.planetModel = planetModel;
     // nocommit need to set x/y/zMin/Max
     minX = 0;
     maxX = 0;
@@ -123,9 +128,29 @@ public class BKD3DPointInGeoShapeQuery extends Query {
                                            }
 
                                            @Override
-                                           public BKD3DTreeReader.Relation compare(int xMin, int xMax, int yMin, int yMax, int zMin, int zMax) {
-                                             // nocommit fixme!
-                                             return BKD3DTreeReader.Relation.INSIDE;
+                                           public BKD3DTreeReader.Relation compare(int xMinEnc, int xMaxEnc, int yMinEnc, int yMaxEnc, int zMinEnc, int zMaxEnc) {
+                                             double xMin = BKD3DTreeDocValuesFormat.decodeValue(xMinEnc);
+                                             double xMax = BKD3DTreeDocValuesFormat.decodeValue(xMaxEnc);
+                                             double yMin = BKD3DTreeDocValuesFormat.decodeValue(yMinEnc);
+                                             double yMax = BKD3DTreeDocValuesFormat.decodeValue(yMaxEnc);
+                                             double zMin = BKD3DTreeDocValuesFormat.decodeValue(zMinEnc);
+                                             double zMax = BKD3DTreeDocValuesFormat.decodeValue(zMaxEnc);
+
+                                             GeoArea xyzSolid = new XYZSolid(planetModel, xMin, xMax, yMin, yMax, zMin, zMax);
+
+                                             // nocommit untested!
+                                             switch(xyzSolid.getRelationship(shape)) {
+                                             case GeoArea.CONTAINS:
+                                             case GeoArea.OVERLAPS:
+                                               return BKD3DTreeReader.Relation.CROSSES;
+                                             case GeoArea.WITHIN:
+                                               return BKD3DTreeReader.Relation.INSIDE;
+                                             case GeoArea.DISJOINT:
+                                               return BKD3DTreeReader.Relation.OUTSIDE;
+                                             default:
+                                               assert false;
+                                               return BKD3DTreeReader.Relation.CROSSES;
+                                             }
                                            }
                                          });
 
