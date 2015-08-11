@@ -60,26 +60,12 @@ public class BKD3DPointInGeoShapeQuery extends Query {
   final String field;
   final PlanetModel planetModel;
   final GeoShape shape;
-  final int minX;
-  final int maxX;
-  final int minY;
-  final int maxY;
-  final int minZ;
-  final int maxZ;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
   public BKD3DPointInGeoShapeQuery(PlanetModel planetModel, String field, GeoShape shape) {
     this.field = field;
     this.planetModel = planetModel;
     this.shape = shape;
-    // nocommit but these min/max should be the 3D bbox of the query shape, not the planet ... or
-    // we could remove entirely and let BKD.intersect always recurse from full earth down:
-    minX = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMinimumXValue());
-    maxX = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMaximumXValue());
-    minY = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMinimumYValue());
-    maxY = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMaximumYValue());
-    minZ = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMinimumZValue());
-    maxZ = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMaximumZValue());
   }
 
   @Override
@@ -110,8 +96,7 @@ public class BKD3DPointInGeoShapeQuery extends Query {
         
         // TODO: make this more efficient: as we recurse the BKD tree we should check whether the
         // bbox we are recursing into intersects our shape; Apache SIS may have (non-GPL!) code to do this?
-        DocIdSet result = tree.intersect(minX, maxX, minY, maxY, minZ, maxZ,
-                                         new BKD3DTreeReader.ValueFilter() {
+        DocIdSet result = tree.intersect(new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {
                                              BytesRef bytes = treeDV.get(docID);

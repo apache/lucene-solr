@@ -109,6 +109,15 @@ final class BKD3DTreeReader implements Accountable {
     }
   }
 
+  public DocIdSet intersect(ValueFilter filter) throws IOException {
+    return intersect(globalMinX, globalMaxX,
+                     globalMinY, globalMaxY,
+                     globalMinZ, globalMaxZ,
+                     filter);
+  }
+
+  /** Optimized intersect which takes the 3D bbox for the query and uses that to avoid filter.compare calls
+  *   when cells are clearly outside the bbox. */
   public DocIdSet intersect(int xMin, int xMax, int yMin, int yMax, int zMin, int zMax, ValueFilter filter) throws IOException {
 
     QueryState state = new QueryState(in.clone(), maxDoc,
