@@ -290,7 +290,6 @@ public class CoreContainer {
   }
 
   private void addHttpConfigurer(Object authcPlugin) {
-    log.info("addHttpConfigurer()");//TODO no commit
     if (authcPlugin instanceof HttpClientInterceptorPlugin) {
       // Setup HttpClient to use the plugin's configurer for internode communication
       HttpClientConfigurer configurer = ((HttpClientInterceptorPlugin) authcPlugin).getClientConfigurer();
