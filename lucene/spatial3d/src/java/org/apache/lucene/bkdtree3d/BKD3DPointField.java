@@ -17,6 +17,8 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
+import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.geo3d.GeoPoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
@@ -36,6 +38,21 @@ public final class BKD3DPointField extends Field {
   }
 
   // nocommit should we also have version that takes lat/lon and converts up front?
+
+  /** 
+   * Creates a new BKD3DPointField field with the specified lat, lon (in radians), given a planet model.
+   *
+   * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
+   */
+  public BKD3DPointField(String name, final PlanetModel planetModel, final double lat, final double lon) {
+    super(name, TYPE);
+    final GeoPoint point = new GeoPoint(planetModel, lat, lon);
+    byte[] bytes = new byte[12];
+    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(point.x), bytes, 0);
+    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(point.y), bytes, 4);
+    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(point.z), bytes, 8);
+    fieldsData = new BytesRef(bytes);
+  }
 
   /** 
    * Creates a new BKD3DPointField field with the specified x,y,z.

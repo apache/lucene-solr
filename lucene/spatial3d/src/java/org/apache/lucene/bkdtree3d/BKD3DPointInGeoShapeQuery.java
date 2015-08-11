@@ -58,6 +58,7 @@ import java.util.Set;
 
 public class BKD3DPointInGeoShapeQuery extends Query {
   final String field;
+  final PlanetModel planetModel;
   final GeoShape shape;
   final int minX;
   final int maxX;
@@ -65,20 +66,20 @@ public class BKD3DPointInGeoShapeQuery extends Query {
   final int maxY;
   final int minZ;
   final int maxZ;
-  final PlanetModel planetModel;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
   public BKD3DPointInGeoShapeQuery(PlanetModel planetModel, String field, GeoShape shape) {
     this.field = field;
-    this.shape = shape;
     this.planetModel = planetModel;
-    // nocommit need to set x/y/zMin/Max
-    minX = 0;
-    maxX = 0;
-    minY = 0;
-    maxY = 0;
-    minZ = 0;
-    maxZ = 0;
+    this.shape = shape;
+    // nocommit but these min/max should be the 3D bbox of the query shape, not the planet ... or
+    // we could remove entirely and let BKD.intersect always recurse from full earth down:
+    minX = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMinimumXValue());
+    maxX = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMaximumXValue());
+    minY = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMinimumYValue());
+    maxY = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMaximumYValue());
+    minZ = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMinimumZValue());
+    maxZ = BKD3DTreeDocValuesFormat.encodeValue(planetModel.getMaximumZValue());
   }
 
   @Override
@@ -122,9 +123,8 @@ public class BKD3DPointInGeoShapeQuery extends Query {
                                              double x = BKD3DTreeDocValuesFormat.decodeValue(BKD3DTreeDocValuesFormat.readInt(bytes.bytes, bytes.offset));
                                              double y = BKD3DTreeDocValuesFormat.decodeValue(BKD3DTreeDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
                                              double z = BKD3DTreeDocValuesFormat.decodeValue(BKD3DTreeDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
-                                             //return GeoUtils.pointInPolygon(polyLons, polyLats, lat, lon);
-                                             // nocommit fixme!
-                                             return true;
+                                             // True if x,y,z is within shape
+                                             return shape.isWithin(x,y,z);
                                            }
 
                                            @Override
@@ -170,12 +170,13 @@ public class BKD3DPointInGeoShapeQuery extends Query {
 
     BKD3DPointInGeoShapeQuery that = (BKD3DPointInGeoShapeQuery) o;
 
-    return shape.equals(that.shape);
+    return planetModel.equals(that.planetModel) && shape.equals(that.shape);
   }
 
   @Override
   public final int hashCode() {
     int result = super.hashCode();
+    result = 31 * result + planetModel.hashCode();
     result = 31 * result + shape.hashCode();
     return result;
   }
@@ -190,6 +191,8 @@ public class BKD3DPointInGeoShapeQuery extends Query {
       sb.append(this.field);
       sb.append(':');
     }
+    sb.append("PlanetModel: ");
+    sb.append(planetModel);
     sb.append(" Shape: ");
     sb.append(shape);
     sb.append(ToStringUtils.boost(getBoost()));
