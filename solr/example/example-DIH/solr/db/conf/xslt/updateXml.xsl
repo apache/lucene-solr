@@ -49,10 +49,10 @@
       <xsl:variable name="fn" select="@name"/>
       
       <xsl:for-each select="*">
-		<xsl:element name="field">
-		    <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
-	        <xsl:value-of select="."/>
-		</xsl:element>
+        <xsl:element name="field">
+            <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
+              <xsl:value-of select="."/>
+        </xsl:element>
       </xsl:for-each>
   </xsl:template>
 
@@ -60,10 +60,10 @@
   <xsl:template match="doc/*">
       <xsl:variable name="fn" select="@name"/>
 
-	<xsl:element name="field">
-	    <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
+       <xsl:element name="field">
+        <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
         <xsl:value-of select="."/>
-	</xsl:element>
+       </xsl:element>
   </xsl:template>
 
   <xsl:template match="*"/>

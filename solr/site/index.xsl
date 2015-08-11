@@ -81,8 +81,8 @@
         <xsl:call-template name="modules"/>
       </body>
     </html>
-	</xsl:template>
-	
+  </xsl:template>
+  
   <xsl:template name="modules">
     <ul>
       <xsl:for-each select="str:split($buildfiles,'|')">
