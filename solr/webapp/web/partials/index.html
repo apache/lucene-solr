@@ -106,8 +106,8 @@ limitations under the License.
       <div class="block" id="system">
 
           <h2><span>System</span>
-	  <small class="bar-desc">{{load_average[0]}} {{load_average[1]}} {{load_average[2]}}</small>
-	  </h2>
+    <small class="bar-desc">{{load_average[0]}} {{load_average[1]}} {{load_average[2]}}</small>
+    </h2>
           <a class="reload" ng-click="reload()"><span>reload</span></a>
 
           <div class="content">
@@ -115,8 +115,8 @@ limitations under the License.
             <div id="physical-memory-bar" ng-show="system.system.totalPhysicalMemorySize && system.system.freePhysicalMemorySize">
 
               <p data-desc="physical-memory-bar">Physical Memory
-	       <small class="bar-desc">{{memoryPercentage}}</small>
-	      </p>
+         <small class="bar-desc">{{memoryPercentage}}</small>
+        </p>
               <div class="bar-holder bar-lvl-2">
 
                 <div class="bar-max bar">
@@ -136,8 +136,8 @@ limitations under the License.
             <div id="swap-space-bar" ng-show="system.system.totalSwapSpaceSize && system.system.freeSwapSpaceSize">
 
               <p data-desc="swap-space-bar">Swap Space
-	        <small class="bar-desc">{{swapPercentage}}</small>
-	      </p>
+          <small class="bar-desc">{{swapPercentage}}</small>
+        </p>
               <div class="bar-holder bar-lvl-2">
 
                 <div class="bar-max bar">
@@ -157,8 +157,8 @@ limitations under the License.
           <div id="file-descriptor-bar" ng-show="system.system.maxFileDescriptorCount && system.system.openFileDescriptorCount">
 
               <p data-desc="file-descriptor-bar">File Descriptor Count
-	        <small class="bar-desc">{{fileDescriptorPercentage}}</small>
-	      </p>
+          <small class="bar-desc">{{fileDescriptorPercentage}}</small>
+        </p>
               <div class="bar-holder bar-lvl-2">
 
                 <div class="bar-max bar">
@@ -224,8 +224,8 @@ limitations under the License.
       <div class="block" id="jvm-memory">
 
           <h2><span data-desc="jvm-memory-bar">JVM-Memory
-	     <small class="bar-desc">{{javaMemoryPercentage}}</small>
-	  </span></h2>
+       <small class="bar-desc">{{javaMemoryPercentage}}</small>
+    </span></h2>
 
           <div class="content">
 
