@@ -43,8 +43,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
-// nocommit rename Geo3DPointInShapeQuery?
-
 /** Finds all previously indexed points that fall within the specified polygon.
  *
  *  <p>The field must be indexed with {@link Geo3DDocValuesFormat}, and {@link Geo3DPointField} added per document.

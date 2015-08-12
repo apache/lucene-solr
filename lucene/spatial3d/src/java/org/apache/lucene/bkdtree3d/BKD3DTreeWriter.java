@@ -94,6 +94,8 @@ class BKD3DTreeWriter {
 
   private long pointCount;
 
+  private final int[] scratchDocIDs;
+
   public BKD3DTreeWriter() throws IOException {
     this(DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_POINTS_SORT_IN_HEAP);
   }
@@ -103,6 +105,7 @@ class BKD3DTreeWriter {
     verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
+    scratchDocIDs = new int[maxPointsInLeafNode];
 
     // We write first maxPointsSortInHeap in heap, then cutover to offline for additional points:
     heapWriter = new GrowingHeapWriter(maxPointsSortInHeap);
@@ -615,8 +618,12 @@ class BKD3DTreeWriter {
                      int[] splitValues,
                      long[] leafBlockFPs) throws IOException {
 
-    assert lastXSorted.count == lastYSorted.count;
-    assert lastXSorted.count == lastZSorted.count;
+    long count = lastXSorted.count;
+    assert count > 0;
+    assert count <= ArrayUtil.MAX_ARRAY_LENGTH;
+
+    assert count == lastYSorted.count;
+    assert count == lastZSorted.count;
 
     if (DEBUG) System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + "\n  lastXSorted=" + lastXSorted + "\n  lastYSorted=" + lastYSorted + "\n  lastZSorted=" + lastZSorted + "\n  count=" + lastXSorted.count + " x=" + minX + " TO " + maxX + " y=" + minY + " TO " + maxY + " z=" + minZ + " TO " + maxZ);
 
@@ -633,12 +640,9 @@ class BKD3DTreeWriter {
       // Sort by docID in the leaf so we get sequentiality at search time (may not matter?):
       Reader reader = lastXSorted.writer.getReader(lastXSorted.start);
 
-      // nocommit we can reuse this?
-      int[] docIDs = new int[(int) lastXSorted.count];
-
       boolean success = false;
       try {
-        for (int i=0;i<lastXSorted.count;i++) {
+        for (int i=0;i<count;i++) {
 
           // NOTE: we discard ord at this point; we only needed it temporarily
           // during building to uniquely identify each point to properly handle
@@ -649,7 +653,7 @@ class BKD3DTreeWriter {
 
           boolean result = reader.next();
           assert result;
-          docIDs[i] = reader.docID();
+          scratchDocIDs[i] = reader.docID();
         }
         success = true;
       } finally {
@@ -660,20 +664,20 @@ class BKD3DTreeWriter {
         }
       }
 
-      Arrays.sort(docIDs);
+      Arrays.sort(scratchDocIDs, 0, (int) count);
 
       // Dedup docIDs: for the multi-valued case where more than one value for the doc
       // wound up in this leaf cell, we only need to store the docID once:
       int lastDocID = -1;
       int uniqueCount = 0;
-      for(int i=0;i<docIDs.length;i++) {
-        int docID = docIDs[i];
+      for(int i=0;i<count;i++) {
+        int docID = scratchDocIDs[i];
         if (docID != lastDocID) {
           uniqueCount++;
           lastDocID = docID;
         }
       }
-      assert uniqueCount <= lastXSorted.count;
+      assert uniqueCount <= count;
 
       long startFP = out.getFilePointer();
       out.writeVInt(uniqueCount);
@@ -683,12 +687,12 @@ class BKD3DTreeWriter {
       //System.out.println("    leafFP=" + startFP);
 
       lastDocID = -1;
-      for (int i=0;i<docIDs.length;i++) {
+      for (int i=0;i<count;i++) {
         // Absolute int encode; with "vInt of deltas" encoding, the .kdd size dropped from
         // 697 MB -> 539 MB, but query time for 225 queries went from 1.65 sec -> 2.64 sec.
         // I think if we also indexed prefix terms here we could do less costly compression
         // on those lists:
-        int docID = docIDs[i];
+        int docID = scratchDocIDs[i];
         if (docID != lastDocID) {
           out.writeInt(docID);
           //System.out.println("  write docID=" + docID);
@@ -711,8 +715,6 @@ class BKD3DTreeWriter {
       } else {
         source = lastZSorted;
       }
-
-      long count = source.count;
 
       // We let ties go to either side, so we should never get down to count == 0, even
       // in adversarial case (all values are the same):

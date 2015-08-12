@@ -24,7 +24,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 
-// nocommit what about multi-valued?
+// TODO: allow multi-valued, packing all points into a single BytesRef
 
 /** Add this to a document to index lat/lon point, but be sure to use {@link Geo3DDocValuesFormat} for the field.
 
@@ -36,8 +36,6 @@ public final class Geo3DPointField extends Field {
     TYPE.setDocValuesType(DocValuesType.BINARY);
     TYPE.freeze();
   }
-
-  // nocommit should we also have version that takes lat/lon and converts up front?
 
   /** 
    * Creates a new Geo3DPointField field with the specified lat, lon (in radians), given a planet model.

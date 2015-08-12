@@ -398,7 +398,6 @@ class BKDTreeWriter {
       latSortedWriter = sort(false);
       heapWriter = null;
 
-      // nocommit use the actual min/max from all points here:
       build(1, numLeaves, new PathSlice(latSortedWriter, 0, pointCount),
             new PathSlice(lonSortedWriter, 0, pointCount),
             bitSet, out,
@@ -634,7 +633,7 @@ class BKDTreeWriter {
       // Sort by docID in the leaf so we get sequentiality at search time (may not matter?):
       LatLonReader reader = source.writer.getReader(source.start);
 
-      // nocommit we can reuse this
+      // TODO: we can reuse this
       int[] docIDs = new int[(int) count];
 
       boolean success = false;

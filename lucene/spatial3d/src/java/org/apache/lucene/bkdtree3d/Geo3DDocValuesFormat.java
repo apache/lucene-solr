@@ -108,7 +108,10 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
     return new Geo3DDocValuesProducer(delegate.fieldsProducer(state), state);
   }
 
-  // nocommit is this ok?  PlanetModel.WGS84 seems to have max 1.0011188180710464 ?
+  // NOTE: the max current PlanetModel is PlanetModel.WGS84; it has a max 1.0011188180710464.  If a new
+  // PlanetModel shows up in the future with a bigger max, we have to revisit this, but users will
+  // hit an exc from encodeValue:
+
   static final double MAX_ABS_VALUE = 1.002d;
 
   private static final double SCALE = Integer.MAX_VALUE / MAX_ABS_VALUE;

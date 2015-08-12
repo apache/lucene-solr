@@ -41,8 +41,9 @@ final class BKDTreeReader implements Accountable {
   enum Relation {INSIDE, CROSSES, OUTSIDE};
 
   interface LatLonFilter {
-    // nocommit pass docID instead; DVs should not be down in here
+    // TODO: move DVs/encoding out on top: this method should just take a docID
     boolean accept(double lat, double lon);
+    // TODO: move DVs/encoding out on top: this method should take ints and do its own decode
     Relation compare(double latMin, double latMax, double lonMin, double lonMax);
   }
 
@@ -94,7 +95,7 @@ final class BKDTreeReader implements Accountable {
     }
   }
 
-  // nocommit lat/lon encoding should be moved out above here
+  // TODO: move DVs/encoding out on top: this method should take ints, and encode should be done up above
   public DocIdSet intersect(double latMin, double latMax, double lonMin, double lonMax, LatLonFilter filter, SortedNumericDocValues sndv) throws IOException {
     if (BKDTreeWriter.validLat(latMin) == false) {
       throw new IllegalArgumentException("invalid latMin: " + latMin);
@@ -208,7 +209,7 @@ final class BKDTreeReader implements Accountable {
           // The cell crosses the shape boundary, so we fall through and do full filtering
         }
       }
-    // nocommit clean this up: the bbox case should also just be a filter, and we should assert filter != null at the start
+    // TODO: clean this up: the bbox case should also just be a filter, and we should assert filter != null at the start
     } else if (state.latMinEnc <= cellLatMinEnc && state.latMaxEnc >= cellLatMaxEnc && state.lonMinEnc <= cellLonMinEnc && state.lonMaxEnc >= cellLonMaxEnc) {
       // Optimize the case when the query fully contains this cell: we can
       // recursively add all points without checking if they match the query:

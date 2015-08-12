@@ -106,7 +106,7 @@ class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
     for (int docID=0;docID<state.segmentInfo.maxDoc();docID++) {
       assert valuesIt.hasNext();
       BytesRef value = valuesIt.next();
-      // nocommit what about multi-valued?
+      // TODO: we should allow multi-valued here, just appended into the BDV
       // 3 ints packed into byte[]
       assert value.length == 12;
       int x = Geo3DDocValuesFormat.readInt(value.bytes, value.offset);
