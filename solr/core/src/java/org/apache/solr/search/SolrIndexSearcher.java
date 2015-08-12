@@ -105,7 +105,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public static final AtomicLong numCloses = new AtomicLong();
 
 
-  private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
+  static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
 
@@ -1252,19 +1252,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
-    DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
-
-    try {
-      if (filter == null) {
-        super.search(query, collector);
-      } else {
-        Filter luceneFilter = filter.getTopFilter();
-        super.search(new FilteredQuery(query, luceneFilter), collector);
-      }
-    } catch ( ExitableDirectoryReader.ExitingReaderException e) {
-        log.warn("Query: " + query + "; " + e.getMessage());
-    }
-    return collector.getDocSet();
+    return DocSetUtil.createDocSet(this, query, filter);
   }
 
 
