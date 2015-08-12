@@ -17,8 +17,16 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.geo3d.GeoCircle;
+import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -32,9 +40,34 @@ import java.util.List;
 
 import static org.apache.lucene.bkdtree3d.BKD3DTreeDocValuesFormat.encodeValue;
 
-public class TestBKD3DTree extends LuceneTestCase {
+public class TestGeo3DPointField extends LuceneTestCase {
 
   public void testBasic() throws Exception {
+    Directory dir = newDirectory();
+    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
+    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new BKD3DTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap)));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new Geo3DPointField("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w, true);
+    // We can't wrap with "exotic" readers because the query must see the BKD3DDVFormat:
+    IndexSearcher s = newSearcher(r, false);
+    assertEquals(1, s.search(new PointInGeo3DShapeQuery(PlanetModel.WGS84,
+                                                        "field",
+                                                        new GeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1).totalHits);
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  private static double toRadians(double degrees) {
+    return Math.PI*(degrees/360.0);
+  }
+
+  public void testBKDBasic() throws Exception {
     Directory dir = newDirectory();
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
 
@@ -126,7 +159,7 @@ public class TestBKD3DTree extends LuceneTestCase {
     }
   }
 
-  public void testRandom() throws Exception {
+  public void testBKDRandom() throws Exception {
     List<Point> points = new ArrayList<>();
     int numPoints = atLeast(10000);
     Directory dir = newDirectory();

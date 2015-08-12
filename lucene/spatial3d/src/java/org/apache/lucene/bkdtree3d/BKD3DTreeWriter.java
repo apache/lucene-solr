@@ -641,9 +641,9 @@ class BKD3DTreeWriter {
     if (nodeID >= leafNodeOffset) {
       // Leaf node: write block
       if (DEBUG) System.out.println("  leaf");
-      assert maxX > minX;
-      assert maxY > minY;
-      assert maxZ > minZ;
+      assert maxX >= minX;
+      assert maxY >= minY;
+      assert maxZ >= minZ;
 
       //System.out.println("\nleaf:\n  lat range: " + ((long) maxLatEnc-minLatEnc));
       //System.out.println("  lon range: " + ((long) maxLonEnc-minLonEnc));
