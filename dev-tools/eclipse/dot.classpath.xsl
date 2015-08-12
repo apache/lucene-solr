@@ -57,7 +57,7 @@
       
       <!-- the main resources folder is here (see above), so it's listed after the test-framework resources, making preflex-override work: -->
       <classpathentry kind="output" path="eclipse-build/main"/>
-      <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+      <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
       
       <xsl:for-each select="str:split($eclipse.fileset.libs,'|')">
         <!-- sort the jars by path name: -->
