@@ -136,6 +136,10 @@ Bug Fixes
 Optimizations
 ----------------------
 
+* SOLR-7918: Filter (DocSet) production from term queries has been optimized and
+  is anywhere from 20% to over 100% faster and produces less garbage on average.
+  (yonik)
+
 Other Changes
 ----------------------
 
