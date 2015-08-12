@@ -43,7 +43,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-class BKD3DTreeDocValuesProducer extends DocValuesProducer {
+class Geo3DDocValuesProducer extends DocValuesProducer {
 
   private final Map<String,BKD3DTreeReader> treeReaders = new HashMap<>();
   private final Map<Integer,Long> fieldToIndexFPs = new HashMap<>();
@@ -54,10 +54,10 @@ class BKD3DTreeDocValuesProducer extends DocValuesProducer {
   private final DocValuesProducer delegate;
   private final boolean merging;
 
-  public BKD3DTreeDocValuesProducer(DocValuesProducer delegate, SegmentReadState state) throws IOException {
-    String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BKD3DTreeDocValuesFormat.META_EXTENSION);
+  public Geo3DDocValuesProducer(DocValuesProducer delegate, SegmentReadState state) throws IOException {
+    String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Geo3DDocValuesFormat.META_EXTENSION);
     ChecksumIndexInput metaIn = state.directory.openChecksumInput(metaFileName, state.context);
-    CodecUtil.checkIndexHeader(metaIn, BKD3DTreeDocValuesFormat.META_CODEC_NAME, BKD3DTreeDocValuesFormat.META_VERSION_START, BKD3DTreeDocValuesFormat.META_VERSION_CURRENT,
+    CodecUtil.checkIndexHeader(metaIn, Geo3DDocValuesFormat.META_CODEC_NAME, Geo3DDocValuesFormat.META_VERSION_START, Geo3DDocValuesFormat.META_VERSION_CURRENT,
                                state.segmentInfo.getId(), state.segmentSuffix);
     int fieldCount = metaIn.readVInt();
     for(int i=0;i<fieldCount;i++) {
@@ -68,9 +68,9 @@ class BKD3DTreeDocValuesProducer extends DocValuesProducer {
     CodecUtil.checkFooter(metaIn);
     metaIn.close();
 
-    String datFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BKD3DTreeDocValuesFormat.DATA_EXTENSION);
+    String datFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Geo3DDocValuesFormat.DATA_EXTENSION);
     datIn = state.directory.openInput(datFileName, state.context);
-    CodecUtil.checkIndexHeader(datIn, BKD3DTreeDocValuesFormat.DATA_CODEC_NAME, BKD3DTreeDocValuesFormat.DATA_VERSION_START, BKD3DTreeDocValuesFormat.DATA_VERSION_CURRENT,
+    CodecUtil.checkIndexHeader(datIn, Geo3DDocValuesFormat.DATA_CODEC_NAME, Geo3DDocValuesFormat.DATA_VERSION_START, Geo3DDocValuesFormat.DATA_VERSION_CURRENT,
                                state.segmentInfo.getId(), state.segmentSuffix);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     maxDoc = state.segmentInfo.maxDoc();
@@ -78,8 +78,8 @@ class BKD3DTreeDocValuesProducer extends DocValuesProducer {
     merging = false;
   }
 
-  // clone for merge: we don't hang onto the BKD3DTrees we load
-  BKD3DTreeDocValuesProducer(BKD3DTreeDocValuesProducer orig) throws IOException {
+  // clone for merge: we don't hang onto the Geo3Ds we load
+  Geo3DDocValuesProducer(Geo3DDocValuesProducer orig) throws IOException {
     assert Thread.holdsLock(orig);
     datIn = orig.datIn.clone();
     ramBytesUsed = new AtomicLong(orig.ramBytesUsed.get());
@@ -129,7 +129,7 @@ class BKD3DTreeDocValuesProducer extends DocValuesProducer {
       }
     }
 
-    return new BKD3DTreeBinaryDocValues(treeReader, delegate.getBinary(field));
+    return new Geo3DBinaryDocValues(treeReader, delegate.getBinary(field));
   }
 
   @Override
@@ -160,7 +160,7 @@ class BKD3DTreeDocValuesProducer extends DocValuesProducer {
 
   @Override
   public synchronized DocValuesProducer getMergeInstance() throws IOException {
-    return new BKD3DTreeDocValuesProducer(this);
+    return new Geo3DDocValuesProducer(this);
   }
 
   @Override

@@ -47,7 +47,7 @@ import java.util.Set;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
- *  <p>The field must be indexed with {@link BKD3DTreeDocValuesFormat}, and {@link BKD3DPointField} added per document.
+ *  <p>The field must be indexed with {@link Geo3DDocValuesFormat}, and {@link Geo3DPointField} added per document.
  *
  *  <p>Because this implementation cannot intersect each cell with the polygon, it will be costly especially for large polygons, as every
  *   possible point must be checked.
@@ -88,10 +88,10 @@ public class PointInGeo3DShapeQuery extends Query {
           return null;
         }
 
-        if (bdv instanceof BKD3DTreeBinaryDocValues == false) {
-          throw new IllegalStateException("field \"" + field + "\" was not indexed with BKD3DTreeBinaryDocValuesFormat: got: " + bdv);
+        if (bdv instanceof Geo3DBinaryDocValues == false) {
+          throw new IllegalStateException("field \"" + field + "\" was not indexed with Geo3DBinaryDocValuesFormat: got: " + bdv);
         }
-        BKD3DTreeBinaryDocValues treeDV = (BKD3DTreeBinaryDocValues) bdv;
+        Geo3DBinaryDocValues treeDV = (Geo3DBinaryDocValues) bdv;
         BKD3DTreeReader tree = treeDV.getBKD3DTreeReader();
         
         // TODO: make this more efficient: as we recurse the BKD tree we should check whether the
@@ -105,21 +105,21 @@ public class PointInGeo3DShapeQuery extends Query {
                                              }
 
                                              assert bytes.length == 12;
-                                             double x = BKD3DTreeDocValuesFormat.decodeValue(BKD3DTreeDocValuesFormat.readInt(bytes.bytes, bytes.offset));
-                                             double y = BKD3DTreeDocValuesFormat.decodeValue(BKD3DTreeDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
-                                             double z = BKD3DTreeDocValuesFormat.decodeValue(BKD3DTreeDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
+                                             double x = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset));
+                                             double y = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
+                                             double z = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
                                              // True if x,y,z is within shape
                                              return shape.isWithin(x,y,z);
                                            }
 
                                            @Override
                                            public BKD3DTreeReader.Relation compare(int xMinEnc, int xMaxEnc, int yMinEnc, int yMaxEnc, int zMinEnc, int zMaxEnc) {
-                                             double xMin = BKD3DTreeDocValuesFormat.decodeValue(xMinEnc);
-                                             double xMax = BKD3DTreeDocValuesFormat.decodeValue(xMaxEnc);
-                                             double yMin = BKD3DTreeDocValuesFormat.decodeValue(yMinEnc);
-                                             double yMax = BKD3DTreeDocValuesFormat.decodeValue(yMaxEnc);
-                                             double zMin = BKD3DTreeDocValuesFormat.decodeValue(zMinEnc);
-                                             double zMax = BKD3DTreeDocValuesFormat.decodeValue(zMaxEnc);
+                                             double xMin = Geo3DDocValuesFormat.decodeValue(xMinEnc);
+                                             double xMax = Geo3DDocValuesFormat.decodeValue(xMaxEnc);
+                                             double yMin = Geo3DDocValuesFormat.decodeValue(yMinEnc);
+                                             double yMax = Geo3DDocValuesFormat.decodeValue(yMaxEnc);
+                                             double zMin = Geo3DDocValuesFormat.decodeValue(zMinEnc);
+                                             double zMax = Geo3DDocValuesFormat.decodeValue(zMaxEnc);
 
                                              GeoArea xyzSolid = new XYZSolid(planetModel, xMin, xMax, yMin, yMax, zMin, zMax);
 

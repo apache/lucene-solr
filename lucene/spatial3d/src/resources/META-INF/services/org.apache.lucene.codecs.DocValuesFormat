@@ -13,5 +13,5 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.lucene.bkdtree3d.BKD3DTreeDocValuesFormat
+org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat
 

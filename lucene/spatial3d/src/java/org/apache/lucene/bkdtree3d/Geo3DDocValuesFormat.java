@@ -28,8 +28,8 @@ import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * A {@link DocValuesFormat} to efficiently index geo-spatial 3D x,y,z points
- * from {@link BKD3DPointField} for fast shape intersection queries using
- * ({@code BKD3DShapeQuery}) // nocommit use link here
+ * from {@link Geo3DPointField} for fast shape intersection queries using
+ * ({@link PointInGeo3DShapeQuery})
  *
  * <p>This wraps {@link Lucene50DocValuesFormat}, but saves its own BKD tree
  * structures to disk for fast query-time intersection. See <a
@@ -61,19 +61,17 @@ import org.apache.lucene.index.SegmentWriteState;
  *
  * @lucene.experimental */
 
-// nocommit rename to Geo3DDVF
+public class Geo3DDocValuesFormat extends DocValuesFormat {
 
-public class BKD3DTreeDocValuesFormat extends DocValuesFormat {
-
-  static final String DATA_CODEC_NAME = "BKD3DData";
+  static final String DATA_CODEC_NAME = "Geo3DData";
   static final int DATA_VERSION_START = 0;
   static final int DATA_VERSION_CURRENT = DATA_VERSION_START;
-  static final String DATA_EXTENSION = "kd3d";
+  static final String DATA_EXTENSION = "g3dd";
 
-  static final String META_CODEC_NAME = "BKD3DMeta";
+  static final String META_CODEC_NAME = "Geo3DMeta";
   static final int META_VERSION_START = 0;
   static final int META_VERSION_CURRENT = META_VERSION_START;
-  static final String META_EXTENSION = "kd3m";
+  static final String META_EXTENSION = "g3dm";
 
   private final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
@@ -81,7 +79,7 @@ public class BKD3DTreeDocValuesFormat extends DocValuesFormat {
   private final DocValuesFormat delegate = new Lucene50DocValuesFormat();
 
   /** Default constructor */
-  public BKD3DTreeDocValuesFormat() {
+  public Geo3DDocValuesFormat() {
     this(BKD3DTreeWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKD3DTreeWriter.DEFAULT_MAX_POINTS_SORT_IN_HEAP);
   }
 
@@ -93,7 +91,7 @@ public class BKD3DTreeDocValuesFormat extends DocValuesFormat {
    *    offline sort is used.  The default is 128 * 1024.
    *
    * @lucene.experimental */
-  public BKD3DTreeDocValuesFormat(int maxPointsInLeafNode, int maxPointsSortInHeap) {
+  public Geo3DDocValuesFormat(int maxPointsInLeafNode, int maxPointsSortInHeap) {
     super("BKD3DTree");
     BKD3DTreeWriter.verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
     this.maxPointsInLeafNode = maxPointsInLeafNode;
@@ -102,12 +100,12 @@ public class BKD3DTreeDocValuesFormat extends DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(final SegmentWriteState state) throws IOException {
-    return new BKD3DTreeDocValuesConsumer(delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
+    return new Geo3DDocValuesConsumer(delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new BKD3DTreeDocValuesProducer(delegate.fieldsProducer(state), state);
+    return new Geo3DDocValuesProducer(delegate.fieldsProducer(state), state);
   }
 
   // nocommit is this ok?  PlanetModel.WGS84 seems to have max 1.0011188180710464 ?

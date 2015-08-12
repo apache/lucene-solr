@@ -32,7 +32,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-class BKD3DTreeDocValuesConsumer extends DocValuesConsumer implements Closeable {
+class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
   final DocValuesConsumer delegate;
   final int maxPointsInLeafNode;
   final int maxPointsSortInHeap;
@@ -40,15 +40,15 @@ class BKD3DTreeDocValuesConsumer extends DocValuesConsumer implements Closeable 
   final Map<Integer,Long> fieldIndexFPs = new HashMap<>();
   final SegmentWriteState state;
 
-  public BKD3DTreeDocValuesConsumer(DocValuesConsumer delegate, SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
+  public Geo3DDocValuesConsumer(DocValuesConsumer delegate, SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
     BKD3DTreeWriter.verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
     this.delegate = delegate;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
     this.state = state;
-    String datFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BKD3DTreeDocValuesFormat.DATA_EXTENSION);
+    String datFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Geo3DDocValuesFormat.DATA_EXTENSION);
     out = state.directory.createOutput(datFileName, state.context);
-    CodecUtil.writeIndexHeader(out, BKD3DTreeDocValuesFormat.DATA_CODEC_NAME, BKD3DTreeDocValuesFormat.DATA_VERSION_CURRENT,
+    CodecUtil.writeIndexHeader(out, Geo3DDocValuesFormat.DATA_CODEC_NAME, Geo3DDocValuesFormat.DATA_VERSION_CURRENT,
                                state.segmentInfo.getId(), state.segmentSuffix);
   }
 
@@ -66,11 +66,11 @@ class BKD3DTreeDocValuesConsumer extends DocValuesConsumer implements Closeable 
       }
     }
     
-    String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BKD3DTreeDocValuesFormat.META_EXTENSION);
+    String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Geo3DDocValuesFormat.META_EXTENSION);
     IndexOutput metaOut = state.directory.createOutput(metaFileName, state.context);
     success = false;
     try {
-      CodecUtil.writeIndexHeader(metaOut, BKD3DTreeDocValuesFormat.META_CODEC_NAME, BKD3DTreeDocValuesFormat.META_VERSION_CURRENT,
+      CodecUtil.writeIndexHeader(metaOut, Geo3DDocValuesFormat.META_CODEC_NAME, Geo3DDocValuesFormat.META_VERSION_CURRENT,
                                  state.segmentInfo.getId(), state.segmentSuffix);
       metaOut.writeVInt(fieldIndexFPs.size());
       for(Map.Entry<Integer,Long> ent : fieldIndexFPs.entrySet()) {       
@@ -109,9 +109,9 @@ class BKD3DTreeDocValuesConsumer extends DocValuesConsumer implements Closeable 
       // nocommit what about multi-valued?
       // 3 ints packed into byte[]
       assert value.length == 12;
-      int x = BKD3DTreeDocValuesFormat.readInt(value.bytes, value.offset);
-      int y = BKD3DTreeDocValuesFormat.readInt(value.bytes, value.offset+4);
-      int z = BKD3DTreeDocValuesFormat.readInt(value.bytes, value.offset+8);
+      int x = Geo3DDocValuesFormat.readInt(value.bytes, value.offset);
+      int y = Geo3DDocValuesFormat.readInt(value.bytes, value.offset+4);
+      int z = Geo3DDocValuesFormat.readInt(value.bytes, value.offset+8);
       writer.add(x, y, z, docID);
     }
 

@@ -38,7 +38,7 @@ import org.apache.lucene.util.TestUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.lucene.bkdtree3d.BKD3DTreeDocValuesFormat.encodeValue;
+import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.encodeValue;
 
 public class TestGeo3DPointField extends LuceneTestCase {
 
@@ -47,7 +47,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new BKD3DTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap)));
+    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new Geo3DDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap)));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new Geo3DPointField("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));

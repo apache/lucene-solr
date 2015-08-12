@@ -20,11 +20,11 @@ package org.apache.lucene.bkdtree3d;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
-class BKD3DTreeBinaryDocValues extends BinaryDocValues {
+class Geo3DBinaryDocValues extends BinaryDocValues {
   final BKD3DTreeReader bkdTreeReader;
   final BinaryDocValues delegate;
 
-  public BKD3DTreeBinaryDocValues(BKD3DTreeReader bkdTreeReader, BinaryDocValues delegate) {
+  public Geo3DBinaryDocValues(BKD3DTreeReader bkdTreeReader, BinaryDocValues delegate) {
     this.bkdTreeReader = bkdTreeReader;
     this.delegate = delegate;
   }

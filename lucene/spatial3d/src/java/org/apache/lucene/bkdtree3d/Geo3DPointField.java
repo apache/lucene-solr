@@ -24,11 +24,11 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 
-// nocommit rename to Geo3DPointField?
-
 // nocommit what about multi-valued?
 
-/** Add this to a document to index lat/lon point, but be sure to use {@link BKD3DTreeDocValuesFormat} for the field. */
+/** Add this to a document to index lat/lon point, but be sure to use {@link Geo3DDocValuesFormat} for the field.
+
+ *  @lucene.experimental */
 public final class Geo3DPointField extends Field {
 
   public static final FieldType TYPE = new FieldType();
@@ -48,9 +48,9 @@ public final class Geo3DPointField extends Field {
     super(name, TYPE);
     final GeoPoint point = new GeoPoint(planetModel, lat, lon);
     byte[] bytes = new byte[12];
-    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(point.x), bytes, 0);
-    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(point.y), bytes, 4);
-    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(point.z), bytes, 8);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(point.x), bytes, 0);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(point.y), bytes, 4);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(point.z), bytes, 8);
     fieldsData = new BytesRef(bytes);
   }
 
@@ -62,9 +62,9 @@ public final class Geo3DPointField extends Field {
   public Geo3DPointField(String name, double x, double y, double z) {
     super(name, TYPE);
     byte[] bytes = new byte[12];
-    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(x), bytes, 0);
-    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(y), bytes, 4);
-    BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(z), bytes, 8);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(x), bytes, 0);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(y), bytes, 4);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(z), bytes, 8);
     fieldsData = new BytesRef(bytes);
   }
 }
