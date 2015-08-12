@@ -46,7 +46,6 @@ public final class Geo3DPointField extends Field {
    */
   public Geo3DPointField(String name, final PlanetModel planetModel, final double lat, final double lon) {
     super(name, TYPE);
-    System.out.println("HERE: " + lat);
     final GeoPoint point = new GeoPoint(planetModel, lat, lon);
     byte[] bytes = new byte[12];
     BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(point.x), bytes, 0);

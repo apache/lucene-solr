@@ -37,12 +37,6 @@ final class BKD3DTreeReader implements Accountable {
   final private long[] leafBlockFPs;
   final int maxDoc;
   final IndexInput in;
-  final int globalMinX;
-  final int globalMaxX;
-  final int globalMinY;
-  final int globalMaxY;
-  final int globalMinZ;
-  final int globalMaxZ;
 
   enum Relation {INSIDE, CROSSES, OUTSIDE};
 
@@ -52,14 +46,6 @@ final class BKD3DTreeReader implements Accountable {
   }
 
   public BKD3DTreeReader(IndexInput in, int maxDoc) throws IOException {
-
-    // nocommit is this really worth it?
-    globalMinX = in.readInt();
-    globalMaxX = in.readInt();
-    globalMinY = in.readInt();
-    globalMaxY = in.readInt();
-    globalMinZ = in.readInt();
-    globalMaxZ = in.readInt();
 
     // Read index:
     int numLeaves = in.readVInt();
@@ -110,9 +96,9 @@ final class BKD3DTreeReader implements Accountable {
   }
 
   public DocIdSet intersect(ValueFilter filter) throws IOException {
-    return intersect(globalMinX, globalMaxX,
-                     globalMinY, globalMaxY,
-                     globalMinZ, globalMaxZ,
+    return intersect(Integer.MIN_VALUE, Integer.MAX_VALUE,
+                     Integer.MIN_VALUE, Integer.MAX_VALUE,
+                     Integer.MIN_VALUE, Integer.MAX_VALUE,
                      filter);
   }
 
@@ -127,9 +113,9 @@ final class BKD3DTreeReader implements Accountable {
                                       filter);
 
     int hitCount = intersect(state, 1,
-                             globalMinX, globalMaxX,
-                             globalMinY, globalMaxY,
-                             globalMinZ, globalMaxZ);
+                             Integer.MIN_VALUE, Integer.MAX_VALUE,
+                             Integer.MIN_VALUE, Integer.MAX_VALUE,
+                             Integer.MIN_VALUE, Integer.MAX_VALUE);
 
     // NOTE: hitCount is an over-estimate in the multi-valued case:
     return state.docs.build(hitCount);

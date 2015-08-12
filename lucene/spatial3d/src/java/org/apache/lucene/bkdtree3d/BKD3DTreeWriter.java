@@ -93,12 +93,6 @@ class BKD3DTreeWriter {
   private final int maxPointsSortInHeap;
 
   private long pointCount;
-  private int globalMinX = Integer.MAX_VALUE;
-  private int globalMaxX = Integer.MIN_VALUE;
-  private int globalMinY = Integer.MAX_VALUE;
-  private int globalMaxY = Integer.MIN_VALUE;
-  private int globalMinZ = Integer.MAX_VALUE;
-  private int globalMaxZ = Integer.MIN_VALUE;
 
   public BKD3DTreeWriter() throws IOException {
     this(DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_POINTS_SORT_IN_HEAP);
@@ -171,12 +165,6 @@ class BKD3DTreeWriter {
     }
 
     pointCount++;
-    globalMinX = Math.min(globalMinX, x);
-    globalMaxX = Math.max(globalMaxX, x);
-    globalMinY = Math.min(globalMinY, y);
-    globalMaxY = Math.max(globalMaxY, y);
-    globalMinZ = Math.min(globalMinZ, z);
-    globalMaxZ = Math.max(globalMaxZ, z);
   }
 
   /** Changes incoming {@link ByteSequencesWriter} file to to fixed-width-per-entry file, because we need to be able to slice
@@ -415,9 +403,9 @@ class BKD3DTreeWriter {
             new PathSlice(ySortedWriter, 0, pointCount),
             new PathSlice(zSortedWriter, 0, pointCount),
             bitSet, out,
-            globalMinX, globalMaxX,
-            globalMinY, globalMaxY,
-            globalMinZ, globalMaxZ,
+            Integer.MIN_VALUE, Integer.MAX_VALUE,
+            Integer.MIN_VALUE, Integer.MAX_VALUE,
+            Integer.MIN_VALUE, Integer.MAX_VALUE,
             splitValues,
             leafBlockFPs);
       success = true;
@@ -452,12 +440,6 @@ class BKD3DTreeWriter {
     // Write index:
     long indexFP = out.getFilePointer();
     //System.out.println("indexFP=" + indexFP);
-    out.writeInt(globalMinX);
-    out.writeInt(globalMaxX);
-    out.writeInt(globalMinY);
-    out.writeInt(globalMaxY);
-    out.writeInt(globalMinZ);
-    out.writeInt(globalMaxZ);
     out.writeVInt(numLeaves);
 
     // NOTE: splitValues[0] is unused, because nodeID is 1-based:
