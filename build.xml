@@ -134,7 +134,9 @@
       import org.apache.rat.api.MetaData;
       
       def extensions = [
-        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js', 'xml', 'xsl'
+        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
+        'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
+        'properties',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',

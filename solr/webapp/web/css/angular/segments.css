@@ -52,7 +52,7 @@ limitations under the License.
 
 #content #segments #result #response
 {
-	margin-left: 25px;
+  margin-left: 25px;
 }
 
 #content #segments .segments-holder ul {
@@ -65,7 +65,7 @@ limitations under the License.
 }
 
 #content #segments .segments-holder li .tooltip {
-	display: none;
+  display: none;
     background: #C8C8C8;
     position: absolute;
     z-index: 1000;
@@ -79,13 +79,13 @@ limitations under the License.
 }
 
 #content #segments .segments-holder li .tooltip .label {
-	float: left;
-	width: 20%;	
-	opacity: 1;
+  float: left;
+  width: 20%;  
+  opacity: 1;
 }
 
 #content #segments .segments-holder li:hover .tooltip {
-	display:block;	
+  display:block;  
 }
 
 #content #segments .segments-holder li dl, 
@@ -122,26 +122,26 @@ limitations under the License.
 }
 
 #content #segments .segments-holder li dd div.live {
-	background-color: #DDDDDD;
-	float: left;	
+  background-color: #DDDDDD;
+  float: left;  
 }
 
 #content #segments .segments-holder li dd div.start {
-	float: left;
-	width: 20%;
+  float: left;
+  width: 20%;
 }
 
 #content #segments .segments-holder li dd div.end {
-	text-align: right;
+  text-align: right;
 }
 
 .merge-candidate {
-	background-color: #FFC9F9 !important;
+  background-color: #FFC9F9 !important;
 }
 
 #content #segments .segments-holder li dd div.w5 {
-	width: 20%;
-	float: left;
+  width: 20%;
+  float: left;
 }
 
 #content #segments #auto-refresh {
