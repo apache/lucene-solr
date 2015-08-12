@@ -124,11 +124,14 @@
     </subant>
   </target>
   
-  <target name="-validate-source-patterns" unless="disable.source-patterns" depends="resolve-groovy">
+  <target name="-validate-source-patterns" unless="disable.source-patterns" depends="resolve-groovy,rat-sources-typedef">
     <!-- check that there are no @author javadoc tags, tabs, svn keywords, javadoc-style licenses, or nocommits: -->
     <property name="validate.baseDir" location="."/>
-    <groovy taskname="source-patterns"><![CDATA[
+    <groovy taskname="source-patterns" classpathref="rat.classpath"><![CDATA[
       import org.apache.tools.ant.BuildException;
+      import org.apache.rat.Defaults;
+      import org.apache.rat.document.impl.FileDocument;
+      import org.apache.rat.api.MetaData;
       
       def extensions = [
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js', 'xml', 'xsl'
@@ -146,8 +149,6 @@
         (~$/\$$Header\b/$) : 'svn keyword',
         (~$/\$$Source\b/$) : 'svn keyword',
       ];
-      def licenseOuterPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
-      def licenseInnerPattern = ~$/\bLicensed\s+(to|under)\b/$;
       
       def baseDir = properties['validate.baseDir'];
       def baseDirLen = baseDir.length() + 1;
@@ -159,6 +160,10 @@
         violations.add(name);
         found++;
       }
+      
+      def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
+      def lineSplitter = ~$/[\r\n]+/$;
+      def licenseMatcher = Defaults.createDefaultMatcher();
       
       ant.fileScanner{
         fileset(dir: baseDir){
@@ -178,10 +183,13 @@
             reportViolation(f, name);
           }
         }
-        def m = licenseOuterPattern.matcher(text);
-        while (m.find()) {
-          if (licenseInnerPattern.matcher(m.group(1)).find()) {
-            reportViolation(f, 'javadoc-style license header');
+        def javadocsMatcher = javadocsPattern.matcher(text);
+        while (javadocsMatcher.find()) {
+          def ratDocument = new FileDocument(f);
+          licenseMatcher.reset();
+          if (lineSplitter.split(javadocsMatcher.group(1)).any{ licenseMatcher.match(ratDocument, it) }) {
+            reportViolation(f, String.format(Locale.ENGLISH, 'javadoc-style license header [%s]',
+              ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
           }
         }
       };
