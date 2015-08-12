@@ -112,9 +112,8 @@ public class TestBKD3DTree extends LuceneTestCase {
   }
 
   private double randomCoord() {
-    // nocommit
-    //return (random().nextDouble()*2.0022) - 1.0011;
-    return (random().nextDouble()*.002) - .001;
+    return (random().nextDouble()*2.0022) - 1.0011;
+    //return (random().nextDouble()*.002) - .001;
   }
 
   private Range randomRange() {
@@ -129,15 +128,10 @@ public class TestBKD3DTree extends LuceneTestCase {
 
   public void testRandom() throws Exception {
     List<Point> points = new ArrayList<>();
-    // nocommit
-    //int numPoints = atLeast(10000);
-    int numPoints = atLeast(200);
+    int numPoints = atLeast(10000);
     Directory dir = newDirectory();
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048); 
-
-    // nocommit
-    maxPointsInLeaf = 100;
 
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
 
@@ -256,8 +250,7 @@ public class TestBKD3DTree extends LuceneTestCase {
         Point point = points.get(docID);
         boolean actual = matches.get(docID);
 
-        // nocommit no good the test is "using" some of the code it's supposed to test ...
-        // nocommit wait: this shouldn't be necessary?  bkd tree IS precise?
+        // We must quantize exactly as BKD tree does else we'll get false failures
         int xEnc = encodeValue(point.x);
         int yEnc = encodeValue(point.y);
         int zEnc = encodeValue(point.z);

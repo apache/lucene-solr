@@ -61,6 +61,8 @@ import org.apache.lucene.index.SegmentWriteState;
  *
  * @lucene.experimental */
 
+// nocommit rename to Geo3DDVF
+
 public class BKD3DTreeDocValuesFormat extends DocValuesFormat {
 
   static final String DATA_CODEC_NAME = "BKD3DData";

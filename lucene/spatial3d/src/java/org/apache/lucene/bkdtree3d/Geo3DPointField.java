@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
 // nocommit what about multi-valued?
 
 /** Add this to a document to index lat/lon point, but be sure to use {@link BKD3DTreeDocValuesFormat} for the field. */
-public final class BKD3DPointField extends Field {
+public final class Geo3DPointField extends Field {
 
   public static final FieldType TYPE = new FieldType();
   static {
@@ -40,11 +40,11 @@ public final class BKD3DPointField extends Field {
   // nocommit should we also have version that takes lat/lon and converts up front?
 
   /** 
-   * Creates a new BKD3DPointField field with the specified lat, lon (in radians), given a planet model.
+   * Creates a new Geo3DPointField field with the specified lat, lon (in radians), given a planet model.
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public BKD3DPointField(String name, final PlanetModel planetModel, final double lat, final double lon) {
+  public Geo3DPointField(String name, final PlanetModel planetModel, final double lat, final double lon) {
     super(name, TYPE);
     final GeoPoint point = new GeoPoint(planetModel, lat, lon);
     byte[] bytes = new byte[12];
@@ -55,11 +55,11 @@ public final class BKD3DPointField extends Field {
   }
 
   /** 
-   * Creates a new BKD3DPointField field with the specified x,y,z.
+   * Creates a new Geo3DPointField field with the specified x,y,z.
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public BKD3DPointField(String name, double x, double y, double z) {
+  public Geo3DPointField(String name, double x, double y, double z) {
     super(name, TYPE);
     byte[] bytes = new byte[12];
     BKD3DTreeDocValuesFormat.writeInt(BKD3DTreeDocValuesFormat.encodeValue(x), bytes, 0);

@@ -56,13 +56,13 @@ import java.util.Set;
  *
  * @lucene.experimental */
 
-public class BKD3DPointInGeoShapeQuery extends Query {
+public class PointInGeo3DShapeQuery extends Query {
   final String field;
   final PlanetModel planetModel;
   final GeoShape shape;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
-  public BKD3DPointInGeoShapeQuery(PlanetModel planetModel, String field, GeoShape shape) {
+  public PointInGeo3DShapeQuery(PlanetModel planetModel, String field, GeoShape shape) {
     this.field = field;
     this.planetModel = planetModel;
     this.shape = shape;
@@ -153,7 +153,7 @@ public class BKD3DPointInGeoShapeQuery extends Query {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
 
-    BKD3DPointInGeoShapeQuery that = (BKD3DPointInGeoShapeQuery) o;
+    PointInGeo3DShapeQuery that = (PointInGeo3DShapeQuery) o;
 
     return planetModel.equals(that.planetModel) && shape.equals(that.shape);
   }
