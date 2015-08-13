@@ -317,7 +317,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
 
       int segDoc = doc - segBase;
       long val = values.get(segDoc);
-      if (val != 0 && docsWithField.get(segDoc)) {
+      if (val != 0 || docsWithField.get(segDoc)) {
         int slot = table.add(val);  // this can trigger a rehash rehash
 
         // countAcc.incrementCount(slot, 1);
