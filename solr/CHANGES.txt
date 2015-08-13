@@ -383,6 +383,10 @@ Bug Fixes
 * SOLR-7908: SegmentsInfoRequestHandler gets a ref counted IndexWriter and does not properly release it.
   (Mark Miller, shalin)
 
+* SOLR-7921: The techproducts example fails when running in a directory that contains spaces.
+  (Ishan Chattopadhyaya via Timothy Potter)
+
+
 Optimizations
 ----------------------
 
