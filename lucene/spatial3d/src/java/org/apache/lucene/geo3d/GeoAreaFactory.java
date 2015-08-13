@@ -50,8 +50,36 @@ public class GeoAreaFactory {
    * @param maxZ is the max Z boundary
    */
   public static GeoArea makeGeoArea(final PlanetModel planetModel, final double minX, final double maxX, final double minY, final double maxY, final double minZ, final double maxZ) {
+    if (Math.abs(maxX - minX) < Vector.MINIMUM_RESOLUTION) {
+      if (Math.abs(maxY - minY) < Vector.MINIMUM_RESOLUTION) {
+        if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
+          return new dXdYdZSolid(planetModel, minX, minY, minZ);
+        } else {
+          // nocommit - more here, degenerate in X and Y
+          throw new IllegalArgumentException("degenerate in X,Y");
+        }
+      } else {
+        if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
+          // nocommit -  more here, degenerate in X and Z
+          throw new IllegalArgumentException("degenerate in X,Z");
+        } else {
+          return new dXYZSolid(planetModel, minX, minY, maxY, minZ, maxZ);
+        }
+      }
+    }
+    if (Math.abs(maxY - minY) < Vector.MINIMUM_RESOLUTION) {
+      if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
+        // nocommit - more here, degenerate in Y and Z
+          throw new IllegalArgumentException("degenerate in Y,Z");
+      } else {
+        return new XdYZSolid(planetModel, minX, maxX, minY, minZ, maxZ);
+      }
+    }
+    if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
+      return new XYdZSolid(planetModel, minX, maxX, minY, maxY, minZ);
+    }
     // nocommit - handle degenerate cases explicitly
-    return new XYZSolid(planetModel, minX, maxY, minY, maxY, minZ, maxZ);
+    return new XYZSolid(planetModel, minX, maxX, minY, maxY, minZ, maxZ);
   }
   
 }

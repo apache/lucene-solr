@@ -60,7 +60,6 @@ public class XYZSolid extends BaseXYZSolid {
   protected final GeoPoint[] notableMaxZPoints;
 
   /**
-   * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
    *@param planetModel is the planet model.
    *@param minX is the minimum X value.
    *@param maxX is the maximum X value.
@@ -316,7 +315,7 @@ public class XYZSolid extends BaseXYZSolid {
     }
     if (!isWholeWorld) {
       return other.minXPlane.equals(minXPlane) &&
-        other.maxXPlane.equals(maxYPlane) &&
+        other.maxXPlane.equals(maxXPlane) &&
         other.minYPlane.equals(minYPlane) &&
         other.maxYPlane.equals(maxYPlane) &&
         other.minZPlane.equals(minZPlane) &&

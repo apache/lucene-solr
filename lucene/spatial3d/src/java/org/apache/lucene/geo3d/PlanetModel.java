@@ -139,6 +139,25 @@ public class PlanetModel {
     return this.c;
   }
 
+  /** Check if point is on surface.
+   * @param v is the point to check.
+   * @return true if the point is on the planet surface.
+   */
+  public boolean pointOnSurface(final Vector v) {
+    return pointOnSurface(v.x, v.y, v.z);
+  }
+  
+  /** Check if point is on surface.
+   * @param x is the x coord.
+   * @param y is the y coord.
+   * @param z is the z coord.
+   */
+  public boolean pointOnSurface(final double x, final double y, final double z) {
+    // Equation of planet surface is:
+    // x^2 / a^2 + y^2 / b^2 + z^2 / c^2 - 1 = 0
+    return Math.abs((x * x + y * y) * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0) < Vector.MINIMUM_RESOLUTION_SQUARED;
+  }
+  
   /** Compute surface distance between two points.
    * @param p1 is the first point.
    * @param p2 is the second point.
