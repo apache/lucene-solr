@@ -28,7 +28,7 @@ public class GeoAreaFactory {
 
   /**
    * Create a GeoArea of the right kind given the specified bounds.
-   *
+   * @param planetModel is the planet model
    * @param topLat    is the top latitude
    * @param bottomLat is the bottom latitude
    * @param leftLon   is the left longitude
@@ -39,4 +39,19 @@ public class GeoAreaFactory {
     return GeoBBoxFactory.makeGeoBBox(planetModel, topLat, bottomLat, leftLon, rightLon);
   }
 
+  /**
+   * Create a GeoArea of the right kind given (x,y,z) bounds.
+   * @param planetModel is the planet model
+   * @param minX is the min X boundary
+   * @param maxX is the max X boundary
+   * @param minY is the min Y boundary
+   * @param maxY is the max Y boundary
+   * @param minZ is the min Z boundary
+   * @param maxZ is the max Z boundary
+   */
+  public static GeoArea makeGeoArea(final PlanetModel planetModel, final double minX, final double maxX, final double minY, final double maxY, final double minZ, final double maxZ) {
+    // nocommit - handle degenerate cases explicitly
+    return new XYZSolid(planetModel, minX, maxY, minY, maxY, minZ, maxZ);
+  }
+  
 }

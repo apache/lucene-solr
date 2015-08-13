@@ -20,7 +20,7 @@ package org.apache.lucene.bkdtree3d;
 import org.apache.lucene.geo3d.GeoArea;
 import org.apache.lucene.geo3d.GeoShape;
 import org.apache.lucene.geo3d.PlanetModel;
-import org.apache.lucene.geo3d.XYZSolid;
+import org.apache.lucene.geo3d.GeoAreaFactory;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -119,7 +119,7 @@ public class PointInGeo3DShapeQuery extends Query {
                                              double zMin = Geo3DDocValuesFormat.decodeValue(zMinEnc);
                                              double zMax = Geo3DDocValuesFormat.decodeValue(zMaxEnc);
 
-                                             GeoArea xyzSolid = new XYZSolid(planetModel, xMin, xMax, yMin, yMax, zMin, zMax);
+                                             GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel, xMin, xMax, yMin, yMax, zMin, zMax);
 
                                              // nocommit untested!
                                              switch(xyzSolid.getRelationship(shape)) {
