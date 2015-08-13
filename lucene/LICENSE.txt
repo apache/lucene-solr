@@ -446,7 +446,7 @@ BSD-licensed dictionary of Polish (SGJP)
 http://sgjp.pl/morfeusz/
 
 Copyright © 2011 Zygmunt Saloni, Włodzimierz Gruszczyński, 
-	    	 Marcin Woliński, Robert Wołosz
+Marcin Woliński, Robert Wołosz
 
 All rights reserved.
 
