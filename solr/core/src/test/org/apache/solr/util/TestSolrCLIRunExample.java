@@ -344,7 +344,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       SolrQuery query = new SolrQuery("*:*");
       QueryResponse qr = solrClient.query(query);
       long numFound = qr.getResults().getNumFound();
-      assertTrue("expected 32 docs in the "+exampleName+" example but found " + numFound + ", output: " + toolOutput,
+      if (numFound == 0) {
+        // brief wait in case of timing issue in getting the new docs committed
+        log.warn("Going to wait for 1 second before re-trying query for techproduct example docs ...");
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException ignore) {
+          Thread.interrupted();
+        }
+        numFound = solrClient.query(query).getResults().getNumFound();
+      }
+      assertTrue("expected 32 docs in the " + exampleName + " example but found " + numFound + ", output: " + toolOutput,
           numFound == 32);
     }
 
