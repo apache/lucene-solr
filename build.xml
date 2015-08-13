@@ -136,7 +136,7 @@
       def extensions = [
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
-        'properties',
+        'properties', 'mdtext',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
@@ -175,7 +175,13 @@
             include(name: 'dev-tools/**/*.' + it)
             include(name: '*.' + it)
           }
+          // TODO: For now we don't scan txt files, so we
+          // check licenses in top-level folders separately:
+          include(name: '*.txt')
+          include(name: '*/*.txt')
+          // excludes:
           exclude(name: '**/build/**')
+          exclude(name: '**/dist/**')
           exclude(name: 'build.xml') // ourselves :-)
         }
       }.each{ f ->
