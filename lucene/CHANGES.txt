@@ -9106,7 +9106,7 @@ API Changes
     Finally, Weight#explain now takes a sub-reader and sub-docID, rather than
     a top level reader and docID.
     (Shai Erera, Chris Hostetter, Martin Ruckli, Mark Miller via Mike McCandless)
- 	
+   
  * LUCENE-1466, LUCENE-1906: Added CharFilter and MappingCharFilter, which allows
     chaining & mapping of characters before tokenizers run. CharStream (subclass of
     Reader) is the base class for custom java.io.Reader's, that support offset
@@ -9269,7 +9269,7 @@ Bug fixes
     readers (Mike McCandless)
     
  * LUCENE-1583: SpanOrQuery skipTo() doesn't always move forwards as Spans
-	documentation indicates it should.  (Moti Nisenson via Mark Miller)
+  documentation indicates it should.  (Moti Nisenson via Mark Miller)
 
  * LUCENE-1566: Sun JVM Bug
     http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6478546 causes
@@ -9828,7 +9828,7 @@ API Changes
 
  8. LUCENE-852: Let the SpellChecker caller specify IndexWriter mergeFactor
     and RAM buffer size.  (Otis Gospodnetic)
-	
+  
  9. LUCENE-1290: Deprecate org.apache.lucene.search.Hits, Hit and HitIterator
     and remove all references to these classes from the core. Also update demos
     and tutorials. (Michael Busch)
@@ -9948,7 +9948,7 @@ Bug fixes
 
 10. LUCENE-1046: Removed dead code in SpellChecker
     (Daniel Naber via Otis Gospodnetic)
-	
+  
 11. LUCENE-1189: Fixed the QueryParser to handle escaped characters within 
     quoted terms correctly. (Tomer Gabel via Michael Busch)
 
@@ -10052,7 +10052,7 @@ Optimizations
  2. LUCENE-1120: Speed up merging of term vectors by bulk-copying the
     raw bytes for each contiguous range of non-deleted documents.
     (Mike McCandless)
-	
+  
  3. LUCENE-1185: Avoid checking if the TermBuffer 'scratch' in 
     SegmentTermEnum is null for every call of scanTo().
     (Christian Kohlschuetter via Michael Busch)
@@ -10100,10 +10100,10 @@ Test Cases
  1. LUCENE-1238: Fixed intermittent failures of TestTimeLimitedCollector.testTimeoutMultiThreaded.
     Within this fix, "greedy" flag was added to TimeLimitedCollector, to allow the wrapped 
     collector to collect also the last doc, after allowed-tTime passed. (Doron Cohen)   
-	
+  
  2. LUCENE-1348: relax TestTimeLimitedCollector to not fail due to 
     timeout exceeded (just because test machine is very busy).
-	
+  
 ======================= Release 2.3.2 =======================
 
 Bug fixes
@@ -10132,7 +10132,7 @@ Bug fixes
 
  8. LUCENE-1222: Fix IndexWriter.doAfterFlush to always be called on
     flush (Mark Ferguson via Mike McCandless)
-	
+  
  9. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
     successfully created compound files. (Michael Busch)
 
@@ -10148,7 +10148,7 @@ Bug fixes
 12. LUCENE-1270: Fixed intermittent case where IndexWriter.close()
     would hang after IndexWriter.addIndexesNoOptimize had been
     called.  (Stu Hood via Mike McCandless)
-	
+  
 Build
 
  1. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
@@ -10171,14 +10171,14 @@ Bug fixes
  4. LUCENE-1163: Fixed bug in CharArraySet.contains(char[] buffer, int
     offset, int len) that was ignoring offset and thus giving the
     wrong answer.  (Thomas Peuss via Mike McCandless)
-	
+  
  5. LUCENE-1177: Fix rare case where IndexWriter.optimize might do too
     many merges at the end.  (Mike McCandless)
-	
+  
  6. LUCENE-1176: Fix corruption case when documents with no term
     vector fields are added before documents with term vector fields.
     (Mike McCandless)
-	
+  
  7. LUCENE-1179: Fixed assert statement that was incorrectly
     preventing Fields with empty-string field name from working.
     (Sergey Kabashnyuk via Mike McCandless)
@@ -10566,7 +10566,7 @@ Build
 
  7. LUCENE-935: Allow to deploy maven artifacts to a remote m2 repository
     via scp and ssh authentication. (Michael Busch)
-	
+  
  8. LUCENE-1123: Allow overriding the specification version for 
     MANIFEST.MF (Michael Busch)
 

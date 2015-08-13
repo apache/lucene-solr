@@ -7525,7 +7525,7 @@ Bug Fixes
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
   (Bernhard Berger, hossman)
-	 	   
+
 * SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
   a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
 
@@ -8320,7 +8320,7 @@ Other Changes
   (Drew Farris, Robert Muir, Steve Rowe)
 
 * SOLR-2105: Rename RequestHandler param 'update.processor' to 'update.chain'.
-	(Jan Høydahl via Mark Miller)
+  (Jan Høydahl via Mark Miller)
 
 * SOLR-2485: Deprecate BaseResponseWriter, GenericBinaryResponseWriter, and 
   GenericTextResponseWriter.  These classes will be removed in 4.0.  (ryan)
@@ -8564,8 +8564,8 @@ New Features
    (Ankul Garg, Jason Rutherglen, Shalin Shekhar Mangar, Grant Ingersoll, Robert Muir, ab)
 
 * SOLR-1568: Added "native" filtering support for PointType, GeohashField.  Added LatLonType with filtering support too.  See
-  	     http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial.
-	     Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers)
+  http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial.
+  Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers)
 
 * SOLR-2128: Full parameter substitution for function queries.
   Example: q=add($v1,$v2)&v1=mul(popularity,5)&v2=20.0
@@ -9456,7 +9456,7 @@ New Features
 62. SOLR-1145: Add capability to specify an infoStream log file for the underlying Lucene IndexWriter in solrconfig.xml.
     This is an advanced debug log file that can be used to aid developers in fixing IndexWriter bugs. See the commented
     out example in the example solrconfig.xml under the indexDefaults section. 
-	  (Chris Harris, Mark Miller)
+    (Chris Harris, Mark Miller)
 
 63. SOLR-1256: Show the output of CharFilters in analysis.jsp. (koji)
 
@@ -10934,7 +10934,7 @@ Build
 
  2. SOLR-479: Added clover code coverage targets for committers and the nightly build.  Requires 
     the Clover library, as licensed to Apache and only available privately.  To run:
-   	     ant -Drun.clover=true clean clover test generate-clover-reports
+          ant -Drun.clover=true clean clover test generate-clover-reports
 
  3. SOLR-510: Nightly release includes client sources. (koji)
 
