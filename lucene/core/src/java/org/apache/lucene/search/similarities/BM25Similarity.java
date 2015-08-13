@@ -63,9 +63,9 @@ public class BM25Similarity extends Similarity {
     this.b  = 0.75f;
   }
   
-  /** Implemented as <code>log(1 + (numDocs - docFreq + 0.5)/(docFreq + 0.5))</code>. */
-  protected float idf(long docFreq, long numDocs) {
-    return (float) Math.log(1 + (numDocs - docFreq + 0.5D)/(docFreq + 0.5D));
+  /** Implemented as <code>log(1 + (docCount - docFreq + 0.5)/(docFreq + 0.5))</code>. */
+  protected float idf(long docFreq, long docCount) {
+    return (float) Math.log(1 + (docCount - docFreq + 0.5D)/(docFreq + 0.5D));
   }
   
   /** Implemented as <code>1 / (distance + 1)</code>. */
@@ -78,7 +78,7 @@ public class BM25Similarity extends Similarity {
     return 1;
   }
   
-  /** The default implementation computes the average as <code>sumTotalTermFreq / maxDoc</code>,
+  /** The default implementation computes the average as <code>sumTotalTermFreq / docCount</code>,
    * or returns <code>1</code> if the index does not store sumTotalTermFreq:
    * any field that omits frequency information). */
   protected float avgFieldLength(CollectionStatistics collectionStats) {
@@ -86,7 +86,8 @@ public class BM25Similarity extends Similarity {
     if (sumTotalTermFreq <= 0) {
       return 1f;       // field does not exist, or stat is unsupported
     } else {
-      return (float) (sumTotalTermFreq / (double) collectionStats.maxDoc());
+      final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+      return (float) (sumTotalTermFreq / (double) docCount);
     }
   }
   
@@ -150,14 +151,14 @@ public class BM25Similarity extends Similarity {
    * The default implementation uses:
    * 
    * <pre class="prettyprint">
-   * idf(docFreq, searcher.maxDoc());
+   * idf(docFreq, docCount);
    * </pre>
    * 
-   * Note that {@link CollectionStatistics#maxDoc()} is used instead of
+   * Note that {@link CollectionStatistics#docCount()} is used instead of
    * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
    * {@link TermStatistics#docFreq()} is used, and when the latter 
-   * is inaccurate, so is {@link CollectionStatistics#maxDoc()}, and in the same direction.
-   * In addition, {@link CollectionStatistics#maxDoc()} is more efficient to compute
+   * is inaccurate, so is {@link CollectionStatistics#docCount()}, and in the same direction.
+   * In addition, {@link CollectionStatistics#docCount()} does not skew when fields are sparse.
    *   
    * @param collectionStats collection-level statistics
    * @param termStats term-level statistics for the term
@@ -166,9 +167,9 @@ public class BM25Similarity extends Similarity {
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
-    final long max = collectionStats.maxDoc();
-    final float idf = idf(df, max);
-    return Explanation.match(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    final float idf = idf(df, docCount);
+    return Explanation.match(idf, "idf(docFreq=" + df + ", docCount=" + docCount + ")");
   }
 
   /**
@@ -185,13 +186,13 @@ public class BM25Similarity extends Similarity {
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final long max = collectionStats.maxDoc();
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
     float idf = 0.0f;
     List<Explanation> details = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
       final long df = stat.docFreq();
-      final float termIdf = idf(df, max);
-      details.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
+      final float termIdf = idf(df, docCount);
+      details.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", docCount=" + docCount + ")"));
       idf += termIdf;
     }
     return Explanation.match(idf, "idf(), sum of:", details);

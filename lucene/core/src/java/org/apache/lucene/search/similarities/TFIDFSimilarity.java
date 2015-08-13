@@ -346,7 +346,7 @@ import org.apache.lucene.util.BytesRef;
  *          </td>
  *          <td valign="middle" align="center">
  *            <table summary="inverse document frequency computation">
- *               <tr><td align="center" style="text-align: center"><small>numDocs</small></td></tr>
+ *               <tr><td align="center" style="text-align: center"><small>docCount</small></td></tr>
  *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
  *               <tr><td align="center" style="text-align: center"><small>docFreq+1</small></td></tr>
  *            </table>
@@ -566,14 +566,14 @@ public abstract class TFIDFSimilarity extends Similarity {
    * The default implementation uses:
    * 
    * <pre class="prettyprint">
-   * idf(docFreq, searcher.maxDoc());
+   * idf(docFreq, docCount);
    * </pre>
    * 
-   * Note that {@link CollectionStatistics#maxDoc()} is used instead of
+   * Note that {@link CollectionStatistics#docCount()} is used instead of
    * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
    * {@link TermStatistics#docFreq()} is used, and when the latter 
-   * is inaccurate, so is {@link CollectionStatistics#maxDoc()}, and in the same direction.
-   * In addition, {@link CollectionStatistics#maxDoc()} is more efficient to compute
+   * is inaccurate, so is {@link CollectionStatistics#docCount()}, and in the same direction.
+   * In addition, {@link CollectionStatistics#docCount()} does not skew when fields are sparse.
    *   
    * @param collectionStats collection-level statistics
    * @param termStats term-level statistics for the term
@@ -582,9 +582,9 @@ public abstract class TFIDFSimilarity extends Similarity {
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
-    final long max = collectionStats.maxDoc();
-    final float idf = idf(df, max);
-    return Explanation.match(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    final float idf = idf(df, docCount);
+    return Explanation.match(idf, "idf(docFreq=" + df + ", docCount=" + docCount + ")");
   }
 
   /**
@@ -601,13 +601,13 @@ public abstract class TFIDFSimilarity extends Similarity {
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final long max = collectionStats.maxDoc();
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
     float idf = 0.0f;
     List<Explanation> subs = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
       final long df = stat.docFreq();
-      final float termIdf = idf(df, max);
-      subs.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
+      final float termIdf = idf(df, docCount);
+      subs.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", docCount=" + docCount + ")"));
       idf += termIdf;
     }
     return Explanation.match(idf, "idf(), sum of:", subs);
@@ -623,10 +623,10 @@ public abstract class TFIDFSimilarity extends Similarity {
    * and smaller values for common terms.
    *
    * @param docFreq the number of documents which contain the term
-   * @param numDocs the total number of documents in the collection
+   * @param docCount the total number of documents in the collection
    * @return a score factor based on the term's document frequency
    */
-  public abstract float idf(long docFreq, long numDocs);
+  public abstract float idf(long docFreq, long docCount);
 
   /**
    * Compute an index-time normalization value for this field instance.

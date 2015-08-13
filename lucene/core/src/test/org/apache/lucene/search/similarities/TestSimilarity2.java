@@ -38,6 +38,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests against all the similarities we have
@@ -156,6 +157,48 @@ public class TestSimilarity2 extends LuceneTestCase {
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query.build(), 10).totalHits);
     }
+    ir.close();
+    dir.close();
+  }
+  
+  /** make sure scores are not skewed by docs not containing the field */
+  public void testNoFieldSkew() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("foo", "bar baz somethingelse", Field.Store.NO));
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    IndexSearcher is = newSearcher(ir);
+    
+    BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+    queryBuilder.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
+    queryBuilder.add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD);
+    Query query = queryBuilder.build();
+    
+    // collect scores
+    List<Float> scores = new ArrayList<>();
+    for (Similarity sim : sims) {
+      is.setSimilarity(sim);
+      scores.add(is.explain(query, 0).getValue());
+    }
+    ir.close();
+    
+    // add some additional docs without the field
+    int numExtraDocs = TestUtil.nextInt(random(), 1, 1000);
+    for (int i = 0; i < numExtraDocs; i++) {
+      iw.addDocument(new Document());
+    }
+    
+    // check scores are the same
+    ir = iw.getReader();
+    is = newSearcher(ir);
+    for (int i = 0; i < sims.size(); i++) {
+      is.setSimilarity(sims.get(i));
+      assertEquals(scores.get(i).floatValue(), is.explain(query, 0).getValue(), 0F);
+    }
+    
+    iw.close();
     ir.close();
     dir.close();
   }
