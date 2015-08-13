@@ -495,8 +495,8 @@ Build
 
 Test Framework
 
-* LUCENE-6637: Fix FSTTester to not violate file permissions on
-  -Dtests.verbose=true.  (Mesbah M. Alam, Uwe Schindler)
+* LUCENE-6637: Fix FSTTester to not violate file permissions
+  on -Dtests.verbose=true.  (Mesbah M. Alam, Uwe Schindler)
 
 * LUCENE-6542: LuceneTestCase now has runWithRestrictedPermissions() to run
   an action with reduced permissions. This can be used to simulate special
