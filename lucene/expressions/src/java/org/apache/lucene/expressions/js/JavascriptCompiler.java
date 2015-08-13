@@ -222,6 +222,9 @@ public final class JavascriptCompiler {
     }
   }
 
+  /**
+   * Sends the bytecode of class file to {@link ClassWriter}.
+   */
   private void generateClass(final ParseTree parseTree, final ClassWriter classWriter, final Map<String, Integer> externalsMap) {
     classWriter.visit(CLASSFILE_VERSION,
         Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
@@ -246,9 +249,6 @@ public final class JavascriptCompiler {
     new JavascriptBaseVisitor<Void>() {
       private final Deque<Type> typeStack = new ArrayDeque<>();
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitCompile(JavascriptParser.CompileContext ctx) {
         typeStack.push(Type.DOUBLE_TYPE);
@@ -258,9 +258,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitPrecedence(JavascriptParser.PrecedenceContext ctx) {
         visit(ctx.expression());
@@ -268,9 +265,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitNumeric(JavascriptParser.NumericContext ctx) {
         if (ctx.HEX() != null) {
@@ -287,9 +281,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitExternal(JavascriptParser.ExternalContext ctx) {
         String text = ctx.VARIABLE().getText();
@@ -342,9 +333,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitUnary(JavascriptParser.UnaryContext ctx) {
         if (ctx.BOOLNOT() != null) {
@@ -386,9 +374,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitMuldiv(JavascriptParser.MuldivContext ctx) {
         int opcode;
@@ -408,9 +393,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitAddsub(JavascriptParser.AddsubContext ctx) {
         int opcode;
@@ -428,9 +410,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBwshift(JavascriptParser.BwshiftContext ctx) {
         int opcode;
@@ -450,9 +429,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBoolcomp(JavascriptParser.BoolcompContext ctx) {
         int opcode;
@@ -474,9 +450,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBooleqne(JavascriptParser.BooleqneContext ctx) {
         int opcode;
@@ -494,9 +467,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBwand(JavascriptParser.BwandContext ctx) {
         pushBitwise(Opcodes.LAND, ctx.expression(0), ctx.expression(1));
@@ -504,9 +474,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBwxor(JavascriptParser.BwxorContext ctx) {
         pushBitwise(Opcodes.LXOR, ctx.expression(0), ctx.expression(1));
@@ -514,9 +481,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBwor(JavascriptParser.BworContext ctx) {
         pushBitwise(Opcodes.LOR, ctx.expression(0), ctx.expression(1));
@@ -524,9 +488,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBooland(JavascriptParser.BoolandContext ctx) {
         Label andFalse = new Label();
@@ -547,9 +508,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitBoolor(JavascriptParser.BoolorContext ctx) {
         Label orTrue = new Label();
@@ -570,9 +528,6 @@ public final class JavascriptCompiler {
         return null;
       }
 
-      /**
-       * For internal compiler use only, do NOT use
-       */
       @Override
       public Void visitConditional(JavascriptParser.ConditionalContext ctx) {
         Label condFalse = new Label();
