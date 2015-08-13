@@ -61,6 +61,11 @@ Optimizations
 * LUCENE-6720: ValueSourceScorer, returned from
   FunctionValues.getRangeScorer(), now uses TwoPhaseIterator. (David Smiley)
 
+Bug Fixes
+
+* LUCENE-6730: Hyper-parameter c is ignored in term frequency NormalizationH1.
+  (Ahmet Arslan via Robert Muir)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
