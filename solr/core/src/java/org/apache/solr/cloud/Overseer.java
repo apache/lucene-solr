@@ -136,7 +136,7 @@ public class Overseer implements Closeable {
 
       log.info("Starting to work on the main queue");
       try {
-        ZkStateWriter zkStateWriter = new ZkStateWriter(reader, stats);
+        ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
         boolean refreshClusterState = true; // let's refresh in the first iteration
         while (!this.isClosed) {
@@ -153,6 +153,7 @@ public class Overseer implements Closeable {
             try {
               reader.updateClusterState();
               clusterState = reader.getClusterState();
+              zkStateWriter = new ZkStateWriter(reader, stats);
               refreshClusterState = false;
 
               // if there were any errors while processing
@@ -237,13 +238,16 @@ public class Overseer implements Closeable {
             // clean work queue
             while (workQueue.poll() != null);
 
+          } catch (KeeperException.BadVersionException bve) {
+            log.warn("Bad version writing to ZK using compare-and-set, will force refresh cluster state", bve);
+            refreshClusterState = true;
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
               log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
               return;
             }
             log.error("Exception in Overseer main queue loop", e);
-            refreshClusterState = true; // it might have been a bad version error
+            refreshClusterState = true; // force refresh state in case of all errors
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;

@@ -133,6 +133,10 @@ Bug Fixes
 * SOLR-7836: Possible deadlock when closing refcounted index writers.
   (Jessica Cheng Mallet, Erick Erickson)
 
+* SOLR-7869: Overseer does not handle BadVersionException correctly and, in some cases,
+  can go into an infinite loop if cluster state in ZooKeeper is modified externally.
+  (Scott Blum, shalin)
+
 Optimizations
 ----------------------
 
