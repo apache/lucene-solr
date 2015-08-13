@@ -362,12 +362,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
+    p.set("Z_num_i", "Z_" + p.get("num_i") );
+
     MacroExpander m = new MacroExpander( p.getMap() );
 
     String cat_s = m.expand("${cat_s}");
     String where_s = m.expand("${where_s}");
     String num_d = m.expand("${num_d}");
     String num_i = m.expand("${num_i}");
+    String Z_num_i = m.expand("${Z_num_i}");
     String val_b = m.expand("${val_b}");
     String date = m.expand("${date}");
     String super_s = m.expand("${super_s}");
@@ -377,13 +380,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.deleteByQuery("*:*", null);
 
     client.add(sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", num_i, "2",   super_s, "zodiac",  date,"2001-01-01T01:01:01Z", val_b, "true", sparse_s, "one"), null);
-    client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", super_s,"superman", date,"2002-02-02T02:02:02Z", val_b, "false"         , multi_ss,"a", multi_ss,"b" ), null);
+    client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", super_s,"superman", date,"2002-02-02T02:02:02Z", val_b, "false"         , multi_ss,"a", multi_ss,"b" , Z_num_i, "0"), null);
     client.add(sdoc("id", "3"), null);
     client.commit();
-    client.add(sdoc("id", "4", cat_s, "A", where_s, "NJ", num_d, "2", num_i, "3",   super_s,"spiderman", date,"2003-03-03T03:03:03Z"                         , multi_ss, "b"), null);
+    client.add(sdoc("id", "4", cat_s, "A", where_s, "NJ", num_d, "2", num_i, "3",   super_s,"spiderman", date,"2003-03-03T03:03:03Z"                         , multi_ss, "b", Z_num_i, ""+Integer.MIN_VALUE), null);
     client.add(sdoc("id", "5", cat_s, "B", where_s, "NJ", num_d, "11", num_i, "7",  super_s,"batman"   , date,"2001-02-03T01:02:03Z"          ,sparse_s,"two", multi_ss, "a"), null);
     client.commit();
-    client.add(sdoc("id", "6", cat_s, "B", where_s, "NY", num_d, "-5", num_i, "-5", super_s,"hulk"     , date,"2002-03-01T03:02:01Z"                         , multi_ss, "b", multi_ss, "a" ), null);
+    client.add(sdoc("id", "6", cat_s, "B", where_s, "NY", num_d, "-5", num_i, "-5", super_s,"hulk"     , date,"2002-03-01T03:02:01Z"                         , multi_ss, "b", multi_ss, "a", Z_num_i, ""+Integer.MAX_VALUE), null);
     client.commit();
 
 
@@ -968,6 +971,20 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",f2:{ buckets:[{val:11.0,count:1},{val:4.0,count:1},{val:2.0,count:1},{val:-5.0,count:1},{val:-9.0,count:1} ] } " +
             "}"
     );
+
+    // test 0, min/max int
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+                " u : 'unique(${Z_num_i})'" +
+                ", f1:{ type:field, field:${Z_num_i} }" +
+        "}"
+        )
+        , "facets=={count:6 " +
+            ",u:3" +
+            ",f1:{ buckets:[{val:" + Integer.MIN_VALUE + ",count:1},{val:0,count:1},{val:" + Integer.MAX_VALUE+",count:1}]} " +
+            "}"
+    );
+
 
   }
 
