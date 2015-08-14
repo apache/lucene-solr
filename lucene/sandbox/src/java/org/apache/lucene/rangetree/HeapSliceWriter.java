@@ -22,6 +22,7 @@ final class HeapSliceWriter implements SliceWriter {
   final int[] docIDs;
   final long[] ords;
   private int nextWrite;
+  private boolean closed;
 
   public HeapSliceWriter(int count) {
     values = new long[count];
@@ -39,11 +40,13 @@ final class HeapSliceWriter implements SliceWriter {
 
   @Override
   public SliceReader getReader(long start) {
+    assert closed;
     return new HeapSliceReader(values, ords, docIDs, (int) start, values.length);
   }
 
   @Override
   public void close() {
+    closed = true;
     if (nextWrite != values.length) {
       throw new IllegalStateException("only wrote " + nextWrite + " values, but expected " + values.length);
     }

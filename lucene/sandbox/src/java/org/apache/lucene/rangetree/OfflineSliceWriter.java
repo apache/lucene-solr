@@ -33,6 +33,7 @@ final class OfflineSliceWriter implements SliceWriter {
   final ByteArrayDataOutput scratchBytesOutput = new ByteArrayDataOutput(scratchBytes);      
   final OutputStreamDataOutput out;
   final long count;
+  private boolean closed;
   private long countWritten;
 
   public OfflineSliceWriter(Path tempDir, long count) throws IOException {
@@ -51,11 +52,13 @@ final class OfflineSliceWriter implements SliceWriter {
 
   @Override
   public SliceReader getReader(long start) throws IOException {
+    assert closed;
     return new OfflineSliceReader(tempFile, start, count-start);
   }
 
   @Override
   public void close() throws IOException {
+    closed = true;
     out.close();
     if (count != countWritten) {
       throw new IllegalStateException("wrote " + countWritten + " values, but expected " + count);
