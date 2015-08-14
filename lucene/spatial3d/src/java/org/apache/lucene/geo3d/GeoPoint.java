@@ -171,4 +171,16 @@ public class GeoPoint extends Vector {
     }
     return mag;
   }
+  
+  /** Compute whether point matches another.
+   *@param x is the x value
+   *@param y is the y value
+   *@param z is the z value
+   *@return true if the same.
+   */
+  public boolean isIdentical(final double x, final double y, final double z) {
+    return Math.abs(this.x - x) < MINIMUM_RESOLUTION &&
+      Math.abs(this.y - y) < MINIMUM_RESOLUTION &&
+      Math.abs(this.z - z) < MINIMUM_RESOLUTION;
+  }
 }

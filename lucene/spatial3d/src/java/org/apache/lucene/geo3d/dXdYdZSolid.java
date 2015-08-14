@@ -69,9 +69,7 @@ public class dXdYdZSolid extends BaseXYZSolid {
     if (!isOnSurface) {
       return false;
     }
-    return Math.abs(thePoint.x - x) < Vector.MINIMUM_RESOLUTION &&
-      Math.abs(thePoint.y - y) < Vector.MINIMUM_RESOLUTION &&
-      Math.abs(thePoint.z - z) < Vector.MINIMUM_RESOLUTION;
+    return thePoint.isIdentical(x,y,z);
   }
 
   @Override
