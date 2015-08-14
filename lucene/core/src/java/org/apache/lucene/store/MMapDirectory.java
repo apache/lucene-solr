@@ -166,7 +166,9 @@ public class MMapDirectory extends FSDirectory {
     @Override
     public Boolean run() {
       try {
-        Class.forName("java.nio.DirectByteBuffer").getMethod("cleaner");
+        Class<?> clazz = Class.forName("java.nio.DirectByteBuffer");
+        Method method = clazz.getMethod("cleaner");
+        method.setAccessible(true);
         return true;
       } catch (Exception e) {
         return false;
