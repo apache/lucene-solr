@@ -793,36 +793,15 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   except:
       print('      Stop failed due to: '+sys.exc_info()[0])
 
-  print('      starting Solr on port 8983 from %s' % unpackPath)
-  server = subprocess.Popen(['bin/solr', '-f', '-p', '8983'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
-
-  startupEvent = threading.Event()
-  failureEvent = threading.Event()
-  serverThread = threading.Thread(target=readSolrOutput, args=(server, startupEvent, failureEvent, logFile))
-  serverThread.setDaemon(True)
-  serverThread.start()
-
+  print('      Running techproducts example on port 8983 from %s' % unpackPath)
   try:
+    runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+    if runExampleStatus != 0:
+      raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
-    # Make sure Solr finishes startup:
-    if not startupEvent.wait(1800):
-      raise RuntimeError('startup took more than 30 minutes')
-
-    if failureEvent.isSet():
-      logFile = os.path.abspath(logFile)
-      print
-      print('Startup failed; see log %s' % logFile)
-      printFileContents(logFile)
-      raise RuntimeError('failure on startup; see log %s' % logFile)
-
-    print('      startup done')
-    # Create the techproducts config (used to be collection1)
-    subprocess.call(['bin/solr','create_core','-c','techproducts','-d','sample_techproducts_configs'])
     os.chdir('example')
     print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
-    print('      index example docs...')
-    run('java -Durl=http://localhost:8983/solr/techproducts/update -jar ./exampledocs/post.jar ./exampledocs/*.xml', 'post-example-docs.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
     if s.find('<result name="response" numFound="3" start="0">') == -1:
@@ -836,23 +815,6 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     else:
       os.chdir(unpackPath)
     subprocess.call(['bin/solr','stop','-p','8983'])
-
-    # Give it 10 seconds to gracefully shut down
-    serverThread.join(10.0)
-
-    if serverThread.isAlive():
-      # Kill server:
-      print('***WARNING***: Solr instance didn\'t respond to SIGINT; using SIGKILL now...')
-      os.kill(server.pid, signal.SIGKILL)
-
-      serverThread.join(10.0)
-
-      if serverThread.isAlive():
-        # Shouldn't happen unless something is seriously wrong...
-        print('***WARNING***: Solr instance didn\'t respond to SIGKILL; ignoring...')
-
-  if failureEvent.isSet():
-    raise RuntimeError('exception while reading Solr output')
 
   if isSrc:
     os.chdir(unpackPath+'/solr')
