@@ -279,6 +279,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
   }
 
+  @Ignore
   @Test
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
