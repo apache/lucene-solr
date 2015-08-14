@@ -64,6 +64,28 @@ public class TestSoraniAnalyzer extends BaseTokenStreamTestCase {
     a.close();
   }
   
+  /**
+   * test we fold digits to latin-1
+   * (these are somewhat rare, but generally a few % of digits still)
+   */
+  public void testDigits() throws Exception {
+    SoraniAnalyzer a = new SoraniAnalyzer();
+    checkOneTerm(a, "١٢٣٤", "1234");
+    a.close();
+  }
+  
+  /**
+   * test that we don't fold digits for back compat behavior
+   * @deprecated remove this test in lucene 7
+   */
+  @Deprecated
+  public void testDigitsBackCompat() throws Exception {
+    SoraniAnalyzer a = new SoraniAnalyzer();
+    a.setVersion(Version.LUCENE_5_3_0);
+    checkOneTerm(a, "١٢٣٤", "١٢٣٤");
+    a.close();
+  }
+  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer a = new SoraniAnalyzer();

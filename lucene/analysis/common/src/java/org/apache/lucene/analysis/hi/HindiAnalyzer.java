@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.DecimalDigitFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
@@ -108,7 +109,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link IndicNormalizationFilter},
+   *         {@link LowerCaseFilter}, {@link DecimalDigitFilter}, {@link IndicNormalizationFilter},
    *         {@link HindiNormalizationFilter}, {@link SetKeywordMarkerFilter}
    *         if a stem exclusion set is provided, {@link HindiStemFilter}, and
    *         Hindi Stop words
@@ -122,6 +123,9 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
       source = new StandardTokenizer40();
     }
     TokenStream result = new LowerCaseFilter(source);
+    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
+      result = new DecimalDigitFilter(result);
+    }
     if (!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new IndicNormalizationFilter(result);

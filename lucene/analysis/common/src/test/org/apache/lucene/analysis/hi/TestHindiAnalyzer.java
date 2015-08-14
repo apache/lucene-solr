@@ -50,6 +50,27 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
     a.close();
   }
   
+  /**
+   * test we fold digits to latin-1
+   */
+  public void testDigits() throws Exception {
+    HindiAnalyzer a = new HindiAnalyzer();
+    checkOneTerm(a, "१२३४", "1234");
+    a.close();
+  }
+  
+  /**
+   * test that we don't fold digits for back compat behavior
+   * @deprecated remove this test in lucene 7
+   */
+  @Deprecated
+  public void testDigitsBackCompat() throws Exception {
+    HindiAnalyzer a = new HindiAnalyzer();
+    a.setVersion(Version.LUCENE_5_3_0);
+    checkOneTerm(a, "१२३४", "१२३४");
+    a.close();
+  }
+  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new HindiAnalyzer();

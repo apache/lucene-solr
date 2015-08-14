@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.DecimalDigitFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
@@ -126,7 +127,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link StopFilter},
+   *         {@link LowerCaseFilter}, {@link DecimalDigitFilter}, {@link StopFilter},
    *         {@link ArabicNormalizationFilter}, {@link SetKeywordMarkerFilter}
    *         if a stem exclusion set is provided and {@link ArabicStemFilter}.
    */
@@ -139,6 +140,9 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
       source = new StandardTokenizer40();
     }
     TokenStream result = new LowerCaseFilter(source);
+    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
+      result = new DecimalDigitFilter(result);
+    }
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter(result, stopwords);
     // TODO maybe we should make ArabicNormalization filter also KeywordAttribute aware?!

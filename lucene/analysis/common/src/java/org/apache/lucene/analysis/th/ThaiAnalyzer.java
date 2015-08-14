@@ -22,6 +22,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.DecimalDigitFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
@@ -93,15 +94,17 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link ThaiWordFilter}, and
-   *         {@link StopFilter}
+   *         built from a {@link ThaiTokenizer} filtered with
+   *         {@link LowerCaseFilter}, {@link DecimalDigitFilter} and {@link StopFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     if (getVersion().onOrAfter(Version.LUCENE_4_8_0)) {
       final Tokenizer source = new ThaiTokenizer();
       TokenStream result = new LowerCaseFilter(source);
+      if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
+        result = new DecimalDigitFilter(result);
+      }
       result = new StopFilter(result, stopwords);
       return new TokenStreamComponents(source, result);
     } else {

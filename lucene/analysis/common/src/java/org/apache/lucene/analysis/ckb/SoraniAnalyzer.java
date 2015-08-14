@@ -22,6 +22,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.DecimalDigitFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
@@ -110,7 +111,7 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link SoraniNormalizationFilter}, 
-   *         {@link LowerCaseFilter}, {@link StopFilter}
+   *         {@link LowerCaseFilter}, {@link DecimalDigitFilter}, {@link StopFilter}
    *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SoraniStemFilter}.
    */
@@ -125,6 +126,9 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new StandardFilter(source);
     result = new SoraniNormalizationFilter(result);
     result = new LowerCaseFilter(result);
+    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
+      result = new DecimalDigitFilter(result);
+    }
     result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
