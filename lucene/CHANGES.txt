@@ -57,6 +57,9 @@ New Features
 * LUCENE-6724: Add utility APIs to GeoHashUtils to compute neighbor
   geohash cells (Nick Knize via Mike McCandless).
 
+* LUCENE-6737: Add DecimalDigitFilter which folds unicode digits to basic latin.
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -120,6 +121,27 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
     ts.addAttribute(FlagsAttribute.class);
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
     analyzer.close();
+  }
+  
+  /**
+   * test we fold digits to latin-1
+   */
+  public void testDigits() throws Exception {
+    ThaiAnalyzer a = new ThaiAnalyzer();
+    checkOneTerm(a, "๑๒๓๔", "1234");
+    a.close();
+  }
+  
+  /**
+   * test that we don't fold digits for back compat behavior
+   * @deprecated remove this test in lucene 7
+   */
+  @Deprecated
+  public void testDigitsBackCompat() throws Exception {
+    ThaiAnalyzer a = new ThaiAnalyzer();
+    a.setVersion(Version.LUCENE_5_3_0);
+    checkOneTerm(a, "๑๒๓๔", "๑๒๓๔");
+    a.close();
   }
   
   public void testTwoSentences() throws Exception {

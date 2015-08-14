@@ -23,6 +23,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
@@ -107,6 +109,18 @@ public class TestSoraniStemFilter extends BaseTokenStreamTestCase {
   /** test against a basic vocabulary file */
   public void testVocabulary() throws Exception {
     // top 8k words or so: freq > 1000
+    
+    // just normalization+stem, we are testing that the stemming doesn't break.
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+        TokenStream stream = new SoraniNormalizationFilter(tokenizer);
+        stream = new SoraniStemFilter(stream);
+        return new TokenStreamComponents(tokenizer, stream);
+      }
+    };
     assertVocabulary(a, getDataPath("ckbtestdata.zip"), "testdata.txt");
+    a.close();
   }
 }

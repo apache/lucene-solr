@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Sorani analyzer
@@ -60,6 +61,28 @@ public class TestSoraniAnalyzer extends BaseTokenStreamTestCase {
     set.add("پیاوە");
     Analyzer a = new SoraniAnalyzer(CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "پیاوە", new String[] { "پیاوە" });
+    a.close();
+  }
+  
+  /**
+   * test we fold digits to latin-1
+   * (these are somewhat rare, but generally a few % of digits still)
+   */
+  public void testDigits() throws Exception {
+    SoraniAnalyzer a = new SoraniAnalyzer();
+    checkOneTerm(a, "١٢٣٤", "1234");
+    a.close();
+  }
+  
+  /**
+   * test that we don't fold digits for back compat behavior
+   * @deprecated remove this test in lucene 7
+   */
+  @Deprecated
+  public void testDigitsBackCompat() throws Exception {
+    SoraniAnalyzer a = new SoraniAnalyzer();
+    a.setVersion(Version.LUCENE_5_3_0);
+    checkOneTerm(a, "١٢٣٤", "١٢٣٤");
     a.close();
   }
   
