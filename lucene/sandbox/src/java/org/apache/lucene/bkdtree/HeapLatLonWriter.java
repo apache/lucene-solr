@@ -23,6 +23,7 @@ final class HeapLatLonWriter implements LatLonWriter {
   final int[] docIDs;
   final long[] ords;
   private int nextWrite;
+  private boolean closed;
 
   public HeapLatLonWriter(int count) {
     latEncs = new int[count];
@@ -42,11 +43,13 @@ final class HeapLatLonWriter implements LatLonWriter {
 
   @Override
   public LatLonReader getReader(long start) {
+    assert closed;
     return new HeapLatLonReader(latEncs, lonEncs, ords, docIDs, (int) start, latEncs.length);
   }
 
   @Override
   public void close() {
+    closed = true;
     if (nextWrite != latEncs.length) {
       throw new IllegalStateException("only wrote " + nextWrite + " values, but expected " + latEncs.length);
     }

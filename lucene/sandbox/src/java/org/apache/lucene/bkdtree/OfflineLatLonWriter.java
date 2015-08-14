@@ -34,6 +34,7 @@ final class OfflineLatLonWriter implements LatLonWriter {
   final OutputStreamDataOutput out;
   final long count;
   private long countWritten;
+  private boolean closed;
 
   public OfflineLatLonWriter(Path tempDir, long count) throws IOException {
     tempFile = Files.createTempFile(tempDir, "size" + count + ".", "");
@@ -52,11 +53,13 @@ final class OfflineLatLonWriter implements LatLonWriter {
 
   @Override
   public LatLonReader getReader(long start) throws IOException {
+    assert closed;
     return new OfflineLatLonReader(tempFile, start, count-start);
   }
 
   @Override
   public void close() throws IOException {
+    closed = true;
     out.close();
     if (count != countWritten) {
       throw new IllegalStateException("wrote " + countWritten + " values, but expected " + count);

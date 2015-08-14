@@ -188,7 +188,7 @@ class RangeTreeWriter {
       if (success) {
         IOUtils.close(sortedWriter, reader);
       } else {
-        IOUtils.closeWhileHandlingException(reader);
+        IOUtils.closeWhileHandlingException(sortedWriter, reader);
         try {
           sortedWriter.destroy();
         } catch (Throwable t) {
@@ -245,6 +245,7 @@ class RangeTreeWriter {
                       heapWriter.ords[i],
                       heapWriter.docIDs[i]);
       }
+      sorted.close();
 
       return sorted;
     } else {
@@ -468,6 +469,7 @@ class RangeTreeWriter {
         assert hasNext;
         writer.append(reader.value(), reader.ord(), reader.docID());
       }
+      writer.close();
       source = new PathSlice(writer, 0, count);
     }
 
