@@ -70,6 +70,9 @@ Bug Fixes
 * LUCENE-6730: Hyper-parameter c is ignored in term frequency NormalizationH1.
   (Ahmet Arslan via Robert Muir)
 
+* LUCENE-6618: Properly set MMapDirectory.UNMAP_SUPPORTED when it is now allowed
+  by security policy. (Robert Muir)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
