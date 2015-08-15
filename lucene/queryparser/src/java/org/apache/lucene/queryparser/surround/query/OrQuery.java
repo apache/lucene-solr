@@ -40,9 +40,9 @@ public class OrQuery extends ComposedQuery implements DistanceSubQuery {
   
   @Override
   public String distanceSubQueryNotAllowed() {
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<SrndQuery> sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
-      SrndQuery leq = (SrndQuery) sqi.next();
+      SrndQuery leq = sqi.next();
       if (leq instanceof DistanceSubQuery) {
         String m = ((DistanceSubQuery)leq).distanceSubQueryNotAllowed();
         if (m != null) {
@@ -57,9 +57,10 @@ public class OrQuery extends ComposedQuery implements DistanceSubQuery {
     
   @Override
   public void addSpanQueries(SpanNearClauseFactory sncf) throws IOException {
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<SrndQuery> sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
-      ((DistanceSubQuery)sqi.next()).addSpanQueries(sncf);
+      SrndQuery s = sqi.next();
+      ((DistanceSubQuery) s).addSpanQueries(sncf);
     }
   }
 }
