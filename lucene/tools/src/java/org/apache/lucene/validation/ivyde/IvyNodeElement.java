@@ -86,8 +86,8 @@ public class IvyNodeElement {
    */
   public IvyNodeElement[] getDeepDependencies() {
     if (deepDependencyCache == null) {
-      Collection deepDependencies = getDeepDependencies(this);
-      deepDependencyCache = (IvyNodeElement[])deepDependencies.toArray(new IvyNodeElement[deepDependencies.size()]);
+      Collection<IvyNodeElement> deepDependencies = getDeepDependencies(this);
+      deepDependencyCache = deepDependencies.toArray(new IvyNodeElement[deepDependencies.size()]);
     }
     return deepDependencyCache;
   }
@@ -147,8 +147,8 @@ public class IvyNodeElement {
    */
   public void setDepth(int depth) {
     this.depth = depth;
-    for (Iterator iter = dependencies.iterator(); iter.hasNext();) {
-      IvyNodeElement dependency = (IvyNodeElement) iter.next();
+    for (Iterator<IvyNodeElement> iter = dependencies.iterator(); iter.hasNext();) {
+      IvyNodeElement dependency = iter.next();
       dependency.setDepth(depth + 1);
     }
   }
@@ -157,7 +157,7 @@ public class IvyNodeElement {
     return conflicts.toArray(new IvyNodeElement[conflicts.size()]);
   }
 
-  public void setConflicts(Collection conflicts) {
+  public void setConflicts(Collection<IvyNodeElement> conflicts) {
     this.conflicts = conflicts;
   }
 
