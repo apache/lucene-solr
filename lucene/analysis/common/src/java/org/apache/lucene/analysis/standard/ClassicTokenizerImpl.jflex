@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 /**
  * This class implements the classic lucene StandardTokenizer up until 3.0 
  */
+@SuppressWarnings("fallthrough")
 %%
 
 %class ClassicTokenizerImpl
