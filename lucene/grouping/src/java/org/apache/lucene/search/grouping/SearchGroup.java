@@ -18,7 +18,6 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
@@ -154,9 +153,12 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
 
   private static class GroupComparator<T> implements Comparator<MergedGroup<T>> {
 
+    @SuppressWarnings("rawtypes")
     public final FieldComparator[] comparators;
+    
     public final int[] reversed;
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public GroupComparator(Sort groupSort) throws IOException {
       final SortField[] sortFields = groupSort.getSort();
       comparators = new FieldComparator[sortFields.length];

@@ -119,7 +119,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     private final Sort sortWithinGroup;
     private final Map<BytesRef, GroupHead> groups;
 
-    private Scorer scorer;
+    Scorer scorer;
 
     GeneralAllGroupHeadsCollector(String groupField, Sort sortWithinGroup) {
       super(groupField, sortWithinGroup.getSort().length);
@@ -182,10 +182,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
 
+      @SuppressWarnings({"unchecked", "rawtypes"})
       final FieldComparator[] comparators;
+      
       final LeafFieldComparator[] leafComparators;
 
-      private GroupHead(BytesRef groupValue, Sort sort, int doc) throws IOException {
+      @SuppressWarnings({"unchecked", "rawtypes"})
+      GroupHead(BytesRef groupValue, Sort sort, int doc) throws IOException {
         super(groupValue, doc + readerContext.docBase);
         final SortField[] sortFields = sort.getSort();
         comparators = new FieldComparator[sortFields.length];
@@ -221,10 +224,10 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     private final SentinelIntSet ordSet;
     private final List<GroupHead> collectedGroups;
-    private final SortField[] fields;
+    final SortField[] fields;
 
-    private SortedDocValues[] sortsIndex;
-    private Scorer scorer;
+    SortedDocValues[] sortsIndex;
+    Scorer scorer;
     private GroupHead[] segmentGroupHeads;
 
     OrdScoreAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
@@ -322,7 +325,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       int[] sortOrds;
       float[] scores;
 
-      private GroupHead(int doc, BytesRef groupValue) throws IOException {
+      GroupHead(int doc, BytesRef groupValue) throws IOException {
         super(groupValue, doc + readerContext.docBase);
         sortValues = new BytesRefBuilder[sortsIndex.length];
         sortOrds = new int[sortsIndex.length];
@@ -384,8 +387,8 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     private final List<GroupHead> collectedGroups;
     private final SortField[] fields;
 
-    private SortedDocValues[] sortsIndex;
-    private GroupHead[] segmentGroupHeads;
+    SortedDocValues[] sortsIndex;
+    GroupHead[] segmentGroupHeads;
 
     OrdAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
@@ -473,7 +476,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       BytesRefBuilder[] sortValues;
       int[] sortOrds;
 
-      private GroupHead(int doc, BytesRef groupValue) {
+      GroupHead(int doc, BytesRef groupValue) {
         super(groupValue, doc + readerContext.docBase);
         sortValues = new BytesRefBuilder[sortsIndex.length];
         sortOrds = new int[sortsIndex.length];
@@ -512,12 +515,12 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
   // AbstractAllGroupHeadsCollector optimized for scores.
   static class ScoreAllGroupHeadsCollector extends TermAllGroupHeadsCollector<ScoreAllGroupHeadsCollector.GroupHead> {
 
-    private final SentinelIntSet ordSet;
-    private final List<GroupHead> collectedGroups;
-    private final SortField[] fields;
+    final SentinelIntSet ordSet;
+    final List<GroupHead> collectedGroups;
+    final SortField[] fields;
 
-    private Scorer scorer;
-    private GroupHead[] segmentGroupHeads;
+    Scorer scorer;
+    GroupHead[] segmentGroupHeads;
 
     ScoreAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
@@ -591,7 +594,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       float[] scores;
 
-      private GroupHead(int doc, BytesRef groupValue) throws IOException {
+      GroupHead(int doc, BytesRef groupValue) throws IOException {
         super(groupValue, doc + readerContext.docBase);
         scores = new float[fields.length];
         float score = scorer.score();

@@ -1221,7 +1221,7 @@ public class TestBlockJoin extends LuceneTestCase {
     s.search(childJoinQuery, c);
 
     //Get all child documents within groups
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"unchecked","rawtypes"})
     TopGroups<Integer>[] getTopGroupsResults = new TopGroups[2];
     getTopGroupsResults[0] = c.getTopGroups(childJoinQuery, null, 0, 10, 0, true);
     getTopGroupsResults[1] = c.getTopGroupsWithAllChildDocs(childJoinQuery, null, 0, 0, true);
