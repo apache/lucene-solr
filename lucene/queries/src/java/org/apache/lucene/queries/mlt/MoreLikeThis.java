@@ -751,7 +751,7 @@ public final class MoreLikeThis {
 
   private PriorityQueue<ScoreTerm> retrieveTerms(Map<String, Collection<Object>> fields) throws 
       IOException {
-    HashMap<String,Int> termFreqMap = new HashMap();
+    HashMap<String,Int> termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
       for (String field : fields.keySet()) {
         Collection<Object> fieldValues = fields.get(field);
