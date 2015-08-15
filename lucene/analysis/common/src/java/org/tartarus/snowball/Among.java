@@ -40,10 +40,8 @@ import java.lang.reflect.Method;
  * refactored StringBuffers to StringBuilder
  * uses char[] as buffer instead of StringBuffer/StringBuilder
  * eq_s,eq_s_b,insert,replace_s take CharSequence like eq_v and eq_v_b
- * reflection calls (Lovins, etc) use EMPTY_ARGS/EMPTY_PARAMS
  */
 public class Among {
-  private static final Class<?>[] EMPTY_PARAMS = new Class[0];
 
   public Among(String s, int substring_i, int result,
                String methodname, SnowballProgram methodobject) {
@@ -56,8 +54,7 @@ public class Among {
       this.method = null;
     } else {
       try {
-        this.method = methodobject.getClass().
-            getDeclaredMethod(methodname, EMPTY_PARAMS);
+        this.method = methodobject.getClass().getDeclaredMethod(methodname);
       } catch (NoSuchMethodException e) {
         throw new RuntimeException(e);
       }

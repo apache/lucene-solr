@@ -292,7 +292,7 @@ public class PatternParser extends DefaultHandler {
    *      java.lang.String, java.lang.String)
    */
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void endElement(String uri, String local, String raw) {
 
     if (token.length() > 0) {
@@ -329,7 +329,7 @@ public class PatternParser extends DefaultHandler {
   /**
    * @see org.xml.sax.ContentHandler#characters(char[], int, int)
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   @Override
   public void characters(char ch[], int start, int length) {
     StringBuilder chars = new StringBuilder(length);

@@ -44,10 +44,8 @@ import org.apache.lucene.util.RamUsageEstimator;
  * refactored StringBuffers to StringBuilder
  * uses char[] as buffer instead of StringBuffer/StringBuilder
  * eq_s,eq_s_b,insert,replace_s take CharSequence like eq_v and eq_v_b
- * reflection calls (Lovins, etc) use EMPTY_ARGS/EMPTY_PARAMS
  */
 public abstract class SnowballProgram {
-    private static final Object[] EMPTY_ARGS = new Object[0];
 
     protected SnowballProgram()
     {
@@ -314,7 +312,7 @@ public abstract class SnowballProgram {
           if (w.method == null) return w.result;
           boolean res;
           try {
-            Object resobj = w.method.invoke(w.methodobject, EMPTY_ARGS);
+            Object resobj = w.method.invoke(w.methodobject);
             res = resobj.toString().equals("true");
           } catch (InvocationTargetException e) {
             res = false;
@@ -382,7 +380,7 @@ public abstract class SnowballProgram {
 
           boolean res;
           try {
-            Object resobj = w.method.invoke(w.methodobject, EMPTY_ARGS);
+            Object resobj = w.method.invoke(w.methodobject);
             res = resobj.toString().equals("true");
           } catch (InvocationTargetException e) {
             res = false;
