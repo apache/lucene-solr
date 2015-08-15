@@ -61,7 +61,7 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
       return false;
     if (! getClass().equals(obj.getClass()))
       return false;
-    RewriteQuery other = (RewriteQuery)obj;
+    @SuppressWarnings("unchecked") RewriteQuery<SQ> other = (RewriteQuery<SQ>)obj;
     return super.equals(obj)
       && fieldName.equals(other.fieldName)
       && qf.equals(other.qf)

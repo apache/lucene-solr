@@ -266,11 +266,11 @@ final class Stemmer {
 
   // some state for traversing FSTs
   final FST.BytesReader prefixReaders[] = new FST.BytesReader[3];
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   final FST.Arc<IntsRef> prefixArcs[] = new FST.Arc[3];
   
   final FST.BytesReader suffixReaders[] = new FST.BytesReader[3];
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   final FST.Arc<IntsRef> suffixArcs[] = new FST.Arc[3];
 
   
