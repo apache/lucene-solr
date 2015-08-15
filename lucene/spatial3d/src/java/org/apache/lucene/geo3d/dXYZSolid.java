@@ -138,13 +138,14 @@ public class dXYZSolid extends BaseXYZSolid {
     //System.err.println(this+" getrelationship with "+path);
     final int insideRectangle = isShapeInsideArea(path);
     if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
+      //System.err.println(" some shape points inside area");
       return OVERLAPS;
     }
 
     // Figure out if the entire XYZArea is contained by the shape.
     final int insideShape = isAreaInsideShape(path);
     if (insideShape == SOME_INSIDE) {
+      //System.err.println(" some area points inside shape");
       return OVERLAPS;
     }
 
@@ -154,18 +155,19 @@ public class dXYZSolid extends BaseXYZSolid {
     }
 
     // The entire locus of points in this shape is on a single plane, so we only need ot look for an intersection with that plane.
+    System.err.println("xPlane = "+xPlane);
     if (path.intersects(xPlane, notableXPoints, minYPlane, maxYPlane, minZPlane, maxZPlane)) {
       //System.err.println(" edges intersect");
       return OVERLAPS;
     }
 
     if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
+      //System.err.println(" shape points inside area");
       return WITHIN;
     }
 
     if (insideShape == ALL_INSIDE) {
-      //System.err.println(" shape contains rectangle");
+      //System.err.println(" shape contains all area");
       return CONTAINS;
     }
     //System.err.println(" disjoint");
