@@ -390,6 +390,8 @@ Bug Fixes
 * SOLR-7921: The techproducts example fails when running in a directory that contains spaces.
   (Ishan Chattopadhyaya via Timothy Potter)
 
+* SOLR-7934: SolrCLI masks underlying cause of create collection failure. (Timothy Potter)
+
 
 Optimizations
 ----------------------

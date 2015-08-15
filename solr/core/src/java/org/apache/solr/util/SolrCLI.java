@@ -1446,13 +1446,7 @@ public class SolrCLI {
       try {
         json = getJson(createCollectionUrl);
       } catch (SolrServerException sse) {
-        // check if already exists
-        if (safeCheckCollectionExists(collectionListUrl, collectionName)) {
-          throw new IllegalArgumentException("Collection '"+collectionName+
-              "' already exists!\nChecked collection existence using Collections API command:\n"+collectionListUrl);
-        } else {
-          throw new Exception("Failed to create collection '"+collectionName+"' due to: "+sse.getMessage());
-        }
+        throw new Exception("Failed to create collection '"+collectionName+"' due to: "+sse.getMessage());
       }
 
       CharArr arr = new CharArr();
@@ -1584,18 +1578,7 @@ public class SolrCLI {
 
       echo("\nCreating new core '" + coreName + "' using command:\n" + createCoreUrl + "\n");
 
-      Map<String,Object> json = null;
-      try {
-        json = getJson(createCoreUrl);
-      } catch (SolrServerException sse) {
-        // mostly likely the core already exists ...
-        if (safeCheckCoreExists(coreStatusUrl, coreName)) {
-          // core already exists
-          throw new IllegalArgumentException("Core '"+coreName+"' already exists!\nChecked core existence using Core API command:\n"+coreStatusUrl);
-        } else {
-          throw sse;
-        }
-      }
+      Map<String,Object> json = getJson(createCoreUrl);
 
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(json);
