@@ -49,8 +49,12 @@
       <replace token="StringBuffer" value="StringBuilder" encoding="UTF-8">
          <fileset dir="@{dir}" includes="ParseException.java TokenMgrError.java"/>
       </replace>
-      <!-- Remove debug stream (violates forbiddena-apis) -->
+      <!-- Remove debug stream (violates forbidden-apis) -->
       <replaceregexp match="/\*\* Debug.*debugStream\s*=\s*ds;\s*}" replace="" flags="s" encoding="UTF-8">
+         <fileset dir="@{dir}" includes="*TokenManager.java"/>
+      </replaceregexp>
+      <!-- Add warnings supression -->
+      <replaceregexp match="^\Qpublic class\E" replace="@SuppressWarnings(&quot;cast&quot;)${line.separator}\0" flags="m" encoding="UTF-8">
          <fileset dir="@{dir}" includes="*TokenManager.java"/>
       </replaceregexp>
     </sequential>
