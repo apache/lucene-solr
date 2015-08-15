@@ -40,6 +40,7 @@ import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 /** Token Manager. */
+@SuppressWarnings("cast")
 public class StandardSyntaxParserTokenManager implements StandardSyntaxParserConstants
 {
 

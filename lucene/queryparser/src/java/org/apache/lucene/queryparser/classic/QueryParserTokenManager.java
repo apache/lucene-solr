@@ -12,6 +12,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 
 /** Token Manager. */
+@SuppressWarnings("cast")
 public class QueryParserTokenManager implements QueryParserConstants
 {
 
