@@ -17,11 +17,11 @@ package org.apache.lucene.analysis.standard.std40;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 @Deprecated
+@SuppressWarnings("fallthrough")
 /**
  * This class implements StandardTokenizer using Unicode 6.1.0.
  * @deprecated This class is only for exact backwards compatibility
@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %final
 %public
 %class StandardTokenizerImpl40
-%implements StandardTokenizerInterface
 %function getNextToken
 %char
 %buffer 4096
@@ -114,7 +113,7 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 // UAX#29 WB1.   sot   ÷
 //        WB2.     ÷   eot
 //
-<<EOF>> { return StandardTokenizerInterface.YYEOF; }
+<<EOF>> { return YYEOF; }
 
 // UAX#29 WB8.   Numeric × Numeric
 //        WB11.  Numeric (MidNum | MidNumLet) × Numeric

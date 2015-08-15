@@ -27,6 +27,7 @@ WARNING: if you change ClassicTokenizerImpl.jflex and need to regenerate
 import java.io.Reader;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
+@SuppressWarnings("fallthrough")
 /**
  * This class implements the classic lucene StandardTokenizer up until 3.0 
  */

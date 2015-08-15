@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.util.OpenStringBuilder;
 /**
  * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.
  */
+@SuppressWarnings("fallthrough")
 %%
 
 %unicode 6.3
