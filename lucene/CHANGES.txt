@@ -508,6 +508,9 @@ Build
   these updates: Tasks are now installed from root's build.xml.
   (Uwe Schindler)
 
+* LUCENE-6741: Fix jflex files to regenerate the java files correctly.
+  (Uwe Schindler)
+
 Test Framework
 
 * LUCENE-6637: Fix FSTTester to not violate file permissions
