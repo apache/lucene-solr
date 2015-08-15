@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 @Deprecated
+@SuppressWarnings("fallthrough")
 /**
  * This class implements StandardTokenizer using Unicode 6.1.0.
  * @deprecated This class is only for exact backwards compatibility

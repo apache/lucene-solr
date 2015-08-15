@@ -17,11 +17,10 @@ package org.apache.lucene.analysis.standard.std40;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
-import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 @Deprecated
+@SuppressWarnings("fallthrough")
 /**
  * This class implements UAX29URLEmailTokenizer using Unicode 6.1.0.
  * @deprecated This class is only for exact backwards compatibility
@@ -33,7 +32,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %final
 %public
 %class UAX29URLEmailTokenizerImpl40
-%implements StandardTokenizerInterface
 %function getNextToken
 %char
 %buffer 4096
@@ -147,10 +145,10 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 
 %{
   /** Alphanumeric sequences */
-  public static final int WORD_TYPE = UAX29URLEmailTokenizer.ALPHANUM;
+  public static final int WORD_TYPE = UAX29URLEmailTokenizer40.ALPHANUM;
   
   /** Numbers */
-  public static final int NUMERIC_TYPE = UAX29URLEmailTokenizer.NUM;
+  public static final int NUMERIC_TYPE = UAX29URLEmailTokenizer40.NUM;
   
   /**
    * Chars in class \p{Line_Break = Complex_Context} are from South East Asian
@@ -160,19 +158,19 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
    * <p>
    * See Unicode Line Breaking Algorithm: http://www.unicode.org/reports/tr14/#SA
    */
-  public static final int SOUTH_EAST_ASIAN_TYPE = UAX29URLEmailTokenizer.SOUTHEAST_ASIAN;
+  public static final int SOUTH_EAST_ASIAN_TYPE = UAX29URLEmailTokenizer40.SOUTHEAST_ASIAN;
   
-  public static final int IDEOGRAPHIC_TYPE = UAX29URLEmailTokenizer.IDEOGRAPHIC;
+  public static final int IDEOGRAPHIC_TYPE = UAX29URLEmailTokenizer40.IDEOGRAPHIC;
   
-  public static final int HIRAGANA_TYPE = UAX29URLEmailTokenizer.HIRAGANA;
+  public static final int HIRAGANA_TYPE = UAX29URLEmailTokenizer40.HIRAGANA;
   
-  public static final int KATAKANA_TYPE = UAX29URLEmailTokenizer.KATAKANA;
+  public static final int KATAKANA_TYPE = UAX29URLEmailTokenizer40.KATAKANA;
   
-  public static final int HANGUL_TYPE = UAX29URLEmailTokenizer.HANGUL;
+  public static final int HANGUL_TYPE = UAX29URLEmailTokenizer40.HANGUL;
   
-  public static final int EMAIL_TYPE = UAX29URLEmailTokenizer.EMAIL;
+  public static final int EMAIL_TYPE = UAX29URLEmailTokenizer40.EMAIL;
   
-  public static final int URL_TYPE = UAX29URLEmailTokenizer.URL;
+  public static final int URL_TYPE = UAX29URLEmailTokenizer40.URL;
 
   public final int yychar()
   {
@@ -196,7 +194,7 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 // UAX#29 WB1.   sot   ÷
 //        WB2.     ÷   eot
 //
-<<EOF>> { return StandardTokenizerInterface.YYEOF; }
+<<EOF>> { return YYEOF; }
 
 {URL}   { return URL_TYPE; }
 
