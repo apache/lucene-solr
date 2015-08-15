@@ -61,6 +61,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.join.ScoreJoinQParserPlugin;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 
 public class JoinQParserPlugin extends QParserPlugin {
@@ -138,7 +139,7 @@ public class JoinQParserPlugin extends QParserPlugin {
             QParser parser = QParser.getParser(v, "lucene", otherReq);
             fromQuery = parser.getQuery();
             fromHolder = fromCore.getRegisteredSearcher();
-            if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenTime();
+            if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
           } finally {
             otherReq.close();
             fromCore.close();
@@ -290,13 +291,13 @@ class JoinQuery extends Query {
     public Scorer scorer(LeafReaderContext context) throws IOException {
       if (filter == null) {
         boolean debug = rb != null && rb.isDebug();
-        long start = debug ? System.currentTimeMillis() : 0;
+        RTimer timer = (debug ? new RTimer() : null);
         resultSet = getDocSet();
-        long end = debug ? System.currentTimeMillis() : 0;
+        if (timer != null) timer.stop();
 
         if (debug) {
           SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
-          dbg.add("time", (end-start));
+          dbg.add("time", (long) timer.getTime());
           dbg.add("fromSetSize", fromSetSize);  // the input
           dbg.add("toSetSize", resultSet.size());    // the output
 

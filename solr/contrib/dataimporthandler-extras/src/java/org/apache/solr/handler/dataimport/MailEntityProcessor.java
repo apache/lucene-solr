@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import com.sun.mail.imap.IMAPMessage;
 
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
+import org.apache.solr.util.RTimer;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.slf4j.Logger;
@@ -623,8 +624,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
           // envelopes; unless you're using gmail server-side filter, which is
           // fast
           LOG.info("Searching folder " + folder.getName() + " for messages");
-          long searchAtMs = System.currentTimeMillis();
-          
+          final RTimer searchTimer = new RTimer();
+
           // If using GMail, speed up the envelope processing by doing a
           // server-side
           // search for messages occurring on or after the fetch date (at
@@ -652,9 +653,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
           totalInFolder = messagesInCurBatch.length;
           folder.fetch(messagesInCurBatch, fp);
           current = 0;
-          long tookMs = (System.currentTimeMillis() - searchAtMs);
           LOG.info("Total messages : " + totalInFolder);
-          LOG.info("Search criteria applied. Batching disabled. Took " + tookMs + " (ms)");
+          LOG.info("Search criteria applied. Batching disabled. Took {} (ms)", searchTimer.getTime());
         } else {
           totalInFolder = folder.getMessageCount();
           LOG.info("Total messages : " + totalInFolder);

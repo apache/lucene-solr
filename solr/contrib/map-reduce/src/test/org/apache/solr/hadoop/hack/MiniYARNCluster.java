@@ -38,7 +38,6 @@ import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
-import org.apache.hadoop.yarn.ipc.RPCUtil;
 import org.apache.hadoop.yarn.server.api.ResourceTracker;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NodeHeartbeatRequest;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NodeHeartbeatResponse;
@@ -102,7 +101,7 @@ public class MiniYARNCluster extends CompositeService {
       // symlink as the test working directory.
       String targetPath = targetWorkDir.getAbsolutePath();
       File link = new File(System.getProperty("java.io.tmpdir"),
-        String.valueOf(System.currentTimeMillis()));
+        String.valueOf(System.nanoTime()));
       String linkPath = link.getAbsolutePath();
 
       try {

@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
@@ -53,12 +54,15 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   protected Map<String,Object> json;
 
   private final RTimerTree requestTimer;
+  protected final long startTime;
 
+  @SuppressForbidden(reason = "Need currentTimeMillis to get start time for request (to be used for stats/debugging)")
   public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimerTree requestTimer) {
     this.core = core;
     this.schema = null == core ? null : core.getLatestSchema();
     this.params = this.origParams = params;
     this.requestTimer = requestTimer;
+    this.startTime = System.currentTimeMillis();
   }
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
@@ -87,7 +91,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     this.params = params;
   }
 
-  protected final long startTime=System.currentTimeMillis();
+
   // Get the start time of this request in milliseconds
   @Override
   public long getStartTime() {

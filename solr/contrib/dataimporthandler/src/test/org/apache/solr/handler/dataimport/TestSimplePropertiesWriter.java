@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -46,7 +47,8 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
     fileLocation = createTempDir().toFile().getAbsolutePath();
     fileName = "the.properties";
   }
- 
+
+  @SuppressForbidden(reason = "Needs currentTimeMillis to construct date stamps")
   @Test
   public void testSimplePropertiesWriter() throws Exception { 
     

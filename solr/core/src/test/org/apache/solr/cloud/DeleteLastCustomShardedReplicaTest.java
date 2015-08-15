@@ -29,12 +29,14 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
@@ -89,10 +91,10 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     client.request(request);
-    long endAt = System.currentTimeMillis() + 3000;
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
     boolean success = false;
     DocCollection testcoll = null;
-    while (System.currentTimeMillis() < endAt) {
+    while (! timeout.hasTimedOut()) {
       testcoll = getCommonCloudSolrClient().getZkStateReader()
           .getClusterState().getCollection(COLL_NAME);
       // In case of a custom sharded collection, the last replica deletion would also lead to

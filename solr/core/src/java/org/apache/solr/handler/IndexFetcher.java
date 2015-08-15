@@ -76,6 +76,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -89,6 +90,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,7 +134,8 @@ public class IndexFetcher {
 
   private final ReplicationHandler replicationHandler;
 
-  private volatile long replicationStartTime;
+  private volatile Date replicationStartTimeStamp;
+  private RTimer replicationTimer;
 
   private final SolrCore solrCore;
 
@@ -267,7 +270,7 @@ public class IndexFetcher {
     
     boolean cleanupDone = false;
     boolean successfulInstall = false;
-    replicationStartTime = System.currentTimeMillis();
+    markReplicationStart();
     Directory tmpIndexDir = null;
     String tmpIndex;
     Directory indexDir = null;
@@ -330,6 +333,7 @@ public class IndexFetcher {
         return true;
       }
       
+      // TODO: Should we be comparing timestamps (across machines) here?
       if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
         //master and slave are already in sync just return
         LOG.info("Slave in sync with master.");
@@ -421,9 +425,7 @@ public class IndexFetcher {
           successfulInstall = false;
           
           downloadIndexFiles(isFullCopyNeeded, indexDir, oldestVersion, tmpIndexDir, latestGeneration);
-          LOG.info("Total time taken for download : "
-              + ((System.currentTimeMillis() - replicationStartTime) / 1000)
-              + " secs");
+          LOG.info("Total time taken for download: {} secs", getReplicationTimeElapsed());
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
@@ -502,7 +504,7 @@ public class IndexFetcher {
           successfulInstall = fetchLatestIndex(true, reloadCore);
         }
         
-        replicationStartTime = 0;
+        markReplicationStop();
         return successfulInstall;
       } catch (ReplicationHandlerException e) {
         LOG.error("User aborted Replication");
@@ -535,7 +537,7 @@ public class IndexFetcher {
       core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
 
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
-      replicationStartTime = 0;
+      markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
       if (fsyncService != null && !fsyncService.isShutdown()) fsyncService
@@ -597,6 +599,7 @@ public class IndexFetcher {
    * restarts.
    * @throws IOException on IO error
    */
+  @SuppressForbidden(reason = "Need currentTimeMillis for debugging/stats")
   private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles, boolean successfulInstall) throws IOException {
     List<String> confFiles = new ArrayList<>();
     if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty())
@@ -605,7 +608,7 @@ public class IndexFetcher {
 
     Properties props = replicationHandler.loadReplicationProperties();
     long replicationTime = System.currentTimeMillis();
-    long replicationTimeTaken = (replicationTime - getReplicationStartTime()) / 1000;
+    long replicationTimeTaken = getReplicationTimeElapsed();
     Directory dir = null;
     try {
       dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
@@ -1165,14 +1168,25 @@ public class IndexFetcher {
     stop = true;
   }
 
-  long getReplicationStartTime() {
-    return replicationStartTime;
+  @SuppressForbidden(reason = "Need currentTimeMillis for debugging/stats")
+  private void markReplicationStart() {
+    replicationTimer = new RTimer();
+    replicationStartTimeStamp = new Date();
+  }
+
+  private void markReplicationStop() {
+    replicationStartTimeStamp = null;
+    replicationTimer = null;
+  }
+
+  Date getReplicationStartTimeStamp() {
+    return replicationStartTimeStamp;
   }
 
   long getReplicationTimeElapsed() {
     long timeElapsed = 0;
-    if (getReplicationStartTime() > 0)
-      timeElapsed = TimeUnit.SECONDS.convert(System.currentTimeMillis() - getReplicationStartTime(), TimeUnit.MILLISECONDS);
+    if (replicationStartTimeStamp != null)
+      timeElapsed = TimeUnit.SECONDS.convert((long) replicationTimer.getTime(), TimeUnit.MILLISECONDS);
     return timeElapsed;
   }
 

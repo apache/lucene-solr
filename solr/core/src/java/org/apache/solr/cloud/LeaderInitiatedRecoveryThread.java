@@ -11,6 +11,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
   }
   
   public void run() {
-    long startMs = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     try {
       sendRecoveryCommandWithRetry();
     } catch (Exception exc) {
@@ -84,8 +85,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         throw new SolrException(ErrorCode.SERVER_ERROR, exc);
       }
     }
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info(getName()+" completed successfully after running for "+Math.round(diffMs/1000L)+" secs");    
+    log.info("{} completed successfully after running for {}ms", getName(), timer.getTime());
   }
   
   protected void sendRecoveryCommandWithRetry() throws Exception {    

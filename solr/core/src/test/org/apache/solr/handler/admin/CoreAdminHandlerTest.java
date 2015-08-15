@@ -195,7 +195,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testDeleteInstanceDir() throws Exception  {
     File solrHomeDirectory = new File(initCoreDataDir, getClass().getName() + "-corex-"
-        + System.currentTimeMillis());
+        + System.nanoTime());
     solrHomeDirectory.mkdirs();
     copySolrHomeToTemp(solrHomeDirectory, "corex", true);
     File corex = new File(solrHomeDirectory, "corex");

@@ -61,6 +61,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
@@ -1571,7 +1572,7 @@ public class UpdateLog implements PluginInfoInitialized {
    */
   protected Long seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher, VersionInfo versions) {
     Long highestVersion = null;
-    long startMs = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     RecentUpdates recentUpdates = null;
     try {
@@ -1596,9 +1597,8 @@ public class UpdateLog implements PluginInfoInitialized {
         recentUpdates.close();
     }
 
-    long tookMs = (System.currentTimeMillis() - startMs);
-    log.info("Took {} ms to seed version buckets with highest version {}",
-        tookMs, String.valueOf(highestVersion));
+    log.info("Took {}ms to seed version buckets with highest version {}",
+        timer.getTime(), String.valueOf(highestVersion));
 
     return highestVersion;
   }

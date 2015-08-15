@@ -72,6 +72,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -644,7 +645,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
                                               String prop,
                                               int expectedVersion,
                                               int maxWaitSecs) {
-    long startMs = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
@@ -702,10 +703,8 @@ public class SolrConfigHandler extends RequestHandlerBase {
       ExecutorUtil.shutdownNowAndAwaitTermination(parallelExecutor);
     }
 
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info(formatString(
-        "Took {0} secs to set the property {1} to be of version {2} for collection {3}",
-        Math.round(diffMs / 1000d), prop, expectedVersion, collection));
+    log.info("Took {}ms to set the property {} to be of version {} for collection {}",
+        timer.getTime(), prop, expectedVersion, collection);
   }
 
   public static List<String> getActiveReplicaCoreUrls(ZkController zkController,
@@ -754,13 +753,13 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     @Override
     public Boolean call() throws Exception {
-      long startTime = System.currentTimeMillis();
+      final RTimer timer = new RTimer();
       int attempts = 0;
       try (HttpSolrClient solr = new HttpSolrClient(coreUrl)) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {
-            long timeElapsed = (System.currentTimeMillis() - startTime) / 1000;
+            long timeElapsed = (long) timer.getTime() / 1000;
             if (timeElapsed >= maxWait) {
               return false;
             }

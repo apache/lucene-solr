@@ -46,6 +46,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -86,6 +87,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to compare against time in header")
   @Override
   public void doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
 
@@ -248,7 +250,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   }
 
-
+  @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
   void setHeader(HttpRequest httpRequest) {
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr = null;

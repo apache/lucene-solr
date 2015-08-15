@@ -36,6 +36,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
@@ -59,6 +60,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.easymock.EasyMock.anyBoolean;
 import static org.easymock.EasyMock.anyObject;
@@ -562,10 +564,10 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void waitForEmptyQueue(long maxWait) throws Exception {
-    long start = System.currentTimeMillis();
+    final TimeOut timeout = new TimeOut(maxWait, TimeUnit.MILLISECONDS);
     while (queue.peek() != null) {
-      if ((System.currentTimeMillis() - start) > maxWait) fail(" Queue not empty within "
-          + maxWait + " ms" + System.currentTimeMillis());
+      if (timeout.hasTimedOut())
+        fail("Queue not empty within " + maxWait + " ms");
       Thread.sleep(100);
     }
   }

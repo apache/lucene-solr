@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -45,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossCollection;
 
@@ -290,10 +292,10 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    long timeout = System.currentTimeMillis() + 3000;
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
     Replica newReplica = null;
 
-    while (System.currentTimeMillis() < timeout && newReplica == null) {
+    while (! timeout.hasTimedOut() && newReplica == null) {
       Slice slice = cloudClient.getZkStateReader().getClusterState().getSlice(collectionName, "shard1");
       newReplica = slice.getReplica(newReplicaName);
     }
@@ -313,10 +315,10 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
     response = deleteReplicaRequest.process(cloudClient);
 
     assertEquals(0, response.getStatus());
-    
-    timeout = System.currentTimeMillis() + 3000;
-    
-    while (System.currentTimeMillis() < timeout && newReplica != null) {
+
+    timeout = new TimeOut(3, TimeUnit.SECONDS);
+
+    while (! timeout.hasTimedOut() && newReplica != null) {
       Slice slice = cloudClient.getZkStateReader().getClusterState().getSlice(collectionName, "shard1");
       newReplica = slice.getReplica(newReplicaName);
     }
@@ -332,10 +334,10 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
 
     assertEquals(0, response.getStatus());
 
-    long timeOut = System.currentTimeMillis() + 3000;
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
     boolean changed = false;
     
-    while(System.currentTimeMillis() < timeOut){
+    while(! timeout.hasTimedOut()){
       Thread.sleep(10);
       changed = Objects.equals("false",
           cloudClient.getZkStateReader().getClusterProps().get(ZkStateReader.LEGACY_CLOUD));
@@ -349,9 +351,9 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
             .setPropertyValue(null);
     clusterPropRequest.process(cloudClient);
 
-    timeOut = System.currentTimeMillis() + 3000;
+    timeout = new TimeOut(3, TimeUnit.SECONDS);
     changed = false;
-    while(System.currentTimeMillis() < timeOut){
+    while(! timeout.hasTimedOut()) {
       Thread.sleep(10);
       changed = (cloudClient.getZkStateReader().getClusterProps().get(ZkStateReader.LEGACY_CLOUD) == null);
       if(changed)  
@@ -423,11 +425,11 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
             .setPropertyValue("true").process(cloudClient);
     assertEquals(0, response.getStatus());
 
-    long timeout = System.currentTimeMillis() + 20000;
+    TimeOut timeout = new TimeOut(20, TimeUnit.SECONDS);
     String propertyValue = null;
     
     String replicaName = replica.getName();
-    while (System.currentTimeMillis() < timeout) {
+    while (! timeout.hasTimedOut()) {
       ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
       replica = clusterState.getReplica(DEFAULT_COLLECTION, replicaName);
       propertyValue = replica.getStr("property.preferredleader"); 
@@ -448,10 +450,10 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
             .setPropertyName("property.preferredleader").process(cloudClient);
     assertEquals(0, response.getStatus());
 
-    timeout = System.currentTimeMillis() + 20000;
+    timeout = new TimeOut(20, TimeUnit.SECONDS);
     boolean updated = false;
 
-    while (System.currentTimeMillis() < timeout) {
+    while (! timeout.hasTimedOut()) {
       ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
       replica = clusterState.getReplica(DEFAULT_COLLECTION, replicaName);
       updated = replica.getStr("property.preferredleader") == null;

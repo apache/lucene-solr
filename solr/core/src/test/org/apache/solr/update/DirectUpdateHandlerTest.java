@@ -371,13 +371,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
     @Override
     public void postSoftCommit() {
-      postSoftCommitAt.set(System.currentTimeMillis());
+      postSoftCommitAt.set(System.nanoTime());
     }
 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
       newSearcherCount.incrementAndGet();
-      newSearcherOpenedAt.set(newSearcher.getOpenTime());
+      newSearcherOpenedAt.set(newSearcher.getOpenNanoTime());
     }
 
     @Override

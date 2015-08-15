@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test for LBHttpSolrClient
@@ -221,16 +223,16 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       // Start the killed server once again
       solr[1].startJetty();
       // Wait for the alive check to complete
-      waitForServer(30000, client, 3, "solr1");
+      waitForServer(30, client, 3, "solr1");
     } finally {
       myHttpClient.close();
     }
   }
   
   // wait maximum ms for serverName to come back up
-  private void waitForServer(int maximum, LBHttpSolrClient client, int nServers, String serverName) throws Exception {
-    long endTime = System.currentTimeMillis() + maximum;
-    while (System.currentTimeMillis() < endTime) {
+  private void waitForServer(int maxSeconds, LBHttpSolrClient client, int nServers, String serverName) throws Exception {
+    final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS);
+    while (! timeout.hasTimedOut()) {
       QueryResponse resp;
       try {
         resp = client.query(new SolrQuery("*:*"));

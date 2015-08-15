@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -101,7 +102,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     hardTracker.setDocsUpperBound(-1);
     
     // Add a single document
-    long add529 = System.currentTimeMillis();
+    long add529 = System.nanoTime();
     assertU(adoc("id", "529", "subject", "the doc we care about in this test"));
 
     monitor.assertSaneOffers();
@@ -123,22 +124,25 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 5, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
     monitor.assertSaneOffers();
-    
-    assertTrue("soft529 occured too fast: " + 
-               add529 + " + " + softCommitWaitMillis + " !<= " + soft529,
-               add529 + softCommitWaitMillis <= soft529);
-    assertTrue("hard529 occured too fast: " + 
-               add529 + " + " + hardCommitWaitMillis + " !<= " + hard529,
-               add529 + hardCommitWaitMillis <= hard529);
+
+    final long soft529Ms = TimeUnit.MILLISECONDS.convert(soft529 - add529, TimeUnit.NANOSECONDS);
+    assertTrue("soft529 occured too fast, in " +
+            soft529Ms + "ms, less than soft commit interval " + softCommitWaitMillis,
+        soft529Ms >= softCommitWaitMillis);
+    final long hard529Ms = TimeUnit.MILLISECONDS.convert(hard529 - add529, TimeUnit.NANOSECONDS);
+    assertTrue("hard529 occured too fast, in " +
+            hard529Ms + "ms, less than hard commit interval " + hardCommitWaitMillis,
+        hard529Ms >= hardCommitWaitMillis);
 
     // however slow the machine was to do the soft commit compared to expected,
     // assume newSearcher had some magnitude of that much overhead as well 
-    long slowTestFudge = Math.max(300, 12 * (soft529 - add529 - softCommitWaitMillis));
-    assertTrue("searcher529 wasn't soon enough after soft529: " +
-               searcher529 + " !< " + soft529 + " + " + slowTestFudge + " (fudge)",
-               searcher529 < soft529 + slowTestFudge );
+    long slowTestFudge = Math.max(300, 12 * (soft529Ms - softCommitWaitMillis));
+    final long softCommitToSearcherOpenMs = TimeUnit.MILLISECONDS.convert(searcher529 - soft529, TimeUnit.NANOSECONDS);
+    assertTrue("searcher529 wasn't soon enough after soft529: Took " +
+            softCommitToSearcherOpenMs + "ms, >= acceptable " + slowTestFudge + "ms (fudge)",
+        softCommitToSearcherOpenMs < slowTestFudge);
 
-    assertTrue("hard529 was before searcher529: " + 
+    assertTrue("hard529 was before searcher529: " +
                searcher529 + " !<= " + hard529,
                searcher529 <= hard529);
 
@@ -147,7 +151,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     // there may have been (or will be) a second hard commit for 530
     Long hard530 = monitor.hard.poll(hardCommitWaitMillis, MILLISECONDS);
     assertEquals("Tracker reports too many hard commits",
-                 (null == hard530 ? 1 : 2), 
+                 (null == hard530 ? 1 : 2),
                  hardTracker.getCommitCount());
 
     // there may have been a second soft commit for 530, 
@@ -229,7 +233,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.clear();
 
     // Delete the document
-    long del529 = System.currentTimeMillis();
+    long del529 = System.nanoTime();
     assertU( delI("529") );
 
     monitor.assertSaneOffers();
@@ -251,22 +255,25 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     hard529 = monitor.hard.poll(hardCommitWaitMillis * 3, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
     monitor.assertSaneOffers();
-    
-    assertTrue("soft529 occured too fast: " + 
-               del529 + " + " + softCommitWaitMillis + " !<= " + soft529,
-               del529 + softCommitWaitMillis <= soft529);
-    assertTrue("hard529 occured too fast: " + 
-               del529 + " + " + hardCommitWaitMillis + " !<= " + hard529,
-               del529 + hardCommitWaitMillis <= hard529);
+
+    final long soft529Ms = TimeUnit.MILLISECONDS.convert(soft529 - del529, TimeUnit.NANOSECONDS);
+    assertTrue("soft529 occured too fast, in " + soft529Ms +
+            "ms, less than soft commit interval " + softCommitWaitMillis,
+        soft529Ms >= softCommitWaitMillis);
+    final long hard529Ms = TimeUnit.MILLISECONDS.convert(hard529 - del529, TimeUnit.NANOSECONDS);
+    assertTrue("hard529 occured too fast, in " +
+            hard529Ms + "ms, less than hard commit interval " + hardCommitWaitMillis,
+        hard529Ms >= hardCommitWaitMillis);
 
     // however slow the machine was to do the soft commit compared to expected,
-    // assume newSearcher had some magnitude of that much overhead as well 
-    long slowTestFudge = Math.max(150, 3 * (soft529 - del529 - softCommitWaitMillis));
-    assertTrue("searcher529 wasn't soon enough after soft529: " +
-               searcher529 + " !< " + soft529 + " + " + slowTestFudge + " (fudge)",
-               searcher529 < soft529 + slowTestFudge );
+    // assume newSearcher had some magnitude of that much overhead as well
+    long slowTestFudge = Math.max(300, 12 * (soft529Ms - softCommitWaitMillis));
+    final long softCommitToSearcherOpenMs = TimeUnit.MILLISECONDS.convert(searcher529 - soft529, TimeUnit.NANOSECONDS);
+    assertTrue("searcher529 wasn't soon enough after soft529: Took " +
+            softCommitToSearcherOpenMs + "ms, >= acceptable " + slowTestFudge + "ms (fudge)",
+        softCommitToSearcherOpenMs < slowTestFudge);
 
-    assertTrue("hard529 was before searcher529: " + 
+    assertTrue("hard529 was before searcher529: " +
                searcher529 + " !<= " + hard529,
                searcher529 <= hard529);
 
@@ -298,17 +305,17 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     hardTracker.setDocsUpperBound(-1);
     
     // try to add 5 docs really fast
-    long fast5start = System.currentTimeMillis();
+    long fast5start = System.nanoTime();
     for( int i=0;i<5; i++ ) {
       assertU(adoc("id", ""+500 + i, "subject", "five fast docs"));
     }
-    long fast5end = System.currentTimeMillis() - 200; // minus a tad of slop
-    long fast5time = 1 + fast5end - fast5start;
+    long fast5end = System.nanoTime() - TimeUnit.NANOSECONDS.convert(200, TimeUnit.MILLISECONDS); // minus a tad of slop
+    long fast5time = 1 + TimeUnit.MILLISECONDS.convert(fast5end - fast5start, TimeUnit.NANOSECONDS);
 
     // total time for all 5 adds determines the number of soft to expect
-    long expectedSoft = (long)Math.ceil(fast5time / softCommitWaitMillis);
-    long expectedHard = (long)Math.ceil(fast5time / hardCommitWaitMillis);
-    
+    long expectedSoft = (long)Math.ceil((double) fast5time / softCommitWaitMillis);
+    long expectedHard = (long)Math.ceil((double) fast5time / hardCommitWaitMillis);
+
     // note: counting from 1 for multiplication
     for (int i = 1; i <= expectedSoft; i++) {
       // Wait for the soft commit with some fudge
@@ -318,10 +325,10 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
       // have to assume none of the docs were added until
       // very end of the add window
-      assertTrue(i + ": soft occured too fast: " + 
-                 fast5end + " + (" + softCommitWaitMillis + " * " + i +
-                 ") !<= " + soft,
-                 fast5end + (softCommitWaitMillis * i) <= soft);
+      long softMs = TimeUnit.MILLISECONDS.convert(soft - fast5end, TimeUnit.NANOSECONDS);
+      assertTrue(i + ": soft occured too fast: " +
+              softMs + " < (" + softCommitWaitMillis + " * " + i + ")",
+          softMs >= (softCommitWaitMillis * i));
     }
 
     // note: counting from 1 for multiplication
@@ -334,10 +341,10 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
       
       // have to assume none of the docs were added until
       // very end of the add window
-      assertTrue(i + ": soft occured too fast: " + 
-                 fast5end + " + (" + hardCommitWaitMillis + " * " + i +
-                 ") !<= " + hard,
-                 fast5end + (hardCommitWaitMillis * i) <= hard);
+      long hardMs = TimeUnit.MILLISECONDS.convert(hard - fast5end, TimeUnit.NANOSECONDS);
+      assertTrue(i + ": hard occured too fast: " +
+              hardMs + " < (" + hardCommitWaitMillis + " * " + i + ")",
+          hardMs >= (hardCommitWaitMillis * i));
     }
  
   }
@@ -361,19 +368,19 @@ class MockEventListener implements SolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher,
                           SolrIndexSearcher currentSearcher) {
-    Long now = System.currentTimeMillis();
+    Long now = System.nanoTime();
     if (!searcher.offer(now)) fail.append(", newSearcher @ " + now);
   }
   
   @Override
   public void postCommit() {
-    Long now = System.currentTimeMillis();
+    Long now = System.nanoTime();
     if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
   }
   
   @Override
   public void postSoftCommit() {
-    Long now = System.currentTimeMillis();
+    Long now = System.nanoTime();
     if (!soft.offer(now)) fail.append(", softCommit @ " + now);
   }
   

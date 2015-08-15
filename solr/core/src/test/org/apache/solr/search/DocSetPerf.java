@@ -21,6 +21,7 @@ import java.util.Random;
 
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.util.RTimer;
 
 /**
  */
@@ -90,7 +91,7 @@ public class DocSetPerf {
       hset[i] = hds;
     }
 
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     if ("test".equals(test)) {
       for (int it=0; it<iter; it++) {
@@ -165,8 +166,7 @@ public class DocSetPerf {
       }
     }
 
-    long end = System.currentTimeMillis();
-    System.out.println("TIME="+(end-start));
+    System.out.println("TIME="+timer.getTime());
 
     System.out.println("ret="+ret);
   }

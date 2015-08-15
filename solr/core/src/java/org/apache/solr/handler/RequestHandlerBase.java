@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
@@ -56,8 +57,15 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private final AtomicLong numErrors = new AtomicLong();
   private final AtomicLong numTimeouts = new AtomicLong();
   private final Timer requestTimes = new Timer();
-  private final long handlerStart = System.currentTimeMillis();
+
+  private final long handlerStart;
+
   private PluginInfo pluginInfo;
+
+  @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
+  public RequestHandlerBase() {
+    handlerStart = System.currentTimeMillis();
+  }
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.

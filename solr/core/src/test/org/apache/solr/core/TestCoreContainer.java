@@ -637,7 +637,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private long getCoreStartTime(final CoreContainer cc, final String name) {
     try (SolrCore tmp = cc.getCore(name)) {
-      return tmp.getStartTime();
+      return tmp.getStartTimeStamp().getTime();
     }
   }
 }

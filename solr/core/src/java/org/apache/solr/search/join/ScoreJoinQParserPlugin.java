@@ -251,7 +251,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
             fromHolder = fromCore.getRegisteredSearcher();
             if (fromHolder != null) {
-              fromCoreOpenTime = fromHolder.get().getOpenTime();
+              fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
             }
             return new OtherCoreJoinQuery(fromQuery, fromField, fromIndex, fromCoreOpenTime,
                 scoreMode, toField);

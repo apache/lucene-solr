@@ -186,7 +186,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         "list"};
     ZkCLI.main(args);
   }
-  
+
   @Test
   public void testUpConfigLinkConfigClearZk() throws Exception {
     File tmpDir = createTempDir().toFile();
@@ -218,7 +218,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     // test down config
     File confDir = new File(tmpDir,
-        "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.currentTimeMillis());
+        "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
     assertFalse(confDir.exists());
 
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
@@ -268,7 +268,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
     File file = new File(tmpDir,
-        "solrtest-getfile-" + this.getClass().getName() + "-" + System.currentTimeMillis());
+        "solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
     ZkCLI.main(args);

@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.RTimer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,7 +65,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     client.deleteByQuery("*:*");
     client.commit();
 
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     final int docsPerThread = nDocs / nProducers;
 
@@ -98,8 +99,8 @@ public class TestSolrJ extends SolrTestCaseJ4 {
       concurrentClient.blockUntilFinished();
     }
 
-    long end = System.currentTimeMillis();
-    System.out.println("time="+(end-start) + " throughput="+(nDocs*1000/(end-start)) + " Exception="+ex);
+    double elapsed = timer.getTime();
+    System.out.println("time="+elapsed + " throughput="+(nDocs*1000/elapsed) + " Exception="+ex);
 
     // should server threads be marked as daemon?
     // need a server.close()!!!
@@ -166,7 +167,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
     try (HttpSolrClient client = new HttpSolrClient("http://127.0.0.1:8983/solr")) {
 
-      long start = System.currentTimeMillis();
+      final RTimer timer = new RTimer();
 
       for (int i = 0; i < 10000; i++) {
         SolrInputDocument doc = new SolrInputDocument();
@@ -175,8 +176,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
         client.commit(true, true, true);
       }
 
-      long end = System.currentTimeMillis();
-      System.out.println("TIME: " + (end-start));
+      System.out.println("TIME: " + timer.getTime());
     }
 
   }

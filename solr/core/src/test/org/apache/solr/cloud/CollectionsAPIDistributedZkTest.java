@@ -80,6 +80,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
@@ -280,10 +281,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     
     makeRequest(baseUrl, request);
-    
-    long timeout = System.currentTimeMillis() + 10000;
+
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS);
     while (cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2")) {
-      if (System.currentTimeMillis() > timeout) {
+      if (timeout.hasTimedOut()) {
         throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
       }
       
@@ -934,12 +935,12 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
 
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
-    
-    
-    long timeoutAt = System.currentTimeMillis() + 45000;
+
+
+    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
 
     boolean allTimesAreCorrect = false;
-    while (System.currentTimeMillis() < timeoutAt) {
+    while (! timeout.hasTimedOut()) {
       Map<String,Long> urlToTimeAfter = new HashMap<>();
       collectStartTimes(collectionName, urlToTimeAfter);
       
@@ -1164,10 +1165,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       addReplica.setProperties(props);
     }
     client.request(addReplica);
-    long timeout = System.currentTimeMillis() + 3000;
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
     Replica newReplica = null;
 
-    for (; System.currentTimeMillis() < timeout; ) {
+    for (; ! timeout.hasTimedOut(); ) {
       Slice slice = client.getZkStateReader().getClusterState().getSlice(collectionName, shard);
       newReplica = slice.getReplica(newReplicaName);
     }
@@ -1218,9 +1219,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     client.request(request);
 
-    long timeOut = System.currentTimeMillis() + 3000;
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
     boolean changed = false;
-    while(System.currentTimeMillis() <timeOut){
+    while(! timeout.hasTimedOut()){
       Thread.sleep(10);
       changed = Objects.equals(val,client.getZkStateReader().getClusterProps().get(name));
       if(changed) break;

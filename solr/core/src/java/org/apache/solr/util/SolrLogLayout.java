@@ -51,8 +51,11 @@ public class SolrLogLayout extends Layout {
   public static interface TG {
     public String getTag();
   }
-  
-  long startTime = System.currentTimeMillis();
+
+  @SuppressForbidden(reason = "Need currentTimeMillis to compare against log event timestamp. " +
+    "This is inaccurate but unavoidable due to interface limitations, in any case this is just for logging.")
+  final long startTime = System.currentTimeMillis();
+
   long lastTime = startTime;
   Map<Method,String> methodAlias = new HashMap<>();
   

@@ -52,6 +52,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -318,11 +319,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     long before = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("commitWithin", 10);
-    add(cloudClient, params , getDoc("id", 300));
-    
-    long timeout = System.currentTimeMillis() + 45000;
+    add(cloudClient, params, getDoc("id", 300));
+
+    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
     while (cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() != before + 1) {
-      if (timeout <= System.currentTimeMillis()) {
+      if (timeout.hasTimedOut()) {
         fail("commitWithin did not work");
       }
       Thread.sleep(100);
@@ -374,10 +375,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     } catch (Exception e) {
       
     }
-    
-    long timeout = System.currentTimeMillis() + 15000;
+
+    TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS);
     while (cloudClient.getZkStateReader().getZkClient().exists("/collections/the_core_collection", true)) {
-      if (timeout <= System.currentTimeMillis()) {
+      if (timeout.hasTimedOut()) {
         fail(cloudClient.getZkStateReader().getZkClient().getChildren("/collections", null, true).toString() + " Collection zk node still exists");
       }
       Thread.sleep(100);

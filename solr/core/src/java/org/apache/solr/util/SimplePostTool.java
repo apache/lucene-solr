@@ -60,6 +60,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.GZIPInputStream;
@@ -172,7 +173,7 @@ public class SimplePostTool {
    * This method delegates to the correct mode method.
    */
   public void execute() {
-    final long startTime = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
     if (DATA_MODE_FILES.equals(mode) && args.length > 0) {
       doFilesMode();
     } else if(DATA_MODE_ARGS.equals(mode) && args.length > 0) {
@@ -188,8 +189,7 @@ public class SimplePostTool {
     
     if (commit)   commit();
     if (optimize) optimize();
-    final long endTime = System.currentTimeMillis();
-    displayTiming(endTime - startTime);
+    displayTiming((long) timer.getTime());
   }
   
   /**

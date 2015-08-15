@@ -112,8 +112,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private boolean debug = log.isDebugEnabled();
 
   private final String name;
-  private long openTime = System.currentTimeMillis();
-  private long registerTime = 0;
+  private final Date openTime = new Date();
+  private final long openNanoTime = System.nanoTime();
+  private Date registerTime;
   private long warmupTime = 0;
   private final DirectoryReader reader;
   private final boolean closeReader;
@@ -392,7 +393,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       cache.setState(SolrCache.State.LIVE);
       core.getInfoRegistry().put(cache.name(), cache);
     }
-    registerTime=System.currentTimeMillis();
+    registerTime = new Date();
   }
 
   /**
@@ -2214,11 +2215,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    */
   public Object cacheInsert(String cacheName, Object key, Object val) {
     SolrCache cache = cacheMap.get(cacheName);
-    return cache==null ? null : cache.put(key,val);
+    return cache==null ? null : cache.put(key, val);
   }
 
-  public long getOpenTime() {
+  public Date getOpenTimeStamp() {
     return openTime;
+  }
+
+  // public but primarily for test case usage
+  public long getOpenNanoTime() {
+    return openNanoTime;
+  }
+
+  @Deprecated
+  public long getOpenTime() {
+    return openTime.getTime();
   }
 
   @Override
@@ -2271,8 +2282,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     lst.add("reader", reader.toString());
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());
-    lst.add("openedAt", new Date(openTime));
-    if (registerTime!=0) lst.add("registeredAt", new Date(registerTime));
+    lst.add("openedAt", openTime);
+    if (registerTime!=null) lst.add("registeredAt", registerTime);
     lst.add("warmupTime", warmupTime);
     return lst;
   }

@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ConcurrentLRUCache;
+import org.apache.solr.util.RTimer;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -254,7 +255,7 @@ public class TestFastLRUCache extends LuceneTestCase {
   }
 
   void doPerfTest(int iter, int cacheSize, int maxKey) {
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     int lowerWaterMark = cacheSize;
     int upperWaterMark = (int)(lowerWaterMark * 1.1);
@@ -276,8 +277,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     }
     cache.destroy();
 
-    long end = System.currentTimeMillis();
-    System.out.println("time=" + (end-start) + ", minSize="+minSize+",maxSize="+maxSize);
+    System.out.println("time=" + timer.getTime() + ", minSize="+minSize+",maxSize="+maxSize);
   }
 
   /***
@@ -326,7 +326,7 @@ public class TestFastLRUCache extends LuceneTestCase {
 
     fillCache(sc, cacheSize, maxKey);
 
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     Thread[] threads = new Thread[nThreads];
     final AtomicInteger puts = new AtomicInteger(0);
@@ -357,8 +357,7 @@ public class TestFastLRUCache extends LuceneTestCase {
       }
     }
 
-    long end = System.currentTimeMillis();
-    System.out.println("time=" + (end-start) + " impl=" +sc.getClass().getSimpleName()
+    System.out.println("time=" + timer.getTime() + " impl=" +sc.getClass().getSimpleName()
                        +" nThreads= " + nThreads + " size="+cacheSize+" maxKey="+maxKey+" gets="+numGets
                        +" hitRatio="+(1-(((double)puts.get())/numGets)));
   }

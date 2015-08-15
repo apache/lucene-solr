@@ -150,7 +150,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     String sortable = NumberUtils.double2sortableStr( number );
     assertEquals( number, NumberUtils.SortableStr2double(sortable), 0.001);
     
-    long num = System.currentTimeMillis();
+    long num = System.nanoTime();
     sortable = NumberUtils.long2sortableStr( num );
     assertEquals( num, NumberUtils.SortableStr2long(sortable, 0, sortable.length() ) );
     assertEquals( Long.toString(num), NumberUtils.SortableStr2long(sortable) );
