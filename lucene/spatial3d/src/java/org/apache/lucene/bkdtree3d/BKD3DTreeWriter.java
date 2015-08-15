@@ -201,7 +201,7 @@ class BKD3DTreeWriter {
       if (success) {
         IOUtils.close(sortedWriter, reader);
       } else {
-        IOUtils.closeWhileHandlingException(reader);
+        IOUtils.closeWhileHandlingException(sortedWriter, reader);
         try {
           sortedWriter.destroy();
         } catch (Throwable t) {
@@ -283,6 +283,7 @@ class BKD3DTreeWriter {
                       heapWriter.ords[i],
                       heapWriter.docIDs[i]);
       }
+      sorted.close();
 
       return sorted;
     } else {

@@ -72,9 +72,6 @@ public class PointInGeo3DShapeQuery extends Query {
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
 
-    // TODO: except that the polygon verify is costly!  The approximation should be all docs in all overlapping cells, and matches() should
-    // then check the polygon
-
     return new ConstantScoreWeight(this) {
 
       @Override
@@ -97,8 +94,10 @@ public class PointInGeo3DShapeQuery extends Query {
         DocIdSet result = tree.intersect(new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {
+                                             //System.out.println("  accept? docID=" + docID);
                                              BytesRef bytes = treeDV.get(docID);
                                              if (bytes == null) {
+                                               //System.out.println("    false (null)");
                                                return false;
                                              }
 
@@ -107,28 +106,44 @@ public class PointInGeo3DShapeQuery extends Query {
                                              double y = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
                                              double z = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
                                              // True if x,y,z is within shape
-                                             return shape.isWithin(x,y,z);
+                                             //System.out.println("    x=" + x + " y=" + y + " z=" + z);
+                                             //System.out.println("    ret: " + shape.isWithin(x, y, z));
+
+                                             return shape.isWithin(x, y, z);
                                            }
 
                                            @Override
-                                           public BKD3DTreeReader.Relation compare(int xMinEnc, int xMaxEnc, int yMinEnc, int yMaxEnc, int zMinEnc, int zMaxEnc) {
-                                             double xMin = Geo3DDocValuesFormat.decodeValue(xMinEnc);
-                                             double xMax = Geo3DDocValuesFormat.decodeValue(xMaxEnc);
-                                             double yMin = Geo3DDocValuesFormat.decodeValue(yMinEnc);
-                                             double yMax = Geo3DDocValuesFormat.decodeValue(yMaxEnc);
-                                             double zMin = Geo3DDocValuesFormat.decodeValue(zMinEnc);
-                                             double zMax = Geo3DDocValuesFormat.decodeValue(zMaxEnc);
+                                           public BKD3DTreeReader.Relation compare(int cellXMinEnc, int cellXMaxEnc, int cellYMinEnc, int cellYMaxEnc, int cellZMinEnc, int cellZMaxEnc) {
+                                             assert cellXMinEnc <= cellXMaxEnc;
+                                             assert cellYMinEnc <= cellYMaxEnc;
+                                             assert cellZMinEnc <= cellZMaxEnc;
 
-                                             GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel, xMin, xMax, yMin, yMax, zMin, zMax);
+                                             double cellXMin = Geo3DDocValuesFormat.decodeValue(cellXMinEnc);
+                                             double cellXMax = Geo3DDocValuesFormat.decodeValue(cellXMaxEnc);
+                                             double cellYMin = Geo3DDocValuesFormat.decodeValue(cellYMinEnc);
+                                             double cellYMax = Geo3DDocValuesFormat.decodeValue(cellYMaxEnc);
+                                             double cellZMin = Geo3DDocValuesFormat.decodeValue(cellZMinEnc);
+                                             double cellZMax = Geo3DDocValuesFormat.decodeValue(cellZMaxEnc);
+                                             //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
 
-                                             // nocommit untested!
+                                             GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel, cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax);
+
                                              switch(xyzSolid.getRelationship(shape)) {
                                              case GeoArea.CONTAINS:
+                                               // Shape fully contains the cell
+                                               //System.out.println("    inside");
+                                               return BKD3DTreeReader.Relation.INSIDE;
                                              case GeoArea.OVERLAPS:
+                                               // They do overlap but neither contains the other:
+                                               //System.out.println("    crosses1");
                                                return BKD3DTreeReader.Relation.CROSSES;
                                              case GeoArea.WITHIN:
-                                               return BKD3DTreeReader.Relation.INSIDE;
+                                               // Cell fully contains the shape:
+                                               //System.out.println("    crosses2");
+                                               return BKD3DTreeReader.Relation.CROSSES;
                                              case GeoArea.DISJOINT:
+                                               // They do not overlap at all
+                                               //System.out.println("    outside");
                                                return BKD3DTreeReader.Relation.OUTSIDE;
                                              default:
                                                assert false;

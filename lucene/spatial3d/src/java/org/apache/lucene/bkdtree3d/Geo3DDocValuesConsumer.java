@@ -108,11 +108,13 @@ class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
       BytesRef value = valuesIt.next();
       // TODO: we should allow multi-valued here, just appended into the BDV
       // 3 ints packed into byte[]
-      assert value.length == 12;
-      int x = Geo3DDocValuesFormat.readInt(value.bytes, value.offset);
-      int y = Geo3DDocValuesFormat.readInt(value.bytes, value.offset+4);
-      int z = Geo3DDocValuesFormat.readInt(value.bytes, value.offset+8);
-      writer.add(x, y, z, docID);
+      if (value != null) {
+        assert value.length == 12;
+        int x = Geo3DDocValuesFormat.readInt(value.bytes, value.offset);
+        int y = Geo3DDocValuesFormat.readInt(value.bytes, value.offset+4);
+        int z = Geo3DDocValuesFormat.readInt(value.bytes, value.offset+8);
+        writer.add(x, y, z, docID);
+      }
     }
 
     long indexStartFP = writer.finish(out);

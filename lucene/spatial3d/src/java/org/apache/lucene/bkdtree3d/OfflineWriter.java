@@ -34,6 +34,7 @@ final class OfflineWriter implements Writer {
   final OutputStreamDataOutput out;
   final long count;
   private long countWritten;
+  private boolean closed;
 
   public OfflineWriter(Path tempDir, long count) throws IOException {
     tempFile = Files.createTempFile(tempDir, "size" + count + ".", "");
@@ -53,11 +54,13 @@ final class OfflineWriter implements Writer {
 
   @Override
   public Reader getReader(long start) throws IOException {
+    assert closed;
     return new OfflineReader(tempFile, start, count-start);
   }
 
   @Override
   public void close() throws IOException {
+    closed = true;
     out.close();
     if (count != countWritten) {
       throw new IllegalStateException("wrote " + countWritten + " values, but expected " + count);

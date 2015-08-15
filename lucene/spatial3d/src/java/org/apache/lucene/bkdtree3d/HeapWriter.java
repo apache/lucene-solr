@@ -24,6 +24,7 @@ final class HeapWriter implements Writer {
   final int[] docIDs;
   final long[] ords;
   private int nextWrite;
+  private boolean closed;
 
   public HeapWriter(int count) {
     xs = new int[count];
@@ -45,11 +46,13 @@ final class HeapWriter implements Writer {
 
   @Override
   public Reader getReader(long start) {
+    assert closed;
     return new HeapReader(xs, ys, zs, ords, docIDs, (int) start, xs.length);
   }
 
   @Override
   public void close() {
+    closed = true;
     if (nextWrite != xs.length) {
       throw new IllegalStateException("only wrote " + nextWrite + " values, but expected " + xs.length);
     }
