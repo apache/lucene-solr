@@ -29,6 +29,8 @@
 
   <import file="../analysis-module-build.xml"/>
   
+  <property name="snowball.programs.dir" location="src/java/org/tartarus/snowball/ext"/>  
+  
   <target name="jflex" depends="-install-jflex,clean-jflex,-jflex-StandardAnalyzer,-jflex-UAX29URLEmailTokenizer,
                                 -jflex-wiki-tokenizer,-jflex-HTMLStripCharFilter"/>
 
@@ -140,4 +142,15 @@
   <target name="javadocs" depends="module-build.javadocs"/>
 
   <target name="regenerate" depends="jflex"/>
+  
+  <target name="patch-snowball" description="Patches all snowball programs in '${snowball.programs.dir}' to make them work with MethodHandles">
+      <fileset id="snowball.programs" dir="${snowball.programs.dir}" includes="*Stemmer.java"/>
+      <replaceregexp match="^public class \w+Stemmer\b" replace="@SuppressWarnings(&quot;unused&quot;) \0" flags="m" encoding="UTF-8">
+        <fileset refid="snowball.programs"/>
+      </replaceregexp>
+      <replaceregexp match="private final static \w+Stemmer methodObject\b.*$" replace="/* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();" flags="m" encoding="UTF-8">
+        <fileset refid="snowball.programs"/>
+      </replaceregexp>
+      <fixcrlf srcdir="${snowball.programs.dir}" includes="*Stemmer.java" tab="remove" tablength="2" encoding="UTF-8" javafiles="yes" fixlast="yes"/>
+  </target>
 </project>

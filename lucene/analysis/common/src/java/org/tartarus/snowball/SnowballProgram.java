@@ -32,18 +32,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.tartarus.snowball;
 
-import java.lang.reflect.InvocationTargetException;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * This is the rev 502 of the Snowball SVN trunk,
+ * now located at <a target="_blank" href="https://github.com/snowballstem/snowball/tree/e103b5c257383ee94a96e7fc58cab3c567bf079b">GitHub</a>,
  * but modified:
- * made abstract and introduced abstract method stem to avoid expensive reflection in filter class.
- * refactored StringBuffers to StringBuilder
- * uses char[] as buffer instead of StringBuffer/StringBuilder
- * eq_s,eq_s_b,insert,replace_s take CharSequence like eq_v and eq_v_b
+ * <ul>
+ * <li>made abstract and introduced abstract method stem to avoid expensive reflection in filter class.
+ * <li>refactored StringBuffers to StringBuilder
+ * <li>uses char[] as buffer instead of StringBuffer/StringBuilder
+ * <li>eq_s,eq_s_b,insert,replace_s take CharSequence like eq_v and eq_v_b
+ * <li>use MethodHandles and fix <a target="_blank" href="http://article.gmane.org/gmane.comp.search.snowball/1139">method visibility bug</a>.
+ * </ul>
  */
 public abstract class SnowballProgram {
 
@@ -310,16 +312,11 @@ public abstract class SnowballProgram {
         if (common_i >= w.s_size) {
           cursor = c + w.s_size;
           if (w.method == null) return w.result;
-          boolean res;
+          boolean res = false;
           try {
-            Object resobj = w.method.invoke(w.methodobject);
-            res = resobj.toString().equals("true");
-          } catch (InvocationTargetException e) {
-            res = false;
-            // FIXME - debug message
-          } catch (IllegalAccessException e) {
-            res = false;
-            // FIXME - debug message
+            res = (boolean) w.method.invokeExact(this);
+          } catch (Throwable e) {
+            rethrow(e);
           }
           cursor = c + w.s_size;
           if (res) return w.result;
@@ -378,16 +375,11 @@ public abstract class SnowballProgram {
           cursor = c - w.s_size;
           if (w.method == null) return w.result;
 
-          boolean res;
+          boolean res = false;
           try {
-            Object resobj = w.method.invoke(w.methodobject);
-            res = resobj.toString().equals("true");
-          } catch (InvocationTargetException e) {
-            res = false;
-            // FIXME - debug message
-          } catch (IllegalAccessException e) {
-            res = false;
-            // FIXME - debug message
+            res = (boolean) w.method.invokeExact(this);
+          } catch (Throwable e) {
+            rethrow(e);
           }
           cursor = c - w.s_size;
           if (res) return w.result;
@@ -496,5 +488,14 @@ extern void debug(struct SN_env * z, int number, int line_count)
 }
 */
 
+    // Hack to rethrow unknown Exceptions from {@link MethodHandle#invoke}:
+    private static void rethrow(Throwable t) {
+      SnowballProgram.<Error>rethrow0(t);
+    }
+    
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void rethrow0(Throwable t) throws T {
+      throw (T) t;
+    }
 };
 
