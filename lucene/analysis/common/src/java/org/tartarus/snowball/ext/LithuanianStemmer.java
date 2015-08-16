@@ -9,11 +9,11 @@ import org.tartarus.snowball.Among;
  * It implements the stemming algorithm defined by a snowball script.
  */
 
-public class LithuanianStemmer extends org.tartarus.snowball.SnowballProgram {
+@SuppressWarnings("unused") public class LithuanianStemmer extends org.tartarus.snowball.SnowballProgram {
 
     private static final long serialVersionUID = 1L;
 
-    private final static LithuanianStemmer methodObject = new LithuanianStemmer ();
+    /* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();
 
     private final static Among a_0[] = {
             new Among ( "a", -1, -1, "", methodObject ),

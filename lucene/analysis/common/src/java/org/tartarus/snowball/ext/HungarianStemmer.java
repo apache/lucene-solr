@@ -10,11 +10,11 @@ import org.tartarus.snowball.SnowballProgram;
   * It implements the stemming algorithm defined by a snowball script.
   */
 
-public class HungarianStemmer extends SnowballProgram {
+@SuppressWarnings("unused") public class HungarianStemmer extends SnowballProgram {
 
 private static final long serialVersionUID = 1L;
 
-        private final static HungarianStemmer methodObject = new HungarianStemmer ();
+        /* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();
 
                 private final static Among a_0[] = {
                     new Among ( "cs", -1, -1, "", methodObject ),
