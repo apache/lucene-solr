@@ -261,53 +261,6 @@ public class LatLonBounds implements Bounds {
   }
 
   /** Update longitude bound.
-   *@param newLeftLongitude is the left longitude.
-   *@param newRightLongitude is the right longitude.
-   */
-  protected void addLongitudeBound(double newLeftLongitude, double newRightLongitude) {
-    if (leftLongitude == null && rightLongitude == null) {
-      leftLongitude = newLeftLongitude;
-      rightLongitude = newRightLongitude;
-    } else {
-      // Map the current range to something monotonically increasing
-      double currentLeftLongitude = leftLongitude;
-      double currentRightLongitude = rightLongitude;
-      if (currentRightLongitude < currentLeftLongitude)
-        currentRightLongitude += 2.0 * Math.PI;
-      double adjustedLeftLongitude = newLeftLongitude;
-      double adjustedRightLongitude = newRightLongitude;
-      if (adjustedRightLongitude < adjustedLeftLongitude)
-        adjustedRightLongitude += 2.0 * Math.PI;
-      // Compare to see what the relationship is
-      if (currentLeftLongitude <= adjustedLeftLongitude && currentRightLongitude >= adjustedRightLongitude) {
-        // No adjustment needed.
-      } else if (currentLeftLongitude >= adjustedLeftLongitude && currentRightLongitude <= adjustedRightLongitude) {
-        // New longitude entirely contains old one
-        leftLongitude = newLeftLongitude;
-        rightLongitude = newRightLongitude;
-      } else {
-        if (currentLeftLongitude > adjustedLeftLongitude) {
-          // New left longitude needed
-          leftLongitude = newLeftLongitude;
-        }
-        if (currentRightLongitude < adjustedRightLongitude) {
-          // New right longitude needed
-          rightLongitude = newRightLongitude;
-        }
-      }
-    }
-    double testRightLongitude = rightLongitude;
-    if (testRightLongitude < leftLongitude)
-      testRightLongitude += Math.PI * 2.0;
-    // If the bound exceeds 180 degrees, we know we could have screwed up.
-    if (testRightLongitude - leftLongitude >= Math.PI) {
-      noLongitudeBound = true;
-      leftLongitude = null;
-      rightLongitude = null;
-    }
-  }
-
-  /** Update longitude bound.
    *@param longitude is the new longitude value.
    */
   protected void addLongitudeBound(double longitude) {
