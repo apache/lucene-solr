@@ -94,8 +94,8 @@ public class GeoSouthRectangle extends GeoBaseBBox {
     final double cosRightLon = Math.cos(rightLon);
 
     // Now build the four points
-    this.ULHC = new GeoPoint(planetModel, sinTopLat, sinLeftLon, cosTopLat, cosLeftLon);
-    this.URHC = new GeoPoint(planetModel, sinTopLat, sinRightLon, cosTopLat, cosRightLon);
+    this.ULHC = new GeoPoint(planetModel, sinTopLat, sinLeftLon, cosTopLat, cosLeftLon, topLat, leftLon);
+    this.URHC = new GeoPoint(planetModel, sinTopLat, sinRightLon, cosTopLat, cosRightLon, topLat, rightLon);
 
     final double middleLat = (topLat - Math.PI * 0.5) * 0.5;
     final double sinMiddleLat = Math.sin(middleLat);
@@ -174,12 +174,12 @@ public class GeoSouthRectangle extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.addLatitudeZone(topLat).noBottomLatitudeBound()
-        .addLongitudeSlice(leftLon, rightLon);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    bounds.noBottomLatitudeBound(planetModel)
+      .addHorizontalPlane(planetModel, topLat, topPlane, leftPlane, rightPlane)
+      .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, rightPlane)
+      .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, leftPlane)
+      .addPoint(URHC).addPoint(ULHC);
   }
 
   @Override

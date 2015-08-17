@@ -54,14 +54,11 @@ public interface GeoShape extends Membership {
   public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds);
 
   /**
-   * Compute longitude/latitude bounds for the shape.
+   * Compute bounds for the shape.
    *
-   * @param bounds is the optional input bounds object.  If this is null,
-   *               a bounds object will be created.  Otherwise, the input object will be modified.
-   * @return a Bounds object describing the shape's bounds.  If the bounds cannot
-   * be computed, then return a Bounds object with noLongitudeBound,
-   * noTopLatitudeBound, and noBottomLatitudeBound.
+   * @param bounds is the input bounds object.
+   *             The input object will be modified.
    */
-  public Bounds getBounds(final Bounds bounds);
+  public void getBounds(final Bounds bounds);
 
 }

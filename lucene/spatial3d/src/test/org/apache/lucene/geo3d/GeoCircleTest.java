@@ -62,7 +62,8 @@ public class GeoCircleTest {
     assertTrue(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertTrue(c.isWithin(gp));
-    Bounds b = c.getBounds(null);
+    LatLonBounds b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -93,12 +94,13 @@ public class GeoCircleTest {
   @Test
   public void testCircleBounds() {
     GeoCircle c;
-    Bounds b;
+    LatLonBounds b;
 
 
     // Vertical circle cases
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -107,7 +109,8 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -116,7 +119,8 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -125,7 +129,8 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -135,13 +140,15 @@ public class GeoCircleTest {
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     // Horizontal circle cases
     c = new GeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
     assertEquals(Math.PI * 0.5 - 0.1, b.getMinLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -149,7 +156,8 @@ public class GeoCircleTest {
 
     // Now do a somewhat tilted plane, facing different directions.
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -159,7 +167,8 @@ public class GeoCircleTest {
     assertEquals(0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -169,7 +178,8 @@ public class GeoCircleTest {
     assertEquals(-Math.PI + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI * 0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -179,7 +189,8 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.5 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, -Math.PI * 0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -190,7 +201,8 @@ public class GeoCircleTest {
 
     // Slightly tilted, PI/4 direction.
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -200,7 +212,8 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, -Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -210,7 +223,8 @@ public class GeoCircleTest {
     assertEquals(-Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, -0.01, Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -220,7 +234,8 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, -0.01, -Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -231,7 +246,8 @@ public class GeoCircleTest {
 
     // Now do a somewhat tilted plane.
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, -0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());

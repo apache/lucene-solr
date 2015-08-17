@@ -165,14 +165,15 @@ public class GeoPathTest {
   @Test
   public void testPathBounds() {
     GeoPath c;
-    Bounds b;
+    LatLonBounds b;
 
     c = new GeoPath(PlanetModel.SPHERE, 0.1);
     c.addPoint(-0.3, -0.3);
     c.addPoint(0.3, 0.3);
     c.done();
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());

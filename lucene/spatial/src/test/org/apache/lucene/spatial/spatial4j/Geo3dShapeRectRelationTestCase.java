@@ -26,7 +26,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
-import org.apache.lucene.geo3d.Bounds;
+import org.apache.lucene.geo3d.LatLonBounds;
 import org.apache.lucene.geo3d.GeoBBox;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
 import org.apache.lucene.geo3d.GeoCircle;
@@ -58,7 +58,8 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
   }
 
   protected GeoBBox getBoundingBox(final GeoShape path) {
-    Bounds bounds = path.getBounds(null);
+    LatLonBounds bounds = new LatLonBounds();
+    path.getBounds(bounds);
 
     double leftLon;
     double rightLon;

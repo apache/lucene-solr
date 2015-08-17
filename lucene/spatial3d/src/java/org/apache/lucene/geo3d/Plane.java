@@ -28,6 +28,13 @@ public class Plane extends Vector {
   protected final static GeoPoint[] NO_POINTS = new GeoPoint[0];
   /** An array with no bounds in it */
   protected final static Membership[] NO_BOUNDS = new Membership[0];
+  /** A vertical plane normal to the Y axis */
+  protected final static Plane normalYPlane = new Plane(0.0,1.0,0.0,0.0);
+  /** A vertical plane normal to the X axis */
+  protected final static Plane normalXPlane = new Plane(1.0,0.0,0.0,0.0);
+  /** A vertical plane normal to the Z axis */
+  protected final static Plane normalZPlane = new Plane(0.0,0.0,1.0,0.0);
+
   /** Ax + By + Cz + D = 0 */
   public final double D;
 
@@ -88,12 +95,12 @@ public class Plane extends Vector {
     this.D = D;
   }
 
-  /** Construct the most accurate normalized, vertical plane given a set of points.  If none of the points can determine
-   * the plane, return null.
-   * @param planePoints is a set of points to choose from.  The best one for constructing the most precise normal plane is picked.
-   * @return the normal plane
+  /** Construct the most accurate normalized plane through an x-y point and including the Z axis.
+   * If none of the points can determine the plane, return null.
+   * @param planePoints is a set of points to choose from.  The best one for constructing the most precise plane is picked.
+   * @return the plane
    */
-  public static Plane constructNormalizedVerticalPlane(final Vector... planePoints) {
+  public static Plane constructNormalizedZPlane(final Vector... planePoints) {
     // Pick the best one (with the greatest x-y distance)
     double bestDistance = 0.0;
     Vector bestPoint = null;
@@ -104,19 +111,84 @@ public class Plane extends Vector {
         bestPoint = point;
       }
     }
-    return constructNormalizedVerticalPlane(bestPoint.x, bestPoint.y);
+    return constructNormalizedZPlane(bestPoint.x, bestPoint.y);
   }
 
-  /** Construct a normalized, vertical plane through an x-y point.  If the x-y point is at (0,0), return null.
+  /** Construct the most accurate normalized plane through an x-z point and including the Y axis.
+   * If none of the points can determine the plane, return null.
+   * @param planePoints is a set of points to choose from.  The best one for constructing the most precise plane is picked.
+   * @return the plane
+   */
+  public static Plane constructNormalizedYPlane(final Vector... planePoints) {
+    // Pick the best one (with the greatest x-z distance)
+    double bestDistance = 0.0;
+    Vector bestPoint = null;
+    for (final Vector point : planePoints) {
+      final double pointDist = point.x * point.x + point.z * point.z;
+      if (pointDist > bestDistance) {
+        bestDistance = pointDist;
+        bestPoint = point;
+      }
+    }
+    return constructNormalizedYPlane(bestPoint.x, bestPoint.z);
+  }
+
+  /** Construct the most accurate normalized plane through an y-z point and including the X axis.
+   * If none of the points can determine the plane, return null.
+   * @param planePoints is a set of points to choose from.  The best one for constructing the most precise plane is picked.
+   * @return the plane
+   */
+  public static Plane constructNormalizedXPlane(final Vector... planePoints) {
+    // Pick the best one (with the greatest y-z distance)
+    double bestDistance = 0.0;
+    Vector bestPoint = null;
+    for (final Vector point : planePoints) {
+      final double pointDist = point.y * point.y + point.z * point.z;
+      if (pointDist > bestDistance) {
+        bestDistance = pointDist;
+        bestPoint = point;
+      }
+    }
+    return constructNormalizedXPlane(bestPoint.y, bestPoint.z);
+  }
+
+  /** Construct a normalized plane through an x-y point and including the Z axis.
+   * If the x-y point is at (0,0), return null.
    * @param x is the x value.
    * @param y is the y value.
-   * @return a vertical plane passing through the center and (x,y,0).
+   * @return a plane passing through the Z axis and (x,y,0).
    */
-  public static Plane constructNormalizedVerticalPlane(final double x, final double y) {
+  public static Plane constructNormalizedZPlane(final double x, final double y) {
     if (Math.abs(x) < MINIMUM_RESOLUTION && Math.abs(y) < MINIMUM_RESOLUTION)
       return null;
     final double denom = 1.0 / Math.sqrt(x*x + y*y);
-    return new Plane(x * denom, y * denom);
+    return new Plane(y * denom, -x * denom, 0.0, 0.0);
+  }
+
+  /** Construct a normalized plane through an x-z point and including the Y axis.
+   * If the x-z point is at (0,0), return null.
+   * @param x is the x value.
+   * @param z is the z value.
+   * @return a plane passing through the Y axis and (x,0,z).
+   */
+  public static Plane constructNormalizedYPlane(final double x, final double z) {
+    if (Math.abs(x) < MINIMUM_RESOLUTION && Math.abs(z) < MINIMUM_RESOLUTION)
+      return null;
+    final double denom = 1.0 / Math.sqrt(x*x + z*z);
+    return new Plane(z * denom, 0.0, -z * denom, 0.0);
+  }
+
+  /** Construct a normalized plane through a y-z point and including the X axis.
+   * If the y-z point is at (0,0), return null.
+   * @param y is the y value.
+   * @param z is the z value.
+   * @return a plane passing through the X axis and (0,y,z).
+   */
+  public static Plane constructNormalizedXPlane(final double y, final double z) {
+    if (Math.abs(y) < MINIMUM_RESOLUTION && Math.abs(z) < MINIMUM_RESOLUTION)
+      return null;
+    final double denom = 1.0 / Math.sqrt(y*y + z*z);
+    return new Plane(0.0, z * denom, -y * denom, 0.0);
   }
   
   /**
@@ -695,35 +767,91 @@ public class Plane extends Vector {
       throw new RuntimeException("Intersection point not on ellipsoid; point="+point);
   }
   */
-  
+
   /**
-   * Accumulate bounds information for this plane, intersected with another plane
-   * and with the unit sphere.
-   * Updates both latitude and longitude information, using max/min points found
+   * Accumulate (x,y,z) bounds information for this plane, intersected with the unit sphere.
+   * Updates min/max information, using max/min points found
    * within the specified bounds.
    *
-   * @param planetModel is the planet model to use to determine bounding points
-   * @param q          is the plane to intersect with.
-   * @param boundsInfo is the info to update with additional bounding information.
+   * @param planetModel is the planet model to use in determining bounds.
+   * @param boundsInfo is the xyz info to update with additional bounding information.
    * @param bounds     are the surfaces delineating what's inside the shape.
    */
-  public void recordBounds(final PlanetModel planetModel, final Plane q, final Bounds boundsInfo, final Membership... bounds) {
-    final GeoPoint[] intersectionPoints = findIntersections(planetModel, q, bounds, NO_BOUNDS);
-    for (GeoPoint intersectionPoint : intersectionPoints) {
-      boundsInfo.addPoint(intersectionPoint);
+  public void recordBounds(final PlanetModel planetModel, final XYZBounds boundsInfo, final Membership... bounds) {
+    // Basic plan is to do three intersections of the plane and the planet.
+    // For min/max x, we intersect a vertical plane such that y = 0.
+    // For min/max y, we intersect a vertical plane such that x = 0.
+    // For min/max z, we intersect a vertical plane that is chosen to go through the high point of the arc.
+    // For clarity, load local variables with good names
+    final double A = this.x;
+    final double B = this.y;
+    final double C = this.z;
+
+    // Do Z
+    if (!boundsInfo.isSmallestMinZ(planetModel) || !boundsInfo.isLargestMaxZ(planetModel)) {
+      // Compute Z bounds for this arc
+      // With ellipsoids, we really have only one viable way to do this computation.
+      // Specifically, we compute an appropriate vertical plane, based on the current plane's x-y orientation, and
+      // then intersect it with this one and with the ellipsoid.  This gives us zero, one, or two points to use
+      // as bounds.
+      // There is one special case: horizontal circles.  These require TWO vertical planes: one for the x, and one for
+      // the y, and we use all four resulting points in the bounds computation.
+      if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(B) >= MINIMUM_RESOLUTION)) {
+        // NOT a degenerate case
+        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedZPlane(A,B), bounds, NO_BOUNDS);
+        for (final GeoPoint point : points) {
+          addPoint(boundsInfo, bounds, point);
+        }
+      } else {
+        // Since a==b==0, any plane including the Z axis suffices.
+        final GeoPoint[] points = findIntersections(planetModel, normalYPlane, NO_BOUNDS, NO_BOUNDS);
+        boundsInfo.addZValue(points[0]);
+      }
+    }
+    
+    // Do X
+    if (!boundsInfo.isSmallestMinX(planetModel) || !boundsInfo.isLargestMaxX(planetModel)) {
+      if ((Math.abs(B) >= MINIMUM_RESOLUTION || Math.abs(C) >= MINIMUM_RESOLUTION)) {
+        // NOT a degenerate case
+        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedXPlane(B,C), bounds, NO_BOUNDS);
+        for (final GeoPoint point : points) {
+          addPoint(boundsInfo, bounds, point);
+        }
+      } else {
+        // Since b==c==0, any plane including the X axis suffices.
+        final GeoPoint[] points = findIntersections(planetModel, normalZPlane, NO_BOUNDS, NO_BOUNDS);
+        boundsInfo.addXValue(points[0]);
+      }
+    }
+    
+    // Do Y
+    if (!boundsInfo.isSmallestMinY(planetModel) || !boundsInfo.isLargestMaxY(planetModel)) {
+      if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(C) >= MINIMUM_RESOLUTION)) {
+        // NOT a degenerate case
+        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedYPlane(A,C), bounds, NO_BOUNDS);
+        for (final GeoPoint point : points) {
+          addPoint(boundsInfo, bounds, point);
+        }
+      } else {
+        // Since a==c==0, any plane including the Y axis suffices.
+        // It doesn't matter that we may discard the point due to bounds, because if there are bounds, we'll have endpoints
+        // that will be tallied separately.
+        final GeoPoint[] points = findIntersections(planetModel, normalXPlane, NO_BOUNDS, NO_BOUNDS);
+        boundsInfo.addYValue(points[0]);
+      }
     }
   }
-
+  
   /**
    * Accumulate bounds information for this plane, intersected with the unit sphere.
    * Updates both latitude and longitude information, using max/min points found
    * within the specified bounds.
    *
    * @param planetModel is the planet model to use in determining bounds.
-   * @param boundsInfo is the info to update with additional bounding information.
+   * @param boundsInfo is the lat/lon info to update with additional bounding information.
    * @param bounds     are the surfaces delineating what's inside the shape.
    */
-  public void recordBounds(final PlanetModel planetModel, final Bounds boundsInfo, final Membership... bounds) {
+  public void recordBounds(final PlanetModel planetModel, final LatLonBounds boundsInfo, final Membership... bounds) {
     // For clarity, load local variables with good names
     final double A = this.x;
     final double B = this.y;
@@ -741,18 +869,15 @@ public class Plane extends Vector {
       if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(B) >= MINIMUM_RESOLUTION)) {
         // NOT a horizontal circle!
         //System.err.println(" Not a horizontal circle");
-        final Plane verticalPlane = constructNormalizedVerticalPlane(A,B);
-        final GeoPoint[] points = findIntersections(planetModel, verticalPlane, NO_BOUNDS, NO_BOUNDS);
+        final Plane verticalPlane = constructNormalizedZPlane(A,B);
+        final GeoPoint[] points = findIntersections(planetModel, verticalPlane, bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
-          addPoint(boundsInfo, bounds, point.x, point.y, point.z);
+          addPoint(boundsInfo, bounds, point);
         }
       } else {
-        // Horizontal circle.  Since a==b, one vertical plane suffices.
-        final Plane verticalPlane = new Plane(1.0,0.0);
-        final GeoPoint[] points = findIntersections(planetModel, verticalPlane, NO_BOUNDS, NO_BOUNDS);
-        // There will always be two points; we only need one.
-        final GeoPoint point = points[0];
-        boundsInfo.addHorizontalCircle(point.z/Math.sqrt(point.x * point.x + point.y * point.y + point.z * point.z));
+        // Horizontal circle.  Since a==b, any vertical plane suffices.
+        final GeoPoint[] points = findIntersections(planetModel, normalXPlane, NO_BOUNDS, NO_BOUNDS);
+        boundsInfo.addZValue(points[0]);
       }
       //System.err.println("Done latitude bounds");
     }
@@ -808,7 +933,7 @@ public class Plane extends Vector {
               double y0 = -b / (2.0 * a);
               double x0 = (-D - B * y0) / A;
               double z0 = 0.0;
-              addPoint(boundsInfo, bounds, x0, y0, z0);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0, y0, z0));
             } else if (sqrtClause > 0.0) {
               double sqrtResult = Math.sqrt(sqrtClause);
               double denom = 1.0 / (2.0 * a);
@@ -823,8 +948,8 @@ public class Plane extends Vector {
               double z0a = 0.0;
               double z0b = 0.0;
 
-              addPoint(boundsInfo, bounds, x0a, y0a, z0a);
-              addPoint(boundsInfo, bounds, x0b, y0b, z0b);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0a, y0a, z0a));
+              addPoint(boundsInfo, bounds, new GeoPoint(x0b, y0b, z0b));
             }
 
           } else {
@@ -841,7 +966,7 @@ public class Plane extends Vector {
               double x0 = -b / (2.0 * a);
               double y0 = (-D - A * x0) / B;
               double z0 = 0.0;
-              addPoint(boundsInfo, bounds, x0, y0, z0);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0, y0, z0));
             } else if (sqrtClause > 0.0) {
               double sqrtResult = Math.sqrt(sqrtClause);
               double denom = 1.0 / (2.0 * a);
@@ -854,8 +979,8 @@ public class Plane extends Vector {
               double z0a = 0.0;
               double z0b = 0.0;
 
-              addPoint(boundsInfo, bounds, x0a, y0a, z0a);
-              addPoint(boundsInfo, bounds, x0b, y0b, z0b);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0a, y0a, z0a));
+              addPoint(boundsInfo, bounds, new GeoPoint(x0b, y0b, z0b));
             }
           }
         }
@@ -949,7 +1074,7 @@ public class Plane extends Vector {
               double x0 = (-2.0 * J - I * y0) / H;
               double z0 = (-A * x0 - B * y0 - D) / C;
 
-              addPoint(boundsInfo, bounds, x0, y0, z0);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0, y0, z0));
             } else if (sqrtClause > 0.0) {
               //System.err.println(" Two solutions");
               double sqrtResult = Math.sqrt(sqrtClause);
@@ -964,8 +1089,8 @@ public class Plane extends Vector {
               double z0a = (-A * x0a - B * y0a - D) * Cdenom;
               double z0b = (-A * x0b - B * y0b - D) * Cdenom;
 
-              addPoint(boundsInfo, bounds, x0a, y0a, z0a);
-              addPoint(boundsInfo, bounds, x0b, y0b, z0b);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0a, y0a, z0a));
+              addPoint(boundsInfo, bounds, new GeoPoint(x0b, y0b, z0b));
             }
 
           } else {
@@ -1001,7 +1126,7 @@ public class Plane extends Vector {
               double z0 = (-A * x0 - B * y0 - D) / C;
               // Verify that x&y fulfill the equation
               // 2Ex^2 + 2Fy^2 + 2Gxy + Hx + Iy = 0
-              addPoint(boundsInfo, bounds, x0, y0, z0);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0, y0, z0));
             } else if (sqrtClause > 0.0) {
               //System.err.println(" Two solutions");
               double sqrtResult = Math.sqrt(sqrtClause);
@@ -1016,8 +1141,8 @@ public class Plane extends Vector {
               double z0a = (-A * x0a - B * y0a - D) * Cdenom;
               double z0b = (-A * x0b - B * y0b - D) * Cdenom;
 
-              addPoint(boundsInfo, bounds, x0a, y0a, z0a);
-              addPoint(boundsInfo, bounds, x0b, y0b, z0b);
+              addPoint(boundsInfo, bounds, new GeoPoint(x0a, y0a, z0a));
+              addPoint(boundsInfo, bounds, new GeoPoint(x0b, y0b, z0b));
             }
           }
         }
@@ -1029,10 +1154,26 @@ public class Plane extends Vector {
   /** Add a point to boundsInfo if within a specifically bounded area.
    * @param boundsInfo is the object to be modified.
    * @param bounds is the area that the point must be within.
+   * @param point is the point.
+   */
+  protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final GeoPoint point) {
+    // Make sure the discovered point is within the bounds
+    for (Membership bound : bounds) {
+      if (!bound.isWithin(point))
+        return;
+    }
+    // Add the point
+    boundsInfo.addPoint(point);
+  }
+
+  /** Add a point to boundsInfo if within a specifically bounded area.
+   * @param boundsInfo is the object to be modified.
+   * @param bounds is the area that the point must be within.
    * @param x is the x value.
    * @param y is the y value.
    * @param z is the z value.
    */
+  /*
   protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final double x, final double y, final double z) {
     //System.err.println(" Want to add point x="+x+" y="+y+" z="+z);
     // Make sure the discovered point is within the bounds
@@ -1045,6 +1186,7 @@ public class Plane extends Vector {
     //System.out.println("Adding point x="+x+" y="+y+" z="+z);
     boundsInfo.addPoint(x, y, z);
   }
+  */
 
   /**
    * Determine whether the plane intersects another plane within the

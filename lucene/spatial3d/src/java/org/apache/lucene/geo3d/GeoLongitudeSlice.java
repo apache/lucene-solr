@@ -129,12 +129,13 @@ public class GeoLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.noTopLatitudeBound().noBottomLatitudeBound();
-    bounds.addLongitudeSlice(leftLon, rightLon);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
+    bounds.noTopLatitudeBound(planetModel).noBottomLatitudeBound(planetModel)
+      .addVerticalPlane(planetModel, leftLon, leftPlane, rightPlane)
+      .addVerticalPlane(planetModel, rightLon, rightPlane, leftPlane)
+      .addPoint(planetModel.NORTH_POLE)
+      .addPoint(planetModel.SOUTH_POLE);
   }
 
   @Override

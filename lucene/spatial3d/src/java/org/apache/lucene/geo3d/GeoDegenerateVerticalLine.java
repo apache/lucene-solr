@@ -77,8 +77,8 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
     final double cosLongitude = Math.cos(longitude);
 
     // Now build the two points
-    this.UHC = new GeoPoint(planetModel, sinTopLat, sinLongitude, cosTopLat, cosLongitude);
-    this.LHC = new GeoPoint(planetModel, sinBottomLat, sinLongitude, cosBottomLat, cosLongitude);
+    this.UHC = new GeoPoint(planetModel, sinTopLat, sinLongitude, cosTopLat, cosLongitude, topLat, longitude);
+    this.LHC = new GeoPoint(planetModel, sinBottomLat, sinLongitude, cosBottomLat, cosLongitude, bottomLat, longitude);
 
     this.plane = new Plane(cosLongitude, sinLongitude);
 
@@ -146,12 +146,9 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.addLatitudeZone(topLat).addLatitudeZone(bottomLat)
-        .addLongitudeSlice(longitude, longitude);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    bounds.addVerticalPlane(planetModel, longitude, plane, boundingPlane, topPlane, bottomPlane)
+      .addPoint(UHC).addPoint(LHC);
   }
 
   @Override

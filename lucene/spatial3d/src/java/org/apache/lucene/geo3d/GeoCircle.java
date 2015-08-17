@@ -78,7 +78,7 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       this.edgePoints = new GeoPoint[0];
     } else {
       // Construct normal plane
-      final Plane normalPlane = Plane.constructNormalizedVerticalPlane(upperPoint, lowerPoint, center);
+      final Plane normalPlane = Plane.constructNormalizedZPlane(upperPoint, lowerPoint, center);
       // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
       if (circlePlane == null)
@@ -130,16 +130,15 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    bounds = super.getBounds(bounds);
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
     if (circlePlane == null) {
       // Entire world
-      bounds.noTopLatitudeBound().noBottomLatitudeBound().noLongitudeBound();
-      return bounds;
+      bounds.noTopLatitudeBound(planetModel).noBottomLatitudeBound(planetModel).noLongitudeBound(planetModel);
+      return;
     }
     bounds.addPoint(center);
-    circlePlane.recordBounds(planetModel, bounds);
-    return bounds;
+    bounds.addPlane(planetModel, circlePlane);
   }
 
   @Override

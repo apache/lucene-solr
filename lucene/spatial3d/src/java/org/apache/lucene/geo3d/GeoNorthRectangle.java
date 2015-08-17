@@ -90,8 +90,8 @@ public class GeoNorthRectangle extends GeoBaseBBox {
     final double cosRightLon = Math.cos(rightLon);
 
     // Now build the points
-    this.LRHC = new GeoPoint(planetModel, sinBottomLat, sinRightLon, cosBottomLat, cosRightLon);
-    this.LLHC = new GeoPoint(planetModel, sinBottomLat, sinLeftLon, cosBottomLat, cosLeftLon);
+    this.LRHC = new GeoPoint(planetModel, sinBottomLat, sinRightLon, cosBottomLat, cosRightLon, bottomLat, rightLon);
+    this.LLHC = new GeoPoint(planetModel, sinBottomLat, sinLeftLon, cosBottomLat, cosLeftLon, bottomLat, leftLon);
 
     final double middleLat = (Math.PI * 0.5 + bottomLat) * 0.5;
     final double sinMiddleLat = Math.sin(middleLat);
@@ -176,12 +176,12 @@ public class GeoNorthRectangle extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.noTopLatitudeBound().addLatitudeZone(bottomLat)
-        .addLongitudeSlice(leftLon, rightLon);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    bounds.noTopLatitudeBound(planetModel)
+      .addHorizontalPlane(planetModel, bottomLat, bottomPlane, leftPlane, rightPlane)
+      .addVerticalPlane(planetModel, leftLon, leftPlane, bottomPlane, rightPlane)
+      .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane, leftPlane)
+      .addPoint(LLHC).addPoint(LRHC);
   }
 
   @Override

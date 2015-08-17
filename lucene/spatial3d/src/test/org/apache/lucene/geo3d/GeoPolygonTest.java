@@ -121,7 +121,7 @@ public class GeoPolygonTest {
   @Test
   public void testPolygonBounds() {
     GeoMembershipShape c;
-    Bounds b;
+    LatLonBounds b;
     List<GeoPoint> points;
 
     points = new ArrayList<GeoPoint>();
@@ -132,7 +132,8 @@ public class GeoPolygonTest {
 
     c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());

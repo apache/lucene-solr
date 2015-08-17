@@ -139,11 +139,12 @@ public class GeoBBoxTest {
   @Test
   public void testBBoxBounds() {
     GeoBBox c;
-    Bounds b;
+    LatLonBounds b;
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, -1.0, 1.0);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -154,7 +155,8 @@ public class GeoBBoxTest {
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, 1.0, -1.0);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -165,16 +167,18 @@ public class GeoBBoxTest {
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, -1.0, 1.0);
 
-    b = c.getBounds(null);
-    assertFalse(b.checkNoLongitudeBound());
+    b = new LatLonBounds();
+    c.getBounds(b);
+    assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
-    assertEquals(-1.0, b.getLeftLongitude(), 0.000001);
-    assertEquals(1.0, b.getRightLongitude(), 0.000001);
+    //assertEquals(-1.0, b.getLeftLongitude(), 0.000001);
+    //assertEquals(1.0, b.getRightLongitude(), 0.000001);
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, 1.0, -1.0);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -185,7 +189,8 @@ public class GeoBBoxTest {
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, -Math.PI + 0.1, Math.PI - 0.1);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -196,7 +201,8 @@ public class GeoBBoxTest {
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, Math.PI - 0.1, -Math.PI + 0.1);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -207,7 +213,8 @@ public class GeoBBoxTest {
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, -Math.PI + 0.1, Math.PI - 0.1);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -216,17 +223,19 @@ public class GeoBBoxTest {
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, Math.PI - 0.1, -Math.PI + 0.1);
 
-    b = c.getBounds(null);
-    assertFalse(b.checkNoLongitudeBound());
+    b = new LatLonBounds();
+    c.getBounds(b);
+    assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
-    assertEquals(Math.PI - 0.1, b.getLeftLongitude(), 0.000001);
-    assertEquals(-Math.PI + 0.1, b.getRightLongitude(), 0.000001);
+    //assertEquals(Math.PI - 0.1, b.getLeftLongitude(), 0.000001);
+    //assertEquals(-Math.PI + 0.1, b.getRightLongitude(), 0.000001);
 
     // Check latitude zone
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 1.0, -1.0, -Math.PI, Math.PI);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -240,9 +249,9 @@ public class GeoBBoxTest {
     c1 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, 0.0);
     c2 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI);
 
-    b = new Bounds();
-    b = c1.getBounds(b);
-    b = c2.getBounds(b);
+    b = new LatLonBounds();
+    c1.getBounds(b);
+    c2.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -250,9 +259,9 @@ public class GeoBBoxTest {
     c1 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, -Math.PI, 0.0);
     c2 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI * 0.5);
 
-    b = new Bounds();
-    b = c1.getBounds(b);
-    b = c2.getBounds(b);
+    b = new LatLonBounds();
+    c1.getBounds(b);
+    c2.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -262,9 +271,9 @@ public class GeoBBoxTest {
     c1 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, -Math.PI * 0.5, 0.0);
     c2 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, 0.0, Math.PI);
 
-    b = new Bounds();
-    b = c1.getBounds(b);
-    b = c2.getBounds(b);
+    b = new LatLonBounds();
+    c1.getBounds(b);
+    c2.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
