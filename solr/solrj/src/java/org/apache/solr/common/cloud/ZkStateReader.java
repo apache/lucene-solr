@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -255,7 +256,9 @@ public class ZkStateReader implements Closeable {
       }
       // No need to set watchers because we should already have watchers registered for everything.
       refreshLegacyClusterState(null);
-      for (String coll : watchedCollectionStates.keySet()) {
+      // Need a copy so we don't delete from what we're iterating over.
+      Collection<String> safeCopy = new ArrayList<>(watchedCollectionStates.keySet());
+      for (String coll : safeCopy) {
         DocCollection newState = fetchCollectionState(coll, null);
         updateWatchedCollection(coll, newState);
       }
@@ -455,6 +458,13 @@ public class ZkStateReader implements Closeable {
     }
 
     this.clusterState = new ClusterState(liveNodes, result, legacyClusterStateVersion);
+    log.debug("clusterStateSet: version {} legacy {} interesting {} watched {} lazy {} total {}",
+        clusterState.getZkClusterStateVersion(),
+        legacyCollectionStates.keySet(),
+        interestingCollections,
+        watchedCollectionStates.keySet(),
+        lazyCollectionStates.keySet(),
+        clusterState.getCollections());
   }
 
   /**
@@ -1028,34 +1038,47 @@ public class ZkStateReader implements Closeable {
       return;
     }
 
-    log.info("Updating data for {} to ver {} ", coll, newState.getZNodeVersion());
     // CAS update loop
     while (true) {
+      if (!interestingCollections.contains(coll)) {
+        break;
+      }
       DocCollection oldState = watchedCollectionStates.get(coll);
       if (oldState == null) {
         if (watchedCollectionStates.putIfAbsent(coll, newState) == null) {
+          log.info("Add data for {} ver {} ", coll, newState.getZNodeVersion());
           break;
         }
       } else {
         if (oldState.getZNodeVersion() >= newState.getZNodeVersion()) {
           // Nothing to do, someone else updated same or newer.
-          return;
+          break;
         }
         if (watchedCollectionStates.replace(coll, oldState, newState)) {
+          log.info("Updating data for {} from {} to {} ", coll, oldState.getZNodeVersion(), newState.getZNodeVersion());
           break;
         }
       }
+    }
+
+    // Resolve race with removeZKWatch.
+    if (!interestingCollections.contains(coll)) {
+      watchedCollectionStates.remove(coll);
+      log.info("Removing uninteresting collection {}", coll);
     }
   }
   
   /** This is not a public API. Only used by ZkController */
   public void removeZKWatch(String coll) {
+    log.info("Removing watch for uninteresting collection {}", coll);
     interestingCollections.remove(coll);
     watchedCollectionStates.remove(coll);
     ClusterState.CollectionRef lazyCollectionStateFormat2 = tryMakeLazyCollectionStateFormat2(coll);
     synchronized (getUpdateLock()) {
       if (lazyCollectionStateFormat2 != null) {
         this.lazyCollectionStates.put(coll, lazyCollectionStateFormat2);
+      } else {
+        this.lazyCollectionStates.remove(coll);
       }
       constructState();
     }
