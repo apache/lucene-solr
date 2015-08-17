@@ -240,6 +240,7 @@ Bug Fixes
 
 * SOLR-7934: SolrCLI masks underlying cause of create collection failure. (Timothy Potter)
 
+* SOLR-7920: Resolve XSS issue in Admin UI Schema Browser (David Chiu via Upayavira)
 
 Optimizations
 ----------------------
