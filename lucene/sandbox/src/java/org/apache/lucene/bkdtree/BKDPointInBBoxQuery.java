@@ -98,7 +98,7 @@ public class BKDPointInBBoxQuery extends Query {
         BKDTreeSortedNumericDocValues treeDV = (BKDTreeSortedNumericDocValues) sdv;
         BKDTreeReader tree = treeDV.getBKDTreeReader();
 
-        DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon, treeDV.delegate);
+        DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon, null, treeDV.delegate);
 
         final DocIdSetIterator disi = result.iterator();
 

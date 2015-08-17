@@ -364,7 +364,7 @@ class BKDTreeWriter {
     long innerNodeCount = 1;
 
     while (countPerLeaf > maxPointsInLeafNode) {
-      countPerLeaf /= 2;
+      countPerLeaf = (countPerLeaf+1)/2;
       innerNodeCount *= 2;
     }
 

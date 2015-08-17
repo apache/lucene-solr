@@ -353,7 +353,7 @@ class BKD3DTreeWriter {
 
   /** Writes the BKD tree to the provided {@link IndexOutput} and returns the file offset where index was written. */
   public long finish(IndexOutput out) throws IOException {
-    //System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapWriter);
+    //System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapWriter + " maxPointsInLeafNode=" + maxPointsInLeafNode);
 
     if (writer != null) {
       writer.close();
@@ -365,11 +365,11 @@ class BKD3DTreeWriter {
     long innerNodeCount = 1;
 
     while (countPerLeaf > maxPointsInLeafNode) {
-      countPerLeaf /= 2;
+      countPerLeaf = (countPerLeaf+1)/2;
       innerNodeCount *= 2;
     }
 
-    //System.out.println("innerNodeCount=" + innerNodeCount);
+    //System.out.println("innerNodeCount=" + innerNodeCount + " countPerLeaf=" + countPerLeaf);
 
     if (1+2*innerNodeCount >= Integer.MAX_VALUE) {
       throw new IllegalStateException("too many nodes; increase maxPointsInLeafNode (currently " + maxPointsInLeafNode + ") and reindex");
@@ -640,6 +640,8 @@ class BKD3DTreeWriter {
 
       // Sort by docID in the leaf so we get sequentiality at search time (may not matter?):
       Reader reader = lastXSorted.writer.getReader(lastXSorted.start);
+
+      assert count <= scratchDocIDs.length: "count=" + count + " scratchDocIDs.length=" + scratchDocIDs.length;
 
       boolean success = false;
       try {
