@@ -18,9 +18,10 @@ package org.apache.lucene.bkdtree3d;
  */
 
 import org.apache.lucene.geo3d.GeoArea;
+import org.apache.lucene.geo3d.GeoAreaFactory;
 import org.apache.lucene.geo3d.GeoShape;
 import org.apache.lucene.geo3d.PlanetModel;
-import org.apache.lucene.geo3d.GeoAreaFactory;
+import org.apache.lucene.geo3d.XYZBounds;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -88,10 +89,19 @@ public class PointInGeo3DShapeQuery extends Query {
         }
         Geo3DBinaryDocValues treeDV = (Geo3DBinaryDocValues) bdv;
         BKD3DTreeReader tree = treeDV.getBKD3DTreeReader();
+
+        XYZBounds bounds = new XYZBounds();
+        shape.getBounds(bounds);
         
         // TODO: make this more efficient: as we recurse the BKD tree we should check whether the
         // bbox we are recursing into intersects our shape; Apache SIS may have (non-GPL!) code to do this?
-        DocIdSet result = tree.intersect(new BKD3DTreeReader.ValueFilter() {
+        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX()),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX()),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY()),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumY()),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumZ()),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumZ()),
+                                         new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {
                                              //System.out.println("  accept? docID=" + docID);
