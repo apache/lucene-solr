@@ -175,11 +175,12 @@ public class GeoSouthRectangle extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.noBottomLatitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds
       .addHorizontalPlane(planetModel, topLat, topPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, leftPlane)
-      .addPoint(URHC).addPoint(ULHC);
+      .addPoint(URHC).addPoint(ULHC).addPoint(planetModel.SOUTH_POLE);
   }
 
   @Override

@@ -122,7 +122,8 @@ public class GeoLatitudeZone extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.noLongitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds.noLongitudeBound()
       .addHorizontalPlane(planetModel, topLat, topPlane)
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane);
   }

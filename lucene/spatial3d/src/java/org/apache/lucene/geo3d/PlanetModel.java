@@ -65,6 +65,14 @@ public class PlanetModel {
   public final GeoPoint NORTH_POLE;
   /** South pole */
   public final GeoPoint SOUTH_POLE;
+  /** Min X pole */
+  public final GeoPoint MIN_X_POLE;
+  /** Max X pole */
+  public final GeoPoint MAX_X_POLE;
+  /** Min Y pole */
+  public final GeoPoint MIN_Y_POLE;
+  /** Max Y pole */
+  public final GeoPoint MAX_Y_POLE;
   
   /** Constructor.
    * @param ab is the x/y scaling factor.
@@ -81,6 +89,10 @@ public class PlanetModel {
     this.inverseCSquared = inverseC * inverseC;
     this.NORTH_POLE = new GeoPoint(c, 0.0, 0.0, 1.0, Math.PI * 0.5, 0.0);
     this.SOUTH_POLE = new GeoPoint(c, 0.0, 0.0, -1.0, -Math.PI * 0.5, 0.0);
+    this.MIN_X_POLE = new GeoPoint(ab, -1.0, 0.0, 0.0, 0.0, -Math.PI);
+    this.MAX_X_POLE = new GeoPoint(ab, 1.0, 0.0, 0.0, 0.0, 0.0);
+    this.MIN_Y_POLE = new GeoPoint(ab, 0.0, -1.0, 0.0, 0.0, -Math.PI * 0.5);
+    this.MAX_Y_POLE = new GeoPoint(ab, 0.0, 1.0, 0.0, 0.0, Math.PI * 0.5);
   }
   
   /** Find the minimum magnitude of all points on the ellipsoid.

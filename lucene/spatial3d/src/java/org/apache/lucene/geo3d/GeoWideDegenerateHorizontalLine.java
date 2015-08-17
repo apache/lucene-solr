@@ -168,7 +168,8 @@ public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.isWide(planetModel)
+    super.getBounds(bounds);
+    bounds.isWide()
       .addHorizontalPlane(planetModel, latitude, plane, eitherBound)
       .addPoint(LHC)
       .addPoint(RHC);

@@ -207,7 +207,8 @@ public class GeoWideRectangle extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.isWide(planetModel)
+    super.getBounds(bounds);
+    bounds.isWide()
       .addHorizontalPlane(planetModel, topLat, topPlane, bottomPlane, eitherBound)
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, bottomPlane)
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, topPlane, eitherBound)

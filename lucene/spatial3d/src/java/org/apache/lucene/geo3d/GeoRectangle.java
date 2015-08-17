@@ -199,6 +199,7 @@ public class GeoRectangle extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
     bounds.addHorizontalPlane(planetModel, topLat, topPlane, bottomPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, bottomPlane, leftPlane)
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, topPlane, leftPlane, rightPlane)

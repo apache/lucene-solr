@@ -177,11 +177,12 @@ public class GeoNorthRectangle extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.noTopLatitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, bottomPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane, leftPlane)
-      .addPoint(LLHC).addPoint(LRHC);
+      .addPoint(LLHC).addPoint(LRHC).addPoint(planetModel.NORTH_POLE);
   }
 
   @Override

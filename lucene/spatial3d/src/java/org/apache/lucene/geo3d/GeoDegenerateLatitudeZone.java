@@ -88,7 +88,8 @@ public class GeoDegenerateLatitudeZone extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.noLongitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds.noLongitudeBound()
       .addHorizontalPlane(planetModel, latitude, plane);
   }
 

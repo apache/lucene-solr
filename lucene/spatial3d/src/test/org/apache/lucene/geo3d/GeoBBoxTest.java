@@ -44,7 +44,7 @@ public class GeoBBoxTest {
     relationship = box.getRelationship(shape);
     assertEquals(GeoArea.CONTAINS, relationship);
     box = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, -61.85 * DEGREES_TO_RADIANS, -67.5 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS, -168.75 * DEGREES_TO_RADIANS);
-    System.out.println("Shape = " + shape + " Rect = " + box);
+    //System.out.println("Shape = " + shape + " Rect = " + box);
     relationship = box.getRelationship(shape);
     assertEquals(GeoArea.CONTAINS, relationship);
   }
@@ -140,11 +140,32 @@ public class GeoBBoxTest {
   public void testBBoxBounds() {
     GeoBBox c;
     LatLonBounds b;
+    XYZBounds xyzb;
 
-    c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, -1.0, 1.0);
-
+    c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.25, -Math.PI * 0.25, -1.0, 1.0);
     b = new LatLonBounds();
     c.getBounds(b);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    assertFalse(b.checkNoLongitudeBound());
+    assertFalse(b.checkNoTopLatitudeBound());
+    assertFalse(b.checkNoBottomLatitudeBound());
+    assertEquals(-1.0, b.getLeftLongitude(), 0.000001);
+    assertEquals(1.0, b.getRightLongitude(), 0.000001);
+    assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
+    assertEquals(Math.PI * 0.25, b.getMaxLatitude(), 0.000001);
+    assertEquals(0.382051, xyzb.getMinimumX(), 0.000001);
+    assertEquals(1.0, xyzb.getMaximumX(), 0.000001);
+    assertEquals(-0.841471, xyzb.getMinimumY(), 0.000001);
+    assertEquals(0.841471, xyzb.getMaximumY(), 0.000001);
+    assertEquals(-0.707107, xyzb.getMinimumZ(), 0.000001);
+    assertEquals(0.707107, xyzb.getMaximumZ(), 0.000001);
+
+    c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, -1.0, 1.0);
+    b = new LatLonBounds();
+    c.getBounds(b);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -152,11 +173,19 @@ public class GeoBBoxTest {
     assertEquals(1.0, b.getRightLongitude(), 0.000001);
     assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
     assertEquals(0.0, b.getMaxLatitude(), 0.000001);
+    assertEquals(0.382051, xyzb.getMinimumX(), 0.000001);
+    assertEquals(1.0, xyzb.getMaximumX(), 0.000001);
+    assertEquals(-0.841471, xyzb.getMinimumY(), 0.000001);
+    assertEquals(0.841471, xyzb.getMaximumY(), 0.000001);
+    assertEquals(-0.707107, xyzb.getMinimumZ(), 0.000001);
+    assertEquals(0.0, xyzb.getMaximumZ(), 0.000001);
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, 1.0, -1.0);
 
     b = new LatLonBounds();
     c.getBounds(b);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
     assertTrue(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -164,26 +193,49 @@ public class GeoBBoxTest {
     //assertEquals(-1.0,b.getRightLongitude(),0.000001);
     assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
     assertEquals(0.0, b.getMaxLatitude(), 0.000001);
+    assertEquals(-1.0, xyzb.getMinimumX(), 0.000001);
+    assertEquals(0.540302, xyzb.getMaximumX(), 0.000001);
+    assertEquals(-1.0, xyzb.getMinimumY(), 0.000001);
+    assertEquals(1.0, xyzb.getMaximumY(), 0.000001);
+    assertEquals(-0.707107, xyzb.getMinimumZ(), 0.000001);
+    assertEquals(0.0, xyzb.getMaximumZ(), 0.000001);
+
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, -1.0, 1.0);
 
     b = new LatLonBounds();
     c.getBounds(b);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
     //assertEquals(-1.0, b.getLeftLongitude(), 0.000001);
     //assertEquals(1.0, b.getRightLongitude(), 0.000001);
+    assertEquals(0.0, xyzb.getMinimumX(), 0.000001);
+    assertEquals(1.0, xyzb.getMaximumX(), 0.000001);
+    assertEquals(-0.841471, xyzb.getMinimumY(), 0.000001);
+    assertEquals(0.841471, xyzb.getMaximumY(), 0.000001);
+    assertEquals(-1.0, xyzb.getMinimumZ(), 0.000001);
+    assertEquals(1.0, xyzb.getMaximumZ(), 0.000001);
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.5, -Math.PI * 0.5, 1.0, -1.0);
 
     b = new LatLonBounds();
     c.getBounds(b);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
     //assertEquals(1.0,b.getLeftLongitude(),0.000001);
     //assertEquals(-1.0,b.getRightLongitude(),0.000001);
+    assertEquals(-1.0, xyzb.getMinimumX(), 0.000001);
+    assertEquals(0.540302, xyzb.getMaximumX(), 0.000001);
+    assertEquals(-1.0, xyzb.getMinimumY(), 0.000001);
+    assertEquals(1.0, xyzb.getMaximumY(), 0.000001);
+    assertEquals(-1.0, xyzb.getMinimumZ(), 0.000001);
+    assertEquals(1.0, xyzb.getMaximumZ(), 0.000001);
 
     // Check wide variants of rectangle and longitude slice
 

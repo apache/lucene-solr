@@ -147,6 +147,7 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
     bounds.addVerticalPlane(planetModel, longitude, plane, boundingPlane, topPlane, bottomPlane)
       .addPoint(UHC).addPoint(LHC);
   }

@@ -92,27 +92,23 @@ public interface Bounds {
   public Bounds addZValue(final GeoPoint point);
   
   /** Signal that the shape exceeds Math.PI in longitude.
-   *@param planetModel is the planet model.
    *@return the updated Bounds object.
    */
-  public Bounds isWide(final PlanetModel planetModel);
+  public Bounds isWide();
   
   /** Signal that there is no longitude bound.
-   *@param planetModel is the planet model.
    *@return the updated Bounds object.
    */
-  public Bounds noLongitudeBound(final PlanetModel planetModel);
+  public Bounds noLongitudeBound();
 
   /** Signal that there is no top latitude bound.
-   *@param planetModel is the planet model.
    *@return the updated Bounds object.
    */
-  public Bounds noTopLatitudeBound(final PlanetModel planetModel);
+  public Bounds noTopLatitudeBound();
 
   /** Signal that there is no bottom latitude bound.
-   *@param planetModel is the planet model.
    *@return the updated Bounds object.
    */
-  public Bounds noBottomLatitudeBound(final PlanetModel planetModel);
+  public Bounds noBottomLatitudeBound();
   
 }

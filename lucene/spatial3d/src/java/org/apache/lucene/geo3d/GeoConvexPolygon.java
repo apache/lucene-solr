@@ -234,11 +234,6 @@ public class GeoConvexPolygon extends GeoBaseMembershipShape {
       }
       bounds.addPlane(planetModel, edge, membershipBounds);
     }
-
-    if (fullDistance >= Math.PI) {
-      // We can't reliably assume that bounds did its longitude calculation right, so we force it to be unbounded.
-      bounds.noLongitudeBound(planetModel);
-    }
   }
 
   @Override

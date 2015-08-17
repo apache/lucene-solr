@@ -181,8 +181,8 @@ public class LatLonBounds implements Bounds {
   }
 
   @Override
-  public Bounds isWide(final PlanetModel planetModel) {
-    return noLongitudeBound(planetModel);
+  public Bounds isWide() {
+    return noLongitudeBound();
   }
 
   @Override
@@ -227,7 +227,7 @@ public class LatLonBounds implements Bounds {
   }
   
   @Override
-  public Bounds noLongitudeBound(final PlanetModel planetModel) {
+  public Bounds noLongitudeBound() {
     noLongitudeBound = true;
     leftLongitude = null;
     rightLongitude = null;
@@ -235,14 +235,14 @@ public class LatLonBounds implements Bounds {
   }
 
   @Override
-  public Bounds noTopLatitudeBound(final PlanetModel planetModel) {
+  public Bounds noTopLatitudeBound() {
     noTopLatitudeBound = true;
     maxLatitude = null;
     return this;
   }
 
   @Override
-  public Bounds noBottomLatitudeBound(final PlanetModel planetModel) {
+  public Bounds noBottomLatitudeBound() {
     noBottomLatitudeBound = true;
     minLatitude = null;
     return this;

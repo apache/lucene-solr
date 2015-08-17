@@ -133,8 +133,7 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     if (circlePlane == null) {
-      // Entire world
-      bounds.noTopLatitudeBound(planetModel).noBottomLatitudeBound(planetModel).noLongitudeBound(planetModel);
+      // Entire world; should already be covered
       return;
     }
     bounds.addPoint(center);

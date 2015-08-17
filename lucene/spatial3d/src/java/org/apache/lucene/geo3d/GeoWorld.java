@@ -69,7 +69,9 @@ public class GeoWorld extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.noLongitudeBound(planetModel).noTopLatitudeBound(planetModel).noBottomLatitudeBound(planetModel);
+    super.getBounds(bounds);
+    // Unnecessary
+    //bounds.noLongitudeBound().noTopLatitudeBound().noBottomLatitudeBound();
   }
 
   @Override

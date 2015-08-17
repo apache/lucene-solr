@@ -179,11 +179,12 @@ public class GeoWideNorthRectangle extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.isWide(planetModel).noTopLatitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds.isWide()
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, eitherBound)
       .addVerticalPlane(planetModel, leftLon, leftPlane, bottomPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane)
-      .addPoint(LLHC).addPoint(LRHC);
+      .addPoint(LLHC).addPoint(LRHC).addPoint(planetModel.NORTH_POLE);
   }
 
   @Override

@@ -104,7 +104,8 @@ public class GeoSouthLatitudeZone extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.noLongitudeBound(planetModel).noBottomLatitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds
       .addHorizontalPlane(planetModel, topLat, topPlane);
   }
 

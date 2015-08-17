@@ -136,7 +136,8 @@ public class GeoWideLongitudeSlice extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.isWide(planetModel).noTopLatitudeBound(planetModel).noBottomLatitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds.isWide()
       .addVerticalPlane(planetModel, leftLon, leftPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane)
       .addPoint(planetModel.NORTH_POLE)

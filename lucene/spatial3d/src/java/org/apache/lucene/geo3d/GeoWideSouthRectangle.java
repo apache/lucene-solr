@@ -178,11 +178,12 @@ public class GeoWideSouthRectangle extends GeoBaseBBox {
 
   @Override
   public void getBounds(Bounds bounds) {
-    bounds.isWide(planetModel).noBottomLatitudeBound(planetModel)
+    super.getBounds(bounds);
+    bounds.isWide()
       .addHorizontalPlane(planetModel, topLat, topPlane, eitherBound)
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane)
-      .addPoint(ULHC).addPoint(URHC);
+      .addPoint(ULHC).addPoint(URHC).addPoint(planetModel.SOUTH_POLE);
   }
 
   @Override

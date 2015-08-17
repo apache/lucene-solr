@@ -214,7 +214,7 @@ public class XYZBounds implements Bounds {
   public Bounds addZValue(final GeoPoint point) {
     final double z = point.z;
     if (minZ == null || minZ > z) {
-      minX = new Double(z);
+      minZ = new Double(z);
     }
     if (maxZ == null || maxZ < z) {
       maxZ = new Double(z);
@@ -228,29 +228,26 @@ public class XYZBounds implements Bounds {
   }
 
   @Override
-  public Bounds isWide(final PlanetModel planetModel) {
+  public Bounds isWide() {
     // No specific thing we need to do.
     return this;
   }
 
   @Override
-  public Bounds noLongitudeBound(final PlanetModel planetModel) {
-    minX = new Double(planetModel.getMinimumXValue());
-    maxX = new Double(planetModel.getMaximumXValue());
-    minY = new Double(planetModel.getMinimumYValue());
-    maxY = new Double(planetModel.getMaximumYValue());
+  public Bounds noLongitudeBound() {
+    // No specific thing we need to do.
     return this;
   }
 
   @Override
-  public Bounds noTopLatitudeBound(final PlanetModel planetModel) {
-    maxZ = new Double(planetModel.getMaximumZValue());
+  public Bounds noTopLatitudeBound() {
+    // No specific thing we need to do.
     return this;
   }
 
   @Override
-  public Bounds noBottomLatitudeBound(final PlanetModel planetModel) {
-    minZ = new Double(planetModel.getMinimumZValue());
+  public Bounds noBottomLatitudeBound() {
+    // No specific thing we need to do.
     return this;
   }
 
