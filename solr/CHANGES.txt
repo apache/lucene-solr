@@ -137,6 +137,8 @@ Bug Fixes
   can go into an infinite loop if cluster state in ZooKeeper is modified externally.
   (Scott Blum, shalin)
 
+* SOLR-7920: Resolve XSS issue in Admin UI Schema Browser (David Chiu via Upayavira)
+
 Optimizations
 ----------------------
 
