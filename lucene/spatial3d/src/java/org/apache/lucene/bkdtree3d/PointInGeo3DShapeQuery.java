@@ -17,6 +17,7 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
+import org.apache.lucene.geo3d.Vector;
 import org.apache.lucene.geo3d.GeoArea;
 import org.apache.lucene.geo3d.GeoAreaFactory;
 import org.apache.lucene.geo3d.GeoShape;
@@ -103,9 +104,6 @@ public class PointInGeo3DShapeQuery extends Query {
 
         assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS;
         
-        // TODO: make this more efficient: as we recurse the BKD tree we should check whether the
-        // bbox we are recursing into intersects our shape; Apache SIS may have (non-GPL!) code to do this?
-        //DocIdSet result = tree.intersect(
         DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX()),
                                          Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX()),
                                          Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY()),
@@ -153,22 +151,22 @@ public class PointInGeo3DShapeQuery extends Query {
                                              case GeoArea.CONTAINS:
                                                // Shape fully contains the cell
                                                //System.out.println("    inside");
-                                               return BKD3DTreeReader.Relation.INSIDE;
+                                               return BKD3DTreeReader.Relation.CELL_INSIDE_SHAPE;
                                              case GeoArea.OVERLAPS:
                                                // They do overlap but neither contains the other:
                                                //System.out.println("    crosses1");
-                                               return BKD3DTreeReader.Relation.CROSSES;
+                                               return BKD3DTreeReader.Relation.SHAPE_CROSSES_CELL;
                                              case GeoArea.WITHIN:
                                                // Cell fully contains the shape:
                                                //System.out.println("    crosses2");
-                                               return BKD3DTreeReader.Relation.CROSSES;
+                                               return BKD3DTreeReader.Relation.SHAPE_INSIDE_CELL;
                                              case GeoArea.DISJOINT:
                                                // They do not overlap at all
                                                //System.out.println("    outside");
-                                               return BKD3DTreeReader.Relation.OUTSIDE;
+                                               return BKD3DTreeReader.Relation.SHAPE_OUTSIDE_CELL;
                                              default:
                                                assert false;
-                                               return BKD3DTreeReader.Relation.CROSSES;
+                                               return BKD3DTreeReader.Relation.SHAPE_CROSSES_CELL;
                                              }
                                            }
                                          });

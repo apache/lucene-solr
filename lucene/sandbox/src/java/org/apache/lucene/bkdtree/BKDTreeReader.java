@@ -38,7 +38,7 @@ final class BKDTreeReader implements Accountable {
   final int maxDoc;
   final IndexInput in;
 
-  enum Relation {INSIDE, CROSSES, OUTSIDE};
+  enum Relation {CELL_INSIDE_SHAPE, SHAPE_CROSSES_CELL, SHAPE_OUTSIDE_CELL};
 
   interface LatLonFilter {
     // TODO: move DVs/encoding out on top: this method should just take a docID
@@ -190,19 +190,21 @@ final class BKDTreeReader implements Accountable {
 
     // 2.06 sec -> 1.52 sec for 225 OSM London queries:
     if (state.latLonFilter != null) {
-      if (cellLatMinEnc >= state.latMinEnc ||
-          cellLatMaxEnc <= state.latMaxEnc ||
-          cellLonMinEnc >= state.lonMinEnc ||
-          cellLonMaxEnc <= state.lonMaxEnc) {
+
+      // Only call the filter when the current cell does not fully contain the bbox:
+      if (cellLatMinEnc > state.latMinEnc || cellLatMaxEnc < state.latMaxEnc ||
+          cellLonMinEnc > state.lonMinEnc || cellLonMaxEnc < state.lonMaxEnc) {
+
+        // nocommit explain why this fails, e.g. ot TestBKDTree.testRandomTiny -seed 80479DBEF3DE1A76 -verbose
         Relation r = state.latLonFilter.compare(BKDTreeWriter.decodeLat(cellLatMinEnc),
                                                 BKDTreeWriter.decodeLat(cellLatMaxEnc),
                                                 BKDTreeWriter.decodeLon(cellLonMinEnc),
                                                 BKDTreeWriter.decodeLon(cellLonMaxEnc));
-        //System.out.println("BKD.intersect cellLat=" + BKDTreeWriter.decodeLat(cellLatMinEnc) + " TO " + BKDTreeWriter.decodeLat(cellLatMaxEnc) + ", cellLon=" + BKDTreeWriter.decodeLon(cellLonMinEnc) + " TO " + BKDTreeWriter.decodeLon(cellLonMaxEnc) + " compare=" + r);
-        if (r == Relation.OUTSIDE) {
+        // System.out.println("BKD.intersect cellLat=" + BKDTreeWriter.decodeLat(cellLatMinEnc) + " TO " + BKDTreeWriter.decodeLat(cellLatMaxEnc) + ", cellLon=" + BKDTreeWriter.decodeLon(cellLonMinEnc) + " TO " + BKDTreeWriter.decodeLon(cellLonMaxEnc) + " compare=" + r);
+        if (r == Relation.SHAPE_OUTSIDE_CELL) {
           // This cell is fully outside of the query shape: stop recursing
           return 0;
-        } else if (r == Relation.INSIDE) {
+        } else if (r == Relation.CELL_INSIDE_SHAPE) {
           // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
           return addAll(state, nodeID);
         } else {
@@ -211,7 +213,7 @@ final class BKDTreeReader implements Accountable {
       }
     // TODO: clean this up: the bbox case should also just be a filter, and we should assert filter != null at the start
     } else if (state.latMinEnc <= cellLatMinEnc && state.latMaxEnc >= cellLatMaxEnc && state.lonMinEnc <= cellLonMinEnc && state.lonMaxEnc >= cellLonMaxEnc) {
-      // Optimize the case when the query fully contains this cell: we can
+      // Bbox query: optimize the case when the query fully contains this cell: we can
       // recursively add all points without checking if they match the query:
       return addAll(state, nodeID);
     }

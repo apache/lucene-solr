@@ -131,7 +131,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                   public BKD3DTreeReader.Relation compare(int xMin, int xMax,
                                                           int yMin, int yMax,
                                                           int zMin, int zMax) {
-                                    return BKD3DTreeReader.Relation.INSIDE;
+                                    return BKD3DTreeReader.Relation.SHAPE_INSIDE_CELL;
                                   }
 
                                 });
@@ -279,22 +279,22 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                                                             int cellYMin, int cellYMax,
                                                                             int cellZMin, int cellZMax) {
                                       if (cellXMin > xMaxEnc || cellXMax < xMinEnc) {
-                                        return BKD3DTreeReader.Relation.OUTSIDE;
+                                        return BKD3DTreeReader.Relation.SHAPE_OUTSIDE_CELL;
                                       }
                                       if (cellYMin > yMaxEnc || cellYMax < yMinEnc) {
-                                        return BKD3DTreeReader.Relation.OUTSIDE;
+                                        return BKD3DTreeReader.Relation.SHAPE_OUTSIDE_CELL;
                                       }
                                       if (cellZMin > zMaxEnc || cellZMax < zMinEnc) {
-                                        return BKD3DTreeReader.Relation.OUTSIDE;
+                                        return BKD3DTreeReader.Relation.SHAPE_OUTSIDE_CELL;
                                       }
 
                                       if (cellXMin >= xMinEnc && cellXMax <= xMaxEnc &&
                                           cellYMin >= yMinEnc && cellYMax <= yMaxEnc &&
                                           cellZMin >= zMinEnc && cellZMax <= zMaxEnc) {
-                                        return BKD3DTreeReader.Relation.INSIDE;
+                                        return BKD3DTreeReader.Relation.CELL_INSIDE_SHAPE;
                                       }
 
-                                      return BKD3DTreeReader.Relation.CROSSES;
+                                      return BKD3DTreeReader.Relation.SHAPE_CROSSES_CELL;
                                     }
                                   });
 
@@ -612,9 +612,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                                  decodeValue(encodeValue(point1.y)),
                                                  decodeValue(encodeValue(point1.z)));
 
-                  boolean expected = deleted.contains(id) == false && shape.isWithin(point2);
+                  boolean expected = ((deleted.contains(id) == false) && shape.isWithin(point2));
                   if (hits.get(docID) != expected) {
-                    fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + "\n  point1=" + point1 + "\n  point2=" + point2 + "\n  query=" + query);
+                    fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + "\n  point1=" + point1 + ", iswithin="+shape.isWithin(point1)+"\n  point2=" + point2 + ", iswithin="+shape.isWithin(point2) + "\n  query=" + query);
                   }
                 } else {
                   assertFalse(hits.get(docID));

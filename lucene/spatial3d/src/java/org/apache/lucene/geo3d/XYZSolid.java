@@ -266,13 +266,14 @@ public class XYZSolid extends BaseXYZSolid {
     //System.err.println(this+" getrelationship with "+path);
     final int insideRectangle = isShapeInsideArea(path);
     if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
+      //System.err.println(" some shape points inside area");
       return OVERLAPS;
     }
 
     // Figure out if the entire XYZArea is contained by the shape.
     final int insideShape = isAreaInsideShape(path);
     if (insideShape == SOME_INSIDE) {
+      //System.err.println(" some area points inside shape");
       return OVERLAPS;
     }
 
@@ -292,12 +293,12 @@ public class XYZSolid extends BaseXYZSolid {
     }
 
     if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
+      //System.err.println(" all shape points inside area");
       return WITHIN;
     }
 
     if (insideShape == ALL_INSIDE) {
-      //System.err.println(" shape contains rectangle");
+      //System.err.println(" all area points inside shape");
       return CONTAINS;
     }
     //System.err.println(" disjoint");

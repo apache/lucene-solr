@@ -38,7 +38,7 @@ final class BKD3DTreeReader implements Accountable {
   final int maxDoc;
   final IndexInput in;
 
-  enum Relation {INSIDE, CROSSES, OUTSIDE};
+  enum Relation {CELL_INSIDE_SHAPE, SHAPE_CROSSES_CELL, SHAPE_OUTSIDE_CELL, SHAPE_INSIDE_CELL};
 
   interface ValueFilter {
     boolean accept(int docID);
@@ -173,20 +173,23 @@ final class BKD3DTreeReader implements Accountable {
         cellZMin <= state.zMin ||
         cellZMax <= state.zMax) {
 
+      // Only call the filter when the current cell does not fully contain the bbox:
       Relation r = state.valueFilter.compare(cellXMin, cellXMax,
                                              cellYMin, cellYMax,
                                              cellZMin, cellZMax);
       //System.out.println("  relation: " + r);
 
-      if (r == Relation.OUTSIDE) {
+      if (r == Relation.SHAPE_OUTSIDE_CELL) {
         // This cell is fully outside of the query shape: stop recursing
         return 0;
-      } else if (r == Relation.INSIDE) {
+      } else if (r == Relation.CELL_INSIDE_SHAPE) {
         // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
         return addAll(state, nodeID);
       } else {
         // The cell crosses the shape boundary, so we fall through and do full filtering
       }
+    } else {
+      assert state.valueFilter.compare(cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax) == Relation.SHAPE_INSIDE_CELL: "got " + state.valueFilter.compare(cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax);
     }
 
     //System.out.println("\nintersect node=" + nodeID + " vs " + leafNodeOffset);
