@@ -142,6 +142,8 @@ Bug Fixes
 * SOLR-7935: Fix very rare race condition that can cause an update to fail
   via NullPointerException during a core reload. (yonik)
 
+* SOLR-7941: multivalued params are concatenated when using config API (noble)
+
 Optimizations
 ----------------------
 
