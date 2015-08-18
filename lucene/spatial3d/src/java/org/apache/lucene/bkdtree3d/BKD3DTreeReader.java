@@ -169,8 +169,8 @@ final class BKD3DTreeReader implements Accountable {
     if (cellXMin >= state.xMin ||
         cellXMax <= state.xMax ||
         cellYMin >= state.yMin ||
-        cellYMin >= state.yMin ||
-        cellZMin <= state.zMin ||
+        cellYMax <= state.yMax ||
+        cellZMin >= state.zMin ||
         cellZMax <= state.zMax) {
 
       // Only call the filter when the current cell does not fully contain the bbox:
