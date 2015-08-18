@@ -139,6 +139,9 @@ Bug Fixes
 
 * SOLR-7920: Resolve XSS issue in Admin UI Schema Browser (David Chiu via Upayavira)
 
+* SOLR-7935: Fix very rare race condition that can cause an update to fail
+  via NullPointerException during a core reload. (yonik)
+
 Optimizations
 ----------------------
 

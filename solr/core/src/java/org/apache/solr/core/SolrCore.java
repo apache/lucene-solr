@@ -1584,8 +1584,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
         // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
 
-        RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState()
-            .getIndexWriter(null);
+        RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(null);
+
         try {
           if (writer != null) {
             // if in NRT mode, open from the writer
@@ -1639,7 +1639,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else  {
-          RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
+          RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
           try {
             newReader = indexReaderFactory.newReader(writer.get(), this);
