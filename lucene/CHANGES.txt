@@ -467,7 +467,7 @@ Optimizations
 * LUCENE-6585: Flatten conjunctions and conjunction approximations into
   parent conjunctions. For example a sloppy phrase query of "foo bar"~5
   with a filter of "baz" will internally leapfrog foo,bar,baz as one
-  conjunction. (Ryan Ernst, Robert Muir, Adrien Grande)
+  conjunction. (Ryan Ernst, Robert Muir, Adrien Grand)
 
 * LUCENE-6325: Reduce RAM usage of FieldInfos, and speed up lookup by
   number, by using an array instead of TreeMap except in very sparse
