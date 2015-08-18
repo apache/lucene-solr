@@ -92,9 +92,20 @@ public class PointInGeo3DShapeQuery extends Query {
 
         XYZBounds bounds = new XYZBounds();
         shape.getBounds(bounds);
+
+        GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel,
+                                                      bounds.getMinimumX(),
+                                                      bounds.getMaximumX(),
+                                                      bounds.getMinimumY(),
+                                                      bounds.getMaximumY(),
+                                                      bounds.getMinimumZ(),
+                                                      bounds.getMaximumZ());
+
+        assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS;
         
         // TODO: make this more efficient: as we recurse the BKD tree we should check whether the
         // bbox we are recursing into intersects our shape; Apache SIS may have (non-GPL!) code to do this?
+        //DocIdSet result = tree.intersect(
         DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX()),
                                          Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX()),
                                          Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY()),
