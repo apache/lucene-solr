@@ -316,6 +316,13 @@ public abstract class SolrParams implements Serializable {
       Object val = params.getVal(i);
       if (val instanceof String[]) {
         MultiMapSolrParams.addParam(name, (String[]) val, map);
+      } else if (val instanceof List) {
+        List l = (List) val;
+        String[] s = new String[l.size()];
+        for (int j = 0; j < l.size(); j++) {
+          s[j] = l.get(j) == null ? null : String.valueOf(l.get(j));
+        }
+        MultiMapSolrParams.addParam(name, s, map);
       } else {
         MultiMapSolrParams.addParam(name, val.toString(), map);
       }
