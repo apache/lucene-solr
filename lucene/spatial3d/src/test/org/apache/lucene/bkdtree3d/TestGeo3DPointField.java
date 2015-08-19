@@ -65,12 +65,12 @@ import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.encodeValue;
 public class TestGeo3DPointField extends LuceneTestCase {
 
   private static boolean smallBBox;
-
+  
   @BeforeClass
   public static void beforeClass() {
     smallBBox = random().nextBoolean();
     if (VERBOSE) {
-      System.out.println("TEST: smallBBox=" + smallBBox);
+      System.err.println("TEST: smallBBox=" + smallBBox);
     }
   }
 
@@ -213,8 +213,8 @@ public class TestGeo3DPointField extends LuceneTestCase {
       }
 
       if (VERBOSE) {
-        System.out.println("  docID=" + docID + " point=" + point);
-        System.out.println("    x=" + encodeValue(point.x) +
+        System.err.println("  docID=" + docID + " point=" + point);
+        System.err.println("    x=" + encodeValue(point.x) +
                            " y=" + encodeValue(point.y) +
                            " z=" + encodeValue(point.z));
       }
@@ -248,7 +248,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
       int zMaxEnc = encodeValue(z.max);
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " bbox: x=" + x + " (" + xMinEnc + " TO " + xMaxEnc+ ")" + " y=" + y + " (" + yMinEnc + " TO " + yMaxEnc + ")"  + " z=" + z + " (" + zMinEnc + " TO " + zMaxEnc + ")" );
+        System.err.println("\nTEST: iter=" + iter + " bbox: x=" + x + " (" + xMinEnc + " TO " + xMaxEnc+ ")" + " y=" + y + " (" + yMinEnc + " TO " + yMaxEnc + ")"  + " z=" + z + " (" + zMinEnc + " TO " + zMaxEnc + ")" );
       }
 
       DocIdSet hits = r.intersect(xMinEnc, xMaxEnc,
@@ -314,7 +314,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
         matches.set(nextHit);
       }
       if (VERBOSE) {
-        System.out.println("  total hits: " + matches.cardinality());
+        System.err.println("  total hits: " + matches.cardinality());
       }
 
       for(int docID=0;docID<numPoints;docID++) {
@@ -360,7 +360,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     int numPoints = atLeast(count);
 
     if (VERBOSE) {
-      System.out.println("TEST: numPoints=" + numPoints);
+      System.err.println("TEST: numPoints=" + numPoints);
     }
 
     double[] lats = new double[numPoints];
@@ -374,7 +374,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
         // Some docs don't have a point:
         lats[docID] = Double.NaN;
         if (VERBOSE) {
-          System.out.println("  doc=" + docID + " is missing");
+          System.err.println("  doc=" + docID + " is missing");
         }
         continue;
       }
@@ -393,14 +393,14 @@ public class TestGeo3DPointField extends LuceneTestCase {
           lats[docID] = lats[oldDocID];
           lons[docID] = toRadians(randomLon());
           if (VERBOSE) {
-            System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat as doc=" + oldDocID + ")");
+            System.err.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat as doc=" + oldDocID + ")");
           }
         } else if (x == 1) {
           // Identical lon to old point
           lats[docID] = toRadians(randomLat());
           lons[docID] = lons[oldDocID];
           if (VERBOSE) {
-            System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lon as doc=" + oldDocID + ")");
+            System.err.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lon as doc=" + oldDocID + ")");
           }
         } else {
           assert x == 2;
@@ -408,7 +408,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
           lats[docID] = lats[oldDocID];
           lons[docID] = lons[oldDocID];
           if (VERBOSE) {
-            System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat/lon as doc=" + oldDocID + ")");
+            System.err.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat/lon as doc=" + oldDocID + ")");
           }
         }
       } else {
@@ -416,7 +416,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
         lons[docID] = toRadians(randomLon());
         haveRealDoc = true;
         if (VERBOSE) {
-          System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID]);
+          System.err.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID]);
         }
       }
     }
@@ -491,7 +491,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
         w.deleteDocuments(new Term("id", ""+idToDelete));
         deleted.add(idToDelete);
         if (VERBOSE) {
-          System.out.println("  delete id=" + idToDelete);
+          System.err.println("  delete id=" + idToDelete);
         }
       }
     }
@@ -545,11 +545,11 @@ public class TestGeo3DPointField extends LuceneTestCase {
                   angle = random().nextDouble() * Math.PI/2.0;
                 }
 
-                if (VERBOSE) {
-                  System.out.println("\nTEST: iter=" + iter + " shape=GeoCircle lat=" + lat + " lon=" + lon + " angle=" + angle);
-                }
-
                 shape = new GeoCircle(planetModel, lat, lon, angle);
+
+                if (VERBOSE) {
+                  System.err.println("\nTEST: iter=" + iter + " shape="+shape);
+                }
 
               } else {
                 double lat0 = toRadians(randomLat());
@@ -567,17 +567,18 @@ public class TestGeo3DPointField extends LuceneTestCase {
                   lon1 = x;
                 }
 
+                shape = GeoBBoxFactory.makeGeoBBox(planetModel, lat1, lat0, lon0, lon1);
+
                 if (VERBOSE) {
-                  System.out.println("\nTEST: iter=" + iter + " shape=GeoBBox lat0=" + lat0 + " lat1=" + lat1 + " lon0=" + lon0 + " lon1=" + lon1);
+                  System.err.println("\nTEST: iter=" + iter + " shape="+shape);
                 }
 
-                shape = GeoBBoxFactory.makeGeoBBox(planetModel, lat1, lat0, lon0, lon1);
               }
 
               Query query = new PointInGeo3DShapeQuery(planetModel, "point", shape);
 
               if (VERBOSE) {
-                System.out.println("  using query: " + query);
+                System.err.println("  using query: " + query);
               }
 
               final FixedBitSet hits = new FixedBitSet(r.maxDoc());
@@ -603,7 +604,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                 });
 
               if (VERBOSE) {
-                System.out.println("  hitCount: " + hits.cardinality());
+                System.err.println("  hitCount: " + hits.cardinality());
               }
       
               for(int docID=0;docID<r.maxDoc();docID++) {

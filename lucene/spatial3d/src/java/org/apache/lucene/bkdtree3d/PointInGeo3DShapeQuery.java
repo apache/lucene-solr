@@ -103,13 +103,14 @@ public class PointInGeo3DShapeQuery extends Query {
                                                       bounds.getMaximumZ());
 
         assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS;
-        
-        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumY()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumZ()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumZ()),
+
+        // nocommit explain why we need the +/- 2.0 fudge factor...
+        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION),
                                          new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {

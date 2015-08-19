@@ -160,6 +160,16 @@ public class GeoBBoxTest {
     assertEquals(0.841471, xyzb.getMaximumY(), 0.000001);
     assertEquals(-0.707107, xyzb.getMinimumZ(), 0.000001);
     assertEquals(0.707107, xyzb.getMaximumZ(), 0.000001);
+    
+    // nocommit explain why we need the +/- 2.0 fudge factor...
+    GeoArea area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
+      xyzb.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION,
+      xyzb.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION,
+      xyzb.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION,
+      xyzb.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION,
+      xyzb.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION,
+      xyzb.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION);
+    assertEquals(GeoArea.WITHIN, area.getRelationship(c));
 
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.0, -Math.PI * 0.25, -1.0, 1.0);
     b = new LatLonBounds();

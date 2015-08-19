@@ -25,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 
 public class GeoCircleTest {
 
-
   @Test
   public void testCircleDistance() {
     GeoCircle c;
@@ -95,8 +94,18 @@ public class GeoCircleTest {
   public void testCircleBounds() {
     GeoCircle c;
     LatLonBounds b;
-
-
+    XYZBounds xyzb;
+    
+    // Test case from BKD
+    c = new GeoCircle(PlanetModel.SPHERE, -0.765816119338, 0.991848766844, 0.8153163226330487);
+    GeoPoint p1 = new GeoPoint(0.7692262265236023, -0.055089298115534646, -0.6365973465711254);
+    assertTrue(c.isWithin(p1));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    assertTrue(p1.x >= xyzb.getMinimumX() && p1.x <= xyzb.getMaximumX());
+    assertTrue(p1.y >= xyzb.getMinimumY() && p1.y <= xyzb.getMaximumY());
+    assertTrue(p1.z >= xyzb.getMinimumZ() && p1.z <= xyzb.getMaximumZ());
+    
     // Vertical circle cases
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
     b = new LatLonBounds();

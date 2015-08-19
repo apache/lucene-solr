@@ -175,7 +175,7 @@ public class Plane extends Vector {
     if (Math.abs(x) < MINIMUM_RESOLUTION && Math.abs(z) < MINIMUM_RESOLUTION)
       return null;
     final double denom = 1.0 / Math.sqrt(x*x + z*z);
-    return new Plane(z * denom, 0.0, -z * denom, 0.0);
+    return new Plane(z * denom, 0.0, -x * denom, 0.0);
   }
 
   /** Construct a normalized plane through a y-z point and including the X axis.

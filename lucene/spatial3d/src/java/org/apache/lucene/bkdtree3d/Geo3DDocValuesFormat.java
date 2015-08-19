@@ -131,6 +131,7 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
   }
 
   static double decodeValue(int x) {
+    // nocommit make this multiplication instead?
     return x / SCALE;
   }
 
