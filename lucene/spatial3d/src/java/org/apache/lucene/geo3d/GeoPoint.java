@@ -183,4 +183,12 @@ public class GeoPoint extends Vector {
       Math.abs(this.y - y) < MINIMUM_RESOLUTION &&
       Math.abs(this.z - z) < MINIMUM_RESOLUTION;
   }
+  
+  @Override
+  public String toString() {
+    if (this.longitude == Double.NEGATIVE_INFINITY) {
+      return super.toString();
+    }
+    return "[lat="+getLatitude()+", lon="+getLongitude()+"]";
+  }
 }

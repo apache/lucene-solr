@@ -96,6 +96,17 @@ public class GeoCircleTest {
     LatLonBounds b;
     XYZBounds xyzb;
     
+    // Another test case from BKD
+    c = new GeoCircle(PlanetModel.SPHERE, -0.005955031040627789, -0.0029274772647399153, 1.601488279374338E-5);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    GeoArea area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    
+    int relationship = area.getRelationship(c);
+    System.err.println("relationship = "+relationship);
+    assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
+
     // Test case from BKD
     c = new GeoCircle(PlanetModel.SPHERE, -0.765816119338, 0.991848766844, 0.8153163226330487);
     GeoPoint p1 = new GeoPoint(0.7692262265236023, -0.055089298115534646, -0.6365973465711254);
