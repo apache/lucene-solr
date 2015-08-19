@@ -102,7 +102,7 @@ public class PointInGeo3DShapeQuery extends Query {
                                                       bounds.getMinimumZ(),
                                                       bounds.getMaximumZ());
 
-        assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS;
+        assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "got " + xyzSolid.getRelationship(shape);
 
         // nocommit explain why we need the +/- 2.0 fudge factor...
         DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
