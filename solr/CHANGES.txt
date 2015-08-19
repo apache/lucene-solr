@@ -97,7 +97,7 @@ Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.2.11.v20150529
+Jetty 9.2.13.v20150730
 
 Upgrading from Solr 5.3
 -----------------------
@@ -162,6 +162,8 @@ Other Changes
 
 * SOLR-7902: Split out use of child timers from RTimer to a sub-class
   (Ramkumar Aiyengar)
+
+* SOLR-7943: Upgrade Jetty to 9.2.13.v20150730. (Bill Bell, shalin)
 
 ==================  5.3.0 ==================
 
