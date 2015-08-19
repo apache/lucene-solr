@@ -90,6 +90,9 @@ Other
 * LUCENE-6729: Upgrade ASM used in expressions module to version 5.0.4.
   (Uwe Schindler)
 
+* LUCENE-6738: remove IndexWriterConfig.[gs]etIndexingChain
+  (Christine Poerschke)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
