@@ -327,22 +327,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return readerPooling;
   }
 
-  /** Expert: sets the {@link DocConsumer} chain to be used to process documents.
-   *
-   * <p>Only takes effect when IndexWriter is first created. */
-  IndexWriterConfig setIndexingChain(IndexingChain indexingChain) {
-    if (indexingChain == null) {
-      throw new IllegalArgumentException("indexingChain must not be null");
-    }
-    this.indexingChain = indexingChain;
-    return this;
-  }
-
-  @Override
-  IndexingChain getIndexingChain() {
-    return indexingChain;
-  }
-
   /**
    * Expert: Controls when segments are flushed to disk during indexing.
    * The {@link FlushPolicy} initialized during {@link IndexWriter} instantiation and once initialized

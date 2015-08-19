@@ -246,14 +246,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
     // Test IndexingChain
     assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
-    conf.setIndexingChain(new MyIndexingChain());
-    assertEquals(MyIndexingChain.class, conf.getIndexingChain().getClass());
-    try {
-      conf.setIndexingChain(null);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
 
     try {
       conf.setMaxBufferedDeleteTerms(0);
