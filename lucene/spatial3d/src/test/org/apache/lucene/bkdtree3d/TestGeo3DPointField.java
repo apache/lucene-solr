@@ -294,6 +294,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                         return BKD3DTreeReader.Relation.CELL_INSIDE_SHAPE;
                                       }
 
+                                      if (xMinEnc >= cellXMin && xMaxEnc <= cellXMax &&
+                                          yMinEnc >= cellYMin && yMaxEnc <= cellYMax &&
+                                          zMinEnc >= cellZMin && zMaxEnc <= cellZMax) {
+                                        return BKD3DTreeReader.Relation.SHAPE_INSIDE_CELL;
+                                      }
+
                                       return BKD3DTreeReader.Relation.SHAPE_CROSSES_CELL;
                                     }
                                   });
