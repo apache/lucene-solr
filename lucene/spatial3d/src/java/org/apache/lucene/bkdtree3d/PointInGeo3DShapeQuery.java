@@ -105,12 +105,19 @@ public class PointInGeo3DShapeQuery extends Query {
         // nocommit sometimes returns CONTAINS too:
         // assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "got " + xyzSolid.getRelationship(shape);
 
-        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumY()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumZ()),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumZ()),
+
+        // The fudge factor here (+/- 2.0 * MINIMUM_RESOLUTION) is here to ensure that
+        // you get a WITHIN rather than an OVERLAPS if you expand the bounding box by
+        // an amount sufficient to insure there are no overlaps between the shape and
+        // the box. Otherwise according to the (revised) definition of getRelationship(),
+        // you could technically get either one.
+
+        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION),
                                          new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {
