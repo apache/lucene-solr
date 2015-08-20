@@ -151,6 +151,10 @@ Optimizations
   is anywhere from 20% to over 100% faster and produces less garbage on average.
   (yonik)
 
+* SOLR-6760: New optimized DistributedQueue implementation for overseer increases
+  message processing performance by ~470%.
+  (Noble Paul, Scott Blum, shalin)
+
 Other Changes
 ----------------------
 
