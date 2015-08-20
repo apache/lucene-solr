@@ -114,7 +114,8 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
 
   static final double MAX_ABS_VALUE = 1.002d;
 
-  private static final double SCALE = Integer.MAX_VALUE / MAX_ABS_VALUE;
+  private static final double ENCODE_SCALE = Integer.MAX_VALUE / MAX_ABS_VALUE;
+  private static final double DECODE_SCALE = MAX_ABS_VALUE / Integer.MAX_VALUE;
 
   static int encodeValue(double x) {
     if (x < -MAX_ABS_VALUE) {
@@ -123,7 +124,7 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
     if (x > MAX_ABS_VALUE) {
       throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than MAX_VALUE=" + MAX_ABS_VALUE + ")");
     }
-    long y = (long) (x * SCALE);
+    long y = (long) (x * ENCODE_SCALE);
     assert y >= Integer.MIN_VALUE;
     assert y <= Integer.MAX_VALUE;
 
@@ -131,8 +132,7 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
   }
 
   static double decodeValue(int x) {
-    // nocommit make this multiplication instead?
-    return x / SCALE;
+    return x * DECODE_SCALE;
   }
 
   static int readInt(byte[] bytes, int offset) {

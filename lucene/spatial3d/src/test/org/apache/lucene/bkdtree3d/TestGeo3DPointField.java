@@ -531,7 +531,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
             for (int iter=0;iter<iters && failed.get() == false;iter++) {
 
-              // nocommit randomize other shapes?
+              // TODO: randomize other shapes
 
               GeoShape shape;
               if (random().nextBoolean()) {

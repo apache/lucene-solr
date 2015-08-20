@@ -102,8 +102,7 @@ public class PointInGeo3DShapeQuery extends Query {
                                                       bounds.getMinimumZ(),
                                                       bounds.getMaximumZ());
 
-        // nocommit sometimes returns CONTAINS too:
-        // assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "got " + xyzSolid.getRelationship(shape);
+        assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "expected WITHIN (1) or OVERLAPS (2) but got " + xyzSolid.getRelationship(shape);
 
 
         // The fudge factor here (+/- 2.0 * MINIMUM_RESOLUTION) is here to ensure that

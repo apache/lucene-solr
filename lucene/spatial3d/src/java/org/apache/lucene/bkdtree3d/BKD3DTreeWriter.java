@@ -73,8 +73,7 @@ class BKD3DTreeWriter {
   // x (int), y (int), z (int) + ord (long) + docID (int)
   static final int BYTES_PER_DOC = RamUsageEstimator.NUM_BYTES_LONG + 4 * RamUsageEstimator.NUM_BYTES_INT;
 
-  // nocommit removeme
-  static final boolean DEBUG = false;
+  //static final boolean DEBUG = false;
 
   public static final int DEFAULT_MAX_POINTS_IN_LEAF_NODE = 1024;
 
@@ -626,11 +625,11 @@ class BKD3DTreeWriter {
     assert count == lastYSorted.count;
     assert count == lastZSorted.count;
 
-    if (DEBUG) System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + "\n  lastXSorted=" + lastXSorted + "\n  lastYSorted=" + lastYSorted + "\n  lastZSorted=" + lastZSorted + "\n  count=" + lastXSorted.count + " x=" + minX + " TO " + maxX + " y=" + minY + " TO " + maxY + " z=" + minZ + " TO " + maxZ);
+    //if (DEBUG) System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + "\n  lastXSorted=" + lastXSorted + "\n  lastYSorted=" + lastYSorted + "\n  lastZSorted=" + lastZSorted + "\n  count=" + lastXSorted.count + " x=" + minX + " TO " + maxX + " y=" + minY + " TO " + maxY + " z=" + minZ + " TO " + maxZ);
 
     if (nodeID >= leafNodeOffset) {
       // Leaf node: write block
-      if (DEBUG) System.out.println("  leaf");
+      //if (DEBUG) System.out.println("  leaf");
       assert maxX >= minX;
       assert maxY >= minY;
       assert maxZ >= minZ;
@@ -724,7 +723,7 @@ class BKD3DTreeWriter {
       assert count > 0;
 
       // Inner node: partition/recurse
-      if (DEBUG) System.out.println("  non-leaf");
+      //if (DEBUG) System.out.println("  non-leaf");
 
       assert nodeID < splitValues.length: "nodeID=" + nodeID + " splitValues.length=" + splitValues.length;
 

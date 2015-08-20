@@ -161,7 +161,6 @@ public class GeoBBoxTest {
     assertEquals(-0.707107, xyzb.getMinimumZ(), 0.000001);
     assertEquals(0.707107, xyzb.getMaximumZ(), 0.000001);
     
-    // nocommit explain why we need the +/- 2.0 fudge factor...
     GeoArea area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
       xyzb.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION,
       xyzb.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION,

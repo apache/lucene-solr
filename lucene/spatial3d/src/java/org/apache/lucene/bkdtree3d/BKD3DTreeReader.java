@@ -189,8 +189,10 @@ final class BKD3DTreeReader implements Accountable {
         // The cell crosses the shape boundary, so we fall through and do full filtering
       }
     } else {
-      // nocommit put me back, but it trips sometimes:
-      //assert state.valueFilter.compare(cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax) == Relation.SHAPE_INSIDE_CELL: "got " + state.valueFilter.compare(cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax);
+      // The whole point of the incoming bbox (state.xMin/xMax/etc.) is that it is
+      // supposed to fully enclose the shape, so this cell we are visiting, which
+      // fully contains the query's bbox, better in turn fully contain the shape!
+      assert state.valueFilter.compare(cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax) == Relation.SHAPE_INSIDE_CELL: "got " + state.valueFilter.compare(cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax);
     }
 
     //System.out.println("\nintersect node=" + nodeID + " vs " + leafNodeOffset);
