@@ -116,7 +116,7 @@ public class RAMInputStream extends IndexInput implements Cloneable {
 
   @Override
   public void seek(long pos) throws IOException {
-    if (currentBuffer==null || pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
+    if (currentBuffer == null || pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
       currentBufferIndex = (int) (pos / BUFFER_SIZE);
       switchCurrentBuffer(false);
     }
@@ -156,5 +156,20 @@ public class RAMInputStream extends IndexInput implements Cloneable {
         return super.slice(sliceDescription, offset + ofs, len);
       }
     };
+  }
+
+  @Override
+  public RAMInputStream clone() {
+    RAMInputStream clone = (RAMInputStream) super.clone();
+    // If another thread was using our instance, this new clone could have a mismatched currentBuffer and currentBufferIndex, so we do
+    // a "fresh seek" here:
+    clone.currentBuffer = null;
+    try {
+      clone.seek(getFilePointer());
+    } catch (IOException ioe) {
+      // Should not happen!
+      throw new AssertionError(ioe);
+    }
+    return clone;
   }
 }
