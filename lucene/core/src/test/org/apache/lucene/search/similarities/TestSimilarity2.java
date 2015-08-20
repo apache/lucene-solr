@@ -30,6 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -177,10 +178,10 @@ public class TestSimilarity2 extends LuceneTestCase {
     Query query = queryBuilder.build();
     
     // collect scores
-    List<Float> scores = new ArrayList<>();
+    List<Explanation> scores = new ArrayList<>();
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
-      scores.add(is.explain(query, 0).getValue());
+      scores.add(is.explain(query, 0));
     }
     ir.close();
     
@@ -195,7 +196,9 @@ public class TestSimilarity2 extends LuceneTestCase {
     is = newSearcher(ir);
     for (int i = 0; i < sims.size(); i++) {
       is.setSimilarity(sims.get(i));
-      assertEquals(scores.get(i).floatValue(), is.explain(query, 0).getValue(), 0F);
+      Explanation expected = scores.get(i);
+      Explanation actual = is.explain(query, 0);
+      assertEquals(sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected, expected.getValue(), actual.getValue(), 0F);
     }
     
     iw.close();
