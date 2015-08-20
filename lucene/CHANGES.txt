@@ -79,6 +79,8 @@ Bug Fixes
   test data.  In addition, the performance of those filters was improved
   significantly.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-6745: RAMInputStream.clone was not thread safe (Mike McCandless)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
