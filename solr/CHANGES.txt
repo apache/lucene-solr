@@ -171,6 +171,9 @@ Other Changes
 
 * SOLR-7943: Upgrade Jetty to 9.2.13.v20150730. (Bill Bell, shalin)
 
+* SOLR-7007: DistributedUpdateProcessor now logs replay flag as boolean instead of int
+  (Mike Drob via Christine Poerschke)
+
 ==================  5.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
