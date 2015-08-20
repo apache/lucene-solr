@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -79,7 +79,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private static final String COLLECTION_NAME = "mycollection";
   private static final String CONFIG_NAME = "myconfig";
   
-  private static DistributedQueue workQueueMock;
+  private static OverseerCollectionQueue workQueueMock;
   private static DistributedMap runningMapMock;
   private static DistributedMap completedMapMock;
   private static DistributedMap failureMapMock;
@@ -105,7 +105,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, ShardHandlerFactory shardHandlerFactory,
         String adminPath,
-        DistributedQueue workQueue, DistributedMap runningMap,
+        OverseerCollectionQueue workQueue, DistributedMap runningMap,
         DistributedMap completedMap,
         DistributedMap failureMap) {
       super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), null, new OverseerNodePrioritizer(zkStateReader, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
@@ -120,7 +120,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void setUpOnce() throws Exception {
-    workQueueMock = createMock(DistributedQueue.class);
+    workQueueMock = createMock(OverseerCollectionQueue.class);
     runningMapMock = createMock(DistributedMap.class);
     completedMapMock = createMock(DistributedMap.class);
     failureMapMock = createMock(DistributedMap.class);

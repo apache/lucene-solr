@@ -16,13 +16,19 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.File;
 import java.nio.charset.Charset;
+import java.util.NoSuchElementException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.cloud.DistributedQueue.QueueEvent;
-
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +39,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
   protected ZkTestServer zkServer;
   protected SolrZkClient zkClient;
+  protected ExecutorService executor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("dqtest-"));
 
   @Before
   @Override
@@ -44,37 +51,120 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   @Test
   public void testDistributedQueue() throws Exception {
     String dqZNode = "/distqueue/test";
-    String testData = "hello world";
-    long timeoutMs = 500L;
+    byte[] data = "hello world".getBytes(UTF8);
 
-    DistributedQueue dq = new DistributedQueue(zkClient, setupDistributedQueueZNode(dqZNode));
+    DistributedQueue dq = makeDistributedQueue(dqZNode);
 
     // basic ops
-    assertTrue(dq.poll() == null);
-    byte[] data = testData.getBytes(UTF8);
+    assertNull(dq.poll());
+    try {
+      dq.remove();
+      fail("NoSuchElementException expected");
+    } catch (NoSuchElementException expected) {
+      // expected
+    }
+
     dq.offer(data);
-    assertEquals(new String(dq.peek(),UTF8), testData);
-    assertEquals(new String(dq.take(),UTF8), testData);
-    assertTrue(dq.poll() == null);
-    QueueEvent qe = dq.offer(data, timeoutMs);
-    assertNotNull(qe);
-    assertEquals(new String(dq.remove(),UTF8), testData);
+    assertArrayEquals(dq.peek(500), data);
+    assertArrayEquals(dq.remove(), data);
+    assertNull(dq.poll());
+
+    dq.offer(data);
+    assertArrayEquals(dq.take(), data); // waits for data
+    assertNull(dq.poll());
+
+    dq.offer(data);
+    dq.peek(true); // wait until data is definitely there before calling remove
+    assertArrayEquals(dq.remove(), data);
+    assertNull(dq.poll());
 
     // should block until the background thread makes the offer
     (new QueueChangerThread(dq, 1000)).start();
-    qe = dq.peek(true);
-    assertNotNull(qe);
-    dq.remove();
+    assertNotNull(dq.peek(true));
+    assertNotNull(dq.remove());
+    assertNull(dq.poll());
 
     // timeout scenario ... background thread won't offer until long after the peek times out
     QueueChangerThread qct = new QueueChangerThread(dq, 1000);
     qct.start();
-    qe = dq.peek(500);
-    assertTrue(qe == null);
+    assertNull(dq.peek(500));
+    qct.join();
+  }
 
+  @Test
+  public void testDistributedQueueBlocking() throws Exception {
+    String dqZNode = "/distqueue/test";
+    String testData = "hello world";
+
+    final DistributedQueue dq = makeDistributedQueue(dqZNode);
+
+    assertNull(dq.peek());
+    Future<String> future = executor.submit(new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        return new String(dq.peek(true), UTF8);
+      }
+    });
     try {
-      qct.interrupt();
-    } catch (Exception exc) {}
+      future.get(1000, TimeUnit.MILLISECONDS);
+      fail("TimeoutException expected");
+    } catch (TimeoutException expected) {
+      assertFalse(future.isDone());
+    }
+
+    // Ultimately trips the watcher, triggering child refresh
+    dq.offer(testData.getBytes(UTF8));
+    assertEquals(testData, future.get(1000, TimeUnit.MILLISECONDS));
+    assertNotNull(dq.poll());
+
+    // After draining the queue, a watcher should be set.
+    assertNull(dq.peek(100));
+    assertTrue(dq.hasWatcher());
+
+    forceSessionExpire();
+
+    // Session expiry should have fired the watcher.
+    Thread.sleep(100);
+    assertFalse(dq.hasWatcher());
+
+    // Rerun the earlier test make sure updates are still seen, post reconnection.
+    future = executor.submit(new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        return new String(dq.peek(true), UTF8);
+      }
+    });
+    try {
+      future.get(1000, TimeUnit.MILLISECONDS);
+      fail("TimeoutException expected");
+    } catch (TimeoutException expected) {
+      assertFalse(future.isDone());
+    }
+
+    // Ultimately trips the watcher, triggering child refresh
+    dq.offer(testData.getBytes(UTF8));
+    assertEquals(testData, future.get(1000, TimeUnit.MILLISECONDS));
+    assertNotNull(dq.poll());
+    assertNull(dq.poll());
+  }
+
+  private void forceSessionExpire() throws InterruptedException, TimeoutException {
+    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+    zkServer.expire(sessionId);
+    zkClient.getConnectionManager().waitForDisconnected(10000);
+    zkClient.getConnectionManager().waitForConnected(10000);
+    for (int i = 0; i < 100; ++i) {
+      if (zkClient.isConnected()) {
+        break;
+      }
+      Thread.sleep(50);
+    }
+    assertTrue(zkClient.isConnected());
+    assertFalse(sessionId == zkClient.getSolrZooKeeper().getSessionId());
+  }
+
+  protected DistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
+    return new DistributedQueue(zkClient, setupNewDistributedQueueZNode(dqZNode));
   }
 
   private class QueueChangerThread extends Thread {
@@ -99,7 +189,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     }
   }
 
-  protected String setupDistributedQueueZNode(String znodePath) throws Exception {
+  protected String setupNewDistributedQueueZNode(String znodePath) throws Exception {
     if (!zkClient.exists("/", true))
       zkClient.makePath("/", false, true);
     if (zkClient.exists(znodePath, true))
@@ -113,8 +203,10 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     try {
       super.tearDown();
-    } catch (Exception exc) {}
+    } catch (Exception exc) {
+    }
     closeZk();
+    executor.shutdown();
   }
 
   protected void setupZk() throws Exception {

@@ -122,7 +122,7 @@ public final class ZkController {
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
   private final DistributedQueue overseerJobQueue;
-  private final DistributedQueue overseerCollectionQueue;
+  private final OverseerCollectionQueue overseerCollectionQueue;
 
   private final DistributedMap overseerRunningMap;
   private final DistributedMap overseerCompletedMap;
@@ -1776,7 +1776,7 @@ public final class ZkController {
     return overseerJobQueue;
   }
 
-  public DistributedQueue getOverseerCollectionQueue() {
+  public OverseerCollectionQueue getOverseerCollectionQueue() {
     return overseerCollectionQueue;
   }
 

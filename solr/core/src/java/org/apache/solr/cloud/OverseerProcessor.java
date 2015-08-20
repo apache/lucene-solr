@@ -29,9 +29,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
-import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -66,7 +65,7 @@ public class OverseerProcessor implements Runnable, Closeable {
   private static Logger log = LoggerFactory
       .getLogger(OverseerProcessor.class);
 
-  private DistributedQueue workQueue;
+  private OverseerCollectionQueue workQueue;
   private DistributedMap runningMap;
   private DistributedMap completedMap;
   private DistributedMap failureMap;
@@ -105,7 +104,7 @@ public class OverseerProcessor implements Runnable, Closeable {
                                         Overseer.Stats stats,
                                         OverseerMessageHandlerSelector selector,
                                         OverseerNodePrioritizer prioritizer,
-                                        DistributedQueue workQueue,
+                                        OverseerCollectionQueue workQueue,
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
                                         DistributedMap failureMap) {

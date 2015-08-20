@@ -36,8 +36,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.DistributedMap;
-import org.apache.solr.cloud.DistributedQueue;
-import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerCollectionQueue;
+import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -252,7 +252,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   }
 
   private boolean overseerCollectionQueueContains(String asyncId) throws KeeperException, InterruptedException {
-    DistributedQueue collectionQueue = coreContainer.getZkController().getOverseerCollectionQueue();
+    OverseerCollectionQueue collectionQueue = coreContainer.getZkController().getOverseerCollectionQueue();
     return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 

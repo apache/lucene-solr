@@ -53,7 +53,7 @@ public class OverseerCollectionProcessor extends OverseerProcessor {
                                         Overseer.Stats stats,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerNodePrioritizer,
-                                        DistributedQueue workQueue,
+                                        OverseerCollectionQueue workQueue,
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
                                         DistributedMap failureMap) {
