@@ -26,6 +26,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -165,7 +166,9 @@ public class TestSimilarity2 extends LuceneTestCase {
   /** make sure scores are not skewed by docs not containing the field */
   public void testNoFieldSkew() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    // an evil merge policy could reorder our docs for no reason
+    IndexWriterConfig iwConfig = newIndexWriterConfig().setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
     Document doc = new Document();
     doc.add(newTextField("foo", "bar baz somethingelse", Field.Store.NO));
     iw.addDocument(doc);
