@@ -144,6 +144,8 @@ Bug Fixes
 
 * SOLR-7941: multivalued params are concatenated when using config API (noble)
 
+* SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
+
 Optimizations
 ----------------------
 
