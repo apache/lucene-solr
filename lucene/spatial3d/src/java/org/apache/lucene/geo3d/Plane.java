@@ -130,7 +130,7 @@ public class Plane extends Vector {
         bestPoint = point;
       }
     }
-    return constructNormalizedYPlane(bestPoint.x, bestPoint.z);
+    return constructNormalizedYPlane(bestPoint.x, bestPoint.z, 0.0);
   }
 
   /** Construct the most accurate normalized plane through an y-z point and including the X axis.
@@ -149,7 +149,7 @@ public class Plane extends Vector {
         bestPoint = point;
       }
     }
-    return constructNormalizedXPlane(bestPoint.y, bestPoint.z);
+    return constructNormalizedXPlane(bestPoint.y, bestPoint.z, 0.0);
   }
 
   /** Construct a normalized plane through an x-y point and including the Z axis.
@@ -165,30 +165,32 @@ public class Plane extends Vector {
     return new Plane(y * denom, -x * denom, 0.0, 0.0);
   }
 
-  /** Construct a normalized plane through an x-z point and including the Y axis.
+  /** Construct a normalized plane through an x-z point and parallel to the Y axis.
    * If the x-z point is at (0,0), return null.
    * @param x is the x value.
    * @param z is the z value.
-   * @return a plane passing through the Y axis and (x,0,z).
+   * @param DValue is the offset from the origin for the plane.
+   * @return a plane parallel to the Y axis and perpendicular to the x and z values given.
    */
-  public static Plane constructNormalizedYPlane(final double x, final double z) {
+  public static Plane constructNormalizedYPlane(final double x, final double z, final double DValue) {
     if (Math.abs(x) < MINIMUM_RESOLUTION && Math.abs(z) < MINIMUM_RESOLUTION)
       return null;
     final double denom = 1.0 / Math.sqrt(x*x + z*z);
-    return new Plane(z * denom, 0.0, -x * denom, 0.0);
+    return new Plane(z * denom, 0.0, -x * denom, DValue);
   }
 
-  /** Construct a normalized plane through a y-z point and including the X axis.
+  /** Construct a normalized plane through a y-z point and parallel to the X axis.
    * If the y-z point is at (0,0), return null.
    * @param y is the y value.
    * @param z is the z value.
-   * @return a plane passing through the X axis and (0,y,z).
+   * @param DValue is the offset from the origin for the plane.
+   * @return a plane parallel to the X axis and perpendicular to the y and z values given.
    */
-  public static Plane constructNormalizedXPlane(final double y, final double z) {
+  public static Plane constructNormalizedXPlane(final double y, final double z, final double DValue) {
     if (Math.abs(y) < MINIMUM_RESOLUTION && Math.abs(z) < MINIMUM_RESOLUTION)
       return null;
     final double denom = 1.0 / Math.sqrt(y*y + z*z);
-    return new Plane(0.0, z * denom, -y * denom, 0.0);
+    return new Plane(0.0, z * denom, -y * denom, DValue);
   }
   
   /**
@@ -787,7 +789,26 @@ public class Plane extends Vector {
     final double B = this.y;
     final double C = this.z;
 
-    // Do Z
+    // For the X and Y values, we need a D value, which is the AVERAGE D value
+    // for two planes that pass through the two Z points determined here, for the axis in question.
+    final GeoPoint[] zPoints;
+    if (!boundsInfo.isSmallestMinX(planetModel) || !boundsInfo.isLargestMaxX(planetModel) ||
+      !boundsInfo.isSmallestMinY(planetModel) || !boundsInfo.isLargestMaxY(planetModel)) {
+      if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(B) >= MINIMUM_RESOLUTION)) {
+        // We need unconstrained values in order to compute D
+        zPoints = findIntersections(planetModel, constructNormalizedZPlane(A,B), NO_BOUNDS, NO_BOUNDS);
+        if (zPoints.length == 0) {
+          // No intersections, so plane never intersects world.
+          return;
+        }
+      } else {
+        zPoints = null;
+      }
+    } else {
+      zPoints = null;
+    }
+
+    // Do Z.
     if (!boundsInfo.isSmallestMinZ(planetModel) || !boundsInfo.isLargestMaxZ(planetModel)) {
       // Compute Z bounds for this arc
       // With ellipsoids, we really have only one viable way to do this computation.
@@ -800,6 +821,7 @@ public class Plane extends Vector {
         // NOT a degenerate case
         final GeoPoint[] points = findIntersections(planetModel, constructNormalizedZPlane(A,B), bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
+          assert planetModel.pointOnSurface(point);
           addPoint(boundsInfo, bounds, point);
         }
       } else {
@@ -808,13 +830,21 @@ public class Plane extends Vector {
         boundsInfo.addZValue(points[0]);
       }
     }
-    
-    // Do X
+        
     if (!boundsInfo.isSmallestMinX(planetModel) || !boundsInfo.isLargestMaxX(planetModel)) {
       if ((Math.abs(B) >= MINIMUM_RESOLUTION || Math.abs(C) >= MINIMUM_RESOLUTION)) {
-        // NOT a degenerate case
-        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedXPlane(B,C), bounds, NO_BOUNDS);
+        // NOT a degenerate case.  Compute D.
+        final Plane originPlane = constructNormalizedXPlane(B,C,0.0);
+        double DValue = 0.0;
+        if (zPoints != null) {
+          for (final GeoPoint p : zPoints) {
+            DValue += originPlane.evaluate(p);
+          }
+          DValue /= (double)zPoints.length;
+        }
+        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedXPlane(B,C,-DValue), bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
+          assert planetModel.pointOnSurface(point);
           addPoint(boundsInfo, bounds, point);
         }
       } else {
@@ -827,9 +857,18 @@ public class Plane extends Vector {
     // Do Y
     if (!boundsInfo.isSmallestMinY(planetModel) || !boundsInfo.isLargestMaxY(planetModel)) {
       if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(C) >= MINIMUM_RESOLUTION)) {
-        // NOT a degenerate case
-        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedYPlane(A,C), bounds, NO_BOUNDS);
+        // NOT a degenerate case.  Compute D.
+        final Plane originPlane = constructNormalizedYPlane(A,C,0.0);
+        double DValue = 0.0;
+        if (zPoints != null) {
+          for (final GeoPoint p : zPoints) {
+            DValue += originPlane.evaluate(p);
+          }
+          DValue /= (double)zPoints.length;
+        }
+        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedYPlane(A,C,-DValue), bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
+          assert planetModel.pointOnSurface(point);
           addPoint(boundsInfo, bounds, point);
         }
       } else {
