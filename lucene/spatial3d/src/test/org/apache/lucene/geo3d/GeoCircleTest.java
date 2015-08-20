@@ -99,6 +99,14 @@ public class GeoCircleTest {
     GeoPoint p1;
     GeoPoint p2;
     
+    // Fourth BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE, -0.0048795517261255, 0.004053904306995974, 5.93699764258874E-6);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    assertTrue(GeoArea.WITHIN == area.getRelationship(c) || GeoArea.OVERLAPS == area.getRelationship(c));
+    
     // Yet another test case from BKD
     c = new GeoCircle(PlanetModel.WGS84, 0.006229478708446979, 0.005570196723795424, 3.840276763694387E-5);
     xyzb = new XYZBounds();
