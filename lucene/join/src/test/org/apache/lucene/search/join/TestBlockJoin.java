@@ -1634,5 +1634,103 @@ public class TestBlockJoin extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  public void testToChildInitialAdvanceParentButNoKids() throws Exception {
+    
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
+    // degenerate case: first doc has no children
+    w.addDocument(makeResume("first", "nokids"));
+    w.addDocuments(Arrays.asList(makeJob("job", 42), makeResume("second", "haskid")));
+
+    // single segment
+    w.forceMerge(1);
+
+    final IndexReader r = w.getReader();
+    final IndexSearcher s = newSearcher(r);
+    w.close();
+
+    BitSetProducer parentFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
+    Query parentQuery = new TermQuery(new Term("docType", "resume"));
+
+    ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentFilter);
+
+    Weight weight = s.createNormalizedWeight(parentJoinQuery, random().nextBoolean());
+    DocIdSetIterator advancingScorer = weight.scorer(s.getIndexReader().leaves().get(0));
+    DocIdSetIterator nextDocScorer = weight.scorer(s.getIndexReader().leaves().get(0));
+
+    final int firstKid = nextDocScorer.nextDoc();
+    assertTrue("firstKid not found", DocIdSetIterator.NO_MORE_DOCS != firstKid);
+    assertEquals(firstKid, advancingScorer.advance(0));
+    
+    r.close();
+    dir.close();
+  }
+
+  public void testMultiChildQueriesOfDiffParentLevels() throws Exception {
+    
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    // randomly generate resume->jobs[]->qualifications[]
+    final int numResumes = atLeast(50);
+    for (int r = 0; r < numResumes; r++) {
+      final List<Document> docs = new ArrayList<>();
+      
+      final int rv = TestUtil.nextInt(random(), 1, 10);
+      final int numJobs = atLeast(1);
+      for (int j = 0; j < numJobs; j++) {
+        final int jv = TestUtil.nextInt(random(), 1, 10);
+
+        final int numQualifications = atLeast(1);
+        for (int q = 0; q < numQualifications; q++) {
+          docs.add(makeQualification("q" + q + "_rv" + rv + "_jv" + jv, q));
+        }
+        docs.add(makeJob("j" + j, jv));
+      }
+      docs.add(makeResume("r" + r, "rv"+rv));
+      w.addDocuments(docs);
+    }
+
+    final IndexReader r = w.getReader();
+    final IndexSearcher s = newSearcher(r);
+    w.close();
+
+    BitSetProducer resumeFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
+    // anything with a skill is a job
+    BitSetProducer jobFilter = new QueryBitSetProducer(new PrefixQuery(new Term("skill", "")));
+
+
+    final int numQueryIters = atLeast(1);
+    for (int i = 0; i < numQueryIters; i++) {
+      final int qjv = TestUtil.nextInt(random(), 1, 10);
+      final int qrv = TestUtil.nextInt(random(), 1, 10);
+      
+      Query resumeQuery = new ToChildBlockJoinQuery(new TermQuery(new Term("country","rv" + qrv)),
+                                                    resumeFilter);
+      
+      Query jobQuery = new ToChildBlockJoinQuery(NumericRangeQuery.newIntRange("year", qjv, qjv, true, true),
+                                                 jobFilter);
+      
+      BooleanQuery.Builder fullQuery = new BooleanQuery.Builder();
+      fullQuery.add(new BooleanClause(jobQuery, Occur.MUST));
+      fullQuery.add(new BooleanClause(resumeQuery, Occur.MUST));
+      
+      TopDocs hits = s.search(fullQuery.build(), 100); // NOTE: totally possible that we'll get no matches
+      
+      for (ScoreDoc sd : hits.scoreDocs) {
+        // since we're looking for children of jobs, all results must be qualifications
+        String q = r.document(sd.doc).get("qualification");
+        assertNotNull(sd.doc + " has no qualification", q);
+        assertTrue(q + " MUST contain jv" + qjv, q.contains("jv"+qjv));
+        assertTrue(q + " MUST contain rv" + qrv, q.contains("rv"+qrv));
+      }
+    }
+    
+    r.close();
+    dir.close();
+  }
+
+  
 }

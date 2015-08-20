@@ -95,6 +95,8 @@ Other
 * LUCENE-6738: remove IndexWriterConfig.[gs]etIndexingChain
   (Christine Poerschke)
 
+* LUCENE-6755: more tests of ToChildBlockJoinScorer.advance (hossman)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
