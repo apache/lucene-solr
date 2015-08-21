@@ -90,6 +90,7 @@
     <attribute name="centralized.versions.file"/>
     <attribute name="ivy.settings.file"/>
     <attribute name="ivy.resolution-cache.dir"/>
+    <attribute name="ivy.lock-strategy"/>
     <attribute name="common.build.dir"/>
     <attribute name="ignore.conflicts.file"/>
     <sequential>
@@ -102,6 +103,7 @@
       <libversions centralizedVersionsFile="@{centralized.versions.file}"
                    ivySettingsFile="@{ivy.settings.file}"
                    ivyResolutionCacheDir="@{ivy.resolution-cache.dir}"
+                   ivyLockStrategy="@{ivy.lock-strategy}"
                    commonBuildDir="@{common.build.dir}"
                    ignoreConflictsFile="@{ignore.conflicts.file}">
         <fileset dir="@{dir}">
