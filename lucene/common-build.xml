@@ -85,6 +85,7 @@
   <!-- Running ant targets in parralel may require this set to false because ivy:retrieve tasks may race with resolve -->
   <property name="ivy.sync" value="true"/>
   <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
+  <property name="ivy.lock-strategy" value="artifact-lock"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" location="${common.dir}/test-framework/lib/${junit.jar}"/>
