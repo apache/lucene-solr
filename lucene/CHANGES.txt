@@ -81,6 +81,9 @@ Bug Fixes
 
 * LUCENE-6745: RAMInputStream.clone was not thread safe (Mike McCandless)
 
+* LUCENE-6748: UsageTrackingQueryCachingPolicy no longer caches trivial queries
+  like MatchAllDocsQuery. (Adrien Grand)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
