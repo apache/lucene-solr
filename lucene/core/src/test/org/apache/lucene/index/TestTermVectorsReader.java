@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -73,12 +74,13 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     Arrays.sort(testTerms);
     int tokenUpto = 0;
+    Random rnd = random();
     for (int i = 0; i < testTerms.length; i++) {
       positions[i] = new int[TERM_FREQ];
       // first position must be 0
       for (int j = 0; j < TERM_FREQ; j++) {
         // positions are always sorted in increasing order
-        positions[i][j] = (int) (j * 10 + Math.random() * 10);
+        positions[i][j] = (int) (j * 10 + rnd.nextDouble() * 10);
         TestToken token = tokens[tokenUpto++] = new TestToken();
         token.text = testTerms[i];
         token.pos = positions[i][j];

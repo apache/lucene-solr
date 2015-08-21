@@ -104,6 +104,11 @@ Build
   detect javadoc-style license headers. Use Groovy to implement the
   checks instead of plain Ant.  (Uwe Schindler)
 
+Tests
+
+* LUCENE-6752: Add Math#random() to forbiddenapis.  (Uwe Schindler,
+  Mikhail Khludnev, Andrei Beliakov)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-6742: The Lovins & Finnish implementation of SnowballFilter
