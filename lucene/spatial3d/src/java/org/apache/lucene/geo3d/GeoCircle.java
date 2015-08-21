@@ -46,8 +46,10 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       throw new IllegalArgumentException("Latitude out of bounds");
     if (lon < -Math.PI || lon > Math.PI)
       throw new IllegalArgumentException("Longitude out of bounds");
-    if (cutoffAngle <= 0.0 || cutoffAngle > Math.PI)
+    if (cutoffAngle < 0.0 || cutoffAngle > Math.PI)
       throw new IllegalArgumentException("Cutoff angle out of bounds");
+    if (cutoffAngle < Vector.MINIMUM_RESOLUTION)
+      throw new IllegalArgumentException("Cutoff angle cannot be effectively zero");
     this.center = new GeoPoint(planetModel, lat, lon);
     // In an ellipsoidal world, cutoff distances make no sense, unfortunately.  Only membership
     // can be used to make in/out determination.
@@ -137,6 +139,8 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       return;
     }
     bounds.addPoint(center);
+    // Cheap way of preventing bounds from not agreeing with edgepoint perfectly
+    bounds.addPoint(edgePoints[0]);
     bounds.addPlane(planetModel, circlePlane);
   }
 
