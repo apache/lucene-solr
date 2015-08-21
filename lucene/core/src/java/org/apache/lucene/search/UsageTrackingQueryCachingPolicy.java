@@ -134,6 +134,24 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
 
   @Override
   public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+    if (query instanceof MatchAllDocsQuery
+        // MatchNoDocsQuery currently rewrites to a BooleanQuery,
+        // but who knows, it might get its own Weight one day
+        || query instanceof MatchNoDocsQuery) {
+      return false;
+    }
+    if (query instanceof BooleanQuery) {
+      BooleanQuery bq = (BooleanQuery) query;
+      if (bq.clauses().isEmpty()) {
+        return false;
+      }
+    }
+    if (query instanceof DisjunctionMaxQuery) {
+      DisjunctionMaxQuery dmq = (DisjunctionMaxQuery) query;
+      if (dmq.getDisjuncts().isEmpty()) {
+        return false;
+      }
+    }
     if (segmentPolicy.shouldCache(query, context) == false) {
       return false;
     }
