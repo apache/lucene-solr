@@ -79,8 +79,6 @@ Bug Fixes
   test data.  In addition, the performance of those filters was improved
   significantly.  (Uwe Schindler, Robert Muir)
 
-* LUCENE-6745: RAMInputStream.clone was not thread safe (Mike McCandless)
-
 * LUCENE-6748: UsageTrackingQueryCachingPolicy no longer caches trivial queries
   like MatchAllDocsQuery. (Adrien Grand)
 
