@@ -147,6 +147,10 @@ final class BKD3DTreeReader implements Accountable {
       for(int i=0;i<count;i++) {
         int docID = state.in.readInt();
         state.docs.add(docID);
+
+        // Up above in the recursion we asked valueFilter to relate our cell, and it returned Relation.CELL_INSIDE_SHAPE
+        // so all docs inside this cell better be accepted by the filter:
+        assert state.valueFilter.accept(docID);
       }
 
       return count;
