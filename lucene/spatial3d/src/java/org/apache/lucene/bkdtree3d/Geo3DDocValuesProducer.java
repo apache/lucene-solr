@@ -119,8 +119,12 @@ class Geo3DDocValuesProducer extends DocValuesProducer {
       if (fp == null) {
         throw new IllegalArgumentException("this field was not indexed as a BKDPointField");
       }
-      datIn.seek(fp);
-      treeReader = new BKD3DTreeReader(datIn, maxDoc);
+
+      // LUCENE-6697: never do real IOPs with the original IndexInput because search
+      // threads can be concurrently cloning it:
+      IndexInput clone = datIn.clone();
+      clone.seek(fp);
+      treeReader = new BKD3DTreeReader(clone, maxDoc);
 
       // Only hang onto the reader when we are not merging:
       if (merging == false) {
