@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -654,8 +655,9 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   /** Creates a file of the specified size with random data. */
   protected static void createRandomFile(Directory dir, String name, int size) throws IOException {
     IndexOutput os = dir.createOutput(name, newIOContext(random()));
+    Random rnd = random();
     for (int i=0; i<size; i++) {
-      byte b = (byte) (Math.random() * 256);
+      byte b = (byte) rnd.nextInt(256);
       os.writeByte(b);
     }
     os.close();

@@ -1114,9 +1114,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     IndexOutput os = dir.createOutput("testBufferStart.txt", newIOContext(random()));
     
     byte[] largeBuf = new byte[2048];
-    for (int i=0; i<largeBuf.length; i++) {
-      largeBuf[i] = (byte) (Math.random() * 256);
-    }
+    random().nextBytes(largeBuf);
     
     long currentPos = os.getFilePointer();
     os.writeBytes(largeBuf, largeBuf.length);
