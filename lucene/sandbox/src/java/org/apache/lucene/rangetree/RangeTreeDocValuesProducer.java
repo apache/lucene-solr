@@ -99,8 +99,12 @@ class RangeTreeDocValuesProducer extends DocValuesProducer {
       // FieldInfos checks has already ensured we are a DV field of this type, and Codec ensures
       // this DVFormat was used at write time:
       assert fp != null;
-      datIn.seek(fp);
-      treeReader = new RangeTreeReader(datIn);
+
+      // LUCENE-6697: never do real IOPs with the original IndexInput because search
+      // threads can be concurrently cloning it:
+      IndexInput clone = datIn.clone();
+      clone.seek(fp);
+      treeReader = new RangeTreeReader(clone);
 
       // Only hang onto the reader when we are not merging:
       if (merging == false) {
@@ -148,9 +152,11 @@ class RangeTreeDocValuesProducer extends DocValuesProducer {
       // this DVFormat was used at write time:
       assert fp != null;
 
-      datIn.seek(fp);
-      //System.out.println("load field=" + field.name);
-      treeReader = new RangeTreeReader(datIn);
+      // LUCENE-6697: never do real IOPs with the original IndexInput because search
+      // threads can be concurrently cloning it:
+      IndexInput clone = datIn.clone();
+      clone.seek(fp);
+      treeReader = new RangeTreeReader(clone);
 
       // Only hang onto the reader when we are not merging:
       if (merging == false) {
