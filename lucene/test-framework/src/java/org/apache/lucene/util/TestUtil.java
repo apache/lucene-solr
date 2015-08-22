@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -1214,7 +1215,7 @@ public final class TestUtil {
       int offset = nextInt(r, 0, WHITESPACE_CHARACTERS.length-1);
       char c = WHITESPACE_CHARACTERS[offset];
       // sanity check
-      Assert.assertTrue("Not really whitespace? (@"+offset+"): " + c, Character.isWhitespace(c));
+      assert Character.isWhitespace(c) : String.format(Locale.ENGLISH, "Not really whitespace? WHITESPACE_CHARACTERS[%d] is '\\u%04X'", offset, (int) c);
       out.append(c);
     }
     return out.toString();
@@ -1333,9 +1334,9 @@ public final class TestUtil {
     '\u001E',
     '\u001F',
     '\u0020',
-    // '\u0085', faild sanity check?
+    // '\u0085', failed sanity check?
     '\u1680',
-    '\u180E',
+    // '\u180E', no longer whitespace in Unicode 7.0 (Java 9)!
     '\u2000',
     '\u2001',
     '\u2002',
