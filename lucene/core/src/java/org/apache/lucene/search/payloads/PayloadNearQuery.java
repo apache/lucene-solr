@@ -58,6 +58,7 @@ import org.apache.lucene.util.ToStringUtils;
  *
  * @deprecated use {@link PayloadScoreQuery} to wrap {@link SpanNearQuery}
  */
+@Deprecated
 public class PayloadNearQuery extends SpanNearQuery {
 
   protected String fieldName;

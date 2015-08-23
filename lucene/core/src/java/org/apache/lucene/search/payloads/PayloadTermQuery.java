@@ -54,6 +54,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * @deprecated use {@link PayloadScoreQuery} to wrap {@link SpanTermQuery}
  **/
+@Deprecated
 public class PayloadTermQuery extends SpanTermQuery {
   protected PayloadFunction function;
   private boolean includeSpanScore;
