@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -1177,24 +1176,6 @@ public final class TestUtil {
     }
   }
 
-  /**
-   * Returns a random string in the specified length range consisting 
-   * entirely of whitespace characters 
-   * @see #WHITESPACE_CHARACTERS
-   */
-  public static String randomWhitespace(Random r, int minLength, int maxLength) {
-    final int end = nextInt(r, minLength, maxLength);
-    StringBuilder out = new StringBuilder();
-    for (int i = 0; i < end; i++) {
-      int offset = nextInt(r, 0, WHITESPACE_CHARACTERS.length-1);
-      char c = WHITESPACE_CHARACTERS[offset];
-      // sanity check
-      assert Character.isWhitespace(c) : String.format(Locale.ENGLISH, "Not really whitespace? WHITESPACE_CHARACTERS[%d] is '\\u%04X'", offset, (int) c);
-      out.append(c);
-    }
-    return out.toString();
-  }
-
   public static String randomAnalysisString(Random random, int maxLength, boolean simple) {
     assert maxLength >= 0;
 
@@ -1294,36 +1275,4 @@ public final class TestUtil {
     }
     return ram;
   }
-  
-  /** List of characters that match {@link Character#isWhitespace} */
-  public static final char[] WHITESPACE_CHARACTERS = new char[] {
-    // :TODO: is this list exhaustive?
-    '\u0009',
-    '\n',    
-    '\u000B',
-    '\u000C',
-    '\r',    
-    '\u001C',
-    '\u001D',
-    '\u001E',
-    '\u001F',
-    '\u0020',
-    // '\u0085', failed sanity check?
-    '\u1680',
-    // '\u180E', no longer whitespace in Unicode 7.0 (Java 9)!
-    '\u2000',
-    '\u2001',
-    '\u2002',
-    '\u2003',
-    '\u2004',
-    '\u2005',
-    '\u2006',
-    '\u2008',
-    '\u2009',
-    '\u200A',
-    '\u2028',
-    '\u2029',
-    '\u205F',
-    '\u3000',
-  };
 }

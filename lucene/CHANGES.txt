@@ -109,6 +109,11 @@ Tests
 * LUCENE-6752: Add Math#random() to forbiddenapis.  (Uwe Schindler,
   Mikhail Khludnev, Andrei Beliakov)
 
+* LUCENE-6760, SOLR-7958: Move TestUtil#randomWhitespace to the only
+  Solr test that is using it. The method is not useful for Lucene tests
+  (and easily breaks, e.g., in Java 9 caused by Unicode version updates).
+  (Uwe Schindler)
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-6742: The Lovins & Finnish implementation of SnowballFilter
