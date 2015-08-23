@@ -123,6 +123,10 @@ New Features
   Example: description:HDTV OR filter(+promotion:tv +promotion_date:[NOW/DAY TO NOW/DAY+7DAY])
   (yonik)
 
+* SOLR-7775: Allow fromIndex parameter to ScoreJoinQParserPlugin {!join score=.. fromIndex=..}..
+   to refer to a single-sharded collection that has a replica on all nodes where there is a 
+   replica in the to index (Andrei Beliakov via Mikhail Khludnev)
+
 
 Bug Fixes
 ----------------------

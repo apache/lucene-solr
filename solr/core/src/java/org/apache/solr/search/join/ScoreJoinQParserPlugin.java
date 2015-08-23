@@ -18,6 +18,7 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -25,7 +26,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -59,10 +65,9 @@ import org.apache.solr.util.RefCounted;
  *             Thus, it only supports {@link DocValuesType#SORTED}, {@link DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}.  </li>
  *  <li>fromIndex - optional parameter, a core name where subordinate query should run (and <code>from</code> values are collected) rather than current core.
  *             <br>Example:<code>q={!join from=manu_id_s to=id score=total fromIndex=products}foo</code> 
- *             <br>Follow up <a href="https://issues.apache.org/jira/browse/SOLR-7775">SOLR-7775</a> for SolrCloud collections support.</li>
  *  <li>to - "primary key" field name which is searched for values collected from subordinate query. 
  *             it should be declared as <code>indexed="true"</code>. Now it's treated as a single value field.</li>
- *  <li>score - one of {@link ScoreMode}: None,Avg,Total,Max. Lowercase is also accepted.</li>
+ *  <li>score - one of {@link ScoreMode}: <code>none,avg,total,max,min</code>. Capital case is also accepted.</li>
  * </ul>
  */
 public class ScoreJoinQParserPlugin extends QParserPlugin {
@@ -235,11 +240,12 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
 
-          final SolrCore fromCore = container.getCore(fromIndex);
+          final String coreName = getCoreName(fromIndex, container);
+          final SolrCore fromCore = container.getCore(coreName);
           RefCounted<SolrIndexSearcher> fromHolder = null;
 
           if (fromCore == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + fromIndex);
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + coreName);
           }
 
           long fromCoreOpenTime = 0;
@@ -253,7 +259,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
             if (fromHolder != null) {
               fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
             }
-            return new OtherCoreJoinQuery(fromQuery, fromField, fromIndex, fromCoreOpenTime,
+            return new OtherCoreJoinQuery(fromQuery, fromField, coreName, fromCoreOpenTime,
                 scoreMode, toField);
           } finally {
             otherReq.close();
@@ -268,6 +274,84 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       }
     };
   }
+
+  /**
+   * Returns an String with the name of a core.
+   * <p>
+   * This method searches the core with fromIndex name in the core's container.
+   * If fromIndex isn't name of collection or alias it's returns fromIndex without changes.
+   * If fromIndex is name of alias but if the alias points to multiple collections it's throw
+   * SolrException.ErrorCode.BAD_REQUEST because multiple shards not yet supported.
+   *
+   * @param  fromIndex name of the index
+   * @param  container the core container for searching the core with fromIndex name or alias
+   * @return      the string with name of core
+   */
+  public static String getCoreName(final String fromIndex, CoreContainer container) {
+    if (container.isZooKeeperAware()) {
+      ZkController zkController = container.getZkController();
+      final String resolved =
+        zkController.getClusterState().hasCollection(fromIndex)
+          ? fromIndex : resolveAlias(fromIndex, zkController);
+      if (resolved == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "SolrCloud join: Collection '" + fromIndex + "' not found!");
+      }
+      return findLocalReplicaForFromIndex(zkController, resolved);
+    }
+    return fromIndex;
+  }
+
+  private static String resolveAlias(String fromIndex, ZkController zkController) {
+    final Aliases aliases = zkController.getZkStateReader().getAliases();
+    if (aliases != null) {
+      final String resolved;
+      Map<String, String> collectionAliases = aliases.getCollectionAliasMap();
+      resolved = (collectionAliases != null) ? collectionAliases.get(fromIndex) : null;
+      if (resolved != null) {
+        if (resolved.split(",").length > 1) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "SolrCloud join: Collection alias '" + fromIndex +
+                  "' maps to multiple collections (" + resolved +
+                  "), which is not currently supported for joins.");
+        }
+        return resolved;
+      }
+    }
+    return null;
+  }
+
+  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {
+    String fromReplica = null;
+
+    String nodeName = zkController.getNodeName();
+    for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
+      if (fromReplica != null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "SolrCloud join: multiple shards not yet supported " + fromIndex);
+
+      for (Replica replica : slice.getReplicas()) {
+        if (replica.getNodeName().equals(nodeName)) {
+          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          // found local replica, but is it Active?
+          if (replica.getState() != Replica.State.ACTIVE)
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
+                    ") on "+nodeName+", but it is "+replica.getState());
+
+          break;
+        }
+      }
+    }
+
+    if (fromReplica == null)
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "SolrCloud join: No active replicas for "+fromIndex+
+              " found in node " + nodeName);
+
+    return fromReplica;
+  }
 }
+
 
 
