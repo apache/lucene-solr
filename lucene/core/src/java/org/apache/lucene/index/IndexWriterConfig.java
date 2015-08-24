@@ -286,7 +286,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
 
   /** Expert: Sets the {@link DocumentsWriterPerThreadPool} instance used by the
    * IndexWriter to assign thread-states to incoming indexing threads.
-   * </p>
    * <p>
    * NOTE: The given {@link DocumentsWriterPerThreadPool} instance must not be used with
    * other {@link IndexWriter} instances once it has been initialized / associated with an

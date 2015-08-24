@@ -341,7 +341,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
    *    <li>Bytes --&gt; Potential additional bytes to read depending on the
    *       header.
    * </ul>
-   * <p>
    */
   static void writeZFloat(DataOutput out, float f) throws IOException {
     int intVal = (int) f;
@@ -380,7 +379,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
    *    <li>Bytes --&gt; Potential additional bytes to read depending on the
    *       header.
    * </ul>
-   * <p>
    */
   static void writeZDouble(DataOutput out, double d) throws IOException {
     int intVal = (int) d;
@@ -431,7 +429,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
    *    <li>Bytes --&gt; Potential additional bytes to read depending on the
    *       header.
    * </ul>
-   * <p>
    */
   // T for "timestamp"
   static void writeTLong(DataOutput out, long l) throws IOException {

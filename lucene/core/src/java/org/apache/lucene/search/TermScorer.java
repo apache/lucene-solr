@@ -36,7 +36,7 @@ final class TermScorer extends Scorer {
    * @param td
    *          An iterator over the documents matching the <code>Term</code>.
    * @param docScorer
-   *          The </code>Similarity.SimScorer</code> implementation
+   *          The <code>Similarity.SimScorer</code> implementation
    *          to be used for score computations.
    */
   TermScorer(Weight weight, PostingsEnum td, Similarity.SimScorer docScorer) {
