@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.standard;
  */
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.stages.tokenattributes.TermAttribute;
 
 /**
  * This class implements Word Break rules from the Unicode Text Segmentation 
@@ -100,7 +101,7 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
   public final void getText(CharTermAttribute t) {
     t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
   }
-  
+
   /**
    * Sets the scanner buffer size in chars
    */

@@ -28,7 +28,7 @@ public class Vector {
    * Values that are all considered to be essentially zero have a magnitude
    * less than this.
    */
-  public static final double MINIMUM_RESOLUTION = 7.5e-11;
+  public static final double MINIMUM_RESOLUTION = 1e-12;//7.5e-11;
   /**
    * For squared quantities, the bound is squared too.
    */

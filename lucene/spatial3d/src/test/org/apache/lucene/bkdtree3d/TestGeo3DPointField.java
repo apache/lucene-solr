@@ -262,6 +262,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                       Point point = points.get(docID);
                                       //System.out.println("  accept docID=" + docID + " point=" + point + " (x=" + encodeValue(point.x) + " y=" + encodeValue(point.y) + " z=" + encodeValue(point.z) + ")");
 
+                                      // System.out.println("  accept docID=" + docID + " point: x=" + point.x + " y=" + point.y + " z=" + point.z);
                                       int xEnc = encodeValue(point.x);
                                       int yEnc = encodeValue(point.y);
                                       int zEnc = encodeValue(point.z);
@@ -548,7 +549,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                 shape = new GeoCircle(planetModel, lat, lon, angle);
 
                 if (VERBOSE) {
-                  System.err.println("\nTEST: iter=" + iter + " shape="+shape);
+                  System.err.println("\n" + Thread.currentThread() + ": TEST: iter=" + iter + " shape="+shape);
                 }
 
               } else {
@@ -570,7 +571,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                 shape = GeoBBoxFactory.makeGeoBBox(planetModel, lat1, lat0, lon0, lon1);
 
                 if (VERBOSE) {
-                  System.err.println("\nTEST: iter=" + iter + " shape="+shape);
+                  System.err.println("\n" + Thread.currentThread() + ": TEST: iter=" + iter + " shape="+shape);
                 }
 
               }

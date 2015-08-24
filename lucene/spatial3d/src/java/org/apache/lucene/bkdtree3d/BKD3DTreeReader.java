@@ -150,7 +150,14 @@ final class BKD3DTreeReader implements Accountable {
 
         // Up above in the recursion we asked valueFilter to relate our cell, and it returned Relation.CELL_INSIDE_SHAPE
         // so all docs inside this cell better be accepted by the filter:
-        assert state.valueFilter.accept(docID);
+
+        // nocommit back to assert
+        // assert state.valueFilter.accept(docID);
+
+        if (state.valueFilter.accept(docID) == false) {
+          System.out.println("\n" + Thread.currentThread().getName() + ": FAILED: docID=" + docID);
+          throw new RuntimeException("FAILED");
+        }
       }
 
       return count;
@@ -188,6 +195,13 @@ final class BKD3DTreeReader implements Accountable {
         return 0;
       } else if (r == Relation.CELL_INSIDE_SHAPE) {
         // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
+        
+        /*
+        System.out.println(Thread.currentThread() + ": switch to addAll at cell" +
+                           " x=" + Geo3DDocValuesFormat.decodeValue(cellXMin) + " to " + Geo3DDocValuesFormat.decodeValue(cellXMax) +
+                           " y=" + Geo3DDocValuesFormat.decodeValue(cellYMin) + " to " + Geo3DDocValuesFormat.decodeValue(cellYMax) +
+                           " z=" + Geo3DDocValuesFormat.decodeValue(cellZMin) + " to " + Geo3DDocValuesFormat.decodeValue(cellZMax));
+        */
         return addAll(state, nodeID);
       } else {
         // The cell crosses the shape boundary, so we fall through and do full filtering

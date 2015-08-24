@@ -140,10 +140,14 @@ public class GeoPath extends GeoBaseDistanceShape {
       }
       final GeoPoint upperPoint = new GeoPoint(planetModel, upperLat, upperLon);
       final GeoPoint lowerPoint = new GeoPoint(planetModel, lowerLat, lowerLon);
+      final GeoPoint point = points.get(0);
+      
+      // Construct normal plane
+      final Plane normalPlane = Plane.constructNormalizedZPlane(upperPoint, lowerPoint, point);
 
-      final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(points.get(0), upperPoint, lowerPoint);
+      final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(point, normalPlane, upperPoint, lowerPoint);
       endPoints.add(onlyEndpoint);
-      this.edgePoints = new GeoPoint[]{upperPoint};
+      this.edgePoints = new GeoPoint[]{onlyEndpoint.circlePlane.getSampleIntersectionPoint(planetModel, normalPlane)};
       return;
     }
     
@@ -338,7 +342,9 @@ public class GeoPath extends GeoBaseDistanceShape {
     public final GeoPoint[] notablePoints;
     /** No notable points from the circle itself */
     public final static GeoPoint[] circlePoints = new GeoPoint[0];
-
+    /** Null membership */
+    public final static Membership[] NO_MEMBERSHIP = new Membership[0];
+    
     /** Base case.  Does nothing at all.
      */
     public SegmentEndpoint(final GeoPoint point) {
@@ -354,14 +360,12 @@ public class GeoPath extends GeoBaseDistanceShape {
      *@param upperPoint is a point that must be on the circle plane.
      *@param lowerPoint is another point that must be on the circle plane.
      */
-    public SegmentEndpoint(final GeoPoint point, final GeoPoint upperPoint, final GeoPoint lowerPoint) {
+    public SegmentEndpoint(final GeoPoint point, final Plane normalPlane, final GeoPoint upperPoint, final GeoPoint lowerPoint) {
       this.point = point;
-      // Construct normal plane
-      final Plane normalPlane = Plane.constructNormalizedZPlane(upperPoint, lowerPoint, point);
       // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(point, normalPlane, upperPoint, lowerPoint);
-      this.cutoffPlanes = new Membership[0];
-      this.notablePoints = new GeoPoint[0];
+      this.cutoffPlanes = NO_MEMBERSHIP;
+      this.notablePoints = circlePoints;
     }
     
     /** Constructor for case (2).
