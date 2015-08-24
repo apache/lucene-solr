@@ -8,6 +8,12 @@ caching, replication, and a web administration interface.
 
 See http://lucene.apache.org/solr for more information.
 
+==================  5.3.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
 
 ==================  5.3.0 ==================
 
@@ -2213,7 +2219,7 @@ Other Changes
 
 ==================  4.10.2 ==================
 
-Bug FixesAnalyticsComponent
+Bug Fixes
 ----------------------
 
 * SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
