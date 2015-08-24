@@ -27,11 +27,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
 import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
-import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.cursors.IntObjectCursor;
 import com.carrotsearch.hppc.cursors.LongCursor;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
@@ -245,9 +245,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     FixedBitSet groupBits = null;
-    LongOpenHashSet groupSet = null;
+    LongHashSet groupSet = null;
     DocList docList = rb.getResults().docList;
-    IntOpenHashSet collapsedSet = new IntOpenHashSet(docList.size() * 2);
+    IntHashSet collapsedSet = new IntHashSet(docList.size() * 2);
 
     //Gather the groups for the current page of documents
     DocIterator idit = docList.iterator();
@@ -267,7 +267,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     int currentContext = 0;
     int currentDocBase = contexts.get(currentContext).docBase;
     int nextDocBase = (currentContext+1)<contexts.size() ? contexts.get(currentContext+1).docBase : Integer.MAX_VALUE;
-    IntObjectOpenHashMap<BytesRef> ordBytes = null;
+    IntObjectHashMap<BytesRef> ordBytes = null;
     if(values != null) {
       groupBits = new FixedBitSet(values.getValueCount());
       MultiDocValues.OrdinalMap ordinalMap = null;
@@ -282,7 +282,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
       int count = 0;
 
-      ordBytes = new IntObjectOpenHashMap();
+      ordBytes = new IntObjectHashMap<>();
 
       for(int i=0; i<globalDocs.length; i++) {
         int globalDoc = globalDocs[i];
@@ -327,7 +327,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         }
       }
     } else {
-      groupSet = new LongOpenHashSet((int)(docList.size()*1.25));
+      groupSet = new LongHashSet(docList.size());
       NumericDocValues collapseValues = contexts.get(currentContext).reader().getNumericDocValues(field);
       int count = 0;
       for(int i=0; i<globalDocs.length; i++) {
@@ -383,12 +383,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     } else {
       searcher.search(new FilteredQuery(query, pfilter.filter), collector);
     }
-    LongObjectMap groups = ((GroupCollector)groupExpandCollector).getGroups();
+    LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();
     NamedList outMap = new SimpleOrderedMap();
     CharsRefBuilder charsRef = new CharsRefBuilder();
-    for (LongObjectCursor cursor : (Iterable<LongObjectCursor>) groups) {
+    for (LongObjectCursor<Collector> cursor : groups) {
       long groupValue = cursor.key;
-      TopDocsCollector topDocsCollector = (TopDocsCollector) cursor.value;
+      TopDocsCollector<?> topDocsCollector = TopDocsCollector.class.cast(cursor.value);
       TopDocs topDocs = topDocsCollector.topDocs();
       ScoreDoc[] scoreDocs = topDocs.scoreDocs;
       if (scoreDocs.length > 0) {
@@ -496,11 +496,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     private LongObjectMap<Collector> groups;
     private FixedBitSet groupBits;
-    private IntOpenHashSet collapsedSet;
+    private IntHashSet collapsedSet;
 
-    public GroupExpandCollector(SortedDocValues docValues, FixedBitSet groupBits, IntOpenHashSet collapsedSet, int limit, Sort sort) throws IOException {
+    public GroupExpandCollector(SortedDocValues docValues, FixedBitSet groupBits, IntHashSet collapsedSet, int limit, Sort sort) throws IOException {
       int numGroups = collapsedSet.size();
-      groups = new LongObjectOpenHashMap<>(numGroups * 2);
+      groups = new LongObjectHashMap<>(numGroups);
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -530,7 +530,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         this.segmentOrdinalMap = ordinalMap.getGlobalOrds(context.ord);
       }
 
-      final LongObjectMap<LeafCollector> leafCollectors = new LongObjectOpenHashMap<>();
+      final LongObjectMap<LeafCollector> leafCollectors = new LongObjectHashMap<>();
       for (LongObjectCursor<Collector> entry : groups) {
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
@@ -572,17 +572,16 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   private class NumericGroupExpandCollector implements Collector, GroupCollector {
     private NumericDocValues docValues;
 
-
     private String field;
-    private LongObjectOpenHashMap<Collector> groups;
+    private LongObjectHashMap<Collector> groups;
 
-    private IntOpenHashSet collapsedSet;
+    private IntHashSet collapsedSet;
     private long nullValue;
 
-    public NumericGroupExpandCollector(String field, long nullValue, LongOpenHashSet groupSet, IntOpenHashSet collapsedSet, int limit, Sort sort) throws IOException {
+    public NumericGroupExpandCollector(String field, long nullValue, LongHashSet groupSet, IntHashSet collapsedSet, int limit, Sort sort) throws IOException {
       int numGroups = collapsedSet.size();
       this.nullValue = nullValue;
-      groups = new LongObjectOpenHashMap(numGroups * 2);
+      groups = new LongObjectHashMap<>(numGroups);
       Iterator<LongCursor> iterator = groupSet.iterator();
       while (iterator.hasNext()) {
         LongCursor cursor = iterator.next();
@@ -603,7 +602,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       final int docBase = context.docBase;
       this.docValues = context.reader().getNumericDocValues(this.field);
 
-      final LongObjectOpenHashMap<LeafCollector> leafCollectors = new LongObjectOpenHashMap<>();
+      final LongObjectHashMap<LeafCollector> leafCollectors = new LongObjectHashMap<>();
 
       for (LongObjectCursor<Collector> entry : groups) {
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
@@ -621,29 +620,30 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         @Override
         public void collect(int docId) throws IOException {
           long value = docValues.get(docId);
-          if (value != nullValue && leafCollectors.containsKey(value) && !collapsedSet.contains(docId + docBase)) {
-            LeafCollector c = leafCollectors.lget();
-            c.collect(docId);
+          final int index;
+          if (value != nullValue && 
+              (index = leafCollectors.indexOf(value)) >= 0 && 
+              !collapsedSet.contains(docId + docBase)) {
+            leafCollectors.indexGet(index).collect(docId);
           }
         }
       };
     }
 
-    public LongObjectOpenHashMap<Collector> getGroups() {
+    public LongObjectHashMap<Collector> getGroups() {
       return groups;
     }
 
   }
 
   private interface GroupCollector {
-    public LongObjectMap getGroups();
-
+    public LongObjectMap<Collector> getGroups();
   }
 
   private Query getGroupQuery(String fname,
                            FieldType ft,
                            int size,
-                           LongOpenHashSet groupSet) {
+                           LongHashSet groupSet) {
 
     BytesRef[] bytesRefs = new BytesRef[size];
     BytesRefBuilder term = new BytesRefBuilder();
@@ -670,8 +670,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private Query getGroupQuery(String fname,
                               int size,
-                              IntObjectOpenHashMap<BytesRef> ordBytes) throws Exception {
-
+                              IntObjectHashMap<BytesRef> ordBytes) throws Exception {
     BytesRef[] bytesRefs = new BytesRef[size];
     int index = -1;
     Iterator<IntObjectCursor<BytesRef>>it = ordBytes.iterator();
@@ -722,7 +721,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     public FieldInfos getFieldInfos() {
       Iterator<FieldInfo> it = in.getFieldInfos().iterator();
-      List<FieldInfo> newInfos = new ArrayList();
+      List<FieldInfo> newInfos = new ArrayList<>();
       while(it.hasNext()) {
         FieldInfo fieldInfo = it.next();
 

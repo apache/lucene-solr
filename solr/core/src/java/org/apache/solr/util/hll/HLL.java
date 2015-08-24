@@ -19,8 +19,8 @@ package org.apache.solr.util.hll;
 
 import java.util.Arrays;
 
-import com.carrotsearch.hppc.IntByteOpenHashMap;
-import com.carrotsearch.hppc.LongOpenHashSet;
+import com.carrotsearch.hppc.IntByteHashMap;
+import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.cursors.IntByteCursor;
 import com.carrotsearch.hppc.cursors.LongCursor;
 
@@ -69,9 +69,9 @@ public class HLL implements Cloneable {
     // ************************************************************************
     // Storage
     // storage used when #type is EXPLICIT, null otherwise
-    LongOpenHashSet explicitStorage;
+    LongHashSet explicitStorage;
     // storage used when #type is SPARSE, null otherwise
-    IntByteOpenHashMap sparseProbabilisticStorage;
+    IntByteHashMap sparseProbabilisticStorage;
     // storage used when #type is FULL, null otherwise
     BitVector probabilisticStorage;
 
@@ -398,8 +398,9 @@ public class HLL implements Cloneable {
         final int j = (int)(rawValue & mBitsMask);
 
         final byte currentValue;
-        if (sparseProbabilisticStorage.containsKey(j)) {
-          currentValue = sparseProbabilisticStorage.lget();
+        final int index = sparseProbabilisticStorage.indexOf(j);
+        if (index >= 0) {
+          currentValue = sparseProbabilisticStorage.indexGet(index);
         } else {
           currentValue = 0;
         }
@@ -467,10 +468,10 @@ public class HLL implements Cloneable {
                 // nothing to be done
                 break;
             case EXPLICIT:
-                this.explicitStorage = new LongOpenHashSet();
+                this.explicitStorage = new LongHashSet();
                 break;
             case SPARSE:
-                this.sparseProbabilisticStorage = new IntByteOpenHashMap();
+                this.sparseProbabilisticStorage = new IntByteHashMap();
                 break;
             case FULL:
                 this.probabilisticStorage = new BitVector(regwidth, m);
@@ -522,7 +523,7 @@ public class HLL implements Cloneable {
         for(int j=0; j<m; j++) {
             final long register;
             if (sparseProbabilisticStorage.containsKey(j)) {
-              register = sparseProbabilisticStorage.lget();
+              register = sparseProbabilisticStorage.get(j);
             } else {
               register = 0;
             }
