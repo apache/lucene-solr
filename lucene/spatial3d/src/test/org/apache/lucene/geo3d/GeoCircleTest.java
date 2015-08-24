@@ -102,6 +102,16 @@ public class GeoCircleTest extends LuceneTestCase {
     GeoPoint p2;
     int relationship;
 
+    // Eleventh BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,-0.004431288600558495,-0.003687846671278374,1.704543429364245E-8);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+
     // Tenth BKD discovered failure
     c = new GeoCircle(PlanetModel.WGS84,-0.0018829770647349636,-0.001969499061382591,1.3045439293158305E-5);
     xyzb = new XYZBounds();
