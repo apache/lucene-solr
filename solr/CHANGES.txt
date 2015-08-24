@@ -2305,7 +2305,7 @@ Other Changes
 
 ==================  4.10.2 ==================
 
-Bug FixesAnalyticsComponent
+Bug Fixes
 ----------------------
 
 * SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
