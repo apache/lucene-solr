@@ -20,7 +20,7 @@ package org.apache.solr.util.hll;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-import com.carrotsearch.hppc.IntByteOpenHashMap;
+import com.carrotsearch.hppc.IntByteHashMap;
 import com.carrotsearch.hppc.cursors.IntByteCursor;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 
@@ -393,7 +393,7 @@ public class SparseHLLTest extends LuceneTestCase {
         for(int run=0; run<100; run++) {
             final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, sparseThreshold, HLLType.SPARSE);
 
-            final IntByteOpenHashMap map = new IntByteOpenHashMap();
+            final IntByteHashMap map = new IntByteHashMap();
 
             for(int i=0; i<sparseThreshold; i++) {
                 final long rawValue = RandomizedTest.randomLong();
@@ -423,7 +423,7 @@ public class SparseHLLTest extends LuceneTestCase {
     private static void assertRegisterPresent(final HLL hll,
                                               final int registerIndex,
                                               final int registerValue) {
-        final IntByteOpenHashMap sparseProbabilisticStorage = hll.sparseProbabilisticStorage;
+        final IntByteHashMap sparseProbabilisticStorage = hll.sparseProbabilisticStorage;
         assertEquals(sparseProbabilisticStorage.get(registerIndex), registerValue);
     }
 
@@ -433,7 +433,7 @@ public class SparseHLLTest extends LuceneTestCase {
     private static void assertOneRegisterSet(final HLL hll,
                                              final int registerIndex,
                                              final byte registerValue) {
-        final IntByteOpenHashMap sparseProbabilisticStorage = hll.sparseProbabilisticStorage;
+        final IntByteHashMap sparseProbabilisticStorage = hll.sparseProbabilisticStorage;
         assertEquals(sparseProbabilisticStorage.size(), 1);
         assertEquals(sparseProbabilisticStorage.get(registerIndex), registerValue);
     }
@@ -442,8 +442,8 @@ public class SparseHLLTest extends LuceneTestCase {
      * Asserts that all registers in the two {@link HLL} instances are identical.
      */
     private static void assertElementsEqual(final HLL hllA, final HLL hllB) {
-        final IntByteOpenHashMap sparseProbabilisticStorageA = hllA.sparseProbabilisticStorage;
-        final IntByteOpenHashMap sparseProbabilisticStorageB = hllB.sparseProbabilisticStorage;
+        final IntByteHashMap sparseProbabilisticStorageA = hllA.sparseProbabilisticStorage;
+        final IntByteHashMap sparseProbabilisticStorageB = hllB.sparseProbabilisticStorage;
         assertEquals(sparseProbabilisticStorageA.size(), sparseProbabilisticStorageB.size());
         for (IntByteCursor c : sparseProbabilisticStorageA) {
             assertEquals(sparseProbabilisticStorageA.get(c.key), 

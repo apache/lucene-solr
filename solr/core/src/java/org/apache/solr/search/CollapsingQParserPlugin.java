@@ -27,8 +27,8 @@ import java.util.Map;
 
 import com.carrotsearch.hppc.FloatArrayList;
 import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntIntOpenHashMap;
-import com.carrotsearch.hppc.IntLongOpenHashMap;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.IntLongHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.carrotsearch.hppc.cursors.IntLongCursor;
 import org.apache.lucene.index.DocValues;
@@ -228,8 +228,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    private IntIntOpenHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Map<BytesRef, Integer> boosted, Map context) throws IOException {
-      IntIntOpenHashMap boostDocs = QueryElevationComponent.getBoostDocs(indexSearcher, boosted, context);
+    private IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Map<BytesRef, Integer> boosted, Map context) throws IOException {
+      IntIntHashMap boostDocs = QueryElevationComponent.getBoostDocs(indexSearcher, boosted, context);
       return boostDocs;
     }
 
@@ -242,7 +242,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         //We have to deal with it here rather then the constructor because
         //because the QueryElevationComponent runs after the Queries are constructed.
 
-        IntIntOpenHashMap boostDocsMap = null;
+        IntIntHashMap boostDocsMap = null;
         Map context = null;
         SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
         if(info != null) {
@@ -413,7 +413,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                              int segments,
                              SortedDocValues collapseValues,
                              int nullPolicy,
-                             IntIntOpenHashMap boostDocsMap) {
+                             IntIntHashMap boostDocsMap) {
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
       this.collapsedSet = new FixedBitSet(maxDoc);
@@ -608,7 +608,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private LeafReaderContext[] contexts;
     private FixedBitSet collapsedSet;
     private NumericDocValues collapseValues;
-    private IntLongOpenHashMap cmap;
+    private IntLongHashMap cmap;
     private int maxDoc;
     private int nullPolicy;
     private float nullScore = -Float.MAX_VALUE;
@@ -627,7 +627,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                              int nullPolicy,
                              int size,
                              String field,
-                             IntIntOpenHashMap boostDocsMap) {
+                             IntIntHashMap boostDocsMap) {
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
       this.collapsedSet = new FixedBitSet(maxDoc);
@@ -636,7 +636,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
         nullScores = new FloatArrayList();
       }
-      this.cmap = new IntLongOpenHashMap(size);
+      this.cmap = new IntLongHashMap(size);
       this.field = field;
 
       if(boostDocsMap != null) {
@@ -680,18 +680,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(collapseValue != nullValue) {
         float score = scorer.score();
-        if(cmap.containsKey(collapseValue)) {
-          long scoreDoc = cmap.lget();
+        final int idx;
+        if((idx = cmap.indexOf(collapseValue)) >= 0) {
+          long scoreDoc = cmap.indexGet(idx);
           int testScore = (int)(scoreDoc>>32);
           int currentScore = Float.floatToRawIntBits(score);
           if(currentScore > testScore) {
             //Current score is higher so replace the old scoreDoc with the current scoreDoc
-            cmap.lset((((long)currentScore)<<32)+globalDoc);
+            cmap.indexReplace(idx, (((long)currentScore)<<32)+globalDoc);
           }
         } else {
           //Combine the score and document into a long.
           long scoreDoc = (((long)Float.floatToRawIntBits(score))<<32)+globalDoc;
-          cmap.put(collapseValue, scoreDoc);
+          cmap.indexInsert(idx, collapseValue, scoreDoc);
         }
       } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
         float score = scorer.score();
@@ -807,7 +808,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                   boolean max,
                                   boolean needsScores,
                                   FieldType fieldType,
-                                  IntIntOpenHashMap boostDocs,
+                                  IntIntHashMap boostDocs,
                                   FunctionQuery funcQuery, IndexSearcher searcher) throws IOException{
 
       this.maxDoc = maxDoc;
@@ -975,7 +976,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                   boolean max,
                                   boolean needsScores,
                                   FieldType fieldType,
-                                  IntIntOpenHashMap boostDocsMap,
+                                  IntIntHashMap boostDocsMap,
                                   FunctionQuery funcQuery,
                                   IndexSearcher searcher) throws IOException{
 
@@ -1035,7 +1036,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       DocIdSetIterator it = new BitSetIterator(collapseStrategy.getCollapsedSet(), 0); // cost is not useful here
       int globalDoc = -1;
       int nullScoreIndex = 0;
-      IntIntOpenHashMap cmap = collapseStrategy.getCollapseMap();
+      IntIntHashMap cmap = collapseStrategy.getCollapseMap();
       int[] docs = collapseStrategy.getDocs();
       float[] scores = collapseStrategy.getScores();
       FloatArrayList nullScores = collapseStrategy.getNullScores();
@@ -1090,7 +1091,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                             String hint,
                                             boolean needsScores,
                                             int size,
-                                            IntIntOpenHashMap boostDocs,
+                                            IntIntHashMap boostDocs,
                                             SolrIndexSearcher searcher) throws IOException {
 
 
@@ -1285,7 +1286,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                  int nullPolicy,
                                  boolean max,
                                  boolean needsScores,
-                                 IntIntOpenHashMap boostDocsMap,
+                                 IntIntHashMap boostDocsMap,
                                  SortedDocValues values) {
       this.field = field;
       this.nullPolicy = nullPolicy;
@@ -1376,7 +1377,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                           int[] ords,
                           boolean max,
                           boolean needsScores,
-                          IntIntOpenHashMap boostDocs,
+                          IntIntHashMap boostDocs,
                           SortedDocValues values) throws IOException {
       super(maxDoc, field, nullPolicy, max, needsScores, boostDocs, values);
       this.ords = ords;
@@ -1457,7 +1458,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                           int[] ords,
                           boolean max,
                           boolean needsScores,
-                          IntIntOpenHashMap boostDocs,
+                          IntIntHashMap boostDocs,
                           SortedDocValues values) throws IOException {
       super(maxDoc, field, nullPolicy, max, needsScores, boostDocs, values);
       this.ords = ords;
@@ -1539,7 +1540,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                            int[] ords,
                            boolean max,
                            boolean needsScores,
-                           IntIntOpenHashMap boostDocs, SortedDocValues values) throws IOException {
+                           IntIntHashMap boostDocs, SortedDocValues values) throws IOException {
       super(maxDoc, field, nullPolicy, max, needsScores, boostDocs, values);
       this.ords = ords;
       this.ordVals = new long[ords.length];
@@ -1623,7 +1624,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                   int[] ords,
                                   boolean max,
                                   boolean needsScores,
-                                  IntIntOpenHashMap boostDocs,
+                                  IntIntHashMap boostDocs,
                                   FunctionQuery funcQuery,
                                   IndexSearcher searcher,
                                   SortedDocValues values) throws IOException {
@@ -1707,7 +1708,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   private abstract class IntFieldValueStrategy {
     protected int nullPolicy;
-    protected IntIntOpenHashMap cmap;
+    protected IntIntHashMap cmap;
     protected Scorer scorer;
     protected FloatArrayList nullScores;
     protected float nullScore;
@@ -1736,7 +1737,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                  int nullPolicy,
                                  boolean max,
                                  boolean needsScores,
-                                 IntIntOpenHashMap boostDocsMap) {
+                                 IntIntHashMap boostDocsMap) {
       this.field = field;
       this.collapseField = collapseField;
       this.nullValue = nullValue;
@@ -1744,7 +1745,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.max = max;
       this.needsScores = needsScores;
       this.collapsedSet = new FixedBitSet(maxDoc);
-      this.cmap = new IntIntOpenHashMap(size);
+      this.cmap = new IntIntHashMap(size);
       if(boostDocsMap != null) {
         this.boosts = true;
         this.boostDocs = new IntArrayList();
@@ -1801,7 +1802,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return nullScores;
     }
 
-    public IntIntOpenHashMap getCollapseMap() {
+    public IntIntHashMap getCollapseMap() {
       return cmap;
     }
 
@@ -1842,7 +1843,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                           int nullPolicy,
                           boolean max,
                           boolean needsScores,
-                          IntIntOpenHashMap boostDocs) throws IOException {
+                          IntIntHashMap boostDocs) throws IOException {
 
       super(maxDoc, size, collapseField, field, nullValue, nullPolicy, max, needsScores, boostDocs);
 
@@ -1881,8 +1882,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentVal = (int) minMaxVals.get(contextDoc);
 
       if(collapseKey != nullValue) {
-        if(cmap.containsKey(collapseKey)) {
-          int pointer = cmap.lget();
+        final int idx;
+        if((idx = cmap.indexOf(collapseKey)) >= 0) {
+          int pointer = cmap.indexGet(idx);
           if(comp.test(currentVal, testValues[pointer])) {
             testValues[pointer]= currentVal;
             docs[pointer] = globalDoc;
@@ -1942,7 +1944,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                           int nullPolicy,
                           boolean max,
                           boolean needsScores,
-                          IntIntOpenHashMap boostDocs) throws IOException {
+                          IntIntHashMap boostDocs) throws IOException {
 
       super(maxDoc, size, collapseField, field, nullValue, nullPolicy, max, needsScores, boostDocs);
 
@@ -1982,8 +1984,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       float currentVal = Float.intBitsToFloat(minMaxVal);
 
       if(collapseKey != nullValue) {
-        if(cmap.containsKey(collapseKey)) {
-          int pointer = cmap.lget();
+        final int idx;
+        if((idx = cmap.indexOf(collapseKey)) >= 0) {
+          int pointer = cmap.indexGet(idx);
           if(comp.test(currentVal, testValues[pointer])) {
             testValues[pointer] = currentVal;
             docs[pointer] = globalDoc;
@@ -2054,7 +2057,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                   int nullPolicy,
                                   boolean max,
                                   boolean needsScores,
-                                  IntIntOpenHashMap boostDocs,
+                                  IntIntHashMap boostDocs,
                                   FunctionQuery funcQuery,
                                   IndexSearcher searcher) throws IOException {
 
@@ -2108,8 +2111,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       float currentVal = functionValues.floatVal(contextDoc);
 
       if(collapseKey != nullValue) {
-        if(cmap.containsKey(collapseKey)) {
-          int pointer = cmap.lget();
+        final int idx;
+        if((idx = cmap.indexOf(collapseKey)) >= 0) {
+          int pointer = cmap.indexGet(idx);
           if(comp.test(currentVal, testValues[pointer])) {
             testValues[pointer] = currentVal;
             docs[pointer] = globalDoc;
