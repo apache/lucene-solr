@@ -819,9 +819,11 @@ public class Plane extends Vector {
       // the y, and we use all four resulting points in the bounds computation.
       if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(B) >= MINIMUM_RESOLUTION)) {
         // NOT a degenerate case
-        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedZPlane(A,B), bounds, NO_BOUNDS);
+        final Plane normalizedZPlane = constructNormalizedZPlane(A,B);
+        final GeoPoint[] points = findIntersections(planetModel, normalizedZPlane, bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
           assert planetModel.pointOnSurface(point);
+          //System.err.println("Point = "+point+"; this.evaluate(point)="+this.evaluate(point)+"; normalizedZPlane.evaluate(point)="+normalizedZPlane.evaluate(point));
           addPoint(boundsInfo, bounds, point);
         }
       } else {

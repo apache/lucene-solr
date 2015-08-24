@@ -24,6 +24,14 @@ package org.apache.lucene.geo3d;
  */
 public class XYZBounds implements Bounds {
 
+  /** A 'fudge factor', which is added to maximums and subtracted from minimums,
+   * in order to compensate for potential error deltas.  This would not be necessary
+   * except that our 'bounds' is defined as always equaling or exceeding the boundary
+   * of the shape, and we cannot guarantee that without making MINIMUM_RESOLUTION
+   * unacceptably large.
+   */
+  protected static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 100.0;
+  
   /** Minimum x */
   protected Double minX = null;
   /** Maximum x */
@@ -189,11 +197,13 @@ public class XYZBounds implements Bounds {
   @Override
   public Bounds addXValue(final GeoPoint point) {
     final double x = point.x;
-    if (minX == null || minX > x) {
-      minX = new Double(x);
+    final double small = x - FUDGE_FACTOR;
+    if (minX == null || minX > small) {
+      minX = new Double(small);
     }
-    if (maxX == null || maxX < x) {
-      maxX = new Double(x);
+    final double large = x + FUDGE_FACTOR;
+    if (maxX == null || maxX < large) {
+      maxX = new Double(large);
     }
     return this;
   }
@@ -201,11 +211,13 @@ public class XYZBounds implements Bounds {
   @Override
   public Bounds addYValue(final GeoPoint point) {
     final double y = point.y;
-    if (minY == null || minY > y) {
-      minY = new Double(y);
+    final double small = y - FUDGE_FACTOR;
+    if (minY == null || minY > small) {
+      minY = new Double(small);
     }
-    if (maxY == null || maxY < y) {
-      maxY = new Double(y);
+    final double large = y + FUDGE_FACTOR;
+    if (maxY == null || maxY < large) {
+      maxY = new Double(large);
     }
     return this;
   }
@@ -213,11 +225,13 @@ public class XYZBounds implements Bounds {
   @Override
   public Bounds addZValue(final GeoPoint point) {
     final double z = point.z;
-    if (minZ == null || minZ > z) {
-      minZ = new Double(z);
+    final double small = z - FUDGE_FACTOR;
+    if (minZ == null || minZ > small) {
+      minZ = new Double(small);
     }
-    if (maxZ == null || maxZ < z) {
-      maxZ = new Double(z);
+    final double large = z + FUDGE_FACTOR;
+    if (maxZ == null || maxZ < large) {
+      maxZ = new Double(large);
     }
     return this;
   }

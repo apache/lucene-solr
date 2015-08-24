@@ -100,7 +100,48 @@ public class GeoCircleTest extends LuceneTestCase {
     GeoArea area;
     GeoPoint p1;
     GeoPoint p2;
+    int relationship;
+
+    // Tenth BKD discovered failure
+    c = new GeoCircle(PlanetModel.WGS84,-0.0018829770647349636,-0.001969499061382591,1.3045439293158305E-5);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+
+    // Ninth BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,-4.211990380885122E-5,-0.0022958453508173044,1.4318475623498535E-5);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
     
+    // Eighth BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,0.005321278689117842,-0.00216937368755372,1.5306034422500785E-4);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+
+    // Seventh BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,-0.0021627146783861745, -0.0017298167021592304,2.0818312293195752E-4);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+
     // Sixth BKD discovered failure
     c = new GeoCircle(PlanetModel.WGS84,-0.006450320645814321,0.004660694205115142,0.00489710732634323);
     //xyzb = new XYZBounds();
@@ -161,7 +202,7 @@ public class GeoCircleTest extends LuceneTestCase {
     area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
       xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
     
-    int relationship = area.getRelationship(c);
+    relationship = area.getRelationship(c);
     assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
     
     // Test case from BKD
