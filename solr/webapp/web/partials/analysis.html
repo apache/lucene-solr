@@ -16,6 +16,14 @@ limitations under the License.
 -->
 <div id="analysis">
 
+  <div class="block analysis-error" id="analysis-handler-missing" ng-show="isHandlerMissing">
+    <div class="head">This Functionality requires the <code>/analysis/field</code> Handler to be registered and active!</div>
+  </div>
+
+  <div class="block analysis-error" id="analysis-error" ng-show="analysisError">
+    <div class="body">{{analysisError}}</div>
+  </div>
+
   <div id="analysis-holder">
 
     <div id="field-analysis">
@@ -41,9 +49,9 @@ limitations under the License.
           <li class="settings-holder clearfix">
             <div class="settings clearfix">
               <label for="type_or_name">Analyse Fieldname / FieldType:</label>
-              <select style="width:130px" chosen id="type_or_name" ng-model="fieldOrType" ng-options="f.value as f.label group by f.group for f in fieldsAndTypes"></select>
+              <select style="width:130px" chosen ng-change="changeFieldOrType()" id="type_or_name" ng-model="fieldOrType" ng-options="f.value as f.label group by f.group for f in fieldsAndTypes"></select>
 
-              <a id="tor_schema" href="#"><span>Schema Browser</span>&nbsp;</a>
+              <a id="tor_schema" ng-href="#/{{core}}/schema-browser?{{schemaBrowserUrl}}"><span>Schema Browser</span>&nbsp;</a>
 
               <div class="buttons clearfix">
 
@@ -66,7 +74,6 @@ limitations under the License.
 
     <div id="analysis-result" class="clearfix verbose_output">
       <div ng-class="key" ng-repeat="(key, type) in result">
-        <h1>{{key}}</h1>
         <table border="0" cellspacing="0" cellpadding="0">
           <tbody ng-repeat="component in type">
             <tr class="step">
@@ -76,7 +83,7 @@ limitations under the License.
                 </div>
               </td>
 
-              <td class="part legend">
+              <td class="part legend" ng-show="verbose">
                 <div class="holder">
                   <table border="0" cellspacing="0" cellpadding="0">
                     <tr>
@@ -91,15 +98,15 @@ limitations under the License.
                   </table>
                 </div>
               </td>
-              <td class="part data" colspan="1" ng-repeat="token in component.tokens track by token.index">
-                <div class="holder">
-                  <table border="0" cellspacing="0" cellpadding="0" ng-show="!token.blank">
+              <td class="part data" ng-class="{spacer:token.blank}" colspan="1" ng-repeat="token in component.tokens track by token.index">
+                <div class="holder" ng-hide="token.blank">
+                  <table border="0" cellspacing="0" cellpadding="0">
                     <tbody>
                       <tr class="details">
                         <td class="details">
                           <table border="0" cellspacing="0" cellpadding="0">
                             <tbody>
-                              <tr class="{{value.key}}" ng-repeat="value in token.keys">
+                              <tr class="{{value.name}}" ng-repeat="value in token.keys" ng-show="verbose || value.name=='text'">
                                 <td>{{value.value}}</td>
                               </tr>
                             </tbody>
@@ -109,6 +116,7 @@ limitations under the License.
                     </tbody>
                   </table>
                 </div>
+                <div class="holder" ng-show="token.blank">&nbsp;</div>
               </td>
             </tr>
           </tbody>

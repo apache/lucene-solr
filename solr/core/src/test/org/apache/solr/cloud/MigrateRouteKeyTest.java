@@ -29,9 +29,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -39,8 +39,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -65,8 +66,9 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
   private boolean waitForRuleToExpire(String splitKey, long finishTime) throws KeeperException, InterruptedException, SolrServerException, IOException {
     ClusterState state;Slice slice;
     boolean ruleRemoved = false;
-    while (System.currentTimeMillis() - finishTime < 60000) {
-      getCommonCloudSolrClient().getZkStateReader().updateClusterState(true);
+    long expiryTime = finishTime + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
+    while (System.nanoTime() < expiryTime) {
+      getCommonCloudSolrClient().getZkStateReader().updateClusterState();
       state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
       slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
       Map<String,RoutingRule> routingRules = slice.getRoutingRules();
@@ -75,7 +77,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
         break;
       }
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", splitKey + System.currentTimeMillis());
+      doc.addField("id", splitKey + random().nextInt());
       cloudClient.add(doc);
       Thread.sleep(1000);
     }
@@ -111,7 +113,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = ZkNodeProps.makeMap(
+      Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, 1,
           MAX_SHARDS_PER_NODE, 5,
           NUM_SLICES, 1);
@@ -161,7 +163,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
       assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());
 
       invokeMigrateApi(AbstractDistribZkTestBase.DEFAULT_COLLECTION, splitKey + "/" + BIT_SEP + "!", targetCollection);
-      long finishTime = System.currentTimeMillis();
+      long finishTime = System.nanoTime();
 
       indexer.join();
       splitKeyCount[0] += indexer.getSplitKeyCount();
@@ -180,7 +182,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
       log.info("Response from target collection: " + response);
       assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
 
-      getCommonCloudSolrClient().getZkStateReader().updateClusterState(true);
+      getCommonCloudSolrClient().getZkStateReader().updateClusterState();
       ClusterState state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
       Slice slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
       assertNotNull("Routing rule map is null", slice.getRoutingRules());
@@ -208,8 +210,8 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
 
     @Override
     public void run() {
-      long start = System.currentTimeMillis();
-      for (int id = 26*3; id < 500 && System.currentTimeMillis() - start <= seconds*1000; id++) {
+      TimeOut timeout = new TimeOut(seconds, TimeUnit.SECONDS);
+      for (int id = 26*3; id < 500 && ! timeout.hasTimedOut(); id++) {
         String shardKey = "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", shardKey + (bitSep != -1 ? "/" + bitSep : "") + "!" + id);

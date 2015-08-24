@@ -17,6 +17,7 @@ For reference, JRE major versions with their corresponding Unicode versions:
  * Java 6, Unicode 4.0
  * Java 7, Unicode 6.0
  * Java 8, Unicode 6.2
+ * Java 9 (not yet released / offcially supported by Lucene), Unicode 7.0
 
 In general, whether or not you need to re-index largely depends upon the data that
 you are searching, and what was changed in any given Unicode version. For example, 

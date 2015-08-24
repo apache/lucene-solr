@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -29,9 +30,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SortingMergePolicy;
@@ -47,6 +51,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -61,6 +67,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   private RandomIndexWriter iw;
   private IndexReader reader;
   private SortingMergePolicy mergePolicy;
+  private final int forceMergeMaxSegmentCount = 5;
 
   @Override
   public void setUp() throws Exception {
@@ -76,7 +83,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     return doc;
   }
 
-  private void createRandomIndex() throws IOException {
+  private void createRandomIndex(boolean singleSortedSegment) throws IOException {
     dir = newDirectory();
     numDocs = atLeast(150);
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
@@ -103,8 +110,17 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
         iw.deleteDocuments(new Term("s", term));
       }
     }
-    if (random().nextBoolean()) {
-      iw.forceMerge(5);
+    if (singleSortedSegment) {
+      // because of deletions, there might still be a single flush segment in
+      // the index, although want want a sorted segment so it needs to be merged
+      iw.getReader().close(); // refresh
+      iw.addDocument(new Document());
+      iw.commit();
+      iw.addDocument(new Document());
+      iw.forceMerge(1);
+    }
+    else if (random().nextBoolean()) {
+      iw.forceMerge(forceMergeMaxSegmentCount);
     }
     reader = iw.getReader();
   }
@@ -118,7 +134,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   public void testEarlyTermination() throws IOException {
     final int iters = atLeast(8);
     for (int i = 0; i < iters; ++i) {
-      createRandomIndex();
+      createRandomIndex(false);
       for (int j = 0; j < iters; ++j) {
         final IndexSearcher searcher = newSearcher(reader);
         final int numHits = TestUtil.nextInt(random(), 1, numDocs);
@@ -175,7 +191,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   }
 
   public void testEarlyTerminationDifferentSorter() throws IOException {
-    createRandomIndex();
+    createRandomIndex(false);
     final int iters = atLeast(3);
     for (int i = 0; i < iters; ++i) {
       final IndexSearcher searcher = newSearcher(reader);
@@ -219,6 +235,71 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       final ScoreDoc scoreDoc2 = scoreDocs2[i];
       assertEquals(scoreDoc1.doc, scoreDoc2.doc);
       assertEquals(scoreDoc1.score, scoreDoc2.score, 0.001f);
+    }
+  }
+
+  private class TestTerminatedEarlySimpleCollector extends SimpleCollector {
+    private boolean collectedSomething;
+    public boolean collectedSomething() {
+      return collectedSomething;
+    }
+    @Override
+    public void collect(int doc) throws IOException {
+      collectedSomething = true;
+    }
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
+  }
+
+  private class TestEarlyTerminatingSortingcollectorQueryTimeout implements QueryTimeout {
+    final private boolean shouldExit;
+    public TestEarlyTerminatingSortingcollectorQueryTimeout(boolean shouldExit) {
+      this.shouldExit = shouldExit;
+    }
+    public boolean shouldExit() {
+      return shouldExit;
+    }
+  }
+
+  private IndexSearcher newSearcherForTestTerminatedEarly(IndexReader r) throws IOException {
+    switch(random().nextInt(2)) {
+    case 0:
+      return new IndexSearcher(r);
+    case 1:
+      assertTrue(r+" is not a DirectoryReader", (r instanceof DirectoryReader));
+      final DirectoryReader directoryReader = ExitableDirectoryReader.wrap(
+          UninvertingReader.wrap((DirectoryReader) r, new HashMap<String,Type>()),
+          new TestEarlyTerminatingSortingcollectorQueryTimeout(false));
+      return new IndexSearcher(directoryReader);
+    }
+    fail("newSearcherForTestTerminatedEarly("+r+") fell through switch");
+    return null;
+  }
+
+  public void testTerminatedEarly() throws IOException {
+    final int iters = atLeast(8);
+    for (int i = 0; i < iters; ++i) {
+      createRandomIndex(true);
+
+      final IndexSearcher searcher = newSearcherForTestTerminatedEarly(reader); // future TODO: use newSearcher(reader);
+      final Query query = new MatchAllDocsQuery(); // search for everything/anything
+
+      final TestTerminatedEarlySimpleCollector collector1 = new TestTerminatedEarlySimpleCollector();
+      searcher.search(query, collector1);
+
+      final TestTerminatedEarlySimpleCollector collector2 = new TestTerminatedEarlySimpleCollector();
+      final EarlyTerminatingSortingCollector etsCollector = new EarlyTerminatingSortingCollector(collector2, sort, 1, mergePolicy.getSort());
+      searcher.search(query, etsCollector);
+
+      assertTrue("collector1="+collector1.collectedSomething()+" vs. collector2="+collector2.collectedSomething(), collector1.collectedSomething() == collector2.collectedSomething());
+
+      if (collector1.collectedSomething()) {
+        // we collected something and since we modestly asked for just one document we should have terminated early
+        assertTrue("should have terminated early (searcher.reader="+searcher.reader+")", etsCollector.terminatedEarly());
+      }
+      closeIndex();
     }
   }
 

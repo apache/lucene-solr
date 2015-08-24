@@ -29,6 +29,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +57,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RTimerTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,14 +141,14 @@ public class SolrRequestParsers
     parsers.put( "", standard );
   }
 
-  private static RTimer getRequestTimer(HttpServletRequest req)
+  private static RTimerTree getRequestTimer(HttpServletRequest req)
   {
     final Object reqTimer = req.getAttribute(REQUEST_TIMER_SERVLET_ATTRIBUTE);
-    if (reqTimer != null && reqTimer instanceof RTimer) {
-      return ((RTimer) reqTimer);
+    if (reqTimer != null && reqTimer instanceof RTimerTree) {
+      return ((RTimerTree) reqTimer);
     }
 
-    return new RTimer();
+    return new RTimerTree();
   }
 
   public SolrQueryRequest parse( SolrCore core, String path, HttpServletRequest req ) throws Exception
@@ -158,7 +160,7 @@ public class SolrRequestParsers
     // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
-    SolrQueryRequest sreq = buildRequestFrom( core, params, streams, getRequestTimer(req) );
+    SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
@@ -170,14 +172,13 @@ public class SolrRequestParsers
     }
     return sreq;
   }
-  
-  public SolrQueryRequest buildRequestFrom( SolrCore core, SolrParams params, Collection<ContentStream> streams ) throws Exception
-  {
-    return buildRequestFrom( core, params, streams, new RTimer() );
+
+  public SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams) throws Exception {
+    return buildRequestFrom(core, params, streams, new RTimerTree(), null);
   }
 
-  private SolrQueryRequest buildRequestFrom( SolrCore core, SolrParams params, Collection<ContentStream> streams, RTimer requestTimer ) throws Exception
-  {
+  private SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams,
+                                            RTimerTree requestTimer, final HttpServletRequest req) throws Exception {
     // The content type will be applied to all streaming content
     String contentType = params.get( CommonParams.STREAM_CONTENTTYPE );
       
@@ -222,8 +223,13 @@ public class SolrRequestParsers
         streams.add( stream );
       }
     }
-    
-    SolrQueryRequestBase q = new SolrQueryRequestBase( core, params, requestTimer ) { };
+
+    SolrQueryRequestBase q = new SolrQueryRequestBase(core, params, requestTimer) {
+      @Override
+      public Principal getUserPrincipal() {
+        return req == null ? null : req.getUserPrincipal();
+      }
+    };
     if( streams != null && streams.size() > 0 ) {
       q.setContentStreams( streams );
     }

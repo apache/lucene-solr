@@ -56,7 +56,7 @@ public class InterpolatedProperties extends Properties {
    */
   private void interpolate() {
     StringBuffer buffer = new StringBuffer();
-    for (Map.Entry entry : entrySet()) {
+    for (Map.Entry<?,?> entry : entrySet()) {
       buffer.setLength(0);
       Matcher matcher = PROPERTY_REFERENCE_PATTERN.matcher(entry.getValue().toString());
       while (matcher.find()) {

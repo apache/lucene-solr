@@ -25,64 +25,68 @@ public interface QueryParserConstants {
   /** RegularExpression Id. */
   int _SQUOTED_CHAR = 7;
   /** RegularExpression Id. */
-  int AND = 9;
+  int AND = 13;
   /** RegularExpression Id. */
-  int OR = 10;
+  int OR = 14;
   /** RegularExpression Id. */
-  int NOT = 11;
+  int NOT = 15;
   /** RegularExpression Id. */
-  int PLUS = 12;
+  int PLUS = 16;
   /** RegularExpression Id. */
-  int MINUS = 13;
+  int MINUS = 17;
   /** RegularExpression Id. */
-  int BAREOPER = 14;
+  int BAREOPER = 18;
   /** RegularExpression Id. */
-  int LPAREN = 15;
+  int LPAREN = 19;
   /** RegularExpression Id. */
-  int RPAREN = 16;
+  int RPAREN = 20;
   /** RegularExpression Id. */
-  int COLON = 17;
+  int COLON = 21;
   /** RegularExpression Id. */
-  int STAR = 18;
+  int STAR = 22;
   /** RegularExpression Id. */
-  int CARAT = 19;
+  int CARAT = 23;
   /** RegularExpression Id. */
-  int QUOTED = 20;
+  int QUOTED = 24;
   /** RegularExpression Id. */
-  int TERM = 21;
+  int TERM = 25;
   /** RegularExpression Id. */
-  int FUZZY_SLOP = 22;
+  int FUZZY_SLOP = 26;
   /** RegularExpression Id. */
-  int PREFIXTERM = 23;
+  int PREFIXTERM = 27;
   /** RegularExpression Id. */
-  int WILDTERM = 24;
+  int WILDTERM = 28;
   /** RegularExpression Id. */
-  int REGEXPTERM = 25;
+  int REGEXPTERM = 29;
   /** RegularExpression Id. */
-  int RANGEIN_START = 26;
+  int RANGEIN_START = 30;
   /** RegularExpression Id. */
-  int RANGEEX_START = 27;
+  int RANGEEX_START = 31;
   /** RegularExpression Id. */
-  int LPARAMS = 28;
+  int LPARAMS = 32;
   /** RegularExpression Id. */
-  int NUMBER = 29;
+  int FILTER = 33;
   /** RegularExpression Id. */
-  int RANGE_TO = 30;
+  int NUMBER = 34;
   /** RegularExpression Id. */
-  int RANGEIN_END = 31;
+  int RANGE_TO = 35;
   /** RegularExpression Id. */
-  int RANGEEX_END = 32;
+  int RANGEIN_END = 36;
   /** RegularExpression Id. */
-  int RANGE_QUOTED = 33;
+  int RANGEEX_END = 37;
   /** RegularExpression Id. */
-  int RANGE_GOOP = 34;
+  int RANGE_QUOTED = 38;
+  /** RegularExpression Id. */
+  int RANGE_GOOP = 39;
 
   /** Lexical state. */
   int Boost = 0;
   /** Lexical state. */
   int Range = 1;
   /** Lexical state. */
-  int DEFAULT = 2;
+  int COMMENT = 2;
+  /** Lexical state. */
+  int DEFAULT = 3;
 
   /** Literal token values. */
   String[] tokenImage = {
@@ -95,6 +99,10 @@ public interface QueryParserConstants {
     "<_QUOTED_CHAR>",
     "<_SQUOTED_CHAR>",
     "<token of kind 8>",
+    "\"/*\"",
+    "\"*/\"",
+    "<token of kind 11>",
+    "<token of kind 12>",
     "<AND>",
     "<OR>",
     "<NOT>",
@@ -115,6 +123,7 @@ public interface QueryParserConstants {
     "\"[\"",
     "\"{\"",
     "<LPARAMS>",
+    "\"filter(\"",
     "<NUMBER>",
     "\"TO\"",
     "\"]\"",

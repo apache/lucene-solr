@@ -297,7 +297,7 @@ public class ToParentBlockJoinQuery extends Query {
             pendingChildScores[childDocUpto] = childScore;
           }
           maxScore = Math.max(childScore, maxScore);
-          minScore = Math.min(childFreq, minScore);
+          minScore = Math.min(childScore, minScore);
           totalScore += childScore;
           parentFreq += childFreq;
         }

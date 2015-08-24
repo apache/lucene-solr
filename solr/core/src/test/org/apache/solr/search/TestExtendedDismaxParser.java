@@ -566,8 +566,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
   
   public void testAliasingBoost() throws Exception {
-    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.5"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
-    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.5"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.1"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
   public void testCyclicAliasing() throws Exception {

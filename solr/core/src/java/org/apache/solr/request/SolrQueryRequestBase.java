@@ -17,9 +17,9 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.SolrParams;
@@ -27,6 +27,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
 import java.io.Closeable;
+import java.security.Principal;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -52,17 +53,20 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   protected Iterable<ContentStream> streams;
   protected Map<String,Object> json;
 
-  private final RTimer requestTimer;
+  private final RTimerTree requestTimer;
+  protected final long startTime;
 
-  public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimer requestTimer) {
+  @SuppressForbidden(reason = "Need currentTimeMillis to get start time for request (to be used for stats/debugging)")
+  public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimerTree requestTimer) {
     this.core = core;
     this.schema = null == core ? null : core.getLatestSchema();
     this.params = this.origParams = params;
     this.requestTimer = requestTimer;
+    this.startTime = System.currentTimeMillis();
   }
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
-    this(core, params, new RTimer());
+    this(core, params, new RTimerTree());
   }
 
   @Override
@@ -87,14 +91,15 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     this.params = params;
   }
 
-  protected final long startTime=System.currentTimeMillis();
+
   // Get the start time of this request in milliseconds
   @Override
   public long getStartTime() {
     return startTime;
   }
 
-  public RTimer getRequestTimer () {
+  @Override
+  public RTimerTree getRequestTimer () {
     return requestTimer;
   }
 
@@ -175,4 +180,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     this.json = json;
   }
 
+  @Override
+  public Principal getUserPrincipal() {
+    return null;
+  }
 }

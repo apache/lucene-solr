@@ -16,11 +16,15 @@
  */
 package org.apache.lucene.classification;
 
+import java.util.List;
+
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.similarities.LMDirichletSimilarity;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
@@ -35,8 +39,60 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = populateSampleIndex(analyzer);
-      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
-      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, analyzer, null, 3, 2, 1, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, null, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, new LMDirichletSimilarity(), analyzer, null, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      ClassificationResult<BytesRef> resultDS =  checkCorrectClassification(new KNearestNeighborClassifier(leafReader, null, analyzer, null, 3, 2, 1, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      ClassificationResult<BytesRef> resultLMS =  checkCorrectClassification(new KNearestNeighborClassifier(leafReader, new LMDirichletSimilarity(), analyzer, null, 3, 2, 1, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      assertTrue(resultDS.getScore() != resultLMS.getScore());
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
+  }
+
+  /**
+   * This test is for the scenario where in the first topK results from the MLT query, we have the same number of results per class.
+   * But the results for a class have a better ranking in comparison with the results of the second class.
+   * So we would expect a greater score for the best ranked class.
+   *
+   * @throws Exception if any error happens
+   */
+  @Test
+  public void testRankedClasses() throws Exception {
+    LeafReader leafReader = null;
+    try {
+      Analyzer analyzer = new EnglishAnalyzer();
+      leafReader = populateSampleIndex(analyzer);
+      KNearestNeighborClassifier knnClassifier = new KNearestNeighborClassifier(leafReader, null, analyzer, null, 6, 1, 1, categoryFieldName, textFieldName);
+      List<ClassificationResult<BytesRef>> classes = knnClassifier.getClasses(STRONG_TECHNOLOGY_INPUT);
+      assertTrue(classes.get(0).getScore() > classes.get(1).getScore());
+      checkCorrectClassification(knnClassifier, STRONG_TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+    } finally {
+      if (leafReader != null) {
+        leafReader.close();
+      }
+    }
+  }
+
+  /**
+   * This test is for the scenario where in the first topK results from the MLT query, we have less results
+   * for the expected class than the results for the bad class.
+   * But the results for the expected class have a better score in comparison with the results of the second class.
+   * So we would expect a greater score for the best ranked class.
+   *
+   * @throws Exception if any error happens
+   */
+  @Test
+  public void testUnbalancedClasses() throws Exception {
+    LeafReader leafReader = null;
+    try {
+      Analyzer analyzer = new EnglishAnalyzer();
+      leafReader = populateSampleIndex(analyzer);
+      KNearestNeighborClassifier knnClassifier = new KNearestNeighborClassifier(leafReader, null,analyzer, null, 3, 1, 1, categoryFieldName, textFieldName);
+      List<ClassificationResult<BytesRef>> classes = knnClassifier.getClasses(SUPER_STRONG_TECHNOLOGY_INPUT);
+      assertTrue(classes.get(0).getScore() > classes.get(1).getScore());
+      checkCorrectClassification(knnClassifier, SUPER_STRONG_TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -51,7 +107,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = populateSampleIndex(analyzer);
       TermQuery query = new TermQuery(new Term(textFieldName, "it"));
-      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, analyzer, query, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(new KNearestNeighborClassifier(leafReader, null, analyzer, query, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();

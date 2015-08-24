@@ -19,6 +19,13 @@ package org.apache.lucene.util.automaton;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+
 public class TestRegExp extends LuceneTestCase {
 
   /**
@@ -46,6 +53,28 @@ public class TestRegExp extends LuceneTestCase {
       fail();
     } catch (TooComplexToDeterminizeException e) {
       assert(e.getMessage().contains(source));
+    }
+  }
+
+  // LUCENE-6713
+  public void testSerializeTooManyStatesToDeterminizeExc() throws Exception {
+    // LUCENE-6046
+    String source = "[ac]*a[ac]{50,200}";
+    try {
+      new RegExp(source).toAutomaton();
+      fail();
+    } catch (TooComplexToDeterminizeException e) {
+      assert(e.getMessage().contains(source));
+
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      ObjectOutput out = new ObjectOutputStream(bos);   
+      out.writeObject(e);
+      byte[] bytes = bos.toByteArray();
+
+      ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+      ObjectInput in = new ObjectInputStream(bis);
+      TooComplexToDeterminizeException e2 = (TooComplexToDeterminizeException) in.readObject();
+      assertNotNull(e2.getMessage());
     }
   }
 

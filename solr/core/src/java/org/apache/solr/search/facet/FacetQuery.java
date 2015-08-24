@@ -54,7 +54,7 @@ class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
   public void process() throws IOException {
     super.process();
     response = new SimpleOrderedMap<>();
-    fillBucket(response, freq.q);
+    fillBucket(response, freq.q, null);
   }
 
 

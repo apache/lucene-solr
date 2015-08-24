@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.cloud.OverseerCollectionProcessor;
+import org.apache.solr.cloud.OverseerCollectionMessageHandler;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -87,10 +87,10 @@ public class ClusterStateMutator {
 
     Map<String, Object> collectionProps = new HashMap<>();
 
-    for (Map.Entry<String, Object> e : OverseerCollectionProcessor.COLL_PROPS.entrySet()) {
+    for (Map.Entry<String, Object> e : OverseerCollectionMessageHandler.COLL_PROPS.entrySet()) {
       Object val = message.get(e.getKey());
       if (val == null) {
-        val = OverseerCollectionProcessor.COLL_PROPS.get(e.getKey());
+        val = OverseerCollectionMessageHandler.COLL_PROPS.get(e.getKey());
       }
       if (val != null) collectionProps.put(e.getKey(), val);
     }
@@ -183,6 +183,17 @@ public class ClusterStateMutator {
       }
     }
     return null;
+  }
+
+  public ZkWriteCommand migrateStateFormat(ClusterState clusterState, ZkNodeProps message) {
+    final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    if (!CollectionMutator.checkKeyExistence(message, ZkStateReader.COLLECTION_PROP)) return ZkStateWriter.NO_OP;
+    DocCollection coll = clusterState.getCollectionOrNull(collection);
+    if (coll == null || coll.getStateFormat() == 2) return ZkStateWriter.NO_OP;
+
+    return new ZkWriteCommand(coll.getName(),
+        new DocCollection(coll.getName(), coll.getSlicesMap(), coll.getProperties(), coll.getRouter(), 0,
+            ZkStateReader.getCollectionPath(collection)));
   }
 }
 

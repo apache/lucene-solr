@@ -18,6 +18,11 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -46,6 +51,8 @@ import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
@@ -87,8 +94,8 @@ public class HttpClientUtil {
       0, false);
 
   private static HttpClientConfigurer configurer = new HttpClientConfigurer();
-  
-  private HttpClientUtil(){}
+
+  private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<HttpRequestInterceptor>());
   
   /**
    * Replace the {@link HttpClientConfigurer} class used in configuring the http
@@ -114,7 +121,7 @@ public class HttpClientUtil {
     if (logger.isDebugEnabled()) {
       logger.debug("Creating new http client, config:" + config);
     }
-    final DefaultHttpClient httpClient = new SystemDefaultHttpClient();
+    final DefaultHttpClient httpClient = HttpClientFactory.createHttpClient();
     configureClient(httpClient, config);
     return httpClient;
   }
@@ -128,7 +135,7 @@ public class HttpClientUtil {
     if (logger.isDebugEnabled()) {
       logger.debug("Creating new http client, config:" + config);
     }
-    final DefaultHttpClient httpClient = new DefaultHttpClient(cm);
+    final DefaultHttpClient httpClient = HttpClientFactory.createHttpClient(cm);
     configureClient(httpClient, config);
     return httpClient;
   }
@@ -140,6 +147,11 @@ public class HttpClientUtil {
   public static void configureClient(final DefaultHttpClient httpClient,
       SolrParams config) {
     configurer.configure(httpClient,  config);
+    synchronized(interceptors) {
+      for(HttpRequestInterceptor interceptor: interceptors) {
+        httpClient.addRequestInterceptor(interceptor);
+      }
+    }
   }
   
   public static void close(HttpClient httpClient) { 
@@ -148,6 +160,14 @@ public class HttpClientUtil {
     } else {
       httpClient.getConnectionManager().shutdown();
     }
+  }
+
+  public static void addRequestInterceptor(HttpRequestInterceptor interceptor) {
+    interceptors.add(interceptor);
+  }
+
+  public static void removeRequestInterceptor(HttpRequestInterceptor interceptor) {
+    interceptors.remove(interceptor);
   }
 
   /**
@@ -358,5 +378,36 @@ public class HttpClientUtil {
       return new InflaterInputStream(wrappedEntity.getContent());
     }
   }
-  
+
+  public static class HttpClientFactory {
+    private static Class<? extends DefaultHttpClient> defaultHttpClientClass = DefaultHttpClient.class;
+    private static Class<? extends SystemDefaultHttpClient> systemDefaultHttpClientClass = SystemDefaultHttpClient.class;
+
+
+    public static SystemDefaultHttpClient createHttpClient() {
+      Constructor<? extends SystemDefaultHttpClient> constructor;
+      try {
+        constructor = systemDefaultHttpClientClass.getDeclaredConstructor();
+        return constructor.newInstance();
+      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create HttpClient instance. ", e);
+      }
+    }
+
+    public static DefaultHttpClient createHttpClient(ClientConnectionManager cm) {
+      Constructor<? extends DefaultHttpClient> constructor;
+      try {
+        constructor = defaultHttpClientClass.getDeclaredConstructor(new Class[]{ClientConnectionManager.class});
+        return constructor.newInstance(new Object[]{cm});
+      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create HttpClient instance, registered class is: " + defaultHttpClientClass, e);
+      }
+    }
+
+    public static void setHttpClientImpl(Class<? extends DefaultHttpClient> defaultHttpClient, Class<? extends SystemDefaultHttpClient> systemDefaultHttpClient) {
+      defaultHttpClientClass = defaultHttpClient;
+      systemDefaultHttpClientClass = systemDefaultHttpClient;
+    }
+  }
+
 }

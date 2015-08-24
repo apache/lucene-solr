@@ -35,6 +35,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.HttpClientInterceptorPlugin;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -59,7 +60,7 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
   
   static String requestUsername = MockAuthenticationPlugin.expectedUsername;
   static String requestPassword = MockAuthenticationPlugin.expectedPassword;
-  
+
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());
@@ -77,28 +78,34 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
   
   private void setupAuthenticationPlugin() throws Exception {
     System.setProperty("authenticationPlugin", "org.apache.solr.cloud.TestAuthenticationFramework$MockAuthenticationPlugin");
+    MockAuthenticationPlugin.expectedUsername = null;
+    MockAuthenticationPlugin.expectedPassword = null;
+
   }
   
   @Test
   @Override
   public void testBasics() throws Exception {
-    requestUsername = MockAuthenticationPlugin.expectedUsername;
-    requestPassword = MockAuthenticationPlugin.expectedPassword;
-    
+
+    final String collectionName = "testAuthenticationFrameworkCollection";
+
     // Should pass
-    testCollectionCreateSearchDelete();
-    
-    requestUsername = MockAuthenticationPlugin.expectedUsername;
-    requestPassword = "junkpassword";
+    testCollectionCreateSearchDelete(collectionName);
+
+    MockAuthenticationPlugin.expectedUsername = "solr";
+    MockAuthenticationPlugin.expectedPassword = "s0lrRocks";
     
     // Should fail with 401
     try {
-      testCollectionCreateSearchDelete();
+      testCollectionCreateSearchDelete(collectionName);
       fail("Should've returned a 401 error");
     } catch (Exception ex) {
       if (!ex.getMessage().contains("Error 401")) {
         fail("Should've returned a 401 error");
       }
+    } finally {
+      MockAuthenticationPlugin.expectedUsername = null;
+      MockAuthenticationPlugin.expectedPassword = null;
     }
   }
 
@@ -108,11 +115,11 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     super.tearDown();
   }
   
-  public static class MockAuthenticationPlugin extends AuthenticationPlugin {
+  public static class MockAuthenticationPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
     private static Logger log = LoggerFactory.getLogger(MockAuthenticationPlugin.class);
 
-    public static String expectedUsername = "solr";
-    public static String expectedPassword = "s0lrRocks";
+    public static String expectedUsername;
+    public static String expectedPassword;
 
     @Override
     public void init(Map<String,Object> pluginConfig) {}
@@ -120,6 +127,10 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     @Override
     public void doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain)
         throws Exception {
+      if (expectedUsername == null) {
+        filterChain.doFilter(request, response);
+        return;
+      }
       HttpServletRequest httpRequest = (HttpServletRequest)request;
       String username = httpRequest.getHeader("username");
       String password = httpRequest.getHeader("password");
@@ -133,7 +144,7 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     }
 
     @Override
-    public HttpClientConfigurer getDefaultConfigurer() {
+    public HttpClientConfigurer getClientConfigurer() {
       return new MockClientConfigurer();
     }
 

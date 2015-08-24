@@ -32,6 +32,7 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocSetCollector;
 
 class FacetFieldProcessorNumeric extends FacetFieldProcessor {
   static int MAXIMUM_STARTING_TABLE_SIZE=1024;  // must be a power of two, non-final to support setting by tests
@@ -137,9 +138,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     super(fcontext, freq, sf);
   }
 
-  int missingSlot = -1;
   int allBucketsSlot = -1;
-
 
   @Override
   public void process() throws IOException {
@@ -148,18 +147,14 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
   }
 
   private void doRehash(LongCounts table) {
-    if (collectAcc == null && missingAcc == null && allBucketsAcc == null) return;
+    if (collectAcc == null && allBucketsAcc == null) return;
 
     // Our "count" acc is backed by the hash table and will already be rehashed
     // otherAccs don't need to be rehashed
 
     int newTableSize = table.numSlots();
     int numSlots = newTableSize;
-    final int oldMissingSlot = missingSlot;
     final int oldAllBucketsSlot = allBucketsSlot;
-    if (oldMissingSlot >= 0) {
-      missingSlot = numSlots++;
-    }
     if (oldAllBucketsSlot >= 0) {
       allBucketsSlot = numSlots++;
     }
@@ -178,9 +173,6 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
         if (oldSlot < mapping.length) {
           return mapping[oldSlot];
         }
-        if (oldSlot == oldMissingSlot) {
-          return missingSlot;
-        }
         if (oldSlot == oldAllBucketsSlot) {
           return allBucketsSlot;
         }
@@ -191,9 +183,6 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     // NOTE: resizing isn't strictly necessary for missing/allBuckets... we could just set the new slot directly
     if (collectAcc != null) {
       collectAcc.resize(resizer);
-    }
-    if (missingAcc != null) {
-      missingAcc.resize(resizer);
     }
     if (allBucketsAcc != null) {
       allBucketsAcc.resize(resizer);
@@ -225,9 +214,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
 
     int numMissing = 0;
 
-    if (freq.missing) {
-      missingSlot = numSlots++;
-    }
+
     if (freq.allBuckets) {
       allBucketsSlot = numSlots++;
     }
@@ -302,11 +289,6 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0);
     }
 
-    if (freq.missing) {
-      // TODO: optimize case when missingSlot can be contiguous with other slots
-      missingAcc = new SpecialSlotAcc(fcontext, collectAcc, missingSlot, otherAccs, 1);
-    }
-
     NumericDocValues values = null;
     Bits docsWithField = null;
 
@@ -335,11 +317,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
 
       int segDoc = doc - segBase;
       long val = values.get(segDoc);
-      if (val == 0 && !docsWithField.get(segDoc)) {
-        if (missingAcc != null) {
-          missingAcc.collect(segDoc, -1);
-        }
-      } else {
+      if (val != 0 || docsWithField.get(segDoc)) {
         int slot = table.add(val);  // this can trigger a rehash rehash
 
         // countAcc.incrementCount(slot, 1);
@@ -428,7 +406,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       // TODO: it would be more efficient to buid up a missing DocSet if we need it here anyway.
 
       SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field));
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null);
       res.add("missing", missingBucket);
     }
 

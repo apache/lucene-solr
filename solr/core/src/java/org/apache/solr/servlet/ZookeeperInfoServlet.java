@@ -45,9 +45,9 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.FastWriter;
 import org.apache.zookeeper.KeeperException;
@@ -706,7 +706,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
                   "Failed to parse /clusterstate.json from ZooKeeper due to: " + e, e);
             }
           } else {
-            clusterstateJsonMap = ZkNodeProps.makeMap();
+            clusterstateJsonMap = Utils.makeMap();
           }
           
           // fetch the requested page of collections and then retrieve the state for each 

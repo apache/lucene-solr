@@ -32,6 +32,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.DateFormatUtil;
 
 
 public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
@@ -332,12 +333,12 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     
     @Override
     public String formatValue(Date val) {
-      return ((TrieDateField)field.getType()).toExternal(val);
+      return DateFormatUtil.formatExternal(val);
     }
     
     @Override
     protected Date parseVal(String rawval) {
-      return ((TrieDateField)field.getType()).parseMath(now, rawval);
+      return DateFormatUtil.parseMath(now, rawval);
     }
     
     @Override

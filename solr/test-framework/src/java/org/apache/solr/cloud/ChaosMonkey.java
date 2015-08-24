@@ -30,6 +30,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.slf4j.Logger;
@@ -79,7 +80,7 @@ public class ChaosMonkey {
   private boolean causeConnectionLoss;
   private boolean aggressivelyKillLeaders;
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
-  private volatile long startTime;
+  private volatile RTimer runTimer;
   
   private List<CloudJettyRunner> deadPool = new ArrayList<>();
 
@@ -403,7 +404,7 @@ public class ChaosMonkey {
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       
       // get latest cloud state
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       
       Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
           .get(slice);
@@ -427,7 +428,7 @@ public class ChaosMonkey {
   
   public SolrClient getRandomClient(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
-    zkStateReader.updateClusterState(true);
+    zkStateReader.updateClusterState();
 
     // get random shard
     List<SolrClient> clients = shardToClient.get(slice);
@@ -451,9 +452,9 @@ public class ChaosMonkey {
       monkeyLog("Jetty will not commit on close");
       DirectUpdateHandler2.commitOnClose = false;
     }
-    
+
     this.aggressivelyKillLeaders = killLeaders;
-    startTime = System.currentTimeMillis();
+    runTimer = new RTimer();
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
     
     stop = false;
@@ -510,7 +511,7 @@ public class ChaosMonkey {
           }
         }
         monkeyLog("finished");
-        monkeyLog("I ran for " + (System.currentTimeMillis() - startTime)/1000.0f + "sec. I stopped " + stops + " and I started " + starts
+        monkeyLog("I ran for " + runTimer.getTime() / 1000 + "s. I stopped " + stops + " and I started " + starts
             + ". I also expired " + expires.get() + " and caused " + connloss
             + " connection losses");
       }
@@ -529,10 +530,11 @@ public class ChaosMonkey {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
-    
+    runTimer.stop();
+
     DirectUpdateHandler2.commitOnClose = true;
-    
-    float runtime = (System.currentTimeMillis() - startTime)/1000.0f;
+
+    double runtime = runTimer.getTime()/1000.0f;
     if (runtime > 30 && stops.get() == 0) {
       LuceneTestCase.fail("The Monkey ran for over 30 seconds and no jetties were stopped - this is worth investigating!");
     }

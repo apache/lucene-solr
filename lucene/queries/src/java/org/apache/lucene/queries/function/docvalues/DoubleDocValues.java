@@ -106,7 +106,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     if (includeLower && includeUpper) {
       return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           double docVal = doubleVal(doc);
           return docVal >= l && docVal <= u;
         }
@@ -115,7 +115,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     else if (includeLower && !includeUpper) {
       return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           double docVal = doubleVal(doc);
           return docVal >= l && docVal < u;
         }
@@ -124,7 +124,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     else if (!includeLower && includeUpper) {
       return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           double docVal = doubleVal(doc);
           return docVal > l && docVal <= u;
         }
@@ -133,7 +133,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     else {
       return new ValueSourceScorer(reader, this) {
         @Override
-        public boolean matchesValue(int doc) {
+        public boolean matches(int doc) {
           double docVal = doubleVal(doc);
           return docVal > l && docVal < u;
         }

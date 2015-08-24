@@ -22,12 +22,6 @@ solr_distrib="$sdir/../../.."
 
 echo `absPath $solr_distrib`
 
-# extract war if necessary
-
-if [ ! -d "$solr_distrib/example/solr-webapp/webapp" ]; then
-   unzip -o $solr_distrib/example/webapps/solr.war -d $solr_distrib/example/solr-webapp/webapp
-fi
-
 # Setup env variables for MapReduceIndexerTool
 
 # Setup HADOOP_CLASSPATH
@@ -38,7 +32,7 @@ dir3=`absPath "$solr_distrib/contrib/map-reduce/lib"`
 dir4=`absPath "$solr_distrib/contrib/morphlines-core/lib"`
 dir5=`absPath "$solr_distrib/contrib/morphlines-cell/lib"`
 dir6=`absPath "$solr_distrib/contrib/extraction/lib"`
-dir7=`absPath "$solr_distrib/example/solr-webapp/webapp/WEB-INF/lib"`
+dir7=`absPath "$solr_distrib/server/solr-webapp/webapp/WEB-INF/lib"`
 
 # Setup -libjar
 

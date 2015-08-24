@@ -30,12 +30,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.DateFormatUtil;
 
 /**
  * Process date facets
@@ -78,12 +80,11 @@ public class DateFacetProcessor extends SimpleFacets {
           (SolrException.ErrorCode.BAD_REQUEST,
               "Can not date facet on a field which is not a TrieDateField: " + f);
     }
-    final TrieDateField ft = (TrieDateField) sf.getType();
     final String startS
         = required.getFieldParam(f, FacetParams.FACET_DATE_START);
     final Date start;
     try {
-      start = ft.parseMath(null, startS);
+      start = DateFormatUtil.parseMath(null, startS);
     } catch (SolrException e) {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -93,7 +94,7 @@ public class DateFacetProcessor extends SimpleFacets {
         = required.getFieldParam(f, FacetParams.FACET_DATE_END);
     Date end; // not final, hardend may change this
     try {
-      end = ft.parseMath(null, endS);
+      end = DateFormatUtil.parseMath(null, endS);
     } catch (SolrException e) {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -126,7 +127,7 @@ public class DateFacetProcessor extends SimpleFacets {
       Date low = start;
       while (low.before(end)) {
         dmp.setNow(low);
-        String label = ft.toExternal(low);
+        String label = DateFormatUtil.formatExternal(low);
 
         Date high = dmp.parseMath(gap);
         if (end.before(high)) {
@@ -246,7 +247,9 @@ public class DateFacetProcessor extends SimpleFacets {
   @Deprecated
   protected int rangeCount(ParsedParams parsed, SchemaField sf, Date low, Date high,
                            boolean iLow, boolean iHigh) throws IOException {
-    Query rangeQ = ((TrieDateField) (sf.getType())).getRangeQuery(null, sf, low, high, iLow, iHigh);
+    String lowStr = (low == null) ? null : DateFormatUtil.formatExternal(low);
+    String highStr = (high == null) ? null : DateFormatUtil.formatExternal(high);
+    Query rangeQ = sf.getType().getRangeQuery(null, sf, lowStr, highStr, iLow, iHigh);
     return searcher.numDocs(rangeQ, parsed.docs);
   }
 }

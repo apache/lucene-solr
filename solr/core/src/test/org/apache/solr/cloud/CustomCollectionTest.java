@@ -33,33 +33,22 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.junit.BeforeClass;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -154,11 +143,11 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
           client = createCloudClient(COLL_PREFIX + i);
         }
 
-        Map<String, Object> props = ZkNodeProps.makeMap(
+        Map<String, Object> props = Utils.makeMap(
             "router.name", ImplicitDocRouter.NAME,
             REPLICATION_FACTOR, replicationFactor,
             MAX_SHARDS_PER_NODE, maxShardsPerNode,
-            SHARDS_PROP,"a,b,c");
+            SHARDS_PROP, "a,b,c");
 
         createCollection(collectionInfos, COLL_PREFIX + i,props,client);
       } finally {
@@ -281,11 +270,11 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
           .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
       try (CloudSolrClient client = createCloudClient(null)) {
-        Map<String, Object> props = ZkNodeProps.makeMap(
+        Map<String, Object> props = Utils.makeMap(
             "router.name", ImplicitDocRouter.NAME,
             REPLICATION_FACTOR, replicationFactor,
             MAX_SHARDS_PER_NODE, maxShardsPerNode,
-            SHARDS_PROP,"a,b,c,d",
+            SHARDS_PROP, "a,b,c,d",
             "router.field", shard_fld);
   
         collectionName = COLL_PREFIX + "withShardField";
@@ -335,10 +324,10 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     String shard_fld = "shard_s";
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = ZkNodeProps.makeMap(
+      Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, replicationFactor,
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
-          NUM_SLICES,numShards,
+          NUM_SLICES, numShards,
           "router.field", shard_fld);
 
       createCollection(collectionInfos, collectionName,props,client);
@@ -387,7 +376,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     String collectionName = "testCreateShardRepFactor";
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = ZkNodeProps.makeMap(
+      Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, 1,
           MAX_SHARDS_PER_NODE, 5,
           NUM_SLICES, 2,
@@ -416,7 +405,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     int attempts = 0;
     while (true) {
       if (attempts > 30) fail("Not enough active replicas in the shard 'x'");
-      zkStateReader.updateClusterState(true);
+      zkStateReader.updateClusterState();
       attempts++;
       replicaCount = zkStateReader.getClusterState().getSlice(collectionName, "x").getReplicas().size();
       if (replicaCount >= 1) break;

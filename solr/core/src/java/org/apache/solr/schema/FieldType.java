@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,6 +45,8 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.Similarity;
@@ -670,6 +673,27 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
+   * Method for dynamically building a ValueSource based on a single value of a multivalued field.
+   *
+   * The default implementation throws an error except in the trivial case where this method is used on 
+   * a {@link SchemaField} that is in fact not-multivalued, in which case it delegates to 
+   * {@link #getValueSource}
+   *
+   * @see MultiValueSelector
+   */
+  public ValueSource getSingleValueSource(MultiValueSelector choice, SchemaField field, QParser parser) {
+    // trivial base case
+    if (!field.multiValued()) {
+      // single value matches any selector
+      return getValueSource(field, parser);
+    }
+    
+    throw new SolrException(ErrorCode.BAD_REQUEST, "Selecting a single value from a multivalued field is not supported for this field: " + field.getName() + " (type: " + this.getTypeName() + ")");
+  }
+
+
+  
+  /**
    * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
    * currently passes part1 and part2 as null if they are '*' respectively. minInclusive and maxInclusive are both true
    * currently by SolrQueryParser but that may change in the future. Also, other QueryParser implementations may have
@@ -883,7 +907,7 @@ public abstract class FieldType extends FieldProperties {
       Map<String,String> factoryArgs;
       TokenizerChain tokenizerChain = (TokenizerChain)analyzer;
       CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
-      if (null != charFilterFactories && charFilterFactories.length > 0) {
+      if (0 < charFilterFactories.length) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
@@ -927,7 +951,7 @@ public abstract class FieldType extends FieldProperties {
       analyzerProps.add(TOKENIZER, tokenizerProps);
 
       TokenFilterFactory[] filterFactories = tokenizerChain.getTokenFilterFactories();
-      if (null != filterFactories && filterFactories.length > 0) {
+      if (0 < filterFactories.length) {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
@@ -1028,4 +1052,65 @@ public abstract class FieldType extends FieldProperties {
     final byte[] bytes = Base64.base64ToByteArray(val);
     return new BytesRef(bytes);
   }
+
+  /**
+   * An enumeration representing various options that may exist for selecting a single value from a 
+   * multivalued field.  This class is designed to be an abstract representation, agnostic of some of 
+   * the underlying specifics.  Not all enum value are garunteeded work in all contexts -- null checks 
+   * must be dont by the caller for the specific methods needed.
+   *
+   * @see FieldType#getSingleValueSource
+   */
+  public enum MultiValueSelector {
+    // trying to be agnostic about SortedSetSelector.Type vs SortedNumericSelector.Type
+    MIN(SortedSetSelector.Type.MIN, SortedNumericSelector.Type.MIN),
+    MAX(SortedSetSelector.Type.MAX, SortedNumericSelector.Type.MAX);
+
+    @Override
+    public String toString() { return super.toString().toLowerCase(Locale.ROOT); }
+    
+    /** 
+     * The appropriate <code>SortedSetSelector.Type</code> option for this <code>MultiValueSelector</code>,
+     * may be null if there is no equivilent
+     */
+    public SortedSetSelector.Type getSortedSetSelectorType() {
+      return sType;
+    }
+
+    /** 
+     * The appropriate <code>SortedNumericSelector.Type</code> option for this <code>MultiValueSelector</code>,
+     * may be null if there is no equivilent
+     */
+    public SortedNumericSelector.Type getSortedNumericSelectorType() {
+      return nType;
+    }
+    
+    private final SortedSetSelector.Type sType;
+    private final SortedNumericSelector.Type nType;
+    
+    private MultiValueSelector(SortedSetSelector.Type sType, SortedNumericSelector.Type nType) {
+      this.sType = sType;
+      this.nType = nType;
+    }
+
+    /**
+     * Returns a MultiValueSelector matching the specified (case insensitive) label, or null if 
+     * no corrisponding MultiValueSelector exists.
+     * 
+     * @param label a non null label to be checked for a corrisponding MultiValueSelector
+     * @return a MultiValueSelector or null if no MultiValueSelector matches the specified label
+     */
+    public static MultiValueSelector lookup(String label) {
+      if (null == label) {
+        throw new NullPointerException("label must not be null when calling MultiValueSelector.lookup");
+      }
+      try {
+        return valueOf(label.toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        return null;
+      }
+    }
+
+  }
+  
 }

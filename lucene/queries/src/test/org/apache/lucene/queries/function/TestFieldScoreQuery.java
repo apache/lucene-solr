@@ -20,6 +20,7 @@ package org.apache.lucene.queries.function;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -59,7 +60,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
 
   // Test that FieldScoreQuery returns docs in expected order.
   private void doTestRank (ValueSource valueSource) throws Exception {
-    FunctionQuery functionQuery = new FunctionQuery(valueSource);
+    Query functionQuery = getFunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = newSearcher(r);
     log("test: "+ functionQuery);
@@ -92,7 +93,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
 
   // Test that FieldScoreQuery returns docs with expected score.
   private void doTestExactScore (ValueSource valueSource) throws Exception {
-    FunctionQuery functionQuery = new FunctionQuery(valueSource);
+    Query functionQuery = getFunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = newSearcher(r);
     TopDocs td = s.search(functionQuery,1000);
@@ -106,6 +107,16 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       assertEquals("score of " + id + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
     }
     r.close();
+  }
+
+  protected Query getFunctionQuery(ValueSource valueSource) {
+    if (random().nextBoolean()) {
+      return new FunctionQuery(valueSource);
+    } else {
+      Integer lower = (random().nextBoolean() ? null : 1);//1 is the lowest value
+      Integer upper = (random().nextBoolean() ? null : N_DOCS); // N_DOCS is the highest value
+      return new FunctionRangeQuery(valueSource, lower, upper, true, true);//will match all docs based on the indexed data
+    }
   }
 
 }

@@ -26,7 +26,12 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
+import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
+import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
+import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -34,13 +39,63 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Test that functionquery's getSortField() actually works */
 public class TestFunctionQuerySort extends LuceneTestCase {
+  
+  public void testOptimizedFieldSourceFunctionSorting() throws IOException {
+    // index contents don't matter for this test.
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    IndexReader reader = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(reader);
 
+    final boolean reverse = random().nextBoolean();
+    ValueSource vs;
+    SortField sf, vssf;
+
+    vs = new IntFieldSource("int_field");
+    sf = new SortField("int_field", Type.INT, reverse);
+    vssf = vs.getSortField(reverse);
+    assertEquals(sf, vssf);
+    sf = sf.rewrite(searcher);
+    vssf = vssf.rewrite(searcher);
+    assertEquals(sf, vssf);
+    
+    vs = new FloatFieldSource("float_field");
+    sf = new SortField("float_field", Type.FLOAT, reverse);
+    vssf = vs.getSortField(reverse);
+    assertEquals(sf, vssf);
+    sf = sf.rewrite(searcher);
+    vssf = vssf.rewrite(searcher);
+    assertEquals(sf, vssf);
+    
+    vs = new DoubleFieldSource("double_field");
+    sf = new SortField("double_field", Type.DOUBLE, reverse);
+    vssf = vs.getSortField(reverse);
+    assertEquals(sf, vssf);
+    sf = sf.rewrite(searcher);
+    vssf = vssf.rewrite(searcher);
+    assertEquals(sf, vssf);
+    
+    vs = new LongFieldSource("long_field");
+    sf = new SortField("long_field", Type.LONG, reverse);
+    vssf = vs.getSortField(reverse);
+    assertEquals(sf, vssf);
+    sf = sf.rewrite(searcher);
+    vssf = vssf.rewrite(searcher);
+    assertEquals(sf, vssf);
+     
+    reader.close();
+    dir.close();
+  }
+  
   public void testSearchAfterWhenSortingByFunctionValues() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(null);
@@ -66,8 +121,9 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     writer.close();
     IndexSearcher searcher = newSearcher(reader);
 
-    // Get ValueSource from FieldCache
-    IntFieldSource src = new IntFieldSource("value");
+    // Trivial ValueSource function that bypasses single field ValueSource sort optimization
+    ValueSource src = new SumFloatFunction(new ValueSource[] { new IntFieldSource("value"),
+                                                               new DoubleConstValueSource(1.0D) });
     // ...and make it a sort criterion
     SortField sf = src.getSortField(false).rewrite(searcher);
     Sort orderBy = new Sort(sf);

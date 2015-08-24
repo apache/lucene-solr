@@ -579,19 +579,19 @@ for my $rel (@releases) {
                   ~gex;
         # Find multiple Bugzilla issues
         $item =~ s~(?<=(?i:bugs))(\s*)(\d+)(\s*(?i:\&|and)\s*)(\d+)
-		              ~ my $leading_whitespace = $1;
-		                my $issue_num_1 = $2;
-		                my $interlude = $3;
+                  ~ my $leading_whitespace = $1;
+                    my $issue_num_1 = $2;
+                    my $interlude = $3;
                     my $issue_num_2 = $4;
                     # Link to JIRA copies
                     my $jira_issue_1 = $lucene_bugzilla_jira_map{$issue_num_1};
                     my $issue1
-		                    = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_1">!
+                        = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_1">!
                         . qq!$issue_num_1&nbsp;[LUCENE-$jira_issue_1]</a>!
                       if (defined($jira_issue_1));
                     my $jira_issue_2 = $lucene_bugzilla_jira_map{$issue_num_2};
                     my $issue2
-		                    = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_2">!
+                        = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_2">!
                         . qq!$issue_num_2&nbsp;[LUCENE-$jira_issue_2]</a>!
                       if (defined($jira_issue_2));
                     $leading_whitespace . $issue1 . $interlude . $issue2;
@@ -654,7 +654,7 @@ sub markup_trailing_attribution {
     # Rule of thumb: if a trailing parenthesized expression with a following
     # period does not contain "LUCENE-XXX", and it either has three or
     # fewer words or it includes the word "via" or the phrase "updates from",
-	  # then it is considered to be an attribution.
+    # then it is considered to be an attribution.
 
     $item =~ s{(\s+(\((?![Ss]ee\ )
                       (?!spans\b)
@@ -675,7 +675,7 @@ sub markup_trailing_attribution {
               {
                 my $subst = $1;  # default: no change
                 my $parenthetical = $2;
-	              my $trailing_period_and_or_issue = $3;
+                my $trailing_period_and_or_issue = $3;
                 if ($parenthetical !~ /LUCENE-\d+/) {
                   my ($no_parens) = $parenthetical =~ /^\((.*)\)$/s;
                   my @words = grep {/\S/} split /\s+/, $no_parens;

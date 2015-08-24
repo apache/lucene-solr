@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.MapSolrParams;
@@ -34,6 +35,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 
 class NewSearcherListener implements SolrEventListener {
@@ -85,9 +87,9 @@ class NewSearcherListener implements SolrEventListener {
     // log.info("TEST: trigger reset");
   }
 
-  boolean waitForNewSearcher(int timeout) {
-    long timeoutTime = System.currentTimeMillis() + timeout;
-    while (System.currentTimeMillis() < timeoutTime) {
+  boolean waitForNewSearcher(int timeoutMs) {
+    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
+    while (! timeout.hasTimedOut()) {
       if (triggered) {
         // check if the new searcher has been registered yet
         RefCounted<SolrIndexSearcher> registeredSearcherH = newSearcher.getCore().getSearcher();

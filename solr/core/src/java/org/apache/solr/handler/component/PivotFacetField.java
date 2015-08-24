@@ -199,35 +199,46 @@ public class PivotFacetField {
    */
   public void queuePivotRefinementRequests(PivotFacet pf) {
     
-    if (needRefinementAtThisLevel && ! valueCollection.getExplicitValuesList().isEmpty()) {
+    if (needRefinementAtThisLevel) {
 
-      if (FacetParams.FACET_SORT_COUNT.equals(facetFieldSort)) {
-        // we only need to things that are currently in our limit,
-        // or might be in our limit if we get increased counts from shards that
-        // didn't include this value the first time
-        final int indexOfCountThreshold 
-          = Math.min(valueCollection.getExplicitValuesListSize(), 
-                     facetFieldOffset + facetFieldLimit) - 1;
-        final int countThreshold = valueCollection.getAt(indexOfCountThreshold).getCount();
-        
-        int positionInResults = 0;
-        
-        for (PivotFacetValue value : valueCollection.getExplicitValuesList()) {
-          if (positionInResults <= indexOfCountThreshold) {
-            // This element is within the top results, so we need to get information 
-            // from all of the shards.
-            processDefiniteCandidateElement(pf, value);
-          } else {
-            // This element is not within the top results, but may still need to be refined.
-            processPossibleCandidateElement(pf, value, countThreshold);
-          }
-          
-          positionInResults++;
+      if (0 < facetFieldMinimumCount) {
+        // missing is always a candidate for refinement if at least one shard met the minimum
+        PivotFacetValue missing = valueCollection.getMissingValue();
+        if (null != missing) {
+          processDefiniteCandidateElement(pf, valueCollection.getMissingValue());
         }
-      } else { // FACET_SORT_INDEX
-        // everything needs refined to see what the per-shard mincount excluded
-        for (PivotFacetValue value : valueCollection.getExplicitValuesList()) {
-          processDefiniteCandidateElement(pf, value);
+      }
+
+      if (! valueCollection.getExplicitValuesList().isEmpty()) {
+
+        if (FacetParams.FACET_SORT_COUNT.equals(facetFieldSort)) {
+          // we only need to things that are currently in our limit,
+          // or might be in our limit if we get increased counts from shards that
+          // didn't include this value the first time
+          final int indexOfCountThreshold 
+            = Math.min(valueCollection.getExplicitValuesListSize(), 
+                       facetFieldOffset + facetFieldLimit) - 1;
+          final int countThreshold = valueCollection.getAt(indexOfCountThreshold).getCount();
+          
+          int positionInResults = 0;
+          
+          for (PivotFacetValue value : valueCollection.getExplicitValuesList()) {
+            if (positionInResults <= indexOfCountThreshold) {
+              // This element is within the top results, so we need to get information 
+              // from all of the shards.
+              processDefiniteCandidateElement(pf, value);
+            } else {
+              // This element is not within the top results, but may still need to be refined.
+              processPossibleCandidateElement(pf, value, countThreshold);
+            }
+            
+            positionInResults++;
+          }
+        } else { // FACET_SORT_INDEX
+          // everything needs refined to see what the per-shard mincount excluded
+          for (PivotFacetValue value : valueCollection.getExplicitValuesList()) {
+            processDefiniteCandidateElement(pf, value);
+          }
         }
       }
 
@@ -258,10 +269,11 @@ public class PivotFacetField {
         if ( // if we're doing index order, we need to refine anything  
              // (mincount may have excluded from a shard)
             FacetParams.FACET_SORT_INDEX.equals(facetFieldSort)
-             // if we are doing count order, we need to refine if the limit was hit
-             // (if not, the shard doesn't have the value or it would have returned already)
-             || numberOfValuesContributedByShardWasLimitedByFacetFieldLimit(shard) ) {
-
+            || (// 'missing' value isn't affected by limit, needs refined if shard didn't provide
+                null == value.getValue() ||
+                // if we are doing count order, we need to refine if the limit was hit
+                // (if not, the shard doesn't have the value or it would have returned already)
+                numberOfValuesContributedByShardWasLimitedByFacetFieldLimit(shard))) {
           pf.addRefinement(shard, value);
         }
       }

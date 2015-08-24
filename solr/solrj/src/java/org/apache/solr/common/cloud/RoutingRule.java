@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.noggit.JSONUtil;
 
 /**
@@ -56,8 +57,14 @@ public class RoutingRule extends ZkNodeProps {
     return targetCollectionName;
   }
 
-  public Long getExpireAt() {
-    return expireAt;
+  @SuppressForbidden(reason = "For currentTimeMillis, expiry time depends on external data (should it?)")
+  public static String makeExpiryAt(long timeMsFromNow) {
+    return String.valueOf(System.currentTimeMillis() + timeMsFromNow);
+  }
+
+  @SuppressForbidden(reason = "For currentTimeMillis, expiry time depends on external data (should it?)")
+  public boolean isExpired() {
+    return (expireAt < System.currentTimeMillis());
   }
 
   public String getRouteRangesStr() {

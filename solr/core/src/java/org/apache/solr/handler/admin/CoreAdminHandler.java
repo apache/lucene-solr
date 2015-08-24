@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.google.common.collect.ImmutableMap;
@@ -947,7 +945,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
                   waitForState + "; forcing ClusterState update from ZooKeeper");
             
             // force a cluster state update
-            coreContainer.getZkController().getZkStateReader().updateClusterState(true);
+            coreContainer.getZkController().getZkStateReader().updateClusterState();
           }
 
           if (maxTries == 0) {
@@ -1165,8 +1163,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
           info.add("dataDir", normalizePath(core.getDataDir()));
           info.add("config", core.getConfigResource());
           info.add("schema", core.getSchemaResource());
-          info.add("startTime", new Date(core.getStartTime()));
-          info.add("uptime", System.currentTimeMillis() - core.getStartTime());
+          info.add("startTime", core.getStartTimeStamp());
+          info.add("uptime", core.getUptimeMs());
           if (isIndexInfoNeeded) {
             RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
             try {

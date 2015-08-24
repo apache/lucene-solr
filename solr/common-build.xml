@@ -58,10 +58,14 @@
   <available file="${solr.tgz.file}" property="solr.tgz.exists"/>
   <available type="dir" file="${solr.tgz.unpack.dir}" property="solr.tgz.unpack.dir.exists"/>
   <target name="-ensure-solr-tgz-exists" unless="solr.tgz.exists">
-    <ant dir="${common-solr.dir}" target="create-package" inheritall="false"/>
+    <ant dir="${common-solr.dir}" target="create-package" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
   <target name="-unpack-solr-tgz" unless="${solr.tgz.unpack.dir.exists}">
-    <antcall target="-ensure-solr-tgz-exists"/>
+    <antcall target="-ensure-solr-tgz-exists">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
     <mkdir dir="${solr.tgz.unpack.dir}"/>
     <untar compression="gzip" src="${solr.tgz.file}" dest="${solr.tgz.unpack.dir}">
       <patternset refid="patternset.lucene.solr.jars"/>
@@ -72,21 +76,21 @@
   <property name="fullnamever" value="${final.name}"/>
 
   <path id="additional.dependencies">
-  	<fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
-  	<fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
-  	<fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
-  	<fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>  	
-  	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
+    <fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>    
+    <fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
 
   <path id="solr.lucene.libs">
     <!-- List of jars that will be used as the foundation for both
          the base classpath, as well as copied into the lucene-libs dir 
-	 in the release.
+         in the release.
     -->
     <!-- NOTE: lucene-core is explicitly not included because of the 
-	 base.classpath (compilation & tests are done directly against   
-	 the class files w/o needing to build the jar)
+         base.classpath (compilation & tests are done directly against   
+         the class files w/o needing to build the jar)
     -->
     <pathelement location="${analyzers-common.jar}"/>
     <pathelement location="${analyzers-kuromoji.jar}"/>
@@ -124,8 +128,8 @@
       <exclude name="randomizedtesting-runner-*.jar" />
       <exclude name="ant*.jar" />
     </fileset>
-  	<pathelement path="src/test-files"/>
-  	<path refid="test.base.classpath"/>
+    <pathelement path="src/test-files"/>
+    <path refid="test.base.classpath"/>
   </path>
  
   <path id="test.classpath" refid="solr.test.base.classpath"/>
@@ -146,15 +150,11 @@
   </macrodef>
 
   <!-- 
-    - We don't test HDFS on Java 7 because it causes permgen errors. Java 8 no longer has permgen.
-    - We don't want to run HDFS tests on Windows, because they require Cygwin.
+    We don't want to run HDFS tests on Windows, because they require Cygwin.
     If you have Cygwin or manually raised permgen, you can override this property on command line:
   -->
   <condition property="tests.disableHdfs" value="true">
-    <or>
-      <equals arg1="${build.java.runtime}" arg2="1.7"/>
-      <os family="windows"/>
-    </or>
+    <os family="windows"/>
   </condition>
 
   <target name="validate" depends="compile-tools">
@@ -168,11 +168,11 @@
   </target>
 
   <target name="prep-lucene-jars" 
-  	      depends="jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
-  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox">
-  	  <property name="solr.deps.compiled" value="true"/>
+          depends="jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
+                   jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox">
+      <property name="solr.deps.compiled" value="true"/>
   </target>
-	
+  
   <target name="lucene-jars-to-solr" 
           depends="-lucene-jars-to-solr-not-for-package,-lucene-jars-to-solr-package"/>
   
@@ -245,11 +245,11 @@
   <property name="lucenedocs" location="${common.dir}/build/docs"/>
 
   <!-- dependency to ensure all lucene javadocs are present -->
-  <target name="lucene-javadocs" depends="javadocs-lucene-core,javadocs-analyzers-common,javadocs-analyzers-icu,javadocs-analyzers-kuromoji,javadocs-analyzers-phonetic,javadocs-analyzers-smartcn,javadocs-analyzers-morfologik,javadocs-analyzers-stempel,javadocs-analyzers-uima,javadocs-backward-codecs,javadocs-codecs,javadocs-expressions,javadocs-suggest,javadocs-grouping,javadocs-queries,javadocs-queryparser,javadocs-highlighter,javadocs-memory,javadocs-misc,javadocs-spatial,javadocs-test-framework"/>
+  <target name="lucene-javadocs" depends="javadocs-lucene-core,javadocs-analyzers-common,javadocs-analyzers-icu,javadocs-analyzers-kuromoji,javadocs-analyzers-phonetic,javadocs-analyzers-smartcn,javadocs-analyzers-morfologik,javadocs-analyzers-stempel,javadocs-analyzers-uima,javadocs-backward-codecs,javadocs-codecs,javadocs-expressions,javadocs-suggest,javadocs-grouping,javadocs-queries,javadocs-queryparser,javadocs-highlighter,javadocs-memory,javadocs-misc,javadocs-spatial,javadocs-join,javadocs-test-framework"/>
 
   <!-- create javadocs for the current module -->
   <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solr-core,check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
-   	<sequential>
+     <sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>
         <solrsources>
@@ -316,6 +316,7 @@
           <link offline="true" href="${lucene.javadoc.url}expressions" packagelistloc="${lucenedocs}/expressions"/>
           <link offline="true" href="${lucene.javadoc.url}suggest" packagelistloc="${lucenedocs}/suggest"/>
           <link offline="true" href="${lucene.javadoc.url}grouping" packagelistloc="${lucenedocs}/grouping"/>
+          <link offline="true" href="${lucene.javadoc.url}join" packagelistloc="${lucenedocs}/join"/>
           <link offline="true" href="${lucene.javadoc.url}queries" packagelistloc="${lucenedocs}/queries"/>
           <link offline="true" href="${lucene.javadoc.url}queryparser" packagelistloc="${lucenedocs}/queryparser"/>
           <link offline="true" href="${lucene.javadoc.url}highlighter" packagelistloc="${lucenedocs}/highlighter"/>
@@ -423,7 +424,7 @@
     <ant dir="${common-solr.dir}/test-framework" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-  	<property name="solr.core.compiled" value="true"/>
+    <property name="solr.core.compiled" value="true"/>
     <property name="solr.test.framework.compiled" value="true"/>
   </target>
 
@@ -468,25 +469,25 @@
   </target>
 
   <target name="compile-contrib" description="Compile contrib modules">
-  	<contrib-crawl target="compile-core"/>
+    <contrib-crawl target="compile-core"/>
   </target>
   
   <target name="compile-test-contrib" description="Compile contrib modules' tests">
-  	<contrib-crawl target="compile-test"/>
+    <contrib-crawl target="compile-test"/>
   </target>
 
   <target name="javadocs-contrib" description="Compile contrib modules">
-  	<contrib-crawl target="javadocs"/>
+    <contrib-crawl target="javadocs"/>
   </target>
 
   <target name="jar-contrib" description="Jar contrib modules">
     <contrib-crawl target="jar-core"/>
   </target>
 
-  <target name="contribs-add-to-war">
+  <target name="contribs-add-to-webapp">
     <mkdir dir="${dest}/web"/>
     <delete dir="${dest}/web" includes="**/*" failonerror="false"/>
-    <contrib-crawl target="add-to-war"/>
+    <contrib-crawl target="add-to-webapp"/>
   </target>
   
   <!-- Forbidden API Task, customizations for Solr -->

@@ -202,6 +202,36 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     //                      FacetParams.FACET_PIVOT_MINCOUNT,"0",
     //                      "facet.pivot", "top_s,sub_s") );
 
+    // facet.missing=true + facet.sort=index + facet.pivot.mincount > 0 (SOLR-7829)
+    final int expectedNumDocsMissingBool = 111;
+    for (String facetSort : new String[] {"count", "index"}) {
+      for (int mincount : new int[] { 1, 20,
+                                      (expectedNumDocsMissingBool / 2) - 1,
+                                      (expectedNumDocsMissingBool / 2) + 1,
+                                      expectedNumDocsMissingBool }) {
+             
+        SolrParams p = params( "q", "*:*",
+                               "fq","-real_b:true", // simplify asserts by ruling out true counts
+                               "rows", "0",
+                               "facet","true",
+                               "facet.pivot", "real_b",
+                               "facet.missing", "true",
+                               "facet.pivot.mincount", ""+mincount,
+                               "facet.sort", facetSort);
+        
+        try {
+          rsp = query( p );
+          pivots = rsp.getFacetPivot().get("real_b");
+          assertEquals(2, pivots.size()); // false, missing - in that order, regardless of sort
+          assertPivot("real_b", false, 300, pivots.get(0)); 
+          assertPivot("real_b", null, expectedNumDocsMissingBool, pivots.get(1));
+          
+        } catch (AssertionFailedError ae) {
+          throw new AssertionError(ae.getMessage() + " <== " + p.toString(), ae);
+        }
+      }
+    }
+    
     // basic check w/ limit & index sort
     for (SolrParams facetParams : 
            // results should be the same regardless of whether local params are used

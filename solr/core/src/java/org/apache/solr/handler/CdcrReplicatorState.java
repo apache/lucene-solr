@@ -18,9 +18,9 @@ package org.apache.solr.handler;
  */
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.DateFormatUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +98,7 @@ class CdcrReplicatorState {
       errorCounters.put(error, 0l);
     }
     errorCounters.put(error, errorCounters.get(error) + 1);
-    errorsQueue.add(new ErrorQueueEntry(error, System.currentTimeMillis()));
+    errorsQueue.add(new ErrorQueueEntry(error, new Date()));
     consecutiveErrors++;
   }
 
@@ -133,7 +133,7 @@ class CdcrReplicatorState {
       Iterator<ErrorQueueEntry> it = errorsQueue.iterator();
       while (it.hasNext()) {
         ErrorQueueEntry entry = it.next();
-        lastErrors.add(new String[]{TrieDateField.formatExternal(new Date(entry.timestamp)), entry.type.toLower()});
+        lastErrors.add(new String[]{DateFormatUtil.formatExternal(entry.timestamp), entry.type.toLower()});
       }
     }
     return lastErrors;
@@ -145,7 +145,7 @@ class CdcrReplicatorState {
   String getTimestampOfLastProcessedOperation() {
     if (logReader != null && logReader.getLastVersion() != -1) {
       // Shift back to the right by 20 bits the version number - See VersionInfo#getNewClock
-      return TrieDateField.formatExternal(new Date(logReader.getLastVersion() >> 20));
+      return DateFormatUtil.formatExternal(new Date(logReader.getLastVersion() >> 20));
     }
     return new String();
   }
@@ -240,9 +240,9 @@ class CdcrReplicatorState {
   private class ErrorQueueEntry {
 
     private ErrorType type;
-    private long timestamp;
+    private Date timestamp;
 
-    private ErrorQueueEntry(ErrorType type, long timestamp) {
+    private ErrorQueueEntry(ErrorType type, Date timestamp) {
       this.type = type;
       this.timestamp = timestamp;
     }

@@ -53,6 +53,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -178,7 +179,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final UpdateHandler updateHandler;
   private final SolrCoreState solrCoreState;
 
-  private final long startTime;
+  private final Date startTime = new Date();
+  private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this);
@@ -194,7 +196,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   private final ReentrantLock ruleExpiryLock;
 
-  public long getStartTime() { return startTime; }
+  public Date getStartTimeStamp() { return startTime; }
+
+  @Deprecated
+  public long getStartTime() { return startTime.getTime(); }
+
+  public long getStartNanoTime() {
+    return startNanoTime;
+  }
+
+  public long getUptimeMs() {
+    return TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanoTime, TimeUnit.NANOSECONDS);
+  }
 
   private final RestManager restManager;
 
@@ -674,7 +687,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.ulogDir = null;
     this.solrConfig = null;
     this.configSetProperties = null;
-    this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = 2;  // we don't have a config yet, just pick a number.
     this.slowQueryThresholdMillis = -1;
     this.resourceLoader = null;
@@ -741,7 +753,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     this.schema = initSchema(config, schema);
 
-    this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = config.maxWarmingSearchers;
     this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
 
@@ -1573,8 +1584,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
         // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
 
-        RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState()
-            .getIndexWriter(null);
+        RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(null);
+
         try {
           if (writer != null) {
             // if in NRT mode, open from the writer
@@ -1628,7 +1639,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else  {
-          RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
+          RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
           try {
             newReader = indexReaderFactory.newReader(writer.get(), this);
@@ -2431,7 +2442,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public NamedList getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("coreName", name==null ? "(null)" : name);
-    lst.add("startTime", new Date(startTime));
+    lst.add("startTime", startTime);
     lst.add("refCount", getOpenCount());
     lst.add("instanceDir", resourceLoader.getInstanceDir());
     lst.add("indexDir", getIndexDir());

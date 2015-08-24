@@ -36,8 +36,8 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ import static org.apache.solr.cloud.rule.Rule.Phase.FUZZY_ASSIGN;
 import static org.apache.solr.cloud.rule.Rule.Phase.FUZZY_VERIFY;
 import static org.apache.solr.cloud.rule.Rule.Phase.VERIFY;
 import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.core.RequestParams.getDeepCopy;
+import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 public class ReplicaAssigner {
   public static final Logger log = LoggerFactory.getLogger(ReplicaAssigner.class);
@@ -140,9 +140,9 @@ public class ReplicaAssigner {
         }
         msg += " Some nodes where excluded from assigning replicas because tags could not be obtained from them " + failedNodes;
       }
-      msg += "\n tag values" + ZkStateReader.toJSONString(getNodeVsTags());
+      msg += "\n tag values" + Utils.toJSONString(getNodeVsTags());
       if (!shardVsNodes.isEmpty()) {
-        msg += "\nInitial state for the coll : " + ZkStateReader.toJSONString(shardVsNodes);
+        msg += "\nInitial state for the coll : " + Utils.toJSONString(shardVsNodes);
       }
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }

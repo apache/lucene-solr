@@ -417,7 +417,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   }
 
   // LUCENE-5919
-  public void testExcInDecRef() throws Exception {
+  public void testExcInDecRef() throws Throwable {
     MockDirectoryWrapper dir = newMockDirectory();
 
     // disable slow things: we don't rely upon sleeps here.
@@ -484,24 +484,11 @@ public class TestIndexFileDeleter extends LuceneTestCase {
           doc.add(newTextField("field", "some text", Field.Store.NO));
           w.addDocument(doc);
         }
-      } catch (IOException ioe) {
-        if (ioe.getMessage().contains("background merge hit exception")) {
-          Throwable cause = ioe.getCause();
-          if (cause != null && cause instanceof RuntimeException && ((RuntimeException) cause).getMessage().equals("fake fail")) {
-            // ok
-          } else {
-            throw ioe;
-          }
-        } else {
-          throw ioe;
-        }
-      } catch (RuntimeException re) {
-        if (re.getMessage().equals("fake fail")) {
+      } catch (Throwable t) {
+        if (t.toString().contains("fake fail") || (t.getCause() != null && t.getCause().toString().contains("fake fail"))) {
           // ok
-        } else if (re instanceof AlreadyClosedException && re.getCause() != null && "fake fail".equals(re.getCause().getMessage())) {
-          break; // our test got unlucky, triggered our strange exception after successful finishCommit, caused a disaster!
         } else {
-          throw re;
+          throw t;
         }
       }
     }

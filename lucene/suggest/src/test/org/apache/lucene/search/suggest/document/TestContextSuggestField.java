@@ -63,15 +63,23 @@ public class TestContextSuggestField extends LuceneTestCase {
     CharsRefBuilder charsRefBuilder = new CharsRefBuilder();
     charsRefBuilder.append("sugg");
     charsRefBuilder.setCharAt(2, (char) ContextSuggestField.CONTEXT_SEPARATOR);
-    try {
-      new ContextSuggestField("name", "sugg", 1, charsRefBuilder.toString());
+
+    Analyzer analyzer = new MockAnalyzer(random());
+    Document document = new Document();
+    try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
+      document.add(new ContextSuggestField("name", "sugg", 1, charsRefBuilder.toString()));
+      iw.addDocument(document);
+      iw.commit();
       fail("no exception thrown for context value containing CONTEXT_SEPARATOR:" + ContextSuggestField.CONTEXT_SEPARATOR);
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("[0x1d]"));
     }
+    document.clear();
 
-    try {
-      new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg");
+    try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
+      document.add(new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg"));
+      iw.addDocument(document);
+      iw.commit();
       fail("no exception thrown for value containing CONTEXT_SEPARATOR:" + ContextSuggestField.CONTEXT_SEPARATOR);
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("[0x1d]"));

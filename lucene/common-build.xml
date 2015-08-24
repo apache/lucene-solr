@@ -81,8 +81,11 @@
 
   <property name="ivy.bootstrap.version" value="2.3.0" />
   <property name="ivy.default.configuration" value="*"/>
+
+  <!-- Running ant targets in parralel may require this set to false because ivy:retrieve tasks may race with resolve -->
   <property name="ivy.sync" value="true"/>
   <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
+  <property name="ivy.lock-strategy" value="artifact-lock"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" location="${common.dir}/test-framework/lib/${junit.jar}"/>
@@ -144,8 +147,6 @@
   <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m -XX:MaxPermSize=192m" else="">
     <isset property="run.clover"/>
   </condition>
-
-  <property name="tests.heapdump.args" value=""/>
 
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
@@ -223,7 +224,7 @@
       <include name="**/lib/*.jar"/>
     </fileset>
   </path>
-	
+  
   <property name="changes.src.dir" location="${common.dir}/site/changes"/>
   <property name="changes.target.dir" location="${common.dir}/build/docs/changes"/>
 
@@ -461,7 +462,7 @@
      If you have already run ivy-bootstrap, and still get this message, please 
      try using the "--noconfig" option when running ant, or editing your global
      ant config to allow the user lib to be loaded.  See the wiki for more details:
-       http://wiki.apache.org/lucene-java/HowToContribute#antivy
+       http://wiki.apache.org/lucene-java/DeveloperTips#Problems_with_Ivy.3F
     </echo>
     <fail>Ivy is not available</fail>
   </target>
@@ -519,8 +520,7 @@
     <!-- convenience target to compile core -->
   </target>
 
-  <target name="jar-core" depends="compile-core"
-    description="Packages the JAR file">
+  <target name="jar-core" depends="compile-core">
     <jarify/>
   </target>
 
@@ -533,10 +533,14 @@
   </patternset>
   <available type="dir" file="${lucene.tgz.unpack.dir}" property="lucene.tgz.unpack.dir.exists"/>
   <target name="-ensure-lucene-tgz-exists" unless="lucene.tgz.exists">
-    <ant dir="${common.dir}" target="package-tgz" inheritall="false"/>
+    <ant dir="${common.dir}" target="package-tgz" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
   <target name="-unpack-lucene-tgz" unless="lucene.tgz.unpack.dir.exists">
-    <antcall target="-ensure-lucene-tgz-exists" inheritall="false"/>
+    <antcall target="-ensure-lucene-tgz-exists" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
     <mkdir dir="${lucene.tgz.unpack.dir}"/>
     <untar compression="gzip" src="${lucene.tgz.file}" dest="${lucene.tgz.unpack.dir}">
       <patternset refid="patternset.lucene.solr.jars"/>
@@ -554,7 +558,7 @@
   </pathconvert>
 
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
-  	<element name="artifact-attachments" optional="yes"/>
+    <element name="artifact-attachments" optional="yes"/>
     <element name="parent-poms" optional="yes"/>
     <element name="credentials" optional="yes"/>
     <attribute name="pom.xml"/>
@@ -612,7 +616,7 @@
   </macrodef>
 
   <macrodef name="build-manifest" description="Builds a manifest file">
-  	<attribute name="title"/>
+    <attribute name="title"/>
     <attribute name="implementation.title"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="additional-manifest-attributes" optional="true"/>
@@ -665,11 +669,11 @@
       </manifest>
     </sequential>
   </macrodef>
-	
+  
   <macrodef name="jarify" description="Builds a JAR file">
-  	<attribute name="basedir" default="${build.dir}/classes/java"/>
-  	<attribute name="destfile" default="${build.dir}/${final.name}.jar"/>
-  	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}"/>
+    <attribute name="basedir" default="${build.dir}/classes/java"/>
+    <attribute name="destfile" default="${build.dir}/${final.name}.jar"/>
+    <attribute name="title" default="Lucene Search Engine: ${ant.project.name}"/>
     <attribute name="excludes" default="**/pom.xml,**/*.iml"/>
     <attribute name="metainf.source.dir" default="${common.dir}"/>
     <attribute name="implementation.title" default="org.apache.lucene"/>
@@ -684,7 +688,7 @@
           <jarify-additional-manifest-attributes />
         </additional-manifest-attributes>
       </build-manifest>
-    	
+      
       <jar destfile="@{destfile}"
            basedir="@{basedir}"
            manifest="@{manifest.file}"
@@ -702,7 +706,7 @@
     <attribute name="module-src-name" default="@{name}"/>
     <sequential>
       <uptodate property="@{property}" targetfile="@{jarfile}">
-      	<srcfiles dir="${common.dir}/@{module-src-name}/src/java" includes="**/*.java"/>
+        <srcfiles dir="${common.dir}/@{module-src-name}/src/java" includes="**/*.java"/>
       </uptodate>
     </sequential>
   </macrodef>
@@ -710,7 +714,7 @@
   <property name="lucene-core.jar" value="${common.dir}/build/core/lucene-core-${version}.jar"/>
   <target name="check-lucene-core-uptodate" unless="lucene-core.uptodate">
     <uptodate property="lucene-core.uptodate" targetfile="${lucene-core.jar}">
-     	<srcfiles dir="${common.dir}/core/src/java" includes="**/*.java"/>
+       <srcfiles dir="${common.dir}/core/src/java" includes="**/*.java"/>
     </uptodate>
   </target>
   <target name="jar-lucene-core" unless="lucene-core.uptodate" depends="check-lucene-core-uptodate">
@@ -793,12 +797,12 @@
   </target>
 
   <macrodef name="compile-test-macro" description="Compiles junit tests.">
-  	<attribute name="srcdir"/>
-  	<attribute name="destdir"/>
-  	<attribute name="test.classpath"/>
+    <attribute name="srcdir"/>
+    <attribute name="destdir"/>
+    <attribute name="test.classpath"/>
     <attribute name="javac.source" default="${javac.source}"/>
     <attribute name="javac.target" default="${javac.target}"/>
-   	<sequential>
+     <sequential>
       <compile
         srcdir="@{srcdir}" 
         destdir="@{destdir}"
@@ -811,7 +815,7 @@
       <copy todir="@{destdir}">
         <fileset dir="@{srcdir}" excludes="**/*.java"/>
       </copy>
-  	</sequential>
+    </sequential>
   </macrodef>
 
   <target name="test-updatecache" description="Overwrite tests' timings cache for balancing." depends="install-junit4-taskdef">
@@ -904,6 +908,8 @@
         <property name="tests.iters" value="" />
         <property name="tests.dups"  value="1" />
         <property name="tests.useSecurityManager"  value="true" />
+
+        <property name="tests.heapdump.args" value=""/>
 
         <!-- turn on security manager? -->
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
@@ -1525,7 +1531,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <!--
    See http://issues.apache.org/jira/browse/LUCENE-721
    -->
-  <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
+  <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup"/>
   
   <target name="-clover.load" depends="ivy-availability-check,ivy-configure" if="run.clover" unless="clover.loaded">
     <available file="${clover.license.path}" property="clover.license.available" />
@@ -1623,7 +1629,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- TODO, this is really unintuitive how we depend on a target that does not exist -->
   <target name="javadocs">
-  	<fail message="You must redefine the javadocs task to do something!!!!!"/>
+    <fail message="You must redefine the javadocs task to do something!!!!!"/>
   </target>
 
   <target name="install-maven-tasks" unless="maven-tasks.uptodate" depends="ivy-availability-check,ivy-configure">
@@ -1818,7 +1824,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
 
   <target name="rat-sources" depends="rat-sources-typedef"
-	  description="runs the tasks over source and test files">
+    description="runs the tasks over source and test files">
     <!-- create a temp file for the log to go to -->
     <tempfile property="rat.sources.logfile"
               prefix="rat"
@@ -2049,7 +2055,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <macrodef name="invoke-javadoc">
     <element name="sources" optional="yes"/>
     <attribute name="destdir"/>
-  	<attribute name="title" default="${Name} ${version} API"/>
+    <attribute name="title" default="${Name} ${version} API"/>
     <attribute name="overview" default="${src.dir}/overview.html"/>
     <attribute name="linksource" default="no"/>
     <sequential>
@@ -2082,7 +2088,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
           description="WARNING: This API is experimental and might change in incompatible ways in the next release."/>
         <tag name="lucene.internal"
         description="NOTE: This API is for internal purposes only and might change in incompatible ways in the next release."/>
-      	<link offline="true" packagelistLoc="${javadoc.dir}"/>
+        <link offline="true" packagelistLoc="${javadoc.dir}"/>
         <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java8"/>
         <bottom><![CDATA[
           <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
@@ -2101,9 +2107,9 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
             })();
           </script>
         ]]></bottom>
-      	
-      	<sources />
-      	      	
+        
+        <sources />
+                
         <classpath refid="javadoc.classpath"/>
         <arg line="${javadoc.doclint.args}"/>
       </javadoc>
@@ -2341,7 +2347,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.3.10"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.4"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2413,16 +2419,47 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </forbidden-apis>
   </target>
 
-  <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown,resolve-groovy" -->
-  
-  <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.4.2"
+  <target name="resolve-pegdown" unless="pegdown.loaded" depends="resolve-groovy">
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.5.0"
       inline="true" conf="default" transitive="true" pathid="pegdown.classpath"/>
+    <groovy classpathref="pegdown.classpath"><![CDATA[
+      import org.apache.tools.ant.AntTypeDefinition;
+      import org.apache.tools.ant.ComponentHelper;
+      import org.apache.tools.ant.filters.TokenFilter.ChainableReaderFilter;
+      import org.pegdown.PegDownProcessor;
+      import org.pegdown.Extensions;
+      import org.pegdown.FastEncoder;
+
+      public final class PegDownFilter extends ChainableReaderFilter {
+        @Override
+        public String filter(String markdownSource) {
+          PegDownProcessor processor = new PegDownProcessor(
+            Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
+            Extensions.FENCED_CODE_BLOCKS | Extensions.SMARTS
+          );
+          StringBuilder html = new StringBuilder('<html>\n<head>\n');
+          // match the first heading in markdown and use as title:
+          markdownSource.find(~/(?m)^#+\s*(.+)$/) {
+            match, title -> html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
+          }
+          html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
+            .append('</head>\n<body>\n')
+            .append(processor.markdownToHtml(markdownSource))
+            .append('\n</body>\n</html>\n');
+          return html;
+        }
+      }
+      
+      AntTypeDefinition t = new AntTypeDefinition();
+      t.setName('pegdownfilter');
+      t.setClass(PegDownFilter.class);
+      ComponentHelper.getComponentHelper(project).addDataTypeDefinition(t);
+    ]]></groovy>
     <property name="pegdown.loaded" value="true"/>
   </target>
   
-  <target name="regenerate"/>
-	
+  <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
+  
   <macrodef name="pegdown">
     <attribute name="todir"/>
     <attribute name="flatten" default="false"/>
@@ -2436,31 +2473,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
           <tokenfilter>
             <filetokenizer/>
             <replaceregex pattern="\b(LUCENE|SOLR)\-\d+\b" replace="[\0](https://issues.apache.org/jira/browse/\0)" flags="gs"/>
-            <scriptfilter language="groovy">
-              <classpath>
-                <path refid="groovy.classpath"/>
-                <path refid="pegdown.classpath"/>
-              </classpath><![CDATA[
-              import org.pegdown.PegDownProcessor;
-              import org.pegdown.Extensions;
-              import org.pegdown.FastEncoder;
-              
-              String markdownSource = self.getToken();
-              PegDownProcessor processor = new PegDownProcessor(
-                Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
-                Extensions.FENCED_CODE_BLOCKS | Extensions.SMARTS
-              );
-              StringBuilder html = new StringBuilder('<html>\n<head>\n');
-              // match the first heading in markdown and use as title:
-              markdownSource.find(~/(?m)^#+\s*(.+)$/) {
-                match, title -> html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
-              }
-              html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
-                .append('</head>\n<body>\n')
-                .append(processor.markdownToHtml(markdownSource))
-                .append('\n</body>\n</html>\n');
-              self.setToken(html.toString());
-            ]]></scriptfilter>
+            <pegdownfilter/>
           </tokenfilter>
         </filterchain>
         <nested/>
@@ -2468,12 +2481,14 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </sequential>
   </macrodef>
 
+  <target name="regenerate"/>
+  
   <macrodef name="check-broken-links">
        <attribute name="dir"/>
      <sequential>
        <exec dir="." executable="${python32.exe}" failonerror="true">
-	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
-	 <arg value="-B"/>
+         <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+         <arg value="-B"/>
          <arg value="${dev-tools.dir}/scripts/checkJavadocLinks.py"/>
          <arg value="@{dir}"/>
        </exec>
@@ -2485,8 +2500,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
        <attribute name="level" default="class"/>
      <sequential>
        <exec dir="." executable="${python32.exe}" failonerror="true">
-	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
-	 <arg value="-B"/>
+         <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+         <arg value="-B"/>
          <arg value="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
          <arg value="@{dir}"/>
          <arg value="@{level}"/>

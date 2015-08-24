@@ -48,7 +48,7 @@ public class Tuple implements Cloneable {
       EOF = true;
     }
 
-    if(fields.containsKey("_EXCEPTION_")){
+    if(fields.containsKey("EXCEPTION")){
       EXCEPTION = true;
     }
 
@@ -67,7 +67,7 @@ public class Tuple implements Cloneable {
     return this.fields.get(key).toString();
   }
 
-  public String getException(){ return (String)this.fields.get("_EXCEPTION_"); }
+  public String getException(){ return (String)this.fields.get("EXCEPTION"); }
 
   public Long getLong(Object key) {
     Object o = this.fields.get(key);

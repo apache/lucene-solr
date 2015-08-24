@@ -17,6 +17,7 @@
 
 package org.apache.solr.search.join;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -25,7 +26,8 @@ import org.apache.solr.search.QParserPlugin;
 
 /**
  * Usage: {!parent which="PARENT:true"}CHILD_PRICE:10
- *
+ * supports optional <code>score</code> parameter with one of {@link ScoreMode} values:
+ *  None,Avg,Total,Min,Max. Lowercase is also accepted.
  **/
 public class BlockJoinParentQParserPlugin extends QParserPlugin {
   public static final String NAME = "parent";

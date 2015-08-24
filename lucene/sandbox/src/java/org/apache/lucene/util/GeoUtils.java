@@ -17,26 +17,19 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+
 /**
  * Basic reusable geo-spatial utility methods
  *
  * @lucene.experimental
  */
 public final class GeoUtils {
-  // WGS84 earth-ellipsoid major (a) minor (b) radius, (f) flattening and eccentricity (e)
-  private static final double SEMIMAJOR_AXIS = 6_378_137; // [m]
-  private static final double FLATTENING = 1.0/298.257223563;
-  private static final double SEMIMINOR_AXIS = SEMIMAJOR_AXIS * (1.0 - FLATTENING); //6_356_752.31420; // [m]
-  private static final double ECCENTRICITY = StrictMath.sqrt((2.0 - FLATTENING) * FLATTENING);
-  private static final double PI_OVER_2 = StrictMath.PI / 2.0D;
-  private static final double SEMIMAJOR_AXIS2 = SEMIMAJOR_AXIS * SEMIMINOR_AXIS;
-  private static final double SEMIMINOR_AXIS2 = SEMIMINOR_AXIS * SEMIMINOR_AXIS;
-
   private static final short MIN_LON = -180;
   private static final short MIN_LAT = -90;
-  public static final short BITS = 31;
-  private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
-  private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
+  public static final short BITS = 32;
+  private static final double LON_SCALE = ((0x1L<<BITS)-1)/360.0D;
+  private static final double LAT_SCALE = ((0x1L<<BITS)-1)/180.0D;
   public static final double TOLERANCE = 1E-6;
 
   /** Minimum longitude value. */
@@ -55,15 +48,15 @@ public final class GeoUtils {
   private GeoUtils() {
   }
 
-  public static final Long mortonHash(final double lon, final double lat) {
+  public static Long mortonHash(final double lon, final double lat) {
     return BitUtil.interleave(scaleLon(lon), scaleLat(lat));
   }
 
-  public static final double mortonUnhashLon(final long hash) {
+  public static double mortonUnhashLon(final long hash) {
     return unscaleLon(BitUtil.deinterleave(hash));
   }
 
-  public static final double mortonUnhashLat(final long hash) {
+  public static double mortonUnhashLat(final long hash) {
     return unscaleLat(BitUtil.deinterleave(hash >>> 1));
   }
 
@@ -83,124 +76,43 @@ public final class GeoUtils {
     return (val / LAT_SCALE) + MIN_LAT;
   }
 
-  public static final double compare(final double v1, final double v2) {
+  public static double compare(final double v1, final double v2) {
     final double compare = v1-v2;
     return Math.abs(compare) <= TOLERANCE ? 0 : compare;
+  }
+
+  /**
+   * Puts longitude in range of -180 to +180.
+   */
+  public static double normalizeLon(double lon_deg) {
+    if (lon_deg >= -180 && lon_deg <= 180) {
+      return lon_deg; //common case, and avoids slight double precision shifting
+    }
+    double off = (lon_deg + 180) % 360;
+    if (off < 0) {
+      return 180 + off;
+    } else if (off == 0 && lon_deg > 0) {
+      return 180;
+    } else {
+      return -180 + off;
+    }
+  }
+
+  /**
+   * Puts latitude in range of -90 to 90.
+   */
+  public static double normalizeLat(double lat_deg) {
+    if (lat_deg >= -90 && lat_deg <= 90) {
+      return lat_deg; //common case, and avoids slight double precision shifting
+    }
+    double off = Math.abs((lat_deg + 90) % 360);
+    return (off <= 180 ? off : 360-off) - 90;
   }
 
   public static final boolean bboxContains(final double lon, final double lat, final double minLon,
                                            final double minLat, final double maxLon, final double maxLat) {
     return (compare(lon, minLon) >= 0 && compare(lon, maxLon) <= 0
           && compare(lat, minLat) >= 0 && compare(lat, maxLat) <= 0);
-  }
-
-  /**
-   * Converts from geodesic lon lat alt to geocentric earth-centered earth-fixed
-   * @param lon geodesic longitude
-   * @param lat geodesic latitude
-   * @param alt geodesic altitude
-   * @param ecf reusable earth-centered earth-fixed result
-   * @return either a new ecef array or the reusable ecf parameter
-   */
-  public static final double[] llaToECF(double lon, double lat, double alt, double[] ecf) {
-    lon = StrictMath.toRadians(lon);
-    lat = StrictMath.toRadians(lat);
-
-    final double sl = StrictMath.sin(lat);
-    final double s2 = sl*sl;
-    final double cl = StrictMath.cos(lat);
-    final double ge2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMAJOR_AXIS2);
-
-    if (ecf == null)
-      ecf = new double[3];
-
-    if (lat < -PI_OVER_2 && lat > -1.001D * PI_OVER_2) {
-      lat = -PI_OVER_2;
-    } else if (lat > PI_OVER_2 && lat < 1.001D * PI_OVER_2) {
-      lat = PI_OVER_2;
-    }
-    assert ((lat >= -PI_OVER_2) || (lat <= PI_OVER_2));
-
-    if (lon > StrictMath.PI) {
-      lon -= (2*StrictMath.PI);
-    }
-
-    final double rn = SEMIMAJOR_AXIS / StrictMath.sqrt(1.0D - ge2 * s2);
-    ecf[0] = (rn+alt) * cl * StrictMath.cos(lon);
-    ecf[1] = (rn+alt) * cl * StrictMath.sin(lon);
-    ecf[2] = ((rn*(1.0-ge2))+alt)*sl;
-
-    return ecf;
-  }
-
-  /**
-   * Converts from geocentric earth-centered earth-fixed to geodesic lat/lon/alt
-   * @param x Cartesian x coordinate
-   * @param y Cartesian y coordinate
-   * @param z Cartesian z coordinate
-   * @param lla 0: longitude 1: latitude: 2: altitude
-   * @return double array as 0: longitude 1: latitude 2: altitude
-   */
-  public static final double[] ecfToLLA(final double x, final double y, final double z, double[] lla) {
-    boolean atPole = false;
-    final double ad_c = 1.0026000D;
-    final double e2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMAJOR_AXIS2);
-    final double ep2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMINOR_AXIS2);
-    final double cos67P5 = 0.38268343236508977D;
-
-    if (lla == null)
-      lla = new double[3];
-
-    if (x != 0.0) {
-      lla[0] = StrictMath.atan2(y,x);
-    } else {
-      if (y > 0) {
-        lla[0] = PI_OVER_2;
-      } else if (y < 0) {
-        lla[0] = -PI_OVER_2;
-      } else {
-        atPole = true;
-        lla[0] = 0.0D;
-        if (z > 0.0) {
-          lla[1] = PI_OVER_2;
-        } else if (z < 0.0) {
-          lla[1] = -PI_OVER_2;
-        } else {
-          lla[1] = PI_OVER_2;
-          lla[2] = -SEMIMINOR_AXIS;
-          return lla;
-        }
-      }
-    }
-
-    final double w2 = x*x + y*y;
-    final double w = StrictMath.sqrt(w2);
-    final double t0 = z * ad_c;
-    final double s0 = StrictMath.sqrt(t0 * t0 + w2);
-    final double sinB0 = t0 / s0;
-    final double cosB0 = w / s0;
-    final double sin3B0 = sinB0 * sinB0 * sinB0;
-    final double t1 = z + SEMIMINOR_AXIS * ep2 * sin3B0;
-    final double sum = w - SEMIMAJOR_AXIS * e2 * cosB0 * cosB0 * cosB0;
-    final double s1 = StrictMath.sqrt(t1 * t1 + sum * sum);
-    final double sinP1 = t1 / s1;
-    final double cosP1 = sum / s1;
-    final double rn = SEMIMAJOR_AXIS / StrictMath.sqrt(1.0D - e2 * sinP1 * sinP1);
-
-    if (cosP1 >= cos67P5) {
-      lla[2] = w / cosP1 - rn;
-    } else if (cosP1 <= -cos67P5) {
-      lla[2] = w / -cosP1 - rn;
-    } else {
-      lla[2] = z / sinP1 + rn * (e2 - 1.0);
-    }
-    if (!atPole) {
-      lla[1] = StrictMath.atan(sinP1/cosP1);
-    }
-    lla[0] = StrictMath.toDegrees(lla[0]);
-    lla[1] = StrictMath.toDegrees(lla[1]);
-
-    return lla;
   }
 
   /**
@@ -236,8 +148,9 @@ public final class GeoUtils {
     for (int i = 0; i < numberOfLeadingZeros; i++) {
       s.append('0');
     }
-    if (term != 0)
+    if (term != 0) {
       s.append(Long.toBinaryString(term));
+    }
     return s.toString();
   }
 
@@ -280,13 +193,14 @@ public final class GeoUtils {
   /**
    * Computes whether a rectangle crosses a shape. (touching not allowed)
    */
-  public static final boolean rectCrossesPoly(final double rMinX, final double rMinY, final double rMaxX,
-                                              final double rMaxY, final double[] shapeX, final double[] shapeY,
-                                              final double sMinX, final double sMinY, final double sMaxX,
-                                              final double sMaxY) {
+  public static boolean rectCrossesPoly(final double rMinX, final double rMinY, final double rMaxX,
+                                        final double rMaxY, final double[] shapeX, final double[] shapeY,
+                                        final double sMinX, final double sMinY, final double sMaxX,
+                                        final double sMaxY) {
     // short-circuit: if the bounding boxes are disjoint then the shape does not cross
-    if (rectDisjoint(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY))
+    if (rectDisjoint(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY)) {
       return false;
+    }
 
     final double[][] bbox = new double[][] { {rMinX, rMinY}, {rMaxX, rMinY}, {rMaxX, rMaxY}, {rMinX, rMaxY}, {rMinX, rMinY} };
     final int polyLength = shapeX.length-1;
@@ -320,12 +234,47 @@ public final class GeoUtils {
           boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
               || ((x10 == s && y10 == t) || (x11 == s && y11 == t));
           // if line segments are not touching and the intersection point is within the range of either segment
-          if (!(touching || x00 > s || x01 < s || y00 > t || y01 < t || x10 > s || x11 < s || y10 > t || y11 < t))
+          if (!(touching || x00 > s || x01 < s || y00 > t || y01 < t || x10 > s || x11 < s || y10 > t || y11 < t)) {
             return true;
+          }
         }
       } // for each poly edge
     } // for each bbox edge
     return false;
+  }
+
+  /**
+   * Converts a given circle (defined as a point/radius) to an approximated line-segment polygon
+   *
+   * @param lon longitudinal center of circle (in degrees)
+   * @param lat latitudinal center of circle (in degrees)
+   * @param radius distance radius of circle (in meters)
+   * @return a list of lon/lat points representing the circle
+   */
+  @SuppressWarnings({"unchecked","rawtypes"})
+  public static ArrayList<double[]> circleToPoly(final double lon, final double lat, final double radius) {
+    double angle;
+    // a little under-sampling (to limit the number of polygonal points): using archimedes estimation of pi
+    final int sides = 25;
+    ArrayList<double[]> geometry = new ArrayList();
+    double[] lons = new double[sides];
+    double[] lats = new double[sides];
+
+    double[] pt = new double[2];
+    final int sidesLen = sides-1;
+    for (int i=0; i<sidesLen; ++i) {
+      angle = (i*360/sides);
+      pt = GeoProjectionUtils.pointFromLonLatBearing(lon, lat, angle, radius, pt);
+      lons[i] = pt[0];
+      lats[i] = pt[1];
+    }
+    // close the poly
+    lons[sidesLen] = lons[0];
+    lats[sidesLen] = lats[0];
+    geometry.add(lons);
+    geometry.add(lats);
+
+    return geometry;
   }
 
   /**
@@ -339,6 +288,99 @@ public final class GeoUtils {
     return !(rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
         !pointInPolygon(shapeX, shapeY, rMinY, rMinX) || !pointInPolygon(shapeX, shapeY, rMinY, rMaxX) ||
         !pointInPolygon(shapeX, shapeY, rMaxY, rMaxX) || !pointInPolygon(shapeX, shapeY, rMaxY, rMinX));
+  }
+
+  private static boolean rectAnyCornersOutsideCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                                     final double centerLon, final double centerLat, final double radius) {
+    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radius
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radius
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radius
+        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radius);
+  }
+
+  private static boolean rectAnyCornersInCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                                final double centerLon, final double centerLat, final double radius) {
+    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radius
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 <= radius
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 <= radius
+        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radius);
+  }
+
+  public static boolean rectWithinCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                         final double centerLon, final double centerLat, final double radius) {
+    return !(rectAnyCornersOutsideCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius));
+  }
+
+  /**
+   * Computes whether a rectangle crosses a circle
+   */
+  public static boolean rectCrossesCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                          final double centerLon, final double centerLat, final double radius) {
+    return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius)
+        || lineCrossesSphere(rMinX, rMinY, 0, rMaxX, rMinY, 0, centerLon, centerLat, 0, radius)
+        || lineCrossesSphere(rMaxX, rMinY, 0, rMaxX, rMaxY, 0, centerLon, centerLat, 0, radius)
+        || lineCrossesSphere(rMaxX, rMaxY, 0, rMinX, rMaxY, 0, centerLon, centerLat, 0, radius)
+        || lineCrossesSphere(rMinX, rMaxY, 0, rMinX, rMinY, 0, centerLon, centerLat, 0, radius);
+  }
+
+  public static boolean circleWithinRect(double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+  final double centerLon, final double centerLat, final double radius) {
+    return !(centerLon < rMinX || centerLon > rMaxX || centerLat > rMaxY || centerLat < rMinY
+        || SloppyMath.haversin(rMinY, centerLon, centerLat, centerLon) < radius
+        || SloppyMath.haversin(rMaxY, centerLon, centerLat, centerLon) < radius
+        || SloppyMath.haversin(centerLat, rMinX, centerLat, centerLon) < radius
+        || SloppyMath.haversin(centerLat, rMaxX, centerLat, centerLon) < radius);
+  }
+
+  /**
+   * Computes whether or a 3dimensional line segment intersects or crosses a sphere
+   *
+   * @param lon1 longitudinal location of the line segment start point (in degrees)
+   * @param lat1 latitudinal location of the line segment start point (in degrees)
+   * @param alt1 altitude of the line segment start point (in degrees)
+   * @param lon2 longitudinal location of the line segment end point (in degrees)
+   * @param lat2 latitudinal location of the line segment end point (in degrees)
+   * @param alt2 altitude of the line segment end point (in degrees)
+   * @param centerLon longitudinal location of center search point (in degrees)
+   * @param centerLat latitudinal location of center search point (in degrees)
+   * @param centerAlt altitude of the center point (in meters)
+   * @param radius search sphere radius (in meters)
+   * @return whether the provided line segment is a secant of the
+   */
+  private static boolean lineCrossesSphere(double lon1, double lat1, double alt1, double lon2,
+                                           double lat2, double alt2, double centerLon, double centerLat,
+                                           double centerAlt, double radius) {
+    // convert to cartesian 3d (in meters)
+    double[] ecf1 = GeoProjectionUtils.llaToECF(lon1, lat1, alt1, null);
+    double[] ecf2 = GeoProjectionUtils.llaToECF(lon2, lat2, alt2, null);
+    double[] cntr = GeoProjectionUtils.llaToECF(centerLon, centerLat, centerAlt, null);
+
+    final double dX = ecf2[0] - ecf1[0];
+    final double dY = ecf2[1] - ecf1[1];
+    final double dZ = ecf2[2] - ecf1[2];
+    final double fX = ecf1[0] - cntr[0];
+    final double fY = ecf1[1] - cntr[1];
+    final double fZ = ecf1[2] - cntr[2];
+
+    final double a = dX*dX + dY*dY + dZ*dZ;
+    final double b = 2 * (fX*dX + fY*dY + fZ*dZ);
+    final double c = (fX*fX + fY*fY + fZ*fZ) - (radius*radius);
+
+    double discrim = (b*b)-(4*a*c);
+    if (discrim < 0) {
+      return false;
+    }
+
+    discrim = StrictMath.sqrt(discrim);
+    final double a2 = 2*a;
+    final double t1 = (-b - discrim)/a2;
+    final double t2 = (-b + discrim)/a2;
+
+    if ( (t1 < 0 || t1 > 1) ) {
+      return !(t2 < 0 || t2 > 1);
+    }
+
+    return true;
   }
 
   public static boolean isValidLat(double lat) {

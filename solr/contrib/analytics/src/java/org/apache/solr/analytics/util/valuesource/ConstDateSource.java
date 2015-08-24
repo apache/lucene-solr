@@ -28,7 +28,7 @@ import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.solr.analytics.util.AnalyticsParams;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 
 /**
  * <code>ConstDateSource</code> returns a constant date for all documents
@@ -47,7 +47,7 @@ public class ConstDateSource extends ConstDoubleSource {
   @SuppressWarnings("deprecation")
   @Override
   public String description() {
-    return name()+"(" + TrieDateField.formatExternal(new Date(getLong())) + ")";
+    return name()+"(" + DateFormatUtil.formatExternal(new Date(getLong())) + ")";
   }
 
   protected String name() {
@@ -84,7 +84,7 @@ public class ConstDateSource extends ConstDoubleSource {
       @SuppressWarnings("deprecation")
       @Override
       public String strVal(int doc) {
-        return TrieDateField.formatExternal(new Date(longVal(doc)));
+        return DateFormatUtil.formatExternal(new Date(longVal(doc)));
       }
       @Override
       public boolean boolVal(int doc) {

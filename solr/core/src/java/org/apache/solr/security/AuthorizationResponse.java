@@ -21,6 +21,9 @@ package org.apache.solr.security;
    be used to return ACLs and other information from the authorization plugin.
  */
 public class AuthorizationResponse {
+  public static final AuthorizationResponse OK = new AuthorizationResponse(200);
+  public static final AuthorizationResponse FORBIDDEN = new AuthorizationResponse(403);
+  public static final AuthorizationResponse PROMPT = new AuthorizationResponse(401);
   public final int statusCode;
   String message;
 

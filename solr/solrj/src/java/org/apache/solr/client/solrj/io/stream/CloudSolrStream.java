@@ -289,7 +289,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       //System.out.println("Connected to zk an got cluster state.");
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-      long time = System.currentTimeMillis();
+
+      if(slices == null) {
+        throw new Exception("Collection not found:"+this.collection);
+      }
+
       params.put("distrib","false"); // We are the aggregator.
 
       for(Slice slice : slices) {
@@ -299,7 +303,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
           shuffler.add(replica);
         }
 
-        Collections.shuffle(shuffler, new Random(time));
+        Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
         String url = zkProps.getCoreUrl();

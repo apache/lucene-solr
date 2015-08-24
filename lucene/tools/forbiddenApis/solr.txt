@@ -27,3 +27,10 @@ java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent
 java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue)
 java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory)
 java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.RejectedExecutionHandler)
+
+@defaultMessage Use slf4j classes instead
+org.apache.log4j.**
+java.util.logging.**
+
+@defaultMessage Use RTimer/TimeOut/System.nanoTime for time comparisons, and `new Date()` output/debugging/stats of timestamps. If for some miscellaneous reason, you absolutely need to use this, use a SuppressForbidden.
+java.lang.System#currentTimeMillis()

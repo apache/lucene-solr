@@ -18,6 +18,7 @@ package org.apache.lucene.search.suggest.document;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -70,26 +71,33 @@ public class ContextSuggestField extends SuggestField {
     validate(value);
     this.contexts = new HashSet<>((contexts != null) ? contexts.length : 0);
     if (contexts != null) {
-      for (CharSequence context : contexts) {
-        validate(context);
-        this.contexts.add(context);
-      }
+      Collections.addAll(this.contexts, contexts);
     }
+  }
+
+  /**
+   * Expert: Sub-classes can inject contexts at
+   * index-time
+   */
+  protected Iterable<CharSequence> contexts() {
+    return contexts;
   }
 
   @Override
   protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
+    for (CharSequence context : contexts()) {
+      validate(context);
+    }
+    PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts());
     CompletionTokenStream completionTokenStream;
     if (stream instanceof CompletionTokenStream) {
       completionTokenStream = (CompletionTokenStream) stream;
-      completionTokenStream = new CompletionTokenStream(
-          new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts),
+      completionTokenStream = new CompletionTokenStream(prefixTokenFilter,
           completionTokenStream.preserveSep,
           completionTokenStream.preservePositionIncrements,
           completionTokenStream.maxGraphExpansions);
     } else {
-      completionTokenStream = new CompletionTokenStream(
-          new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
+      completionTokenStream = new CompletionTokenStream(prefixTokenFilter);
     }
     return completionTokenStream;
   }

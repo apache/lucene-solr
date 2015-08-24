@@ -112,6 +112,7 @@ public class AnalyzerFactoryTask extends PerfTask {
    *               and 0+ TokenFilterFactory's
    */
   @Override
+  @SuppressWarnings("fallthrough")
   public void setParams(String params) {
     super.setParams(params);
     ArgType expectedArgType = ArgType.ANALYZER_ARG;
@@ -287,6 +288,7 @@ public class AnalyzerFactoryTask extends PerfTask {
    * @param stok stream tokenizer from which to draw analysis factory params
    * @param clazz analysis factory class to instantiate
    */
+  @SuppressWarnings("fallthrough")
   private void createAnalysisPipelineComponent
       (StreamTokenizer stok, Class<? extends AbstractAnalysisFactory> clazz) {
     Map<String,String> argMap = new HashMap<>();

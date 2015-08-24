@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.Utils;
 
 public class TestClusterStateMutator extends SolrTestCaseJ4 {
   public void testCreateCollection() throws Exception {
@@ -34,7 +35,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
 
     ClusterState clusterState = zkStateReader.getClusterState();
     ClusterStateMutator mutator = new ClusterStateMutator(zkStateReader);
-    ZkNodeProps message = new ZkNodeProps(ZkNodeProps.makeMap(
+    ZkNodeProps message = new ZkNodeProps(Utils.makeMap(
         "name", "xyz",
         "numShards", "1"
     ));
@@ -45,7 +46,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertEquals(1, collection.getMaxShardsPerNode());
 
     state = new ClusterState(-1, Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
-    message = new ZkNodeProps(ZkNodeProps.makeMap(
+    message = new ZkNodeProps(Utils.makeMap(
         "name", "abc",
         "numShards", "2",
         "router.name", "implicit",

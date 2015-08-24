@@ -60,7 +60,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {

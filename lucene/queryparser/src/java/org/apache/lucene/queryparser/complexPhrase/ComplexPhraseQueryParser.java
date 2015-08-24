@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.complexPhrase;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -30,6 +29,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -273,7 +273,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
         // HashSet bclauseterms=new HashSet();
         Query qc = clause.getQuery();
         // Rewrite this clause e.g one* becomes (one OR onerous)
-        qc = qc.rewrite(reader);
+        qc = new IndexSearcher(reader).rewrite(qc);
         if (clause.getOccur().equals(BooleanClause.Occur.MUST_NOT)) {
           numNegatives++;
         }

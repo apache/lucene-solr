@@ -20,17 +20,15 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
- * {@link GeoPointInBBoxQuery} and is implemented using a
- * three phase approach. First, like {@link GeoPointInBBoxQuery}
+ * {@code GeoPointInBBoxQueryImpl} and is implemented using a
+ * three phase approach. First, like {@code GeoPointInBBoxQueryImpl}
  * candidate terms are queried using a numeric range based on the morton codes
  * of the min and max lat/lon pairs. Terms passing this initial filter are passed
  * to a secondary filter that verifies whether the decoded lat/lon point falls within
@@ -47,7 +45,7 @@ import java.util.Arrays;
  *
  *    @lucene.experimental
  */
-public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
+public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   // polygon position arrays - this avoids the use of any objects or
   // or geo library dependencies
   private final double[] x;
@@ -59,27 +57,6 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
    */
   public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
     this(field, computeBBox(polyLons, polyLats), polyLons, polyLats);
-  }
-
-  /**
-   * Expert: constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.document.GeoPointField} terms
-   * that fall within or on the boundary of the polygon defined by the input parameters.  This constructor requires a
-   * precomputed bounding box. As an alternative, {@link #GeoPointInPolygonQuery(String,double[],double[])} can
-   * be used to compute the bounding box during construction
-   *
-   * @param field the field name
-   * @param minLon lower longitude (x) value of the bounding box optimizer
-   * @param minLat lower latitude (y) value of the bounding box optimizer
-   * @param maxLon upper longitude (x) value of the bounding box optimizer
-   * @param maxLat upper latitude (y) value of the bounding box optimizer
-   * @param polyLons array containing all longitude values for the polygon
-   * @param polyLats array containing all latitude values for the polygon
-   */
-  public GeoPointInPolygonQuery(final String field, final double minLon, final double minLat, final double maxLon,
-                                final double maxLat, final double[] polyLons, final double[] polyLats) {
-    // TODO: should we remove this?  It's dangerous .. app could accidentally provide too-small bbox?
-    // we should at least verify that bbox does in fact fully contain the poly?
-    this(field, new GeoBoundingBox(minLon, maxLon, minLat, maxLat), polyLons, polyLats);
   }
 
   /** Common constructor, used only internally. */
@@ -112,16 +89,16 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
 
   @Override @SuppressWarnings("unchecked")
   protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    final Long min = GeoUtils.mortonHash(minLon, minLat);
-    final Long max = Math.abs(GeoUtils.mortonHash(maxLon, maxLat));
-    if (min != null && max != null &&  min.compareTo(max) > 0) {
-      return TermsEnum.EMPTY;
-    }
-    return new GeoPolygonTermsEnum(terms.iterator(), atts, minLon, minLat, maxLon, maxLat);
+    return new GeoPolygonTermsEnum(terms.iterator(), this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 
   @Override
-  public final boolean equals(Object o) {
+  public void setRewriteMethod(RewriteMethod method) {
+    throw new UnsupportedOperationException("cannot change rewrite method");
+  }
+
+  @Override
+  public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
@@ -135,7 +112,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (x != null ? Arrays.hashCode(x) : 0);
     result = 31 * result + (y != null ? Arrays.hashCode(y) : 0);
@@ -167,10 +144,14 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
     return sb.toString();
   }
 
+  /**
+   * Custom {@link org.apache.lucene.index.TermsEnum} that computes morton hash ranges based on the defined edges of
+   * the provided polygon.
+   */
   private final class GeoPolygonTermsEnum extends GeoPointTermsEnum {
-    GeoPolygonTermsEnum(final TermsEnum tenum, AttributeSource atts, final double minLon, final double minLat,
+    GeoPolygonTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
                         final double maxLon, final double maxLat) {
-      super(tenum, atts, minLon, minLat, maxLon, maxLat);
+      super(tenum, minLon, minLat, maxLon, maxLat);
     }
 
     @Override
@@ -186,9 +167,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
     }
 
     @Override
-    protected boolean cellIntersects(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, GeoPointInPolygonQuery.this.minLon,
-          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
+    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return cellWithin(minLon, minLat, maxLon, maxLat) || cellCrosses(minLon, minLat, maxLon, maxLat);
     }
 
     /**
@@ -197,28 +177,10 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
      * {@link org.apache.lucene.util.GeoUtils#pointInPolygon} method.
-     *
-     * @param term term for candidate document
-     * @return match status
      */
     @Override
-    protected final AcceptStatus accept(BytesRef term) {
-      // first filter by bounding box
-      AcceptStatus status = super.accept(term);
-      assert status != AcceptStatus.YES_AND_SEEK;
-
-      if (status != AcceptStatus.YES) {
-        return status;
-      }
-
-      final long val = NumericUtils.prefixCodedToLong(term);
-      final double lon = GeoUtils.mortonUnhashLon(val);
-      final double lat = GeoUtils.mortonUnhashLat(val);
-      // post-filter by point in polygon
-      if (!GeoUtils.pointInPolygon(x, y, lat, lon)) {
-        return AcceptStatus.NO;
-      }
-      return AcceptStatus.YES;
+    protected boolean postFilter(final double lon, final double lat) {
+      return GeoUtils.pointInPolygon(x, y, lat, lon);
     }
   }
 
@@ -246,5 +208,21 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
     }
 
     return new GeoBoundingBox(minLon, maxLon, minLat, maxLat);
+  }
+
+  /**
+   * API utility method for returning the array of longitudinal values for this GeoPolygon
+   * The returned array is not a copy so do not change it!
+   */
+  public double[] getLons() {
+    return this.x;
+  }
+
+  /**
+   * API utility method for returning the array of latitudinal values for this GeoPolygon
+   * The returned array is not a copy so do not change it!
+   */
+  public double[] getLats() {
+    return this.y;
   }
 }

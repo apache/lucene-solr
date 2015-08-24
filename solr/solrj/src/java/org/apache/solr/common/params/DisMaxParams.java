@@ -42,7 +42,12 @@ public interface DisMaxParams {
   
   /** query and init param for MinShouldMatch specification */
   public static String MM = "mm";
-  
+
+  /**
+   * If set to true, will try to reduce MM if tokens are removed from some clauses but not all
+   */
+  public static String MM_AUTORELAX = "mm.autoRelax";
+
   /**
    * query and init param for Phrase Slop value in phrase
    * boost query (in pf fields)

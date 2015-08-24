@@ -19,6 +19,9 @@ package org.apache.solr.util.xslt;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.io.IOUtils;
@@ -45,8 +48,8 @@ import org.apache.solr.core.SolrConfig;
 public class TransformerProvider {
   private String lastFilename;
   private Templates lastTemplates = null;
-  private long cacheExpires = 0;
-  
+  private TimeOut cacheExpiresTimeout;
+
   private static final Logger log = LoggerFactory.getLogger(TransformerProvider.class.getName());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
@@ -69,7 +72,8 @@ public class TransformerProvider {
   public synchronized Transformer getTransformer(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
     // For now, the Templates are blindly reloaded once cacheExpires is over.
     // It'd be better to check the file modification time to reload only if needed.
-    if(lastTemplates!=null && filename.equals(lastFilename) && System.currentTimeMillis() < cacheExpires) {
+    if(lastTemplates!=null && filename.equals(lastFilename) &&
+        cacheExpiresTimeout != null && ! cacheExpiresTimeout.hasTimedOut()) {
       if(log.isDebugEnabled()) {
         log.debug("Using cached Templates:" + filename);
       }
@@ -117,8 +121,8 @@ public class TransformerProvider {
     
     lastFilename = filename;
     lastTemplates = result;
-    cacheExpires = System.currentTimeMillis() + (cacheLifetimeSeconds * 1000);
-    
+    cacheExpiresTimeout = new TimeOut(cacheLifetimeSeconds, TimeUnit.SECONDS);
+
     return result;
   }
 }

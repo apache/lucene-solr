@@ -324,9 +324,19 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       }
 
       // otherwise on alphabetic order
-      return CHARSEQUENCE_COMPARATOR.compare(o1.key, o2.key);
+      int keyCompare = CHARSEQUENCE_COMPARATOR.compare(o1.key, o2.key);
+
+      if (keyCompare != 0) {
+        return keyCompare;
+      }
+
+      // if same weight and title, use the payload if there is one
+      if (o1.payload != null) {
+        return o1.payload.compareTo(o2.payload);
+      }
+
+      return 0;
     }
   }
-
 }
 

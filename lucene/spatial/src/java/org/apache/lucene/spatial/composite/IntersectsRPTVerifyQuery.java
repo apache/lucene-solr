@@ -38,9 +38,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.prefix.AbstractVisitingPrefixTreeFilter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.spatial.util.BitDocIdSetBuilder;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * A spatial Intersects predicate that distinguishes an approximated match from an exact match based on which cells
@@ -103,16 +102,16 @@ public class IntersectsRPTVerifyQuery extends Query {
         if (approxDISI == null) {
           return null;
         }
-        final Bits exactDocBits;
+        final DocIdSetIterator exactIterator;
         if (result.exactDocIdSet != null) {
           // If both sets are the same, there's nothing to verify; we needn't return a TwoPhaseIterator
-          if (result.approxDocIdSet.equals(result.exactDocIdSet)) {
+          if (result.approxDocIdSet == result.exactDocIdSet) {
             return new ConstantScoreScorer(this, score(), approxDISI);
           }
-          exactDocBits = result.exactDocIdSet.bits();
-          assert exactDocBits != null;
+          exactIterator = result.exactDocIdSet.iterator();
+          assert exactIterator != null;
         } else {
-          exactDocBits = null;
+          exactIterator = null;
         }
 
         final FunctionValues predFuncValues = predicateValueSource.getValues(valueSourceContext, context);
@@ -120,11 +119,17 @@ public class IntersectsRPTVerifyQuery extends Query {
         final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(approxDISI) {
           @Override
           public boolean matches() throws IOException {
-            if (exactDocBits != null && exactDocBits.get(approxDISI.docID())) {
-              return true;
+            final int doc = approxDISI.docID();
+            if (exactIterator != null) {
+              if (exactIterator.docID() < doc) {
+                exactIterator.advance(doc);
+              }
+              if (exactIterator.docID() == doc) {
+                return true;
+              }
             }
 
-            return predFuncValues.boolVal(approxDISI.docID());
+            return predFuncValues.boolVal(doc);
           }
         };
 
@@ -153,10 +158,12 @@ public class IntersectsRPTVerifyQuery extends Query {
     // TODO consider if IntersectsPrefixTreeFilter should simply do this and provide both sets
 
     class IntersectsDifferentiatingVisitor extends VisitorTemplate {
-      BitDocIdSetBuilder approxBuilder = new BitDocIdSetBuilder(maxDoc);
-      BitDocIdSetBuilder exactBuilder = new BitDocIdSetBuilder(maxDoc);
-      BitDocIdSet exactDocIdSet;
-      BitDocIdSet approxDocIdSet;
+      DocIdSetBuilder approxBuilder = new DocIdSetBuilder(maxDoc);
+      DocIdSetBuilder exactBuilder = new DocIdSetBuilder(maxDoc);
+      boolean approxIsEmpty = true;
+      boolean exactIsEmpty = true;
+      DocIdSet exactDocIdSet;
+      DocIdSet approxDocIdSet;
 
       public IntersectsDifferentiatingVisitor(LeafReaderContext context, Bits acceptDocs) throws IOException {
         super(context, acceptDocs);
@@ -168,12 +175,16 @@ public class IntersectsRPTVerifyQuery extends Query {
 
       @Override
       protected DocIdSet finish() throws IOException {
-        exactDocIdSet = exactBuilder.build();
-        if (approxBuilder.isDefinitelyEmpty()) {
+        if (exactIsEmpty) {
+          exactDocIdSet = null;
+        } else {
+          exactDocIdSet = exactBuilder.build();
+        }
+        if (approxIsEmpty) {
           approxDocIdSet = exactDocIdSet;//optimization
         } else {
           if (exactDocIdSet != null) {
-            approxBuilder.or(exactDocIdSet.iterator());
+            approxBuilder.add(exactDocIdSet.iterator());
           }
           approxDocIdSet = approxBuilder.build();
         }
@@ -183,9 +194,11 @@ public class IntersectsRPTVerifyQuery extends Query {
       @Override
       protected boolean visitPrefix(Cell cell) throws IOException {
         if (cell.getShapeRel() == SpatialRelation.WITHIN) {
+          exactIsEmpty = false;
           collectDocs(exactBuilder);//note: we'll add exact to approx on finish()
           return false;
         } else if (cell.getLevel() == detailLevel) {
+          approxIsEmpty = false;
           collectDocs(approxBuilder);
           return false;
         }
@@ -195,8 +208,10 @@ public class IntersectsRPTVerifyQuery extends Query {
       @Override
       protected void visitLeaf(Cell cell) throws IOException {
         if (cell.getShapeRel() == SpatialRelation.WITHIN) {
+          exactIsEmpty = false;
           collectDocs(exactBuilder);//note: we'll add exact to approx on finish()
         } else {
+          approxIsEmpty = false;
           collectDocs(approxBuilder);
         }
       }

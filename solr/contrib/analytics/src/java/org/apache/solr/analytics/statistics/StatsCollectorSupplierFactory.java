@@ -67,6 +67,7 @@ import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
+import org.apache.solr.util.DateFormatUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -443,7 +444,7 @@ public class StatsCollectorSupplierFactory {
       }
     } else if ( src instanceof DateFieldSource || src instanceof MultiDateFunction) {
       try {
-        defaultObject = TrieDateField.parseDate(arguments[1]);
+        defaultObject = DateFormatUtil.parseDate(arguments[1]);
       } catch (ParseException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The filter value "+arguments[1]+" cannot be converted into a date.",e);
       }
@@ -578,7 +579,7 @@ public class StatsCollectorSupplierFactory {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The constant date declaration ["+expressionString+"] does not have exactly 1 argument.");
       }
       try {
-        return new ConstDateSource(TrieDateField.parseDate(operands));
+        return new ConstDateSource(DateFormatUtil.parseDate(operands));
       } catch (ParseException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The constant "+operands+" cannot be converted into a date.",e);
       }

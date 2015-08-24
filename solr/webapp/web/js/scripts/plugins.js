@@ -282,7 +282,7 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
   var entry_count = entries.length;
   for( var i = 0; i < entry_count; i++ )
   {
-    $( 'a[data-bean="' + entries[i] + '"]', frame_element )
+    $( 'a[data-bean="' + entries[i].esc() + '"]', frame_element )
       .parent().addClass( 'expanded' );
   }
 

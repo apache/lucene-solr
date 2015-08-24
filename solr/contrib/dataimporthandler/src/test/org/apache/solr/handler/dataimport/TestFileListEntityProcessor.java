@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -133,6 +134,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     return fList;
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to set last modified time")
   @Test
   public void testNTOT() throws IOException {
     File tmpdir = createTempDir().toFile();

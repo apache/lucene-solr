@@ -206,13 +206,7 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
     license = decodeUTF8(z.read(LICENSE_FILE_NAME))
 
-    idx = desc.find('inside WAR file')
-    if idx != -1:
-      desc2 = desc[:idx]
-    else:
-      desc2 = desc
-
-    justFileName = os.path.split(desc2)[1]
+    justFileName = os.path.split(desc)[1]
     
     if justFileName.lower().find('solr') != -1:
       if SOLR_LICENSE is None:
@@ -277,45 +271,6 @@ def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
                                % (fullPath, luceneDistFilenames[jarFilename]))
 
 
-def checkSolrWAR(warFileName, svnRevision, version, tmpDir, baseURL):
-
-  """
-  Crawls for JARs inside the WAR and ensures there are no classes
-  under java.* or javax.* namespace.
-  """
-
-  print('    verify WAR metadata/contained JAR identity/no javax.* or java.* classes...')
-
-  checkJARMetaData(warFileName, warFileName, svnRevision, version)
-
-  distFilenames = dict()
-  for file in getBinaryDistFiles('lucene', tmpDir, version, baseURL):
-    distFilenames[os.path.basename(file)] = file
-
-  with zipfile.ZipFile(warFileName, 'r') as z:
-    for name in z.namelist():
-      if name.endswith('.jar'):
-        jarInsideWarContents = z.read(name)
-        noJavaPackageClasses('JAR file %s inside WAR file %s' % (name, warFileName),
-                             io.BytesIO(jarInsideWarContents))
-        if name.lower().find('lucene') != -1 or name.lower().find('solr') != -1:
-          checkJARMetaData('JAR file %s inside WAR file %s' % (name, warFileName),
-                           io.BytesIO(jarInsideWarContents),
-                           svnRevision,
-                           version)
-        if name.lower().find('lucene') != -1:              
-          jarInsideWarFilename = os.path.basename(name)
-          if jarInsideWarFilename not in distFilenames:
-            raise RuntimeError('Artifact %s in %s is not present in Lucene binary distribution'
-                              % (name, warFileName))
-          distJarName = distFilenames[jarInsideWarFilename]
-          with open(distJarName, "rb", buffering=0) as distJarFile:
-            distJarContents = distJarFile.readall()
-          if jarInsideWarContents != distJarContents:
-            raise RuntimeError('Artifact %s in %s is not identical to %s in Lucene binary distribution'
-                              % (name, warFileName, distJarName))
-          
-        
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
   print('  test basics...')
@@ -680,7 +635,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
+    extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'spatial3d', 'suggest', 'test-framework', 'licenses')
     if isSrc:
       extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site')
   else:
@@ -755,8 +710,6 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
       checkJavadocpath('%s/docs' % unpackPath)
 
     else:
-      checkSolrWAR('%s/server/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
-
       print('    copying unpacked distribution for Java 8 ...')
       java8UnpackPath = '%s-java8' % unpackPath
       if os.path.exists(java8UnpackPath):
@@ -840,36 +793,15 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   except:
       print('      Stop failed due to: '+sys.exc_info()[0])
 
-  print('      starting Solr on port 8983 from %s' % unpackPath)
-  server = subprocess.Popen(['bin/solr', '-f', '-p', '8983'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
-
-  startupEvent = threading.Event()
-  failureEvent = threading.Event()
-  serverThread = threading.Thread(target=readSolrOutput, args=(server, startupEvent, failureEvent, logFile))
-  serverThread.setDaemon(True)
-  serverThread.start()
-
+  print('      Running techproducts example on port 8983 from %s' % unpackPath)
   try:
+    runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+    if runExampleStatus != 0:
+      raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
-    # Make sure Solr finishes startup:
-    if not startupEvent.wait(1800):
-      raise RuntimeError('startup took more than 30 minutes')
-
-    if failureEvent.isSet():
-      logFile = os.path.abspath(logFile)
-      print
-      print('Startup failed; see log %s' % logFile)
-      printFileContents(logFile)
-      raise RuntimeError('failure on startup; see log %s' % logFile)
-
-    print('      startup done')
-    # Create the techproducts config (used to be collection1)
-    subprocess.call(['bin/solr','create_core','-c','techproducts','-d','sample_techproducts_configs'])
     os.chdir('example')
     print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
-    print('      index example docs...')
-    run('java -Durl=http://localhost:8983/solr/techproducts/update -jar ./exampledocs/post.jar ./exampledocs/*.xml', 'post-example-docs.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
     if s.find('<result name="response" numFound="3" start="0">') == -1:
@@ -883,23 +815,6 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     else:
       os.chdir(unpackPath)
     subprocess.call(['bin/solr','stop','-p','8983'])
-
-    # Give it 10 seconds to gracefully shut down
-    serverThread.join(10.0)
-
-    if serverThread.isAlive():
-      # Kill server:
-      print('***WARNING***: Solr instance didn\'t respond to SIGINT; using SIGKILL now...')
-      os.kill(server.pid, signal.SIGKILL)
-
-      serverThread.join(10.0)
-
-      if serverThread.isAlive():
-        # Shouldn't happen unless something is seriously wrong...
-        print('***WARNING***: Solr instance didn\'t respond to SIGKILL; ignoring...')
-
-  if failureEvent.isSet():
-    raise RuntimeError('exception while reading Solr output')
 
   if isSrc:
     os.chdir(unpackPath+'/solr')

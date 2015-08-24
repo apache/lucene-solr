@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -31,10 +31,12 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
@@ -58,6 +60,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.easymock.EasyMock.anyBoolean;
 import static org.easymock.EasyMock.anyObject;
@@ -76,7 +79,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private static final String COLLECTION_NAME = "mycollection";
   private static final String CONFIG_NAME = "myconfig";
   
-  private static DistributedQueue workQueueMock;
+  private static OverseerCollectionQueue workQueueMock;
   private static DistributedMap runningMapMock;
   private static DistributedMap completedMapMock;
   private static DistributedMap failureMapMock;
@@ -102,10 +105,10 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, ShardHandlerFactory shardHandlerFactory,
         String adminPath,
-        DistributedQueue workQueue, DistributedMap runningMap,
+        OverseerCollectionQueue workQueue, DistributedMap runningMap,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), null, new OverseerNodePrioritizer(zkStateReader, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -117,7 +120,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void setUpOnce() throws Exception {
-    workQueueMock = createMock(DistributedQueue.class);
+    workQueueMock = createMock(OverseerCollectionQueue.class);
     runningMapMock = createMock(DistributedMap.class);
     completedMapMock = createMock(DistributedMap.class);
     failureMapMock = createMock(DistributedMap.class);
@@ -252,7 +255,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }).anyTimes();
 
-    zkStateReaderMock.updateClusterState(anyBoolean());
+    zkStateReaderMock.updateClusterState();
 
     clusterStateMock.getCollections();
     expectLastCall().andAnswer(new IAnswer<Object>() {
@@ -401,24 +404,24 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   protected void issueCreateJob(Integer numberOfSlices,
       Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
-    Map<String,Object> propMap = ZkNodeProps.makeMap(
+    Map<String,Object> propMap = Utils.makeMap(
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
         "collection.configName", CONFIG_NAME,
-        OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
+        OverseerCollectionMessageHandler.NUM_SLICES, numberOfSlices.toString(),
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode.toString()
     );
     if (sendCreateNodeList) {
-      propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET,
+      propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET,
           (createNodeList != null)?StrUtils.join(createNodeList, ','):null);
-      if (OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE_DEFAULT != createNodeSetShuffle || random().nextBoolean()) {
-        propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE, createNodeSetShuffle);
+      if (OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT != createNodeSetShuffle || random().nextBoolean()) {
+        propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE, createNodeSetShuffle);
       }
     }
 
     ZkNodeProps props = new ZkNodeProps(propMap);
-    QueueEvent qe = new QueueEvent("id", ZkStateReader.toJSON(props), null){
+    QueueEvent qe = new QueueEvent("id", Utils.toJSON(props), null){
       @Override
       public void setBytes(byte[] bytes) {
         lastProcessMessageResult = SolrResponse.deserialize( bytes);
@@ -561,10 +564,10 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void waitForEmptyQueue(long maxWait) throws Exception {
-    long start = System.currentTimeMillis();
+    final TimeOut timeout = new TimeOut(maxWait, TimeUnit.MILLISECONDS);
     while (queue.peek() != null) {
-      if ((System.currentTimeMillis() - start) > maxWait) fail(" Queue not empty within "
-          + maxWait + " ms" + System.currentTimeMillis());
+      if (timeout.hasTimedOut())
+        fail("Queue not empty within " + maxWait + " ms");
       Thread.sleep(100);
     }
   }
@@ -589,7 +592,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }
     
-    if (random().nextBoolean()) Collections.shuffle(createNodeList, OverseerCollectionProcessor.RANDOM);
+    if (random().nextBoolean()) Collections.shuffle(createNodeList, OverseerCollectionMessageHandler.RANDOM);
     
     List<SubmitCapture> submitCaptures = null;
     if (collectionExceptedToBeCreated) {

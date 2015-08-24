@@ -18,7 +18,6 @@ package org.apache.solr.hadoop.hack;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,7 +29,6 @@ import org.apache.hadoop.mapred.MapTaskCompletionEventsUpdate;
 import org.apache.hadoop.mapred.TaskCompletionEvent;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.LuceneTestCase;
 
 
@@ -176,14 +174,6 @@ public class MiniMRCluster {
       int numTaskTrackers, String namenode, int numDir, String[] racks,
       String[] hosts, UserGroupInformation ugi, JobConf conf,
       int numTrackerToExclude) throws Exception {
-    this(jobTrackerPort, taskTrackerPort, numTaskTrackers, namenode, numDir,
-        racks, hosts, ugi, conf, numTrackerToExclude, new Clock());
-  }
-
-  public MiniMRCluster(int jobTrackerPort, int taskTrackerPort,
-      int numTaskTrackers, String namenode, int numDir, String[] racks,
-      String[] hosts, UserGroupInformation ugi, JobConf conf,
-      int numTrackerToExclude, Clock clock) throws Exception {
     if (conf == null) conf = new JobConf();
     FileSystem.setDefaultUri(conf, namenode);
     String identifier = this.getClass().getSimpleName() + "_"
@@ -273,11 +263,4 @@ public class MiniMRCluster {
       LOG.error(e);
     }
   }
-  
-  static class Clock {
-    long getTime() {
-      return System.currentTimeMillis();
-    }
-  }
-
 }

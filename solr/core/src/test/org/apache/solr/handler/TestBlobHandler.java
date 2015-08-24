@@ -35,8 +35,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -52,7 +53,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   static final Logger log = LoggerFactory.getLogger(TestBlobHandler.class);
@@ -92,7 +93,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
       url = baseUrl + "/.system/blob/test/1";
       map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
-      List l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
+      List l = (List) Utils.getObjectByPath(map, false, Arrays.asList("response", "docs"));
       assertNotNull("" + map, l);
       assertTrue("" + map, l.size() > 0);
       map = (Map) l.get(0);
@@ -120,28 +121,28 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     String url;
     Map map = null;
     List l;
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
     int i = 0;
     for (; i < 150; i++) {//15 secs
       url = baseUrl + "/.system/blob/" + blobName;
       map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
-      String numFound = String.valueOf(ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "numFound")));
+      String numFound = String.valueOf(Utils.getObjectByPath(map, false, Arrays.asList("response", "numFound")));
       if (!("" + count).equals(numFound)) {
         Thread.sleep(100);
         continue;
       }
-      l = (List) ConfigOverlay.getObjectByPath(map, false, Arrays.asList("response", "docs"));
+      l = (List) Utils.getObjectByPath(map, false, Arrays.asList("response", "docs"));
       assertNotNull(l);
       map = (Map) l.get(0);
       assertEquals("" + bytes.limit(), String.valueOf(map.get("size")));
       return;
     }
     fail(StrUtils.formatString("Could not successfully add blob after {0} attempts. Expecting {1} items. time elapsed {2}  output  for url is {3}",
-        i, count, System.currentTimeMillis() - start, getAsString(map)));
+        i, count, timer.getTime(), getAsString(map)));
   }
 
   public static String getAsString(Map map) {
-    return new String(ZkStateReader.toJSON(map), StandardCharsets.UTF_8);
+    return new String(Utils.toJSON(map), StandardCharsets.UTF_8);
   }
 
   private void compareInputAndOutput(String url, byte[] bytarr) throws IOException {

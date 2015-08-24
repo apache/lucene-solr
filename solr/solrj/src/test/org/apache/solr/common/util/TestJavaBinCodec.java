@@ -40,8 +40,8 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.util.ConcurrentLRUCache;
+import org.apache.solr.util.RTimer;
 import org.junit.Test;
 import org.noggit.CharArr;
 
@@ -306,7 +306,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
   @Test
   public void testStringCaching() throws Exception {
-    Map<String, Object> m = ZkNodeProps.makeMap("key1", "val1", "key2", "val2");
+    Map<String, Object> m = Utils.makeMap("key1", "val1", "key2", "val2");
 
     ByteArrayOutputStream os1 = new ByteArrayOutputStream();
     new JavaBinCodec().marshal(m, os1);
@@ -440,7 +440,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
     printMem("after cache init");
 
-    long ms = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     final int ITERS = 1000000;
     int THREADS = 10;
 
@@ -460,8 +460,8 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
 
     printMem("after cache test");
-    System.out.println("time taken by LRUCACHE "+ (System.currentTimeMillis()-ms));
-    ms = System.currentTimeMillis();
+    System.out.println("time taken by LRUCACHE " + timer.getTime());
+    timer = new RTimer();
 
     runInThreads(THREADS, new Runnable() {
       @Override
@@ -478,7 +478,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     });
 
     printMem("after new string test");
-    System.out.println("time taken by string creation "+ (System.currentTimeMillis()-ms));
+    System.out.println("time taken by string creation "+ timer.getTime());
 
 
 
@@ -570,7 +570,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
 
     int ret = 0;
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
     ConcurrentLRUCache underlyingCache = cacheSz > 0 ? new ConcurrentLRUCache<>(cacheSz,cacheSz-cacheSz/10,cacheSz,cacheSz/10,false,true,null) : null;  // the cache in the first version of the patch was 10000,9000,10000,1000,false,true,null
     final JavaBinCodec.StringCache stringCache = underlyingCache==null ? null : new JavaBinCodec.StringCache(underlyingCache);
     if (nThreads <= 0) {
@@ -587,10 +587,9 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         }
       });
     }
-    long end = System.currentTimeMillis();
 
     long n = iter * Math.max(1,nThreads);
-    System.out.println("ret=" + ret + " THROUGHPUT=" + (n*1000 / (end-start)));
+    System.out.println("ret=" + ret + " THROUGHPUT=" + (n*1000 / timer.getTime()));
     if (underlyingCache != null) System.out.println("cache: hits=" + underlyingCache.getStats().getCumulativeHits() + " lookups=" + underlyingCache.getStats().getCumulativeLookups() + " size=" + underlyingCache.getStats().getCurrentSize());
   }
 

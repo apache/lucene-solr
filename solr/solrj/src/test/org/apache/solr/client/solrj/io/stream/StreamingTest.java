@@ -511,9 +511,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     Tuple t = getTuple(estream);
     assert(t.EOF);
     assert(t.EXCEPTION);
-    //The /select handler does not return exceptions in tuple so the generic exception is returned.
-    assert(t.getException().contains("An exception has occurred on the server, refer to server log for details."));
-
+    assert(t.getException().contains("sort param field can't be found: blah"));
 
     //Test an error that comes originates from the /export handler
     paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt","/export");
@@ -552,6 +550,18 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     assert(t.EXCEPTION);
     //ParallelStream requires that partitionKeys be set.
     assert(t.getException().contains("When numWorkers > 1 partitionKeys must be set."));
+
+
+    //Test an error that originates from the /select handler
+    paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "partitionKeys","a_s");
+    stream = new CloudSolrStream(zkHost, "collection1", paramsA);
+    pstream = new ParallelStream(zkHost,"collection1", stream, 2, new FieldComparator("blah", ComparatorOrder.ASCENDING));
+    estream = new ExceptionStream(pstream);
+    t = getTuple(estream);
+    assert(t.EOF);
+    assert(t.EXCEPTION);
+    assert(t.getException().contains("sort param field can't be found: blah"));
+
 
     //Test an error that originates from the /export handler
     paramsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt","/export", "partitionKeys","a_s");

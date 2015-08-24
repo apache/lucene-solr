@@ -1055,7 +1055,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
     // Ensure that only one thread actually gets to do the
     // closing
-    if (shouldClose()) {
+    if (shouldClose(true)) {
       boolean success = false;
       try {
         if (infoStream.isEnabled("IW")) {
@@ -1113,14 +1113,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   // Returns true if this thread should attempt to close, or
-  // false if IndexWriter is now closed; else, waits until
-  // another thread finishes closing
-  synchronized private boolean shouldClose() {
-    while(true) {
-      if (!closed) {
-        if (!closing) {
+  // false if IndexWriter is now closed; else,
+  // waits until another thread finishes closing
+  synchronized private boolean shouldClose(boolean waitForClose) {
+    while (true) {
+      if (closed == false) {
+        if (closing == false) {
+          // We get to close
           closing = true;
           return true;
+        } else if (waitForClose == false) {
+          return false;
         } else {
           // Another thread is presently trying to close;
           // wait until it finishes one way (closes
@@ -2012,7 +2015,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // Ensure that only one thread actually gets to do the
     // closing, and make sure no commit is also in progress:
     synchronized(commitLock) {
-      if (shouldClose()) {
+      if (shouldClose(true)) {
         rollbackInternal();
       }
     }
@@ -2027,10 +2030,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
     
     try {
-      synchronized(this) {
-        abortMerges();
-        stopMerges = true;
-      }
+      abortMerges();
 
       rateLimiters.close();
 
@@ -2039,7 +2039,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       // Must pre-close in case it increments changeCount so that we can then
-      // set it to false before calling closeInternal
+      // set it to false before calling rollbackInternal
       mergeScheduler.close();
 
       bufferedUpdatesStream.clear();
@@ -2061,11 +2061,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         readerPool.dropAll(false);
 
         // Keep the same segmentInfos instance but replace all
-        // of its SegmentInfo instances.  This is so the next
-        // attempt to commit using this instance of IndexWriter
-        // will always write to a new generation ("write
-        // once").
+        // of its SegmentInfo instances so IFD below will remove
+        // any segments we flushed since the last commit:
         segmentInfos.rollbackSegmentInfos(rollbackSegments);
+
         if (infoStream.isEnabled("IW") ) {
           infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
         }
@@ -2073,13 +2072,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         testPoint("rollback before checkpoint");
 
         // Ask deleter to locate unreferenced files & remove
-        // them:
-        deleter.checkpoint(segmentInfos, false);
-        deleter.refresh();
+        // them ... only when we are not experiencing a tragedy, else
+        // these methods throw ACE:
+        if (tragedy == null) {
+          deleter.checkpoint(segmentInfos, false);
+          deleter.refresh();
+          deleter.close();
+        }
 
         lastCommitChangeCount = changeCount.get();
-        
-        deleter.close();
 
         // Must set closed while inside same sync block where we call deleter.refresh, else concurrent threads may try to sneak a flush in,
         // after we leave this sync block and before we enter the sync block in the finally clause below that sets closed:
@@ -2093,14 +2094,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     } catch (OutOfMemoryError oom) {
       tragicEvent(oom, "rollbackInternal");
     } finally {
-      if (!success) {
+      if (success == false) {
         // Must not hold IW's lock while closing
         // mergeScheduler: this can lead to deadlock,
         // e.g. TestIW.testThreadInterruptDeadlock
         IOUtils.closeWhileHandlingException(mergeScheduler);
       }
       synchronized(this) {
-        if (!success) {
+        if (success == false) {
           // we tried to be nice about it: do the minimum
           
           // don't leak a segments_N file if there is a pending commit
@@ -2119,6 +2120,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
         closed = true;
         closing = false;
+
+        // So any "concurrently closing" threads wake up and see that the close has now completed:
+        notifyAll();
       }
     }
   }
@@ -2176,6 +2180,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           try {
             // Abort any running merges
             abortMerges();
+            // Let merges run again
+            stopMerges = false;
             // Remove all segments
             pendingNumDocs.addAndGet(-segmentInfos.totalMaxDoc());
             segmentInfos.clear();
@@ -2214,6 +2220,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  method: when you abort a long-running merge, you lose
    *  a lot of work that must later be redone. */
   private synchronized void abortMerges() {
+
     stopMerges = true;
 
     // Abort all pending & running merges:
@@ -2233,21 +2240,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       merge.rateLimiter.setAbort();
     }
 
-    // These merges periodically check whether they have
-    // been aborted, and stop if so.  We wait here to make
-    // sure they all stop.  It should not take very long
-    // because the merge threads periodically check if
+    // We wait here to make all merges stop.  It should not
+    // take very long because they periodically check if
     // they are aborted.
-    while(runningMerges.size() > 0) {
+    while (runningMerges.size() != 0) {
+
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now wait for " + runningMerges.size() + " running merge/s to abort");
       }
+
       doWait();
     }
 
-    stopMerges = false;
     notifyAll();
-
     assert 0 == mergingSegments.size();
 
     if (infoStream.isEnabled("IW")) {
@@ -2273,7 +2278,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "waitForMerges");
       }
-
 
       while (pendingMerges.size() > 0 || runningMerges.size() > 0) {
         doWait();
@@ -2975,6 +2979,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     try {
       synchronized(this) {
+        ensureOpen(false);
+
+        if (tragedy != null) {
+          throw new IllegalStateException("this writer hit an unrecoverable error; cannot complete commit", tragedy);
+        }
+
         if (pendingCommit != null) {
           try {
 
@@ -3057,6 +3067,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  deletes or docs were flushed) if necessary
    * @param applyAllDeletes whether pending deletes should also
    */
+  // why protected
   protected final void flush(boolean triggerMerge, boolean applyAllDeletes) throws IOException {
 
     // NOTE: this method cannot be sync'd because
@@ -3596,7 +3607,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     if (t instanceof MergePolicy.MergeAbortedException) {
       // We can ignore this exception (it happens when
-      // close(false) or rollback is called), unless the
+      // deleteAll or rollback is called), unless the
       // merge involves segments from external directories,
       // in which case we must throw it so, for example, the
       // rollbackTransaction code in addIndexes* is
@@ -3654,19 +3665,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             if (merge.info != null && !segmentInfos.contains(merge.info)) {
               deleter.refresh(merge.info.info.name);
             }
-          }
-
-          // This merge (and, generally, any change to the
-          // segments) may now enable new merges, so we call
-          // merge policy & update pending merges.
-          if (success && merge.rateLimiter.getAbort() == false && (merge.maxNumSegments != -1 || (!closed && !closing))) {
+          } else if (merge.rateLimiter.getAbort() == false && (merge.maxNumSegments != -1 || (!closed && !closing))) {
+            // This merge (and, generally, any change to the
+            // segments) may now enable new merges, so we call
+            // merge policy & update pending merges.
             updatePendingMerges(mergePolicy, MergeTrigger.MERGE_FINISHED, merge.maxNumSegments);
           }
         }
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "merge");
+    } catch (Throwable t) {
+      // Important that tragicEvent is called after mergeFinish, else we hang
+      // waiting for our merge thread to be removed from runningMerges:
+      tragicEvent(t, "merge");
     }
+
     if (merge.info != null && merge.rateLimiter.getAbort() == false) {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.info.maxDoc() + " docs");
@@ -4260,7 +4272,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  debugging.
    *
    * @lucene.internal */
-  public synchronized String segString() {
+  synchronized String segString() {
     return segString(segmentInfos);
   }
 
@@ -4268,7 +4280,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  segments, for debugging.
    *
    * @lucene.internal */
-  public synchronized String segString(Iterable<SegmentCommitInfo> infos) {
+  synchronized String segString(Iterable<SegmentCommitInfo> infos) {
     final StringBuilder buffer = new StringBuilder();
     for(final SegmentCommitInfo info : infos) {
       if (buffer.length() > 0) {
@@ -4283,7 +4295,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  segment, for debugging.
    *
    * @lucene.internal */
-  public synchronized String segString(SegmentCommitInfo info) {
+  synchronized String segString(SegmentCommitInfo info) {
     return info.toString(numDeletedDocs(info) - info.getDelCount());
   }
 
@@ -4513,10 +4525,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
 
   void tragicEvent(Throwable tragedy, String location) throws IOException {
+
     // unbox our internal AbortingException
     if (tragedy instanceof AbortingException) {
       tragedy = tragedy.getCause();
     }
+
+    // This is not supposed to be tragic: IW is supposed to catch this and
+    // ignore, because it means we asked the merge to abort:
+    assert tragedy instanceof MergePolicy.MergeAbortedException == false;
+
     // We cannot hold IW's lock here else it can lead to deadlock:
     assert Thread.holdsLock(this) == false;
 
@@ -4528,22 +4546,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
 
     synchronized (this) {
-      // it's possible you could have a really bad day
-      if (this.tragedy == null) {
-        this.tragedy = tragedy;
+      // It's possible you could have a really bad day
+      if (this.tragedy != null) {
+        // Another thread is already dealing / has dealt with the tragedy:
+        IOUtils.reThrow(tragedy);
       }
+
+      this.tragedy = tragedy;
     }
 
     // if we are already closed (e.g. called by rollback), this will be a no-op.
-    synchronized(commitLock) {
-      if (closing == false) {
-        try {
-          rollback();
-        } catch (Throwable ignored) {
-          // it would be confusing to addSuppressed here, it's unrelated to the disaster,
-          // and it's possible our internal state is amiss anyway.
-        }
-      }
+    if (shouldClose(false)) {
+      rollbackInternal();
     }
 
     IOUtils.reThrow(tragedy);

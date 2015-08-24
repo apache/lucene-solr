@@ -107,15 +107,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public static final AtomicLong numCloses = new AtomicLong();
 
 
-  private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
+  static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
 
   private boolean debug = log.isDebugEnabled();
 
   private final String name;
-  private long openTime = System.currentTimeMillis();
-  private long registerTime = 0;
+  private final Date openTime = new Date();
+  private final long openNanoTime = System.nanoTime();
+  private Date registerTime;
   private long warmupTime = 0;
   private final DirectoryReader reader;
   private final boolean closeReader;
@@ -130,8 +131,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<Integer,StoredDocument> documentCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
-
-  private final LuceneQueryOptimizer optimizer;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final HashMap<String, SolrCache> cacheMap;
@@ -296,10 +295,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       cacheMap = noGenericCaches;
       cacheList= noCaches;
     }
-    
-    // TODO: This option has been dead/noop since 3.1, should we re-enable it?
-//    optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
-    optimizer = null;
 
     fieldNames = new HashSet<>();
     fieldInfos = leafReader.getFieldInfos();
@@ -400,7 +395,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       cache.setState(SolrCache.State.LIVE);
       core.getInfoRegistry().put(cache.name(), cache);
     }
-    registerTime=System.currentTimeMillis();
+    registerTime = new Date();
   }
 
   /**
@@ -1264,21 +1259,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
-    DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
-
-    try {
-      if (filter != null) {
-        Filter luceneFilter = filter.getTopFilter();
-        query = new BooleanQuery.Builder()
-            .add(query, Occur.MUST)
-            .add(luceneFilter, Occur.FILTER)
-            .build();
-      }
-      super.search(query, collector);
-    } catch ( ExitableDirectoryReader.ExitingReaderException e) {
-        log.warn("Query: " + query + "; " + e.getMessage());
-    }
-    return collector.getDocSet();
+    return DocSetUtil.createDocSet(this, query, filter);
   }
 
 
@@ -2209,6 +2190,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       };
 
       SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.clearRequestInfo();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       try {
         this.cacheList[i].warm(this, old.cacheList[i]);
@@ -2245,11 +2227,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    */
   public Object cacheInsert(String cacheName, Object key, Object val) {
     SolrCache cache = cacheMap.get(cacheName);
-    return cache==null ? null : cache.put(key,val);
+    return cache==null ? null : cache.put(key, val);
   }
 
-  public long getOpenTime() {
+  public Date getOpenTimeStamp() {
     return openTime;
+  }
+
+  // public but primarily for test case usage
+  public long getOpenNanoTime() {
+    return openNanoTime;
+  }
+
+  @Deprecated
+  public long getOpenTime() {
+    return openTime.getTime();
   }
 
   @Override
@@ -2302,8 +2294,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     lst.add("reader", reader.toString());
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());
-    lst.add("openedAt", new Date(openTime));
-    if (registerTime!=0) lst.add("registeredAt", new Date(registerTime));
+    lst.add("openedAt", openTime);
+    if (registerTime!=null) lst.add("registeredAt", registerTime);
     lst.add("warmupTime", warmupTime);
     return lst;
   }
@@ -2643,3 +2635,4 @@ class FilterImpl extends Filter {
   }
 
 }
+

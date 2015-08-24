@@ -456,14 +456,19 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     testPoint.doFail = true;
     Document doc = new Document();
     doc.add(newTextField("field", "a field", Field.Store.YES));
-    for(int i=0;i<10;i++)
+    for(int i=0;i<10;i++) {
       try {
         w.addDocument(doc);
       } catch (RuntimeException re) {
         break;
       }
+    }
 
-    ((ConcurrentMergeScheduler) w.getConfig().getMergeScheduler()).sync();
+    try {
+      ((ConcurrentMergeScheduler) w.getConfig().getMergeScheduler()).sync();
+    } catch (IllegalStateException ise) {
+      // OK: merge exc causes tragedy
+    }
     assertTrue(testPoint.failed);
     w.close();
     dir.close();
@@ -974,14 +979,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                                .setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(100);
     IndexWriter w = new IndexWriter(startDir, conf);
-    for(int i=0;i<27;i++)
+    for(int i=0;i<27;i++) {
       addDoc(w);
+    }
     w.close();
 
     int iter = TEST_NIGHTLY ? 200 : 10;
     for(int i=0;i<iter;i++) {
       if (VERBOSE) {
-        System.out.println("TEST: iter " + i);
+        System.out.println("\nTEST: iter " + i);
       }
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(startDir));
       conf = newIndexWriterConfig(new MockAnalyzer(random()))
@@ -991,12 +997,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       dir.setRandomIOExceptionRate(0.5);
       try {
         w.forceMerge(1);
+      } catch (IllegalStateException ise) {
+        // expected
       } catch (IOException ioe) {
-        if (ioe.getCause() == null)
+        if (ioe.getCause() == null) {
           fail("forceMerge threw IOException without root cause");
+        }
       }
       dir.setRandomIOExceptionRate(0);
-      w.close();
+      //System.out.println("TEST: now close IW");
+      try {
+        w.close();
+      } catch (IllegalStateException ise) {
+        // ok
+      }
       dir.close();
     }
     startDir.close();
@@ -1857,7 +1871,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // full), and then the exception stops (e.g., disk frees
   // up), so we successfully close IW or open an NRT
   // reader, we don't lose any deletes or updates:
-  public void testNoLostDeletesOrUpdates() throws Exception {
+  public void testNoLostDeletesOrUpdates() throws Throwable {
     int deleteCount = 0;
     int docBase = 0;
     int docCount = 0;
@@ -1907,6 +1921,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     });
     
     RandomIndexWriter w = null;
+
+    boolean tragic = false;
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
       int numDocs = atLeast(100);
@@ -2011,17 +2027,22 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           w = null;
         }
 
-      } catch (IOException ioe) {
+      } catch (Throwable t) {
         // FakeIOException can be thrown from mergeMiddle, in which case IW
         // registers it before our CMS gets to suppress it. IW.forceMerge later
         // throws it as a wrapped IOE, so don't fail in this case.
-        if (ioe instanceof FakeIOException || (ioe.getCause() != null && ioe.getCause() instanceof FakeIOException)) {
+        if (t instanceof FakeIOException || (t.getCause() instanceof FakeIOException)) {
           // expected
           if (VERBOSE) {
-            System.out.println("TEST: w.close() hit expected IOE");
+            System.out.println("TEST: hit expected IOE");
+          }
+          if (t instanceof AlreadyClosedException) {
+            // FakeIOExc struck during merge and writer is now closed:
+            w = null;
+            tragic = true;
           }
         } else {
-          throw ioe;
+          throw t;
         }
       }
       shouldFail.set(false);
@@ -2052,7 +2073,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
         r = w.getReader();
       }
-      assertEquals(docCount-deleteCount, r.numDocs());
+      if (tragic == false) {
+        assertEquals(docCount-deleteCount, r.numDocs());
+      }
       BytesRef scratch = new BytesRef();
       for (LeafReaderContext context : r.leaves()) {
         LeafReader reader = context.reader();
@@ -2088,9 +2111,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     // Final verify:
-    IndexReader r = DirectoryReader.open(dir);
-    assertEquals(docCount-deleteCount, r.numDocs());
-    r.close();
+    if (tragic == false) {
+      IndexReader r = DirectoryReader.open(dir);
+      assertEquals(docCount-deleteCount, r.numDocs());
+      r.close();
+    }
 
     dir.close();
   }
@@ -2271,5 +2296,73 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // no leaks
       dir.close();
     }
+  }
+
+  public void testMergeExceptionIsTragic() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+    final AtomicBoolean didFail = new AtomicBoolean();
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+        
+        @Override
+        public void eval(MockDirectoryWrapper dir) throws IOException {
+          if (random().nextInt(10) != 0) {
+            return;
+          }
+          if (didFail.get()) {
+            // Already failed
+            return;
+          }
+          StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+          
+          for (int i = 0; i < trace.length; i++) {
+            if ("merge".equals(trace[i].getMethodName())) {
+              if (VERBOSE) {
+                System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
+                new Throwable().printStackTrace(System.out);
+              }
+              didFail.set(true);
+              throw new FakeIOException();
+            }
+          }
+        }
+      });
+
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    MergeScheduler ms = iwc.getMergeScheduler();
+    if (ms instanceof ConcurrentMergeScheduler) {
+      ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+    }
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    while (true) {
+      try {
+        Document doc = new Document();
+        doc.add(newStringField("field", "string", Field.Store.NO));
+        w.addDocument(doc);
+        if (random().nextInt(10) == 7) {
+          // Flush new segment:
+          DirectoryReader.open(w, true).close();
+        }
+      } catch (AlreadyClosedException ace) {
+        // OK: e.g. CMS hit the exc in BG thread and closed the writer
+        break;
+      } catch (FakeIOException fioe) {
+        // OK: e.g. SMS hit the exception
+        break;
+      }
+    }
+
+    assertNotNull(w.getTragicException());
+    assertFalse(w.isOpen());
+    assertTrue(didFail.get());
+
+    if (ms instanceof ConcurrentMergeScheduler) {
+      // Sneaky: CMS's merge thread will be concurrently rolling back IW due
+      // to the tragedy, with this main thread, so we have to wait here
+      // to ensure the rollback has finished, else MDW still sees open files:
+      ((ConcurrentMergeScheduler) ms).sync();
+    }
+
+    dir.close();
   }
 }

@@ -29,16 +29,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 
 
 /**
  * Returns a score for each document based on a ValueSource,
  * often some function of the value of a field.
  *
- * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
- *
- *
+ * @see ValueSourceScorer
+ * @lucene.experimental
  */
 public class FunctionQuery extends Query {
   final ValueSource func;

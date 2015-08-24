@@ -16,8 +16,8 @@
  limitations under the License.
 -->
 <FuzzyLikeThisQuery>
-	<!-- Matches on misspelt "Sumitomo" bank -->
-	<Field fieldName="contents">
-		Sumitimo bank 
-	</Field>
+  <!-- Matches on misspelt "Sumitomo" bank -->
+  <Field fieldName="contents">
+    Sumitimo bank 
+  </Field>
 </FuzzyLikeThisQuery>

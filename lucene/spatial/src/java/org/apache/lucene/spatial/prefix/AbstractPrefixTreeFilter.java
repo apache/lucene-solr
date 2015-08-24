@@ -29,9 +29,9 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.spatial.util.BitDocIdSetBuilder;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * Base class for Lucene Filters on SpatialPrefixTree fields.
@@ -102,10 +102,10 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
       bitSet.or(wrap(postingsEnum, acceptDocs));
     }
 
-    protected void collectDocs(BitDocIdSetBuilder bitSetBuilder) throws IOException {
+    protected void collectDocs(DocIdSetBuilder docSetBuilder) throws IOException {
       assert termsEnum != null;
       postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
-      bitSetBuilder.or(wrap(postingsEnum, acceptDocs));
+      docSetBuilder.add(wrap(postingsEnum, acceptDocs));
     }
   }
 

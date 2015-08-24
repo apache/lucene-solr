@@ -28,6 +28,10 @@ import org.apache.lucene.store.DataOutput;
  * an inconsistency in the index.
  */
 public class CorruptIndexException extends IOException {
+
+  private final String message;
+  private final String resourceDescription;
+
   /** Create exception with a message only */
   public CorruptIndexException(String message, DataInput input) {
     this(message, input, null);
@@ -56,5 +60,21 @@ public class CorruptIndexException extends IOException {
   /** Create exception with message and root cause. */
   public CorruptIndexException(String message, String resourceDescription, Throwable cause) {
     super(Objects.toString(message) + " (resource=" + resourceDescription + ")", cause);
+    this.resourceDescription = resourceDescription;
+    this.message = message;
+  }
+
+  /**
+   * Returns a description of the file that was corrupted
+   */
+  public String getResourceDescription() {
+    return resourceDescription;
+  }
+
+  /**
+   * Returns the original exception message without the corrupted file description.
+   */
+  public String getOriginalMessage() {
+    return message;
   }
 }

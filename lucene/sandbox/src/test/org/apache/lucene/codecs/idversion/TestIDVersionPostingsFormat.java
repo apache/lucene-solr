@@ -405,11 +405,11 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       fail("didn't hit exception");
     } catch (IllegalArgumentException iae) {
       // expected: SMS will hit this
-    } catch (IOException ioe) {
+    } catch (IOException | IllegalStateException exc) {
       // expected
-      assertTrue(ioe.getCause() instanceof IllegalArgumentException);
+      assertTrue(exc.getCause() instanceof IllegalArgumentException);
     }
-    w.close();
+    w.rollback();
     dir.close();
   }
 

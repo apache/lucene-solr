@@ -1,5 +1,22 @@
 # Apache Lucene Migration Guide
 
+## The way how number of document calculated is changed (LUCENE-6711)
+The number of documents (numDocs) is used to calculate term specificity (idf) and average document length (avdl).
+Prior to LUCENE-6711, collectionStats.maxDoc() was used for the statistics.
+Now, collectionStats.docCount() is used whenever possible, if not maxDocs() is used.
+
+Assume that a collection contains 100 documents, and 50 of them have "keywords" field.
+In this example, maxDocs is 100 while docCount is 50 for the "keywords" field.
+The total number of tokens for "keywords" field is divided by docCount to obtain avdl.
+Therefore, docCount which is the total number of documents that have at least one term for the field, is a more precise metric for optional fields.
+
+DefaultSimilarity does not leverage avdl, so this change would have relatively minor change in the result list.
+Because relative idf values of terms will remain same.
+However, when combined with other factors such as term frequency, relative ranking of documents could change.
+Some Similarity implementations (such as the ones instantiated with NormalizationH2 and BM25) take account into avdl and would have notable change in ranked list.
+Especially if you have a collection of documents with varying lengths.
+Because NormalizationH2 tends to punish documents longer than avdl.
+
 ## Separation of IndexDocument and StoredDocument (LUCENE-3312)
 
 The API of oal.document was restructured to differentiate between stored 

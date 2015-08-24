@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
-import net.agkn.hll.HLL;
+import org.apache.solr.util.hll.HLL;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
 
@@ -88,7 +88,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                     "long_l", ""+longValue, 
                     "long_l_prehashed_l", ""+HASHER.hashLong(longValue).asLong(),
                     "string_s", strValue,
-                    "string_s_prehashed_l", ""+HASHER.hashUnencodedChars(strValue).asLong()));
+                    "string_s_prehashed_l", ""+HASHER.hashString(strValue).asLong()));
 
       longValue -= BIG_PRIME;
     }

@@ -98,6 +98,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static Logger log = LoggerFactory.getLogger(LukeRequestHandler.class);
 
   public static final String NUMTERMS = "numTerms";
+  public static final String INCLUDE_INDEX_FIELD_FLAGS = "includeIndexFieldFlags";
   public static final String DOC_ID = "docId";
   public static final String ID = "id";
   public static final int DEFAULT_COUNT = 10;
@@ -372,29 +373,25 @@ public class LukeRequestHandler extends RequestHandlerBase
       }
 
       if(sfield != null && sfield.indexed() ) {
-        // In the pre-4.0 days, this did a veeeery expensive range query. But we can be much faster now,
-        // so just do this all the time.
-        StoredDocument doc = getFirstLiveDoc(terms, reader);
+        if (params.getBool(INCLUDE_INDEX_FIELD_FLAGS,true)) {
+          StoredDocument doc = getFirstLiveDoc(terms, reader);
 
-
-        if( doc != null ) {
-          // Found a document with this field
-          try {
-            StorableField fld = doc.getField( fieldName );
-            if( fld != null ) {
-              fieldMap.add("index", getFieldFlags(fld));
+          if (doc != null) {
+            // Found a document with this field
+            try {
+              StorableField fld = doc.getField(fieldName);
+              if (fld != null) {
+                fieldMap.add("index", getFieldFlags(fld));
+              } else {
+                // it is a non-stored field...
+                fieldMap.add("index", "(unstored field)");
+              }
+            } catch (Exception ex) {
+              log.warn("error reading field: " + fieldName);
             }
-            else {
-              // it is a non-stored field...
-              fieldMap.add("index", "(unstored field)");
-            }
-          }
-          catch( Exception ex ) {
-            log.warn( "error reading field: "+fieldName );
           }
         }
         fieldMap.add("docs", terms.getDocCount());
-
       }
       if (fields != null && (fields.contains(fieldName) || fields.contains("*"))) {
         getDetailedFieldInfo(req, fieldName, fieldMap);
@@ -497,15 +494,15 @@ public class LukeRequestHandler extends RequestHandlerBase
       TokenizerChain tchain = (TokenizerChain)analyzer;
 
       CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
-      SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<>();
-      for (CharFilterFactory cfiltfac : cfiltfacs) {
-        Map<String, Object> tok = new HashMap<>();
-        String className = cfiltfac.getClass().getName();
-        tok.put("className", className);
-        tok.put("args", cfiltfac.getOriginalArgs());
-        cfilters.add(className.substring(className.lastIndexOf('.')+1), tok);
-      }
-      if (cfilters.size() > 0) {
+      if (0 < cfiltfacs.length) {
+        SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<>();
+        for (CharFilterFactory cfiltfac : cfiltfacs) {
+          Map<String, Object> tok = new HashMap<>();
+          String className = cfiltfac.getClass().getName();
+          tok.put("className", className);
+          tok.put("args", cfiltfac.getOriginalArgs());
+          cfilters.add(className.substring(className.lastIndexOf('.')+1), tok);
+        }
         aninfo.add("charFilters", cfilters);
       }
 
@@ -516,15 +513,15 @@ public class LukeRequestHandler extends RequestHandlerBase
       aninfo.add("tokenizer", tokenizer);
 
       TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
-      SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<>();
-      for (TokenFilterFactory filtfac : filtfacs) {
-        Map<String, Object> tok = new HashMap<>();
-        String className = filtfac.getClass().getName();
-        tok.put("className", className);
-        tok.put("args", filtfac.getOriginalArgs());
-        filters.add(className.substring(className.lastIndexOf('.')+1), tok);
-      }
-      if (filters.size() > 0) {
+      if (0 < filtfacs.length) {
+        SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<>();
+        for (TokenFilterFactory filtfac : filtfacs) {
+          Map<String, Object> tok = new HashMap<>();
+          String className = filtfac.getClass().getName();
+          tok.put("className", className);
+          tok.put("args", filtfac.getOriginalArgs());
+          filters.add(className.substring(className.lastIndexOf('.')+1), tok);
+        }
         aninfo.add("filters", filters);
       }
     }

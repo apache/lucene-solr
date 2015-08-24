@@ -20,10 +20,8 @@ package org.apache.solr.cloud;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 @Slow
 public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
 
@@ -35,7 +33,7 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   @Test
-  @ShardsFixed(num = 4)
+  @ShardsFixed(num = 2)
   public void doTest() throws Exception {
     this.doTestLifeCycleActions();
     this.doTestCheckpointActions();

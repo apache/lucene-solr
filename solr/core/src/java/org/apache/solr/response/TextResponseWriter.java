@@ -30,7 +30,7 @@ import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.Base64;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -293,20 +293,21 @@ public abstract class TextResponseWriter {
 
   public void writeTupleStream(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    writeStartDocumentList("response", -1, -1, -1, null);
+    tupleStream.writeStreamOpen(writer);
     boolean isFirst = true;
     while(true) {
       Tuple tuple = tupleStream.read();
       if(!isFirst) {
         writer.write(",");
       }
+      writer.write("\n");
       writeMap(null, tuple.fields, false, true);
       isFirst = false;
       if(tuple.EOF) {
         break;
       }
     }
-    writeEndDocumentList();
+    tupleStream.writeStreamClose(writer);
     tupleStream.close();
   }
 
@@ -327,7 +328,7 @@ public abstract class TextResponseWriter {
 
 
   public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, TrieDateField.formatExternal(val));
+    writeDate(name, DateFormatUtil.formatExternal(val));
   }
   
 

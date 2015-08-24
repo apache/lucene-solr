@@ -68,6 +68,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public FieldComparator<Integer> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
     // we keep parallel slots: the parent ids and the child ids
     final int parentSlots[] = new int[numHits];

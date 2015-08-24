@@ -24,8 +24,8 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <searchComponent name="componentThatAddsHeader" class="org.apache.solr.servlet.ResponseHeaderTest$ComponentThatAddsHeader"/>
   <requestHandler name="/withHeaders" class="solr.StandardRequestHandler">
-	  <arr name="first-components">
-	  	<str>componentThatAddsHeader</str>
-	  </arr>
+    <arr name="first-components">
+      <str>componentThatAddsHeader</str>
+    </arr>
   </requestHandler>
 </config>

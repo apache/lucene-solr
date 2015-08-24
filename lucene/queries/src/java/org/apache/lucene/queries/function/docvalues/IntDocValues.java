@@ -103,7 +103,7 @@ public abstract class IntDocValues extends FunctionValues {
 
     return new ValueSourceScorer(reader, this) {
       @Override
-      public boolean matchesValue(int doc) {
+      public boolean matches(int doc) {
         int val = intVal(doc);
         // only check for deleted if it's the default value
         // if (val==0 && reader.isDeleted(doc)) return false;

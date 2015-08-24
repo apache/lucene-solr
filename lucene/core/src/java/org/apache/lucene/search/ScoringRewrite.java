@@ -59,7 +59,8 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
       builder.setDisableCoord(true);
       return builder;
     }
-    
+
+    @Override
     protected Query build(BooleanQuery.Builder builder) {
       return builder.build();
     }

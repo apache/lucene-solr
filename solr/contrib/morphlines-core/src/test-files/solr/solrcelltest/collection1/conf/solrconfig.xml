@@ -955,7 +955,7 @@
       <!-- maximum threshold of documents a query term can appear to be considered for correction -->
       <float name="maxQueryFrequency">0.01</float>
       <!-- uncomment this to require suggestions to occur in 1% of the documents
-      	<float name="thresholdTokenFrequency">.01</float>
+        <float name="thresholdTokenFrequency">.01</float>
       -->
     </lst>
     

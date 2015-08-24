@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;

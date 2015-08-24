@@ -30,30 +30,37 @@ public interface CollectionParams
 
 
   public enum CollectionAction {
-    CREATE,
-    DELETE,
-    RELOAD,
-    SYNCSHARD,
-    CREATEALIAS,
-    DELETEALIAS,
-    SPLITSHARD,
-    DELETESHARD,
-    CREATESHARD,
-    DELETEREPLICA,
-    MIGRATE,
-    ADDROLE,
-    REMOVEROLE,
-    CLUSTERPROP,
-    REQUESTSTATUS,
-    ADDREPLICA,
-    OVERSEERSTATUS,
-    LIST,
-    CLUSTERSTATUS,
-    ADDREPLICAPROP,
-    DELETEREPLICAPROP,
-    BALANCESHARDUNIQUE,
-    REBALANCELEADERS,
-    MODIFYCOLLECTION;
+    CREATE(true),
+    DELETE(true),
+    RELOAD(true),
+    SYNCSHARD(true),
+    CREATEALIAS(true),
+    DELETEALIAS(true),
+    SPLITSHARD(true),
+    DELETESHARD(true),
+    CREATESHARD(true),
+    DELETEREPLICA(true),
+    MIGRATE(true),
+    ADDROLE(true),
+    REMOVEROLE(true),
+    CLUSTERPROP(true),
+    REQUESTSTATUS(false),
+    ADDREPLICA(true),
+    OVERSEERSTATUS(false),
+    LIST(false),
+    CLUSTERSTATUS(false),
+    ADDREPLICAPROP(true),
+    DELETEREPLICAPROP(true),
+    BALANCESHARDUNIQUE(true),
+    REBALANCELEADERS(true),
+    MODIFYCOLLECTION(true),
+    MIGRATESTATEFORMAT(true);
+    
+    public final boolean isWrite;
+
+    CollectionAction(boolean isWrite) {
+      this.isWrite = isWrite;
+    }
 
     public static CollectionAction get(String p) {
       if( p != null ) {

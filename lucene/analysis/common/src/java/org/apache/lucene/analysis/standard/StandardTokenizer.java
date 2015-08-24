@@ -88,18 +88,28 @@ public final class StandardTokenizer extends Tokenizer {
     "<HANGUL>"
   };
   
+  public static final int MAX_TOKEN_LENGTH_LIMIT = 1024 * 1024;
+  
   private int skippedPositions;
 
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
-  /** Set the max allowed token length.  Any token longer
-   *  than this is skipped. */
+  /**
+   * Set the max allowed token length.  No tokens longer than this are emitted.
+   * 
+   * @throws IllegalArgumentException if the given length is outside of the
+   *  range [1, {@value #MAX_TOKEN_LENGTH_LIMIT}].
+   */ 
   public void setMaxTokenLength(int length) {
     if (length < 1) {
       throw new IllegalArgumentException("maxTokenLength must be greater than zero");
+    } else if (length > MAX_TOKEN_LENGTH_LIMIT) {
+      throw new IllegalArgumentException("maxTokenLength may not exceed " + MAX_TOKEN_LENGTH_LIMIT);
     }
-    this.maxTokenLength = length;
-    scanner.setBufferSize(Math.min(length, 1024 * 1024)); // limit buffer size to 1M chars
+    if (length != maxTokenLength) {
+      maxTokenLength = length;
+      scanner.setBufferSize(length);
+    }
   }
 
   /** @see #setMaxTokenLength */

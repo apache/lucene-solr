@@ -35,6 +35,7 @@ import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -150,15 +151,14 @@ public class VersionInfo {
   // Time-based lamport clock.  Good for introducing some reality into clocks (to the degree
   // that times are somewhat synchronized in the cluster).
   // Good if we want to relax some constraints to scale down to where only one node may be
-  // up at a time.  Possibly harder to detect missing messages (because versions are not contiguous.
-  long vclock;
-  long time;
+  // up at a time.  Possibly harder to detect missing messages (because versions are not contiguous).
+  private long vclock;
   private final Object clockSync = new Object();
 
-
+  @SuppressForbidden(reason = "need currentTimeMillis just for getting realistic version stamps, does not assume monotonicity")
   public long getNewClock() {
     synchronized (clockSync) {
-      time = System.currentTimeMillis();
+      long time = System.currentTimeMillis();
       long result = time << 20;
       if (result <= vclock) {
         result = vclock + 1;
@@ -231,8 +231,9 @@ public class VersionInfo {
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
       Terms versionTerms = searcher.getLeafReader().terms(versionFieldName);
-      if (versionTerms != null) {
-        maxVersionInIndex = NumericUtils.getMaxLong(versionTerms);
+      Long max = (versionTerms != null) ? NumericUtils.getMaxLong(versionTerms) : null;
+      if (max != null) {
+        maxVersionInIndex = max.longValue();
         log.info("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
       } else {
         log.info("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);

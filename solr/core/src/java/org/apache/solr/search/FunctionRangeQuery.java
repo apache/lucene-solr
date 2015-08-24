@@ -17,15 +17,15 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
-
-import java.io.IOException;
-import java.util.Map;
 
 // This class works as either a normal constant score query, or as a PostFilter using a collector
 public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFilter {
@@ -53,7 +53,8 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
 
     @Override
     public void collect(int doc) throws IOException {
-      if (doc<maxdoc && scorer.matches(doc)) {
+      assert doc < maxdoc;
+      if (scorer.matches(doc)) {
         leafDelegate.collect(doc);
       }
     }

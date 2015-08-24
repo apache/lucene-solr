@@ -68,6 +68,9 @@ ENABLE_REMOTE_JMX_OPTS="false"
 # The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 # RMI_PORT=18983
 
+# Set the thread stack size
+SOLR_OPTS="$SOLR_OPTS -Xss256k"
+
 # Anything you add to the SOLR_OPTS variable will be included in the java
 # start command line as-is, in ADDITION to other options. If you specify the
 # -a option on start script, those options will be appended as well. Examples:
@@ -79,8 +82,8 @@ ENABLE_REMOTE_JMX_OPTS="false"
 # If not set, the script will create PID files in $SOLR_TIP/bin
 #SOLR_PID_DIR=
 
-# Path to a directory where Solr creates index files, the specified directory
-# must contain a solr.xml; by default, Solr will use server/solr
+# Path to a directory for Solr to store cores and their data. By default, Solr will use server/solr
+# If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 #SOLR_HOME=
 
 # Solr provides a default Log4J configuration properties file in server/resources

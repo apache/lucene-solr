@@ -142,7 +142,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   // TODO: merge with SearchGroup or not?
   // ad: don't need to build a new hashmap
   // disad: blows up the size of SearchGroup if we need many of them, and couples implementations
-  public static class SearchGroupDocs<GROUP_VALUE_TYPE> {
+  public class SearchGroupDocs<GROUP_VALUE_TYPE> {
 
     public final GROUP_VALUE_TYPE groupValue;
     public final TopDocsCollector<?> collector;

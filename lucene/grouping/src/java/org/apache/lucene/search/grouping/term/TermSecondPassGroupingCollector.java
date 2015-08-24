@@ -42,7 +42,7 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
   private SortedDocValues index;
   private final String groupField;
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public TermSecondPassGroupingCollector(String groupField, Collection<SearchGroup<BytesRef>> groups, Sort groupSort, Sort withinGroupSort,
                                          int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields)
       throws IOException {

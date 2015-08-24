@@ -18,20 +18,10 @@
  -->
 
 <project name="lucene-solr" default="-projecthelp" basedir=".">
-  <!-- Give user a chance to override without editing this file
-      (and without typing -D each time it compiles it -->
-  <property file="${user.home}/lucene.build.properties"/>
-  <property file="${user.home}/build.properties"/>
-  <property file="lucene/build.properties"/><!-- ${common.dir} -->
+  <import file="lucene/common-build.xml"/>
 
-  <!-- include version number from property file (includes "version.*" properties) -->
-  <loadproperties srcFile="lucene/version.properties"/>
+  <property name="svnkit.version" value="1.8.10"/>
 
-  <!-- define here, as common-build is not included! TODO: maybe include into a property file like the version? -->
-  <property name="python32.exe" value="python3" />
-  <property name="args" value=""/>
-
-  <!-- other settings: -->
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
   <property name="maven-build-dir" value="maven-build"/>
@@ -57,21 +47,41 @@
   <target name="precommit" description="Run basic checks before committing"
           depends="check-svn-working-copy,validate,documentation-lint"/>
 
-  <target name="test" description="Test both Lucene and Solr">
-    <subant buildpath="." antfile="extra-targets.xml" target="-run-test" inheritall="false" failonerror="true" />
+  <target name="test" description="Test both Lucene and Solr" depends="resolve-groovy">
+    <mkdir dir="lucene/build" />
+    <tempfile property="tests.totals.tmpfile"
+          destdir="lucene/build"
+          prefix=".test-totals-"
+          suffix=".tmp"
+          deleteonexit="true"
+          createfile="true" />
+
+    <subant target="test" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+      <propertyset>
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <propertyref name="tests.totals.tmpfile" />
+      </propertyset>      
+    </subant>
+
+    <property name="tests.totals.toplevel" value="true" />
+    <antcall target="-check-totals" />
   </target>
 
-  <target name="jacoco" description="Generates JaCoCo code coverage reports">
+  <target name="jacoco" depends="resolve-groovy" description="Generates JaCoCo code coverage reports">
     <subant target="jacoco" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
-  <target name="pitest" description="Run PITest on both Lucene and Solr">
+  <target name="pitest" depends="resolve-groovy" description="Run PITest on both Lucene and Solr">
     <subant target="pitest" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -79,59 +89,131 @@
     <fail message="The Beast only works inside of individual modules"/>
   </target>
 
-  <target name="documentation" description="Generate Lucene and Solr Documentation">
+  <target name="documentation" depends="resolve-pegdown" description="Generate Lucene and Solr Documentation">
     <subant target="documentation" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
-  <target name="documentation-lint" description="Validates the generated documentation (HTML errors, broken links,...)">
+  <target name="documentation-lint" depends="resolve-pegdown,-ecj-javadoc-lint-unsupported,-ecj-resolve" description="Validates the generated documentation (HTML errors, broken links,...)">
     <subant target="documentation-lint" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
-  <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns">
+  <target name="check-forbidden-apis" depends="-install-forbidden-apis" description="Check forbidden API calls in compiled class files.">
+    <subant target="check-forbidden-apis" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </subant>
+  </target>
+
+  <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns,resolve-groovy,rat-sources-typedef,-install-forbidden-apis">
     <subant target="validate" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
-    <subant buildpath="lucene" target="check-lib-versions" inheritall="false" failonerror="true"/>
+    <subant buildpath="lucene" target="check-lib-versions" inheritall="false" failonerror="true">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </subant>
   </target>
   
-  <target name="-validate-source-patterns" unless="disable.source-patterns">
-    <!-- check that there are no @author javadoc tags, tabs, svn keywords or nocommits: -->
-    <property name="validate.currDir" location="."/>
-    <pathconvert pathsep="${line.separator}" dirsep="/" property="validate.patternsFound" setonempty="false">
-      <fileset dir="${validate.currDir}">
-        <include name="**/*.java"/>
-        <include name="**/*.py"/>
-        <or>
-          <containsregexp expression="@author\b" casesensitive="yes"/>
-          <containsregexp expression="\bno(n|)commit\b" casesensitive="no"/>
-          <containsregexp expression="\bTOOD:" casesensitive="yes"/>
-          <containsregexp expression="\t" casesensitive="no"/>
-          <containsregexp expression="\$(?:LastChanged)?Date\b" casesensitive="yes"/>
-          <containsregexp expression="\$(?:(?:LastChanged)?Revision|Rev)\b" casesensitive="yes"/>
-          <containsregexp expression="\$(?:LastChangedBy|Author)\b" casesensitive="yes"/>
-          <containsregexp expression="\$(?:Head)?URL\b" casesensitive="yes"/>
-          <containsregexp expression="\$Id\b" casesensitive="yes"/>
-          <containsregexp expression="\$Header\b" casesensitive="yes"/>
-          <containsregexp expression="\$Source\b" casesensitive="yes"/>
-        </or>
-      </fileset>
-      <map from="${validate.currDir}${file.separator}" to="* "/>
-    </pathconvert>
-    <fail if="validate.patternsFound">The following files contain @author tags, tabs, TOODs, svn keywords or nocommits:${line.separator}${validate.patternsFound}</fail>
+  <target name="-validate-source-patterns" unless="disable.source-patterns" depends="resolve-groovy,rat-sources-typedef">
+    <!-- check that there are no @author javadoc tags, tabs, svn keywords, javadoc-style licenses, or nocommits: -->
+    <property name="validate.baseDir" location="."/>
+    <groovy taskname="source-patterns" classpathref="rat.classpath"><![CDATA[
+      import org.apache.tools.ant.BuildException;
+      import org.apache.rat.Defaults;
+      import org.apache.rat.document.impl.FileDocument;
+      import org.apache.rat.api.MetaData;
+      
+      def extensions = [
+        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
+        'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
+        'properties', 'mdtext',
+      ];
+      def invalidPatterns = [
+        (~$/@author\b/$) : '@author javadoc tag',
+        (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
+        (~$/\bTOOD:/$) : 'TOOD instead TODO',
+        (~$/\t/$) : 'tabs instead spaces',
+        (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
+        (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
+        (~$/\$$(?:LastChangedBy|Author)\b/$) : 'svn keyword',
+        (~$/\$$(?:Head)?URL\b/$) : 'svn keyword',
+        (~$/\$$Id\b/$) : 'svn keyword',
+        (~$/\$$Header\b/$) : 'svn keyword',
+        (~$/\$$Source\b/$) : 'svn keyword',
+      ];
+      
+      def baseDir = properties['validate.baseDir'];
+      def baseDirLen = baseDir.length() + 1;
+      
+      def found = 0;
+      def violations = new TreeSet();
+      def reportViolation = { f, name ->
+        task.log(name + ': ' + f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'));
+        violations.add(name);
+        found++;
+      }
+      
+      def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
+      def lineSplitter = ~$/[\r\n]+/$;
+      def licenseMatcher = Defaults.createDefaultMatcher();
+      
+      ant.fileScanner{
+        fileset(dir: baseDir){
+          extensions.each{
+            include(name: 'lucene/**/*.' + it)
+            include(name: 'solr/**/*.' + it)
+            include(name: 'dev-tools/**/*.' + it)
+            include(name: '*.' + it)
+          }
+          // TODO: For now we don't scan txt files, so we
+          // check licenses in top-level folders separately:
+          include(name: '*.txt')
+          include(name: '*/*.txt')
+          // excludes:
+          exclude(name: '**/build/**')
+          exclude(name: '**/dist/**')
+          exclude(name: 'build.xml') // ourselves :-)
+        }
+      }.each{ f ->
+        def text = f.getText('UTF-8');
+        invalidPatterns.each{ pattern,name ->
+          if (pattern.matcher(text).find()) {
+            reportViolation(f, name);
+          }
+        }
+        def javadocsMatcher = javadocsPattern.matcher(text);
+        while (javadocsMatcher.find()) {
+          def ratDocument = new FileDocument(f);
+          licenseMatcher.reset();
+          if (lineSplitter.split(javadocsMatcher.group(1)).any{ licenseMatcher.match(ratDocument, it) }) {
+            reportViolation(f, String.format(Locale.ENGLISH, 'javadoc-style license header [%s]',
+              ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
+          }
+        }
+      };
+      
+      if (found) {
+        throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
+          found, violations.join(', ')));
+      }
+    ]]></groovy>
   </target>
-	
-  <target name="rat-sources" description="Runs rat across all sources and tests">
+  
+  <target name="rat-sources" description="Runs rat across all sources and tests" depends="common.rat-sources">
     <subant target="rat-sources" inheritall="false" failonerror="true">
-      <fileset dir="." includes="extra-targets.xml" /><!-- run rat-sources also for root directory -->
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -139,6 +221,7 @@
     <subant target="resolve" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -147,6 +230,14 @@
     <subant target="compile" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </subant>
+  </target>
+
+  <target name="compile-core" description="Compile Lucene Core">
+    <subant target="compile-core" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -154,6 +245,7 @@
     <subant target="compile-test" inheritAll="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -161,6 +253,7 @@
     <subant target="jar" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml"/>
       <fileset dir="solr" includes="build.xml"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -168,6 +261,7 @@
     <subant target="jar-src" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml"/>
       <fileset dir="solr" includes="build.xml"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -181,39 +275,61 @@
     <delete failonerror="true" dir="${maven-build-dir}/"/>
   </target>
 
-  <target name="generate-maven-artifacts" depends="resolve"
+  <target name="generate-maven-artifacts" depends="resolve,resolve-groovy,resolve-pegdown,install-maven-tasks"
           description="Generate Maven Artifacts for Lucene and Solr">
     <property name="maven.dist.dir"  location="dist/maven" />
     <mkdir dir="${maven.dist.dir}" />
     <ant dir="lucene" inheritall="false">
       <target name="-unpack-lucene-tgz"/>
       <target name="-filter-pom-templates"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-    <ant dir="solr" target="-unpack-solr-tgz" inheritall="false"/>
+    <ant dir="solr" target="-unpack-solr-tgz" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
     <subant target="-dist-maven" inheritall="false" failonerror="true">
       <property name="maven.dist.dir"  location="${maven.dist.dir}" />
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
   <target name="validate-maven-dependencies" depends="generate-maven-artifacts"
           description="Validates maven dependencies, licenses, etc.">
-    <sequential>
-      <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml"/>
-        <fileset dir="solr" includes="build.xml"/>
-      </subant>
-    </sequential>
+    <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml"/>
+      <fileset dir="solr" includes="build.xml"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </subant>
   </target>
   
-  <target name="run-maven-build" depends="get-maven-poms" description="Runs the Maven build using automatically generated POMs">
-    <subant buildpath="." antfile="extra-targets.xml" target="-run-maven-build" inheritall="false" failonerror="true">
-      <propertyset>
-        <propertyref prefix="maven-"/>
-        <propertyref builtin="commandline"/>
-      </propertyset>
-    </subant>
+  <target name="run-maven-build" depends="get-maven-poms,install-maven-tasks,resolve-groovy" description="Runs the Maven build using automatically generated POMs">
+    <groovy><![CDATA[
+      import groovy.xml.NamespaceBuilder;
+      import org.apache.tools.ant.Project;
+      def userHome = properties['user.home'], commonDir = properties['common.dir'];
+      def propPrefix = '-mvn.inject.'; int propPrefixLen = propPrefix.length();
+      def subProject = project.createSubProject();
+      project.copyUserProperties(subProject);
+      subProject.initProperties();
+      new AntBuilder(subProject).sequential{
+        property(file: userHome+'/lucene.build.properties', prefix: propPrefix);
+        property(file: userHome+'/build.properties', prefix: propPrefix);
+        property(file: commonDir+'/build.properties', prefix: propPrefix);
+      };
+      def cmdlineProps = subProject.properties
+        .findAll{ k, v -> k.startsWith(propPrefix) }
+        .collectEntries{ k, v -> [k.substring(propPrefixLen), v] };
+      cmdlineProps << project.userProperties.findAll{ k, v -> !k.startsWith('ant.') };
+      def artifact = NamespaceBuilder.newInstance(ant, 'antlib:org.apache.maven.artifact.ant');
+      task.log('Running Maven with props: ' + cmdlineProps.toString(), Project.MSG_INFO);
+      artifact.mvn(pom: properties['maven-build-dir']+'/pom.xml', mavenVersion: properties['maven-version'], failonerror: true, fork: true) {
+        cmdlineProps.each{ k, v -> arg(value: '-D' + k + '=' + v) };
+        arg(value: '-fae');
+        arg(value: 'install');
+      };
+    ]]></groovy>
   </target>
   
   <target name="remove-maven-artifacts" description="Removes all Lucene/Solr Maven artifacts from the local repository">
@@ -239,7 +355,7 @@
       <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" 
                excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
       <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" 
-               excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, example/solr-webapp/**" />
+               excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, server/solr-webapp/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
     <mkdir dir="nbproject"/>
@@ -358,6 +474,7 @@ File | Project Structure | Platform Settings | SDKs):
     <subant target="clean" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
@@ -373,19 +490,16 @@ File | Project Structure | Platform Settings | SDKs):
     </delete>
   </target>
 
-  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir">
-    <subant buildpath="lucene" target="ivy-bootstrap" inheritall="false" failonerror="true"/>
-  </target>
-
   <target name="jar-checksums" description="Recompute SHA1 checksums for all JAR files.">
     <subant target="jar-checksums" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
   
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it"
-    depends="clean">
+    depends="clean,resolve-groovy,resolve-pegdown,install-maven-tasks">
     <fail message="To run nightly smoke, the JDK must be exactly Java 1.8, was: ${java.specification.version}">
       <condition>
         <not><equals arg1="${java.specification.version}" arg2="1.8"/></not>
@@ -399,7 +513,8 @@ File | Project Structure | Platform Settings | SDKs):
       <fileset dir="solr" includes="build.xml" />
       <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
       <property name="version" value="${version.base}" />
-    </subant>
+      <propertyset refid="uptodate.and.compiled.properties"/>
+   </subant>
     <mkdir dir="${smokeTestRelease.dir}"/>
     <copy todir="${smokeTestRelease.dir}/lucene">
       <fileset dir="lucene/dist"/>
@@ -429,8 +544,115 @@ File | Project Structure | Platform Settings | SDKs):
     <delete dir="${smokeTestRelease.tmp}"/>
   </target>
   
-  <target name="check-svn-working-copy" description="Checks the status of the SVN working copy">
-    <subant buildpath="." antfile="extra-targets.xml" target="-check-svn-working-copy" inheritall="false" failonerror="true"/>
+  <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="svn-checker">
+    <attribute name="failonmodifications" default="true"/> <!-- false if file modifications are allowed -->
+    <sequential>
+      <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="${svnkit.version}"
+        inline="true" conf="default" transitive="true" pathid="svnkit.classpath"/>
+      <local name="svn.checkprops.failed"/>
+      <local name="svn.unversioned.failed"/>
+      <local name="svn.keywords.failed"/>
+      <local name="svn.changed.failed"/>
+      <groovy taskname="svn" classpathref="svnkit.classpath"><![CDATA[
+        import org.tmatesoft.svn.core.*;
+        import org.tmatesoft.svn.core.wc.*;
+        import org.apache.tools.ant.Project;
+        
+        SVNClientManager manager = SVNClientManager.newInstance();
+        SVNStatusClient statusClient = manager.getStatusClient();
+        SVNWCClient wcClient = manager.getWCClient();
+        
+        File basedir = new File(properties['basedir']).getAbsoluteFile();
+        int baseLen = basedir.toString().length();
+
+        // do some fake check, to verify if this is valid SVN working copy. If this fails ignore checks but log some useful message.
+        task.log('Initializing working copy...');
+        try {
+          wcClient.doInfo(basedir, SVNRevision.WORKING);
+        } catch (SVNException ex) {
+          def ec = ex.getErrorMessage().getErrorCode();
+          int code = ec.getCode();
+          int category = ec.getCategory();
+          if (code == SVNErrorCode.WC_NOT_DIRECTORY.getCode() || code == SVNErrorCode.WC_NOT_FILE.getCode()) {
+            task.log('WARNING: Development directory is not an SVN checkout! Disabling checks...', Project.MSG_WARN);
+            return;
+          } else if (category == SVNErrorCode.WC_CATEGORY) {
+            task.log('WARNING: Development directory is not a valid SVN checkout (' + ex.getErrorMessage() + '). Disabling checks...', Project.MSG_WARN);
+            return;
+          } else {
+            throw ex;
+          }
+        }
+        
+        def convertRelative = {
+          file -> '.' + file.getAbsolutePath().substring(baseLen).replace(File.separatorChar, (char)'/');
+        }
+
+        Set missingProps = new TreeSet(), withKeywords = new TreeSet(), unversioned = new TreeSet(), changed = new TreeSet();
+
+        task.log('Getting all versioned and unversioned files...');
+        statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, {
+          status ->
+          SVNStatusType nodeStatus = status.getNodeStatus();
+          if (nodeStatus == SVNStatusType.STATUS_UNVERSIONED || nodeStatus == SVNStatusType.STATUS_MISSING) {
+            unversioned.add(convertRelative(status.getFile()));
+          } else if (status.getKind() == SVNNodeKind.FILE && nodeStatus != SVNStatusType.STATUS_DELETED) {
+            missingProps.add(convertRelative(status.getFile()));
+          }
+          if (nodeStatus == SVNStatusType.STATUS_MODIFIED || nodeStatus == SVNStatusType.STATUS_REPLACED ||
+              nodeStatus == SVNStatusType.STATUS_DELETED  || nodeStatus == SVNStatusType.STATUS_ADDED) {
+            changed.add(convertRelative(status.getFile()));
+          }
+        } as ISVNStatusHandler, null);
+
+        task.log('Filtering files with existing svn:eol-style...');
+        wcClient.doGetProperty(basedir, 'svn:eol-style', SVNRevision.WORKING, SVNRevision.WORKING, true, {
+          file, prop -> missingProps.remove(convertRelative(file));
+        } as ISVNPropertyHandler);
+        
+        task.log('Filtering files with binary svn:mime-type...');
+        wcClient.doGetProperty(basedir, 'svn:mime-type', SVNRevision.WORKING, SVNRevision.WORKING, true, {
+          file, prop ->
+          prop = SVNPropertyValue.getPropertyAsString(prop.getValue());
+          if (prop.startsWith('application/') || prop.startsWith('image/')) {
+            missingProps.remove(convertRelative(file));
+          }
+        } as ISVNPropertyHandler);
+        
+        task.log('Scanning for files with svn:keywords property...');
+        wcClient.doGetProperty(basedir, 'svn:keywords', SVNRevision.WORKING, SVNRevision.WORKING, true, {
+          file, prop -> withKeywords.add(convertRelative(file));
+        } as ISVNPropertyHandler);
+        
+        def setProjectPropertyFromSet(prop, set) {
+          if (set) {
+            properties[prop] = '* ' + set.join(properties['line.separator'] + '* ');
+          }
+        };
+        setProjectPropertyFromSet('svn.checkprops.failed', missingProps);
+        setProjectPropertyFromSet('svn.keywords.failed', withKeywords);
+        setProjectPropertyFromSet('svn.unversioned.failed', unversioned);
+        setProjectPropertyFromSet('svn.changed.failed', changed);
+      ]]></groovy>
+      <fail if="svn.checkprops.failed"
+        message="The following files are missing svn:eol-style (or binary svn:mime-type):${line.separator}${svn.checkprops.failed}"/>
+      <fail if="svn.keywords.failed"
+        message="The following files have the svn:keywords property set:${line.separator}${svn.keywords.failed}"/>
+      <fail if="svn.unversioned.failed"
+        message="Source checkout is dirty after running tests!!! Offending files:${line.separator}${svn.unversioned.failed}"/>
+      <fail message="Source checkout is modified !!! Offending files:${line.separator}${svn.changed.failed}">
+        <condition>
+          <and>
+             <istrue value="@{failonmodifications}"/>
+             <isset property="svn.changed.failed"/>
+          </and>
+        </condition>
+      </fail>
+    </sequential>
+  </macrodef>
+
+  <target name="check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
+    <svn-checker failonmodifications="false"/>
   </target>
 
   <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_OPTS=-Xmx1536M&quot; as environment)" depends="clean">
@@ -446,22 +668,45 @@ File | Project Structure | Platform Settings | SDKs):
       <!-- The idea behind Clover is to determine test coverage, so be immune to failing tests: -->
       <param name="tests.haltonfailure" value="false"/>
       
+      <target name="clover"/>
       <target name="test"/>
       <target name="-generate-clover-reports"/>
+      
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </antcall>
   </target>
 
-  <target name="-generate-clover-reports">
-    <subant buildpath="." antfile="extra-targets.xml" target="-generate-clover-reports" inheritall="false" failonerror="true"/>
+  <!--
+   Run after Junit tests.
+   
+   This target is in a separate file, as it needs to include common-build.xml,
+   but must run from top-level!
+   -->
+  <target name="-generate-clover-reports" depends="clover">
+    <fail unless="run.clover">Clover not enabled!</fail>
+    <mkdir dir="${clover.report.dir}"/>
+    <fileset dir="." id="clover.test.result.files">
+      <include name="*/build/**/test/TEST-*.xml"/>
+    </fileset>
+    <clover-report projectName="Apache Lucene/Solr">
+      <current outfile="${clover.report.dir}" title="Apache Lucene/Solr ${version}" numThreads="0">
+        <format type="html" filter="assert"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
+      <current outfile="${clover.report.dir}/clover.xml" title="Apache Lucene/Solr ${version}">
+        <format type="xml" filter="assert"/>
+        <testresults refid="clover.test.result.files"/>
+      </current>
+    </clover-report>
+    <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>
   </target>
 
-  <target name="test-with-heapdumps" depends="-test-with-heapdumps-enabled,-test-with-heapdumps-disabled" description="Runs tests with heap dumps on OOM enabled (if VM supports this)"/>
+  <target name="test-with-heapdumps" depends="resolve-groovy,-test-with-heapdumps-enabled,-test-with-heapdumps-disabled" description="Runs tests with heap dumps on OOM enabled (if VM supports this)"/>
   
   <condition property="vm.supports.heapdumps">
     <or>
       <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
       <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
-      <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
     </or>
   </condition>
 
@@ -473,6 +718,7 @@ File | Project Structure | Platform Settings | SDKs):
     </delete>
     <antcall inheritAll="false" target="test">
       <param name="tests.heapdump.args" value="-XX:+HeapDumpOnOutOfMemoryError &quot;-XX:HeapDumpPath=${tests.heap-dump-dir}&quot;"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </antcall>
     <pathconvert property="heapdumps.list" setonempty="false" pathsep="${line.separator}">
       <fileset dir="${tests.heap-dump-dir}"/>
@@ -484,7 +730,9 @@ File | Project Structure | Platform Settings | SDKs):
 
   <target name="-test-with-heapdumps-disabled" unless="vm.supports.heapdumps">
     <echo level="warning" message="WARN: The used JVM (${java.vm.name}) does not support HPROF heap dumps on OutOfMemoryError."/>
-    <antcall target="test"/>
+    <antcall target="test">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
   </target>
 
   <target name="regenerate" description="Runs all code regenerators">
@@ -492,24 +740,25 @@ File | Project Structure | Platform Settings | SDKs):
       <fileset dir="lucene" includes="build.xml" />
       <!-- todo:
       <fileset dir="solr" includes="build.xml" />-->
+      <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
 
-  <target name="-check-after-regeneration">
-    <subant buildpath="." antfile="extra-targets.xml" target="-check-after-regeneration" inheritall="false" failonerror="true"/>
+  <!-- should only be called by jenkins, not precommit! -->
+  <target name="-check-after-regeneration" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
+    <svn-checker failonmodifications="true"/>
   </target>
 
   <!-- TODO: remove me when jenkins works -->
   <target name="regenerateAndCheck" depends="regenerate,-check-after-regeneration"/>
 
   <target name="-append-all-modules-dependencies-properties">
-    <sequential>
-      <delete file="lucene/build/module.dependencies.properties"/>
-      <subant target="-append-module-dependencies-properties" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
+    <delete file="lucene/build/module.dependencies.properties"/>
+    <subant target="-append-module-dependencies-properties" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </subant>
   </target>
   
   <!-- Jenkins tasks -->
@@ -537,7 +786,7 @@ Test args: [${args}]</echo>
     </antcall>
   </target>
   
-  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build">
+  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-pegdown,install-maven-tasks">
     <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
     <antcall>
       <param name="is.jenkins.build" value="true"/>
@@ -560,4 +809,6 @@ Test args: [${args}]</echo>
     </antcall>
   </target>
 
+  <!-- useless targets (override common-build.xml): -->
+  <target name="generate-test-reports"/>
 </project>

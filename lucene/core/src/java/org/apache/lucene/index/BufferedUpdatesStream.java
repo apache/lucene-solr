@@ -27,10 +27,10 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
@@ -687,23 +687,27 @@ class BufferedUpdatesStream implements Accountable {
     for (QueryAndLimit ent : queriesIter) {
       Query query = ent.query;
       int limit = ent.limit;
-      final DocIdSet docs = new QueryWrapperFilter(query).getDocIdSet(readerContext, segState.reader.getLiveDocs());
-      if (docs != null) {
-        final DocIdSetIterator it = docs.iterator();
-        if (it != null) {
-          while (true)  {
-            int doc = it.nextDoc();
-            if (doc >= limit) {
-              break;
-            }
+      final IndexSearcher searcher = new IndexSearcher(readerContext.reader());
+      searcher.setQueryCache(null);
+      final Weight weight = searcher.createNormalizedWeight(query, false);
+      final DocIdSetIterator it = weight.scorer(readerContext);
+      if (it != null) {
+        final Bits liveDocs = readerContext.reader().getLiveDocs();
+        while (true)  {
+          int doc = it.nextDoc();
+          if (doc >= limit) {
+            break;
+          }
+          if (liveDocs != null && liveDocs.get(doc) == false) {
+            continue;
+          }
 
-            if (!segState.any) {
-              segState.rld.initWritableLiveDocs();
-              segState.any = true;
-            }
-            if (segState.rld.delete(doc)) {
-              delCount++;
-            }
+          if (!segState.any) {
+            segState.rld.initWritableLiveDocs();
+            segState.any = true;
+          }
+          if (segState.rld.delete(doc)) {
+            delCount++;
           }
         }
       }

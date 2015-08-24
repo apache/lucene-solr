@@ -72,13 +72,21 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  * <p>
  * {@link DocValuesType#SORTED_SET SORTED_SET}:
  * <ul>
+ *    <li>Single: if all documents have 0 or 1 value, then data are written like SORTED.
+ *    <li>SortedSet table: when there are few unique sets of values (&lt; 256) then each set is assigned
+ *        an id, a lookup table is written and the mapping from document to set id is written using the
+ *        numeric strategies above.
  *    <li>SortedSet: a mapping of ordinals to deduplicated terms is written as Binary, 
  *        an ordinal list and per-document index into this list are written using the numeric strategies 
- *        above. 
+ *        above.
  * </ul>
  * <p>
  * {@link DocValuesType#SORTED_NUMERIC SORTED_NUMERIC}:
  * <ul>
+ *    <li>Single: if all documents have 0 or 1 value, then data are written like NUMERIC.
+ *    <li>SortedSet table: when there are few unique sets of values (&lt; 256) then each set is assigned
+ *        an id, a lookup table is written and the mapping from document to set id is written using the
+ *        numeric strategies above.
  *    <li>SortedNumeric: a value list and per-document index into this list are written using the numeric
  *        strategies above.
  * </ul>
@@ -108,21 +116,24 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *     <li>PrefixBinaryEntry --&gt; BinaryHeader,AddressInterval,AddressOffset,PackedVersion,BlockSize</li>
  *     <li>BinaryHeader --&gt; FieldNumber,EntryType,BinaryType,MissingOffset,MinLength,MaxLength,DataOffset</li>
  *     <li>SortedEntry --&gt; FieldNumber,EntryType,BinaryEntry,NumericEntry</li>
- *     <li>SortedSetEntry --&gt; EntryType,BinaryEntry,NumericEntry,NumericEntry</li>
- *     <li>SortedNumericEntry --&gt; EntryType,NumericEntry,NumericEntry</li>
+ *     <li>SortedSetEntry --&gt; SingleSortedSetEntry | AddressesSortedSetEntry | TableSortedSetEntry</li>
+ *     <li>SingleSortedSetEntry --&gt; SetHeader,SortedEntry</li>
+ *     <li>AddressesSortedSetEntry --&gt; SetHeader,BinaryEntry,NumericEntry,NumericEntry</li>
+ *     <li>TableSortedSetEntry --&gt; SetHeader,TotalTableLength,{@link DataOutput#writeLong Int64}<sup>TotalTableLength</sup>,TableSize,{@link DataOutput#writeInt Int32}<sup>TableSize</sup>,BinaryEntry,NumericEntry</li>
+ *     <li>SetHeader --&gt; FieldNumber,EntryType,SetType</li>
+ *     <li>SortedNumericEntry --&gt; SingleSortedNumericEntry | AddressesSortedNumericEntry | TableSortedNumericEntry</li>
+ *     <li>SingleNumericEntry --&gt; SetHeader,NumericEntry</li>
+ *     <li>AddressesSortedNumericEntry --&gt; SetHeader,NumericEntry,NumericEntry</li>
+ *     <li>TableSortedNumericEntry --&gt; SetHeader,TotalTableLength,{@link DataOutput#writeLong Int64}<sup>TotalTableLength</sup>,TableSize,{@link DataOutput#writeInt Int32}<sup>TableSize</sup>,NumericEntry</li>
  *     <li>FieldNumber,PackedVersion,MinLength,MaxLength,BlockSize,ValueCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *     <li>EntryType,CompressionType --&gt; {@link DataOutput#writeByte Byte}</li>
  *     <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
  *     <li>MinValue,GCD,MissingOffset,AddressOffset,DataOffset,EndOffset --&gt; {@link DataOutput#writeLong Int64}</li>
- *     <li>TableSize,BitsPerValue --&gt; {@link DataOutput#writeVInt vInt}</li>
+ *     <li>TableSize,BitsPerValue,TotalTableLength --&gt; {@link DataOutput#writeVInt vInt}</li>
  *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  *   </ul>
  *   <p>Sorted fields have two entries: a BinaryEntry with the value metadata,
  *      and an ordinary NumericEntry for the document-to-ord metadata.</p>
- *   <p>SortedSet fields have three entries: a BinaryEntry with the value metadata,
- *      and two NumericEntries for the document-to-ord-index and ordinal list metadata.</p>
- *   <p>SortedNumeric fields have two entries: A NumericEntry with the value metadata,
- *      and a numeric entry with the document-to-value index.</p>
  *   <p>FieldNumber of -1 indicates the end of metadata.</p>
  *   <p>EntryType is a 0 (NumericEntry) or 1 (BinaryEntry)</p>
  *   <p>DataOffset is the pointer to the start of the data in the DocValues data (.dvd)</p>
@@ -144,6 +155,15 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *         <li>1 --&gt; variable-width. An address for each value is stored.
  *         <li>2 --&gt; prefix-compressed. An address to the start of every interval'th value is stored.
  *      </ul>
+ *   <p>SetType indicates how SortedSet and SortedNumeric values will be stored:
+ *       <ul>
+ *         <li>0 --&gt; with addresses. There are two numeric entries: a first one from document to start
+ *             offset, and a second one from offset to ord/value.
+ *         <li>1 --&gt; single-valued. Used when all documents have at most one value and is encoded like
+ *             a regular Sorted/Numeric entry.
+ *         <li>2 --&gt; table-encoded. A lookup table of unique sets of values is written, followed by a
+ *             numeric entry that maps each document to an ordinal in this table.
+ *       </ul>
  *   <p>MinLength and MaxLength represent the min and max byte[] value lengths for Binary values.
  *      If they are equal, then all values are of a fixed size, and can be addressed as DataOffset + (docID * length).
  *      Otherwise, the binary values are of variable size, and packed integer metadata (PackedVersion,BlockSize)
@@ -187,7 +207,8 @@ public final class Lucene50DocValuesFormat extends DocValuesFormat {
   static final String META_CODEC = "Lucene50DocValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_SORTEDSET_TABLE = 1;
+  static final int VERSION_CURRENT = VERSION_SORTEDSET_TABLE;
   
   // indicates docvalues type
   static final byte NUMERIC = 0;
@@ -235,6 +256,9 @@ public final class Lucene50DocValuesFormat extends DocValuesFormat {
   /** Single-valued sorted set values, encoded as sorted values, so no level
    *  of indirection: {@code docId -> ord}. */
   static final int SORTED_SINGLE_VALUED = 1;
+  /** Compressed giving IDs to unique sets of values:
+   * {@code docId -> setId -> ords} */
+  static final int SORTED_SET_TABLE = 2;
   
   /** placeholder for missing offset that means there are no missing values */
   static final int ALL_LIVE = -1;

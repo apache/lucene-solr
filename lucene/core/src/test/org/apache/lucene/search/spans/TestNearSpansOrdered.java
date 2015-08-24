@@ -20,9 +20,9 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
@@ -33,7 +33,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.search.spans.SpanTestUtil.*;
+import static org.apache.lucene.search.spans.SpanTestUtil.assertFinished;
+import static org.apache.lucene.search.spans.SpanTestUtil.assertNext;
 
 public class TestNearSpansOrdered extends LuceneTestCase {
   protected IndexSearcher searcher;
@@ -69,7 +70,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 w3 w2 w3 zz",
     "w1 xx w2 yy w3",
     "w1 w3 xx w2 yy w3 zz",
-    "t1 t2 t2 t1"
+    "t1 t2 t2 t1",
+    "g x x g g x x x g g x x g"
   };
 
   protected SpanNearQuery makeQuery(String s1, String s2, String s3,
@@ -240,7 +242,6 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     assertFinished(spans);
   }
 
-
   /**
    * not a direct test of NearSpans, but a demonstration of how/when
    * this causes problems
@@ -252,4 +253,52 @@ public class TestNearSpansOrdered extends LuceneTestCase {
                + e.toString(),
                0.0f < e.getValue());
   }
+
+  public void testGaps() throws Exception {
+    SpanNearQuery q = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanTermQuery(new Term(FIELD, "w1")))
+        .addGap(1)
+        .addClause(new SpanTermQuery(new Term(FIELD, "w2")))
+        .build();
+    Spans spans = MultiSpansWrapper.wrap(reader, q);
+    assertNext(spans, 1, 0, 3);
+    assertNext(spans, 2, 0, 3);
+    assertFinished(spans);
+
+    q = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanTermQuery(new Term(FIELD, "w1")))
+        .addGap(1)
+        .addClause(new SpanTermQuery(new Term(FIELD, "w2")))
+        .addGap(1)
+        .addClause(new SpanTermQuery(new Term(FIELD, "w3")))
+        .setSlop(1)
+        .build();
+    spans = MultiSpansWrapper.wrap(reader, q);
+    assertNext(spans, 2, 0, 5);
+    assertNext(spans, 3, 0, 6);
+    assertFinished(spans);
+  }
+
+  public void testMultipleGaps() throws Exception {
+    SpanQuery q = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanTermQuery(new Term(FIELD, "g")))
+        .addGap(2)
+        .addClause(new SpanTermQuery(new Term(FIELD, "g")))
+        .build();
+    Spans spans = MultiSpansWrapper.wrap(reader, q);
+    assertNext(spans, 5, 0, 4);
+    assertNext(spans, 5, 9, 13);
+    assertFinished(spans);
+  }
+
+  /*
+    protected String[] docFields = {
+    "w1 w2 w3 w4 w5",
+    "w1 w3 w2 w3 zz",
+    "w1 xx w2 yy w3",
+    "w1 w3 xx w2 yy w3 zz",
+    "t1 t2 t2 t1",
+    "g x x g g x x x g g x x g"
+  };
+   */
 }

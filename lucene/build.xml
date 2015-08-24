@@ -78,7 +78,7 @@
 
   <!-- Validation here depends on compile-tools: but we want to compile modules' tools too -->
   <target name="compile-tools" depends="common.compile-tools">
-  	<modules-crawl target="compile-tools" failonerror="true"/>
+    <modules-crawl target="compile-tools" failonerror="true"/>
   </target>
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
@@ -97,7 +97,8 @@
     <lib-versions-check-macro dir="${common.dir}/.."
                               centralized.versions.file="${common.dir}/ivy-versions.properties"
                               ivy.settings.file="${common.dir}/ivy-settings.xml"
-    	                      ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
+                              ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
+                              ivy.lock-strategy="${ivy.lock-strategy}"
                               common.build.dir="${common.build.dir}"
                               ignore.conflicts.file="${common.dir}/ivy-ignore-conflicts.properties"/>
   </target>
@@ -201,7 +202,7 @@
     <modules-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <target name="process-webpages" depends="resolve-groovy,resolve-pegdown">
+  <target name="process-webpages" depends="resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,site/**"/>
     </makeurl>
@@ -237,7 +238,7 @@
       <fileset dir="site/html"/>
     </copy>
   </target>
-	
+  
   <target name="javadocs-modules" description="Generate javadoc for modules classes">
     <modules-crawl target="javadocs"
                    failonerror="true"/>
@@ -281,7 +282,7 @@
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
     </zip>
-	<make-checksums file="${dist.dir}/lucene-${version}.zip"/>
+    <make-checksums file="${dist.dir}/lucene-${version}.zip"/>
   </target>
 
   <!-- ================================================================== -->
@@ -408,6 +409,7 @@
       <m2-deploy pom.xml="${filtered.pom.templates.dir}/pom.xml"/>        <!-- Lucene/Solr grandparent POM -->
       <m2-deploy pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/> <!-- Lucene parent POM -->
       <subant target="-dist-maven" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="${common.dir}/core" includes="build.xml"/>
         <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
       </subant>
@@ -416,11 +418,11 @@
   </target>
 
   <target name="generate-maven-artifacts" depends="-unpack-lucene-tgz">
-    <sequential>
-      <ant dir=".." target="resolve" inheritall="false"/>
-      <antcall target="-filter-pom-templates" inheritall="false"/>
-      <antcall target="-dist-maven" inheritall="false"/>
-    </sequential>
+    <ant dir=".." target="resolve" inheritall="false"/>
+    <antcall target="-filter-pom-templates" inheritall="false"/>
+    <antcall target="-dist-maven" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </antcall>
   </target>
   
   <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">
@@ -434,7 +436,7 @@
       <modules-crawl target="-validate-maven-dependencies"/>
     </sequential>
   </target>
-	
+  
   <!-- ================================================================== -->
   <!-- support for signing the artifacts using gpg                        -->
   <!-- ================================================================== -->

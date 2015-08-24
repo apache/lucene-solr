@@ -125,11 +125,12 @@ public class SpanTestUtil {
    * Makes a new unordered SpanNearQuery (with additional asserts) from the provided {@code terms}
    */
   public static SpanQuery spanNearUnorderedQuery(String field, int slop, String... terms) {
-    SpanQuery[] subqueries = new SpanQuery[terms.length];
-    for (int i = 0; i < terms.length; i++) {
-      subqueries[i] = spanTermQuery(field, terms[i]);
+    SpanNearQuery.Builder builder = SpanNearQuery.newUnorderedNearQuery(field);
+    builder.setSlop(slop);
+    for (String term : terms) {
+      builder.addClause(new SpanTermQuery(new Term(field, term)));
     }
-    return spanNearUnorderedQuery(slop, subqueries);
+    return spanQuery(builder.build());
   }
   
   /**

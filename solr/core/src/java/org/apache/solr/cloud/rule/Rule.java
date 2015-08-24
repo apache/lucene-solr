@@ -22,11 +22,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 
 import static org.apache.solr.cloud.rule.ImplicitSnitch.CORES;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.CANNOT_ASSIGN_FAIL;
@@ -105,7 +104,7 @@ public class Rule {
     if (shard != SHARD_DEFAULT) map.put(shard.name, shard.operand.toStr(shard.val));
     if (replica != REPLICA_DEFAULT) map.put(replica.name, replica.operand.toStr(replica.val));
     map.put(tag.name, tag.operand.toStr(tag.val));
-    return ZkStateReader.toJSONString(map);
+    return Utils.toJSONString(map);
   }
 
   /**

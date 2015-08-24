@@ -17,10 +17,10 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
-
-import java.io.IOException;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.spans package as a
@@ -154,11 +154,6 @@ final class JustCompileSearchSpans {
     protected JustCompileSpanScorer(Spans spans, SpanWeight weight,
         Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
-    }
-
-    @Override
-    protected void setFreqCurrentDoc() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override

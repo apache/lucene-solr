@@ -88,7 +88,7 @@ public class MultiTermTest extends SolrTestCaseJ4 {
       assertTrue((factory instanceof ASCIIFoldingFilterFactory) || (factory instanceof LowerCaseFilterFactory));
     }
 
-    assertTrue(tc.getCharFilterFactories() == null);
+    assertTrue(tc.getCharFilterFactories().length == 0);
 
   }
 }

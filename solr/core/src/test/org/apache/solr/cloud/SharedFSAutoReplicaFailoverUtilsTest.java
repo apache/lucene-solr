@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -356,7 +357,7 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
     
     String json;
     try {
-      json = new String(ZkStateReader.toJSON(clusterState), "UTF-8");
+      json = new String(Utils.toJSON(clusterState), "UTF-8");
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("Unexpected");
     }

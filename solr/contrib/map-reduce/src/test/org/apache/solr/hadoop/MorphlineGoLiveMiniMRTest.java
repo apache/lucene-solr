@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
@@ -75,6 +76,7 @@ import org.apache.solr.hadoop.hack.MiniMRClientClusterFactory;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.BadMrClusterThreadsFilter;
+import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -638,15 +640,14 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     request.setPath("/admin/collections");
     cloudClient.request(request);
 
-    
-    long timeout = System.currentTimeMillis() + 10000;
+    final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS);
     while (cloudClient.getZkStateReader().getClusterState().hasCollection(replicatedCollection)) {
-      if (System.currentTimeMillis() > timeout) {
-        throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
+      if (timeout.hasTimedOut()) {
+         throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
       }
       
       Thread.sleep(200);
-      cloudClient.getZkStateReader().updateClusterState(true);
+      cloudClient.getZkStateReader().updateClusterState();
     }
     
     if (TEST_NIGHTLY) {

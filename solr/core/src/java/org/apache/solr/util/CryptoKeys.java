@@ -24,12 +24,16 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.X509EncodedKeySpec;
@@ -250,6 +254,93 @@ public final class CryptoKeys {
     } catch (GeneralSecurityException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  public static PublicKey deserializeX509PublicKey(String pubKey) {
+    try {
+      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Base64.base64ToByteArray(pubKey));
+      return keyFactory.generatePublic(publicKeySpec);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+    }
+  }
+
+  public static byte[] decryptRSA(byte[] buffer, PublicKey pubKey) throws InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    Cipher rsaCipher = null;
+    try {
+      rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+    }
+    rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
+    return rsaCipher.doFinal(buffer, 0, buffer.length);
+
+  }
+
+  public static class RSAKeyPair {
+    private final String pubKeyStr;
+    private final PublicKey publicKey;
+    private final PrivateKey privateKey;
+    private final SecureRandom random = new SecureRandom();
+
+
+    public RSAKeyPair() {
+      KeyPairGenerator keyGen = null;
+      try {
+        keyGen = KeyPairGenerator.getInstance("RSA");
+      } catch (NoSuchAlgorithmException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+      keyGen.initialize(512);
+      java.security.KeyPair keyPair = keyGen.genKeyPair();
+      privateKey = keyPair.getPrivate();
+      publicKey = keyPair.getPublic();
+
+      X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(
+          publicKey.getEncoded());
+
+      pubKeyStr = Base64.byteArrayToBase64(x509EncodedKeySpec.getEncoded());
+    }
+
+    public String getPublicKeyStr() {
+      return pubKeyStr;
+    }
+
+    public byte[] encrypt(ByteBuffer buffer) {
+      try {
+        Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
+        rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
+        return rsaCipher.doFinal(buffer.array(),buffer.position(), buffer.limit());
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+      }
+    }
+    public byte[] signSha256(byte[] bytes) throws InvalidKeyException, SignatureException {
+      Signature dsa = null;
+      try {
+        dsa = Signature.getInstance("SHA256withRSA");
+      } catch (NoSuchAlgorithmException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+      dsa.initSign(privateKey);
+      dsa.update(bytes,0,bytes.length);
+      return dsa.sign();
+
+    }
+
+  }
+
+  public static void main(String[] args) throws Exception {
+    RSAKeyPair keyPair = new RSAKeyPair();
+    System.out.println(keyPair.getPublicKeyStr());
+    PublicKey pk = deserializeX509PublicKey(keyPair.getPublicKeyStr());
+    byte[] payload = "Hello World!".getBytes(StandardCharsets.UTF_8);
+    byte[] encrypted = keyPair.encrypt(ByteBuffer.wrap(payload));
+    String cipherBase64 = Base64.byteArrayToBase64(encrypted);
+    System.out.println("encrypted: "+ cipherBase64);
+    System.out.println("signed: "+ Base64.byteArrayToBase64(keyPair.signSha256(payload)));
+    System.out.println("decrypted "+  new String(decryptRSA(encrypted , pk), StandardCharsets.UTF_8));
   }
 
 }

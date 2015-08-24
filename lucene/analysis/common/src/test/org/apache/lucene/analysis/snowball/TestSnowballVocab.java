@@ -39,18 +39,14 @@ public class TestSnowballVocab extends LuceneTestCase {
     assertCorrectOutput("Danish", "danish");
     assertCorrectOutput("Dutch", "dutch");
     assertCorrectOutput("English", "english");
-    // disabled due to snowball java code generation bug: 
-    // see http://article.gmane.org/gmane.comp.search.snowball/1139
-    // assertCorrectOutput("Finnish", "finnish");
+    assertCorrectOutput("Finnish", "finnish");
     assertCorrectOutput("French", "french");
     assertCorrectOutput("German", "german");
     assertCorrectOutput("German2", "german2");
     assertCorrectOutput("Hungarian", "hungarian");
     assertCorrectOutput("Italian", "italian");
     assertCorrectOutput("Kp", "kraaij_pohlmann");
-    // disabled due to snowball java code generation bug: 
-    // see http://article.gmane.org/gmane.comp.search.snowball/1139
-    // assertCorrectOutput("Lovins", "lovins");
+    assertCorrectOutput("Lovins", "lovins");
     assertCorrectOutput("Norwegian", "norwegian");
     assertCorrectOutput("Porter", "porter");
     assertCorrectOutput("Portuguese", "portuguese");

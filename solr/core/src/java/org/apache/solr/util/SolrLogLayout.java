@@ -13,6 +13,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -41,6 +42,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
  * limitations under the License.
  */
 
+@SuppressForbidden(reason = "class is specific to log4j")
 public class SolrLogLayout extends Layout {
   /**
    * Add this interface to a thread group and the string returned by getTag()
@@ -49,8 +51,11 @@ public class SolrLogLayout extends Layout {
   public static interface TG {
     public String getTag();
   }
-  
-  long startTime = System.currentTimeMillis();
+
+  @SuppressForbidden(reason = "Need currentTimeMillis to compare against log event timestamp. " +
+    "This is inaccurate but unavoidable due to interface limitations, in any case this is just for logging.")
+  final long startTime = System.currentTimeMillis();
+
   long lastTime = startTime;
   Map<Method,String> methodAlias = new HashMap<>();
   

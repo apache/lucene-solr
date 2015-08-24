@@ -50,7 +50,7 @@ Test for HighlighterMaxOffsetTest which requires the use of ReversedWildcardFilt
 
 
     <!-- Just like text_general except it reverses the characters of
-	 each token, to enable more efficient leading wildcard queries. -->
+   each token, to enable more efficient leading wildcard queries. -->
     <fieldType name="text_general_rev" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
         <tokenizer class="solr.StandardTokenizerFactory"/>

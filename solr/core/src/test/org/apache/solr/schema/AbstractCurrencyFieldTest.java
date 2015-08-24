@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.index.StorableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -260,25 +261,25 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     }
 
     for (int j = 0; j < 3; j++) {
-      long t1 = System.currentTimeMillis();
+      final RTimer timer = new RTimer();
       for (int i = 0; i < 1000; i++) {
         double lower = r.nextInt(10) + 1.00;
         assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",USD TO " + (lower + (9.99 - (j * 0.01))) + ",USD]"), "//*");
       }
 
-      System.out.println(System.currentTimeMillis() - t1);
+      System.out.println(timer.getTime());
     }
 
     System.out.println("---");
 
     for (int j = 0; j < 3; j++) {
-      long t1 = System.currentTimeMillis();
+      final RTimer timer = new RTimer();
       for (int i = 0; i < 1000; i++) {
         double lower = r.nextInt(10) + 1.00;
         assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",EUR TO " + (lower + (9.99 - (j * 0.01))) + ",EUR]"), "//*");
       }
 
-      System.out.println(System.currentTimeMillis() - t1);
+      System.out.println(timer.getTime());
     }
   }
 

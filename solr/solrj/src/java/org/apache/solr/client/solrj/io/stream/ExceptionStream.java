@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,9 +54,9 @@ public class ExceptionStream extends TupleStream {
     if(openException != null) {
       //There was an exception during the open.
       Map fields = new HashMap();
-      fields.put("_EXCEPTION_", openException.getMessage());
+      fields.put("EXCEPTION", openException.getMessage());
       fields.put("EOF", true);
-      log.error("Error while opening Stream", openException);
+      SolrException.log(log, openException);
       return new Tuple(fields);
     }
 
@@ -63,9 +64,9 @@ public class ExceptionStream extends TupleStream {
       return stream.read();
     } catch (Exception e) {
       Map fields = new HashMap();
-      fields.put("_EXCEPTION_", e.getMessage());
+      fields.put("EXCEPTION", e.getMessage());
       fields.put("EOF", true);
-      log.error("Error while reading Stream:" + e);
+      SolrException.log(log, e);
       return new Tuple(fields);
     }
   }

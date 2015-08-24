@@ -268,10 +268,39 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
           Iterator<Toffs> toffsIterator = subInfo.getTermsOffsets().iterator();
           while (toffsIterator.hasNext()) {
             Toffs toffs = toffsIterator.next();
-            if (toffs.getStartOffset() >= fieldStart && toffs.getEndOffset() <= fieldEnd) {
-
+            if (toffs.getStartOffset() >= fieldEnd) {
+              // We've gone past this value so its not worth iterating any more.
+              break;
+            }
+            boolean startsAfterField = toffs.getStartOffset() >= fieldStart;
+            boolean endsBeforeField = toffs.getEndOffset() < fieldEnd;
+            if (startsAfterField && endsBeforeField) {
+              // The Toff is entirely within this value.
               toffsList.add(toffs);
               toffsIterator.remove();
+            } else if (startsAfterField) {
+              /*
+               * The Toffs starts within this value but ends after this value
+               * so we clamp the returned Toffs to this value and leave the
+               * Toffs in the iterator for the next value of this field.
+               */
+              toffsList.add(new Toffs(toffs.getStartOffset(), fieldEnd - 1));
+            } else if (endsBeforeField) {
+              /*
+               * The Toffs starts before this value but ends in this value
+               * which means we're really continuing from where we left off
+               * above. Since we use the remainder of the offset we can remove
+               * it from the iterator.
+               */
+              toffsList.add(new Toffs(fieldStart, toffs.getEndOffset()));
+              toffsIterator.remove();
+            } else {
+              /*
+               * The Toffs spans the whole value so we clamp on both sides.
+               * This is basically a combination of both arms of the loop
+               * above.
+               */
+              toffsList.add(new Toffs(fieldStart, fieldEnd - 1));
             }
           }
           if (!toffsList.isEmpty()) {

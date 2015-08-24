@@ -204,6 +204,8 @@ public final class SortingMergePolicy extends MergePolicy {
       if (diagnostics != null) {
         return diagnostics.get(SORTER_ID_PROP);
       }
+    } else if (reader instanceof FilterLeafReader) {
+      return getSortDescription(FilterLeafReader.unwrap(reader));
     }
     return null;
   }
@@ -258,6 +260,11 @@ public final class SortingMergePolicy extends MergePolicy {
   public boolean useCompoundFile(SegmentInfos segments,
       SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
     return in.useCompoundFile(segments, newSegment, writer);
+  }
+
+  @Override
+  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
+    return in.size(info, writer);
   }
 
   @Override

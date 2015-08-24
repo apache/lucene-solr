@@ -34,12 +34,11 @@ import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.schema.*;
 
 import com.tdunning.math.stats.AVLTreeDigest;
-
-import net.agkn.hll.HLL;
-import net.agkn.hll.HLLType;
-
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
+
+import org.apache.solr.util.hll.HLL;
+import org.apache.solr.util.hll.HLLType;
 
 /**
  * Factory class for creating instance of 
@@ -825,7 +824,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
 
   @Override
   public long hash(String v) {
-    return hasher.hashUnencodedChars(v).asLong();
+    return hasher.hashString(v).asLong();
   }
   
   @Override

@@ -265,23 +265,18 @@ final class DocumentsWriter implements Closeable, Accountable {
   /** Returns how many documents were aborted. */
   private int abortThreadState(final ThreadState perThread) {
     assert perThread.isHeldByCurrentThread();
-    if (perThread.isActive()) { // we might be closed
-      if (perThread.isInitialized()) { 
-        try {
-          int abortedDocCount = perThread.dwpt.getNumDocsInRAM();
-          subtractFlushedNumDocs(abortedDocCount);
-          perThread.dwpt.abort();
-          return abortedDocCount;
-        } finally {
-          flushControl.doOnAbort(perThread);
-        }
-      } else {
+    if (perThread.isInitialized()) { 
+      try {
+        int abortedDocCount = perThread.dwpt.getNumDocsInRAM();
+        subtractFlushedNumDocs(abortedDocCount);
+        perThread.dwpt.abort();
+        return abortedDocCount;
+      } finally {
         flushControl.doOnAbort(perThread);
-        // This DWPT was never initialized so it has no indexed documents:
-        return 0;
       }
     } else {
-      assert closed;
+      flushControl.doOnAbort(perThread);
+      // This DWPT was never initialized so it has no indexed documents:
       return 0;
     }
   }
@@ -390,9 +385,8 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
   
   private void ensureInitialized(ThreadState state) throws IOException {
-    if (state.isActive() && state.dwpt == null) {
-      final FieldInfos.Builder infos = new FieldInfos.Builder(
-          writer.globalFieldNumberMap);
+    if (state.dwpt == null) {
+      final FieldInfos.Builder infos = new FieldInfos.Builder(writer.globalFieldNumberMap);
       state.dwpt = new DocumentsWriterPerThread(writer, writer.newSegmentName(), directoryOrig,
                                                 directory, config, infoStream, deleteQueue, infos,
                                                 writer.pendingNumDocs, writer.enableTestPoints);
@@ -407,10 +401,9 @@ final class DocumentsWriter implements Closeable, Accountable {
     final DocumentsWriterPerThread flushingDWPT;
     
     try {
-      if (!perThread.isActive()) {
-        ensureOpen();
-        assert false: "perThread is not active but we are still open";
-      }
+      // This must happen after we've pulled the ThreadState because IW.close
+      // waits for all ThreadStates to be released:
+      ensureOpen();
       ensureInitialized(perThread);
       assert perThread.isInitialized();
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
@@ -445,10 +438,9 @@ final class DocumentsWriter implements Closeable, Accountable {
 
     final DocumentsWriterPerThread flushingDWPT;
     try {
-      if (!perThread.isActive()) {
-        ensureOpen();
-        assert false: "perThread is not active but we are still open";
-      }
+      // This must happen after we've pulled the ThreadState because IW.close
+      // waits for all ThreadStates to be released:
+      ensureOpen();
       ensureInitialized(perThread);
       assert perThread.isInitialized();
       final DocumentsWriterPerThread dwpt = perThread.dwpt;

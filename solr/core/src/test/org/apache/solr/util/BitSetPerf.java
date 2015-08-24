@@ -77,7 +77,7 @@ public class BitSetPerf {
 
     int ret=0;
 
-    long start = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     if ("union".equals(test)) {
       for (int it=0; it<iter; it++) {
@@ -187,9 +187,8 @@ public class BitSetPerf {
       }
     }
 
-    long end = System.currentTimeMillis();
     System.out.println("ret="+ret);
-    System.out.println("TIME="+(end-start));
+    System.out.println("TIME="+timer.getTime());
 
   }
 

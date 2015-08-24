@@ -80,10 +80,11 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -280,15 +281,15 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     
     makeRequest(baseUrl, request);
-    
-    long timeout = System.currentTimeMillis() + 10000;
+
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS);
     while (cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2")) {
-      if (System.currentTimeMillis() > timeout) {
+      if (timeout.hasTimedOut()) {
         throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
       }
       
       Thread.sleep(200);
-      cloudClient.getZkStateReader().updateClusterState(true);
+      cloudClient.getZkStateReader().updateClusterState();
     }
 
     assertFalse("Still found collection that should be gone", cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
@@ -442,7 +443,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String nn1 = ((SolrDispatchFilter) jettys.get(0).getDispatchFilter().getFilter()).getCores().getZkController().getNodeName();
     String nn2 =  ((SolrDispatchFilter) jettys.get(1).getDispatchFilter().getFilter()).getCores().getZkController().getNodeName();
     
-    params.set(OverseerCollectionProcessor.CREATE_NODE_SET, nn1 + "," + nn2);
+    params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, nn1 + "," + nn2);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
@@ -461,7 +462,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   private void testNoCollectionSpecified() throws Exception {
     
-    cloudClient.getZkStateReader().updateClusterState(true);
+    cloudClient.getZkStateReader().updateClusterState();
     assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection"));
     assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection2"));
     
@@ -485,13 +486,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     makeRequest(getBaseUrl((HttpSolrClient) clients.get(1)), createCmd);
     
     // in both cases, the collection should have default to the core name
-    cloudClient.getZkStateReader().updateClusterState(true);
+    cloudClient.getZkStateReader().updateClusterState();
     assertTrue(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection"));
     assertTrue(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection2"));
   }
 
   private void testNoConfigSetExist() throws Exception {
-    cloudClient.getZkStateReader().updateClusterState(true);
+    cloudClient.getZkStateReader().updateClusterState();
     assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection3"));
 
     // try and create a SolrCore with no collection name
@@ -512,7 +513,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     assertTrue(gotExp);
     TimeUnit.MILLISECONDS.sleep(200);
     // in both cases, the collection should have default to the core name
-    cloudClient.getZkStateReader().updateClusterState(true);
+    cloudClient.getZkStateReader().updateClusterState();
 
     Collection<Slice> slices = cloudClient.getZkStateReader().getClusterState().getActiveSlices("corewithnocollection3");
     assertNull(slices);
@@ -934,12 +935,12 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
 
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
-    
-    
-    long timeoutAt = System.currentTimeMillis() + 45000;
+
+
+    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
 
     boolean allTimesAreCorrect = false;
-    while (System.currentTimeMillis() < timeoutAt) {
+    while (! timeout.hasTimedOut()) {
       Map<String,Long> urlToTimeAfter = new HashMap<>();
       collectStartTimes(collectionName, urlToTimeAfter);
       
@@ -1164,10 +1165,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       addReplica.setProperties(props);
     }
     client.request(addReplica);
-    long timeout = System.currentTimeMillis() + 3000;
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
     Replica newReplica = null;
 
-    for (; System.currentTimeMillis() < timeout; ) {
+    for (; ! timeout.hasTimedOut(); ) {
       Slice slice = client.getZkStateReader().getClusterState().getSlice(collectionName, shard);
       newReplica = slice.getReplica(newReplicaName);
     }
@@ -1218,9 +1219,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     client.request(request);
 
-    long timeOut = System.currentTimeMillis() + 3000;
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
     boolean changed = false;
-    while(System.currentTimeMillis() <timeOut){
+    while(! timeout.hasTimedOut()){
       Thread.sleep(10);
       changed = Objects.equals(val,client.getZkStateReader().getClusterProps().get(name));
       if(changed) break;

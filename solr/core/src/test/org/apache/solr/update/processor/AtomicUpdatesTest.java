@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -598,45 +599,45 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
     TrieDateField trieDF = new TrieDateField();
-    Date tempDate = trieDF.parseMath(null, "2014-02-01T12:00:00Z");
-    doc.setField("dateRemove", new Date[]{trieDF.parseMath(null, "2014-02-01T12:00:00Z"), 
-        trieDF.parseMath(null, "2014-07-02T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-03T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-03T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-04T12:00:00Z")
+    Date tempDate = DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z");
+    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
+        DateFormatUtil.parseMath(null, "2014-07-02T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10002");
-    doc.setField("dateRemove", new Date[]{trieDF.parseMath(null, "2014-02-01T12:00:00Z"), 
-        trieDF.parseMath(null, "2014-07-02T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-02T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-03T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
+        DateFormatUtil.parseMath(null, "2014-07-02T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-02T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10020");
-    doc.setField("dateRemove", new Date[]{trieDF.parseMath(null, "2014-02-01T12:00:00Z"), 
-        trieDF.parseMath(null, "2014-02-03T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
+        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    doc.setField("dateRemove", new Date[]{trieDF.parseMath(null, "2014-02-01T12:00:00Z"), 
-        trieDF.parseMath(null, "2014-02-02T12:00:00Z"),
-        trieDF.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
+        DateFormatUtil.parseMath(null, "2014-02-02T12:00:00Z"),
+        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     assertU(commit());
 
     assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
-    String dateString = trieDF.parseMath(null, "2014-02-02T12:00:00Z").toString();
+    String dateString = DateFormatUtil.parseMath(null, "2014-02-02T12:00:00Z").toString();
 //    assertQ(req("q", "dateRemove:"+URLEncoder.encode(dateString, "UTF-8"), "indent", "true"), "//result[@numFound = '3']");
 //    assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
 //    assertQ(req("q", "dateRemove:"+dateString, "indent", "true"), "//result[@numFound = '3']"); //Sun Feb 02 10:00:00 FNT 2014
@@ -646,8 +647,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
     List<Date> removeList = new ArrayList<Date>();
-    removeList.add(trieDF.parseMath(null, "2014-09-02T12:00:00Z"));
-    removeList.add(trieDF.parseMath(null, "2014-09-03T12:00:00Z"));
+    removeList.add(DateFormatUtil.parseMath(null, "2014-09-02T12:00:00Z"));
+    removeList.add(DateFormatUtil.parseMath(null, "2014-09-03T12:00:00Z"));
 
     doc.setField("dateRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
@@ -659,8 +660,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
     removeList = new ArrayList<Date>();
-    removeList.add(trieDF.parseMath(null, "2014-09-02T12:00:00Z"));
-    removeList.add(trieDF.parseMath(null, "2014-09-03T12:00:00Z"));
+    removeList.add(DateFormatUtil.parseMath(null, "2014-09-02T12:00:00Z"));
+    removeList.add(DateFormatUtil.parseMath(null, "2014-09-03T12:00:00Z"));
     doc.setField("dateRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -670,7 +671,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    doc.setField("dateRemove", ImmutableMap.of("remove", trieDF.parseMath(null, "2014-09-01T12:00:00Z"))); //behavior when hitting Solr directly
+    doc.setField("dateRemove", ImmutableMap.of("remove", DateFormatUtil.parseMath(null, "2014-09-01T12:00:00Z"))); //behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());

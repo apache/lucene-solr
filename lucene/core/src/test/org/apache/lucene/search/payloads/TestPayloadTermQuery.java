@@ -16,6 +16,8 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -24,7 +26,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -39,6 +40,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.store.Directory;
@@ -47,8 +49,6 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
 
 
 /**
@@ -149,7 +149,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   public void test() throws IOException {
-    PayloadTermQuery query = new PayloadTermQuery(new Term("field", "seventy"),
+    SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term("field", "seventy")),
             new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
@@ -175,7 +175,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
   
   public void testQuery() {
-    PayloadTermQuery boostingFuncTermQuery = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+    SpanQuery boostingFuncTermQuery = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
         new MaxPayloadFunction());
     QueryUtils.check(boostingFuncTermQuery);
     
@@ -183,14 +183,14 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
     assertTrue(boostingFuncTermQuery.equals(spanTermQuery) == spanTermQuery.equals(boostingFuncTermQuery));
     
-    PayloadTermQuery boostingFuncTermQuery2 = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+    SpanQuery boostingFuncTermQuery2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
         new AveragePayloadFunction());
     
     QueryUtils.checkUnequal(boostingFuncTermQuery, boostingFuncTermQuery2);
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {
-    PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+    SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
             new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
@@ -228,52 +228,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     assertTrue(count + " does not equal: " + 200, count == 200);
   }
 
-  //Set includeSpanScore to false, in which case just the payload score comes through.
-  public void testIgnoreSpanScorer() throws Exception {
-    PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
-            new MaxPayloadFunction(), false);
-
-    IndexReader reader = DirectoryReader.open(directory);
-    IndexSearcher theSearcher = newSearcher(reader);
-    theSearcher.setSimilarity(new FullSimilarity());
-    TopDocs hits = searcher.search(query, 100);
-    assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
-
-    //they should all have the exact same score, because they all contain seventy once, and we set
-    //all the other similarity factors to be 1
-
-    //System.out.println("Hash: " + seventyHash + " Twice Hash: " + 2*seventyHash);
-    assertTrue(hits.getMaxScore() + " does not equal: " + 4.0, hits.getMaxScore() == 4.0);
-    //there should be exactly 10 items that score a 4, all the rest should score a 2
-    //The 10 items are: 70 + i*100 where i in [0-9]
-    int numTens = 0;
-    for (int i = 0; i < hits.scoreDocs.length; i++) {
-      ScoreDoc doc = hits.scoreDocs[i];
-      if (doc.doc % 10 == 0) {
-        numTens++;
-        assertTrue(doc.score + " does not equal: " + 4.0, doc.score == 4.0);
-      } else {
-        assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
-      }
-    }
-    assertTrue(numTens + " does not equal: " + 10, numTens == 10);
-    CheckHits.checkExplanations(query, "field", searcher, true);
-    Spans spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), query);
-    assertTrue("spans is null and it shouldn't be", spans != null);
-    //should be two matches per document
-    int count = 0;
-    //100 hits times 2 matches per hit, we should have 200 in count
-    while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
-      while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
-        count++;
-      }
-    }
-    reader.close();
-  }
-
   public void testNoMatch() throws Exception {
-    PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.FIELD, "junk"),
+    SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.FIELD, "junk")),
             new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
@@ -282,9 +238,9 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   public void testNoPayload() throws Exception {
-    PayloadTermQuery q1 = new PayloadTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero"),
+    SpanQuery q1 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero")),
             new MaxPayloadFunction());
-    PayloadTermQuery q2 = new PayloadTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo"),
+    SpanQuery q2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo")),
             new MaxPayloadFunction());
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
@@ -332,7 +288,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
 
     @Override
-    public float idf(long docFreq, long numDocs) {
+    public float idf(long docFreq, long docCount) {
       return 1;
     }
 

@@ -46,9 +46,12 @@ public class DumpRequestHandler extends RequestHandlerBase
       for (String returnParam : returnParams) {
         String[] vals = req.getParams().getParams(returnParam);
         if(vals != null){
-          for (String val : vals) {
-            params.add(returnParam,val);
+          if (vals.length == 1) {
+            params.add(returnParam, vals[0]);
+          } else {
+            params.add(returnParam, vals);
           }
+
         }
 
       }

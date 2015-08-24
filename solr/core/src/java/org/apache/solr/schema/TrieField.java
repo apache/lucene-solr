@@ -42,6 +42,7 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
@@ -54,6 +55,7 @@ import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.util.DateFormatUtil;
 
 /**
  * Provides field types to support for Lucene's {@link
@@ -81,13 +83,6 @@ public class TrieField extends PrimitiveFieldType {
   protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
   protected int precisionStep;     // normalized
   protected TrieTypes type;
-  protected Object missingValue;
-
-  
-  /**
-   * Used for handling date types
-   */
-  static final TrieDateField dateField = new TrieDateField();
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -250,7 +245,50 @@ public class TrieField extends PrimitiveFieldType {
     }
   }
 
+  @Override
+  public final ValueSource getSingleValueSource(MultiValueSelector choice, SchemaField field, QParser parser) {
+    // trivial base case
+    if (!field.multiValued()) {
+      // single value matches any selector
+      return getValueSource(field, parser);
+    }
 
+    // See LUCENE-6709
+    if (! field.hasDocValues()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                              "docValues='true' is required to select '" + choice.toString() +
+                              "' value from multivalued field ("+ field.getName() +") at query time");
+    }
+    
+    // multivalued Trie fields all use SortedSetDocValues, so we give a clean error if that's
+    // not supported by the specified choice, else we delegate to a helper
+    SortedSetSelector.Type selectorType = choice.getSortedSetSelectorType();
+    if (null == selectorType) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                              choice.toString() + " is not a supported option for picking a single value"
+                              + " from the multivalued field: " + field.getName() +
+                              " (type: " + this.getTypeName() + ")");
+    }
+    
+    return getSingleValueSource(selectorType, field);
+  }
+
+  /**
+   * Helper method that will only be called for multivalued Trie fields that have doc values.
+   * Default impl throws an error indicating that selecting a single value from this multivalued 
+   * field is not supported for this field type
+   *
+   * @param choice the selector Type to use, will never be null
+   * @param field the field to use, garunteed to be multivalued.
+   * @see #getSingleValueSource(MultiValueSelector,SchemaField,QParser) 
+   */
+  protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                            "Can not select a single value for multivalued field: " + field.getName()
+                            + " (single valued field selection not supported for type: " + this.getTypeName()
+                            + ")");
+  }
+  
   @Override
   public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeVal(name, toObject(f));
@@ -304,7 +342,7 @@ public class TrieField extends PrimitiveFieldType {
       return super.getRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     }
     int ps = precisionStep;
-    Query query = null;
+    Query query;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();
     switch (type) {
       case INTEGER:
@@ -362,13 +400,13 @@ public class TrieField extends PrimitiveFieldType {
       case DATE:
         if (matchOnly) {
           query = DocValuesRangeQuery.newLongRange(field.getName(),
-                min == null ? null : dateField.parseMath(null, min).getTime(),
-                max == null ? null : dateField.parseMath(null, max).getTime(),
+                min == null ? null : DateFormatUtil.parseMath(null, min).getTime(),
+                max == null ? null : DateFormatUtil.parseMath(null, max).getTime(),
                 minInclusive, maxInclusive);
         } else {
           query = NumericRangeQuery.newLongRange(field.getName(), ps,
-                min == null ? null : dateField.parseMath(null, min).getTime(),
-                max == null ? null : dateField.parseMath(null, max).getTime(),
+                min == null ? null : DateFormatUtil.parseMath(null, min).getTime(),
+                max == null ? null : DateFormatUtil.parseMath(null, max).getTime(),
                 minInclusive, maxInclusive);
         }
         break;
@@ -432,7 +470,7 @@ public class TrieField extends PrimitiveFieldType {
           NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
           break;
         case DATE:
-          NumericUtils.longToPrefixCodedBytes(dateField.parseMath(null, s).getTime(), 0, result);
+          NumericUtils.longToPrefixCodedBytes(DateFormatUtil.parseMath(null, s).getTime(), 0, result);
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
@@ -456,7 +494,7 @@ public class TrieField extends PrimitiveFieldType {
   @Override
   public String toExternal(StorableField f) {
     return (type == TrieTypes.DATE)
-      ? dateField.toExternal((Date) toObject(f))
+      ? DateFormatUtil.formatExternal((Date) toObject(f))
       : toObject(f).toString();
   }
 
@@ -473,7 +511,7 @@ public class TrieField extends PrimitiveFieldType {
       case DOUBLE:
         return Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) );
       case DATE:
-        return dateField.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
+        return DateFormatUtil.formatExternal(new Date(NumericUtils.prefixCodedToLong(indexedForm)));
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
@@ -496,7 +534,7 @@ public class TrieField extends PrimitiveFieldType {
         value = Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) );
         break;
       case DATE:
-        value = dateField.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
+        value = DateFormatUtil.formatExternal(new Date(NumericUtils.prefixCodedToLong(indexedForm)));
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
@@ -654,7 +692,7 @@ public class TrieField extends PrimitiveFieldType {
       case DATE:
         Date date = (value instanceof Date)
           ? ((Date)value)
-          : dateField.parseMath(null, value.toString());
+          : DateFormatUtil.parseMath(null, value.toString());
         f = new org.apache.lucene.document.LongField(field.getName(), date.getTime(), ft);
         break;
       default:
@@ -759,12 +797,12 @@ class TrieDateFieldSource extends LongFieldSource {
 
   @Override
   public String longToString(long val) {
-    return TrieField.dateField.toExternal(longToObject(val));
+    return DateFormatUtil.formatExternal(longToObject(val));
   }
 
   @Override
   public long externalToLong(String extVal) {
-    return TrieField.dateField.parseMath(null, extVal).getTime();
+    return DateFormatUtil.parseMath(null, extVal).getTime();
   }
 
 }

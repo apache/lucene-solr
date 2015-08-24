@@ -19,10 +19,10 @@ package org.apache.lucene.search.payloads;
 import org.apache.lucene.search.Explanation;
 
 /**
- * An abstract class that defines a way for Payload*Query instances to transform
+ * An abstract class that defines a way for PayloadScoreQuery instances to transform
  * the cumulative effects of payload scores for a document.
  * 
- * @see org.apache.lucene.search.payloads.PayloadTermQuery for more information
+ * @see org.apache.lucene.search.payloads.PayloadScoreQuery for more information
  * 
  * @lucene.experimental This class and its derivations are experimental and subject to
  *               change

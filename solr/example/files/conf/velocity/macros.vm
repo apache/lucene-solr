@@ -11,3 +11,6 @@
 #macro(current_type)#if($response.responseHeader.params.type)${response.responseHeader.params.type}#{else}all#end#end
 #macro(url_for_locale $locale)#url_for_home#lensNoLocale#if($locale!="")&locale=$locale#end&start=$page.start#end
 #macro(current_locale)$!{response.responseHeader.params.locale}#end
+
+## Usage: #label(resource_key[, default_value]) - resource_key is used as label if no default value specified and no resource exists
+#macro(label $key $default)#if($resource.get($key).exists)${resource.get($key)}#else#if($default)$default#else${key}#end#end#end

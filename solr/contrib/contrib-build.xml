@@ -30,7 +30,7 @@
   <dirname file="${ant.file}" property="antfile.dir"/>
 
   <available property="contrib.has.webapp" type="dir" file="${antfile.dir}/src/webapp" />
-  <target name="add-to-war" if="contrib.has.webapp">
+  <target name="add-to-webapp" if="contrib.has.webapp">
     <copy todir="${dest}/web" failonerror="false">
       <fileset dir="${antfile.dir}/src/webapp"/>
     </copy>

@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -248,7 +249,7 @@ public class ClusterState implements JSONWriter.Writable {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
     }
-    Map<String, Object> stateMap = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
@@ -264,7 +265,7 @@ public class ClusterState implements JSONWriter.Writable {
     if (bytes == null || bytes.length == 0) {
       return new Aliases();
     }
-    Map<String,Map<String,String>> aliasMap = (Map<String,Map<String,String>>) ZkStateReader.fromJSON(bytes);
+    Map<String,Map<String,String>> aliasMap = (Map<String,Map<String,String>>) Utils.fromJSON(bytes);
 
     return new Aliases(aliasMap);
   }
@@ -334,7 +335,9 @@ public class ClusterState implements JSONWriter.Writable {
    * The version of clusterstate.json in ZooKeeper.
    * 
    * @return null if ClusterState was created for publication, not consumption
+   * @deprecated true cluster state spans many ZK nodes, stop depending on the version number of the shared node!
    */
+  @Deprecated
   public Integer getZkClusterStateVersion() {
     return znodeVersion;
   }

@@ -68,6 +68,7 @@ public class TestRandomSamplingFacetsCollector extends FacetTestCase {
       doc.add(new FacetField("iMod10", Integer.toString(i % numCategories)));
       writer.addDocument(config.build(taxoWriter, doc));
     }
+    writer.forceMerge(CHI_SQUARE_VALUES.length - 1);
     
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());

@@ -102,7 +102,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     SQLHandler.SQLVisitor sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("(c:d)"));
+    assert(sqlVistor.query.equals("(c:\"d\")"));
 
     //Add parens
     parser = new SqlParser();
@@ -111,11 +111,11 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("(c:d)"));
+    assert(sqlVistor.query.equals("(c:\"d\")"));
 
     //Phrase
     parser = new SqlParser();
-    sql = "select a from b where (c = '\"d d\"')";
+    sql = "select a from b where (c = 'd d')";
     statement = parser.createStatement(sql);
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
@@ -129,7 +129,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("((c:d) AND (l:z))"));
+    assert(sqlVistor.query.equals("((c:\"d\") AND (l:\"z\"))"));
 
     // OR
 
@@ -139,7 +139,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("((c:d) OR (l:z))"));
+    assert(sqlVistor.query.equals("((c:\"d\") OR (l:\"z\"))"));
 
     // AND NOT
 
@@ -149,7 +149,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("((c:d) AND -(l:z))"));
+    assert(sqlVistor.query.equals("((c:\"d\") AND -(l:\"z\"))"));
 
     // NESTED
     parser = new SqlParser();
@@ -158,7 +158,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("((c:d) OR ((l:z) AND (m:j)))"));
+    assert(sqlVistor.query.equals("((c:\"d\") OR ((l:\"z\") AND (m:\"j\")))"));
 
     // NESTED NOT
     parser = new SqlParser();
@@ -167,33 +167,33 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("((c:d) OR ((l:z) AND -(m:j)))"));
+    assert(sqlVistor.query.equals("((c:\"d\") OR ((l:\"z\") AND -(m:\"j\")))"));
 
     // RANGE - Will have to do until SQL BETWEEN is supported.
     // NESTED
     parser = new SqlParser();
-    sql = "select a from b where ((c = '[0 TO 100]') OR ((l = 'z') AND (m = 'j')))";
+    sql = "select a from b where ((c = '[0 TO 100]') OR ((l = '(z)') AND (m = 'j')))";
     statement = parser.createStatement(sql);
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
 
-    assert(sqlVistor.query.equals("((c:[0 TO 100]) OR ((l:z) AND (m:j)))"));
+    assert(sqlVistor.query.equals("((c:[0 TO 100]) OR ((l:(z)) AND (m:\"j\")))"));
 
     // Wildcard
     parser = new SqlParser();
-    sql = "select a from b where ((c = '[0 TO 100]') OR ((l = 'z*') AND (m = 'j')))";
+    sql = "select a from b where ((c = '[0 TO 100]') OR ((l = '(z*)') AND (m = 'j')))";
     statement = parser.createStatement(sql);
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
-    assert(sqlVistor.query.equals("((c:[0 TO 100]) OR ((l:z*) AND (m:j)))"));
+    assert(sqlVistor.query.equals("((c:[0 TO 100]) OR ((l:(z*)) AND (m:\"j\")))"));
 
     // Complex Lucene/Solr Query
     parser = new SqlParser();
-    sql = "select a from b where ((c = '[0 TO 100]') OR ((l = 'z*') AND (m = '(j OR (k NOT s))')))";
+    sql = "select a from b where ((c = '[0 TO 100]') OR ((l = '(z*)') AND (m = '(j OR (k NOT s))')))";
     statement = parser.createStatement(sql);
     sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
     sqlVistor.process(statement, new Integer(0));
-    assert(sqlVistor.query.equals("((c:[0 TO 100]) OR ((l:z*) AND (m:(j OR (k NOT s)))))"));
+    assert(sqlVistor.query.equals("((c:[0 TO 100]) OR ((l:(z*)) AND (m:(j OR (k NOT s)))))"));
   }
 
   private void testBasicSelect() throws Exception {
@@ -216,7 +216,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       commit();
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select id, field_i, str_s from mytable where text='XXXX' order by field_i desc");
+      params.put("sql", "select id, field_i, str_s from collection1 where text='XXXX' order by field_i desc");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -267,7 +267,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select id, field_i, str_s from mytable where text='XXXX' order by field_i desc limit 1");
+      params.put("sql", "select id, field_i, str_s from collection1 where text='XXXX' order by field_i desc limit 1");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -281,7 +281,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select id, field_i, str_s from mytable where text='XXXX' AND id='(1 2 3)' order by field_i desc");
+      params.put("sql", "select id, field_i, str_s from collection1 where text='XXXX' AND id='(1 2 3)' order by field_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -326,9 +326,10 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       indexr("id", "7", "text", "XXXX XXXX", "str_s", "c", "field_i", "50");
       indexr("id", "8", "text", "XXXX XXXX", "str_s", "c", "field_i", "60");
       commit();
+
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select id, field_i, str_s from mytable where text='XXXX' order by field_iff desc");
+      params.put("sql", "select id, field_i, str_s from collection1 where text='XXXX' order by field_iff desc");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       Tuple tuple = getTuple(new ExceptionStream(solrStream));
@@ -339,18 +340,18 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select id, field_iff, str_s from mytable where text='XXXX' order by field_iff desc");
+      params.put("sql", "select id, field_iff, str_s from collection1 where text='XXXX' order by field_iff desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuple = getTuple(new ExceptionStream(solrStream));
       assert(tuple.EOF);
       assert(tuple.EXCEPTION);
       //An exception not detected by the parser thrown from the /select handler
-      assert(tuple.getException().contains("An exception has occurred on the server, refer to server log for details"));
+      assert(tuple.getException().contains("sort param field can't be found:"));
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select str_s, count(*), sum(field_iff), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
+      params.put("sql", "select str_s, count(*), sum(field_iff), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuple = getTuple(new ExceptionStream(solrStream));
@@ -358,6 +359,27 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.EXCEPTION);
       //An exception not detected by the parser thrown from the /export handler
       assert(tuple.getException().contains("undefined field:"));
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("sql", "select str_s, count(*), blah(field_iff), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuple = getTuple(new ExceptionStream(solrStream));
+      assert(tuple.EOF);
+      assert(tuple.EXCEPTION);
+      //An exception not detected by the parser thrown from the /export handler
+      assert(tuple.getException().contains("Invalid function: blah"));
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("sql", "select str_s from collection1 where text='XXXX' group by str_s");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuple = getTuple(new ExceptionStream(solrStream));
+      assert(tuple.EOF);
+      assert(tuple.EXCEPTION);
+      assert(tuple.getException().contains("Group by queries must include atleast one aggregate function."));
 
     } finally {
       delete();
@@ -384,7 +406,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       commit();
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -412,7 +434,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where (text='XXXX' AND NOT text='\"XXXX XXX\"') group by str_s order by str_s desc");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -449,7 +471,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having sum(field_i) = 19");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -466,7 +488,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -484,7 +506,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 100))");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 100))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -518,7 +540,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -547,7 +569,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s order by str_s desc");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -584,7 +606,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having sum(field_i) = 19");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -611,7 +633,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -630,7 +652,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from mytable where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 100))");
+      params.put("sql", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 100))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -663,7 +685,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       commit();
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select year_i, sum(item_i) from mytable group by year_i order by year_i desc");
+      params.put("sql", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -681,7 +703,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("year_i") == 2014);
       assert(tuple.getDouble("sum(item_i)") == 7);
 
-      params.put("sql", "select year_i, month_i, sum(item_i) from mytable group by year_i, month_i order by year_i desc, month_i desc");
+      params.put("sql", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i order by year_i desc, month_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -708,7 +730,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", "select year_i, month_i, day_i, sum(item_i) from mytable group by year_i, month_i, day_i order by year_i desc, month_i desc, day_i desc");
+      params.put("sql", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i order by year_i desc, month_i desc, day_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -781,7 +803,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", 2);
-      params.put("sql", "select year_i, sum(item_i) from mytable group by year_i order by year_i desc");
+      params.put("sql", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -802,7 +824,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", 2);
-      params.put("sql", "select year_i, month_i, sum(item_i) from mytable group by year_i, month_i order by year_i desc, month_i desc");
+      params.put("sql", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i order by year_i desc, month_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -831,7 +853,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", 2);
-      params.put("sql", "select year_i, month_i, day_i, sum(item_i) from mytable group by year_i, month_i, day_i order by year_i desc, month_i desc, day_i desc");
+      params.put("sql", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i order by year_i desc, month_i desc, day_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);

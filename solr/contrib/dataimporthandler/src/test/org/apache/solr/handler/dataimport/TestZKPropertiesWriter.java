@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -86,6 +87,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     cc = null;
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to construct date stamps")
   @Test
   public void testZKPropertiesWriter() throws Exception {
     // test using ZooKeeper

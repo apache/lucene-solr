@@ -80,7 +80,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     @Override
-    public float idf(long docFreq, long numDocs) {
+    public float idf(long docFreq, long docCount) {
       return 1.0f;
     }
   }

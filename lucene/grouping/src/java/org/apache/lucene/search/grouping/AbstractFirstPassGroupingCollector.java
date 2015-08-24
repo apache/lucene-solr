@@ -61,6 +61,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    *  @param topNGroups How many top groups to keep.
    *  @throws IOException If I/O related errors occur
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public AbstractFirstPassGroupingCollector(Sort groupSort, int topNGroups) throws IOException {
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");

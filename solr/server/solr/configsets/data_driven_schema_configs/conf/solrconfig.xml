@@ -857,29 +857,38 @@
      Do not change these defaults.
    -->
 
-    <requestHandler name="/export" class="solr.SearchHandler">
-        <lst name="invariants">
-            <str name="rq">{!xport}</str>
-            <str name="wt">xsort</str>
-            <str name="distrib">false</str>
-        </lst>
+  <requestHandler name="/export" class="solr.SearchHandler">
+    <lst name="invariants">
+      <str name="rq">{!xport}</str>
+      <str name="wt">xsort</str>
+      <str name="distrib">false</str>
+    </lst>
 
-        <arr name="components">
-            <str>query</str>
-        </arr>
-    </requestHandler>
+    <arr name="components">
+      <str>query</str>
+    </arr>
+  </requestHandler>
 
 
     <!--
     Distributed Stream processing.
     -->
 
-    <requestHandler name="/stream" class="solr.StreamHandler">
-        <lst name="invariants">
-            <str name="wt">json</str>
-            <str name="distrib">false</str>
-        </lst>
-    </requestHandler>
+  <requestHandler name="/stream" class="solr.StreamHandler">
+    <lst name="invariants">
+      <str name="wt">json</str>
+      <str name="distrib">false</str>
+    </lst>
+  </requestHandler>
+
+
+  <requestHandler name="/sql" class="solr.SQLHandler">
+    <lst name="invariants">
+      <str name="wt">json</str>
+      <str name="distrib">false</str>
+    </lst>
+  </requestHandler>
+
 
 
   <!-- A Robust Example
@@ -940,19 +949,6 @@
       <str>query</str>
     </arr>
   </requestHandler>
-
-
-  <!--
-  Distributed Stream processing.
-  -->
-
-  <requestHandler name="/stream" class="solr.StreamHandler">
-    <lst name="invariants">
-      <str name="wt">json</str>
-      <str name="distrib">false</str>
-    </lst>
-  </requestHandler>
-
 
 
   <!-- Field Analysis Request Handler
@@ -1098,7 +1094,7 @@
       <!-- maximum threshold of documents a query term can appear to be considered for correction -->
       <float name="maxQueryFrequency">0.01</float>
       <!-- uncomment this to require suggestions to occur in 1% of the documents
-      	<float name="thresholdTokenFrequency">.01</float>
+        <float name="thresholdTokenFrequency">.01</float>
       -->
     </lst>
 

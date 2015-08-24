@@ -22,10 +22,11 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 
 public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
@@ -114,9 +116,9 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
   // 2> All the replicas we _think_ are leaders are in the 0th position in the leader election queue.
   // 3> The node that ZooKeeper thinks is the leader is the one we think should be the leader.
   void checkConsistency() throws InterruptedException, KeeperException {
-    long start = System.currentTimeMillis();
+    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
 
-    while ((System.currentTimeMillis() - start) < timeoutMs) {
+    while (! timeout.hasTimedOut()) {
       if (checkAppearOnce() &&
           checkElectionZero() &&
           checkZkLeadersAgree()) {
@@ -221,7 +223,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
       if (data == null) {
         return false;
       } else {
-        Map m = (Map) ZkStateReader.fromJSON(data);
+        Map m = (Map) Utils.fromJSON(data);
         zkCore = (String) m.get("core");
         repCore = ent.getValue().getStr("core");
         if (zkCore.equals(repCore) == false) {
@@ -234,7 +236,6 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
 
   byte[] getZkData(CloudSolrClient client, String path) {
     org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-    long start = System.currentTimeMillis();
     try {
       byte[] data = client.getZkStateReader().getZkClient().getData(path, null, stat, true);
       if (data != null) {
@@ -299,10 +300,10 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
 
   boolean waitForAllPreferreds() throws KeeperException, InterruptedException {
     boolean goAgain = true;
-    long start = System.currentTimeMillis();
-    while (System.currentTimeMillis() - start < timeoutMs) {
+    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
+    while (! timeout.hasTimedOut()) {
       goAgain = false;
-      cloudClient.getZkStateReader().updateClusterState(true);
+      cloudClient.getZkStateReader().updateClusterState();
       Map<String, Slice> slices = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
 
       for (Map.Entry<String, Replica> ent : expected.entrySet()) {

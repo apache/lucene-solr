@@ -28,7 +28,8 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
     super(qstr, localParams, params, req);
   }
 
-  protected Query createQuery(Query parentListQuery, Query query) {
+  @Override
+  protected Query createQuery(Query parentListQuery, Query query, String scoreMode) {
     return new ToChildBlockJoinQuery(query, getFilter(parentListQuery).filter);
   }
 
@@ -37,5 +38,3 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
     return "of";
   }
 }
-
-

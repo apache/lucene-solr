@@ -20,7 +20,6 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,22 +27,26 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.response.SolrQueryResponse;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.Utils.toJSON;
 
 public class CommandOperation {
   public final String name;
   private Object commandData;//this is most often a map
   private List<String> errors = new ArrayList<>();
 
-  CommandOperation(String operationName, Object metaData) {
+  public CommandOperation(String operationName, Object metaData) {
     commandData = metaData;
     this.name = operationName;
   }
@@ -55,6 +58,9 @@ public class CommandOperation {
     }
     Object o = getMapVal(key);
     return o == null ? def : String.valueOf(o);
+  }
+  public void setCommandData(Object o){
+    commandData = o;
   }
 
   public Map<String,Object> getDataMap() {
@@ -97,6 +103,10 @@ public class CommandOperation {
     }
     return val;
 
+  }
+
+  public void unknownOperation() {
+    addError(formatString("Unknown operation ''{0}'' ", name));
   }
 
   static final String REQD = "''{0}'' is a required field";
@@ -148,7 +158,7 @@ public class CommandOperation {
   }
 
   private Map errorDetails() {
-    return makeMap(name, commandData, ERR_MSGS, errors);
+    return Utils.makeMap(name, commandData, ERR_MSGS, errors);
   }
 
   public boolean hasError() {
@@ -216,7 +226,12 @@ public class CommandOperation {
       if (val instanceof List) {
         List list = (List) val;
         for (Object o : list) {
-          operations.add(new CommandOperation(String.valueOf(key), o));
+          if (!(o instanceof Map)) {
+            operations.add(new CommandOperation(String.valueOf(key), list));
+            break;
+          } else {
+            operations.add(new CommandOperation(String.valueOf(key), o));
+          }
         }
       } else {
         operations.add(new CommandOperation(String.valueOf(key), val));
@@ -244,10 +259,35 @@ public class CommandOperation {
   @Override
   public String toString() {
     try {
-      return new String(ZkStateReader.toJSON(singletonMap(name, commandData)), IOUtils.UTF_8);
+      return new String(toJSON(singletonMap(name, commandData)), IOUtils.UTF_8);
     } catch (UnsupportedEncodingException e) {
       //should not happen
       return "";
     }
   }
+
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, SolrQueryResponse resp)
+      throws IOException {
+    if (streams == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
+    }
+    ArrayList<CommandOperation> ops = new ArrayList<>();
+
+    for (ContentStream stream : streams)
+      ops.addAll(parse(stream.getReader()));
+    List<Map> errList = CommandOperation.captureErrors(ops);
+    if (!errList.isEmpty()) {
+      resp.add(CommandOperation.ERR_MSGS, errList);
+      return null;
+    }
+    return ops;
+  }
+
+  public static List<CommandOperation> clone(List<CommandOperation> ops) {
+    List<CommandOperation> opsCopy = new ArrayList<>(ops.size());
+    for (CommandOperation op : ops) opsCopy.add(op.getCopy());
+    return opsCopy;
+  }
+
+
 }

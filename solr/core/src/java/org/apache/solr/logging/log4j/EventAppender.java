@@ -18,9 +18,10 @@ package org.apache.solr.logging.log4j;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.LogWatcher;
 
-
+@SuppressForbidden(reason = "class is specific to log4j")
 public final class EventAppender extends AppenderSkeleton {
 
   final LogWatcher<LoggingEvent> watcher;

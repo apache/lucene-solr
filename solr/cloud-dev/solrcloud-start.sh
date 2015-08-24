@@ -43,9 +43,6 @@ rm -f server/server.log
 ant -f ../build.xml clean
 ant server dist
 
-rm -r server/solr-webapp/*
-unzip server/webapps/solr.war -d server/solr-webapp/webapp
-
 for (( i=1; i <= $numServers; i++ ))
 do
  echo "create server$i"

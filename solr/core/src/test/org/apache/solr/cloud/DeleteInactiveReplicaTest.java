@@ -18,12 +18,12 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.*;
-import static org.apache.solr.common.cloud.ZkNodeProps.*;
 
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -37,6 +37,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
 public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
@@ -66,9 +68,9 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
       StringBuilder sb = new StringBuilder();
       Replica replica1 = null;
       Slice shard1 = null;
-      long timeout = System.currentTimeMillis() + 3000;
+      TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
       DocCollection testcoll = null;
-      while (!stopped && System.currentTimeMillis() < timeout) {
+      while (!stopped && ! timeout.hasTimedOut()) {
         testcoll = client.getZkStateReader().getClusterState().getCollection(collectionName);
         for (JettySolrRunner jetty : jettys)
           sb.append(jetty.getBaseUrl()).append(",");
@@ -102,9 +104,9 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
             + " jettys: " + sb);
       }
 
-      long endAt = System.currentTimeMillis() + 3000;
+      timeout = new TimeOut(20, TimeUnit.SECONDS);
       boolean success = false;
-      while (System.currentTimeMillis() < endAt) {
+      while (! timeout.hasTimedOut()) {
         testcoll = client.getZkStateReader()
             .getClusterState().getCollection(collectionName);
         if (testcoll.getSlice(shard1.getName()).getReplica(replica1.getName()).getState() != Replica.State.ACTIVE) {
@@ -120,7 +122,7 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
       ChaosMonkey.start(stoppedJetty);
       log.info("restarted jetty");
 
-      Map m = makeMap("qt", "/admin/cores", "action", "status");
+      Map m = Utils.makeMap("qt", "/admin/cores", "action", "status");
 
       try (SolrClient queryClient = new HttpSolrClient(replica1.getStr(ZkStateReader.BASE_URL_PROP))) {
         NamedList<Object> resp = queryClient.request(new QueryRequest(new MapSolrParams(m)));
@@ -132,7 +134,7 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
 
       try {
 
-        m = makeMap(
+        m = Utils.makeMap(
             "action", CoreAdminParams.CoreAdminAction.CREATE.toString(),
             ZkStateReader.COLLECTION_PROP, collectionName,
             ZkStateReader.SHARD_ID_PROP, "shard2",

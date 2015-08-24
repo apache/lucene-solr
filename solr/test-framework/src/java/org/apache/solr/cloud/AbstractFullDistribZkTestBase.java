@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.params.CoreConnectionPNames;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -69,10 +68,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -81,10 +83,10 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -205,7 +207,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT)) {
         zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
-            ZkStateReader.toJSON(Collections.singletonMap("urlScheme", "https")),
+            Utils.toJSON(Collections.singletonMap("urlScheme", "https")),
             CreateMode.PERSISTENT, true);
       }
     }
@@ -356,7 +358,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
       Overseer.getInQueue(zkClient).offer(
-          ZkStateReader.toJSON(ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION,
+          Utils.toJSON(Utils.makeMap(Overseer.QUEUE_OPERATION,
               CollectionParams.CollectionAction.CREATE.toLower(), "name",
               DEFAULT_COLLECTION, "numShards", String.valueOf(sliceCount),
               DocCollection.STATE_FORMAT, getStateFormat())));
@@ -604,7 +606,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrClient> clients, boolean allowOverSharding) throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    zkStateReader.updateClusterState(true);
+    zkStateReader.updateClusterState();
     cloudJettys.clear();
     shardToJetty.clear();
 
@@ -1540,7 +1542,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     Integer replicationFactor = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
     if(replicationFactor==null){
-      replicationFactor = (Integer) OverseerCollectionProcessor.COLL_PROPS.get(ZkStateReader.REPLICATION_FACTOR);
+      replicationFactor = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(ZkStateReader.REPLICATION_FACTOR);
     }
 
     if (confSetName != null) {
@@ -1579,7 +1581,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
 
     return createCollection(collectionInfos, collectionName,
-        ZkNodeProps.makeMap(
+        Utils.makeMap(
         NUM_SLICES, numShards,
         ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
@@ -1591,7 +1593,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                                      String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr, String configName) throws SolrServerException, IOException {
 
     return createCollection(collectionInfos, collectionName,
-        ZkNodeProps.makeMap(
+        Utils.makeMap(
         NUM_SLICES, numShards,
         ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
@@ -1680,10 +1682,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       List<Integer> numShardsNumReplicaList,
       List<String> nodesAllowedToRunShards) throws Exception {
     // check for an expectedSlices new collection - we poll the state
-    long timeoutAt = System.currentTimeMillis() + 120000;
+    final TimeOut timeout = new TimeOut(120, TimeUnit.SECONDS);
     boolean success = false;
     String checkResult = "Didnt get to perform a single check";
-    while (System.currentTimeMillis() < timeoutAt) {
+    while (! timeout.hasTimedOut()) {
       checkResult = checkCollectionExpectations(collectionName,
           numShardsNumReplicaList, nodesAllowedToRunShards);
       if (checkResult == null) {
@@ -1743,9 +1745,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
  public static void waitForNon403or404or503(HttpSolrClient collectionClient)
       throws Exception {
     SolrException exp = null;
-    long timeoutAt = System.currentTimeMillis() + 30000;
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
 
-    while (System.currentTimeMillis() < timeoutAt) {
+    while (! timeout.hasTimedOut()) {
       boolean missing = false;
 
       try {
@@ -1787,12 +1789,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected List<Replica> ensureAllReplicasAreActive(String testCollectionName, String shardId, int shards, int rf, int maxWaitSecs) throws Exception {
-    long startMs = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
 
     Map<String,Replica> notLeaders = new HashMap<>();
 
     ZkStateReader zkr = cloudClient.getZkStateReader();
-    zkr.updateClusterState(true); // force the state to be fresh
+    zkr.updateClusterState(); // force the state to be fresh
 
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
@@ -1804,7 +1806,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     while (waitMs < maxWaitMs && !allReplicasUp) {
       // refresh state every 2 secs
       if (waitMs % 2000 == 0)
-        cloudClient.getZkStateReader().updateClusterState(true);
+        cloudClient.getZkStateReader().updateClusterState();
 
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
@@ -1845,8 +1847,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (notLeaders.isEmpty())
       fail("Didn't isolate any replicas that are not the leader! ClusterState: " + printClusterStateInfo());
 
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info("Took " + diffMs + " ms to see all replicas become active.");
+    log.info("Took {} ms to see all replicas become active.", timer.getTime());
 
     List<Replica> replicas = new ArrayList<>();
     replicas.addAll(notLeaders.values());
@@ -1858,7 +1859,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected String printClusterStateInfo(String collection) throws Exception {
-    cloudClient.getZkStateReader().updateClusterState(true);
+    cloudClient.getZkStateReader().updateClusterState();
     String cs = null;
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     if (collection != null) {
@@ -1875,12 +1876,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
 
-  protected String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
+  static String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
       throws IOException, SolrServerException {
     String state = null;
-    long maxWait = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
+    final TimeOut timeout = new TimeOut(waitForSeconds, TimeUnit.SECONDS);
 
-    while (System.nanoTime() < maxWait)  {
+    while (! timeout.hasTimedOut())  {
       state = getRequestState(requestId, client);
       if(state.equals("completed") || state.equals("failed"))
         return state;
@@ -1893,11 +1894,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return state;
   }
 
-  protected String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
+  static String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
     return getRequestState(String.valueOf(requestId), client);
   }
 
-  protected String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
+  static String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
     CollectionAdminRequest.RequestStatus requestStatusRequest = new CollectionAdminRequest.RequestStatus();
     requestStatusRequest.setRequestId(requestId);
     CollectionAdminResponse response = requestStatusRequest.process(client);

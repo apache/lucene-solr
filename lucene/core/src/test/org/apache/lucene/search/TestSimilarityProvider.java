@@ -142,7 +142,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
 
     @Override
-    public float idf(long docFreq, long numDocs) {
+    public float idf(long docFreq, long docCount) {
       return 1f;
     }
 
@@ -190,7 +190,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
 
     @Override
-    public float idf(long docFreq, long numDocs) {
+    public float idf(long docFreq, long docCount) {
       return 10f;
     }
 

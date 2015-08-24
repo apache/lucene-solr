@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.LeaderElector;
-import org.apache.solr.cloud.OverseerCollectionProcessor;
+import org.apache.solr.cloud.OverseerProcessor;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -74,7 +74,7 @@ class RebalanceLeaders {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "The " + COLLECTION_PROP + " is required for the REASSIGNLEADERS command."));
     }
-    coreContainer.getZkController().getZkStateReader().updateClusterState(true);
+    coreContainer.getZkController().getZkStateReader().updateClusterState();
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
     DocCollection dc = clusterState.getCollection(collectionName);
     if (dc == null) {
@@ -160,7 +160,7 @@ class RebalanceLeaders {
 
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
 
-      List<String> electionNodes = OverseerCollectionProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+      List<String> electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
           ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
       if (electionNodes.size() < 2) { // if there's only one node in the queue, should already be leader and we shouldn't be here anyway.
@@ -193,7 +193,7 @@ class RebalanceLeaders {
       throws KeeperException, InterruptedException {
 
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-    List<String> electionNodes = OverseerCollectionProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+    List<String> electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
         ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
     // First, queue up the preferred leader at the head of the queue.
@@ -210,12 +210,12 @@ class RebalanceLeaders {
       return; // let's not continue if we didn't get what we expect. Possibly we're offline etc..
     }
 
-    List<String> electionNodesTmp = OverseerCollectionProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+    List<String> electionNodesTmp = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
         ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
 
     // Now find other nodes that have the same sequence number as this node and re-queue them at the end of the queue.
-    electionNodes = OverseerCollectionProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+    electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
         ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
     for (String thisNode : electionNodes) {
@@ -238,7 +238,7 @@ class RebalanceLeaders {
     int oldSeq = LeaderElector.getSeq(electionNode);
     for (int idx = 0; idx < 600; ++idx) {
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-      List<String> electionNodes = OverseerCollectionProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+      List<String> electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
           ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
       for (String testNode : electionNodes) {
         if (LeaderElector.getNodeName(testNode).equals(nodeName) && oldSeq != LeaderElector.getSeq(testNode)) {

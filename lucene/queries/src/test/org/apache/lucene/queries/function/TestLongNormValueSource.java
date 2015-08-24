@@ -203,10 +203,10 @@ class PreciseDefaultSimilarity extends TFIDFSimilarity {
     return 1;
   }
 
-  /** Implemented as <code>log(numDocs/(docFreq+1)) + 1</code>. */
+  /** Implemented as <code>log(docCount/(docFreq+1)) + 1</code>. */
   @Override
-  public float idf(long docFreq, long numDocs) {
-    return (float)(Math.log(numDocs/(double)(docFreq+1)) + 1.0);
+  public float idf(long docFreq, long docCount) {
+    return (float)(Math.log(docCount/(double)(docFreq+1)) + 1.0);
   }
 
   /**

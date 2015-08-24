@@ -35,7 +35,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -44,7 +43,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.facet.FacetModule;
-import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -241,7 +240,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
     }
 
-    final RTimer timer = rb.isDebug() ? req.getRequestTimer() : null;
+    final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
     
@@ -252,7 +251,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       }
     } else {
       // debugging prepare phase
-      RTimer subt = timer.sub( "prepare" );
+      RTimerTree subt = timer.sub( "prepare" );
       for( SearchComponent c : components ) {
         rb.setTimer( subt.sub( c.getName() ) );
         c.prepare(rb);
@@ -279,7 +278,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         }
         else {
           // Process
-          RTimer subt = timer.sub( "process" );
+          RTimerTree subt = timer.sub( "process" );
           for( SearchComponent c : components ) {
             rb.setTimer( subt.sub( c.getName() ) );
             c.process(rb);

@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Analyzer
@@ -97,6 +98,27 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     a = new ArabicAnalyzer(CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
+    a.close();
+  }
+  
+  /**
+   * test we fold digits to latin-1
+   */
+  public void testDigits() throws Exception {
+    ArabicAnalyzer a = new ArabicAnalyzer();
+    checkOneTerm(a, "١٢٣٤", "1234");
+    a.close();
+  }
+  
+  /**
+   * test that we don't fold digits for back compat behavior
+   * @deprecated remove this test in lucene 7
+   */
+  @Deprecated
+  public void testDigitsBackCompat() throws Exception {
+    ArabicAnalyzer a = new ArabicAnalyzer();
+    a.setVersion(Version.LUCENE_5_3_0);
+    checkOneTerm(a, "١٢٣٤", "١٢٣٤");
     a.close();
   }
   

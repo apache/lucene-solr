@@ -155,11 +155,12 @@ public class CloudSolrClient extends SolrClient {
 
     ExpiringCachedDocCollection(DocCollection cached) {
       this.cached = cached;
-      this.cachedAt = System.currentTimeMillis();
+      this.cachedAt = System.nanoTime();
     }
 
-    boolean isExpired(long timeToLive) {
-      return (System.currentTimeMillis() - cachedAt) > timeToLive;
+    boolean isExpired(long timeToLiveMs) {
+      return (System.nanoTime() - cachedAt)
+          > TimeUnit.NANOSECONDS.convert(timeToLiveMs, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -978,8 +979,7 @@ public class CloudSolrClient extends SolrClient {
       reqParams = new ModifiableSolrParams();
     }
     List<String> theUrlList = new ArrayList<>();
-    if (request.getPath().equals("/admin/collections")
-        || request.getPath().equals("/admin/cores")) {
+    if (request.getPath().startsWith("/admin/")) {
       Set<String> liveNodes = clusterState.getLiveNodes();
       for (String liveNode : liveNodes) {
         theUrlList.add(zkStateReader.getBaseUrlForNodeName(liveNode));

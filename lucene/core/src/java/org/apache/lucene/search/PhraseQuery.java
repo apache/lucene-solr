@@ -81,16 +81,17 @@ public class PhraseQuery extends Query {
      * Set the slop.
      * @see PhraseQuery#getSlop()
      */
-    public void setSlop(int slop) {
+    public Builder setSlop(int slop) {
       this.slop = slop;
+      return this;
     }
 
     /**
      * Adds a term to the end of the query phrase.
      * The relative position of the term is the one immediately after the last term added.
      */
-    public void add(Term term) {
-      add(term, positions.isEmpty() ? 0 : 1 + positions.get(positions.size() - 1));
+    public Builder add(Term term) {
+      return add(term, positions.isEmpty() ? 0 : 1 + positions.get(positions.size() - 1));
     }
 
     /**
@@ -100,7 +101,7 @@ public class PhraseQuery extends Query {
      * or phrases with gaps (e.g. in connection with stopwords).
      * 
      */
-    public void add(Term term, int position) {
+    public Builder add(Term term, int position) {
       term = new Term(term.field(), BytesRef.deepCopyOf(term.bytes())); // be defensive
       if (position < 0) {
         throw new IllegalArgumentException("Positions must be >= 0, got " + position);
@@ -116,6 +117,7 @@ public class PhraseQuery extends Query {
       }
       terms.add(term);
       positions.add(position);
+      return this;
     }
 
     /**

@@ -29,7 +29,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -165,11 +166,15 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       }
       
       ModifiableSolrParams pivotP = params(FACET,"true");
-      pivotP.add(FACET_PIVOT, buildPivotParamValue(buildRandomPivot(fieldNames)));
+
+      // put our FACET_PIVOT params in a set in case we just happen to pick the same one twice
+      LinkedHashSet<String> pivotParamValues = new LinkedHashSet<String>();
+      pivotParamValues.add(buildPivotParamValue(buildRandomPivot(fieldNames)));
                  
       if (random().nextBoolean()) {
-        pivotP.add(FACET_PIVOT, buildPivotParamValue(buildRandomPivot(fieldNames)));
+        pivotParamValues.add(buildPivotParamValue(buildRandomPivot(fieldNames)));
       }
+      pivotP.set(FACET_PIVOT, pivotParamValues.toArray(new String[pivotParamValues.size()]));
 
       // keep limit low - lots of unique values, and lots of depth in pivots
       pivotP.add(FACET_LIMIT, ""+TestUtil.nextInt(random(),1,17));
@@ -468,7 +473,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     // otherwise, build up a term filter...
     String prefix = "{!term f=" + constraint.getField() + "}";
     if (value instanceof Date) {
-      return prefix + TrieDateField.formatExternal((Date)value);
+      return prefix + DateFormatUtil.formatExternal((Date)value);
     } else {
       return prefix + value;
     }
@@ -728,7 +733,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     } else if (expected instanceof Float || expected instanceof Double) {
       // compute an epsilon relative to the size of the expected value
       double expect = ((Number)expected).doubleValue();
-      double epsilon = expect * 0.1E-7D;
+      double epsilon = Math.abs(expect * 0.1E-7D);
 
       assertEquals(msg, expect, ((Number)actual).doubleValue(), epsilon);
       
@@ -741,68 +746,82 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * test the test
    */
   private void sanityCheckAssertNumerics() {
+    
     assertNumerics("Null?", null, null);
-    assertNumerics("big", 
+    assertNumerics("large a", 
                    new Double(2.3005390038169265E9), 
                    new Double(2.300539003816927E9));
+    assertNumerics("large b",
+                   new Double(1.2722582464444444E9),
+                   new Double(1.2722582464444442E9));
     assertNumerics("small", 
                    new Double(2.3005390038169265E-9), 
                    new Double(2.300539003816927E-9));
-    assertNumerics("small", 
-                   new Double(2.3005390038169265E-9), 
-                   new Double(2.300539003816927E-9));
+    
+    assertNumerics("large a negative", 
+                   new Double(-2.3005390038169265E9), 
+                   new Double(-2.300539003816927E9));
+    assertNumerics("large b negative",
+                   new Double(-1.2722582464444444E9),
+                   new Double(-1.2722582464444442E9));
+    assertNumerics("small negative", 
+                   new Double(-2.3005390038169265E-9), 
+                   new Double(-2.300539003816927E-9));
     
     assertNumerics("high long", Long.MAX_VALUE, Long.MAX_VALUE);
     assertNumerics("high int", Integer.MAX_VALUE, Integer.MAX_VALUE);
     assertNumerics("low long", Long.MIN_VALUE, Long.MIN_VALUE);
     assertNumerics("low int", Integer.MIN_VALUE, Integer.MIN_VALUE);
 
+    // NOTE: can't use 'fail' in these try blocks, because we are catching AssertionError
+    // (ie: the code we are expecting to 'fail' is an actual test assertion generator)
+    
     for (Object num : new Object[] { new Date(42), 42, 42L, 42.0F }) {
       try {
         assertNumerics("non-null", null, num);
-        fail("expected was null");
+        throw new RuntimeException("did not get assertion failure when expected was null");
       } catch (AssertionError e) {}
       
       try {
         assertNumerics("non-null", num, null);
-        fail("actual was null");
+        throw new RuntimeException("did not get assertion failure when actual was null");
       } catch (AssertionError e) {}
     }
   
     try {
       assertNumerics("non-number", "foo", 42);
-      fail("expected was non-number");
+      throw new RuntimeException("did not get assertion failure when expected was non-number");
     } catch (AssertionError e) {}
 
     try {
       assertNumerics("non-number", 42, "foo");
-      fail("actual was non-number");
+      throw new RuntimeException("did not get assertion failure when actual was non-number");
     } catch (AssertionError e) {}
   
     try {
       assertNumerics("diff", 
                      new Double(2.3005390038169265E9), 
                      new Double(2.267272520100462E9));
-      fail("big & diff");
+      throw new RuntimeException("did not get assertion failure when args are big & too diff");
     } catch (AssertionError e) {}
     try {
       assertNumerics("diff", 
                      new Double(2.3005390038169265E-9), 
                      new Double(2.267272520100462E-9));
-      fail("small & diff");
+      throw new RuntimeException("did not get assertion failure when args are small & too diff");
     } catch (AssertionError e) {}
   
     try {
       assertNumerics("diff long", Long.MAX_VALUE, Long.MAX_VALUE-1);
-      fail("diff long");
+      throw new RuntimeException("did not get assertion failure when args are diff longs");
     } catch (AssertionError e) {}
     try {
       assertNumerics("diff int", Integer.MAX_VALUE, Integer.MAX_VALUE-1);
-      fail("diff int");
+      throw new RuntimeException("did not get assertion failure when args are diff ints");
     } catch (AssertionError e) {}
     try {
       assertNumerics("diff date", new Date(42), new Date(43));
-      fail("diff date");
+      throw new RuntimeException("did not get assertion failure when args are diff dates");
     } catch (AssertionError e) {}
 
   }

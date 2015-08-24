@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.junit.BeforeClass;
@@ -182,6 +183,129 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertEquals(-3.0, q.getBoost(), 0.0f);
 
     req.close();
+  }
+
+  @Test
+  public void testComments() throws Exception {
+    assertJQ(req("q","id:1 id:2 /* *:* */ id:3")
+        ,"/response/numFound==3"
+    );
+
+    //
+    assertJQ(req("q","id:1 /**.*/")
+        ,"/response/numFound==1"  // if it matches more than one, it's being treated as a regex.
+    );
+
+
+    // don't match comment start in string
+    assertJQ(req("q", " \"/*\" id:1 id:2 \"*/\" id:3")
+        , "/response/numFound==3"
+    );
+
+    // don't match an end of comment within  a string
+    // assertJQ(req("q","id:1 id:2 /* \"*/\" *:* */ id:3")
+    //     ,"/response/numFound==3"
+    // );
+    // removed this functionality - there's more of a danger to thinking we're in a string.
+    //   can't do it */  ......... '
+
+    // nested comments
+    assertJQ(req("q","id:1 /* id:2 /* */ /* /**/ id:3 */ id:10 */ id:11")
+        ,"/response/numFound==2"
+    );
+
+  }
+
+  @Test
+  public void testFilter() throws Exception {
+
+    // normal test "solrconfig.xml" has autowarm set to 2...
+    for (int i=0; i<10; i++) {
+      assertJQ(req("q","*:* "+ i, "fq","filter(just_to_clear_the_cache) filter(id:10000" + i + ") filter(id:10001" + i + ")")
+          ,"/response/numFound==0"
+      );
+    }
+    assertU(adoc("id","777"));
+    delI("777");
+    assertU(commit());  // arg... commit no longer "commits" unless there has been a change.
+
+
+    final SolrInfoMBean filterCacheStats
+        = h.getCore().getInfoRegistry().get("filterCache");
+    assertNotNull(filterCacheStats);
+    final SolrInfoMBean queryCacheStats
+        = h.getCore().getInfoRegistry().get("queryResultCache");
+
+    assertNotNull(queryCacheStats);
+
+
+    long inserts = (Long) filterCacheStats.getStatistics().get("inserts");
+    long hits = (Long) filterCacheStats.getStatistics().get("hits");
+
+    assertJQ(req("q","doesnotexist filter(id:1) filter(qqq_s:X) filter(abcdefg)")
+        ,"/response/numFound==2"
+    );
+
+    inserts+=3;
+    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue() );
+    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue() );
+
+    assertJQ(req("q","doesnotexist2 filter(id:1) filter(qqq_s:X) filter(abcdefg)")
+        ,"/response/numFound==2"
+    );
+
+    hits+=3;
+    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue() );
+    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue() );
+
+    // make sure normal "fq" parameters also hit the cache the same way
+    assertJQ(req("q","doesnotexist3", "fq","id:1", "fq", "qqq_s:X", "fq", "abcdefg")
+        ,"/response/numFound==0"
+    );
+
+    hits+=3;
+    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue() );
+    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue() );
+
+    // try a query deeply nested in a FQ
+    assertJQ(req("q","*:* doesnotexist4", "fq","(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
+        ,"/response/numFound==2"
+    );
+
+    inserts+=1;  // +1 for top level fq
+    hits+=3;
+    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue() );
+    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue() );
+
+    // retry the complex FQ and make sure hashCode/equals works as expected w/ filter queries
+    assertJQ(req("q","*:* doesnotexist5", "fq","(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
+        ,"/response/numFound==2"
+    );
+
+    hits+=1;  // top-level fq should have been found.
+    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue() );
+    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue() );
+
+
+    // try nested filter with multiple top-level args (i.e. a boolean query)
+    assertJQ(req("q","*:* +filter(id:1 filter(qqq_s:X) abcdefg)")
+        ,"/response/numFound==2"
+    );
+
+    hits+=1;  // the inner filter
+    inserts+=1; // the outer filter
+    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue() );
+    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue() );
+
+    // test the score for a filter, and that default score is 0
+    assertJQ(req("q","+filter(*:*) +filter(id:1)", "fl","id,score", "sort","id asc")
+        ,"/response/docs/[0]/score==0.0"
+    );
+
+    assertJQ(req("q","+filter(*:*)^=10 +filter(id:1)", "fl","id,score", "sort","id asc")
+        ,"/response/docs/[0]/score==1.0"  // normalization reduces to 1
+    );
+
   }
 
 }

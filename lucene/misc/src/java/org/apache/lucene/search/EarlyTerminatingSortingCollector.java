@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -86,6 +87,7 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
   /** Number of documents to collect in each segment */
   protected final int numDocsToCollect;
   private final Sort mergePolicySort;
+  private final AtomicBoolean terminatedEarly = new AtomicBoolean(false);
 
   /**
    * Create a new {@link EarlyTerminatingSortingCollector} instance.
@@ -127,6 +129,7 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
         public void collect(int doc) throws IOException {
           super.collect(doc);
           if (++numCollected >= numDocsToCollect) {
+            terminatedEarly.set(true);
             throw new CollectionTerminatedException();
           }
         }
@@ -135,6 +138,10 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
     } else {
       return super.getLeafCollector(context);
     }
+  }
+
+  public boolean terminatedEarly() {
+    return terminatedEarly.get();
   }
 
 }

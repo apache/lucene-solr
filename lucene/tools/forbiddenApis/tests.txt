@@ -15,7 +15,8 @@
 
 junit.framework.TestCase @ All classes should derive from LuceneTestCase
 
-java.util.Random#<init>() @ Use RandomizedRunner's random instead
+java.util.Random#<init>() @ Use RandomizedRunner's random() instead
+java.lang.Math#random() @ Use RandomizedRunner's random().nextDouble() instead
 
 # TODO: fix tests that do this!
 #java.lang.System#currentTimeMillis() @ Don't depend on wall clock times

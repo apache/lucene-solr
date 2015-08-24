@@ -36,8 +36,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.DistributedMap;
-import org.apache.solr.cloud.DistributedQueue;
-import org.apache.solr.cloud.DistributedQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerCollectionQueue;
+import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -59,6 +59,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -70,16 +71,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.ONLY_IF_DOWN;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARD_UNIQUE;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
@@ -167,7 +168,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         result.put(QUEUE_OPERATION, operation.action.toLower());
         ZkNodeProps props = new ZkNodeProps(result);
         if (operation.sendToOCPQueue) handleResponse(operation.action.toLower(), props, rsp, operation.timeOut);
-        else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(ZkStateReader.toJSON(props));
+        else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
 
       }
     } else {
@@ -212,7 +213,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
        } else {
          coreContainer.getZkController().getOverseerCollectionQueue()
-             .offer(ZkStateReader.toJSON(m));
+             .offer(Utils.toJSON(m));
        }
        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
        SolrResponse response = new OverseerSolrResponse(r);
@@ -224,7 +225,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
-        .offer(ZkStateReader.toJSON(m), timeout);
+        .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
       SolrResponse response = SolrResponse.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
@@ -251,7 +252,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   }
 
   private boolean overseerCollectionQueueContains(String asyncId) throws KeeperException, InterruptedException {
-    DistributedQueue collectionQueue = coreContainer.getZkController().getOverseerCollectionQueue();
+    OverseerCollectionQueue collectionQueue = coreContainer.getZkController().getOverseerCollectionQueue();
     return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 
@@ -698,6 +699,13 @@ public class CollectionsHandler extends RequestHandlerBase {
         for (String prop : MODIFIABLE_COLL_PROPS) DocCollection.verifyProp(m, prop);
         verifyRuleParams(h.coreContainer, m);
         return m;
+      }
+    },
+    MIGRATESTATEFORMAT_OP(MIGRATESTATEFORMAT) {
+      @Override
+      Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler)
+          throws Exception {
+        return req.getParams().required().getAll(null, COLLECTION_PROP);
       }
     };
     CollectionAction action;

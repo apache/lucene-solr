@@ -376,50 +376,54 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     assertEquals("no more docs, but cursorMark has changed", 
                  cursorMark, assertHashNextCursorMark(rsp));
 
-    // tri-level sort with more dups of primary then fit on a page
-    cursorMark = CURSOR_MARK_START;
-    params = params("q", "*:*", 
-                    "rows","2",
-                    "fl", "id",
-                    "sort", "float asc, "+intsort+" desc, id desc");
-    rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
-    assertNumFound(10, rsp);
-    assertStartsAt(0, rsp);
-    assertDocList(rsp, 2, 9);
-    cursorMark = assertHashNextCursorMark(rsp);
-    //
-    rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
-    assertNumFound(10, rsp); 
-    assertStartsAt(0, rsp);
-    assertDocList(rsp, 7, 4);
-    cursorMark = assertHashNextCursorMark(rsp);
-    //
-    rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
-    assertNumFound(10, rsp); 
-    assertStartsAt(0, rsp);
-    assertDocList(rsp, 3, 8);
-    cursorMark = assertHashNextCursorMark(rsp);
-    //
-    rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
-    assertNumFound(10, rsp); 
-    assertStartsAt(0, rsp);
-    assertDocList(rsp, 5, 6);
-    cursorMark = assertHashNextCursorMark(rsp);
-    //
-    rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
-    assertNumFound(10, rsp);
-    assertStartsAt(0, rsp);
-    assertDocList(rsp, 1, 0);
-    cursorMark = assertHashNextCursorMark(rsp);
-    // we've exactly exhausted all the results, but solr had no way of know that
-    //
-    rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
-    assertNumFound(10, rsp); 
-    assertStartsAt(0, rsp);
-    assertDocList(rsp);
-    assertEquals("no more docs, but cursorMark has changed", 
-                 cursorMark, assertHashNextCursorMark(rsp));
-
+    // tri-level sort with more dups of primary then fit on a page.
+    // also a function based sort using a simple function(s) on same field
+    // (order should be the same in all cases)
+    for (String primarysort : new String[] { "float", "field('float')", "sum(float,42)" }) {
+      cursorMark = CURSOR_MARK_START;
+      params = params("q", "*:*", 
+                      "rows","2",
+                      "fl", "id",
+                      "sort", primarysort + " asc, "+intsort+" desc, id desc");
+      rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
+      assertNumFound(10, rsp);
+      assertStartsAt(0, rsp);
+      assertDocList(rsp, 2, 9);
+      cursorMark = assertHashNextCursorMark(rsp);
+      //
+      rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
+      assertNumFound(10, rsp); 
+      assertStartsAt(0, rsp);
+      assertDocList(rsp, 7, 4);
+      cursorMark = assertHashNextCursorMark(rsp);
+      //
+      rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
+      assertNumFound(10, rsp); 
+      assertStartsAt(0, rsp);
+      assertDocList(rsp, 3, 8);
+      cursorMark = assertHashNextCursorMark(rsp);
+      //
+      rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
+      assertNumFound(10, rsp); 
+      assertStartsAt(0, rsp);
+      assertDocList(rsp, 5, 6);
+      cursorMark = assertHashNextCursorMark(rsp);
+      //
+      rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
+      assertNumFound(10, rsp);
+      assertStartsAt(0, rsp);
+      assertDocList(rsp, 1, 0);
+      cursorMark = assertHashNextCursorMark(rsp);
+      // we've exactly exhausted all the results, but solr had no way of know that
+      //
+      rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
+      assertNumFound(10, rsp); 
+      assertStartsAt(0, rsp);
+      assertDocList(rsp);
+      assertEquals("no more docs, but cursorMark has changed", 
+                   cursorMark, assertHashNextCursorMark(rsp));
+    }
+    
     // trivial base case: rows bigger then number of matches
     cursorMark = CURSOR_MARK_START;
     params = params("q", "id:3 id:7", 

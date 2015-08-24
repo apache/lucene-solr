@@ -24,7 +24,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,22 +33,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +61,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected volatile CoreContainer cores;
 
   protected String abortErrorMessage = null;
-  protected final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+  protected HttpClient httpClient;
   private ArrayList<Pattern> excludePatterns;
 
   /**
@@ -85,11 +82,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public static final String PROPERTIES_ATTRIBUTE = "solr.properties";
 
   public static final String SOLRHOME_ATTRIBUTE = "solr.solr.home";
-  
+
   @Override
   public void init(FilterConfig config) throws ServletException
   {
     log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+
     String exclude = config.getInitParameter("excludePatterns");
     if(exclude != null) {
       String[] excludeArray = exclude.split(",");
@@ -106,16 +104,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
       if (solrHome == null)
         solrHome = SolrResourceLoader.locateSolrHome();
+      ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
 
       this.cores = createCoreContainer(solrHome, extraProperties);
-
-      if (this.cores.getAuthenticationPlugin() != null) {
-        HttpClientConfigurer configurer = this.cores.getAuthenticationPlugin().getDefaultConfigurer();
-        if (configurer != null) {
-          configurer.configure((DefaultHttpClient)httpClient, new ModifiableSolrParams());
-        }
-      }
-
+      this.httpClient = cores.getUpdateShardHandler().getHttpClient();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -149,30 +141,25 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public static NodeConfig loadNodeConfig(String solrHome, Properties nodeProperties) {
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHome, null, nodeProperties);
-
-    String solrxmlLocation = System.getProperty("solr.solrxml.location", "solrhome");
-
-    if (solrxmlLocation == null || "solrhome".equalsIgnoreCase(solrxmlLocation))
-      return SolrXmlConfig.fromSolrHome(loader, loader.getInstanceDir());
-
-    if ("zookeeper".equalsIgnoreCase(solrxmlLocation)) {
-      String zkHost = System.getProperty("zkHost");
-      log.info("Trying to read solr.xml from {}", zkHost);
-      if (StringUtils.isEmpty(zkHost))
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Could not load solr.xml from zookeeper: zkHost system property not set");
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
-        if (!zkClient.exists("/solr.xml", true))
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper: node not found");
-        byte[] data = zkClient.getData("/solr.xml", null, null, true);
-        return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
-      } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper", e);
-      }
+    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
+      log.warn("Solr property solr.solrxml.location is no longer supported. " +
+               "Will automatically load solr.xml from ZooKeeper if it exists");
     }
 
-    throw new SolrException(ErrorCode.SERVER_ERROR,
-        "Bad solr.solrxml.location set: " + solrxmlLocation + " - should be 'solrhome' or 'zookeeper'");
+    String zkHost = System.getProperty("zkHost");
+    if (!StringUtils.isEmpty(zkHost)) {
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+        if (zkClient.exists("/solr.xml", true)) {
+          log.info("solr.xml found in ZooKeeper. Loading...");
+          byte[] data = zkClient.getData("/solr.xml", null, null, true);
+          return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
+        }
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
+      }
+      log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
+    }
+    return SolrXmlConfig.fromSolrHome(loader, loader.getInstanceDir());
   }
   
   public CoreContainer getCores() {
@@ -181,13 +168,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
-    try {
-      if (cores != null) {
-        cores.shutdown();
-        cores = null;
-      }
-    } finally {
-      IOUtils.closeQuietly(httpClient);
+    if (cores != null) {
+      cores.shutdown();
+      cores = null;
     }
   }
   
@@ -199,7 +182,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if (!(request instanceof HttpServletRequest)) return;
 
-    AtomicReference<ServletRequest> wrappedRequest = new AtomicReference();
+    AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();
     if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
       return;
     }
@@ -255,6 +238,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
+      //special case when solr is securing inter-node requests
+      String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
+      if (header != null && cores.getPkiAuthenticationPlugin() != null)
+        authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.

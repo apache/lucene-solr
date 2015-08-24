@@ -176,9 +176,9 @@ public class QueryTemplateManager {
     Element root = doc.createElement("Document");
     doc.appendChild(root);
 
-    Enumeration keysEnum = formProperties.keys();
+    Enumeration<?> keysEnum = formProperties.propertyNames();
     while (keysEnum.hasMoreElements()) {
-      String propName = (String) keysEnum.nextElement();
+      String propName = keysEnum.nextElement().toString();
       String value = formProperties.getProperty(propName);
       if ((value != null) && (value.length() > 0)) {
         DOMUtils.insertChild(root, propName, value);

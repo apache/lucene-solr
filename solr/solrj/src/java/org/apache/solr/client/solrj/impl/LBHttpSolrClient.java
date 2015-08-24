@@ -128,9 +128,6 @@ public class LBHttpSolrClient extends SolrClient {
 
     final HttpSolrClient client;
 
-    long lastUsed;     // last time used for a real request
-    long lastChecked;  // last time checked for liveness
-
     // "standard" servers are used by default.  They normally live in the alive list
     // and move to the zombie list when unavailable.  When they become available again,
     // they move back to the alive list.
@@ -362,7 +359,6 @@ public class LBHttpSolrClient extends SolrClient {
     ServerWrapper wrapper;
 
     wrapper = new ServerWrapper(server);
-    wrapper.lastUsed = System.currentTimeMillis();
     wrapper.standard = false;
     zombieServers.put(wrapper.getKey(), wrapper);
     startAliveCheckExecutor();
@@ -514,7 +510,6 @@ public class LBHttpSolrClient extends SolrClient {
       
       int count = counter.incrementAndGet() & Integer.MAX_VALUE;
       ServerWrapper wrapper = serverList[count % serverList.length];
-      wrapper.lastUsed = System.currentTimeMillis();
 
       try {
         return wrapper.client.request(request, collection);
@@ -591,9 +586,7 @@ public class LBHttpSolrClient extends SolrClient {
    * @param zombieServer a server in the dead pool
    */
   private void checkAZombieServer(ServerWrapper zombieServer) {
-    long currTime = System.currentTimeMillis();
     try {
-      zombieServer.lastChecked = currTime;
       QueryResponse resp = zombieServer.client.query(solrQuery);
       if (resp.getStatus() == 0) {
         // server has come back up.

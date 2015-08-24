@@ -26,7 +26,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.analytics.util.AnalyticsParams;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.util.DateFormatUtil;
 
 /**
  * <code>DefaultIsMissingFieldSource</code> wraps a field source to return missing values 
@@ -50,7 +50,7 @@ public class FilterFieldSource extends ValueSource {
   @Override
   public String description() {
     if (missValue.getClass().equals(Date.class)) {
-      return name()+"("+source.description()+","+TrieDateField.formatExternal((Date)missValue)+")";
+      return name()+"("+source.description()+","+DateFormatUtil.formatExternal((Date)missValue)+")";
     } else {
       return name()+"("+source.description()+","+missValue.toString()+")";
     }

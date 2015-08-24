@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -31,6 +29,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
@@ -75,37 +74,28 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   }
   
   public void testConcurrentCreateAndDeleteOverTheSameConfig() {
-    // TODO: no idea what this test needs to override the level, but regardless of reason it should
-    // reset when it's done.
-    final Logger logger = Logger.getLogger("org.apache.solr");
-    final Level SAVED_LEVEL = logger.getLevel();
+    final String configName = "testconfig";
+    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+    uploadConfig(configDir, configName); // upload config once, to be used by all collections
+    final SolrClient solrClient = new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    final AtomicReference<Exception> failure = new AtomicReference<>();
+    final int timeToRunSec = 30;
+    final Thread[] threads = new Thread[2];
+    for (int i = 0; i < threads.length; i++) {
+      final String collectionName = "collection" + i;
+      threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName,
+                                                    timeToRunSec, solrClient, failure);
+    }
+
+    startAll(threads);
+    joinAll(threads);
+
+    assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
+
     try {
-      logger.setLevel(Level.WARN);
-      final String configName = "testconfig";
-      final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-      uploadConfig(configDir, configName); // upload config once, to be used by all collections
-      final SolrClient solrClient = new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-      final AtomicReference<Exception> failure = new AtomicReference<>();
-      final int timeToRunSec = 30;
-      final Thread[] threads = new Thread[2];
-      for (int i = 0; i < threads.length; i++) {
-        final String collectionName = "collection" + i;
-        threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName, 
-                                                      timeToRunSec, solrClient, failure);
-      }
-    
-      startAll(threads);
-      joinAll(threads);
-    
-      assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
-      
-      try {
-        solrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    } finally {
-      logger.setLevel(SAVED_LEVEL);
+      solrClient.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
   
@@ -153,8 +143,8 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     @Override
     public void run() {
-      final long timeToStop = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeToRunSec);
-      while (System.currentTimeMillis() < timeToStop && failure.get() == null) {
+      final TimeOut timeout = new TimeOut(timeToRunSec, TimeUnit.SECONDS);
+      while (! timeout.hasTimedOut() && failure.get() == null) {
         doWork();
       }
     }

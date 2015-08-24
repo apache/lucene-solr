@@ -88,11 +88,11 @@
       <float name="thresholdTokenFrequency">.29</float>
     </lst>
     <lst name="spellchecker">
-			<str name="name">multipleFields</str>
-			<str name="field">lowerfilt1and2</str>
-			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
-			<str name="buildOnCommit">true</str>
-   	</lst>
+      <str name="name">multipleFields</str>
+      <str name="field">lowerfilt1and2</str>
+      <str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
+      <str name="buildOnCommit">true</str>
+     </lst>
     <!-- Example of using different distance measure -->
     <lst name="spellchecker">
       <str name="name">jarowinkler</str>
@@ -156,13 +156,13 @@
     </arr>
   </requestHandler>
   <requestHandler name="spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
-			<lst name="defaults">
-				<str name="defType">dismax</str>
-				<str name="qf">lowerfilt1^1</str>
-			</lst>
-			<arr name="last-components">
-				<str>spellcheck</str>
-			</arr>
+      <lst name="defaults">
+        <str name="defType">dismax</str>
+        <str name="qf">lowerfilt1^1</str>
+      </lst>
+      <arr name="last-components">
+        <str>spellcheck</str>
+      </arr>
  </requestHandler>
  <requestHandler name="spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">

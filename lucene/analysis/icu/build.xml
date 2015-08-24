@@ -59,7 +59,7 @@
   </target>
 
   <property name="gennorm2.src.files"
-  	value="nfc.txt nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt"/>
+    value="nfc.txt nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt"/>
   <property name="gennorm2.tmp" value="${build.dir}/gennorm2/utr30.tmp"/>
   <property name="gennorm2.dst" value="${resources.dir}/org/apache/lucene/analysis/icu/utr30.nrm"/>
   <target name="gennorm2" depends="gen-utr30-data-files">
@@ -85,7 +85,7 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
   
   <property name="rbbi.src.dir" location="src/data/uax29"/>
   <property name="rbbi.dst.dir" location="${resources.dir}/org/apache/lucene/analysis/icu/segmentation"/>
-		
+  
   <target name="genrbbi" depends="compile-tools">
     <mkdir dir="${rbbi.dst.dir}"/>
     <java
@@ -94,8 +94,8 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       fork="true"
       failonerror="true">
       <classpath>
-      	<path refid="icujar"/>
-      	<pathelement location="${build.dir}/classes/tools"/>
+        <path refid="icujar"/>
+        <pathelement location="${build.dir}/classes/tools"/>
       </classpath>
       <assertions>
         <enable package="org.apache.lucene"/>

@@ -205,14 +205,20 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
       m.put("EOF", true);
       Tuple t = new Tuple(m);
 
+      /*
       Map<String, Map> metrics = new HashMap();
       Iterator<Entry<String,Tuple>> it = this.eofTuples.entrySet().iterator();
       while(it.hasNext()) {
         Map.Entry<String, Tuple> entry = it.next();
-        metrics.put(entry.getKey(), entry.getValue().fields);
+        if(entry.getValue().fields.size() > 1) {
+          metrics.put(entry.getKey(), entry.getValue().fields);
+        }
       }
 
-      t.setMetrics(metrics);
+      if(metrics.size() > 0) {
+        t.setMetrics(metrics);
+      }
+      */
       return t;
     }
 
@@ -246,7 +252,6 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-      long time = System.currentTimeMillis();
       List<Replica> shuffler = new ArrayList();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
@@ -259,7 +264,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
         throw new IOException("Number of workers exceeds nodes in the worker collection");
       }
 
-      Collections.shuffle(shuffler, new Random(time));
+      Collections.shuffle(shuffler, new Random());
 
       for(int w=0; w<workers; w++) {
         HashMap params = new HashMap();

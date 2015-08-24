@@ -154,8 +154,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   either all or none of the incoming documents were in
   fact added.
    */
-  public void testAddIndexOnDiskFull() throws IOException
-  {
+  public void testAddIndexOnDiskFull() throws IOException {
     // MemoryCodec, since it uses FST, is not necessarily
     // "additive", ie if you add up N small FSTs, then merge
     // them, the merged result can easily be larger than the
@@ -256,21 +255,25 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         // Make a new dir that will enforce disk usage:
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(startDir));
-        writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                         .setOpenMode(OpenMode.APPEND)
-                                         .setMergePolicy(newLogMergePolicy(false)));
-        IOException err = null;
+        dir.setPreventDoubleWrite(false);
+        IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+          .setOpenMode(OpenMode.APPEND)
+          .setMergePolicy(newLogMergePolicy(false));
+        writer = new IndexWriter(dir, iwc);
+        Exception err = null;
 
-        MergeScheduler ms = writer.getConfig().getMergeScheduler();
         for(int x=0;x<2;x++) {
-          if (ms instanceof ConcurrentMergeScheduler)
+          MergeScheduler ms = writer.getConfig().getMergeScheduler();
+          if (ms instanceof ConcurrentMergeScheduler) {
             // This test intentionally produces exceptions
             // in the threads that CMS launches; we don't
             // want to pollute test output with these.
-            if (0 == x)
+            if (0 == x) {
               ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
-            else
+            } else {
               ((ConcurrentMergeScheduler) ms).clearSuppressExceptions();
+            }
+          }
           
           // Two loops: first time, limit disk space &
           // throw random IOExceptions; second time, no
@@ -294,18 +297,21 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             if (diskRatio >= 6.0) {
               rate = 0.0;
             }
-            if (VERBOSE)
+            if (VERBOSE) {
               testName = "disk full test " + methodName + " with disk full at " + diskFree + " bytes";
+            }
           } else {
             dir.setRandomIOExceptionRateOnOpen(0.0);
             thisDiskFree = 0;
             rate = 0.0;
-            if (VERBOSE)
+            if (VERBOSE) {
               testName = "disk full test " + methodName + " with unlimited disk space";
+            }
           }
           
-          if (VERBOSE)
+          if (VERBOSE) {
             System.out.println("\ncycle: " + testName);
+          }
           
           dir.setTrackDiskUsage(true);
           dir.setMaxSizeInBytes(thisDiskFree);
@@ -347,11 +353,11 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
               done = true;
             }
             
-          } catch (IOException e) {
+          } catch (IllegalStateException | IOException e) {
             success = false;
             err = e;
             if (VERBOSE) {
-              System.out.println("  hit IOException: " + e);
+              System.out.println("  hit Exception: " + e);
               e.printStackTrace(System.out);
             }
             
@@ -361,9 +367,16 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             }
           }
           
-          // Make sure all threads from
-          // ConcurrentMergeScheduler are done
-          TestUtil.syncConcurrentMerges(writer);
+          if (x == 1) {
+            // Make sure all threads from ConcurrentMergeScheduler are done
+            TestUtil.syncConcurrentMerges(writer);
+          } else {
+            dir.setRandomIOExceptionRateOnOpen(0.0);
+            writer.rollback();
+            writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                     .setOpenMode(OpenMode.APPEND)
+                                     .setMergePolicy(newLogMergePolicy(false)));
+          }
           
           if (VERBOSE) {
             System.out.println("  now test readers");
@@ -447,11 +460,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         writer.close();
         
-        // Wait for all BG threads to finish else
-        // dir.close() will throw IOException because
-        // there are still open files
-        TestUtil.syncConcurrentMerges(ms);
-        
         dir.close();
         
         // Try again with more free space:
@@ -524,8 +532,12 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     }
     TestUtil.checkIndex(dir);
     ftdm.clearDoFail();
-    w.addDocument(doc);
-    w.close();
+    try {
+      w.addDocument(doc);
+      fail("writer was not closed by merge exception");
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
 
     dir.close();
   }
@@ -556,20 +568,18 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   
   // TODO: these are also in TestIndexWriter... add a simple doc-writing method
   // like this to LuceneTestCase?
-  private void addDoc(IndexWriter writer) throws IOException
-  {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa", Field.Store.NO));
-      doc.add(new NumericDocValuesField("numericdv", 1));
-      writer.addDocument(doc);
+  private void addDoc(IndexWriter writer) throws IOException {
+    Document doc = new Document();
+    doc.add(newTextField("content", "aaa", Field.Store.NO));
+    doc.add(new NumericDocValuesField("numericdv", 1));
+    writer.addDocument(doc);
   }
   
-  private void addDocWithIndex(IndexWriter writer, int index) throws IOException
-  {
-      Document doc = new Document();
-      doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
-      doc.add(newTextField("id", "" + index, Field.Store.NO));
-      doc.add(new NumericDocValuesField("numericdv", 1));
-      writer.addDocument(doc);
+  private void addDocWithIndex(IndexWriter writer, int index) throws IOException {
+    Document doc = new Document();
+    doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
+    doc.add(newTextField("id", "" + index, Field.Store.NO));
+    doc.add(new NumericDocValuesField("numericdv", 1));
+    writer.addDocument(doc);
   }
 }

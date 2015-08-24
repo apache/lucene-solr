@@ -32,7 +32,7 @@
   <xsl:template match='/'>
     <rss version="2.0">
        <channel>
-	 <title>Example Solr RSS 2.0 Feed</title>
+         <title>Example Solr RSS 2.0 Feed</title>
          <link>http://localhost:8983/solr</link>
          <description>
           This has been formatted by the sample "example_rss.xsl" transform -

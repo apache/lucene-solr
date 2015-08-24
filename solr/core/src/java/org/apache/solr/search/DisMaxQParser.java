@@ -243,7 +243,8 @@ public class DisMaxQParser extends QParser {
     if (dis instanceof BooleanQuery) {
       BooleanQuery.Builder t = new BooleanQuery.Builder();
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery) dis);
-      SolrPluginUtils.setMinShouldMatch(t, minShouldMatch);
+      boolean mmAutoRelax = params.getBool(DisMaxParams.MM_AUTORELAX, false);
+      SolrPluginUtils.setMinShouldMatch(t, minShouldMatch, mmAutoRelax);
       query = t.build();
     }
     return query;

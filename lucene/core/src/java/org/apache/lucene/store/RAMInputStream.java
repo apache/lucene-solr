@@ -116,7 +116,7 @@ public class RAMInputStream extends IndexInput implements Cloneable {
 
   @Override
   public void seek(long pos) throws IOException {
-    if (currentBuffer==null || pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
+    if (currentBuffer == null || pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
       currentBufferIndex = (int) (pos / BUFFER_SIZE);
       switchCurrentBuffer(false);
     }

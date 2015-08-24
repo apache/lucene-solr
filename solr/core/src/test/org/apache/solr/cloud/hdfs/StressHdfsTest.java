@@ -37,6 +37,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 @Slow
 @ThreadLeakFilters(defaultFilters = true, filters = {
@@ -153,7 +155,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
 
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     cloudClient.setDefaultCollection(DELETE_DATA_DIR_COLLECTION);
-    cloudClient.getZkStateReader().updateClusterState(true);
+    cloudClient.getZkStateReader().updateClusterState();
     
     for (int i = 1; i < nShards + 1; i++) {
       cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
@@ -202,15 +204,15 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     cloudClient.request(request);
-    
-    long timeout = System.currentTimeMillis() + 10000;
+
+    final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS);
     while (cloudClient.getZkStateReader().getClusterState().hasCollection(DELETE_DATA_DIR_COLLECTION)) {
-      if (System.currentTimeMillis() > timeout) {
+      if (timeout.hasTimedOut()) {
         throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
       }
       
       Thread.sleep(200);
-      cloudClient.getZkStateReader().updateClusterState(true);
+      cloudClient.getZkStateReader().updateClusterState();
     }
     
     // check that all dirs are gone

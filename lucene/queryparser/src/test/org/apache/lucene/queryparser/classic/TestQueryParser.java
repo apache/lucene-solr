@@ -17,8 +17,6 @@ package org.apache.lucene.queryparser.classic;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -37,6 +35,9 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
+
+import java.io.IOException;
 
 /**
  * Tests QueryParser.
@@ -155,14 +156,13 @@ public class TestQueryParser extends QueryParserTestBase {
   @SuppressWarnings("rawtype")
   public void testProtectedCtors() throws Exception {
     try {
-      QueryParser.class.getConstructor(new Class[] {CharStream.class});
+      QueryParser.class.getConstructor(CharStream.class);
       fail("please switch public QueryParser(CharStream) to be protected");
     } catch (NoSuchMethodException nsme) {
       // expected
     }
     try {
-      QueryParser.class
-          .getConstructor(new Class[] {QueryParserTokenManager.class});
+      QueryParser.class.getConstructor(QueryParserTokenManager.class);
       fail("please switch public QueryParser(QueryParserTokenManager) to be protected");
     } catch (NoSuchMethodException nsme) {
       // expected
@@ -504,5 +504,16 @@ public class TestQueryParser extends QueryParserTestBase {
     expected.setSlop(3);
     assertEquals(expected, qp.parse("\"中国\"~3^2"));
   }
-  
+
+  /** LUCENE-6677: make sure wildcard query respects maxDeterminizedStates. */
+  public void testWildcardMaxDeterminizedStates() throws Exception {
+    QueryParser qp = new QueryParser("field", new MockAnalyzer(random()));
+    qp.setMaxDeterminizedStates(10);
+    try {
+      qp.parse("a*aaaaaaa");
+      fail("should have hit exception");
+    } catch (TooComplexToDeterminizeException tctde) {
+      // expected
+    }
+  }
 }

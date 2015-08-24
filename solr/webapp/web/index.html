@@ -107,16 +107,16 @@ limitations under the License.
           <h2>Connection to Solr lost</h2>
           <p>Please check the Solr instance.</p>
         </div>
-	<div class="connection-status header-message" id="connection-status-recovered"  ng-show="connectionRecovered">
-	  <h2>Connection recovered...</h2>
-	  <p>Continuing to load data...</p>
-	</div>
+  <div class="connection-status header-message" id="connection-status-recovered"  ng-show="connectionRecovered">
+    <h2>Connection recovered...</h2>
+    <p>Continuing to load data...</p>
+  </div>
       </div>
 
       <div id="http-exception" class="header-message" ng-show="exception">
         <h2>Exception</h2>
-	<p>{{exception}}</p>
-	<a ng-click="hideException()">hide exception</a>
+  <p>{{exception}}</p>
+  <a ng-click="hideException()">hide exception</a>
       </div>
 
       <div id="content-wrapper">
@@ -180,7 +180,7 @@ limitations under the License.
               <li class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
               <li class="schema-browser" ng-class="{active:page=='schema-browser'}"><a href="#/{{currentCore.name}}/schema-browser"><span>Schema Browser</span></a></li>
               <li class="segments" ng-class="{active:page=='segments'}"><a href="#/{{currentCore.name}}/segments"><span>Segments info</span></a></li>
-	    </ul>
+      </ul>
           </div>
 
         </div>

@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.agkn.hll.HLL;
-import net.agkn.hll.HLLType;
+import org.apache.solr.util.hll.HLL;
+import org.apache.solr.util.hll.HLLType;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;

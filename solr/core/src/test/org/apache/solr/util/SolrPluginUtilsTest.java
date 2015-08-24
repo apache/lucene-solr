@@ -390,6 +390,66 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
         
   }
 
+  @Test
+  public void testMinShouldMatchAutoRelax() {
+    /* The basics should not be affected by autoRelax */
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.add(new TermQuery(new Term("a","b")), Occur.SHOULD);
+    q.add(new TermQuery(new Term("a","c")), Occur.SHOULD);
+    q.add(new TermQuery(new Term("a","d")), Occur.SHOULD);
+    q.add(new TermQuery(new Term("a","d")), Occur.SHOULD);
+
+    SolrPluginUtils.setMinShouldMatch(q, "0", true);
+    assertEquals(0, q.build().getMinimumNumberShouldMatch());
+
+    SolrPluginUtils.setMinShouldMatch(q, "1", true);
+    assertEquals(1, q.build().getMinimumNumberShouldMatch());
+
+    SolrPluginUtils.setMinShouldMatch(q, "50%", true);
+    assertEquals(2, q.build().getMinimumNumberShouldMatch());
+
+    SolrPluginUtils.setMinShouldMatch(q, "99", true);
+    assertEquals(4, q.build().getMinimumNumberShouldMatch());
+
+    q.add(new TermQuery(new Term("a","e")), Occur.MUST);
+    q.add(new TermQuery(new Term("a","f")), Occur.MUST);
+
+    SolrPluginUtils.setMinShouldMatch(q, "50%", true);
+    assertEquals(2, q.build().getMinimumNumberShouldMatch());
+
+    /* Simulate stopwords through uneven disjuncts */
+    q = new BooleanQuery.Builder();
+    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(0.0f);
+    dmq.add(new TermQuery(new Term("a","foo")));
+    q.add(dmq, Occur.SHOULD);
+    dmq = new DisjunctionMaxQuery(0.0f);
+    dmq.add(new TermQuery(new Term("a","foo")));
+    dmq.add(new TermQuery(new Term("b","foo")));
+    q.add(dmq, Occur.SHOULD);
+    dmq = new DisjunctionMaxQuery(0.0f);
+    dmq.add(new TermQuery(new Term("a","bar")));
+    dmq.add(new TermQuery(new Term("b","bar")));
+    q.add(dmq, Occur.SHOULD);
+
+    // Without relax
+    SolrPluginUtils.setMinShouldMatch(q, "100%", false);
+    assertEquals(3, q.build().getMinimumNumberShouldMatch());
+
+    // With relax
+    SolrPluginUtils.setMinShouldMatch(q, "100%", true);
+    assertEquals(2, q.build().getMinimumNumberShouldMatch());
+
+    // Still same result with a MUST clause extra
+    q.add(new TermQuery(new Term("a","must")), Occur.MUST);
+    SolrPluginUtils.setMinShouldMatch(q, "100%", true);
+    assertEquals(2, q.build().getMinimumNumberShouldMatch());
+
+    // Combination of dismax and non-dismax SHOULD clauses
+    q.add(new TermQuery(new Term("b","should")), Occur.SHOULD);
+    SolrPluginUtils.setMinShouldMatch(q, "100%", true);
+    assertEquals(3, q.build().getMinimumNumberShouldMatch());
+  }
+
   /** macro */
   public String pe(CharSequence s) {
     return SolrPluginUtils.partialEscape(s).toString();

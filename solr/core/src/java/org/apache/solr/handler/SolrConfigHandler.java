@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -51,7 +50,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -60,6 +58,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.ImplicitPlugins;
 import org.apache.solr.core.PluginInfo;
@@ -73,11 +72,12 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
@@ -179,7 +179,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
         } else {
           if (ZNODEVER.equals(parts.get(1))) {
-            resp.add(ZNODEVER, ZkNodeProps.makeMap(
+            resp.add(ZNODEVER, Utils.makeMap(
                 ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().getZnodeVersion(),
                 RequestParams.NAME, req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
             boolean checkStale = false;
@@ -246,20 +246,8 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
 
     private void handlePOST() throws IOException {
-      Iterable<ContentStream> streams = req.getContentStreams();
-      if (streams == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
-      }
-      ArrayList<CommandOperation> ops = new ArrayList<>();
-
-      for (ContentStream stream : streams)
-        ops.addAll(CommandOperation.parse(stream.getReader()));
-      List<Map> errList = CommandOperation.captureErrors(ops);
-      if (!errList.isEmpty()) {
-        resp.add(CommandOperation.ERR_MSGS, errList);
-        return;
-      }
-
+      List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp);
+      if (ops == null) return;
       try {
         for (; ; ) {
           ArrayList<CommandOperation> opsCopy = new ArrayList<>(ops.size());
@@ -407,7 +395,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
                   overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create") || prefix.equals("add"));
                 }
               } else {
-                op.addError(formatString("Unknown operation ''{0}'' ", op.name));
+                op.unknownOperation();
               }
             }
           }
@@ -593,7 +581,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
     return null;
   }
 
-  static void setWt(SolrQueryRequest req, String wt) {
+  public static void setWt(SolrQueryRequest req, String wt) {
     SolrParams params = req.getParams();
     if (params.get(CommonParams.WT) != null) return;//wt is set by user
     Map<String, String> map = new HashMap<>(1);
@@ -657,7 +645,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
                                               String prop,
                                               int expectedVersion,
                                               int maxWaitSecs) {
-    long startMs = System.currentTimeMillis();
+    final RTimer timer = new RTimer();
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
@@ -715,10 +703,8 @@ public class SolrConfigHandler extends RequestHandlerBase {
       ExecutorUtil.shutdownNowAndAwaitTermination(parallelExecutor);
     }
 
-    long diffMs = (System.currentTimeMillis() - startMs);
-    log.info(formatString(
-        "Took {0} secs to set the property {1} to be of version {2} for collection {3}",
-        Math.round(diffMs / 1000d), prop, expectedVersion, collection));
+    log.info("Took {}ms to set the property {} to be of version {} for collection {}",
+        timer.getTime(), prop, expectedVersion, collection);
   }
 
   public static List<String> getActiveReplicaCoreUrls(ZkController zkController,
@@ -767,13 +753,13 @@ public class SolrConfigHandler extends RequestHandlerBase {
 
     @Override
     public Boolean call() throws Exception {
-      long startTime = System.currentTimeMillis();
+      final RTimer timer = new RTimer();
       int attempts = 0;
       try (HttpSolrClient solr = new HttpSolrClient(coreUrl)) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {
-            long timeElapsed = (System.currentTimeMillis() - startTime) / 1000;
+            long timeElapsed = (long) timer.getTime() / 1000;
             if (timeElapsed >= maxWait) {
               return false;
             }

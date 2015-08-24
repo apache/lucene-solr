@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.fa;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Persian Analyzer
@@ -225,6 +226,27 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
         new CharArraySet( asSet("the", "and", "a"), false));
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
+    a.close();
+  }
+  
+  /**
+   * test we fold digits to latin-1
+   */
+  public void testDigits() throws Exception {
+    PersianAnalyzer a = new PersianAnalyzer();
+    checkOneTerm(a, "۱۲۳۴", "1234");
+    a.close();
+  }
+  
+  /**
+   * test that we don't fold digits for back compat behavior
+   * @deprecated remove this test in lucene 7
+   */
+  @Deprecated
+  public void testDigitsBackCompat() throws Exception {
+    PersianAnalyzer a = new PersianAnalyzer();
+    a.setVersion(Version.LUCENE_5_3_0);
+    checkOneTerm(a, "۱۲۳۴", "۱۲۳۴");
     a.close();
   }
   

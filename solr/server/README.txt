@@ -75,11 +75,7 @@ server/solr/configsets
 
 server/solr-webapp
 
-  Jetty will extract the solr.war into this directory at runtime.
-
-server/webapps
-
-  Contains the solr.war file.
+  Contains files used by the Solr server; do not edit files in this directory (Solr is not a Java Web application).
 
 
 Notes About Solr Examples

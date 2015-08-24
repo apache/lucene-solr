@@ -130,7 +130,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     info.add( "now", new Date() );
     
     // Start Time
-    info.add( "start", new Date(core.getStartTime()) );
+    info.add( "start", core.getStartTimeStamp() );
 
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();

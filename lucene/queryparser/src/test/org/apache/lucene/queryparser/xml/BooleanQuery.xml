@@ -16,13 +16,13 @@
  limitations under the License.
 -->
 <BooleanQuery fieldName="contents">
-	<Clause occurs="should">
-		<TermQuery>merger</TermQuery>
-	</Clause>
-	<Clause occurs="mustnot">
-		<TermQuery>sumitomo</TermQuery>
-	</Clause>
-	<Clause occurs="must">
-		<TermQuery>bank</TermQuery>
-	</Clause>
+  <Clause occurs="should">
+    <TermQuery>merger</TermQuery>
+  </Clause>
+  <Clause occurs="mustnot">
+    <TermQuery>sumitomo</TermQuery>
+  </Clause>
+  <Clause occurs="must">
+    <TermQuery>bank</TermQuery>
+  </Clause>
 </BooleanQuery>

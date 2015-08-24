@@ -17,6 +17,23 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.docvalues.FloatDocValues;
+import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueFloat;
+
 /**
  * A numeric field that can contain single-precision 32-bit IEEE 754 
  * floating point values.
@@ -45,4 +62,50 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
     if (val instanceof String) return Float.parseFloat((String) val);
     return super.toNativeType(val);
   }
+
+  @Override
+  protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
+    
+    return new SortedSetFieldSource(f.getName(), choice) {
+      @Override
+      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+        SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
+        
+        SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
+        SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
+        
+        return new FloatDocValues(thisAsSortedSetFieldSource) {
+          @Override
+          public float floatVal(int doc) {
+            BytesRef bytes = view.get(doc);
+            return  NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(bytes));
+          }
+
+          @Override
+          public boolean exists(int doc) {
+            return -1 != view.getOrd(doc);
+          }
+
+          @Override
+          public ValueFiller getValueFiller() {
+            return new ValueFiller() {
+              private final MutableValueFloat mval = new MutableValueFloat();
+              
+              @Override
+              public MutableValue getValue() {
+                return mval;
+              }
+              
+              @Override
+              public void fillValue(int doc) {
+                mval.exists = exists(doc);
+                mval.value = mval.exists ? floatVal(doc) : 0.0F;
+              }
+            };
+          }
+        };
+      }
+    };
+  }
+
 }

@@ -23,6 +23,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -77,6 +78,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     checkVetoHeaders(response, false);
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to check against expiry headers from Solr")
   protected void checkVetoHeaders(HttpResponse response, boolean checkExpires) throws Exception {
     Header head = response.getFirstHeader("Cache-Control");
     assertNotNull("We got no Cache-Control header", head);

@@ -408,11 +408,17 @@
   <fieldType name="text_shingles" class="solr.TextField" positionIncrementGap="100" multiValued="true">
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.LengthFilterFactory" min="2" max="20"/>
-      <!-- <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/> -->
+      <!-- <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="false" /> -->
+      <filter class="solr.LengthFilterFactory" min="2" max="18"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.ShingleFilterFactory" maxShingleSize="3"
-              outputUnigrams="false" outputUnigramsIfNoShingles="true" tokenSeparator=" " fillerToken="*"/>
+      <filter class="solr.PatternReplaceFilterFactory" pattern="(^[^a-z]+$)" replacement="" replace="all"/>
+      <filter class="solr.ShingleFilterFactory" minShingleSize="3"  maxShingleSize="3"
+             outputUnigrams="false" outputUnigramsIfNoShingles="false" tokenSeparator=" " fillerToken="*"/>
+      <filter class="solr.PatternReplaceFilterFactory" pattern="(.*[\*].*)"  replacement=""/>
+      <filter class="solr.TrimFilterFactory"/>
+
+      <!-- PRFF could have removed everything down to an empty string, remove if so -->
+      <filter class="solr.LengthFilterFactory" min="1" max="100"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.KeywordTokenizerFactory"/>
@@ -424,6 +430,8 @@
   <field name="_version_" type="long" indexed="true" stored="true"/>
   <field name="content_type" type="string" indexed="true" stored="true"/>
   <field name="doc_type" type="string" indexed="true" stored="true"/>
+  <field name="title" type="string" indexed="true" stored="true"/>
+  <field name="language" type="string" indexed="true" stored="true"/>
   <field name="content" type="text_general" multiValued="false" indexed="true" stored="true"/>
   <field name="text_shingles" type="text_shingles" indexed="true" stored="false"/>
   <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
@@ -504,4 +512,6 @@
 
   <copyField source="content" dest="text_shingles"/>
   <copyField source="*" dest="_text_"/>
+
+
 </schema>

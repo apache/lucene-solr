@@ -26,7 +26,9 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.SortedSetSortField;
 
 /**
  * Retrieves {@link FunctionValues} instances for multi-valued string based fields.
@@ -47,7 +49,12 @@ public class SortedSetFieldSource extends FieldCacheSource {
     super(field);
     this.selector = selector;
   }
-
+  
+  @Override
+  public SortField getSortField(boolean reverse) {
+    return new SortedSetSortField(this.field, reverse, this.selector);
+  }
+  
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);

@@ -15,6 +15,7 @@ import org.apache.lucene.queryparser.surround.query.SrndPrefixQuery;
 import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;
 
 /** Token Manager. */
+@SuppressWarnings("cast")
 public class QueryParserTokenManager implements QueryParserConstants
 {
 

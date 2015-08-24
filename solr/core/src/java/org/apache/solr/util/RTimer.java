@@ -17,16 +17,11 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-
-/** A recursive timer.
+/** A simple timer.
  * 
- * RTimers are started automatically when instantiated; subtimers are also
- * started automatically when created.
+ * RTimers are started automatically when instantiated.
  *
  * @since solr 1.3
  *
@@ -38,10 +33,9 @@ public class RTimer {
   public static final int PAUSED = 2;
 
   protected int state;
-  protected TimerImpl timerImpl;
-  protected double time;
-  protected double culmTime;
-  protected SimpleOrderedMap<RTimer> children;
+  private TimerImpl timerImpl;
+  private double time;
+  private double culmTime;
 
   protected interface TimerImpl {
     void start();
@@ -62,32 +56,21 @@ public class RTimer {
     return new NanoTimeTimerImpl();
   }
 
-  protected RTimer newTimer() {
-    return new RTimer();
-  }
-
   public RTimer() {
     time = 0;
     culmTime = 0;
-    children = new SimpleOrderedMap<>();
     timerImpl = newTimerImpl();
     timerImpl.start();
     state = STARTED;
   }
 
-  /** Recursively stop timer and sub timers */
+  /** Stop this timer */
   public double stop() {
     assert state == STARTED || state == PAUSED;
     time = culmTime;
     if(state == STARTED) 
       time += timerImpl.elapsed();
     state = STOPPED;
-    
-    for( Map.Entry<String,RTimer> entry : children ) {
-      RTimer child = entry.getValue();
-      if(child.state == STARTED || child.state == PAUSED) 
-        child.stop();
-    }
     return time;
   }
 
@@ -114,41 +97,4 @@ public class RTimer {
       return culmTime + timerImpl.elapsed();
     }
  }
-
-  /** Create new subtimer with given name
-   *
-   * Subtimer will be started.
-   */
-  public RTimer sub(String desc) {
-    RTimer child = children.get( desc );
-    if( child == null ) {
-      child = newTimer();
-      children.add(desc, child);
-    }
-    return child;
-  }
-
-  @Override
-  public String toString() {
-    return asNamedList().toString();
-  }
-
-  public NamedList asNamedList() {
-    NamedList<Object> m = new SimpleOrderedMap<>();
-    m.add( "time", getTime() );
-    if( children.size() > 0 ) {
-      for( Map.Entry<String, RTimer> entry : children ) {
-        m.add( entry.getKey(), entry.getValue().asNamedList() );
-      }
-    }
-    return m;
-  }
-  
-  /**
-   * Manipulating this map may have undefined results.
-   */
-  public SimpleOrderedMap<RTimer> getChildren()
-  {
-    return children;
-  }
 }

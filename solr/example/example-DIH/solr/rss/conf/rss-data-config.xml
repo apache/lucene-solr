@@ -7,11 +7,11 @@
                 processor="XPathEntityProcessor"
                 forEach="/rss/channel/item"
                 transformer="DateFormatTransformer">
-				
+        
             <field column="source" xpath="/rss/channel/title" commonField="true" />
             <field column="source-link" xpath="/rss/channel/link" commonField="true" />
             <field column="subject" xpath="/rss/channel/subject" commonField="true" />
-			
+      
             <field column="title" xpath="/rss/channel/item/title" />
             <field column="link" xpath="/rss/channel/item/link" />
             <field column="description" xpath="/rss/channel/item/description" />
