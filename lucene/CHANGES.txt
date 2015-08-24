@@ -98,6 +98,9 @@ Other
 
 * LUCENE-6755: more tests of ToChildBlockJoinScorer.advance (hossman)
 
+* LUCENE-6571: fix some private access level javadoc errors and warnings
+  (Cao Manh Dat, Christine Poerschke)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also

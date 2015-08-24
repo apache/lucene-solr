@@ -43,7 +43,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -104,17 +103,17 @@ public final class FST<T> implements Accountable {
   private static final byte ARCS_AS_FIXED_ARRAY = BIT_ARC_HAS_FINAL_OUTPUT;
 
   /**
-   * @see #shouldExpand(Builder, UnCompiledNode)
+   * @see #shouldExpand(Builder, Builder.UnCompiledNode)
    */
   static final int FIXED_ARRAY_SHALLOW_DISTANCE = 3; // 0 => only root node.
 
   /**
-   * @see #shouldExpand(Builder, UnCompiledNode)
+   * @see #shouldExpand(Builder, Builder.UnCompiledNode)
    */
   static final int FIXED_ARRAY_NUM_ARCS_SHALLOW = 5;
 
   /**
-   * @see #shouldExpand(Builder, UnCompiledNode)
+   * @see #shouldExpand(Builder, Builder.UnCompiledNode)
    */
   static final int FIXED_ARRAY_NUM_ARCS_DEEP = 10;
 
@@ -1332,7 +1331,7 @@ public final class FST<T> implements Accountable {
    * @see #FIXED_ARRAY_NUM_ARCS_DEEP
    * @see Builder.UnCompiledNode#depth
    */
-  private boolean shouldExpand(Builder<T> builder, UnCompiledNode<T> node) {
+  private boolean shouldExpand(Builder<T> builder, Builder.UnCompiledNode<T> node) {
     return builder.allowArrayArcs &&
       ((node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
        node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP);
