@@ -44,9 +44,10 @@ public abstract class ChecksumIndexInput extends IndexInput {
    */
   @Override
   public void seek(long pos) throws IOException {
-    final long skip = pos - getFilePointer();
+    final long curFP = getFilePointer();
+    final long skip = pos - curFP;
     if (skip < 0) {
-      throw new IllegalStateException(getClass() + " cannot seek backwards");
+      throw new IllegalStateException(getClass() + " cannot seek backwards (pos=" + pos + " getFilePointer()=" + curFP + ")");
     }
     skipBytes(skip);
   }
