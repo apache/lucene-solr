@@ -390,6 +390,11 @@
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-decl-order">
     <lst name="engine">
+      <bool name="optional">true</bool>
+      <str name="name">unavailable</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.lingo.UnavailableAlgorithm</str>
+    </lst>
+    <lst name="engine">
       <str name="name">lingo</str>
       <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
     </lst>

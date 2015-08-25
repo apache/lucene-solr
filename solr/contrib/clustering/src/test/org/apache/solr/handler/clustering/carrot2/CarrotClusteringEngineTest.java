@@ -414,7 +414,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("clustering-name-decl-order");
     Map<String,SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
     assertEquals(
-        Lists.newArrayList("lingo", "stc", "mock", "default"),
+        Lists.newArrayList("unavailable", "lingo", "stc", "mock", "default"),
         Lists.newArrayList(engines.keySet()));
     assertEquals(
         LingoClusteringAlgorithm.class,

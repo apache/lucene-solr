@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
-Carrot2 3.9.0
+Carrot2 3.10.3
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -93,7 +93,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
-Carrot2 3.9.0
+Carrot2 3.10.3
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -167,6 +167,8 @@ Optimizations
 
 Other Changes
 ----------------------
+
+* SOLR-7969: Unavailable clustering engines should not fail the core. (Dawid Weiss)
 
 * SOLR-7790, SOLR-7792, SOLR-7791: Update Carrot2 clustering component to 
   version 3.10.3. Upgrade HPPC library to version 0.7.1, morfologik-stemming 

@@ -1360,64 +1360,54 @@
 
        You'll need to set the solr.clustering.enabled system property
        when running solr to run with clustering enabled:
+       -Dsolr.clustering.enabled=true
 
-            java -Dsolr.clustering.enabled=true -jar start.jar
-
-       http://wiki.apache.org/solr/ClusteringComponent
-       http://carrot2.github.io/solr-integration-strategies/
+       https://cwiki.apache.org/confluence/display/solr/Result+Clustering
     -->
   <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:false}"
                    class="solr.clustering.ClusteringComponent" >
+    <!--
+    Declaration of "engines" (clustering algorithms).
+
+    The open source algorithms from Carrot2.org project:
+      * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
+      * org.carrot2.clustering.stc.STCClusteringAlgorithm
+      * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
+    See http://project.carrot2.org/algorithms.html for more information.
+
+    Commercial algorithm Lingo3G (needs to be installed separately):
+      * com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm
+    -->
+
     <lst name="engine">
-      <str name="name">lingo</str>
-
-      <!-- Class name of a clustering algorithm compatible with the Carrot2 framework.
-
-           Currently available open source algorithms are:
-           * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
-           * org.carrot2.clustering.stc.STCClusteringAlgorithm
-           * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
-
-           See http://project.carrot2.org/algorithms.html for more information.
-
-           A commercial algorithm Lingo3G (needs to be installed separately) is defined as:
-           * com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm
-        -->
-      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
-
-      <!-- Override location of the clustering algorithm's resources 
-           (attribute definitions and lexical resources).
-
-           A directory from which to load algorithm-specific stop words,
-           stop labels and attribute definition XMLs. 
-
-           For an overview of Carrot2 lexical resources, see:
-           http://download.carrot2.org/head/manual/#chapter.lexical-resources
-
-           For an overview of Lingo3G lexical resources, see:
-           http://download.carrotsearch.com/lingo3g/manual/#chapter.lexical-resources
-       -->
+      <str name="name">lingo3g</str>
+      <bool name="optional">true</bool>
+      <str name="carrot.algorithm">com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm</str>
       <str name="carrot.resourcesDir">clustering/carrot2</str>
     </lst>
 
-    <!-- An example definition for the STC clustering algorithm. -->
+    <lst name="engine">
+      <str name="name">lingo</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
+      <str name="carrot.resourcesDir">clustering/carrot2</str>
+    </lst>
+
     <lst name="engine">
       <str name="name">stc</str>
       <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
+      <str name="carrot.resourcesDir">clustering/carrot2</str>
     </lst>
 
-    <!-- An example definition for the bisecting kmeans clustering algorithm. -->
     <lst name="engine">
       <str name="name">kmeans</str>
       <str name="carrot.algorithm">org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm</str>
+      <str name="carrot.resourcesDir">clustering/carrot2</str>
     </lst>
   </searchComponent>
 
-  <!-- A request handler for demonstrating the clustering component
-
-       This is purely as an example.
-
+  <!-- A request handler for demonstrating the clustering component.
+       This is meant as an example.
        In reality you will likely want to add the component to your 
        already specified request handlers. 
     -->
@@ -1447,14 +1437,14 @@
         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
       </str>
       <str name="q.alt">*:*</str>
-      <str name="rows">10</str>
+      <str name="rows">100</str>
       <str name="fl">*,score</str>
     </lst>
     <arr name="last-components">
       <str>clustering</str>
     </arr>
   </requestHandler>
-  
+
   <!-- Terms Component
 
        http://wiki.apache.org/solr/TermsComponent
