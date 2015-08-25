@@ -168,6 +168,10 @@ Optimizations
   are more efficient especially when cluster has a mix of collections in stateFormat=1
   and stateFormat=2. (Scott Blum, shalin)
 
+* SOLR-7971: Reduce memory allocated by JavaBinCodec to encode large strings by an amount
+  equal to the string.length().
+  (yonik, Steve Rowe, shalin)
+
 Other Changes
 ----------------------
 
