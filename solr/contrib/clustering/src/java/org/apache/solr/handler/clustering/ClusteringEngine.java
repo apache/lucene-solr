@@ -22,7 +22,7 @@ import org.apache.solr.core.SolrCore;
  * A base class for {@link SearchClusteringEngine} and {@link DocumentClusteringEngine}.
  * @lucene.experimental
  */
-public class ClusteringEngine {
+public abstract class ClusteringEngine {
   public static final String ENGINE_NAME = "name";
   public static final String DEFAULT_ENGINE_NAME = "default";
 
@@ -36,4 +36,6 @@ public class ClusteringEngine {
   public String getName() {
     return name;
   }
+
+  public abstract boolean isAvailable();
 }
