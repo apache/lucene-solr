@@ -150,6 +150,9 @@ Bug Fixes
 
 * SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
 
+* SOLR-7956: There are interrupts on shutdown in places that can cause ChannelAlreadyClosed
+  exceptions which prevents proper closing of transaction logs. (Mark Miller)
+
 Optimizations
 ----------------------
 
