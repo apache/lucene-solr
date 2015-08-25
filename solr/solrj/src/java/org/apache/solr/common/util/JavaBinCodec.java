@@ -614,7 +614,7 @@ public class JavaBinCodec {
       return;
     }
     int end = s.length();
-    int maxSize = end * 4;
+    int maxSize = end * 3; // 3 is enough, see SOLR-7971
     if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
     int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
 
