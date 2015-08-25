@@ -161,6 +161,10 @@ Optimizations
   message processing performance by ~470%.
   (Noble Paul, Scott Blum, shalin)
 
+* SOLR-6629: Watch /collections zk node on all nodes so that cluster state updates
+  are more efficient especially when cluster has a mix of collections in stateFormat=1
+  and stateFormat=2. (Scott Blum, shalin)
+
 Other Changes
 ----------------------
 

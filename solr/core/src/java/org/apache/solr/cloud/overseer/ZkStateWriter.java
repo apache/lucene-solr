@@ -125,14 +125,24 @@ public class ZkStateWriter {
       callback.onEnqueue();
     }
 
+    /*
+    We need to know if the collection has moved from stateFormat=1 to stateFormat=2 (as a result of MIGRATECLUSTERSTATE)
+     */
+    DocCollection previousCollection = prevState.getCollectionOrNull(cmd.name);
+    boolean wasPreviouslyStateFormat1 = previousCollection != null && previousCollection.getStateFormat() == 1;
+    boolean isCurrentlyStateFormat1 = cmd.collection != null && cmd.collection.getStateFormat() == 1;
+
     if (cmd.collection == null) {
-      isClusterStateModified = true;
+      if (wasPreviouslyStateFormat1) {
+        isClusterStateModified = true;
+      }
       clusterState = prevState.copyWith(cmd.name, null);
       updates.put(cmd.name, null);
     } else {
-      if (cmd.collection.getStateFormat() > 1) {
+      if (!isCurrentlyStateFormat1) {
         updates.put(cmd.name, cmd.collection);
-      } else {
+      }
+      if (isCurrentlyStateFormat1 || wasPreviouslyStateFormat1) {
         isClusterStateModified = true;
       }
       clusterState = prevState.copyWith(cmd.name, cmd.collection);
@@ -211,6 +221,7 @@ public class ZkStateWriter {
 
           if (c == null) {
             // let's clean up the collections path for this collection
+            log.info("going to delete_collection {}", path);
             reader.getZkClient().clean("/collections/" + name);
           } else if (c.getStateFormat() > 1) {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
@@ -225,7 +236,6 @@ public class ZkStateWriter {
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
               clusterState = clusterState.copyWith(name, newCollection);
-              isClusterStateModified = true;
             }
           } else if (c.getStateFormat() == 1) {
             isClusterStateModified = true;
@@ -237,7 +247,6 @@ public class ZkStateWriter {
 
       if (isClusterStateModified) {
         assert clusterState.getZkClusterStateVersion() >= 0;
-        lastUpdatedTime = System.nanoTime();
         byte[] data = Utils.toJSON(clusterState);
         Stat stat = reader.getZkClient().setData(ZkStateReader.CLUSTER_STATE, data, clusterState.getZkClusterStateVersion(), true);
         Set<String> collectionNames = clusterState.getCollections();
@@ -249,6 +258,7 @@ public class ZkStateWriter {
         clusterState = new ClusterState(stat.getVersion(), reader.getClusterState().getLiveNodes(), collectionStates);
         isClusterStateModified = false;
       }
+      lastUpdatedTime = System.nanoTime();
       success = true;
     } catch (KeeperException.BadVersionException bve) {
       // this is a tragic error, we must disallow usage of this instance

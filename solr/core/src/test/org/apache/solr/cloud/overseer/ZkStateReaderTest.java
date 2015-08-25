@@ -39,15 +39,25 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
   /** Uses explicit refresh to ensure latest changes are visible. */
   public void testStateFormatUpdateWithExplicitRefresh() throws Exception {
-    testStateFormatUpdate(true);
+    testStateFormatUpdate(true, true);
+  }
+
+  /** Uses explicit refresh to ensure latest changes are visible. */
+  public void testStateFormatUpdateWithExplicitRefreshLazy() throws Exception {
+    testStateFormatUpdate(true, false);
   }
 
   /** ZkStateReader should automatically pick up changes based on ZK watches. */
   public void testStateFormatUpdateWithTimeDelay() throws Exception {
-    testStateFormatUpdate(false);
+    testStateFormatUpdate(false, true);
   }
 
-  public void testStateFormatUpdate(boolean explicitRefresh) throws Exception {
+  /** ZkStateReader should automatically pick up changes based on ZK watches. */
+  public void testStateFormatUpdateWithTimeDelayLazy() throws Exception {
+    testStateFormatUpdate(false, false);
+  }
+
+  public void testStateFormatUpdate(boolean explicitRefresh, boolean isInteresting) throws Exception {
     String zkDir = createTempDir("testStateFormatUpdate").toFile().getAbsolutePath();
 
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -64,7 +74,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       ZkStateReader reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
-      int trackedStateVersion = reader.getClusterState().getZkClusterStateVersion();
+      if (isInteresting) {
+        reader.addCollectionWatch("c1");
+      }
 
       ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
 
@@ -82,7 +94,16 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         boolean exists = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true);
         assertFalse(exists);
 
-        trackedStateVersion = refresh(reader, trackedStateVersion, explicitRefresh);
+        if (explicitRefresh) {
+          reader.updateClusterState();
+        } else {
+          for (int i = 0; i < 100; ++i) {
+            if (reader.getClusterState().hasCollection("c1")) {
+              break;
+            }
+            Thread.sleep(50);
+          }
+        }
 
         DocCollection collection = reader.getClusterState().getCollection("c1");
         assertEquals(1, collection.getStateFormat());
@@ -101,7 +122,16 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         boolean exists = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true);
         assertTrue(exists);
 
-        trackedStateVersion = refresh(reader, trackedStateVersion, explicitRefresh);
+        if (explicitRefresh) {
+          reader.updateClusterState();
+        } else {
+          for (int i = 0; i < 100; ++i) {
+            if (reader.getClusterState().getCollection("c1").getStateFormat() == 2) {
+              break;
+            }
+            Thread.sleep(50);
+          }
+        }
 
         DocCollection collection = reader.getClusterState().getCollection("c1");
         assertEquals(2, collection.getStateFormat());
@@ -138,7 +168,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
       writer.enqueueUpdate(reader.getClusterState(), c1, null);
       writer.writePendingUpdates();
-      refresh(reader, 0, true);
+      reader.updateClusterState();
 
       assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
       reader.addCollectionWatch("c1");
@@ -150,21 +180,5 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       IOUtils.close(zkClient);
       server.shutdown();
     }
-  }
-
-  private static int refresh(ZkStateReader reader, int trackedStateVersion, boolean explicitRefresh) throws KeeperException, InterruptedException {
-    if (explicitRefresh) {
-      reader.updateClusterState();
-      return reader.getClusterState().getZkClusterStateVersion();
-    }
-    for (int i = 0; i < 100; ++i) {
-      // Loop until we observe the change.
-      int newStateVersion = reader.getClusterState().getZkClusterStateVersion();
-      if (newStateVersion > trackedStateVersion) {
-        return newStateVersion;
-      }
-      Thread.sleep(100);
-    }
-    throw new AssertionError("Did not observe expected update");
   }
 }

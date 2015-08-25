@@ -1094,7 +1094,7 @@ public class CloudSolrClient extends SolrClient {
     Set<String> collectionNames = new HashSet<>();
     // validate collections
     for (String collectionName : rawCollectionsList) {
-      if (!clusterState.getCollections().contains(collectionName)) {
+      if (!clusterState.hasCollection(collectionName)) {
         Aliases aliases = zkStateReader.getAliases();
         String alias = aliases.getCollectionAlias(collectionName);
         if (alias != null) {

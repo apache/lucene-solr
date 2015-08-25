@@ -2006,7 +2006,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       boolean created = false;
       while (! waitUntil.hasTimedOut()) {
         Thread.sleep(100);
-        created = zkStateReader.getClusterState().getCollections().contains(collectionName);
+        created = zkStateReader.getClusterState().hasCollection(collectionName);
         if(created) break;
       }
       if (!created)
