@@ -70,6 +70,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -223,6 +224,12 @@ public class SolrCLI {
           + "Supported tools:\n");
       displayToolOptions(System.err);
       exit(1);
+    }
+
+    if (args.length == 1 && Arrays.asList("-v","-version","version").contains(args[0])) {
+      // Simple version tool, no need for its own class
+      System.out.println(Version.LATEST);
+      exit(0);
     }
 
     String configurerClassName = System.getProperty("solr.authentication.httpclient.configurer");
