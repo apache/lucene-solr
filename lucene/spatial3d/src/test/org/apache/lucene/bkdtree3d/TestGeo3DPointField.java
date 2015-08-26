@@ -620,6 +620,13 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                                  decodeValue(encodeValue(point1.y)),
                                                  decodeValue(encodeValue(point1.z)));
 
+                  if (shape.isWithin(point1) != shape.isWithin(point2)) {
+                    if (VERBOSE) {
+                      System.out.println("  skip checking docID=" + docID + " quantization changed the expected result from " + shape.isWithin(point1) + " to " + shape.isWithin(point2));
+                    }
+                    continue;
+                  }
+
                   boolean expected = ((deleted.contains(id) == false) && shape.isWithin(point2));
                   if (hits.get(docID) != expected) {
                     fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + "\n  point1=" + point1 + ", iswithin="+shape.isWithin(point1)+"\n  point2=" + point2 + ", iswithin="+shape.isWithin(point2) + "\n  query=" + query);
@@ -643,4 +650,3 @@ public class TestGeo3DPointField extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 }
-
