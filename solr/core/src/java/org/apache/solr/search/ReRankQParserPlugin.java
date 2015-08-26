@@ -157,7 +157,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return "{!rerank mainQuery='"+mainQuery.toString()+
              "' reRankQuery='"+reRankQuery.toString()+
              "' reRankDocs="+reRankDocs+
-             " reRankWeigh="+reRankWeight+"}";
+             " reRankWeight="+reRankWeight+"}";
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
