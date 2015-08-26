@@ -85,7 +85,7 @@ class BigEndianAscendingWordSerializer implements IWordSerializer {
         this.wordLength = wordLength;
         this.wordCount = wordCount;
 
-        final long bitsRequired = (wordLength * wordCount);
+        final long bitsRequired = ((long)wordLength) * ((long)wordCount);
         final boolean leftoverBits = ((bitsRequired % BITS_PER_BYTE) != 0);
         final int bytesRequired = (int)(bitsRequired / BITS_PER_BYTE) + (leftoverBits ? 1 : 0) + bytePadding;
         bytes = new byte[bytesRequired];
