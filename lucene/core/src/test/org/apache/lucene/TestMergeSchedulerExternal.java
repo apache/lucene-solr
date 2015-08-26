@@ -67,7 +67,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
       excCalled = true;
     }
 
-    ;@Override
+    @Override
     protected void doMerge(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
       mergeCalled = true;
       super.doMerge(writer, merge);
