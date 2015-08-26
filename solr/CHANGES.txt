@@ -153,6 +153,9 @@ Bug Fixes
 * SOLR-7956: There are interrupts on shutdown in places that can cause ChannelAlreadyClosed
   exceptions which prevents proper closing of transaction logs. (Mark Miller)
 
+* SOLR-7972: Fix VelocityResponseWriter template encoding issue.
+  Templates must be UTF-8 encoded. (Erik Hatcher)
+
 Optimizations
 ----------------------
 
