@@ -127,6 +127,7 @@ New Features
    to refer to a single-sharded collection that has a replica on all nodes where there is a 
    replica in the to index (Andrei Beliakov via Mikhail Khludnev)
 
+* SOLR-7961: Print Solr's version with command bin/solr version (janhoy)
 
 Bug Fixes
 ----------------------
@@ -199,6 +200,8 @@ Other Changes
 
 * SOLR-7007: DistributedUpdateProcessor now logs replay flag as boolean instead of int
   (Mike Drob via Christine Poerschke)
+
+* SOLR-7960: Start scripts now gives generic help for bin/solr -h and bin/solr --help (janhoy)
 
 ==================  5.3.0 ==================
 
