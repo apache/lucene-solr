@@ -73,6 +73,9 @@ Bug Fixes
 
 * SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
 
+* SOLR-7972: Fix VelocityResponseWriter template encoding issue.
+  Templates must be UTF-8 encoded. (Erik Hatcher)
+
 Optimizations
 ----------------------
 

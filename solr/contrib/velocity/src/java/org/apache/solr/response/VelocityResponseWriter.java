@@ -282,6 +282,8 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
     engine.setProperty(RuntimeConstants.RESOURCE_LOADER, StringUtils.join(loaders,','));
 
+    engine.setProperty(RuntimeConstants.INPUT_ENCODING, "UTF-8");
+
     // bring in any custom properties too
     engine.init(velocityInitProps);
 

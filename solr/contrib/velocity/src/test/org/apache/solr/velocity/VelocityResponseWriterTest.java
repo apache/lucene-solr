@@ -93,6 +93,11 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testEncoding() throws Exception {
+    assertEquals("éñçø∂îñg", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"encoding")));
+  }
+
+  @Test
   public void testMacros() throws Exception {
     // tests that a macro in a custom macros.vm is visible
     assertEquals("test_macro_SUCCESS", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"test_macro_visible")));
