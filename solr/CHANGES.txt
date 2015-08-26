@@ -156,6 +156,8 @@ Bug Fixes
 * SOLR-7972: Fix VelocityResponseWriter template encoding issue.
   Templates must be UTF-8 encoded. (Erik Hatcher)
 
+* SOLR-7929: SimplePostTool (also bin/post) -filetypes "*" now works properly in 'web' mode (Erik Hatcher)
+
 Optimizations
 ----------------------
 
