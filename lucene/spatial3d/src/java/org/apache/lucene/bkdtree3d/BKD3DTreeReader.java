@@ -151,13 +151,9 @@ final class BKD3DTreeReader implements Accountable {
         // Up above in the recursion we asked valueFilter to relate our cell, and it returned Relation.CELL_INSIDE_SHAPE
         // so all docs inside this cell better be accepted by the filter:
 
-        // nocommit back to assert
+        // NOTE: this is too anal, because we lost precision in the pack/unpack (8 bytes to 4 bytes), a point that's a bit above/below the
+        // earth's surface due to that quantization may incorrectly evaluate as not inside the shape:
         // assert state.valueFilter.accept(docID);
-
-        if (state.valueFilter.accept(docID) == false) {
-          System.out.println("\n" + Thread.currentThread().getName() + ": FAILED: docID=" + docID);
-          throw new RuntimeException("FAILED");
-        }
       }
 
       return count;
