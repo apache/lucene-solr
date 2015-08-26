@@ -99,7 +99,7 @@ class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         }
 
         // First bit of the word
-        final long firstBitIndex = (position * wordLength);
+        final long firstBitIndex = ((long)position) * ((long)wordLength);
         final int firstByteIndex = (bytePadding + (int)(firstBitIndex / BITS_PER_BYTE));
         final int firstByteSkipBits = (int)(firstBitIndex % BITS_PER_BYTE);
 

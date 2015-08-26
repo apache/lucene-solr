@@ -159,6 +159,10 @@ Bug Fixes
 
 * SOLR-7929: SimplePostTool (also bin/post) -filetypes "*" now works properly in 'web' mode (Erik Hatcher)
 
+* SOLR-7954: Fixed an integer overflow bug in the HyperLogLog code used by the 'cardinality' option
+  of stats.field to prevent ArrayIndexOutOfBoundsException in a distributed search when a large precision
+  is selected and a large number of values exist in each shard (hossman)
+
 Optimizations
 ----------------------
 
