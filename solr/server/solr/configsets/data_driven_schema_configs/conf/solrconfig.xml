@@ -1542,6 +1542,8 @@
     -->
   <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy">
     <str name="template.base.dir">${velocity.template.base.dir:}</str>
+    <str name="solr.resource.loader.enabled">${velocity.solr.resource.loader.enabled:true}</str>
+    <str name="params.resource.loader.enabled">${velocity.params.resource.loader.enabled:false}</str>
   </queryResponseWriter>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
