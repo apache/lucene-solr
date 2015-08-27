@@ -7,6 +7,10 @@ http://s.apache.org/luceneversions
 ======================= Lucene 5.4.0 =======================
 
 New Features
+* LUCENE-6747: FingerprintFilter is a TokenFilter that outputs a single
+  token which is a concatenation of the sorted and de-duplicated set of 
+  input tokens. Useful for normalizing short text in clustering/linking 
+  tasks. (Mark Harwood, Adrien Grand)
 
 * LUCENE-6720: New FunctionRangeQuery wrapper around ValueSourceScorer
   (returned from ValueSource/FunctionValues.getRangeScorer()). (David Smiley)
