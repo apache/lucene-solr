@@ -385,6 +385,19 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     '\u205F',
     '\u3000',
   };
+
+  static {
+    // if the JVM/unicode can redefine whitespace once (LUCENE-6760), it might happen again
+    // in the future.  if that happens, fail early with a clera msg, even if java asserts
+    // (used in randomWhitespace) are disbled
+    
+    for (int offset = 0; offset < WHITESPACE_CHARACTERS.length; offset++) {
+      char c = WHITESPACE_CHARACTERS[offset];
+      if (! Character.isWhitespace(c) ) {
+        fail(String.format(Locale.ENGLISH, "Not really whitespace? New JVM/Unicode definitions? WHITESPACE_CHARACTERS[%d] is '\\u%04X'", offset, (int) c));
+      }
+    }
+  }
   
   /**
    * Returns a random string in the specified length range consisting 
