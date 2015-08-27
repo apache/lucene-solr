@@ -165,8 +165,6 @@ Bug Fixes
   of stats.field to prevent ArrayIndexOutOfBoundsException in a distributed search when a large precision
   is selected and a large number of values exist in each shard (hossman)
 
-* SOLR-7983: Utils.toUTF8 uses shorter buffer than necessary for holding UTF8 data. (shalin)
-
 Optimizations
 ----------------------
 
@@ -185,6 +183,8 @@ Optimizations
 * SOLR-7971: Reduce memory allocated by JavaBinCodec to encode large strings by an amount
   equal to the string.length().
   (yonik, Steve Rowe, shalin)
+
+* SOLR-7983: Utils.toUTF8 uses larger buffer than necessary for holding UTF8 data. (shalin)
 
 Other Changes
 ----------------------
