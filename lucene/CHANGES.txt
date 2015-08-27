@@ -14,6 +14,10 @@ System Requirements
   all other modules with "compact2".  (Robert Muir, Uwe Schindler)
 
 New Features
+* LUCENE-6747: FingerprintFilter is a TokenFilter that outputs a single
+  token which is a concatenation of the sorted and de-duplicated set of 
+  input tokens. Useful for normalizing short text in clustering/linking 
+  tasks. (Mark Harwood, Adrien Grand)
 
 * LUCENE-5735: NumberRangePrefixTreeStrategy now includes interval/range faceting
   for counting ranges that align with the underlying terms as defined by the
