@@ -530,17 +530,17 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     initIndexReaderFactory();
 
     if (indexExists && firstTime && !reload) {
-
-      Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT,
-          getSolrConfig().indexConfig.lockType);
+      final String lockType = getSolrConfig().indexConfig.lockType;
+      Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
       try {
         if (IndexWriter.isLocked(dir)) {
-          log.error(logid
-              + "Solr index directory '{}' is locked.  Throwing exception.",
-              indexDir);
-          throw new LockObtainFailedException(
-              "Index locked for write for core '" + name +
-              "'. Solr now longer supports forceful unlocking via 'unlockOnStartup'. Please verify locks manually!");
+          log.error(logid + "Solr index directory '{}' is locked (lockType={}).  Throwing exception.",
+                    indexDir, lockType);
+          throw new LockObtainFailedException
+            ("Index dir '" + indexDir + "' of core '" + name + "' is already locked. " +
+             "The most likely cause is another Solr server (or another solr core in this server) " +
+             "also configured to use this directory; other possible causes may be specific to lockType: " +
+             lockType);
         }
       } finally {
         directoryFactory.release(dir);

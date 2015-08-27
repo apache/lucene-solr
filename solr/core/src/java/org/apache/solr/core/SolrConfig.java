@@ -230,7 +230,15 @@ public class SolrConfig extends Config implements MapSerializable {
             " This config will be removed in future versions.", getNode(indexConfigPrefix + "/nrtMode", false) == null,
         false
     );
-
+    assertWarnOrFail("Solr no longer supports forceful unlocking via the 'unlockOnStartup' option.  "+
+                     "This is no longer neccessary for the default lockType except in situations where "+
+                     "it would be dangerous and should not be done.  For other lockTypes and/or "+
+                     "directoryFactory options it may also be dangerous and users must resolve "+
+                     "problematic locks manually.",
+                     null == getNode(indexConfigPrefix + "/unlockOnStartup", false),
+                     false // warn in 5x
+                     );
+                     
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", mainIndexConfig);
 
