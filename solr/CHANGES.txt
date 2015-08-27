@@ -165,6 +165,8 @@ Bug Fixes
   of stats.field to prevent ArrayIndexOutOfBoundsException in a distributed search when a large precision
   is selected and a large number of values exist in each shard (hossman)
 
+* SOLR-7983: Utils.toUTF8 uses shorter buffer than necessary for holding UTF8 data. (shalin)
+
 Optimizations
 ----------------------
 
