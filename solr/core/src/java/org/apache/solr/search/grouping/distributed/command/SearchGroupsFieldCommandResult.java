@@ -17,26 +17,29 @@ package org.apache.solr.search.grouping.distributed.command;
  * limitations under the License.
  */
 
+import java.util.Collection;
+
+import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.util.BytesRef;
+
 /**
- * A simple data structure to hold a pair of typed objects.
- *
- * @lucene.experimental
+ * Encapsulates the result of a {@link SearchGroupsFieldCommand} command
  */
-public class Pair<A, B> {
+public class SearchGroupsFieldCommandResult {
 
-  private final A a;
-  private final B b;
+  private final Integer groupCount;
+  private final Collection<SearchGroup<BytesRef>> searchGroups;
 
-  public Pair(A a, B b) {
-    this.a = a;
-    this.b = b;
+  public SearchGroupsFieldCommandResult(Integer groupCount, Collection<SearchGroup<BytesRef>> searchGroups) {
+    this.groupCount = groupCount;
+    this.searchGroups = searchGroups;
   }
 
-  public A getA() {
-    return a;
+  public Integer getGroupCount() {
+    return groupCount;
   }
 
-  public B getB() {
-    return b;
+  public Collection<SearchGroup<BytesRef>> getSearchGroups() {
+    return searchGroups;
   }
 }

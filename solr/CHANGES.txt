@@ -209,6 +209,9 @@ Other Changes
 
 * SOLR-7960: Start scripts now gives generic help for bin/solr -h and bin/solr --help (janhoy)
 
+* SOLR-7970: Factor out a SearchGroupsFieldCommandResult class.
+  (Christine Poerschke)
+
 ==================  5.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

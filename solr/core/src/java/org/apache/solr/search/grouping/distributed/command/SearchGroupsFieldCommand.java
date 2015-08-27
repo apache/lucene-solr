@@ -38,7 +38,7 @@ import java.util.*;
 /**
  * Creates all the collectors needed for the first phase and how to handle the results.
  */
-public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collection<SearchGroup<BytesRef>>>> {
+public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldCommandResult> {
 
   public static class Builder {
 
@@ -118,7 +118,7 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
   }
 
   @Override
-  public Pair<Integer, Collection<SearchGroup<BytesRef>>> result() {
+  public SearchGroupsFieldCommandResult result() {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (topNGroups > 0) {
       if (field.getType().getNumericType() != null) {
@@ -135,7 +135,7 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
     } else {
       groupCount = null;
     }
-    return new Pair<>(groupCount, topGroups);
+    return new SearchGroupsFieldCommandResult(groupCount, topGroups);
   }
 
   @Override

@@ -27,8 +27,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.Command;
-import org.apache.solr.search.grouping.distributed.command.Pair;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommand;
+import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommandResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -36,7 +36,7 @@ import java.util.*;
 /**
  * Implementation for transforming {@link SearchGroup} into a {@link NamedList} structure and visa versa.
  */
-public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, Pair<Integer, Collection<SearchGroup<BytesRef>>>>> {
+public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, SearchGroupsFieldCommandResult>> {
 
   private final SolrIndexSearcher searcher;
 
@@ -54,12 +54,12 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
       final NamedList<Object> commandResult = new NamedList<>();
       if (SearchGroupsFieldCommand.class.isInstance(command)) {
         SearchGroupsFieldCommand fieldCommand = (SearchGroupsFieldCommand) command;
-        Pair<Integer, Collection<SearchGroup<BytesRef>>> pair = fieldCommand.result();
-        Integer groupedCount = pair.getA();
-        Collection<SearchGroup<BytesRef>> searchGroups = pair.getB();
+        final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
+        final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
         if (searchGroups != null) {
           commandResult.add("topGroups", serializeSearchGroup(searchGroups, fieldCommand.getGroupSort()));
         }
+        final Integer groupedCount = fieldCommandResult.getGroupCount();
         if (groupedCount != null) {
           commandResult.add("groupCount", groupedCount);
         }
@@ -76,8 +76,8 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
    * {@inheritDoc}
    */
   @Override
-  public Map<String, Pair<Integer, Collection<SearchGroup<BytesRef>>>> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
-    Map<String, Pair<Integer, Collection<SearchGroup<BytesRef>>>> result = new HashMap<>();
+  public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
+    final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>();
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
       NamedList topGroupsAndGroupCount = command.getValue();
@@ -102,7 +102,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
       }
 
       Integer groupCount = (Integer) topGroupsAndGroupCount.get("groupCount");
-      result.put(command.getKey(), new Pair<Integer, Collection<SearchGroup<BytesRef>>>(groupCount, searchGroups));
+      result.put(command.getKey(), new SearchGroupsFieldCommandResult(groupCount, searchGroups));
     }
     return result;
   }
