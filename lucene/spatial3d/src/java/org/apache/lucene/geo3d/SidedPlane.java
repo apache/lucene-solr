@@ -48,6 +48,8 @@ public class SidedPlane extends Plane implements Membership {
   public SidedPlane(Vector p, Vector A, Vector B) {
     super(A, B);
     sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
   }
 
   /**
@@ -60,6 +62,8 @@ public class SidedPlane extends Plane implements Membership {
   public SidedPlane(Vector p, final PlanetModel planetModel, double sinLat) {
     super(planetModel, sinLat);
     sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
   }
 
   /**
@@ -72,6 +76,8 @@ public class SidedPlane extends Plane implements Membership {
   public SidedPlane(Vector p, double x, double y) {
     super(x, y);
     sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
   }
 
   /**
@@ -84,6 +90,8 @@ public class SidedPlane extends Plane implements Membership {
   public SidedPlane(Vector p, Vector v, double D) {
     super(v, D);
     sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
   }
 
   /**
@@ -98,6 +106,8 @@ public class SidedPlane extends Plane implements Membership {
   public SidedPlane(double pX, double pY, double pZ, Vector v, double D) {
     super(v, D);
     sigNum = Math.signum(evaluate(pX,pY,pZ));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
   }
 
   /** Construct a sided plane from two points and a third normal vector.

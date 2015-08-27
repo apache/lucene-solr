@@ -84,8 +84,10 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
       if (circlePlane == null)
-        throw new RuntimeException("Couldn't construct circle plane.  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
+        throw new IllegalArgumentException("Couldn't construct circle plane, probably too small?  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
       final GeoPoint recomputedIntersectionPoint = circlePlane.getSampleIntersectionPoint(planetModel, normalPlane);
+      if (recomputedIntersectionPoint == null)
+        throw new IllegalArgumentException("Couldn't construct intersection point, probably circle too small?  Plane = "+circlePlane);
       this.edgePoints = new GeoPoint[]{recomputedIntersectionPoint};
     }
   }

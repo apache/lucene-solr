@@ -546,7 +546,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
                   angle = random().nextDouble() * Math.PI/2.0;
                 }
 
-                shape = new GeoCircle(planetModel, lat, lon, angle);
+                try {
+                  shape = new GeoCircle(planetModel, lat, lon, angle);
+                } catch (IllegalArgumentException iae) {
+                  // angle is too small; try again:
+                  continue;
+                }
 
                 if (VERBOSE) {
                   System.err.println("\n" + Thread.currentThread() + ": TEST: iter=" + iter + " shape="+shape);
