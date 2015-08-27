@@ -17,14 +17,15 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat;
+import org.apache.lucene.geo3d.PlanetModel;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+
+import java.io.IOException;
 
 /**
  * A {@link DocValuesFormat} to efficiently index geo-spatial 3D x,y,z points
@@ -108,11 +109,11 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
     return new Geo3DDocValuesProducer(delegate.fieldsProducer(state), state);
   }
 
-  // NOTE: the max current PlanetModel is PlanetModel.WGS84; it has a max 1.0011188180710464.  If a new
+  // NOTE: this is from the max current PlanetModel (WGS84).  If a new
   // PlanetModel shows up in the future with a bigger max, we have to revisit this, but users will
   // hit an exc from encodeValue:
 
-  static final double MAX_ABS_VALUE = 1.002d;
+  static final double MAX_ABS_VALUE = 1.0011188180710464;
 
   private static final double ENCODE_SCALE = Integer.MAX_VALUE / MAX_ABS_VALUE;
   private static final double DECODE_SCALE = MAX_ABS_VALUE / Integer.MAX_VALUE;

@@ -140,11 +140,40 @@ public class PointInGeo3DShapeQuery extends Query {
                                              return shape.isWithin(x, y, z);
                                            }
 
+                                           private int roundUp(int x) {
+                                             if (x >=0 && x < Integer.MAX_VALUE) {
+                                               return x+1;
+                                             } else {
+                                               return x;
+                                             }
+                                           }
+
+                                           private int roundDown(int x) {
+                                             if (x < 0 && x > Integer.MIN_VALUE) {
+                                               return x-1;
+                                             } else {
+                                               return x;
+                                             }
+                                           }
+
                                            @Override
                                            public BKD3DTreeReader.Relation compare(int cellXMinEnc, int cellXMaxEnc, int cellYMinEnc, int cellYMaxEnc, int cellZMinEnc, int cellZMaxEnc) {
                                              assert cellXMinEnc <= cellXMaxEnc;
                                              assert cellYMinEnc <= cellYMaxEnc;
                                              assert cellZMinEnc <= cellZMaxEnc;
+
+                                             // Because the BKD tree operates in quantized (64 bit -> 32 bit) space, and the cell bounds
+                                             // here are inclusive, we need to extend the bounds to the largest un-quantized values that
+                                             // could quantize into these bounds.  The encoding (Geo3DDocValuesFormat.encodeValue) does
+                                             // a simple truncation from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
+                                             
+                                             cellXMaxEnc = roundUp(cellXMaxEnc);
+                                             cellYMaxEnc = roundUp(cellYMaxEnc);
+                                             cellZMaxEnc = roundUp(cellZMaxEnc);
+
+                                             cellXMinEnc = roundDown(cellXMinEnc);
+                                             cellYMinEnc = roundDown(cellYMinEnc);
+                                             cellZMinEnc = roundDown(cellZMinEnc);
 
                                              double cellXMin = Geo3DDocValuesFormat.decodeValue(cellXMinEnc);
                                              double cellXMax = Geo3DDocValuesFormat.decodeValue(cellXMaxEnc);
