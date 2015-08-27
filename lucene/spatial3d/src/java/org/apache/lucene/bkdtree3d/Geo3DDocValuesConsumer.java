@@ -17,20 +17,21 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.geo3d.PlanetModel;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
   final DocValuesConsumer delegate;
@@ -40,7 +41,7 @@ class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
   final Map<Integer,Long> fieldIndexFPs = new HashMap<>();
   final SegmentWriteState state;
 
-  public Geo3DDocValuesConsumer(DocValuesConsumer delegate, SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
+  public Geo3DDocValuesConsumer(PlanetModel planetModel, DocValuesConsumer delegate, SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
     BKD3DTreeWriter.verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
     this.delegate = delegate;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
@@ -50,6 +51,10 @@ class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
     out = state.directory.createOutput(datFileName, state.context);
     CodecUtil.writeIndexHeader(out, Geo3DDocValuesFormat.DATA_CODEC_NAME, Geo3DDocValuesFormat.DATA_VERSION_CURRENT,
                                state.segmentInfo.getId(), state.segmentSuffix);
+
+    // We write the max for this PlanetModel into the index so we know we are decoding correctly at search time, and so we can also do
+    // best-effort check that the search time PlanetModel "matches":
+    out.writeLong(Double.doubleToLongBits(planetModel.getMaximumMagnitude()));
   }
 
   @Override

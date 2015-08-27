@@ -80,32 +80,33 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
   
   private final DocValuesFormat delegate = new Lucene50DocValuesFormat();
 
+  private final PlanetModel planetModel;
+
   /** Default constructor */
   public Geo3DDocValuesFormat() {
-    this(BKD3DTreeWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKD3DTreeWriter.DEFAULT_MAX_POINTS_SORT_IN_HEAP);
+    this(PlanetModel.WGS84, BKD3DTreeWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKD3DTreeWriter.DEFAULT_MAX_POINTS_SORT_IN_HEAP);
   }
-
-  // nocommit require PlanetModel here, at write time?  then we could use the true max to encode, and write that into the doc values, and
-  // confirm it's == to the search-time planet model
 
   /** Creates this with custom configuration.
    *
+   * @param planetModel the {@link PlanetModel} to use; this is only used when writing
    * @param maxPointsInLeafNode Maximum number of points in each leaf cell.  Smaller values create a deeper tree with larger in-heap index and possibly
    *    faster searching.  The default is 1024.
    * @param maxPointsSortInHeap Maximum number of points where in-heap sort can be used.  When the number of points exceeds this, a (slower)
    *    offline sort is used.  The default is 128 * 1024.
    *
    * @lucene.experimental */
-  public Geo3DDocValuesFormat(int maxPointsInLeafNode, int maxPointsSortInHeap) {
+  public Geo3DDocValuesFormat(PlanetModel planetModel, int maxPointsInLeafNode, int maxPointsSortInHeap) {
     super("BKD3DTree");
     BKD3DTreeWriter.verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
+    this.planetModel = planetModel;
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(final SegmentWriteState state) throws IOException {
-    return new Geo3DDocValuesConsumer(delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
+    return new Geo3DDocValuesConsumer(planetModel, delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
   }
 
   @Override
@@ -113,41 +114,34 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
     return new Geo3DDocValuesProducer(delegate.fieldsProducer(state), state);
   }
 
-  // NOTE: this is from the max current PlanetModel (WGS84).  If a new
-  // PlanetModel shows up in the future with a bigger max, we have to revisit this, but users will
-  // hit an exc from encodeValue:
-
-  static final double MAX_ABS_VALUE = 1.0011188180710464;
-
-  private static final double ENCODE_SCALE = Integer.MAX_VALUE / MAX_ABS_VALUE;
-  private static final double DECODE_SCALE = MAX_ABS_VALUE / Integer.MAX_VALUE;
-
   /** Clips the incoming value to the allowed min/max range before encoding, instead of throwing an exception. */
-  static int encodeValueLenient(double x) {
-    if (x > MAX_ABS_VALUE) {
-      x = MAX_ABS_VALUE;
-    } else if (x < -MAX_ABS_VALUE) {
-      x = -MAX_ABS_VALUE;
+  static int encodeValueLenient(PlanetModel planetModel, double x) {
+    double max = planetModel.getMaximumMagnitude();
+    if (x > max) {
+      x = max;
+    } else if (x < -max) {
+      x = -max;
     }
-    return encodeValue(x);
+    return encodeValue(planetModel, x);
   }
     
-  static int encodeValue(double x) {
-    if (x < -MAX_ABS_VALUE) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than MIN_VALUE=" + (-MAX_ABS_VALUE) + ")");
+  static int encodeValue(PlanetModel planetModel, double x) {
+    double max = planetModel.getMaximumMagnitude();
+    if (x > max) {
+      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than max for PlanetModel=" + planetModel + " " + max);
     }
-    if (x > MAX_ABS_VALUE) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than MAX_VALUE=" + MAX_ABS_VALUE + ")");
+    if (x < -max) {
+      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than than -max for PlanetModel=" + planetModel + " " + max);
     }
-    long y = (long) (x * ENCODE_SCALE);
+    long y = (long) (x * (Integer.MAX_VALUE / max));
     assert y >= Integer.MIN_VALUE;
     assert y <= Integer.MAX_VALUE;
 
     return (int) y;
   }
 
-  static double decodeValue(int x) {
-    return x * DECODE_SCALE;
+  static double decodeValue(double planetMax, int x) {
+    return x * (planetMax / Integer.MAX_VALUE);
   }
 
   static int readInt(byte[] bytes, int offset) {

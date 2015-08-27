@@ -88,11 +88,15 @@ public class PointInGeo3DShapeQuery extends Query {
         if (bdv instanceof Geo3DBinaryDocValues == false) {
           throw new IllegalStateException("field \"" + field + "\" was not indexed with Geo3DBinaryDocValuesFormat: got: " + bdv);
         }
-        Geo3DBinaryDocValues treeDV = (Geo3DBinaryDocValues) bdv;
+        final Geo3DBinaryDocValues treeDV = (Geo3DBinaryDocValues) bdv;
         BKD3DTreeReader tree = treeDV.getBKD3DTreeReader();
 
         XYZBounds bounds = new XYZBounds();
         shape.getBounds(bounds);
+
+        if (planetModel.getMaximumMagnitude() != treeDV.planetMax) {
+          throw new IllegalStateException(planetModel + " is not the same one used during indexing: max=" + planetModel.getMaximumMagnitude() + " vs indexing max=" + treeDV.planetMax);
+        }
 
         /*
         GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel,
@@ -112,12 +116,12 @@ public class PointInGeo3DShapeQuery extends Query {
         // the box. Otherwise according to the (revised) definition of getRelationship(),
         // you could technically get either one.
 
-        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION),
+        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION),
                                          new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {
@@ -129,9 +133,9 @@ public class PointInGeo3DShapeQuery extends Query {
                                              }
 
                                              assert bytes.length == 12;
-                                             double x = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset));
-                                             double y = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
-                                             double z = Geo3DDocValuesFormat.decodeValue(Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
+                                             double x = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset));
+                                             double y = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
+                                             double z = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
                                              // System.out.println("  accept docID=" + docID + " point: x=" + x + " y=" + y + " z=" + z);
 
                                              // True if x,y,z is within shape
@@ -176,12 +180,12 @@ public class PointInGeo3DShapeQuery extends Query {
                                              cellYMinEnc = roundDown(cellYMinEnc);
                                              cellZMinEnc = roundDown(cellZMinEnc);
 
-                                             double cellXMin = Geo3DDocValuesFormat.decodeValue(cellXMinEnc);
-                                             double cellXMax = Geo3DDocValuesFormat.decodeValue(cellXMaxEnc);
-                                             double cellYMin = Geo3DDocValuesFormat.decodeValue(cellYMinEnc);
-                                             double cellYMax = Geo3DDocValuesFormat.decodeValue(cellYMaxEnc);
-                                             double cellZMin = Geo3DDocValuesFormat.decodeValue(cellZMinEnc);
-                                             double cellZMax = Geo3DDocValuesFormat.decodeValue(cellZMaxEnc);
+                                             double cellXMin = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellXMinEnc);
+                                             double cellXMax = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellXMaxEnc);
+                                             double cellYMin = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellYMinEnc);
+                                             double cellYMax = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellYMaxEnc);
+                                             double cellZMin = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellZMinEnc);
+                                             double cellZMax = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellZMaxEnc);
                                              //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
 
                                              GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel, cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax);

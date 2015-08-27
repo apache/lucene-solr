@@ -23,10 +23,12 @@ import org.apache.lucene.util.BytesRef;
 class Geo3DBinaryDocValues extends BinaryDocValues {
   final BKD3DTreeReader bkdTreeReader;
   final BinaryDocValues delegate;
+  final double planetMax;
 
-  public Geo3DBinaryDocValues(BKD3DTreeReader bkdTreeReader, BinaryDocValues delegate) {
+  public Geo3DBinaryDocValues(BKD3DTreeReader bkdTreeReader, BinaryDocValues delegate, double planetMax) {
     this.bkdTreeReader = bkdTreeReader;
     this.delegate = delegate;
+    this.planetMax = planetMax;
   }
 
   public BKD3DTreeReader getBKD3DTreeReader() {

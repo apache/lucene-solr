@@ -53,6 +53,7 @@ class Geo3DDocValuesProducer extends DocValuesProducer {
   private final int maxDoc;
   private final DocValuesProducer delegate;
   private final boolean merging;
+  private final double planetMax;
 
   public Geo3DDocValuesProducer(DocValuesProducer delegate, SegmentReadState state) throws IOException {
     String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Geo3DDocValuesFormat.META_EXTENSION);
@@ -72,6 +73,7 @@ class Geo3DDocValuesProducer extends DocValuesProducer {
     datIn = state.directory.openInput(datFileName, state.context);
     CodecUtil.checkIndexHeader(datIn, Geo3DDocValuesFormat.DATA_CODEC_NAME, Geo3DDocValuesFormat.DATA_VERSION_START, Geo3DDocValuesFormat.DATA_VERSION_CURRENT,
                                state.segmentInfo.getId(), state.segmentSuffix);
+    planetMax = Double.longBitsToDouble(datIn.readLong());
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     maxDoc = state.segmentInfo.maxDoc();
     this.delegate = delegate;
@@ -88,6 +90,7 @@ class Geo3DDocValuesProducer extends DocValuesProducer {
     treeReaders.putAll(orig.treeReaders);
     merging = true;
     maxDoc = orig.maxDoc;
+    planetMax = orig.planetMax;
   }
 
   @Override
@@ -133,7 +136,7 @@ class Geo3DDocValuesProducer extends DocValuesProducer {
       }
     }
 
-    return new Geo3DBinaryDocValues(treeReader, delegate.getBinary(field));
+    return new Geo3DBinaryDocValues(treeReader, delegate.getBinary(field), planetMax);
   }
 
   @Override

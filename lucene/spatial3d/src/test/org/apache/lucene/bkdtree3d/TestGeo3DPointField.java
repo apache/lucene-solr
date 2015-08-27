@@ -79,7 +79,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new Geo3DDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap)));
+    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new Geo3DDocValuesFormat(PlanetModel.WGS84, maxPointsInLeaf, maxPointsSortInHeap)));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new Geo3DPointField("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
@@ -90,6 +90,31 @@ public class TestGeo3DPointField extends LuceneTestCase {
     assertEquals(1, s.search(new PointInGeo3DShapeQuery(PlanetModel.WGS84,
                                                         "field",
                                                         new GeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1).totalHits);
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testPlanetModelChanged() throws Exception {
+    Directory dir = newDirectory();
+    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
+    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new Geo3DDocValuesFormat(PlanetModel.WGS84, maxPointsInLeaf, maxPointsSortInHeap)));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new Geo3DPointField("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w, true);
+    IndexSearcher s = new IndexSearcher(r);
+    try {
+      s.search(new PointInGeo3DShapeQuery(PlanetModel.SPHERE,
+                                          "field",
+                                          new GeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1);
+      fail("did not hit exc");      
+    } catch (IllegalStateException ise) {
+      // expected
+    }
     w.close();
     r.close();
     dir.close();
@@ -176,14 +201,13 @@ public class TestGeo3DPointField extends LuceneTestCase {
     }
   }
 
-  private double randomCoord() {
-    return (random().nextDouble()*2.0022) - 1.0011;
-    //return (random().nextDouble()*.002) - .001;
+  private double randomCoord(PlanetModel planetModel) {
+    return planetModel.getMaximumMagnitude() * 2*(random().nextDouble()-0.5);
   }
 
-  private Range randomRange() {
-    double x = randomCoord();
-    double y = randomCoord();
+  private Range randomRange(PlanetModel planetModel) {
+    double x = randomCoord(planetModel);
+    double y = randomCoord(planetModel);
     if (x < y) {
       return new Range(x, y);
     } else {
@@ -200,6 +224,13 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
 
+    PlanetModel planetModel;
+    if (random().nextBoolean()) {
+      planetModel = PlanetModel.WGS84;
+    } else {
+      planetModel = PlanetModel.SPHERE;
+    }
+
     BKD3DTreeWriter w = new BKD3DTreeWriter(maxPointsInLeaf, maxPointsSortInHeap);
     for(int docID=0;docID<numPoints;docID++) {
       Point point;
@@ -207,22 +238,22 @@ public class TestGeo3DPointField extends LuceneTestCase {
         // Dup point
         point = points.get(random().nextInt(points.size()));
       } else {
-        point = new Point(randomCoord(),
-                          randomCoord(),
-                          randomCoord());
+        point = new Point(randomCoord(planetModel),
+                          randomCoord(planetModel),
+                          randomCoord(planetModel));
       }
 
       if (VERBOSE) {
         System.err.println("  docID=" + docID + " point=" + point);
-        System.err.println("    x=" + encodeValue(point.x) +
-                           " y=" + encodeValue(point.y) +
-                           " z=" + encodeValue(point.z));
+        System.err.println("    x=" + encodeValue(planetModel, point.x) +
+                           " y=" + encodeValue(planetModel, point.y) +
+                           " z=" + encodeValue(planetModel, point.z));
       }
 
       points.add(point);
-      w.add(encodeValue(point.x),
-            encodeValue(point.y),
-            encodeValue(point.z),
+      w.add(encodeValue(planetModel, point.x),
+            encodeValue(planetModel, point.y),
+            encodeValue(planetModel, point.z),
             docID);
     }
 
@@ -236,16 +267,16 @@ public class TestGeo3DPointField extends LuceneTestCase {
     int numIters = atLeast(100);
     for(int iter=0;iter<numIters;iter++) {
       // bbox
-      Range x = randomRange();
-      Range y = randomRange();
-      Range z = randomRange();
+      Range x = randomRange(planetModel);
+      Range y = randomRange(planetModel);
+      Range z = randomRange(planetModel);
 
-      int xMinEnc = encodeValue(x.min);
-      int xMaxEnc = encodeValue(x.max);
-      int yMinEnc = encodeValue(y.min);
-      int yMaxEnc = encodeValue(y.max);
-      int zMinEnc = encodeValue(z.min);
-      int zMaxEnc = encodeValue(z.max);
+      int xMinEnc = encodeValue(planetModel, x.min);
+      int xMaxEnc = encodeValue(planetModel, x.max);
+      int yMinEnc = encodeValue(planetModel, y.min);
+      int yMaxEnc = encodeValue(planetModel, y.max);
+      int zMinEnc = encodeValue(planetModel, z.min);
+      int zMaxEnc = encodeValue(planetModel, z.max);
 
       if (VERBOSE) {
         System.err.println("\nTEST: iter=" + iter + " bbox: x=" + x + " (" + xMinEnc + " TO " + xMaxEnc+ ")" + " y=" + y + " (" + yMinEnc + " TO " + yMaxEnc + ")"  + " z=" + z + " (" + zMinEnc + " TO " + zMaxEnc + ")" );
@@ -263,9 +294,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                       //System.out.println("  accept docID=" + docID + " point=" + point + " (x=" + encodeValue(point.x) + " y=" + encodeValue(point.y) + " z=" + encodeValue(point.z) + ")");
 
                                       // System.out.println("  accept docID=" + docID + " point: x=" + point.x + " y=" + point.y + " z=" + point.z);
-                                      int xEnc = encodeValue(point.x);
-                                      int yEnc = encodeValue(point.y);
-                                      int zEnc = encodeValue(point.z);
+                                      int xEnc = encodeValue(planetModel, point.x);
+                                      int yEnc = encodeValue(planetModel, point.y);
+                                      int zEnc = encodeValue(planetModel, point.z);
 
                                       boolean accept = xEnc >= xMinEnc && xEnc <= xMaxEnc &&
                                         yEnc >= yMinEnc && yEnc <= yMaxEnc &&
@@ -323,9 +354,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
         boolean actual = matches.get(docID);
 
         // We must quantize exactly as BKD tree does else we'll get false failures
-        int xEnc = encodeValue(point.x);
-        int yEnc = encodeValue(point.y);
-        int zEnc = encodeValue(point.z);
+        int xEnc = encodeValue(planetModel, point.x);
+        int yEnc = encodeValue(planetModel, point.y);
+        int zEnc = encodeValue(planetModel, point.z);
 
         boolean expected = xEnc >= xMinEnc && xEnc <= xMaxEnc &&
           yEnc >= yMinEnc && yEnc <= yMaxEnc &&
@@ -458,7 +489,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     if (mbd != -1 && mbd < lats.length/100) {
       iwc.setMaxBufferedDocs(lats.length/100);
     }
-    final DocValuesFormat dvFormat = new Geo3DDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
+    final DocValuesFormat dvFormat = new Geo3DDocValuesFormat(planetModel, maxPointsInLeaf, maxPointsSortInHeap);
     Codec codec = new Lucene53Codec() {
         @Override
         public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -621,9 +652,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
                   GeoPoint point1 = new GeoPoint(planetModel, lats[id], lons[id]);
 
                   // Quantized point (32 bits per dim):
-                  GeoPoint point2 = new GeoPoint(decodeValue(encodeValue(point1.x)),
-                                                 decodeValue(encodeValue(point1.y)),
-                                                 decodeValue(encodeValue(point1.z)));
+                  GeoPoint point2 = new GeoPoint(decodeValue(planetModel.getMaximumMagnitude(), encodeValue(planetModel, point1.x)),
+                                                 decodeValue(planetModel.getMaximumMagnitude(), encodeValue(planetModel, point1.y)),
+                                                 decodeValue(planetModel.getMaximumMagnitude(), encodeValue(planetModel, point1.z)));
 
                   if (shape.isWithin(point1) != shape.isWithin(point2)) {
                     if (VERBOSE) {

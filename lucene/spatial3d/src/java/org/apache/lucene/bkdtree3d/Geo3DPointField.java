@@ -42,14 +42,11 @@ public final class Geo3DPointField extends Field {
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public Geo3DPointField(String name, final PlanetModel planetModel, final double lat, final double lon) {
+  public Geo3DPointField(String name, PlanetModel planetModel, double lat, double lon) {
     super(name, TYPE);
+    // Translate lat/lon to x,y,z:
     final GeoPoint point = new GeoPoint(planetModel, lat, lon);
-    byte[] bytes = new byte[12];
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(point.x), bytes, 0);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(point.y), bytes, 4);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(point.z), bytes, 8);
-    fieldsData = new BytesRef(bytes);
+    fillFieldsData(planetModel, point.x, point.y, point.z);
   }
 
   /** 
@@ -57,12 +54,16 @@ public final class Geo3DPointField extends Field {
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public Geo3DPointField(String name, double x, double y, double z) {
+  public Geo3DPointField(String name, PlanetModel planetModel, double x, double y, double z) {
     super(name, TYPE);
+    fillFieldsData(planetModel, x, y, z);
+  }
+
+  private void fillFieldsData(PlanetModel planetModel, double x, double y, double z) {
     byte[] bytes = new byte[12];
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(x), bytes, 0);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(y), bytes, 4);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(z), bytes, 8);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetModel, x), bytes, 0);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetModel, y), bytes, 4);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetModel, z), bytes, 8);
     fieldsData = new BytesRef(bytes);
   }
 }
