@@ -883,7 +883,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Sync Failed");
         }
       } else {
-        SolrException.log(log, "Cound not find core to call sync:" + cname);
+        SolrException.log(log, "Could not find core to call sync:" + cname);
       }
     } finally {
       // no recoveryStrat close for now
