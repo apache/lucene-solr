@@ -116,7 +116,8 @@ public final class ZkController {
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
   private final DistributedQueue overseerJobQueue;
-  private final OverseerCollectionQueue overseerCollectionQueue;
+  private final OverseerTaskQueue overseerCollectionQueue;
+  private final OverseerTaskQueue overseerConfigSetQueue;
 
   private final DistributedMap overseerRunningMap;
   private final DistributedMap overseerCompletedMap;
@@ -376,6 +377,7 @@ public final class ZkController {
 
     this.overseerJobQueue = Overseer.getInQueue(zkClient);
     this.overseerCollectionQueue = Overseer.getCollectionQueue(zkClient);
+    this.overseerConfigSetQueue = Overseer.getConfigSetQueue(zkClient);
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
@@ -1768,8 +1770,12 @@ public final class ZkController {
     return overseerJobQueue;
   }
 
-  public OverseerCollectionQueue getOverseerCollectionQueue() {
+  public OverseerTaskQueue getOverseerCollectionQueue() {
     return overseerCollectionQueue;
+  }
+
+  public OverseerTaskQueue getOverseerConfigSetQueue() {
+    return overseerConfigSetQueue;
   }
 
   public DistributedMap getOverseerRunningMap() {

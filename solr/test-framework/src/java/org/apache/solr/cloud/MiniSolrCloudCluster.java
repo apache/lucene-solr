@@ -64,6 +64,7 @@ public class MiniSolrCloudCluster {
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
 
   private final ZkTestServer zkServer;
+  private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new LinkedList<>();
   private final File testDir;
   private final CloudSolrClient solrClient;
@@ -125,15 +126,34 @@ public class MiniSolrCloudCluster {
    * @throws Exception if there was an error starting the cluster
    */
   public MiniSolrCloudCluster(int numServers, File baseDir, File solrXml, JettyConfig jettyConfig) throws Exception {
+    this(numServers, baseDir, solrXml, jettyConfig, null);
+  }
+
+  /**
+   * Create a MiniSolrCloudCluster
+   *
+   * @param numServers number of Solr servers to start
+   * @param baseDir base directory that the mini cluster should be run from
+   * @param solrXml solr.xml file to be uploaded to ZooKeeper
+   * @param jettyConfig Jetty configuration
+   * @param zkTestServer ZkTestServer to use.  If null, one will be created
+   *
+   * @throws Exception if there was an error starting the cluster
+   */
+  public MiniSolrCloudCluster(int numServers, File baseDir, File solrXml, JettyConfig jettyConfig, ZkTestServer zkTestServer) throws Exception {
 
     this.testDir = baseDir;
     this.jettyConfig = jettyConfig;
 
-    String zkDir = testDir.getAbsolutePath() + File.separator
-      + "zookeeper/server1/data";
-    zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
-    
+    this.externalZkServer = zkTestServer != null;
+    if (!externalZkServer) {
+      String zkDir = testDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+      zkTestServer = new ZkTestServer(zkDir);
+      zkTestServer.run();
+    }
+    this.zkServer = zkTestServer;
+
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
         AbstractZkTestCase.TIMEOUT, 45000, null)) {
       zkClient.makePath("/solr/solr.xml", solrXml, false, true);
@@ -375,7 +395,9 @@ public class MiniSolrCloudCluster {
       executor.shutdown();
       executor.awaitTermination(2, TimeUnit.SECONDS);
       try {
-        zkServer.shutdown();
+        if (!externalZkServer) {
+          zkServer.shutdown();
+        }
       } finally {
         System.clearProperty("zkHost");
       }

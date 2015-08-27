@@ -33,7 +33,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
   @Test
   @ShardsFixed(num = 1)
   public void test() throws Exception {
-    String overseerNode = OverseerCollectionProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
+    String overseerNode = OverseerCollectionConfigSetProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
     String notOverseerNode = null;
     for (CloudJettyRunner cloudJetty : cloudJettys) {
       if (!overseerNode.equals(cloudJetty.nodeName)) {

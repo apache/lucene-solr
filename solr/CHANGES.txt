@@ -129,6 +129,8 @@ New Features
 
 * SOLR-7961: Print Solr's version with command bin/solr version (janhoy)
 
+* SOLR-7889: Introduce a ConfigSet management API (Gregory Chanan)
+
 Bug Fixes
 ----------------------
 

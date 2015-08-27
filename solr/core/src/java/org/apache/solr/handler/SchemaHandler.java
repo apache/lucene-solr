@@ -41,11 +41,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
 
 public class SchemaHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(SchemaHandler.class);
-
-  public static final String IMMUTABLE_CONFIGSET_ARG = "immutable";
   private boolean isImmutableConfigSet = false;
 
   @Override

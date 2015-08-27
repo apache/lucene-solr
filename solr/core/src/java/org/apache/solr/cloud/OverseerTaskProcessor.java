@@ -29,7 +29,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -56,16 +56,16 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
  * {@link OverseerMessageHandler} handles specific messages in the
  * queue.
  */
-public class OverseerProcessor implements Runnable, Closeable {
+public class OverseerTaskProcessor implements Runnable, Closeable {
 
   public int maxParallelThreads = 10;
 
   public ExecutorService tpe ;
 
   private static Logger log = LoggerFactory
-      .getLogger(OverseerProcessor.class);
+      .getLogger(OverseerTaskProcessor.class);
 
-  private OverseerCollectionQueue workQueue;
+  private OverseerTaskQueue workQueue;
   private DistributedMap runningMap;
   private DistributedMap completedMap;
   private DistributedMap failureMap;
@@ -98,13 +98,13 @@ public class OverseerProcessor implements Runnable, Closeable {
 
   private OverseerNodePrioritizer prioritizer;
 
-  public OverseerProcessor(ZkStateReader zkStateReader, String myId,
+  public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
                                         final ShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
                                         Overseer.Stats stats,
                                         OverseerMessageHandlerSelector selector,
                                         OverseerNodePrioritizer prioritizer,
-                                        OverseerCollectionQueue workQueue,
+                                        OverseerTaskQueue workQueue,
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
                                         DistributedMap failureMap) {
@@ -451,7 +451,7 @@ public class OverseerProcessor implements Runnable, Closeable {
           log.debug("Completed task:[{}]", head.getId());
         }
 
-        markTaskComplete(messageHandler, head.getId(), asyncId, taskKey);
+        markTaskComplete(messageHandler, head.getId(), asyncId, taskKey, message);
         log.debug("Marked task [{}] as completed.", head.getId());
         printTrackingMaps();
 
@@ -462,13 +462,13 @@ public class OverseerProcessor implements Runnable, Closeable {
         SolrException.log(log, "", e);
       } catch (InterruptedException e) {
         // Reset task from tracking data structures so that it can be retried.
-        resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey);
+        resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
         log.warn("Resetting task {} as the thread was interrupted.", head.getId());
         Thread.currentThread().interrupt();
       } finally {
         if(!success) {
           // Reset task from tracking data structures so that it can be retried.
-          resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey);
+          resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
         }
         synchronized (waitLock){
           waitLock.notifyAll();
@@ -476,7 +476,7 @@ public class OverseerProcessor implements Runnable, Closeable {
       }
     }
 
-    private void markTaskComplete(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey)
+    private void markTaskComplete(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message)
         throws KeeperException, InterruptedException {
       synchronized (completedTasks) {
         completedTasks.put(id, head);
@@ -489,10 +489,10 @@ public class OverseerProcessor implements Runnable, Closeable {
       if(asyncId != null)
         runningMap.remove(asyncId);
 
-      messageHandler.unmarkExclusiveTask(taskKey, operation);
+      messageHandler.unmarkExclusiveTask(taskKey, operation, message);
     }
 
-    private void resetTaskWithException(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey) {
+    private void resetTaskWithException(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message) {
       log.warn("Resetting task: {}, requestid: {}, taskKey: {}", id, asyncId, taskKey);
       try {
         if (asyncId != null)
@@ -502,7 +502,7 @@ public class OverseerProcessor implements Runnable, Closeable {
           runningTasks.remove(id);
         }
 
-        messageHandler.unmarkExclusiveTask(taskKey, operation);
+        messageHandler.unmarkExclusiveTask(taskKey, operation, message);
       } catch (KeeperException e) {
         SolrException.log(log, "", e);
       } catch (InterruptedException e) {

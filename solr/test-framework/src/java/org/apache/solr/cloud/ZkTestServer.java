@@ -448,6 +448,14 @@ public class ZkTestServer {
     });
   }
 
+  public ZKDatabase getZKDatabase() {
+    return zkServer.zooKeeperServer.getZKDatabase();
+  }
+
+  public void setZKDatabase(ZKDatabase zkDb) {
+    zkServer.zooKeeperServer.setZKDatabase(zkDb);
+  }
+
   public void run() throws InterruptedException {
     log.info("STARTING ZK TEST SERVER");
     // we don't call super.distribSetUp

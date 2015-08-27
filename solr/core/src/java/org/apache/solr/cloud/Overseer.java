@@ -309,7 +309,7 @@ public class Overseer implements Closeable {
       try {
         Map m = (Map) Utils.fromJSON(data);
         String id = (String) m.get("id");
-        if(overseerCollectionProcessor.getId().equals(id)){
+        if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
             log.info("I'm exiting , but I'm still the leader");
             zkClient.delete(path,stat.getVersion(),true);
@@ -390,7 +390,7 @@ public class Overseer implements Closeable {
           case QUIT:
             if (myId.equals(message.get("id"))) {
               log.info("Quit command received {}", LeaderElector.getNodeName(myId));
-              overseerCollectionProcessor.close();
+              overseerCollectionConfigSetProcessor.close();
               close();
             } else {
               log.warn("Overseer received wrong QUIT message {}", message);
@@ -786,7 +786,7 @@ public class Overseer implements Closeable {
 
   private final String adminPath;
 
-  private OverseerCollectionProcessor overseerCollectionProcessor;
+  private OverseerCollectionConfigSetProcessor overseerCollectionConfigSetProcessor;
 
   private ZkController zkController;
 
@@ -824,8 +824,8 @@ public class Overseer implements Closeable {
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
     OverseerNodePrioritizer overseerPrioritizer = new OverseerNodePrioritizer(reader, adminPath, shardHandler.getShardHandlerFactory());
-    overseerCollectionProcessor = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
-    ccThread = new OverseerThread(ccTg, overseerCollectionProcessor, "OverseerCollectionProcessor-" + id);
+    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
+    ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
     
     ThreadGroup ohcfTg = new ThreadGroup("Overseer Hdfs SolrCore Failover Thread.");
@@ -922,15 +922,27 @@ public class Overseer implements Closeable {
   }
   
   /* Collection creation queue */
-  static OverseerCollectionQueue getCollectionQueue(final SolrZkClient zkClient) {
+  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient) {
     return getCollectionQueue(zkClient, new Stats());
   }
 
-  static OverseerCollectionQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats)  {
+  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats)  {
     createOverseerNode(zkClient);
-    return new OverseerCollectionQueue(zkClient, "/overseer/collection-queue-work", zkStats);
+    return new OverseerTaskQueue(zkClient, "/overseer/collection-queue-work", zkStats);
   }
-  
+
+  /* The queue for ConfigSet related operations */
+  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient)  {
+    return getConfigSetQueue(zkClient, new Stats());
+  }
+
+  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats)  {
+    // For now, we use the same queue as the collection queue, but ensure
+    // that the actions are prefixed with a unique string.
+    createOverseerNode(zkClient);
+    return getCollectionQueue(zkClient, zkStats);
+  }
+
   private static void createOverseerNode(final SolrZkClient zkClient) {
     try {
       zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT, true);
