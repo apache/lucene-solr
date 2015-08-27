@@ -44,6 +44,8 @@ public class NodeConfig {
 
   private final String infoHandlerClass;
 
+  private final String configSetsHandlerClass;
+
   private final LogWatcherConfig logWatcherConfig;
 
   private final CloudConfig cloudConfig;
@@ -58,7 +60,8 @@ public class NodeConfig {
 
   private NodeConfig(String nodeName, String coreRootDirectory, String configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
-                     String coreAdminHandlerClass, String collectionsAdminHandlerClass, String infoHandlerClass,
+                     String coreAdminHandlerClass, String collectionsAdminHandlerClass,
+                     String infoHandlerClass, String configSetsHandlerClass,
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, int coreLoadThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath,
                      SolrResourceLoader loader, Properties solrProperties) {
@@ -71,6 +74,7 @@ public class NodeConfig {
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
     this.infoHandlerClass = infoHandlerClass;
+    this.configSetsHandlerClass = configSetsHandlerClass;
     this.logWatcherConfig = logWatcherConfig;
     this.cloudConfig = cloudConfig;
     this.coreLoadThreads = coreLoadThreads;
@@ -142,6 +146,10 @@ public class NodeConfig {
     return infoHandlerClass;
   }
 
+  public String getConfigSetsHandlerClass() {
+    return configSetsHandlerClass;
+  }
+
   public boolean hasSchemaCache() {
     return useSchemaCache;
   }
@@ -187,6 +195,7 @@ public class NodeConfig {
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
     private String infoHandlerClass = DEFAULT_INFOHANDLERCLASS;
+    private String configSetsHandlerClass = DEFAULT_CONFIGSETSHANDLERCLASS;
     private LogWatcherConfig logWatcherConfig = new LogWatcherConfig(true, null, null, 50);
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
@@ -205,6 +214,7 @@ public class NodeConfig {
     private static final String DEFAULT_ADMINHANDLERCLASS = "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS = "org.apache.solr.handler.admin.InfoHandler";
     private static final String DEFAULT_COLLECTIONSHANDLERCLASS = "org.apache.solr.handler.admin.CollectionsHandler";
+    private static final String DEFAULT_CONFIGSETSHANDLERCLASS = "org.apache.solr.handler.admin.ConfigSetsHandler";
 
     public NodeConfigBuilder(String nodeName, SolrResourceLoader loader) {
       this.nodeName = nodeName;
@@ -252,6 +262,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setConfigSetsHandlerClass(String configSetsHandlerClass) {
+      this.configSetsHandlerClass = configSetsHandlerClass;
+      return this;
+    }
+
     public NodeConfigBuilder setLogWatcherConfig(LogWatcherConfig logWatcherConfig) {
       this.logWatcherConfig = logWatcherConfig;
       return this;
@@ -289,7 +304,7 @@ public class NodeConfig {
 
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
-                            updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass,
+                            updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties);
     }
   }

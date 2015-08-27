@@ -43,8 +43,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.getLeaderNode;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedOverseerNodeNames;
+import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLeaderNode;
+import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
@@ -88,7 +88,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS);
     String newLeader=null;
     for(;! timeout.hasTimedOut();){
-      newLeader = OverseerCollectionProcessor.getLeaderNode(zk);
+      newLeader = OverseerCollectionConfigSetProcessor.getLeaderNode(zk);
       if(newLeader!=null && !newLeader.equals(leader)) break;
       Thread.sleep(100);
     }
@@ -96,7 +96,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
 
 
-    assertTrue("The old leader should have rejoined election ", OverseerCollectionProcessor.getSortedOverseerNodeNames(zk).contains(leader));
+    assertTrue("The old leader should have rejoined election ", OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zk).contains(leader));
   }
 
 
@@ -108,10 +108,10 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     createCollection(collectionName, client);
 
     waitForRecoveriesToFinish(collectionName, false);
-    List<String> l = OverseerCollectionProcessor.getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) ;
+    List<String> l = OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) ;
 
     log.info("All nodes {}", l);
-    String currentLeader = OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient());
+    String currentLeader = OverseerCollectionConfigSetProcessor.getLeaderNode(client.getZkStateReader().getZkClient());
     log.info("Current leader {} ", currentLeader);
     l.remove(currentLeader);
 
@@ -124,7 +124,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     boolean leaderchanged = false;
     for(;!timeout.hasTimedOut();){
-      if(overseerDesignate.equals(OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()))){
+      if(overseerDesignate.equals(OverseerCollectionConfigSetProcessor.getLeaderNode(client.getZkStateReader().getZkClient()))){
         log.info("overseer designate is the new overseer");
         leaderchanged =true;
         break;
@@ -134,7 +134,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     assertTrue("could not set the new overseer . expected "+
         overseerDesignate + " current order : " +
         getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) +
-        " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) ,leaderchanged);
+        " ldr :"+ OverseerCollectionConfigSetProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) ,leaderchanged);
 
 
 
@@ -176,7 +176,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     log.info("leader node {}", leaderJetty.getBaseUrl());
     log.info ("current election Queue",
-        OverseerCollectionProcessor.getSortedElectionNodes(client.getZkStateReader().getZkClient(),
+        OverseerCollectionConfigSetProcessor.getSortedElectionNodes(client.getZkStateReader().getZkClient(),
             OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE));
     ChaosMonkey.stop(leaderJetty);
     timeout = new TimeOut(10, TimeUnit.SECONDS);

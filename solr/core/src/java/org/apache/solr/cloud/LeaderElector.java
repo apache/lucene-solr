@@ -280,7 +280,7 @@ public  class LeaderElector {
       try {
         if(joinAtHead){
           log.info("Node {} trying to join election at the head", id);
-          List<String> nodes = OverseerProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
+          List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
           if(nodes.size() <2){
             leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
                 CreateMode.EPHEMERAL_SEQUENTIAL, false);

@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -73,13 +73,13 @@ import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.verify;
 
-public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
+public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   
   private static final String ADMIN_PATH = "/admin/cores";
   private static final String COLLECTION_NAME = "mycollection";
   private static final String CONFIG_NAME = "myconfig";
   
-  private static OverseerCollectionQueue workQueueMock;
+  private static OverseerTaskQueue workQueueMock;
   private static DistributedMap runningMapMock;
   private static DistributedMap completedMapMock;
   private static DistributedMap failureMapMock;
@@ -93,19 +93,19 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private SolrResponse lastProcessMessageResult;
 
 
-  private OverseerCollectionProcessorToBeTested underTest;
+  private OverseerCollectionConfigSetProcessorToBeTested underTest;
   
   private Thread thread;
   private Queue<QueueEvent> queue = new ArrayBlockingQueue<>(10);
 
-  private class OverseerCollectionProcessorToBeTested extends
-      OverseerCollectionProcessor {
+  private class OverseerCollectionConfigSetProcessorToBeTested extends
+      OverseerCollectionConfigSetProcessor {
     
 
-    public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
+    public OverseerCollectionConfigSetProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, ShardHandlerFactory shardHandlerFactory,
         String adminPath,
-        OverseerCollectionQueue workQueue, DistributedMap runningMap,
+        OverseerTaskQueue workQueue, DistributedMap runningMap,
         DistributedMap completedMap,
         DistributedMap failureMap) {
       super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), null, new OverseerNodePrioritizer(zkStateReader, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
@@ -120,7 +120,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void setUpOnce() throws Exception {
-    workQueueMock = createMock(OverseerCollectionQueue.class);
+    workQueueMock = createMock(OverseerTaskQueue.class);
     runningMapMock = createMock(DistributedMap.class);
     completedMapMock = createMock(DistributedMap.class);
     failureMapMock = createMock(DistributedMap.class);
@@ -158,7 +158,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     reset(zkStateReaderMock);
     reset(clusterStateMock);
     reset(solrZkClientMock);
-    underTest = new OverseerCollectionProcessorToBeTested(zkStateReaderMock,
+    underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
         "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
         completedMapMock, failureMapMock);
     zkMap.clear();

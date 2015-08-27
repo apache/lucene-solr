@@ -16,13 +16,13 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-public class OverseerCollectionQueueTest extends DistributedQueueTest {
+public class OverseerTaskQueueTest extends DistributedQueueTest {
 
 
-  // TODO: OverseerCollectionQueue specific tests.
+  // TODO: OverseerTaskQueue specific tests.
 
   @Override
-  protected OverseerCollectionQueue makeDistributedQueue(String dqZNode) throws Exception {
-    return new OverseerCollectionQueue(zkClient, setupNewDistributedQueueZNode(dqZNode));
+  protected OverseerTaskQueue makeDistributedQueue(String dqZNode) throws Exception {
+    return new OverseerTaskQueue(zkClient, setupNewDistributedQueueZNode(dqZNode));
   }
 }

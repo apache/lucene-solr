@@ -21,14 +21,16 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
 
 /**
- * An {@link OverseerProcessor} that handles collection-related Overseer
- * messages only.
+ * An {@link OverseerTaskProcessor} that handles:
+ * 1) collection-related Overseer messages
+ * 2) configset-related Overseer messages
  */
-public class OverseerCollectionProcessor extends OverseerProcessor {
+public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
-   public OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId,
+   public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
                                      final ShardHandler shardHandler,
                                      String adminPath, Overseer.Stats stats, Overseer overseer,
                                      OverseerNodePrioritizer overseerNodePrioritizer) {
@@ -47,13 +49,13 @@ public class OverseerCollectionProcessor extends OverseerProcessor {
     );
   }
 
-  protected OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId,
+  protected OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
                                         final ShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
                                         Overseer.Stats stats,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerNodePrioritizer,
-                                        OverseerCollectionQueue workQueue,
+                                        OverseerTaskQueue workQueue,
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
                                         DistributedMap failureMap) {
@@ -80,12 +82,18 @@ public class OverseerCollectionProcessor extends OverseerProcessor {
       Overseer.Stats stats,
       Overseer overseer,
       OverseerNodePrioritizer overseerNodePrioritizer) {
-    final OverseerCollectionMessageHandler messageHandler = new OverseerCollectionMessageHandler(
+    final OverseerCollectionMessageHandler collMessageHandler = new OverseerCollectionMessageHandler(
         zkStateReader, myId, shardHandlerFactory, adminPath, stats, overseer, overseerNodePrioritizer);
+    final OverseerConfigSetMessageHandler configMessageHandler = new OverseerConfigSetMessageHandler(
+        zkStateReader);
     return new OverseerMessageHandlerSelector() {
       @Override
       public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
-        return messageHandler;
+        String operation = message.getStr(Overseer.QUEUE_OPERATION);
+        if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
+          return configMessageHandler;
+        }
+        return collMessageHandler;
       }
     };
   }

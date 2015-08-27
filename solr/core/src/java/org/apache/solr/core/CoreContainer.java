@@ -46,6 +46,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
@@ -97,6 +98,7 @@ public class CoreContainer {
   protected CoreAdminHandler coreAdminHandler = null;
   protected CollectionsHandler collectionsHandler = null;
   private InfoHandler infoHandler;
+  protected ConfigSetsHandler configSetsHandler = null;
 
   private PKIAuthenticationPlugin pkiAuthenticationPlugin;
 
@@ -129,6 +131,7 @@ public class CoreContainer {
   public static final String CORES_HANDLER_PATH = "/admin/cores";
   public static final String COLLECTIONS_HANDLER_PATH = "/admin/collections";
   public static final String INFO_HANDLER_PATH = "/admin/info";
+  public static final String CONFIGSETS_HANDLER_PATH = "/admin/configs";
 
   private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
@@ -407,6 +410,8 @@ public class CoreContainer {
     containerHandlers.put(INFO_HANDLER_PATH, infoHandler);
     coreAdminHandler   = createHandler(cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     containerHandlers.put(CORES_HANDLER_PATH, coreAdminHandler);
+    configSetsHandler = createHandler(cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
+    containerHandlers.put(CONFIGSETS_HANDLER_PATH, configSetsHandler);
     containerHandlers.put("/admin/authorization", securityConfHandler);
     containerHandlers.put("/admin/authentication", securityConfHandler);
     if(pkiAuthenticationPlugin != null)
@@ -1038,6 +1043,10 @@ public class CoreContainer {
 
   public InfoHandler getInfoHandler() {
     return infoHandler;
+  }
+
+  public ConfigSetsHandler getConfigSetsHandler() {
+    return configSetsHandler;
   }
 
   public String getHostName() {

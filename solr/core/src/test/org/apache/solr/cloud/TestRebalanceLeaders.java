@@ -183,7 +183,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
   List<String> getOverseerSort(String key) {
     List<String> ret = null;
     try {
-      ret = OverseerCollectionProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
+      ret = OverseerCollectionConfigSetProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
           "/collections/" + COLLECTION_NAME + "/leader_elect/" + key + "/election");
       return ret;
     } catch (KeeperException e) {

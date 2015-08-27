@@ -61,10 +61,10 @@ public class OverseerNodePrioritizer {
 
     List overseerDesignates = (List) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
-    String ldr = OverseerProcessor.getLeaderNode(zk);
+    String ldr = OverseerTaskProcessor.getLeaderNode(zk);
     if(overseerDesignates.contains(ldr)) return;
     log.info("prioritizing overseer nodes at {} overseer designates are {}", overseerId, overseerDesignates);
-    List<String> electionNodes = OverseerProcessor.getSortedElectionNodes(zk, OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE);
+    List<String> electionNodes = OverseerTaskProcessor.getSortedElectionNodes(zk, OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE);
     if(electionNodes.size()<2) return;
     log.info("sorted nodes {}", electionNodes);
 
@@ -89,7 +89,7 @@ public class OverseerNodePrioritizer {
     //now ask the current leader to QUIT , so that the designate can takeover
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(
         Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            "id", OverseerProcessor.getLeaderId(zkStateReader.getZkClient()))));
+            "id", OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()))));
 
   }
 

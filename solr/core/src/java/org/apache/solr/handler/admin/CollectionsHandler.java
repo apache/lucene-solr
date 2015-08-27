@@ -36,8 +36,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.DistributedMap;
-import org.apache.solr.cloud.OverseerCollectionQueue;
-import org.apache.solr.cloud.OverseerCollectionQueue.QueueEvent;
+import org.apache.solr.cloud.OverseerTaskQueue;
+import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -246,13 +246,13 @@ public class CollectionsHandler extends RequestHandlerBase {
             + event.getWatchedEvent().getType() + "]");
       } else {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
-            + " the collection unkown case");
+            + " the collection unknown case");
       }
     }
   }
 
   private boolean overseerCollectionQueueContains(String asyncId) throws KeeperException, InterruptedException {
-    OverseerCollectionQueue collectionQueue = coreContainer.getZkController().getOverseerCollectionQueue();
+    OverseerTaskQueue collectionQueue = coreContainer.getZkController().getOverseerCollectionQueue();
     return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 

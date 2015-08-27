@@ -29,6 +29,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Class that manages named configs in Zookeeper
@@ -141,5 +142,82 @@ public class ZkConfigManager {
     catch (KeeperException | InterruptedException e) {
       throw new IOException("Error listing configs", SolrZkClient.checkInterrupted(e));
     }
+  }
+
+  /**
+   * Check whether a config exists in Zookeeper
+   *
+   * @param configName the config to check existance on
+   * @return whether the config exists or not
+   * @throws IOException if an I/O error occurs
+   */
+  public Boolean configExists(String configName) throws IOException {
+    try {
+      return zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error checking whether config exists",
+          SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  /**
+   * Delete a config in ZooKeeper
+   *
+   * @param configName the config to delete
+   * @throws IOException if an I/O error occurs
+   */
+  public void deleteConfigDir(String configName) throws IOException {
+    try {
+      zkClient.clean(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error checking whether config exists",
+          SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
+    try {
+      List<String> files = zkClient.getChildren(fromZkPath, null, true);
+      for (String file : files) {
+        List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
+        if (children.size() == 0) {
+          final String toZkFilePath = toZkPath + "/" + file;
+          logger.info("Copying zk node {} to {}",
+              fromZkPath + "/" + file, toZkFilePath);
+          byte[] data = zkClient.getData(fromZkPath + "/" + file, null, null, true);
+          zkClient.makePath(toZkFilePath, data, true);
+          if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
+        } else {
+          copyConfigDirFromZk(fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
+        }
+      }
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error copying nodes from zookeeper path " + fromZkPath + " to " + toZkPath,
+          SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  /**
+   * Copy a config in ZooKeeper
+   *
+   * @param fromConfig the config to copy from
+   * @param toConfig the config to copy to
+   * @throws IOException if an I/O error occurs
+   */
+  public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
+    copyConfigDir(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, null);
+  }
+
+  /**
+   * Copy a config in ZooKeeper
+   *
+   * @param fromConfig the config to copy from
+   * @param toConfig the config to copy to
+   * @param copiedToZkPaths should be an empty Set, will be filled in by function
+                            with the paths that were actually copied to.
+   * @throws IOException if an I/O error occurs
+   */
+  public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
+    copyConfigDirFromZk(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, copiedToZkPaths);
   }
 }

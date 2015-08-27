@@ -36,6 +36,9 @@ public class ConfigSetProperties {
 
   private static final Logger log = LoggerFactory.getLogger(ConfigSetProperties.class);
 
+  public static final String DEFAULT_FILENAME = "configsetprops.json";
+  public static final String IMMUTABLE_CONFIGSET_ARG = "immutable";
+
   /**
    * Return the properties associated with the ConfigSet (e.g. immutable)
    *
@@ -55,9 +58,18 @@ public class ConfigSetProperties {
     }
 
     try {
+      return readFromInputStream(reader);
+    } finally {
+      IOUtils.closeQuietly(reader);
+    }
+  }
+
+  public static NamedList readFromInputStream(InputStreamReader reader) {
+    try {
       JSONParser jsonParser = new JSONParser(reader);
       Object object = ObjectBuilder.getVal(jsonParser);
       if (!(object instanceof Map)) {
+        final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + object.getClass().getName() + ", expected Map");
       }
       return new NamedList((Map)object);
