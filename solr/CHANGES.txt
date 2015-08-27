@@ -214,6 +214,9 @@ Other Changes
 * SOLR-7970: Factor out a SearchGroupsFieldCommandResult class.
   (Christine Poerschke)
 
+* SOLR-7942: Previously removed unlockOnStartup option (LUCENE-6508) now logs warning if configured,
+  will be an error in 6.0.  Also improved error msg if an index is locked on startup  (hossman)
+
 ==================  5.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
