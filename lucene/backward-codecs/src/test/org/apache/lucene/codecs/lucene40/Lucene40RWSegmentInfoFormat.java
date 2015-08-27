@@ -38,12 +38,14 @@ public final class Lucene40RWSegmentInfoFormat extends Lucene40SegmentInfoFormat
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene40SegmentInfoFormat.SI_EXTENSION);
-    si.addFile(fileName);
 
     final IndexOutput output = dir.createOutput(fileName, ioContext);
 
     boolean success = false;
     try {
+      // Only add the file once we've successfully created it, else IFD assert can trip:
+      si.addFile(fileName);
+
       CodecUtil.writeHeader(output, Lucene40SegmentInfoFormat.CODEC_NAME, Lucene40SegmentInfoFormat.VERSION_CURRENT);
       // Write the Lucene version that created this segment, since 3.1
       output.writeString(si.getVersion().toString());
