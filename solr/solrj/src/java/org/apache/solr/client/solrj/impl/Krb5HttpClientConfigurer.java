@@ -34,6 +34,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
+import org.apache.http.auth.AuthSchemeRegistry;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HttpContext;
@@ -77,7 +78,10 @@ public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
         }
 
         javax.security.auth.login.Configuration.setConfiguration(jaasConfig);
-        httpClient.getAuthSchemes().register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory(true, false));
+        //Enable only SPNEGO authentication scheme.
+        AuthSchemeRegistry registry = new AuthSchemeRegistry();
+        registry.register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory(true, false));
+        httpClient.setAuthSchemes(registry);
         // Get the credentials from the JAAS configuration rather than here
         Credentials useJaasCreds = new Credentials() {
           public String getPassword() {
