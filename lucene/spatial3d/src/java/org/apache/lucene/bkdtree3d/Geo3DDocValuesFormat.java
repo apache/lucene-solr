@@ -22,6 +22,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat;
 import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.geo3d.Vector;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -84,6 +85,9 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
     this(BKD3DTreeWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKD3DTreeWriter.DEFAULT_MAX_POINTS_SORT_IN_HEAP);
   }
 
+  // nocommit require PlanetModel here, at write time?  then we could use the true max to encode, and write that into the doc values, and
+  // confirm it's == to the search-time planet model
+
   /** Creates this with custom configuration.
    *
    * @param maxPointsInLeafNode Maximum number of points in each leaf cell.  Smaller values create a deeper tree with larger in-heap index and possibly
@@ -118,6 +122,16 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
   private static final double ENCODE_SCALE = Integer.MAX_VALUE / MAX_ABS_VALUE;
   private static final double DECODE_SCALE = MAX_ABS_VALUE / Integer.MAX_VALUE;
 
+  /** Clips the incoming value to the allowed min/max range before encoding, instead of throwing an exception. */
+  static int encodeValueLenient(double x) {
+    if (x > MAX_ABS_VALUE) {
+      x = MAX_ABS_VALUE;
+    } else if (x < -MAX_ABS_VALUE) {
+      x = -MAX_ABS_VALUE;
+    }
+    return encodeValue(x);
+  }
+    
   static int encodeValue(double x) {
     if (x < -MAX_ABS_VALUE) {
       throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than MIN_VALUE=" + (-MAX_ABS_VALUE) + ")");

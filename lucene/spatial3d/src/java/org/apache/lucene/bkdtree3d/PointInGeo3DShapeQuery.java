@@ -94,6 +94,7 @@ public class PointInGeo3DShapeQuery extends Query {
         XYZBounds bounds = new XYZBounds();
         shape.getBounds(bounds);
 
+        /*
         GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel,
                                                       bounds.getMinimumX(),
                                                       bounds.getMaximumX(),
@@ -103,7 +104,7 @@ public class PointInGeo3DShapeQuery extends Query {
                                                       bounds.getMaximumZ());
 
         assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "expected WITHIN (1) or OVERLAPS (2) but got " + xyzSolid.getRelationship(shape) + "; shape="+shape+"; XYZSolid="+xyzSolid;
-
+        */
 
         // The fudge factor here (+/- 2.0 * MINIMUM_RESOLUTION) is here to ensure that
         // you get a WITHIN rather than an OVERLAPS if you expand the bounding box by
@@ -111,12 +112,12 @@ public class PointInGeo3DShapeQuery extends Query {
         // the box. Otherwise according to the (revised) definition of getRelationship(),
         // you could technically get either one.
 
-        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValue(bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValue(bounds.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION),
+        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION),
+                                         Geo3DDocValuesFormat.encodeValueLenient(bounds.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION),
                                          new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {
