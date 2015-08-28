@@ -133,16 +133,28 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
     if (x < -max) {
       throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than than -max for PlanetModel=" + planetModel + " " + max);
     }
-    long y = (long) (x * (Integer.MAX_VALUE / max));
+    long y = Math.round (x * (Integer.MAX_VALUE / max));
     assert y >= Integer.MIN_VALUE;
     assert y <= Integer.MAX_VALUE;
 
     return (int) y;
   }
 
+  /** Center decode */
   static double decodeValue(double planetMax, int x) {
     return x * (planetMax / Integer.MAX_VALUE);
   }
+
+  /** More negative decode, at bottom of cell */
+  static double decodeValueMin(double planetMax, int x) {
+    return (((double)x) - 0.5) * (planetMax / Integer.MAX_VALUE);
+  }
+  
+  /** More positive decode, at top of cell  */
+  static double decodeValueMax(double planetMax, int x) {
+    return (((double)x) + 0.5) * (planetMax / Integer.MAX_VALUE);
+  }
+  
 
   static int readInt(byte[] bytes, int offset) {
     return ((bytes[offset] & 0xFF) << 24) | ((bytes[offset+1] & 0xFF) << 16)

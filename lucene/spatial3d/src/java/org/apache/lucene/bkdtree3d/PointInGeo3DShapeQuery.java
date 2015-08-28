@@ -145,22 +145,6 @@ public class PointInGeo3DShapeQuery extends Query {
                                              return shape.isWithin(x, y, z);
                                            }
 
-                                           private int roundUp(int x) {
-                                             if (x >=0 && x < Integer.MAX_VALUE) {
-                                               return x+1;
-                                             } else {
-                                               return x;
-                                             }
-                                           }
-
-                                           private int roundDown(int x) {
-                                             if (x < 0 && x > Integer.MIN_VALUE) {
-                                               return x-1;
-                                             } else {
-                                               return x;
-                                             }
-                                           }
-
                                            @Override
                                            public BKD3DTreeReader.Relation compare(int cellXMinEnc, int cellXMaxEnc, int cellYMinEnc, int cellYMaxEnc, int cellZMinEnc, int cellZMaxEnc) {
                                              assert cellXMinEnc <= cellXMaxEnc;
@@ -170,22 +154,13 @@ public class PointInGeo3DShapeQuery extends Query {
                                              // Because the BKD tree operates in quantized (64 bit -> 32 bit) space, and the cell bounds
                                              // here are inclusive, we need to extend the bounds to the largest un-quantized values that
                                              // could quantize into these bounds.  The encoding (Geo3DDocValuesFormat.encodeValue) does
-                                             // a simple truncation from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
-                                             
-                                             cellXMaxEnc = roundUp(cellXMaxEnc);
-                                             cellYMaxEnc = roundUp(cellYMaxEnc);
-                                             cellZMaxEnc = roundUp(cellZMaxEnc);
-
-                                             cellXMinEnc = roundDown(cellXMinEnc);
-                                             cellYMinEnc = roundDown(cellYMinEnc);
-                                             cellZMinEnc = roundDown(cellZMinEnc);
-
-                                             double cellXMin = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellXMinEnc);
-                                             double cellXMax = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellXMaxEnc);
-                                             double cellYMin = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellYMinEnc);
-                                             double cellYMax = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellYMaxEnc);
-                                             double cellZMin = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellZMinEnc);
-                                             double cellZMax = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, cellZMaxEnc);
+                                             // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
+                                             double cellXMin = Geo3DDocValuesFormat.decodeValueMin(treeDV.planetMax, cellXMinEnc);
+                                             double cellXMax = Geo3DDocValuesFormat.decodeValueMax(treeDV.planetMax, cellXMaxEnc);
+                                             double cellYMin = Geo3DDocValuesFormat.decodeValueMin(treeDV.planetMax, cellYMinEnc);
+                                             double cellYMax = Geo3DDocValuesFormat.decodeValueMax(treeDV.planetMax, cellYMaxEnc);
+                                             double cellZMin = Geo3DDocValuesFormat.decodeValueMin(treeDV.planetMax, cellZMinEnc);
+                                             double cellZMax = Geo3DDocValuesFormat.decodeValueMax(treeDV.planetMax, cellZMaxEnc);
                                              //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
 
                                              GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel, cellXMin, cellXMax, cellYMin, cellYMax, cellZMin, cellZMax);
