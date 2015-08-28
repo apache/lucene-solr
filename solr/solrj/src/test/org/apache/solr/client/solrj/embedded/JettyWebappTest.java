@@ -29,9 +29,9 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -107,8 +107,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
     byte[] bytes = IOUtils.toByteArray( new URL(adminPath).openStream() );
     assertNotNull( bytes ); // real error will be an exception
 
-
-    HttpClient client = HttpClientUtil.createClient(null);
+    HttpClient client = HttpClients.createDefault();
     HttpRequestBase m = new HttpGet(adminPath);
     HttpResponse response = client.execute(m);
     assertEquals(200, response.getStatusLine().getStatusCode());
