@@ -19,8 +19,6 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -108,7 +106,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
      * This transformer simply concatinates the values of multipe fields
      */
     @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
+    public void transform(SolrDocument doc, int docid, float score) throws IOException {
       str.setLength(0);
       for(String s : extra) {
         String v = getAsString(s, doc);

@@ -48,7 +48,7 @@ class DocIdAugmenter extends DocTransformer
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, float score) {
     if( docid >= 0 ) {
       doc.setField( name, docid );
     }

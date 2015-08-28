@@ -340,13 +340,13 @@ class CSVWriter extends TextResponseWriter {
       printer.println();
     }
 
-    if (responseObj instanceof ResultContext ) {
-      writeDocuments(null, (ResultContext)responseObj, returnFields );
+    if (responseObj instanceof ResultContext) {
+      writeDocuments(null, (ResultContext)responseObj );
     }
     else if (responseObj instanceof DocList) {
-      ResultContext ctx = new ResultContext();
-      ctx.docs =  (DocList)responseObj;
-      writeDocuments(null, ctx, returnFields );
+
+      ResultContext ctx = new BasicResultContext((DocList)responseObj, returnFields, null, null, req);
+      writeDocuments(null, ctx );
     } else if (responseObj instanceof SolrDocumentList) {
       writeSolrDocumentList(null, (SolrDocumentList)responseObj, returnFields );
     }

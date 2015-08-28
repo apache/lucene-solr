@@ -144,12 +144,11 @@ public abstract class TextResponseWriter {
       writeSolrDocument(name, (SolrDocument)val,returnFields, 0);
     } else if (val instanceof ResultContext) {
       // requires access to IndexReader
-      writeDocuments(name, (ResultContext)val, returnFields);
+      writeDocuments(name, (ResultContext)val);
     } else if (val instanceof DocList) {
       // Should not happen normally
-      ResultContext ctx = new ResultContext();
-      ctx.docs = (DocList)val;
-      writeDocuments(name, ctx, returnFields);
+      ResultContext ctx = new BasicResultContext((DocList)val, returnFields, null, null, req);
+      writeDocuments(name, ctx);
     // }
     // else if (val instanceof DocSet) {
     // how do we know what fields to read?
@@ -216,29 +215,31 @@ public abstract class TextResponseWriter {
 
   public abstract void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException;  
 
-  public abstract void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException;
+  public abstract void writeSolrDocument(String name, SolrDocument doc, ReturnFields fields, int idx) throws IOException;
   
   public abstract void writeEndDocumentList() throws IOException;
   
   // Assume each SolrDocument is already transformed
-  public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields returnFields) throws IOException
+  public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields fields) throws IOException
   {
     writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore() );
     for( int i=0; i<docs.size(); i++ ) {
-      writeSolrDocument( null, docs.get(i), returnFields, i );
+      writeSolrDocument( null, docs.get(i), fields, i );
     }
     writeEndDocumentList();
   }
 
 
-  public final void writeDocuments(String name, ResultContext res, ReturnFields fields ) throws IOException {
-    DocList ids = res.docs;
-    DocsStreamer docsStreamer = new DocsStreamer(res.docs,res.query, req, fields);
+  public final void writeDocuments(String name, ResultContext res) throws IOException {
+    DocList ids = res.getDocList();
+    Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
     writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(),
-        docsStreamer.hasScores() ? new Float(ids.maxScore()) : null);
+        res.wantsScores() ? new Float(ids.maxScore()) : null);
 
+    int idx = 0;
     while (docsStreamer.hasNext()) {
-      writeSolrDocument(null, docsStreamer.next(), returnFields, docsStreamer.currentIndex());
+      writeSolrDocument(null, docsStreamer.next(), res.getReturnFields(), idx);
+      idx++;
     }
     writeEndDocumentList();
   }

@@ -48,7 +48,7 @@ class MarkTransformer extends BaseEditorialTransformer {
 
   @Override
   protected Set<String> getIdSet() {
-    return (Set<String>) context.req.getContext().get("BOOSTED");
+    return (Set<String>) context.getRequest().getContext().get("BOOSTED");
   }
 }
 

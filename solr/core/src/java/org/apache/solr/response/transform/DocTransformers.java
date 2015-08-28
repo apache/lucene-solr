@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.ResultContext;
 
 /**
  * Transform a document before it gets sent out
@@ -65,16 +65,16 @@ public class DocTransformers extends DocTransformer
   }
 
   @Override
-  public void setContext( TransformContext context ) {
+  public void setContext( ResultContext context ) {
     for( DocTransformer a : children ) {
       a.setContext( context );
     }
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) throws IOException {
+  public void transform(SolrDocument doc, int docid, float score) throws IOException {
     for( DocTransformer a : children ) {
-      a.transform( doc, docid);
+      a.transform( doc, docid, score);
     }
   }
 }

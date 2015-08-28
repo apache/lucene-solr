@@ -71,11 +71,12 @@ public class ResponseLogComponent extends SearchComponent {
     if (schema.getUniqueKeyField() == null) return;
 
     ResultContext rc = (ResultContext) rb.rsp.getValues().get("response");
-    
-    if (rc.docs.hasScores()) {
-      processScores(rb, rc.docs, schema, searcher);
+
+    DocList docs = rc.getDocList();
+    if (docs.hasScores()) {
+      processScores(rb, docs, schema, searcher);
     } else {
-      processIds(rb, rc.docs, schema, searcher);
+      processIds(rb, docs, schema, searcher);
     }
   }
 

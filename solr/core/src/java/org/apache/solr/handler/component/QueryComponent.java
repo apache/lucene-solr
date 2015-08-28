@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -66,6 +65,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
@@ -348,9 +348,7 @@ public class QueryComponent extends SearchComponent
       }
       rb.setResults(res);
 
-      ResultContext ctx = new ResultContext();
-      ctx.docs = rb.getResults().docList;
-      ctx.query = null; // anything?
+      ResultContext ctx = new BasicResultContext(rb);
       rsp.add("response", ctx);
       return;
     }
@@ -503,9 +501,7 @@ public class QueryComponent extends SearchComponent
         rb.setResult(result);
 
         if (grouping.mainResult != null) {
-          ResultContext ctx = new ResultContext();
-          ctx.docs = grouping.mainResult;
-          ctx.query = null; // TODO? add the query?
+          ResultContext ctx = new BasicResultContext(rb, grouping.mainResult);
           rsp.add("response", ctx);
           rsp.getToLog().add("hits", grouping.mainResult.matches());
         } else if (!grouping.getCommands().isEmpty()) { // Can never be empty since grouping.execute() checks for this.
@@ -522,9 +518,7 @@ public class QueryComponent extends SearchComponent
     searcher.search(result, cmd);
     rb.setResult(result);
 
-    ResultContext ctx = new ResultContext();
-    ctx.docs = rb.getResults().docList;
-    ctx.query = rb.getQuery();
+    ResultContext ctx = new BasicResultContext(rb);
     rsp.add("response", ctx);
     rsp.getToLog().add("hits", rb.getResults().docList.matches());
 

@@ -27,6 +27,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -60,7 +61,8 @@ public class ValueSourceAugmenter extends DocTransformer
   }
 
   @Override
-  public void setContext( TransformContext context ) {
+  public void setContext( ResultContext context ) {
+    super.setContext(context);
     try {
       IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
       readerContexts = reader.leaves();
@@ -82,7 +84,7 @@ public class ValueSourceAugmenter extends DocTransformer
 
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, float score) {
     // This is only good for random-access functions
 
     try {

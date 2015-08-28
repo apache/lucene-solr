@@ -50,9 +50,10 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.BasicResultContext;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.response.transform.TransformContext;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -153,8 +154,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     DocTransformer transformer = rsp.getReturnFields().getTransformer();
     if (transformer != null) {
-      TransformContext context = new TransformContext();
-      context.req = req;
+      ResultContext context = new BasicResultContext(null, rsp.getReturnFields(), null, null, req);
       transformer.setContext(context);
     }
    try {
@@ -174,7 +174,7 @@ public class RealTimeGetComponent extends SearchComponent
              case UpdateLog.ADD:
                SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
                if(transformer!=null) {
-                 transformer.transform(doc, -1); // unknown docID
+                 transformer.transform(doc, -1, 0); // unknown docID
                }
               docList.add(doc);
               break;
@@ -200,7 +200,7 @@ public class RealTimeGetComponent extends SearchComponent
        StoredDocument luceneDocument = searcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
        if( transformer != null ) {
-         transformer.transform(doc, docid);
+         transformer.transform(doc, docid, 0);
        }
        docList.add(doc);
      }

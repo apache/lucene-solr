@@ -47,6 +47,12 @@ Upgrading from Solr 5.x
 * The deprecated zkCredientialsProvider element in solrcloud section of solr.xml
   is now removed. Use the correct spelling (zkCredentialsProvider) instead.
 
+* SOLR-7957: internal/expert - ResultContext was significantly changed and expanded
+  to allow for multiple full query results (DocLists) per Solr request.
+  TransformContext was rendered redundant and was removed. (yonik)
+
+
+
 Detailed Change List
 ----------------------
 

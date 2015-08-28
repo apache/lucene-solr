@@ -17,15 +17,45 @@
 
 package org.apache.solr.response;
 
+import java.util.Iterator;
+
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * A class to hold the QueryResult and the Query
  * 
  *
  */
-public class ResultContext {
-  public Query query;
-  public DocList docs;
+public abstract class ResultContext {
+
+  public abstract DocList getDocList();
+
+  public abstract ReturnFields getReturnFields();
+
+  public abstract SolrIndexSearcher getSearcher();
+
+  public abstract Query getQuery();
+
+  // TODO: any reason to allow for retrievial of any filters as well?
+
+  /** Note: do not use the request to get the searcher!  A cross-core request may have a different
+   *  searcher (for the other core) than the original request.
+   */
+  public abstract SolrQueryRequest getRequest();
+
+  public boolean wantsScores() {
+    return getReturnFields().wantsScore() && getDocList().hasScores();
+  }
+
+  public Iterator<SolrDocument> getProcessedDocuments() {
+    return new DocsStreamer(this);
+  }
 }
+
+

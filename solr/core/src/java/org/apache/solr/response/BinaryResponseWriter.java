@@ -23,11 +23,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.IndexableField;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -39,7 +38,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +71,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   public static class Resolver implements JavaBinCodec.ObjectResolver , JavaBinCodec.WritableDocFields {
     protected final SolrQueryRequest solrQueryRequest;
     protected IndexSchema schema;
-    protected SolrIndexSearcher searcher;
+    protected SolrIndexSearcher searcher; // TODO - this is never set?  always null?
     protected final ReturnFields returnFields;
 
     public Resolver(SolrQueryRequest req, ReturnFields returnFields) {
@@ -88,8 +86,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         return null; // null means we completely handled it
       }
       if (o instanceof DocList) {
-        ResultContext ctx = new ResultContext();
-        ctx.docs = (DocList) o;
+        ResultContext ctx = new BasicResultContext((DocList)o, returnFields, null, null, solrQueryRequest);
         writeResults(ctx, codec);
         return null; // null means we completely handled it
       }
@@ -118,8 +115,8 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     }
 
     protected void writeResultsBody( ResultContext res, JavaBinCodec codec ) throws IOException {
-      codec.writeTag(JavaBinCodec.ARR, res.docs.size());
-      DocsStreamer docStreamer = new DocsStreamer(res.docs,res.query, solrQueryRequest, returnFields);
+      codec.writeTag(JavaBinCodec.ARR, res.getDocList().size());
+      Iterator<SolrDocument> docStreamer = res.getProcessedDocuments();
       while (docStreamer.hasNext()) {
         SolrDocument doc = docStreamer.next();
         codec.writeSolrDocument(doc);
@@ -128,14 +125,13 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
-      boolean wantsScores = returnFields.wantsScore() && ctx.docs.hasScores();
       List l = new ArrayList(3);
-      l.add((long) ctx.docs.matches());
-      l.add((long) ctx.docs.offset());
+      l.add((long) ctx.getDocList().matches());
+      l.add((long) ctx.getDocList().offset());
       
       Float maxScore = null;
-      if (wantsScores) {
-        maxScore = ctx.docs.maxScore();
+      if (ctx.wantsScores()) {
+        maxScore = ctx.getDocList().maxScore();
       }
       l.add(maxScore);
       codec.writeArray(l);

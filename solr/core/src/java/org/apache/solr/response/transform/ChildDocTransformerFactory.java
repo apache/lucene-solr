@@ -96,7 +96,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
   }
 }
 
-class ChildDocTransformer extends TransformerWithContext {
+class ChildDocTransformer extends DocTransformer {
   private final String name;
   private final SchemaField idField;
   private final IndexSchema schema;
@@ -121,7 +121,7 @@ class ChildDocTransformer extends TransformerWithContext {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, float score) {
 
     FieldType idFt = idField.getType();
     Object parentIdField = doc.getFirstValue(idField.getName());
@@ -133,12 +133,12 @@ class ChildDocTransformer extends TransformerWithContext {
     try {
       Query parentQuery = idFt.getFieldQuery(null, idField, parentIdExt);
       Query query = new ToChildBlockJoinQuery(parentQuery, parentsFilter);
-      DocList children = context.searcher.getDocList(query, childFilterQuery, new Sort(), 0, limit);
+      DocList children = context.getSearcher().getDocList(query, childFilterQuery, new Sort(), 0, limit);
       if(children.matches() > 0) {
         DocIterator i = children.iterator();
         while(i.hasNext()) {
           Integer childDocNum = i.next();
-          StoredDocument childDoc = context.searcher.doc(childDocNum);
+          StoredDocument childDoc = context.getSearcher().doc(childDocNum);
           SolrDocument solrChildDoc = DocsStreamer.getDoc(childDoc, schema);
 
           // TODO: future enhancement...
