@@ -105,6 +105,9 @@ Other
 * LUCENE-6571: fix some private access level javadoc errors and warnings
   (Cao Manh Dat, Christine Poerschke)
 
+* LUCENE-6768: AbstractFirstPassGroupingCollector.groupSort private member
+  is not needed. (Christine Poerschke)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
