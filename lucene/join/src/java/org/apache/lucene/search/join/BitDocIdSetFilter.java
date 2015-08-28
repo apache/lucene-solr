@@ -32,6 +32,7 @@ import org.apache.lucene.util.Bits;
  * A {@link Filter} that produces {@link BitDocIdSet}s.
  * @deprecated Use {@link BitSetProducer} instead
  */
+@Deprecated
 public abstract class BitDocIdSetFilter extends Filter implements BitSetProducer {
 
   /** Sole constructor, typically called from sub-classes. */
