@@ -220,6 +220,9 @@ Other Changes
 * SOLR-7979: Fix two typos (in a CoreAdminHandler log message and a TestCloudPivotFacet comment).
   (Mike Drob via Christine Poerschke)
 
+* SOLR-7966: Solr Admin UI Solr now sets the HTTP header X-Frame-Options to DENY
+  to avoid clickjacking. (yonik)
+
 ==================  5.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
