@@ -228,29 +228,29 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
           // obtains, across IndexReader &
           // IndexWriters should be "fair" (ie
           // FIFO).
-        } catch (Exception e) {
+        } catch (Throwable t) {
           hitException = true;
-          System.out.println("Stress Test Index Writer: creation hit unexpected exception: " + e.toString());
-          e.printStackTrace(System.out);
+          System.out.println("Stress Test Index Writer: creation hit unexpected exception: " + t.toString());
+          t.printStackTrace(System.out);
           System.out.println(toString(baos));
           break;
         }
         if (writer != null) {
           try {
             addDoc(writer);
-          } catch (IOException e) {
+          } catch (Throwable t) {
             hitException = true;
-            System.out.println("Stress Test Index Writer: addDoc hit unexpected exception: " + e.toString());
-            e.printStackTrace(System.out);
+            System.out.println("Stress Test Index Writer: addDoc hit unexpected exception: " + t.toString());
+            t.printStackTrace(System.out);
             System.out.println(toString(baos));
             break;
           }
           try {
             writer.close();
-          } catch (IOException e) {
+          } catch (Throwable t) {
             hitException = true;
-            System.out.println("Stress Test Index Writer: close hit unexpected exception: " + e.toString());
-            e.printStackTrace(System.out);
+            System.out.println("Stress Test Index Writer: close hit unexpected exception: " + t.toString());
+            t.printStackTrace(System.out);
             System.out.println(toString(baos));
             break;
           }
