@@ -116,12 +116,14 @@ public class PointInGeo3DShapeQuery extends Query {
         // the box. Otherwise according to the (revised) definition of getRelationship(),
         // you could technically get either one.
 
-        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumX() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumX() + 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumY() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumY() + 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumZ() - 2.0 * Vector.MINIMUM_RESOLUTION),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumZ() + 2.0 * Vector.MINIMUM_RESOLUTION),
+        double inflate = 2.0 * Vector.MINIMUM_RESOLUTION;
+
+        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumX() - inflate),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumX() + inflate),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumY() - inflate),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumY() + inflate),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumZ() - inflate),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumZ() + inflate),
                                          new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {

@@ -141,7 +141,7 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
   }
 
   /** Center decode */
-  static double decodeValue(double planetMax, int x) {
+  static double decodeValueCenter(double planetMax, int x) {
     return x * (planetMax / Integer.MAX_VALUE);
   }
 

@@ -23,11 +23,15 @@ import org.apache.lucene.codecs.lucene53.Lucene53Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.geo3d.GeoArea;
+import org.apache.lucene.geo3d.GeoAreaFactory;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
 import org.apache.lucene.geo3d.GeoCircle;
 import org.apache.lucene.geo3d.GeoPoint;
 import org.apache.lucene.geo3d.GeoShape;
 import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.geo3d.Vector;
+import org.apache.lucene.geo3d.XYZBounds;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -51,6 +55,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -59,8 +65,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValue;
+import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueCenter;
+import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueMax;
+import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueMin;
 import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.encodeValue;
+import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.encodeValueLenient;
 
 public class TestGeo3DPointField extends LuceneTestCase {
 
@@ -374,6 +383,297 @@ public class TestGeo3DPointField extends LuceneTestCase {
     dir.close();
   }
 
+  private static class Cell {
+    static int nextCellID;
+
+    final Cell parent;
+    final int cellID;
+    final int xMinEnc, xMaxEnc;
+    final int yMinEnc, yMaxEnc;
+    final int zMinEnc, zMaxEnc;
+    final int splitCount;
+
+    public Cell(Cell parent,
+                int xMinEnc, int xMaxEnc,
+                int yMinEnc, int yMaxEnc,
+                int zMinEnc, int zMaxEnc,
+                int splitCount) {
+      this.parent = parent;
+      this.xMinEnc = xMinEnc;
+      this.xMaxEnc = xMaxEnc;
+      this.yMinEnc = yMinEnc;
+      this.yMaxEnc = yMaxEnc;
+      this.zMinEnc = zMinEnc;
+      this.zMaxEnc = zMaxEnc;
+      this.cellID = nextCellID++;
+      this.splitCount = splitCount;
+    }
+
+    /** Returns true if the quantized point lies within this cell, inclusive on all bounds. */
+    public boolean contains(PlanetModel planetModel, GeoPoint point) {
+      int docX = encodeValue(planetModel, point.x);
+      int docY = encodeValue(planetModel, point.y);
+      int docZ = encodeValue(planetModel, point.z);
+
+      return docX >= xMinEnc && docX <= xMaxEnc &&
+        docY >= yMinEnc && docY <= yMaxEnc && 
+        docZ >= zMinEnc && docZ <= zMaxEnc;
+    }
+
+    @Override
+    public String toString() {
+      return "cell=" + cellID + (parent == null ? "" : " parentCellID=" + parent.cellID) + " x: " + xMinEnc + " TO " + xMaxEnc + ", y: " + yMinEnc + " TO " + yMaxEnc + ", z: " + zMinEnc + " TO " + zMaxEnc + ", splits: " + splitCount;
+    }
+  }
+
+  private static GeoPoint quantize(PlanetModel planetModel, GeoPoint point) {
+    double planetMax = planetModel.getMaximumMagnitude();
+    return new GeoPoint(decodeValueCenter(planetMax, encodeValue(planetModel, point.x)),
+                        decodeValueCenter(planetMax, encodeValue(planetModel, point.y)),
+                        decodeValueCenter(planetMax, encodeValue(planetModel, point.z)));
+  }
+
+  /** Tests consistency of GeoArea.getRelationship vs GeoShape.isWithin */
+  public void testGeo3DRelations() throws Exception {
+
+    PlanetModel planetModel;
+    if (random().nextBoolean()) {
+      planetModel = PlanetModel.WGS84;
+    } else {
+      planetModel = PlanetModel.SPHERE;
+    }
+
+    int numDocs = atLeast(1000);
+    if (VERBOSE) {
+      System.out.println("TEST: " + numDocs + " docs");
+    }
+
+    GeoPoint[] docs = new GeoPoint[numDocs];
+    for(int docID=0;docID<numDocs;docID++) {
+      docs[docID] = new GeoPoint(planetModel, toRadians(randomLat()), toRadians(randomLon()));
+      if (VERBOSE) {
+        System.out.println("  doc=" + docID + ": " + docs[docID]);
+      }
+    }
+
+    double planetMax = planetModel.getMaximumMagnitude();
+
+    int iters = atLeast(10);
+
+    // nocommit:
+    iters = 1;
+    
+    for(int iter=0;iter<iters;iter++) {
+      GeoShape shape = randomShape(planetModel);
+
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter + " shape=" + shape);
+      }
+
+      XYZBounds bounds = new XYZBounds();
+      shape.getBounds(bounds);
+
+      // Start with the root cell that fully contains the shape:
+      double inflate = 2.0 * Vector.MINIMUM_RESOLUTION;
+      Cell root = new Cell(null,
+                           encodeValueLenient(planetModel, bounds.getMinimumX() - inflate),
+                           encodeValueLenient(planetModel, bounds.getMaximumX() - inflate),
+                           encodeValueLenient(planetModel, bounds.getMinimumY() - inflate),
+                           encodeValueLenient(planetModel, bounds.getMaximumY() - inflate),
+                           encodeValueLenient(planetModel, bounds.getMinimumZ() - inflate),
+                           encodeValueLenient(planetModel, bounds.getMaximumZ() - inflate),
+                           0);
+
+      if (VERBOSE) {
+        System.out.println("  root cell: " + root);
+      }
+
+      List<Cell> queue = new ArrayList<>();
+      queue.add(root);
+      Set<Integer> hits = new HashSet<>();
+
+      while (queue.size() > 0) {
+        Cell cell = queue.get(queue.size()-1);
+        queue.remove(queue.size()-1);
+        if (VERBOSE) {
+          System.out.println("  cycle: " + cell + " queue.size()=" + queue.size());
+        }
+
+        // nocommit or if the volume is too small?
+        // nocommit randomize 10:
+        if (random().nextInt(10) == 7 || cell.splitCount > 10) {
+          if (VERBOSE) {
+            System.out.println("    leaf");
+          }
+          // Leaf cell: brute force check all docs that fall within this cell:
+          for(int docID=0;docID<numDocs;docID++) {
+            GeoPoint point = docs[docID];
+            if (cell.contains(planetModel, point)) {
+              if (shape.isWithin(quantize(planetModel, point))) {
+                if (VERBOSE) {
+                  System.out.println("    check doc=" + docID + ": match!");
+                }
+                hits.add(docID);
+              } else {
+                if (VERBOSE) {
+                  System.out.println("    check doc=" + docID + ": no match");
+                }
+              }
+            }
+          }
+        } else {
+          
+          GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel,
+                                                        decodeValueMin(planetMax, cell.xMinEnc), decodeValueMax(planetMax, cell.xMaxEnc),
+                                                        decodeValueMin(planetMax, cell.yMinEnc), decodeValueMax(planetMax, cell.yMaxEnc),
+                                                        decodeValueMin(planetMax, cell.zMinEnc), decodeValueMax(planetMax, cell.zMaxEnc));
+
+          switch (xyzSolid.getRelationship(shape)) {          
+          case GeoArea.CONTAINS:
+            // Shape fully contains the cell: blindly add all docs in this cell:
+            if (VERBOSE) {
+              System.out.println("    GeoArea.CONTAINS: now addAll");
+            }
+            for(int docID=0;docID<numDocs;docID++) {
+              if (cell.contains(planetModel, docs[docID])) {
+                if (VERBOSE) {
+                  System.out.println("    addAll doc=" + docID);
+                }
+                hits.add(docID);
+              }
+            }
+            break;
+          case GeoArea.OVERLAPS:
+            if (VERBOSE) {
+              System.out.println("    GeoArea.OVERLAPS: keep splitting");
+            }
+            // They do overlap but neither contains the other:
+            //System.out.println("    crosses1");
+            break;
+          case GeoArea.WITHIN:
+            if (VERBOSE) {
+              System.out.println("    GeoArea.WITHIN: keep splitting");
+            }
+            // Cell fully contains the shape:
+            //System.out.println("    crosses2");
+            break;
+          case GeoArea.DISJOINT:
+            // They do not overlap at all: don't recurse on this cell
+            //System.out.println("    outside");
+            if (VERBOSE) {
+              System.out.println("    GeoArea.DISJOINT: drop this cell");
+              for(int docID=0;docID<numDocs;docID++) {
+                if (cell.contains(planetModel, docs[docID])) {
+                  if (VERBOSE) {
+                    System.out.println("    skip doc=" + docID);
+                  }
+                }
+              }
+            }
+            continue;
+          default:
+            assert false;
+          }
+
+          // Randomly split:
+          switch(random().nextInt(3)) {
+
+          case 0:
+            // Split on X:
+            {
+              int splitValue = RandomInts.randomIntBetween(random(), cell.xMinEnc, cell.xMaxEnc);
+              if (VERBOSE) {
+                System.out.println("    now split on x=" + splitValue);
+              }
+              queue.add(new Cell(cell,
+                                 cell.xMinEnc, splitValue,
+                                 cell.yMinEnc, cell.yMaxEnc,
+                                 cell.zMinEnc, cell.zMaxEnc,
+                                 cell.splitCount+1));
+              queue.add(new Cell(cell,
+                                 splitValue, cell.xMaxEnc,
+                                 cell.yMinEnc, cell.yMaxEnc,
+                                 cell.zMinEnc, cell.zMaxEnc,
+                                 cell.splitCount+1));
+            }
+            break;
+
+          case 1:
+            // Split on Y:
+            {
+              int splitValue = RandomInts.randomIntBetween(random(), cell.yMinEnc, cell.yMaxEnc);
+              if (VERBOSE) {
+                System.out.println("    now split on y=" + splitValue);
+              }
+              queue.add(new Cell(cell,
+                                 cell.xMinEnc, cell.xMaxEnc,
+                                 cell.yMinEnc, splitValue,
+                                 cell.zMinEnc, cell.zMaxEnc,
+                                 cell.splitCount+1));
+              queue.add(new Cell(cell,
+                                 cell.xMinEnc, cell.xMaxEnc,
+                                 splitValue, cell.yMaxEnc,
+                                 cell.zMinEnc, cell.zMaxEnc,
+                                 cell.splitCount+1));
+            }
+            break;
+
+          case 2:
+            // Split on Z:
+            {
+              int splitValue = RandomInts.randomIntBetween(random(), cell.zMinEnc, cell.zMaxEnc);
+              if (VERBOSE) {
+                System.out.println("    now split on z=" + splitValue);
+              }
+              queue.add(new Cell(cell,
+                                 cell.xMinEnc, cell.xMaxEnc,
+                                 cell.yMinEnc, cell.yMaxEnc,
+                                 cell.zMinEnc, splitValue,
+                                 cell.splitCount+1));
+              queue.add(new Cell(cell,
+                                 cell.xMinEnc, cell.xMaxEnc,
+                                 cell.yMinEnc, cell.yMaxEnc,
+                                 splitValue, cell.zMaxEnc,
+                                 cell.splitCount+1));
+            }
+            break;
+          }
+        }
+      }
+
+      if (VERBOSE) {
+        System.out.println("  " + hits.size() + " hits");
+      }
+
+      // Done matching, now verify:
+      boolean fail = false;
+      for(int docID=0;docID<numDocs;docID++) {
+        GeoPoint point = docs[docID];
+        GeoPoint quantized = quantize(planetModel, point);
+        boolean expected = shape.isWithin(quantized);
+
+        if (expected != shape.isWithin(point)) {
+          // Quantization changed the result; skip testing this doc:
+          continue;
+        }
+
+        boolean actual = hits.contains(docID);
+        if (actual != expected) {
+          if (actual) {
+            System.out.println("doc=" + docID + " matched but should not");
+          } else {
+            System.out.println("doc=" + docID + " did not match but should");
+          }
+          System.out.println("  point=" + docs[docID]);
+          System.out.println("  quantized=" + quantize(planetModel, docs[docID]));
+          fail = true;
+        }
+      }
+
+      assertFalse(fail);
+    }
+  }
+
   public void testRandomTiny() throws Exception {
     // Make sure single-leaf-node case is OK:
     doTestRandom(10);
@@ -472,6 +772,50 @@ public class TestGeo3DPointField extends LuceneTestCase {
     }
   }
 
+  private static GeoShape randomShape(PlanetModel planetModel) {
+    while (true) {
+      GeoShape shape;
+      if (random().nextBoolean()) {
+        double lat = toRadians(randomLat());
+        double lon = toRadians(randomLon());
+
+        double angle;
+        if (smallBBox) {
+          angle = random().nextDouble() * Math.PI/360.0;
+        } else {
+          angle = random().nextDouble() * Math.PI/2.0;
+        }
+
+        try {
+          shape = new GeoCircle(planetModel, lat, lon, angle);
+        } catch (IllegalArgumentException iae) {
+          // angle is too small; try again:
+          continue;
+        }
+
+      } else {
+        double lat0 = toRadians(randomLat());
+        double lat1 = toRadians(randomLat());
+        if (lat1 < lat0) {
+          double x = lat0;
+          lat0 = lat1;
+          lat1 = x;
+        }
+        double lon0 = toRadians(randomLon());
+        double lon1 = toRadians(randomLon());
+        if (lon1 < lon0) {
+          double x = lon0;
+          lon0 = lon1;
+          lon1 = x;
+        }
+
+        shape = GeoBBoxFactory.makeGeoBBox(planetModel, lat1, lat0, lon0, lon1);
+      }
+
+      return shape;
+    }
+  }
+
   private static void verify(double[] lats, double[] lons) throws Exception {
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
@@ -563,55 +907,14 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
             for (int iter=0;iter<iters && failed.get() == false;iter++) {
 
-              // TODO: randomize other shapes
+              // nocommit: randomize other shapes
 
-              GeoShape shape;
-              if (random().nextBoolean()) {
-                double lat = toRadians(randomLat());
-                double lon = toRadians(randomLon());
+              GeoShape shape = randomShape(planetModel);
 
-                double angle;
-                if (smallBBox) {
-                  angle = random().nextDouble() * Math.PI/360.0;
-                } else {
-                  angle = random().nextDouble() * Math.PI/2.0;
-                }
-
-                try {
-                  shape = new GeoCircle(planetModel, lat, lon, angle);
-                } catch (IllegalArgumentException iae) {
-                  // angle is too small; try again:
-                  continue;
-                }
-
-                if (VERBOSE) {
-                  System.err.println("\n" + Thread.currentThread() + ": TEST: iter=" + iter + " shape="+shape);
-                }
-
-              } else {
-                double lat0 = toRadians(randomLat());
-                double lat1 = toRadians(randomLat());
-                if (lat1 < lat0) {
-                  double x = lat0;
-                  lat0 = lat1;
-                  lat1 = x;
-                }
-                double lon0 = toRadians(randomLon());
-                double lon1 = toRadians(randomLon());
-                if (lon1 < lon0) {
-                  double x = lon0;
-                  lon0 = lon1;
-                  lon1 = x;
-                }
-
-                shape = GeoBBoxFactory.makeGeoBBox(planetModel, lat1, lat0, lon0, lon1);
-
-                if (VERBOSE) {
-                  System.err.println("\n" + Thread.currentThread() + ": TEST: iter=" + iter + " shape="+shape);
-                }
-
+              if (VERBOSE) {
+                System.err.println("\n" + Thread.currentThread() + ": TEST: iter=" + iter + " shape="+shape);
               }
-
+              
               Query query = new PointInGeo3DShapeQuery(planetModel, "point", shape);
 
               if (VERBOSE) {
@@ -652,9 +955,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                   GeoPoint point1 = new GeoPoint(planetModel, lats[id], lons[id]);
 
                   // Quantized point (32 bits per dim):
-                  GeoPoint point2 = new GeoPoint(decodeValue(planetModel.getMaximumMagnitude(), encodeValue(planetModel, point1.x)),
-                                                 decodeValue(planetModel.getMaximumMagnitude(), encodeValue(planetModel, point1.y)),
-                                                 decodeValue(planetModel.getMaximumMagnitude(), encodeValue(planetModel, point1.z)));
+                  GeoPoint point2 = quantize(planetModel, point1);
 
                   if (shape.isWithin(point1) != shape.isWithin(point2)) {
                     if (VERBOSE) {
