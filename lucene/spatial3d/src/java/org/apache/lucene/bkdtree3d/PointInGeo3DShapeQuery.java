@@ -135,9 +135,9 @@ public class PointInGeo3DShapeQuery extends Query {
                                              }
 
                                              assert bytes.length == 12;
-                                             double x = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset));
-                                             double y = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
-                                             double z = Geo3DDocValuesFormat.decodeValue(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
+                                             double x = Geo3DDocValuesFormat.decodeValueCenter(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset));
+                                             double y = Geo3DDocValuesFormat.decodeValueCenter(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+4));
+                                             double z = Geo3DDocValuesFormat.decodeValueCenter(treeDV.planetMax, Geo3DDocValuesFormat.readInt(bytes.bytes, bytes.offset+8));
                                              // System.out.println("  accept docID=" + docID + " point: x=" + x + " y=" + y + " z=" + z);
 
                                              // True if x,y,z is within shape
