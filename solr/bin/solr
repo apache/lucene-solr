@@ -2248,7 +2248,8 @@ function start_solr() {
   esac
 
   if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
+    # scottb: OOMKILLER needs super special handling
+    exec "$JAVA" "${SOLR_START_OPTS[@]}" "${OOMKILLER:=-Dno.oom.killer}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
   else
     # run Solr in the background
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
