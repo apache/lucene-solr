@@ -1,3 +1,4 @@
 ================= FullStory ================
 
 * fs.ignoreconflicts (Scott Blum)
+* FullStory: special OOMKILLER handling for spaces (Scott Blum)
