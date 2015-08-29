@@ -141,7 +141,18 @@ public class GeoBBoxTest {
     GeoBBox c;
     LatLonBounds b;
     XYZBounds xyzb;
-
+    GeoArea solid;
+    GeoPoint point;
+    int relationship;
+    
+    c= GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 0.006607096847842122, -0.002828135860810422, -0.0012934461873348349, 0.006727418645092394);
+    solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,0.9999995988328008,1.0000000002328306,-0.0012934708508166816,0.006727393021214471,-0.002828157275369464,0.006607074060760007);
+    point = new GeoPoint(PlanetModel.SPHERE, -5.236470872437899E-4, 3.992578692654256E-4);
+    assertTrue(c.isWithin(point));
+    assertTrue(solid.isWithin(point));
+    relationship = solid.getRelationship(c);
+    assertTrue(relationship == GeoArea.OVERLAPS || relationship == GeoArea.CONTAINS || relationship == GeoArea.WITHIN);
+    
     c = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI * 0.25, -Math.PI * 0.25, -1.0, 1.0);
     b = new LatLonBounds();
     c.getBounds(b);

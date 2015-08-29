@@ -101,12 +101,17 @@ public class XYdZSolid extends BaseXYZSolid {
     if (edgePoints.length == 0) {
       // If we still haven't encountered anything, we need to look at single-plane/world intersections.
       // We detect these by looking at the world model and noting its x, y, and z bounds.
+      // The cases we are looking for are when the four corner points for any given
+      // plane are all outside of the world, AND that plane intersects the world.
+      // There are four corner points all told; we must evaluate these WRT the planet surface.
+      final boolean minXminYZ = planetModel.pointOutside(minX, minY, Z);
+      final boolean minXmaxYZ = planetModel.pointOutside(minX, maxY, Z);
+      final boolean maxXminYZ = planetModel.pointOutside(maxX, minY, Z);
+      final boolean maxXmaxYZ = planetModel.pointOutside(maxX, maxY, Z);
 
       if (Z - worldMinZ >= -Vector.MINIMUM_RESOLUTION && Z - worldMaxZ <= Vector.MINIMUM_RESOLUTION &&
-        (minY - worldMinY < -Vector.MINIMUM_RESOLUTION) &&
-        (maxY - worldMaxY > Vector.MINIMUM_RESOLUTION) &&
-        (minX - worldMinX < -Vector.MINIMUM_RESOLUTION) &&
-        (maxX - worldMaxX > Vector.MINIMUM_RESOLUTION)) {
+        minX < 0.0 && maxX > 0.0 && minY < 0.0 && maxY > 0.0 &&
+        minXminYZ && minXmaxYZ && maxXminYZ && maxXmaxYZ) {
         // Find any point on the minZ plane that intersects the world
         // First construct a perpendicular plane that will allow us to find a sample point.
         // This plane is vertical and goes through the points (0,0,0) and (1,0,0)

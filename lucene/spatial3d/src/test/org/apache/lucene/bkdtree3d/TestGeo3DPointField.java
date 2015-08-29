@@ -474,14 +474,13 @@ public class TestGeo3DPointField extends LuceneTestCase {
       shape.getBounds(bounds);
 
       // Start with the root cell that fully contains the shape:
-      double inflate = 2.0 * Vector.MINIMUM_RESOLUTION;
       Cell root = new Cell(null,
-                           encodeValueLenient(planetModel, bounds.getMinimumX() - inflate),
-                           encodeValueLenient(planetModel, bounds.getMaximumX() - inflate),
-                           encodeValueLenient(planetModel, bounds.getMinimumY() - inflate),
-                           encodeValueLenient(planetModel, bounds.getMaximumY() - inflate),
-                           encodeValueLenient(planetModel, bounds.getMinimumZ() - inflate),
-                           encodeValueLenient(planetModel, bounds.getMaximumZ() - inflate),
+                           encodeValueLenient(planetModel, bounds.getMinimumX()),
+                           encodeValueLenient(planetModel, bounds.getMaximumX()),
+                           encodeValueLenient(planetModel, bounds.getMinimumY()),
+                           encodeValueLenient(planetModel, bounds.getMaximumY()),
+                           encodeValueLenient(planetModel, bounds.getMinimumZ()),
+                           encodeValueLenient(planetModel, bounds.getMaximumZ()),
                            0);
 
       if (VERBOSE) {
@@ -527,6 +526,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                                         decodeValueMin(planetMax, cell.xMinEnc), decodeValueMax(planetMax, cell.xMaxEnc),
                                                         decodeValueMin(planetMax, cell.yMinEnc), decodeValueMax(planetMax, cell.yMaxEnc),
                                                         decodeValueMin(planetMax, cell.zMinEnc), decodeValueMax(planetMax, cell.zMaxEnc));
+
+          if (VERBOSE) {
+            System.out.println("    minx="+decodeValueMin(planetMax, cell.xMinEnc)+" maxx="+decodeValueMax(planetMax, cell.xMaxEnc)+
+              " miny="+decodeValueMin(planetMax, cell.yMinEnc)+" maxy="+decodeValueMax(planetMax, cell.yMaxEnc)+
+              " minz="+decodeValueMin(planetMax, cell.zMinEnc)+" maxz="+decodeValueMax(planetMax, cell.zMaxEnc));
+          }
 
           switch (xyzSolid.getRelationship(shape)) {          
           case GeoArea.CONTAINS:

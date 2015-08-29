@@ -116,6 +116,7 @@ public class PointInGeo3DShapeQuery extends Query {
         // the box. Otherwise according to the (revised) definition of getRelationship(),
         // you could technically get either one.
 
+        // nocommit can we also remove this inflate?
         double inflate = 2.0 * Vector.MINIMUM_RESOLUTION;
 
         DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumX() - inflate),
