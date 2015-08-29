@@ -106,10 +106,10 @@ limitations under the License.
         <form>
 
           <p class="clearfix"><label for="swap_core">this:</label>
-          <input type="text" id="swap_core" name="core" ng-model="currentCore" readonly="readonly"></p>
+          <input type="text" id="swap_core" name="core" ng-model="selectedCore" readonly="readonly"></p>
 
           <p class="clearfix"><label for="swap_other">and:</label>
-          <select name="other" ng-model="swapOther" ng-options="core.name as core.name for core in cores" class="other">
+          <select name="other" ng-model="swapOther" ng-options="core.name as core.name for core in corelist" class="other">
           </select></p>
 
           <p class="clearfix note error" ng-show="swapMessage">

@@ -16,8 +16,8 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $routeParams, $location, Query){
-    $scope.resetMenu("query");
+  function($scope, $routeParams, $location, Query, Constants){
+    $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     // @todo read URL parameters into scope
     $scope.query = {wt: 'json', q:'*:*', indent:'on'};

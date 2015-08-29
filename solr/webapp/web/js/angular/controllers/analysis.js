@@ -16,8 +16,8 @@
 */
 
 solrAdminApp.controller('AnalysisController',
-  function($scope, $location, $routeParams, Luke, Analysis) {
-      $scope.resetMenu("analysis");
+  function($scope, $location, $routeParams, Luke, Analysis, Constants) {
+      $scope.resetMenu("analysis", Constants.IS_COLLECTION_PAGE);
 
       $scope.refresh = function() {
         Luke.schema({core: $routeParams.core}, function(data) {

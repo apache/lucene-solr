@@ -18,8 +18,8 @@
 var dataimport_timeout = 2000;
 
 solrAdminApp.controller('DataImportController',
-    function($scope, $rootScope, $routeParams, $location, $timeout, $interval, $cookies, Mbeans, DataImport) {
-        $scope.resetMenu("dataimport");
+    function($scope, $rootScope, $routeParams, $location, $timeout, $interval, $cookies, Mbeans, DataImport, Constants) {
+        $scope.resetMenu("dataimport", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
             Mbeans.info({core: $routeParams.core, cat: 'QUERYHANDLER'}, function (data) {

@@ -137,6 +137,8 @@ New Features
 
 * SOLR-7789: Introduce a ConfigSet management API (Gregory Chanan)
 
+* SOLR-4316: Add a collections dropdown to angular admin UI (Upayavira, Shalin Shekhar Mangar)
+
 Bug Fixes
 ----------------------
 

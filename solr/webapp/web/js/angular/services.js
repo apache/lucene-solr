@@ -35,6 +35,15 @@ solrAdminServices.factory('System',
     "optimize": {params:{}}
     });
   }])
+.factory('Collections',
+  ['$resource', function($resource) {
+    return $resource('/solr/admin/collections',
+      {wt: 'json', _:Date.now()}, {
+        "list": {params:{action: "LIST"}},
+        "status": {params:{action: "CLUSTERSTATUS"}}
+      }
+    )
+  }])
 .factory('Logging',
   ['$resource', function($resource) {
     return $resource('/solr/admin/info/logging', {'wt':'json', '_':Date.now()}, {

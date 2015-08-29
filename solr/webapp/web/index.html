@@ -27,7 +27,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/analysis.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cloud.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cores.css?_=${version}">
-  <link rel="stylesheet" type="text/css" href="css/styles/dashboard.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/dashboard.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/dataimport.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/files.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/index.css?_=${version}">
@@ -64,6 +64,7 @@ limitations under the License.
   <script src="js/angular/controllers/threads.js"></script>
   <script src="js/angular/controllers/java-properties.js"></script>
   <script src="js/angular/controllers/core-overview.js"></script>
+  <script src="js/angular/controllers/collection-overview.js"></script>
   <script src="js/angular/controllers/analysis.js"></script>
   <script src="js/angular/controllers/dataimport.js"></script>
   <script src="js/angular/controllers/documents.js"></script>
@@ -155,11 +156,36 @@ limitations under the License.
 
           </ul>
 
+          <div id="collection-selector" ng-show="isCloudEnabled">
+            <div id="has-collections" ng-show="collections.length!=0">
+              <select data-placeholder="Collection Selector"
+                      ng-model="currentCollection"
+                      chosen
+                      ng-change="showCollection(currentCollection)"
+                      ng-options="collection.name for collection in collections"></select>
+            </div>
+            <p id="has-no-collections" ng-show="collections.length==0"><a href="#/~collections">
+              No collections available
+              <span>Go and create one</span>
+            </a></p>
+          </div>
+          <div id="collection-menu" class="sub-menu" ng-show="currentCollection">
+            <ul>
+              <li class="overview" ng-class="{active:page=='collection-overview'}"><a href="#/{{currentCore.name}}/collection-overview"><span>Overview</span></a></li>
+              <li class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCollection.name}}/analysis"><span>Analysis</span></a></li>
+              <li class="dataimport" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCollection.name}}/dataimport"><span>Dataimport</span></a></li>
+              <li class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
+              <li class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
+              <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
+              <li class="schema-browser" ng-class="{active:page=='schema-browser'}"><a href="#/{{currentCollection.name}}/schema-browser"><span>Schema Browser</span></a></li>
+        </ul>
+          </div>
           <div id="core-selector">
             <div id="has-cores" ng-show="cores.length!=0">
               <select data-placeholder="Core Selector"
                       ng-model="currentCore"
                       chosen
+                      ng-change="showCore(currentCore)"
                       ng-options="core.name for core in cores"></select>
             </div>
             <p id="has-no-cores" ng-show="cores.length==0"><a href="#/~cores">
@@ -167,18 +193,18 @@ limitations under the License.
               <span>Go and create one</span>
             </a></p>
           </div>
-          <div id="core-menu" ng-show="currentCore">
+          <div id="core-menu" class="sub-menu" ng-show="currentCore">
             <ul>
               <li class="overview" ng-class="{active:page=='overview'}"><a href="#/{{currentCore.name}}"><span>Overview</span></a></li>
-              <li class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCore.name}}/analysis"><span>Analysis</span></a></li>
-              <li class="dataimport" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCore.name}}/dataimport"><span>Dataimport</span></a></li>
-              <li class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCore.name}}/documents"><span>Documents</span></a></li>
-              <li class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCore.name}}/files"><span>Files</span></a></li>
+              <li ng-hide="isCloudEnabled" class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCore.name}}/analysis"><span>Analysis</span></a></li>
+              <li ng-hide="isCloudEnabled" class="dataimport" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCore.name}}/dataimport"><span>Dataimport</span></a></li>
+              <li ng-hide="isCloudEnabled" class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCore.name}}/documents"><span>Documents</span></a></li>
+              <li ng-hide="isCloudEnabled" class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCore.name}}/files"><span>Files</span></a></li>
               <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="pingMS"> (<span>{{pingMS}}ms</span>)</small></a></li>
               <li class="plugins" ng-class="{active:page=='plugins'}"><a href="#/{{currentCore.name}}/plugins"><span>Plugins / Stats</span></a></li>
-              <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
+              <li ng-hide="isCloudEnabled" class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
               <li class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
-              <li class="schema-browser" ng-class="{active:page=='schema-browser'}"><a href="#/{{currentCore.name}}/schema-browser"><span>Schema Browser</span></a></li>
+              <li ng-hide="isCloudEnabled" class="schema-browser" ng-class="{active:page=='schema-browser'}"><a href="#/{{currentCore.name}}/schema-browser"><span>Schema Browser</span></a></li>
               <li class="segments" ng-class="{active:page=='segments'}"><a href="#/{{currentCore.name}}/segments"><span>Segments info</span></a></li>
       </ul>
           </div>

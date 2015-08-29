@@ -19,8 +19,8 @@ var contentTypeMap = { xml : 'text/xml', html : 'text/html', js : 'text/javascri
 var languages = {js: "javascript", xml:"xml", xsl:"xml", vm: "xml", html: "xml", json: "text", css: "css"};
 
 solrAdminApp.controller('FilesController',
-    function($scope, $rootScope, $routeParams, $location, Files) {
-        $scope.resetMenu("files");
+    function($scope, $rootScope, $routeParams, $location, Files, Constants) {
+        $scope.resetMenu("files", Constants.IS_COLLECTION_PAGE);
 
         $scope.file = $location.search().file;
         $scope.content = null;
