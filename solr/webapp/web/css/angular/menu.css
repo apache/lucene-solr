@@ -43,29 +43,33 @@ limitations under the License.
   text-overflow: ellipsis;
 }
 
-#core-selector
+#core-selector,#collection-selector
 {
   margin-top: 20px;
   padding-right: 10px;
 }
 
-#core-selector a
+#core-selector a,
+#collection-selector a
 {
   padding: 0;
   padding-left: 8px;
 }
 
-#core-selector select
+#core-selector select,
+#collection-selector select
 {
   width: 100%;
 }
 
-#core-selector #has-no-cores a
+#core-selector #has-no-cores a,
+#collection-selector #has-no-collections a
 {
   background-image: url( ../../img/ico/database--plus.png );
 }
 
-#core-selector #has-no-cores span
+#core-selector #has-no-cores span,
+#collection-selector #has-no-collections span
 {
   color: #c0c0c0;
   display: block;
@@ -172,34 +176,34 @@ limitations under the License.
 {
 }
 
-#core-menu p
+.sub-menu p
 {
   border-top: 1px solid #f0f0f0;
 }
 
-#core-menu li:first-child p
+.sub-menu li:first-child p
 {
   border-top: 0;
 }
 
-#core-menu p a
+.sub-menu p a
 {
   background-image: url( ../../img/ico/status-offline.png );
 }
 
-#core-menu .active p a
+.sub-menu .active p a
 {
   background-image: url( ../../img/ico/box.png );
 }
 
-#core-menu ul,
+.sub-menu ul,
 #menu ul
 {
   padding-top: 5px;
   padding-bottom: 10px;
 }
 
-#core-menu .active ul,
+.sub-menu .active ul,
 #menu .active ul
 {
   display: block;
@@ -211,6 +215,7 @@ limitations under the License.
 }
 
 #core-menu ul li a,
+#collection-menu ul li a,
 #menu ul li a
 {
   background-position: 7px 50%;
@@ -220,20 +225,20 @@ limitations under the License.
   padding-left: 26px;
 }
 
-#core-menu ul li:last-child a,
+.sub-menu ul li:last-child a,
 #menu ul li:last-child a
 {
   border-bottom: 0;
 }
 
-#core-menu ul li a:hover,
+.sub-menu ul li a:hover,
 #menu ul li a:hover
 {
   background-color: #f0f0f0;
   color: #333;
 }
 
-#core-menu ul li.active a,
+.sub-menu ul li.active a,
 #menu ul li.active a
 {
   background-color: #d0d0d0;
@@ -258,7 +263,7 @@ limitations under the License.
 #menu #cloud.global .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
 #menu #cloud.global .dump a { background-image: url( ../../img/ico/download-cloud.png ); }
 
-#core-menu .ping.error a
+.sub-menu .ping.error a
 {
   
   background-color: #ffcccc;
@@ -267,19 +272,19 @@ limitations under the License.
   cursor: help;
 }
 
-#core-menu .overview a { background-image: url( ../../img/ico/home.png ); }
-#core-menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
-#core-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
-#core-menu .documents a { background-image: url( ../../img/ico/documents-stack.png ); }
-#core-menu .files a { background-image: url( ../../img/ico/folder.png ); }
-#core-menu .schema-browser a { background-image: url( ../../img/ico/book-open-text.png ); }
-#core-menu .replication a { background-image: url( ../../img/ico/node.png ); }
-#core-menu .distribution a { background-image: url( ../../img/ico/node-select.png ); }
-#core-menu .ping a { background-image: url( ../../img/ico/system-monitor.png ); }
-#core-menu .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
-#core-menu .plugins a { background-image: url( ../../img/ico/block.png ); }
-#core-menu .dataimport a { background-image: url( ../../img/ico/document-import.png ); }
-#core-menu .segments a { background-image: url( ../../img/ico/construction.png ); }
+.sub-menu .overview a { background-image: url( ../../img/ico/home.png ); }
+.sub-menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
+.sub-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
+.sub-menu .documents a { background-image: url( ../../img/ico/documents-stack.png ); }
+.sub-menu .files a { background-image: url( ../../img/ico/folder.png ); }
+.sub-menu .schema-browser a { background-image: url( ../../img/ico/book-open-text.png ); }
+.sub-menu .replication a { background-image: url( ../../img/ico/node.png ); }
+.sub-menu .distribution a { background-image: url( ../../img/ico/node-select.png ); }
+.sub-menu .ping a { background-image: url( ../../img/ico/system-monitor.png ); }
+.sub-menu .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
+.sub-menu .plugins a { background-image: url( ../../img/ico/block.png ); }
+.sub-menu .dataimport a { background-image: url( ../../img/ico/document-import.png ); }
+.sub-menu .segments a { background-image: url( ../../img/ico/construction.png ); }
 
 
 #content #navigation
