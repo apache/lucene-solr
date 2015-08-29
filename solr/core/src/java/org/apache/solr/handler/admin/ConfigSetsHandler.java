@@ -56,7 +56,7 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 public class ConfigSetsHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(ConfigSetsHandler.class);
   protected final CoreContainer coreContainer;
-  public static long DEFAULT_ZK_TIMEOUT = 180*1000;
+  public static long DEFAULT_ZK_TIMEOUT = 300*1000;
 
   /**
    * Overloaded ctor to inject CoreContainer into the handler.

@@ -71,7 +71,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
 
   @Test
   public void testAPIExclusivity() throws Exception {
-    int trials = 30;
+    int trials = 20;
     setupBaseConfigSet(GRANDBASE_CONFIGSET_NAME);
     CreateThread createBaseThread =
         new CreateThread(solrCluster, BASE_CONFIGSET_NAME, GRANDBASE_CONFIGSET_NAME, trials);
