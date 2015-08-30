@@ -36,6 +36,9 @@ public abstract class BaseXYZSolid extends BasePlanetObject implements GeoArea {
   /** Vertical plane normal to y unit vector passing through origin */
   protected static final Plane yVerticalPlane = new Plane(1.0, 0.0, 0.0, 0.0);
 
+  /** Empty point vector */
+  protected static final GeoPoint[] EMPTY_POINTS = new GeoPoint[0];
+  
   /**
    * Base solid constructor.
    *@param planetModel is the planet model.
@@ -58,20 +61,6 @@ public abstract class BaseXYZSolid extends BasePlanetObject implements GeoArea {
     for (final GeoPoint[] pointArray : pointArrays) {
       for (final GeoPoint point : pointArray) {
         rval[count++] = point;
-      }
-    }
-    return rval;
-  }
-  
-  /** Find the longest set of point solutions.
-   * @param pointArrays is the array of point arrays.
-   * @return one of the longest sets.
-   */
-  protected static GeoPoint[] findLargestSolution(final GeoPoint[]... pointArrays) {
-    GeoPoint[] rval = null;
-    for (final GeoPoint[] pointArray : pointArrays) {
-      if (rval == null || rval.length < pointArray.length) {
-        rval = pointArray;
       }
     }
     return rval;

@@ -96,31 +96,31 @@ public class XYdZSolid extends BaseXYZSolid {
     // we'll start there.  We know that at most there will be two disconnected shapes on the planet surface.
     // But there's also a case where exactly one plane slices through the world, and none of the bounding plane
     // intersections do.  Thus, if we don't find any of the edge intersection cases, we have to look for that last case.
-    GeoPoint[] edgePoints = findLargestSolution(minXZ, maxXZ, minYZ, maxYZ);
       
-    if (edgePoints.length == 0) {
-      // If we still haven't encountered anything, we need to look at single-plane/world intersections.
-      // We detect these by looking at the world model and noting its x, y, and z bounds.
-      // The cases we are looking for are when the four corner points for any given
-      // plane are all outside of the world, AND that plane intersects the world.
-      // There are four corner points all told; we must evaluate these WRT the planet surface.
-      final boolean minXminYZ = planetModel.pointOutside(minX, minY, Z);
-      final boolean minXmaxYZ = planetModel.pointOutside(minX, maxY, Z);
-      final boolean maxXminYZ = planetModel.pointOutside(maxX, minY, Z);
-      final boolean maxXmaxYZ = planetModel.pointOutside(maxX, maxY, Z);
+    // If we still haven't encountered anything, we need to look at single-plane/world intersections.
+    // We detect these by looking at the world model and noting its x, y, and z bounds.
+    // The cases we are looking for are when the four corner points for any given
+    // plane are all outside of the world, AND that plane intersects the world.
+    // There are four corner points all told; we must evaluate these WRT the planet surface.
+    final boolean minXminYZ = planetModel.pointOutside(minX, minY, Z);
+    final boolean minXmaxYZ = planetModel.pointOutside(minX, maxY, Z);
+    final boolean maxXminYZ = planetModel.pointOutside(maxX, minY, Z);
+    final boolean maxXmaxYZ = planetModel.pointOutside(maxX, maxY, Z);
 
-      if (Z - worldMinZ >= -Vector.MINIMUM_RESOLUTION && Z - worldMaxZ <= Vector.MINIMUM_RESOLUTION &&
-        minX < 0.0 && maxX > 0.0 && minY < 0.0 && maxY > 0.0 &&
-        minXminYZ && minXmaxYZ && maxXminYZ && maxXmaxYZ) {
-        // Find any point on the minZ plane that intersects the world
-        // First construct a perpendicular plane that will allow us to find a sample point.
-        // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
-        // Then use it to compute a sample point.
-        edgePoints = new GeoPoint[]{zPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
-      }
+    final GeoPoint[] zEdges;
+    if (Z - worldMinZ >= -Vector.MINIMUM_RESOLUTION && Z - worldMaxZ <= Vector.MINIMUM_RESOLUTION &&
+      minX < 0.0 && maxX > 0.0 && minY < 0.0 && maxY > 0.0 &&
+      minXminYZ && minXmaxYZ && maxXminYZ && maxXmaxYZ) {
+      // Find any point on the minZ plane that intersects the world
+      // First construct a perpendicular plane that will allow us to find a sample point.
+      // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
+      // Then use it to compute a sample point.
+      zEdges = new GeoPoint[]{zPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+    } else {
+      zEdges= EMPTY_POINTS;
     }
 
-    this.edgePoints = edgePoints;
+    this.edgePoints = glueTogether(minXZ, maxXZ, minYZ, maxYZ, zEdges);
   }
 
   @Override

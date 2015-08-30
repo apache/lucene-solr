@@ -153,80 +153,113 @@ public class XYZSolid extends BaseXYZSolid {
 
       // Now, compute the edge points.
       // This is the trickiest part of setting up an XYZSolid.  We've computed intersections already, so
-      // we'll start there.  We know that at most there will be two disconnected shapes on the planet surface.
-      // But there's also a case where exactly one plane slices through the world, and none of the bounding plane
-      // intersections do.  Thus, if we don't find any of the edge intersection cases, we have to look for that last case.
-      GeoPoint[] edgePoints = findLargestSolution(minXminY,minXmaxY,minXminZ,minXmaxZ,
-        maxXminY,maxXmaxY,maxXminZ,maxXmaxZ,
-        minYminZ,minYmaxZ,maxYminZ,maxYmaxZ);
-      if (edgePoints.length == 0) {
-        // The cases we are looking for are when the four corner points for any given
-        // plane are all outside of the world, AND that plane intersects the world.
-        // There are eight corner points all told; we must evaluate these WRT the planet surface.
-        final boolean minXminYminZ = planetModel.pointOutside(minX, minY, minZ);
-        final boolean minXminYmaxZ = planetModel.pointOutside(minX, minY, maxZ);
-        final boolean minXmaxYminZ = planetModel.pointOutside(minX, maxY, minZ);
-        final boolean minXmaxYmaxZ = planetModel.pointOutside(minX, maxY, maxZ);
-        final boolean maxXminYminZ = planetModel.pointOutside(maxX, minY, minZ);
-        final boolean maxXminYmaxZ = planetModel.pointOutside(maxX, minY, maxZ);
-        final boolean maxXmaxYminZ = planetModel.pointOutside(maxX, maxY, minZ);
-        final boolean maxXmaxYmaxZ = planetModel.pointOutside(maxX, maxY, maxZ);
+      // we'll start there.
+      // There can be a number of shapes, each of which needs an edgepoint.  Each side by itself might contribute
+      // an edgepoint, for instance, if the plane describing that side intercepts the planet in such a way that the ellipse
+      // of interception does not meet any other planes.  Plane intersections can each contribute 0, 1, or 2 edgepoints.
+      //
+      // All of this makes for a lot of potential edgepoints, but I believe these can be pruned back with careful analysis.
+      // I haven't yet done that analysis, however, so I will treat them all as individual edgepoints.
+      
+      // The cases we are looking for are when the four corner points for any given
+      // plane are all outside of the world, AND that plane intersects the world.
+      // There are eight corner points all told; we must evaluate these WRT the planet surface.
+      final boolean minXminYminZ = planetModel.pointOutside(minX, minY, minZ);
+      final boolean minXminYmaxZ = planetModel.pointOutside(minX, minY, maxZ);
+      final boolean minXmaxYminZ = planetModel.pointOutside(minX, maxY, minZ);
+      final boolean minXmaxYmaxZ = planetModel.pointOutside(minX, maxY, maxZ);
+      final boolean maxXminYminZ = planetModel.pointOutside(maxX, minY, minZ);
+      final boolean maxXminYmaxZ = planetModel.pointOutside(maxX, minY, maxZ);
+      final boolean maxXmaxYminZ = planetModel.pointOutside(maxX, maxY, minZ);
+      final boolean maxXmaxYmaxZ = planetModel.pointOutside(maxX, maxY, maxZ);
         
-        // If we still haven't encountered anything, we need to look at single-plane/world intersections.
-        // We detect these by looking at the world model and noting its x, y, and z bounds.
+      // Look at single-plane/world intersections.
+      // We detect these by looking at the world model and noting its x, y, and z bounds.
 
-        if (minX - worldMinX >= -Vector.MINIMUM_RESOLUTION && minX - worldMaxX <= Vector.MINIMUM_RESOLUTION &&
-          minY < 0.0 && maxY > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
-          minXminYminZ && minXminYmaxZ && minXmaxYminZ && minXmaxYmaxZ) {
-          // Find any point on the minX plane that intersects the world
-          // First construct a perpendicular plane that will allow us to find a sample point.
-          // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
-          // Then use it to compute a sample point.
-          edgePoints = new GeoPoint[]{minXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
-        } else if (maxX - worldMinX >= -Vector.MINIMUM_RESOLUTION && maxX - worldMaxX <= Vector.MINIMUM_RESOLUTION &&
-          minY < 0.0 && maxY > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
-          maxXminYminZ && maxXminYmaxZ && maxXmaxYminZ && maxXmaxYmaxZ) {
-          // Find any point on the maxX plane that intersects the world
-          // First construct a perpendicular plane that will allow us to find a sample point.
-          // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
-          // Then use it to compute a sample point.
-          edgePoints = new GeoPoint[]{maxXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
-        } else if (minY - worldMinY >= -Vector.MINIMUM_RESOLUTION && minY - worldMaxY <= Vector.MINIMUM_RESOLUTION &&
-          minX < 0.0 && maxX > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
-          minXminYminZ && minXminYmaxZ && maxXminYminZ && maxXminYmaxZ) {
-          // Find any point on the minY plane that intersects the world
-          // First construct a perpendicular plane that will allow us to find a sample point.
-          // This plane is vertical and goes through the points (0,0,0) and (0,1,0)
-          // Then use it to compute a sample point.
-          edgePoints = new GeoPoint[]{minYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane)};
-        } else if (maxY - worldMinY >= -Vector.MINIMUM_RESOLUTION && maxY - worldMaxY <= Vector.MINIMUM_RESOLUTION &&
-          minX < 0.0 && maxX > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
-          minXmaxYminZ && minXmaxYmaxZ && maxXmaxYminZ && maxXmaxYmaxZ) {
-          // Find any point on the maxY plane that intersects the world
-          // First construct a perpendicular plane that will allow us to find a sample point.
-          // This plane is vertical and goes through the points (0,0,0) and (0,1,0)
-          // Then use it to compute a sample point.
-          edgePoints = new GeoPoint[]{maxYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane)};
-        } else if (minZ - worldMinZ >= -Vector.MINIMUM_RESOLUTION && minZ - worldMaxZ <= Vector.MINIMUM_RESOLUTION &&
-          minX < 0.0 && maxX > 0.0 && minY < 0.0 && maxY > 0.0 &&
-          minXminYminZ && minXmaxYminZ && maxXminYminZ && maxXmaxYminZ) {
-          // Find any point on the minZ plane that intersects the world
-          // First construct a perpendicular plane that will allow us to find a sample point.
-          // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
-          // Then use it to compute a sample point.
-          edgePoints = new GeoPoint[]{minZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
-        } else if (maxZ - worldMinZ >= -Vector.MINIMUM_RESOLUTION && maxZ - worldMaxZ <= Vector.MINIMUM_RESOLUTION &&
-          minX < 0.0 && maxX > 0.0 && minY < 0.0 && maxY > 0.0 &&
-          minXminYmaxZ && minXmaxYmaxZ && maxXminYmaxZ && maxXmaxYmaxZ) {
-          // Find any point on the maxZ plane that intersects the world
-          // First construct a perpendicular plane that will allow us to find a sample point.
-          // This plane is vertical and goes through the points (0,0,0) and (1,0,0) (that is, its orientation doesn't matter)
-          // Then use it to compute a sample point.
-          edgePoints = new GeoPoint[]{maxZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
-        }
+      final GeoPoint[] minXEdges;
+      if (minX - worldMinX >= -Vector.MINIMUM_RESOLUTION && minX - worldMaxX <= Vector.MINIMUM_RESOLUTION &&
+        minY < 0.0 && maxY > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
+        minXminYminZ && minXminYmaxZ && minXmaxYminZ && minXmaxYmaxZ) {
+        // Find any point on the minX plane that intersects the world
+        // First construct a perpendicular plane that will allow us to find a sample point.
+        // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
+        // Then use it to compute a sample point.
+        minXEdges = new GeoPoint[]{minXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+      } else {
+        minXEdges = EMPTY_POINTS;
       }
-        
-      this.edgePoints = edgePoints;
+      
+      final GeoPoint[] maxXEdges;
+      if (maxX - worldMinX >= -Vector.MINIMUM_RESOLUTION && maxX - worldMaxX <= Vector.MINIMUM_RESOLUTION &&
+        minY < 0.0 && maxY > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
+        maxXminYminZ && maxXminYmaxZ && maxXmaxYminZ && maxXmaxYmaxZ) {
+        // Find any point on the maxX plane that intersects the world
+        // First construct a perpendicular plane that will allow us to find a sample point.
+        // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
+        // Then use it to compute a sample point.
+        maxXEdges = new GeoPoint[]{maxXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+      } else {
+        maxXEdges = EMPTY_POINTS;
+      }
+      
+      final GeoPoint[] minYEdges;
+      if (minY - worldMinY >= -Vector.MINIMUM_RESOLUTION && minY - worldMaxY <= Vector.MINIMUM_RESOLUTION &&
+        minX < 0.0 && maxX > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
+        minXminYminZ && minXminYmaxZ && maxXminYminZ && maxXminYmaxZ) {
+        // Find any point on the minY plane that intersects the world
+        // First construct a perpendicular plane that will allow us to find a sample point.
+        // This plane is vertical and goes through the points (0,0,0) and (0,1,0)
+        // Then use it to compute a sample point.
+        minYEdges = new GeoPoint[]{minYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane)};
+      } else {
+        minYEdges = EMPTY_POINTS;
+      }
+      
+      final GeoPoint[] maxYEdges;
+      if (maxY - worldMinY >= -Vector.MINIMUM_RESOLUTION && maxY - worldMaxY <= Vector.MINIMUM_RESOLUTION &&
+        minX < 0.0 && maxX > 0.0 && minZ < 0.0 && maxZ > 0.0 &&
+        minXmaxYminZ && minXmaxYmaxZ && maxXmaxYminZ && maxXmaxYmaxZ) {
+        // Find any point on the maxY plane that intersects the world
+        // First construct a perpendicular plane that will allow us to find a sample point.
+        // This plane is vertical and goes through the points (0,0,0) and (0,1,0)
+        // Then use it to compute a sample point.
+        maxYEdges = new GeoPoint[]{maxYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane)};
+      } else {
+        maxYEdges = EMPTY_POINTS;
+      }
+      
+      final GeoPoint[] minZEdges;
+      if (minZ - worldMinZ >= -Vector.MINIMUM_RESOLUTION && minZ - worldMaxZ <= Vector.MINIMUM_RESOLUTION &&
+        minX < 0.0 && maxX > 0.0 && minY < 0.0 && maxY > 0.0 &&
+        minXminYminZ && minXmaxYminZ && maxXminYminZ && maxXmaxYminZ) {
+        // Find any point on the minZ plane that intersects the world
+        // First construct a perpendicular plane that will allow us to find a sample point.
+        // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
+        // Then use it to compute a sample point.
+        minZEdges = new GeoPoint[]{minZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+      } else {
+        minZEdges = EMPTY_POINTS;
+      }
+      
+      final GeoPoint[] maxZEdges;
+      if (maxZ - worldMinZ >= -Vector.MINIMUM_RESOLUTION && maxZ - worldMaxZ <= Vector.MINIMUM_RESOLUTION &&
+        minX < 0.0 && maxX > 0.0 && minY < 0.0 && maxY > 0.0 &&
+        minXminYmaxZ && minXmaxYmaxZ && maxXminYmaxZ && maxXmaxYmaxZ) {
+        // Find any point on the maxZ plane that intersects the world
+        // First construct a perpendicular plane that will allow us to find a sample point.
+        // This plane is vertical and goes through the points (0,0,0) and (1,0,0) (that is, its orientation doesn't matter)
+        // Then use it to compute a sample point.
+        maxZEdges = new GeoPoint[]{maxZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+      } else {
+        maxZEdges = EMPTY_POINTS;
+      }
+      
+      // Glue everything together.  This is not a minimal set of edgepoints, as of now, but it does completely describe all shapes on the
+      // planet.
+      this.edgePoints = glueTogether(minXminY, minXmaxY, minXminZ, minXmaxZ,
+        maxXminY, maxXmaxY, maxXminZ, maxXmaxZ,
+        minYminZ, minYmaxZ, maxYminZ, maxYmaxZ,
+        minXEdges, maxXEdges, minYEdges, maxYEdges, minZEdges, maxZEdges);
     }
   }
 
