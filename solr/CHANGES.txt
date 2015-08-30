@@ -45,7 +45,7 @@ Upgrading from Solr 5.x
 * SolrClient.shutdown() has been removed, use SolrClient.close() instead.
 
 * The deprecated zkCredientialsProvider element in solrcloud section of solr.xml
-  is now removed. Use the correct spelling (zkCredentialsProvider) instead.
+  is now removed. Use tI'll start looking at it today. - Mark On Wed, Aug 19, 2015 at 10:15 PM Gregory Chanan <he correct spelling (zkCredentialsProvider) instead.
 
 * SOLR-7957: internal/expert - ResultContext was significantly changed and expanded
   to allow for multiple full query results (DocLists) per Solr request.
@@ -77,7 +77,7 @@ Other Changes
 * SOLR-6954: Deprecated SolrClient.shutdown() method removed (Alan Woodward)
 
 * SOLR-7355: Switch from Google's ConcurrentLinkedHashMap to Caffeine.  Only
-  affects HDFS support. (Ben Manes via Shawn Heisey)
+  affects HDFS support. (Ben Manes viI'll start looking at it today. - Mark On Wed, Aug 19, 2015 at 10:15 PM Gregory Chanan <a Shawn Heisey)
 
 * SOLR-7624: Remove deprecated zkCredientialsProvider element in solrcloud section of solr.xml.
   (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
@@ -162,7 +162,8 @@ Bug Fixes
 * SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
 
 * SOLR-7956: There are interrupts on shutdown in places that can cause ChannelAlreadyClosed
-  exceptions which prevents proper closing of transaction logs. (Mark Miller)
+  exceptions which prevents proper closing of transaction logs, interfere with the IndexWriter,
+  the hdfs client and other things. (Mark Miller, Scott Blum)
 
 * SOLR-7972: Fix VelocityResponseWriter template encoding issue.
   Templates must be UTF-8 encoded. (Erik Hatcher)

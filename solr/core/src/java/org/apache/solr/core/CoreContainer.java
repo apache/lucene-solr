@@ -486,7 +486,7 @@ public class CoreContainer {
                 }
               }
             } finally {
-              ExecutorUtil.shutdownNowAndAwaitTermination(coreLoadExecutor);
+              ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
             }
           }
         };

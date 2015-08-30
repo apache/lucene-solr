@@ -317,9 +317,7 @@ public class HttpShardHandler extends ShardHandler {
   @Override
   public void cancelAll() {
     for (Future<ShardResponse> future : pending) {
-      // TODO: any issues with interrupting?  shouldn't be if
-      // there are finally blocks to release connections.
-      future.cancel(true);
+      future.cancel(false);
     }
   }
 
