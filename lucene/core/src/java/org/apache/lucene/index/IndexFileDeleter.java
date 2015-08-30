@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CollectionUtil;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -747,8 +748,9 @@ final class IndexFileDeleter implements Closeable {
     } catch (IOException e) {  // if delete fails
 
       // IndexWriter should only ask us to delete files it knows it wrote, so if we hit this, something is wrong!
-      assert e instanceof NoSuchFileException == false: "hit unexpected NoSuchFileException: file=" + fileName;
-      assert e instanceof FileNotFoundException == false: "hit unexpected FileNotFoundException: file=" + fileName;
+      // LUCENE-6684: we suppress this assert for Windows, since a file could be in a confusing "pending delete" state:
+      assert Constants.WINDOWS || e instanceof NoSuchFileException == false: "hit unexpected NoSuchFileException: file=" + fileName;
+      assert Constants.WINDOWS || e instanceof FileNotFoundException == false: "hit unexpected FileNotFoundException: file=" + fileName;
 
       // Some operating systems (e.g. Windows) don't
       // permit a file to be deleted while it is opened
