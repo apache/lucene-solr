@@ -27,7 +27,9 @@ import org.apache.lucene.geo3d.GeoArea;
 import org.apache.lucene.geo3d.GeoAreaFactory;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
 import org.apache.lucene.geo3d.GeoCircle;
+import org.apache.lucene.geo3d.GeoPath;
 import org.apache.lucene.geo3d.GeoPoint;
+import org.apache.lucene.geo3d.GeoPolygonFactory;
 import org.apache.lucene.geo3d.GeoShape;
 import org.apache.lucene.geo3d.PlanetModel;
 import org.apache.lucene.geo3d.Vector;
@@ -460,8 +462,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
     int iters = atLeast(10);
 
-    // nocommit:
-    iters = 1;
+    int recurseDepth = RandomInts.randomIntBetween(random(), 5, 15);
+
+    iters = atLeast(50);
     
     for(int iter=0;iter<iters;iter++) {
       GeoShape shape = randomShape(planetModel);
@@ -500,7 +503,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
         // nocommit or if the volume is too small?
         // nocommit randomize 10:
-        if (random().nextInt(10) == 7 || cell.splitCount > 10) {
+        if (random().nextInt(10) == 7 || cell.splitCount > recurseDepth) {
           if (VERBOSE) {
             System.out.println("    leaf");
           }
@@ -777,10 +780,32 @@ public class TestGeo3DPointField extends LuceneTestCase {
     }
   }
 
+  // Poached from Geo3dRptTest.randomShape:
   private static GeoShape randomShape(PlanetModel planetModel) {
     while (true) {
-      GeoShape shape;
-      if (random().nextBoolean()) {
+      final int shapeType = random().nextInt(4);
+      switch (shapeType) {
+      case 0: {
+        // Polygons
+        final int vertexCount = random().nextInt(3) + 3;
+        final List<GeoPoint> geoPoints = new ArrayList<>();
+        while (geoPoints.size() < vertexCount) {
+          final GeoPoint gPt = new GeoPoint(planetModel, toRadians(randomLat()), toRadians(randomLon()));
+          geoPoints.add(gPt);
+        }
+        final int convexPointIndex = random().nextInt(vertexCount);       //If we get this wrong, hopefully we get IllegalArgumentException
+        try {
+          return GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints, convexPointIndex);
+        } catch (IllegalArgumentException e) {
+          // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
+          // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+          continue;
+        }
+      }
+
+      case 1: {
+        // Circles
+
         double lat = toRadians(randomLat());
         double lon = toRadians(randomLon());
 
@@ -792,13 +817,15 @@ public class TestGeo3DPointField extends LuceneTestCase {
         }
 
         try {
-          shape = new GeoCircle(planetModel, lat, lon, angle);
+          return new GeoCircle(planetModel, lat, lon, angle);
         } catch (IllegalArgumentException iae) {
           // angle is too small; try again:
           continue;
         }
+      }
 
-      } else {
+      case 2: {
+        // Rectangles
         double lat0 = toRadians(randomLat());
         double lat1 = toRadians(randomLat());
         if (lat1 < lat0) {
@@ -814,10 +841,30 @@ public class TestGeo3DPointField extends LuceneTestCase {
           lon1 = x;
         }
 
-        shape = GeoBBoxFactory.makeGeoBBox(planetModel, lat1, lat0, lon0, lon1);
+        return GeoBBoxFactory.makeGeoBBox(planetModel, lat1, lat0, lon0, lon1);
       }
 
-      return shape;
+      case 3: {
+        // Paths
+        final int pointCount = random().nextInt(5) + 1;
+        final double width = toRadians(random().nextInt(89)+1);
+        try {
+          final GeoPath path = new GeoPath(planetModel, width);
+          for (int i = 0; i < pointCount; i++) {
+            path.addPoint(toRadians(randomLat()), toRadians(randomLon()));
+          }
+          path.done();
+          return path;
+        } catch (IllegalArgumentException e) {
+          // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
+          // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+          continue;
+        }
+      }
+
+      default:
+        throw new IllegalStateException("Unexpected shape type");
+      }
     }
   }
 
@@ -911,8 +958,6 @@ public class TestGeo3DPointField extends LuceneTestCase {
             NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
             for (int iter=0;iter<iters && failed.get() == false;iter++) {
-
-              // nocommit: randomize other shapes
 
               GeoShape shape = randomShape(planetModel);
 
