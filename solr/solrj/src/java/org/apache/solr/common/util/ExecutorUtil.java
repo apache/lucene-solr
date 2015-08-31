@@ -82,20 +82,39 @@ public class ExecutorUtil {
   // this if you know what you are doing - you probably want shutdownAndAwaitTermination.
   // Marked as Deprecated to discourage use.
   @Deprecated
-  public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
-    pool.shutdown(); // Disable new tasks from being submitted
-    pool.shutdownNow(); // Cancel currently executing tasks  - NOTE: this interrupts!
+  public static void shutdownWithInterruptAndAwaitTermination(ExecutorService pool) {
+    pool.shutdownNow(); // Cancel currently executing tasks - NOTE: this interrupts!
     boolean shutdown = false;
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(1, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();
       }
-      if (!shutdown) {
+    }
+  }
+  
+  // ** This will interrupt the threads! ** Lucene and Solr do not like this because it can close channels, so only use
+  // this if you know what you are doing - you probably want shutdownAndAwaitTermination.
+  // Marked as Deprecated to discourage use.
+  @Deprecated
+  public static void shutdownAndAwaitTerminationWithInterrupt(ExecutorService pool) {
+    pool.shutdown(); // Disable new tasks from being submitted
+    boolean shutdown = false;
+    boolean interrupted = false;
+    while (!shutdown) {
+      try {
+        // Wait a while for existing tasks to terminate
+        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
+      } catch (InterruptedException ie) {
+        // Preserve interrupt status
+        Thread.currentThread().interrupt();
+      }
+      if (!shutdown && !interrupted) {
         pool.shutdownNow(); // Cancel currently executing tasks - NOTE: this interrupts!
+        interrupted = true;
       }
     }
   }
@@ -106,7 +125,7 @@ public class ExecutorUtil {
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(1, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();

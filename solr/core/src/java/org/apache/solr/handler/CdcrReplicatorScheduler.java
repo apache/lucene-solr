@@ -102,6 +102,8 @@ class CdcrReplicatorScheduler {
 
   void shutdown() {
     if (isStarted) {
+      // interrupts are often dangerous in Lucene / Solr code, but the
+      // test for this will leak threads without
       replicatorsPool.shutdown();
       try {
         replicatorsPool.awaitTermination(60, TimeUnit.SECONDS);
