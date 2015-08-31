@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 
 import static org.apache.solr.common.SolrException.ErrorCode.*;
 
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -266,11 +267,11 @@ public final class DocExpirationUpdateProcessorFactory
 
     core.addCloseHook(new CloseHook() {
       public void postClose(SolrCore core) {
-        // update handler is gone, hard terminiate anything that's left.
+        // update handler is gone, terminate anything that's left.
 
         if (executor.isTerminating()) {
-          log.info("Triggering hard close of DocExpiration Executor");
-          executor.shutdownNow();
+          log.info("Waiting for close of DocExpiration Executor");
+          ExecutorUtil.shutdownAndAwaitTermination(executor);
         }
       }
       public void preClose(SolrCore core) {
