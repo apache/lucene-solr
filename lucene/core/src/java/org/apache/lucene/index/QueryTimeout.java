@@ -29,5 +29,10 @@ public interface QueryTimeout {
    */
   public abstract boolean shouldExit();
 
+  /** Returns true if timeouts are enabled for this query (i.e. if shouldExit would ever return true) */
+  public default boolean isTimeoutEnabled() {
+    return true;
+  }
+
 }
 
