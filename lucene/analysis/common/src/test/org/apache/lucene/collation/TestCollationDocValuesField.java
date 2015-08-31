@@ -120,10 +120,10 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     for(int docID=0;docID<is.getIndexReader().maxDoc();docID++) {
       Document doc = is.doc(docID);
       String s = doc.getField("field").stringValue();
-      boolean collatorAccepts = collator.compare(s, startPoint) >= 0 && collator.compare(s, endPoint) <= 0;
+      boolean collatorAccepts = collate(collator, s, startPoint) >= 0 && collate(collator, s, endPoint) <= 0;
       BytesRef br = dvs.get(docID);
       boolean luceneAccepts = br.compareTo(startBR) >= 0 && br.compareTo(endBR) <= 0;
-      assertEquals(collatorAccepts, luceneAccepts);
+      assertEquals(startPoint + " <= " + s + " <= " + endPoint, collatorAccepts, luceneAccepts);
     }
   }
 }
