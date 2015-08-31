@@ -46,7 +46,7 @@ public final class Geo3DPointField extends Field {
     super(name, TYPE);
     // Translate lat/lon to x,y,z:
     final GeoPoint point = new GeoPoint(planetModel, lat, lon);
-    fillFieldsData(planetModel, point.x, point.y, point.z);
+    fillFieldsData(planetModel.getMaximumMagnitude(), point.x, point.y, point.z);
   }
 
   /** 
@@ -56,14 +56,14 @@ public final class Geo3DPointField extends Field {
    */
   public Geo3DPointField(String name, PlanetModel planetModel, double x, double y, double z) {
     super(name, TYPE);
-    fillFieldsData(planetModel, x, y, z);
+    fillFieldsData(planetModel.getMaximumMagnitude(), x, y, z);
   }
 
-  private void fillFieldsData(PlanetModel planetModel, double x, double y, double z) {
+  private void fillFieldsData(double planetMax, double x, double y, double z) {
     byte[] bytes = new byte[12];
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetModel, x), bytes, 0);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetModel, y), bytes, 4);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetModel, z), bytes, 8);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetMax, x), bytes, 0);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetMax, y), bytes, 4);
+    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetMax, z), bytes, 8);
     fieldsData = new BytesRef(bytes);
   }
 }

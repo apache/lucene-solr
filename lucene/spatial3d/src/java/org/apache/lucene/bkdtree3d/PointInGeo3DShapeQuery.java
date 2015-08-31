@@ -94,8 +94,9 @@ public class PointInGeo3DShapeQuery extends Query {
         XYZBounds bounds = new XYZBounds();
         shape.getBounds(bounds);
 
-        if (planetModel.getMaximumMagnitude() != treeDV.planetMax) {
-          throw new IllegalStateException(planetModel + " is not the same one used during indexing: max=" + planetModel.getMaximumMagnitude() + " vs indexing max=" + treeDV.planetMax);
+        final double planetMax = planetModel.getMaximumMagnitude();
+        if (planetMax != treeDV.planetMax) {
+          throw new IllegalStateException(planetModel + " is not the same one used during indexing: planetMax=" + planetMax + " vs indexing planetMax=" + treeDV.planetMax);
         }
 
         /*
@@ -110,21 +111,12 @@ public class PointInGeo3DShapeQuery extends Query {
         assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "expected WITHIN (1) or OVERLAPS (2) but got " + xyzSolid.getRelationship(shape) + "; shape="+shape+"; XYZSolid="+xyzSolid;
         */
 
-        // The fudge factor here (+/- 2.0 * MINIMUM_RESOLUTION) is here to ensure that
-        // you get a WITHIN rather than an OVERLAPS if you expand the bounding box by
-        // an amount sufficient to insure there are no overlaps between the shape and
-        // the box. Otherwise according to the (revised) definition of getRelationship(),
-        // you could technically get either one.
-
-        // nocommit can we also remove this inflate?
-        double inflate = 2.0 * Vector.MINIMUM_RESOLUTION;
-
-        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumX() - inflate),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumX() + inflate),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumY() - inflate),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumY() + inflate),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMinimumZ() - inflate),
-                                         Geo3DDocValuesFormat.encodeValueLenient(planetModel, bounds.getMaximumZ() + inflate),
+        DocIdSet result = tree.intersect(Geo3DDocValuesFormat.encodeValueLenient(planetMax, bounds.getMinimumX()),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetMax, bounds.getMaximumX()),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetMax, bounds.getMinimumY()),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetMax, bounds.getMaximumY()),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetMax, bounds.getMinimumZ()),
+                                         Geo3DDocValuesFormat.encodeValueLenient(planetMax, bounds.getMaximumZ()),
                                          new BKD3DTreeReader.ValueFilter() {
                                            @Override
                                            public boolean accept(int docID) {

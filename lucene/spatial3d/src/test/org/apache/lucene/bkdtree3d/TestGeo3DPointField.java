@@ -241,7 +241,8 @@ public class TestGeo3DPointField extends LuceneTestCase {
     } else {
       planetModel = PlanetModel.SPHERE;
     }
-
+    final double planetMax = planetModel.getMaximumMagnitude();
+    
     BKD3DTreeWriter w = new BKD3DTreeWriter(maxPointsInLeaf, maxPointsSortInHeap);
     for(int docID=0;docID<numPoints;docID++) {
       Point point;
@@ -256,15 +257,15 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
       if (VERBOSE) {
         System.err.println("  docID=" + docID + " point=" + point);
-        System.err.println("    x=" + encodeValue(planetModel, point.x) +
-                           " y=" + encodeValue(planetModel, point.y) +
-                           " z=" + encodeValue(planetModel, point.z));
+        System.err.println("    x=" + encodeValue(planetMax, point.x) +
+                           " y=" + encodeValue(planetMax, point.y) +
+                           " z=" + encodeValue(planetMax, point.z));
       }
 
       points.add(point);
-      w.add(encodeValue(planetModel, point.x),
-            encodeValue(planetModel, point.y),
-            encodeValue(planetModel, point.z),
+      w.add(encodeValue(planetMax, point.x),
+            encodeValue(planetMax, point.y),
+            encodeValue(planetMax, point.z),
             docID);
     }
 
@@ -282,12 +283,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
       Range y = randomRange(planetModel);
       Range z = randomRange(planetModel);
 
-      int xMinEnc = encodeValue(planetModel, x.min);
-      int xMaxEnc = encodeValue(planetModel, x.max);
-      int yMinEnc = encodeValue(planetModel, y.min);
-      int yMaxEnc = encodeValue(planetModel, y.max);
-      int zMinEnc = encodeValue(planetModel, z.min);
-      int zMaxEnc = encodeValue(planetModel, z.max);
+      int xMinEnc = encodeValue(planetMax, x.min);
+      int xMaxEnc = encodeValue(planetMax, x.max);
+      int yMinEnc = encodeValue(planetMax, y.min);
+      int yMaxEnc = encodeValue(planetMax, y.max);
+      int zMinEnc = encodeValue(planetMax, z.min);
+      int zMaxEnc = encodeValue(planetMax, z.max);
 
       if (VERBOSE) {
         System.err.println("\nTEST: iter=" + iter + " bbox: x=" + x + " (" + xMinEnc + " TO " + xMaxEnc+ ")" + " y=" + y + " (" + yMinEnc + " TO " + yMaxEnc + ")"  + " z=" + z + " (" + zMinEnc + " TO " + zMaxEnc + ")" );
@@ -305,9 +306,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                       //System.out.println("  accept docID=" + docID + " point=" + point + " (x=" + encodeValue(point.x) + " y=" + encodeValue(point.y) + " z=" + encodeValue(point.z) + ")");
 
                                       // System.out.println("  accept docID=" + docID + " point: x=" + point.x + " y=" + point.y + " z=" + point.z);
-                                      int xEnc = encodeValue(planetModel, point.x);
-                                      int yEnc = encodeValue(planetModel, point.y);
-                                      int zEnc = encodeValue(planetModel, point.z);
+                                      int xEnc = encodeValue(planetMax, point.x);
+                                      int yEnc = encodeValue(planetMax, point.y);
+                                      int zEnc = encodeValue(planetMax, point.z);
 
                                       boolean accept = xEnc >= xMinEnc && xEnc <= xMaxEnc &&
                                         yEnc >= yMinEnc && yEnc <= yMaxEnc &&
@@ -365,9 +366,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
         boolean actual = matches.get(docID);
 
         // We must quantize exactly as BKD tree does else we'll get false failures
-        int xEnc = encodeValue(planetModel, point.x);
-        int yEnc = encodeValue(planetModel, point.y);
-        int zEnc = encodeValue(planetModel, point.z);
+        int xEnc = encodeValue(planetMax, point.x);
+        int yEnc = encodeValue(planetMax, point.y);
+        int zEnc = encodeValue(planetMax, point.z);
 
         boolean expected = xEnc >= xMinEnc && xEnc <= xMaxEnc &&
           yEnc >= yMinEnc && yEnc <= yMaxEnc &&
@@ -412,10 +413,10 @@ public class TestGeo3DPointField extends LuceneTestCase {
     }
 
     /** Returns true if the quantized point lies within this cell, inclusive on all bounds. */
-    public boolean contains(PlanetModel planetModel, GeoPoint point) {
-      int docX = encodeValue(planetModel, point.x);
-      int docY = encodeValue(planetModel, point.y);
-      int docZ = encodeValue(planetModel, point.z);
+    public boolean contains(double planetMax, GeoPoint point) {
+      int docX = encodeValue(planetMax, point.x);
+      int docY = encodeValue(planetMax, point.y);
+      int docZ = encodeValue(planetMax, point.z);
 
       return docX >= xMinEnc && docX <= xMaxEnc &&
         docY >= yMinEnc && docY <= yMaxEnc && 
@@ -430,9 +431,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
   private static GeoPoint quantize(PlanetModel planetModel, GeoPoint point) {
     double planetMax = planetModel.getMaximumMagnitude();
-    return new GeoPoint(decodeValueCenter(planetMax, encodeValue(planetModel, point.x)),
-                        decodeValueCenter(planetMax, encodeValue(planetModel, point.y)),
-                        decodeValueCenter(planetMax, encodeValue(planetModel, point.z)));
+    return new GeoPoint(decodeValueCenter(planetMax, encodeValue(planetMax, point.x)),
+                        decodeValueCenter(planetMax, encodeValue(planetMax, point.y)),
+                        decodeValueCenter(planetMax, encodeValue(planetMax, point.z)));
   }
 
   /** Tests consistency of GeoArea.getRelationship vs GeoShape.isWithin */
@@ -478,12 +479,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
       // Start with the root cell that fully contains the shape:
       Cell root = new Cell(null,
-                           encodeValueLenient(planetModel, bounds.getMinimumX()),
-                           encodeValueLenient(planetModel, bounds.getMaximumX()),
-                           encodeValueLenient(planetModel, bounds.getMinimumY()),
-                           encodeValueLenient(planetModel, bounds.getMaximumY()),
-                           encodeValueLenient(planetModel, bounds.getMinimumZ()),
-                           encodeValueLenient(planetModel, bounds.getMaximumZ()),
+                           encodeValueLenient(planetMax, bounds.getMinimumX()),
+                           encodeValueLenient(planetMax, bounds.getMaximumX()),
+                           encodeValueLenient(planetMax, bounds.getMinimumY()),
+                           encodeValueLenient(planetMax, bounds.getMaximumY()),
+                           encodeValueLenient(planetMax, bounds.getMinimumZ()),
+                           encodeValueLenient(planetMax, bounds.getMaximumZ()),
                            0);
 
       if (VERBOSE) {
@@ -510,7 +511,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
           // Leaf cell: brute force check all docs that fall within this cell:
           for(int docID=0;docID<numDocs;docID++) {
             GeoPoint point = docs[docID];
-            if (cell.contains(planetModel, point)) {
+            if (cell.contains(planetMax, point)) {
               if (shape.isWithin(quantize(planetModel, point))) {
                 if (VERBOSE) {
                   System.out.println("    check doc=" + docID + ": match!");
@@ -543,7 +544,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
               System.out.println("    GeoArea.CONTAINS: now addAll");
             }
             for(int docID=0;docID<numDocs;docID++) {
-              if (cell.contains(planetModel, docs[docID])) {
+              if (cell.contains(planetMax, docs[docID])) {
                 if (VERBOSE) {
                   System.out.println("    addAll doc=" + docID);
                 }
@@ -571,7 +572,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
             if (VERBOSE) {
               System.out.println("    GeoArea.DISJOINT: drop this cell");
               for(int docID=0;docID<numDocs;docID++) {
-                if (cell.contains(planetModel, docs[docID])) {
+                if (cell.contains(planetMax, docs[docID])) {
                   if (VERBOSE) {
                     System.out.println("    skip doc=" + docID);
                   }

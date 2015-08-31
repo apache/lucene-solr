@@ -115,25 +115,23 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
   }
 
   /** Clips the incoming value to the allowed min/max range before encoding, instead of throwing an exception. */
-  static int encodeValueLenient(PlanetModel planetModel, double x) {
-    double max = planetModel.getMaximumMagnitude();
-    if (x > max) {
-      x = max;
-    } else if (x < -max) {
-      x = -max;
+  static int encodeValueLenient(double planetMax, double x) {
+    if (x > planetMax) {
+      x = planetMax;
+    } else if (x < -planetMax) {
+      x = -planetMax;
     }
-    return encodeValue(planetModel, x);
+    return encodeValue(planetMax, x);
   }
     
-  static int encodeValue(PlanetModel planetModel, double x) {
-    double max = planetModel.getMaximumMagnitude();
-    if (x > max) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than max for PlanetModel=" + planetModel + " " + max);
+  static int encodeValue(double planetMax, double x) {
+    if (x > planetMax) {
+      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than planetMax=" + planetMax + ")");
     }
-    if (x < -max) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than than -max for PlanetModel=" + planetModel + " " + max);
+    if (x < -planetMax) {
+      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than than -planetMax=" + -planetMax + ")");
     }
-    long y = Math.round (x * (Integer.MAX_VALUE / max));
+    long y = Math.round (x * (Integer.MAX_VALUE / planetMax));
     assert y >= Integer.MIN_VALUE;
     assert y <= Integer.MAX_VALUE;
 
