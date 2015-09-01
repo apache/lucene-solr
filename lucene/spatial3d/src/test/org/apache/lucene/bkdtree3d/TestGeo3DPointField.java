@@ -429,8 +429,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     }
   }
 
-  private static GeoPoint quantize(PlanetModel planetModel, GeoPoint point) {
-    double planetMax = planetModel.getMaximumMagnitude();
+  private static GeoPoint quantize(double planetMax, GeoPoint point) {
     return new GeoPoint(decodeValueCenter(planetMax, encodeValue(planetMax, point.x)),
                         decodeValueCenter(planetMax, encodeValue(planetMax, point.y)),
                         decodeValueCenter(planetMax, encodeValue(planetMax, point.z)));
@@ -512,7 +511,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
           for(int docID=0;docID<numDocs;docID++) {
             GeoPoint point = docs[docID];
             if (cell.contains(planetMax, point)) {
-              if (shape.isWithin(quantize(planetModel, point))) {
+              if (shape.isWithin(quantize(planetMax, point))) {
                 if (VERBOSE) {
                   System.out.println("    check doc=" + docID + ": match!");
                 }
@@ -594,16 +593,22 @@ public class TestGeo3DPointField extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("    now split on x=" + splitValue);
               }
-              queue.add(new Cell(cell,
+              Cell cell1 = new Cell(cell,
                                  cell.xMinEnc, splitValue,
                                  cell.yMinEnc, cell.yMaxEnc,
                                  cell.zMinEnc, cell.zMaxEnc,
-                                 cell.splitCount+1));
-              queue.add(new Cell(cell,
+                                 cell.splitCount+1);
+              Cell cell2 = new Cell(cell,
                                  splitValue, cell.xMaxEnc,
                                  cell.yMinEnc, cell.yMaxEnc,
                                  cell.zMinEnc, cell.zMaxEnc,
-                                 cell.splitCount+1));
+                                 cell.splitCount+1);
+              if (VERBOSE) {
+                System.out.println("    split cell1: " + cell1);
+                System.out.println("    split cell2: " + cell2);
+              }
+              queue.add(cell1);
+              queue.add(cell2);
             }
             break;
 
@@ -614,16 +619,22 @@ public class TestGeo3DPointField extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("    now split on y=" + splitValue);
               }
-              queue.add(new Cell(cell,
+              Cell cell1 = new Cell(cell,
                                  cell.xMinEnc, cell.xMaxEnc,
                                  cell.yMinEnc, splitValue,
                                  cell.zMinEnc, cell.zMaxEnc,
-                                 cell.splitCount+1));
-              queue.add(new Cell(cell,
+                                 cell.splitCount+1);
+              Cell cell2 = new Cell(cell,
                                  cell.xMinEnc, cell.xMaxEnc,
                                  splitValue, cell.yMaxEnc,
                                  cell.zMinEnc, cell.zMaxEnc,
-                                 cell.splitCount+1));
+                                 cell.splitCount+1);
+              if (VERBOSE) {
+                System.out.println("    split cell1: " + cell1);
+                System.out.println("    split cell2: " + cell2);
+              }
+              queue.add(cell1);
+              queue.add(cell2);
             }
             break;
 
@@ -634,16 +645,22 @@ public class TestGeo3DPointField extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("    now split on z=" + splitValue);
               }
-              queue.add(new Cell(cell,
+              Cell cell1 = new Cell(cell,
                                  cell.xMinEnc, cell.xMaxEnc,
                                  cell.yMinEnc, cell.yMaxEnc,
                                  cell.zMinEnc, splitValue,
-                                 cell.splitCount+1));
-              queue.add(new Cell(cell,
+                                 cell.splitCount+1);
+              Cell cell2 = new Cell(cell,
                                  cell.xMinEnc, cell.xMaxEnc,
                                  cell.yMinEnc, cell.yMaxEnc,
                                  splitValue, cell.zMaxEnc,
-                                 cell.splitCount+1));
+                                 cell.splitCount+1);
+              if (VERBOSE) {
+                System.out.println("    split cell1: " + cell1);
+                System.out.println("    split cell2: " + cell2);
+              }
+              queue.add(cell1);
+              queue.add(cell2);
             }
             break;
           }
@@ -658,7 +675,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
       boolean fail = false;
       for(int docID=0;docID<numDocs;docID++) {
         GeoPoint point = docs[docID];
-        GeoPoint quantized = quantize(planetModel, point);
+        GeoPoint quantized = quantize(planetMax, point);
         boolean expected = shape.isWithin(quantized);
 
         if (expected != shape.isWithin(point)) {
@@ -674,7 +691,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
             System.out.println("doc=" + docID + " did not match but should");
           }
           System.out.println("  point=" + docs[docID]);
-          System.out.println("  quantized=" + quantize(planetModel, docs[docID]));
+          System.out.println("  quantized=" + quantize(planetMax, docs[docID]));
           fail = true;
         }
       }
@@ -1006,7 +1023,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                   GeoPoint point1 = new GeoPoint(planetModel, lats[id], lons[id]);
 
                   // Quantized point (32 bits per dim):
-                  GeoPoint point2 = quantize(planetModel, point1);
+                  GeoPoint point2 = quantize(planetModel.getMaximumMagnitude(), point1);
 
                   if (shape.isWithin(point1) != shape.isWithin(point2)) {
                     if (VERBOSE) {

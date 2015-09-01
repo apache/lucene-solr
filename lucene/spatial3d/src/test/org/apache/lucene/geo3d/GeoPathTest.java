@@ -166,6 +166,26 @@ public class GeoPathTest {
   public void testPathBounds() {
     GeoPath c;
     LatLonBounds b;
+    XYZBounds xyzb;
+    GeoPoint point;
+    int relationship;
+    GeoArea area;
+    
+    c = new GeoPath(PlanetModel.WGS84, 0.7766715171374766);
+    c.addPoint(-0.2751718361148076, -0.7786721269011477);
+    c.addPoint(0.5728375851539309, -1.2700115736820465);
+    c.done();
+    point = new GeoPoint(PlanetModel.WGS84, -0.01580760332365284, -0.03956004622490505);
+    assertTrue(c.isWithin(point));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println("minx="+xyzb.getMinimumX()+" maxx="+xyzb.getMaximumX()+" miny="+xyzb.getMinimumY()+" maxy="+xyzb.getMaximumY()+" minz="+xyzb.getMinimumZ()+" maxz="+xyzb.getMaximumZ());
+    //System.err.println("point.x="+point.x+" point.y="+point.y+" point.z="+point.z);
+    relationship = area.getRelationship(c);
+    assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
+    assertTrue(area.isWithin(point));
 
     c = new GeoPath(PlanetModel.SPHERE, 0.1);
     c.addPoint(-0.3, -0.3);

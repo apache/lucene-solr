@@ -142,8 +142,6 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       return;
     }
     bounds.addPoint(center);
-    // Cheap way of preventing bounds from not agreeing with edgepoint perfectly
-    //bounds.addPoint(edgePoints[0]);
     bounds.addPlane(planetModel, circlePlane);
   }
 
