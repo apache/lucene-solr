@@ -222,7 +222,7 @@ public class GeoBBoxTest {
     assertEquals(-Math.PI * 0.25, b.getMinLatitude(), 0.000001);
     assertEquals(0.0, b.getMaxLatitude(), 0.000001);
     assertEquals(-1.0, xyzb.getMinimumX(), 0.000001);
-    assertEquals(0.540302, xyzb.getMaximumX(), 0.000001);
+    assertEquals(0.540303, xyzb.getMaximumX(), 0.000001);
     assertEquals(-1.0, xyzb.getMinimumY(), 0.000001);
     assertEquals(1.0, xyzb.getMaximumY(), 0.000001);
     assertEquals(-0.707107, xyzb.getMinimumZ(), 0.000001);
@@ -259,7 +259,7 @@ public class GeoBBoxTest {
     //assertEquals(1.0,b.getLeftLongitude(),0.000001);
     //assertEquals(-1.0,b.getRightLongitude(),0.000001);
     assertEquals(-1.0, xyzb.getMinimumX(), 0.000001);
-    assertEquals(0.540302, xyzb.getMaximumX(), 0.000001);
+    assertEquals(0.540303, xyzb.getMaximumX(), 0.000001);
     assertEquals(-1.0, xyzb.getMinimumY(), 0.000001);
     assertEquals(1.0, xyzb.getMaximumY(), 0.000001);
     assertEquals(-1.0, xyzb.getMinimumZ(), 0.000001);

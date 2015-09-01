@@ -799,8 +799,12 @@ public class Plane extends Vector {
         zPoints = findIntersections(planetModel, constructNormalizedZPlane(A,B), NO_BOUNDS, NO_BOUNDS);
         if (zPoints.length == 0) {
           // No intersections, so plane never intersects world.
+          //System.err.println("  plane never intersects world");
           return;
         }
+        //for (final GeoPoint p : zPoints) {
+        //  System.err.println("zPoint: "+p);
+        //}
       } else {
         zPoints = null;
       }
@@ -810,6 +814,7 @@ public class Plane extends Vector {
 
     // Do Z.
     if (!boundsInfo.isSmallestMinZ(planetModel) || !boundsInfo.isLargestMaxZ(planetModel)) {
+      //System.err.println("    computing Z bound");
       // Compute Z bounds for this arc
       // With ellipsoids, we really have only one viable way to do this computation.
       // Specifically, we compute an appropriate vertical plane, based on the current plane's x-y orientation, and
@@ -819,38 +824,47 @@ public class Plane extends Vector {
       // the y, and we use all four resulting points in the bounds computation.
       if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(B) >= MINIMUM_RESOLUTION)) {
         // NOT a degenerate case
+        //System.err.println("    not degenerate");
         final Plane normalizedZPlane = constructNormalizedZPlane(A,B);
         final GeoPoint[] points = findIntersections(planetModel, normalizedZPlane, bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
           assert planetModel.pointOnSurface(point);
-          //System.err.println("Point = "+point+"; this.evaluate(point)="+this.evaluate(point)+"; normalizedZPlane.evaluate(point)="+normalizedZPlane.evaluate(point));
+          //System.err.println("      Point = "+point+"; this.evaluate(point)="+this.evaluate(point)+"; normalizedZPlane.evaluate(point)="+normalizedZPlane.evaluate(point));
           addPoint(boundsInfo, bounds, point);
         }
       } else {
         // Since a==b==0, any plane including the Z axis suffices.
+        //System.err.println("      Perpendicular to z");
         final GeoPoint[] points = findIntersections(planetModel, normalYPlane, NO_BOUNDS, NO_BOUNDS);
         boundsInfo.addZValue(points[0]);
       }
     }
         
     if (!boundsInfo.isSmallestMinX(planetModel) || !boundsInfo.isLargestMaxX(planetModel)) {
+      //System.err.println("    computing X bound");
       if ((Math.abs(B) >= MINIMUM_RESOLUTION || Math.abs(C) >= MINIMUM_RESOLUTION)) {
         // NOT a degenerate case.  Compute D.
+        //System.err.println("    not degenerate; B="+B+"; C="+C);
         final Plane originPlane = constructNormalizedXPlane(B,C,0.0);
         double DValue = 0.0;
         if (zPoints != null) {
           for (final GeoPoint p : zPoints) {
-            DValue += originPlane.evaluate(p);
+            final double zValue = originPlane.evaluate(p);
+            //System.err.println("    originPlane.evaluate(zpoint)="+zValue);
+            DValue += zValue;
           }
           DValue /= (double)zPoints.length;
         }
-        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedXPlane(B,C,-DValue), bounds, NO_BOUNDS);
+        final Plane normalizedXPlane = constructNormalizedXPlane(B,C,-DValue);
+        final GeoPoint[] points = findIntersections(planetModel, normalizedXPlane, bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
           assert planetModel.pointOnSurface(point);
+          //System.err.println("      Point = "+point+"; this.evaluate(point)="+this.evaluate(point)+"; normalizedXPlane.evaluate(point)="+normalizedXPlane.evaluate(point));
           addPoint(boundsInfo, bounds, point);
         }
       } else {
         // Since b==c==0, any plane including the X axis suffices.
+        //System.err.println("      Perpendicular to x");
         final GeoPoint[] points = findIntersections(planetModel, normalZPlane, NO_BOUNDS, NO_BOUNDS);
         boundsInfo.addXValue(points[0]);
       }
@@ -858,8 +872,10 @@ public class Plane extends Vector {
     
     // Do Y
     if (!boundsInfo.isSmallestMinY(planetModel) || !boundsInfo.isLargestMaxY(planetModel)) {
+      //System.err.println("    computing Y bound");
       if ((Math.abs(A) >= MINIMUM_RESOLUTION || Math.abs(C) >= MINIMUM_RESOLUTION)) {
         // NOT a degenerate case.  Compute D.
+        //System.err.println("    not degenerate");
         final Plane originPlane = constructNormalizedYPlane(A,C,0.0);
         double DValue = 0.0;
         if (zPoints != null) {
@@ -868,15 +884,18 @@ public class Plane extends Vector {
           }
           DValue /= (double)zPoints.length;
         }
-        final GeoPoint[] points = findIntersections(planetModel, constructNormalizedYPlane(A,C,-DValue), bounds, NO_BOUNDS);
+        final Plane normalizedYPlane = constructNormalizedYPlane(A,C,-DValue);
+        final GeoPoint[] points = findIntersections(planetModel, normalizedYPlane, bounds, NO_BOUNDS);
         for (final GeoPoint point : points) {
           assert planetModel.pointOnSurface(point);
+          //System.err.println("      Point = "+point+"; this.evaluate(point)="+this.evaluate(point)+"; normalizedYPlane.evaluate(point)="+normalizedYPlane.evaluate(point));
           addPoint(boundsInfo, bounds, point);
         }
       } else {
         // Since a==c==0, any plane including the Y axis suffices.
         // It doesn't matter that we may discard the point due to bounds, because if there are bounds, we'll have endpoints
         // that will be tallied separately.
+        //System.err.println("      Perpendicular to y");
         final GeoPoint[] points = findIntersections(planetModel, normalXPlane, NO_BOUNDS, NO_BOUNDS);
         boundsInfo.addYValue(points[0]);
       }
