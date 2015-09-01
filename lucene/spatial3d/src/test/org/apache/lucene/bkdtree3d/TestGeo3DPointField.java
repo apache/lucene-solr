@@ -702,8 +702,10 @@ public class TestGeo3DPointField extends LuceneTestCase {
       }
 
       if (fail) {
-        System.out.print(sw.toString());
-        fail();
+        if (VERBOSE) {
+          System.out.print(sw.toString());
+        }
+        fail("invalid hits for shape=" + shape);
       }
     }
   }
