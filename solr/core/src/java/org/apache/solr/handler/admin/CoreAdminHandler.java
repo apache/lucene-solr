@@ -308,7 +308,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           if (zkController != null) {
             zkController.rejoinShardLeaderElection(req.getParams());
           } else {
-            log.warn("zkController is null in CoreAdminHandler.handleRequestInternal:REJOINLEADERELCTIONS. No action taken.");
+            log.warn("zkController is null in CoreAdminHandler.handleRequestInternal:REJOINLEADERELECTION. No action taken.");
           }
           break;
         case INVOKE:

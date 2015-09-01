@@ -22,10 +22,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.cloud.ZkController.ContextKey;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -70,11 +72,21 @@ public  class LeaderElector {
 
   private ElectionWatcher watcher;
 
+  private Map<ContextKey,ElectionContext> electionContexts;
+  private ContextKey contextKey;
+
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
   }
   
+  public LeaderElector(SolrZkClient zkClient, ContextKey key, Map<ContextKey,ElectionContext> electionContexts) {
+    this.zkClient = zkClient;
+    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
+    this.electionContexts = electionContexts;
+    this.contextKey = key;
+  }
+
   public ElectionContext getContext() {
     return context;
   }
@@ -139,20 +151,6 @@ public  class LeaderElector {
         }
         retryElection(context, false);//join at the tail again
         return;
-      }
-      // first we delete the node advertising the old leader in case the ephem is still there
-      try {
-        zkClient.delete(context.leaderPath, -1, true);
-      }catch (KeeperException.NoNodeException nne){
-        //no problem
-      }catch (InterruptedException e){
-        throw e;
-      } catch (Exception e) {
-        //failed to delete the leader node
-        log.error("leader elect delete error",e);
-        retryElection(context, false);
-        return;
-        // fine
       }
 
       try {
@@ -423,6 +421,9 @@ public  class LeaderElector {
   void retryElection(ElectionContext context, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     ElectionWatcher watcher = this.watcher;
     ElectionContext ctx = context.copy();
+    if (electionContexts != null) {
+      electionContexts.put(contextKey, ctx);
+    }
     if (watcher != null) watcher.cancel();
     this.context.cancelElection();
     this.context = ctx;
