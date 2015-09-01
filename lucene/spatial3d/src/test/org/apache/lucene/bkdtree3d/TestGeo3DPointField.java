@@ -60,6 +60,8 @@ import org.junit.BeforeClass;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -469,8 +471,11 @@ public class TestGeo3DPointField extends LuceneTestCase {
     for(int iter=0;iter<iters;iter++) {
       GeoShape shape = randomShape(planetModel);
 
+      StringWriter sw = new StringWriter();
+      PrintWriter log = new PrintWriter(sw, true);
+
       if (VERBOSE) {
-        System.out.println("TEST: iter=" + iter + " shape=" + shape);
+        log.println("TEST: iter=" + iter + " shape=" + shape);
       }
 
       XYZBounds bounds = new XYZBounds();
@@ -487,7 +492,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                            0);
 
       if (VERBOSE) {
-        System.out.println("  root cell: " + root);
+        log.println("  root cell: " + root);
       }
 
       List<Cell> queue = new ArrayList<>();
@@ -498,14 +503,14 @@ public class TestGeo3DPointField extends LuceneTestCase {
         Cell cell = queue.get(queue.size()-1);
         queue.remove(queue.size()-1);
         if (VERBOSE) {
-          System.out.println("  cycle: " + cell + " queue.size()=" + queue.size());
+          log.println("  cycle: " + cell + " queue.size()=" + queue.size());
         }
 
         // nocommit or if the volume is too small?
         // nocommit randomize 10:
         if (random().nextInt(10) == 7 || cell.splitCount > recurseDepth) {
           if (VERBOSE) {
-            System.out.println("    leaf");
+            log.println("    leaf");
           }
           // Leaf cell: brute force check all docs that fall within this cell:
           for(int docID=0;docID<numDocs;docID++) {
@@ -513,12 +518,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
             if (cell.contains(planetMax, point)) {
               if (shape.isWithin(quantize(planetMax, point))) {
                 if (VERBOSE) {
-                  System.out.println("    check doc=" + docID + ": match!");
+                  log.println("    check doc=" + docID + ": match!");
                 }
                 hits.add(docID);
               } else {
                 if (VERBOSE) {
-                  System.out.println("    check doc=" + docID + ": no match");
+                  log.println("    check doc=" + docID + ": no match");
                 }
               }
             }
@@ -531,7 +536,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                                         decodeValueMin(planetMax, cell.zMinEnc), decodeValueMax(planetMax, cell.zMaxEnc));
 
           if (VERBOSE) {
-            System.out.println("    minx="+decodeValueMin(planetMax, cell.xMinEnc)+" maxx="+decodeValueMax(planetMax, cell.xMaxEnc)+
+            log.println("    minx="+decodeValueMin(planetMax, cell.xMinEnc)+" maxx="+decodeValueMax(planetMax, cell.xMaxEnc)+
               " miny="+decodeValueMin(planetMax, cell.yMinEnc)+" maxy="+decodeValueMax(planetMax, cell.yMaxEnc)+
               " minz="+decodeValueMin(planetMax, cell.zMinEnc)+" maxz="+decodeValueMax(planetMax, cell.zMaxEnc));
           }
@@ -540,12 +545,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
           case GeoArea.CONTAINS:
             // Shape fully contains the cell: blindly add all docs in this cell:
             if (VERBOSE) {
-              System.out.println("    GeoArea.CONTAINS: now addAll");
+              log.println("    GeoArea.CONTAINS: now addAll");
             }
             for(int docID=0;docID<numDocs;docID++) {
               if (cell.contains(planetMax, docs[docID])) {
                 if (VERBOSE) {
-                  System.out.println("    addAll doc=" + docID);
+                  log.println("    addAll doc=" + docID);
                 }
                 hits.add(docID);
               }
@@ -553,27 +558,27 @@ public class TestGeo3DPointField extends LuceneTestCase {
             break;
           case GeoArea.OVERLAPS:
             if (VERBOSE) {
-              System.out.println("    GeoArea.OVERLAPS: keep splitting");
+              log.println("    GeoArea.OVERLAPS: keep splitting");
             }
             // They do overlap but neither contains the other:
-            //System.out.println("    crosses1");
+            //log.println("    crosses1");
             break;
           case GeoArea.WITHIN:
             if (VERBOSE) {
-              System.out.println("    GeoArea.WITHIN: keep splitting");
+              log.println("    GeoArea.WITHIN: keep splitting");
             }
             // Cell fully contains the shape:
-            //System.out.println("    crosses2");
+            //log.println("    crosses2");
             break;
           case GeoArea.DISJOINT:
             // They do not overlap at all: don't recurse on this cell
-            //System.out.println("    outside");
+            //log.println("    outside");
             if (VERBOSE) {
-              System.out.println("    GeoArea.DISJOINT: drop this cell");
+              log.println("    GeoArea.DISJOINT: drop this cell");
               for(int docID=0;docID<numDocs;docID++) {
                 if (cell.contains(planetMax, docs[docID])) {
                   if (VERBOSE) {
-                    System.out.println("    skip doc=" + docID);
+                    log.println("    skip doc=" + docID);
                   }
                 }
               }
@@ -591,7 +596,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
             {
               int splitValue = RandomInts.randomIntBetween(random(), cell.xMinEnc, cell.xMaxEnc);
               if (VERBOSE) {
-                System.out.println("    now split on x=" + splitValue);
+                log.println("    now split on x=" + splitValue);
               }
               Cell cell1 = new Cell(cell,
                                  cell.xMinEnc, splitValue,
@@ -604,8 +609,8 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                  cell.zMinEnc, cell.zMaxEnc,
                                  cell.splitCount+1);
               if (VERBOSE) {
-                System.out.println("    split cell1: " + cell1);
-                System.out.println("    split cell2: " + cell2);
+                log.println("    split cell1: " + cell1);
+                log.println("    split cell2: " + cell2);
               }
               queue.add(cell1);
               queue.add(cell2);
@@ -617,7 +622,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
             {
               int splitValue = RandomInts.randomIntBetween(random(), cell.yMinEnc, cell.yMaxEnc);
               if (VERBOSE) {
-                System.out.println("    now split on y=" + splitValue);
+                log.println("    now split on y=" + splitValue);
               }
               Cell cell1 = new Cell(cell,
                                  cell.xMinEnc, cell.xMaxEnc,
@@ -630,8 +635,8 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                  cell.zMinEnc, cell.zMaxEnc,
                                  cell.splitCount+1);
               if (VERBOSE) {
-                System.out.println("    split cell1: " + cell1);
-                System.out.println("    split cell2: " + cell2);
+                log.println("    split cell1: " + cell1);
+                log.println("    split cell2: " + cell2);
               }
               queue.add(cell1);
               queue.add(cell2);
@@ -643,7 +648,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
             {
               int splitValue = RandomInts.randomIntBetween(random(), cell.zMinEnc, cell.zMaxEnc);
               if (VERBOSE) {
-                System.out.println("    now split on z=" + splitValue);
+                log.println("    now split on z=" + splitValue);
               }
               Cell cell1 = new Cell(cell,
                                  cell.xMinEnc, cell.xMaxEnc,
@@ -656,8 +661,8 @@ public class TestGeo3DPointField extends LuceneTestCase {
                                  splitValue, cell.zMaxEnc,
                                  cell.splitCount+1);
               if (VERBOSE) {
-                System.out.println("    split cell1: " + cell1);
-                System.out.println("    split cell2: " + cell2);
+                log.println("    split cell1: " + cell1);
+                log.println("    split cell2: " + cell2);
               }
               queue.add(cell1);
               queue.add(cell2);
@@ -668,7 +673,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
       }
 
       if (VERBOSE) {
-        System.out.println("  " + hits.size() + " hits");
+        log.println("  " + hits.size() + " hits");
       }
 
       // Done matching, now verify:
@@ -686,17 +691,20 @@ public class TestGeo3DPointField extends LuceneTestCase {
         boolean actual = hits.contains(docID);
         if (actual != expected) {
           if (actual) {
-            System.out.println("doc=" + docID + " matched but should not");
+            log.println("doc=" + docID + " matched but should not");
           } else {
-            System.out.println("doc=" + docID + " did not match but should");
+            log.println("doc=" + docID + " did not match but should");
           }
-          System.out.println("  point=" + docs[docID]);
-          System.out.println("  quantized=" + quantize(planetMax, docs[docID]));
+          log.println("  point=" + docs[docID]);
+          log.println("  quantized=" + quantize(planetMax, docs[docID]));
           fail = true;
         }
       }
 
-      assertFalse(fail);
+      if (fail) {
+        System.out.print(sw.toString());
+        fail();
+      }
     }
   }
 
