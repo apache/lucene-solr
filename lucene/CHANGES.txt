@@ -7,6 +7,7 @@ http://s.apache.org/luceneversions
 ======================= Lucene 5.4.0 =======================
 
 New Features
+
 * LUCENE-6747: FingerprintFilter is a TokenFilter that outputs a single
   token which is a concatenation of the sorted and de-duplicated set of 
   input tokens. Useful for normalizing short text in clustering/linking 
@@ -28,6 +29,9 @@ Optimizations
 
 * LUCENE-6720: ValueSourceScorer, returned from
   FunctionValues.getRangeScorer(), now uses TwoPhaseIterator. (David Smiley)
+
+* LUCENE-6756: MatchAllDocsQuery now has a dedicated BulkScorer for better
+  performance when used as a top-level query. (Adrien Grand)
 
 Bug Fixes
 

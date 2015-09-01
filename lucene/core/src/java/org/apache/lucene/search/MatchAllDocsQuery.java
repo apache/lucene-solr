@@ -40,6 +40,31 @@ public final class MatchAllDocsQuery extends Query {
       public String toString() {
         return "weight(" + MatchAllDocsQuery.this + ")";
       }
+      @Override
+      public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+        final float score = score();
+        final int maxDoc = context.reader().maxDoc();
+        return new BulkScorer() {
+          @Override
+          public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+            max = Math.min(max, maxDoc);
+            FakeScorer scorer = new FakeScorer();
+            scorer.score = score;
+            collector.setScorer(scorer);
+            for (int doc = min; doc < max; ++doc) {
+              scorer.doc = doc;
+              if (acceptDocs == null || acceptDocs.get(doc)) {
+                collector.collect(doc);
+              }
+            }
+            return max == maxDoc ? DocIdSetIterator.NO_MORE_DOCS : max;
+          }
+          @Override
+          public long cost() {
+            return maxDoc;
+          }
+        };
+      }
     };
   }
 
