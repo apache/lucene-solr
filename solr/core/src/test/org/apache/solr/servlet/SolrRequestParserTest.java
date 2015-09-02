@@ -24,9 +24,9 @@ import static org.easymock.EasyMock.replay;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.SocketTimeoutException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -40,6 +40,7 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -122,41 +123,47 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-7999")
   public void testStreamURL() throws Exception
   {
-    String url = "http://www.apache.org/dist/lucene/solr/";
-    byte[] bytes = null;
-    try {
-      URL u = new URL(url);
-      HttpURLConnection connection = (HttpURLConnection)u.openConnection();
-      connection.setConnectTimeout(5000);
-      connection.setReadTimeout(5000);
-      connection.connect();
-      int code = connection.getResponseCode();
-      assumeTrue("wrong response code from server: " + code, 200 == code);
-      bytes = IOUtils.toByteArray( connection.getInputStream());
-    }
-    catch( Exception ex ) {
-      assumeNoException("Unable to connect to " + url + " to run the test.", ex);
-      return;
-    }
+    URL url = getClass().getResource("/README");
+    assertNotNull("Missing file 'README' in test-resources root folder.", url);
+    
+    byte[] bytes = IOUtils.toByteArray(url);
 
     SolrCore core = h.getCore();
     
     Map<String,String[]> args = new HashMap<>();
-    args.put( CommonParams.STREAM_URL, new String[] {url} );
+    args.put( CommonParams.STREAM_URL, new String[] { url.toExternalForm() } );
     
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<>();
-    SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
-    assertEquals( 1, streams.size() );
-    try {
-      assertArrayEquals( bytes, IOUtils.toByteArray( streams.get(0).getStream() ) );
-    } catch (SocketTimeoutException ex) {
-      assumeNoException("Problems retrieving from " + url + " to run the test.", ex);
-    } finally {
-      req.close();
+    try (SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams )) {
+      assertEquals( 1, streams.size() );
+      try (InputStream in = streams.get(0).getStream()) {
+        assertArrayEquals( bytes, IOUtils.toByteArray( in ) );
+      }
+    }
+  }
+  
+  @Test
+  public void testStreamFile() throws Exception
+  {
+    File file = getFile("README");
+    
+    byte[] bytes = FileUtils.readFileToByteArray(file);
+
+    SolrCore core = h.getCore();
+    
+    Map<String,String[]> args = new HashMap<>();
+    args.put( CommonParams.STREAM_FILE, new String[] { file.getAbsolutePath() } );
+    
+    // Make sure it got a single stream in and out ok
+    List<ContentStream> streams = new ArrayList<>();
+    try (SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams )) {
+      assertEquals( 1, streams.size() );
+      try (InputStream in = streams.get(0).getStream()) {
+        assertArrayEquals( bytes, IOUtils.toByteArray( in ) );
+      }
     }
   }
   
