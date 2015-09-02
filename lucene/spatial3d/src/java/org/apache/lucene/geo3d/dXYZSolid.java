@@ -46,6 +46,8 @@ public class dXYZSolid extends BaseXYZSolid {
   protected final GeoPoint[] notableXPoints;
 
   /**
+   * Sole constructor
+   *
    *@param planetModel is the planet model.
    *@param X is the X value.
    *@param minY is the minimum Y value.
@@ -160,7 +162,7 @@ public class dXYZSolid extends BaseXYZSolid {
     }
 
     // The entire locus of points in this shape is on a single plane, so we only need ot look for an intersection with that plane.
-    System.err.println("xPlane = "+xPlane);
+    //System.err.println("xPlane = "+xPlane);
     if (path.intersects(xPlane, notableXPoints, minYPlane, maxYPlane, minZPlane, maxZPlane)) {
       //System.err.println(" edges intersect");
       return OVERLAPS;

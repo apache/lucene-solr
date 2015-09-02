@@ -60,6 +60,8 @@ public class XYZSolid extends BaseXYZSolid {
   protected final GeoPoint[] notableMaxZPoints;
 
   /**
+   * Sole constructor
+   *
    *@param planetModel is the planet model.
    *@param minX is the minimum X value.
    *@param maxX is the maximum X value.

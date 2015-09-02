@@ -31,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
  *  @lucene.experimental */
 public final class Geo3DPointField extends Field {
 
+  /** Indexing {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValuesType(DocValuesType.BINARY);

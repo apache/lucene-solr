@@ -30,6 +30,8 @@ public class dXYdZSolid extends BaseXYZSolid {
   protected final GeoPoint[] surfacePoints;
   
   /**
+   * Sole constructor
+   *
    *@param planetModel is the planet model.
    *@param X is the X value.
    *@param minY is the minimum Y value.

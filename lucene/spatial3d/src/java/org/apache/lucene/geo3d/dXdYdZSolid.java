@@ -36,9 +36,12 @@ public class dXdYdZSolid extends BaseXYZSolid {
    */
   protected final GeoPoint[] edgePoints;
 
+  /** Empty array of {@link GeoPoint}. */
   protected static final GeoPoint[] nullPoints = new GeoPoint[0];
   
   /**
+   * Sole constructor
+   *
    *@param planetModel is the planet model.
    *@param X is the X value.
    *@param Y is the Y value.
