@@ -80,7 +80,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
   }
 
 
-  private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
+  protected List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
     String[] tokenizedDoc = tokenizeDoc(inputDocument);
 
     List<ClassificationResult<BytesRef>> dataList = calculateLogLikelihood(tokenizedDoc);
@@ -200,7 +200,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
         }
       }
       if (insertPoint != null) {
-        // threadsafe and concurent write
+        // threadsafe and concurrent write
         termCClassHitCache.put(word, searched);
       }
     }

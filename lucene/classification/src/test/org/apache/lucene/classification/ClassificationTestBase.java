@@ -40,21 +40,21 @@ import org.junit.Before;
  * Base class for testing {@link Classifier}s
  */
 public abstract class ClassificationTestBase<T> extends LuceneTestCase {
-  public final static String POLITICS_INPUT = "Here are some interesting questions and answers about Mitt Romney.. " +
+  protected static final String POLITICS_INPUT = "Here are some interesting questions and answers about Mitt Romney.. " +
           "If you don't know the answer to the question about Mitt Romney, then simply click on the answer below the question section.";
-  public static final BytesRef POLITICS_RESULT = new BytesRef("politics");
+  protected static final BytesRef POLITICS_RESULT = new BytesRef("politics");
 
-  public static final String TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
+  protected static final String TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
           " Truth is, Amazon may know more.";
 
-  public static final String STRONG_TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
+  protected static final String STRONG_TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users." +
       " Truth is, Amazon may know more. This technology observation is extracted from the internet.";
 
-  public static final String SUPER_STRONG_TECHNOLOGY_INPUT = "More than 400 million people trust Google with their e-mail, and 50 million store files" +
+  protected static final String SUPER_STRONG_TECHNOLOGY_INPUT = "More than 400 million people trust Google with their e-mail, and 50 million store files" +
       " in the cloud using the Dropbox service. People manage their bank accounts, pay bills, trade stocks and " +
       "generally transfer or store huge volumes of personal data online. traveling seeks raises some questions Republican presidential. ";
 
-  public static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
+  protected static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
 
   protected RandomIndexWriter indexWriter;
   private Directory dir;
@@ -101,7 +101,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   }
 
   protected void checkOnlineClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String textFieldName, String classFieldName, Query query) throws Exception {
-    populateSampleIndex(analyzer);
+    getSampleIndex(analyzer);
 
     ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
     assertNotNull(classificationResult.getAssignedClass());
@@ -115,7 +115,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
   }
 
-  protected LeafReader populateSampleIndex(Analyzer analyzer) throws IOException {
+  protected LeafReader getSampleIndex(Analyzer analyzer) throws IOException {
     indexWriter.close();
     indexWriter = new RandomIndexWriter(random(), dir, newIndexWriterConfig(analyzer).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     indexWriter.commit();
@@ -193,34 +193,27 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
   }
 
-  protected void checkPerformance(Classifier<T> classifier, Analyzer analyzer, String classFieldName) throws Exception {
-    long trainStart = System.currentTimeMillis();
-    populatePerformanceIndex(analyzer);
-    long trainEnd = System.currentTimeMillis();
-    long trainTime = trainEnd - trainStart;
-    assertTrue("training took more than 2 mins : " + trainTime / 1000 + "s", trainTime < 120000);
-  }
-
-  private void populatePerformanceIndex(Analyzer analyzer) throws IOException {
+  protected LeafReader getRandomIndex(Analyzer analyzer, int size) throws IOException {
     indexWriter.close();
     indexWriter = new RandomIndexWriter(random(), dir, newIndexWriterConfig(analyzer).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+    indexWriter.deleteAll();
     indexWriter.commit();
 
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
-    int docs = 1000;
     Random random = random();
-    for (int i = 0; i < docs; i++) {
+    for (int i = 0; i < size; i++) {
       boolean b = random.nextBoolean();
       Document doc = new Document();
       doc.add(new Field(textFieldName, createRandomString(random), ft));
-      doc.add(new Field(categoryFieldName, b ? "technology" : "politics", ft));
+      doc.add(new Field(categoryFieldName, String.valueOf(random.nextInt(1000)), ft));
       doc.add(new Field(booleanFieldName, String.valueOf(b), ft));
       indexWriter.addDocument(doc);
     }
     indexWriter.commit();
+    return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
   }
 
   private String createRandomString(Random random) {

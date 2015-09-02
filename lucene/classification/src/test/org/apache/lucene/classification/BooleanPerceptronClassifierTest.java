@@ -17,6 +17,7 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
@@ -32,7 +33,7 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName), TECHNOLOGY_INPUT, false);
     } finally {
       if (leafReader != null) {
@@ -46,7 +47,7 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, 50d, booleanFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, false);
       checkCorrectClassification(classifier, POLITICS_INPUT, true);
@@ -63,12 +64,37 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, analyzer, query, 1, null, booleanFieldName, textFieldName), TECHNOLOGY_INPUT, false);
     } finally {
       if (leafReader != null) {
         leafReader.close();
       }
+    }
+  }
+
+  @Test
+  public void testPerformance() throws Exception {
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    try {
+      long trainStart = System.currentTimeMillis();
+      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, 0d, booleanFieldName, textFieldName);
+      long trainEnd = System.currentTimeMillis();
+      long trainTime = trainEnd - trainStart;
+      assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
+
+      long evaluationStart = System.currentTimeMillis();
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
+          classifier, categoryFieldName, textFieldName);
+      assertNotNull(confusionMatrix);
+      long evaluationEnd = System.currentTimeMillis();
+      long evaluationTime = evaluationEnd - evaluationStart;
+      assertTrue("evaluation took more than 1m: " + evaluationTime / 1000 + "s", evaluationTime < 60000);
+      double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
+      assertTrue(5000 > avgClassificationTime);
+    } finally {
+      leafReader.close();
     }
   }
 

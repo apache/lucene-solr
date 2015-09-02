@@ -22,11 +22,12 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
+import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -39,9 +40,10 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      leafReader = populateSampleIndex(analyzer);
-      checkCorrectClassification(new SimpleNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
-      checkCorrectClassification(new SimpleNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), POLITICS_INPUT, POLITICS_RESULT);
+      leafReader = getSampleIndex(analyzer);
+      SimpleNaiveBayesClassifier classifier = new SimpleNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
+      checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(classifier, POLITICS_INPUT, POLITICS_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -54,7 +56,7 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       TermQuery query = new TermQuery(new Term(textFieldName, "it"));
       checkCorrectClassification(new SimpleNaiveBayesClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
@@ -69,7 +71,7 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     LeafReader leafReader = null;
     try {
       Analyzer analyzer = new NGramAnalyzer();
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
@@ -84,6 +86,34 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
       final Tokenizer tokenizer = new KeywordTokenizer();
       return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20)));
     }
+  }
+
+  @Ignore
+  @Test
+  public void testPerformance() throws Exception {
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    try {
+      long trainStart = System.currentTimeMillis();
+      SimpleNaiveBayesClassifier simpleNaiveBayesClassifier = new SimpleNaiveBayesClassifier(leafReader,
+          analyzer, null, categoryFieldName, textFieldName);
+      long trainEnd = System.currentTimeMillis();
+      long trainTime = trainEnd - trainStart;
+      assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
+
+      long evaluationStart = System.currentTimeMillis();
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
+          simpleNaiveBayesClassifier, categoryFieldName, textFieldName);
+      assertNotNull(confusionMatrix);
+      long evaluationEnd = System.currentTimeMillis();
+      long evaluationTime = evaluationEnd - evaluationStart;
+      assertTrue("evaluation took more than 2m: " + evaluationTime / 1000 + "s", evaluationTime < 120000);
+      double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
+      assertTrue("avg classification time: " + avgClassificationTime, 5000 > avgClassificationTime);
+    } finally {
+      leafReader.close();
+    }
+
   }
 
 }

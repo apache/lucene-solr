@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
@@ -38,7 +39,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       checkCorrectClassification(new KNearestNeighborClassifier(leafReader, null, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
       checkCorrectClassification(new KNearestNeighborClassifier(leafReader, new LMDirichletSimilarity(), analyzer, null, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
       ClassificationResult<BytesRef> resultDS =  checkCorrectClassification(new KNearestNeighborClassifier(leafReader, null, analyzer, null, 3, 2, 1, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
@@ -63,7 +64,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
     LeafReader leafReader = null;
     try {
       Analyzer analyzer = new EnglishAnalyzer();
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       KNearestNeighborClassifier knnClassifier = new KNearestNeighborClassifier(leafReader, null, analyzer, null, 6, 1, 1, categoryFieldName, textFieldName);
       List<ClassificationResult<BytesRef>> classes = knnClassifier.getClasses(STRONG_TECHNOLOGY_INPUT);
       assertTrue(classes.get(0).getScore() > classes.get(1).getScore());
@@ -88,7 +89,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
     LeafReader leafReader = null;
     try {
       Analyzer analyzer = new EnglishAnalyzer();
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       KNearestNeighborClassifier knnClassifier = new KNearestNeighborClassifier(leafReader, null,analyzer, null, 3, 1, 1, categoryFieldName, textFieldName);
       List<ClassificationResult<BytesRef>> classes = knnClassifier.getClasses(SUPER_STRONG_TECHNOLOGY_INPUT);
       assertTrue(classes.get(0).getScore() > classes.get(1).getScore());
@@ -105,13 +106,39 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      leafReader = populateSampleIndex(analyzer);
+      leafReader = getSampleIndex(analyzer);
       TermQuery query = new TermQuery(new Term(textFieldName, "it"));
       checkCorrectClassification(new KNearestNeighborClassifier(leafReader, null, analyzer, query, 1, 0, 0, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();
       }
+    }
+  }
+
+  @Test
+  public void testPerformance() throws Exception {
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    try {
+      long trainStart = System.currentTimeMillis();
+      KNearestNeighborClassifier kNearestNeighborClassifier = new KNearestNeighborClassifier(leafReader, null,
+          analyzer, null, 1, 2, 2, categoryFieldName, textFieldName);
+      long trainEnd = System.currentTimeMillis();
+      long trainTime = trainEnd - trainStart;
+      assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
+
+      long evaluationStart = System.currentTimeMillis();
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
+          kNearestNeighborClassifier, categoryFieldName, textFieldName);
+      assertNotNull(confusionMatrix);
+      long evaluationEnd = System.currentTimeMillis();
+      long evaluationTime = evaluationEnd - evaluationStart;
+      assertTrue("evaluation took more than 2m: " + evaluationTime / 1000 + "s", evaluationTime < 120000);
+      double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
+      assertTrue(5000 > avgClassificationTime);
+    } finally {
+      leafReader.close();
     }
   }
 

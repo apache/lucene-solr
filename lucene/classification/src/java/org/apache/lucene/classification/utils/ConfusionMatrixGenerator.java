@@ -21,11 +21,21 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.Classifier;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -49,37 +59,67 @@ public class ConfusionMatrixGenerator {
    * @return a {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix}
    * @throws IOException if problems occurr while reading the index or using the classifier
    */
-  public static <T> ConfusionMatrix getConfusionMatrix(LeafReader reader, Classifier<T> classifier, String classFieldName, String textFieldName) throws IOException {
+  public static <T> ConfusionMatrix getConfusionMatrix(LeafReader reader, Classifier<T> classifier, String classFieldName,
+                                                       String textFieldName) throws IOException {
 
-    Map<String, Map<String, Long>> counts = new HashMap<>();
+    ExecutorService executorService = Executors.newFixedThreadPool(1);
 
-    for (int i = 0; i < reader.maxDoc(); i++) {
-      StoredDocument doc = reader.document(i);
-      String correctAnswer = doc.get(classFieldName);
+    try {
 
-      if (correctAnswer != null && correctAnswer.length() > 0) {
+      Map<String, Map<String, Long>> counts = new HashMap<>();
+      IndexSearcher indexSearcher = new IndexSearcher(reader);
+      TopDocs topDocs = indexSearcher.search(new WildcardQuery(new Term(classFieldName, "*")), Integer.MAX_VALUE);
+      double time = 0d;
 
-        ClassificationResult<T> result = classifier.assignClass(doc.get(textFieldName));
-        T assignedClass = result.getAssignedClass();
-        String classified = assignedClass instanceof BytesRef ? ((BytesRef) assignedClass).utf8ToString() : assignedClass.toString();
+      for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+        StoredDocument doc = reader.document(scoreDoc.doc);
+        String correctAnswer = doc.get(classFieldName);
 
-        Map<String, Long> stringLongMap = counts.get(correctAnswer);
-        if (stringLongMap != null) {
-          Long aLong = stringLongMap.get(classified);
-          if (aLong != null) {
-            stringLongMap.put(classified, aLong + 1);
-          } else {
-            stringLongMap.put(classified, 1l);
+        if (correctAnswer != null && correctAnswer.length() > 0) {
+          ClassificationResult<T> result;
+          String text = doc.get(textFieldName);
+          if (text != null) {
+            try {
+              // fail if classification takes more than 5s
+              long start = System.currentTimeMillis();
+              result = executorService.submit(() -> classifier.assignClass(text)).get(5, TimeUnit.SECONDS);
+              long end = System.currentTimeMillis();
+              time += end - start;
+
+              if (result != null) {
+                T assignedClass = result.getAssignedClass();
+                if (assignedClass != null) {
+                  String classified = assignedClass instanceof BytesRef ? ((BytesRef) assignedClass).utf8ToString() : assignedClass.toString();
+
+                  Map<String, Long> stringLongMap = counts.get(correctAnswer);
+                  if (stringLongMap != null) {
+                    Long aLong = stringLongMap.get(classified);
+                    if (aLong != null) {
+                      stringLongMap.put(classified, aLong + 1);
+                    } else {
+                      stringLongMap.put(classified, 1l);
+                    }
+                  } else {
+                    stringLongMap = new HashMap<>();
+                    stringLongMap.put(classified, 1l);
+                    counts.put(correctAnswer, stringLongMap);
+                  }
+                }
+              }
+            } catch (TimeoutException timeoutException) {
+              // add timeout
+              time += 5000;
+            } catch (ExecutionException | InterruptedException executionException) {
+              throw new RuntimeException(executionException);
+            }
+
           }
-        } else {
-          stringLongMap = new HashMap<>();
-          stringLongMap.put(classified, 1l);
-          counts.put(correctAnswer, stringLongMap);
         }
-
       }
+      return new ConfusionMatrix(counts, time / topDocs.totalHits, topDocs.totalHits);
+    } finally {
+      executorService.shutdown();
     }
-    return new ConfusionMatrix(counts);
   }
 
   /**
@@ -88,9 +128,13 @@ public class ConfusionMatrixGenerator {
   public static class ConfusionMatrix {
 
     private final Map<String, Map<String, Long>> linearizedMatrix;
+    private final double avgClassificationTime;
+    private final int numberOfEvaluatedDocs;
 
-    private ConfusionMatrix(Map<String, Map<String, Long>> linearizedMatrix) {
+    private ConfusionMatrix(Map<String, Map<String, Long>> linearizedMatrix, double avgClassificationTime, int numberOfEvaluatedDocs) {
       this.linearizedMatrix = linearizedMatrix;
+      this.avgClassificationTime = avgClassificationTime;
+      this.numberOfEvaluatedDocs = numberOfEvaluatedDocs;
     }
 
     /**
@@ -104,8 +148,26 @@ public class ConfusionMatrixGenerator {
     @Override
     public String toString() {
       return "ConfusionMatrix{" +
-              "linearizedMatrix=" + linearizedMatrix +
-              '}';
+          "linearizedMatrix=" + linearizedMatrix +
+          ", avgClassificationTime=" + avgClassificationTime +
+          ", numberOfEvaluatedDocs=" + numberOfEvaluatedDocs +
+          '}';
+    }
+
+    /**
+     * get the average classification time in milliseconds
+     * @return the avg classification time
+     */
+    public double getAvgClassificationTime() {
+      return avgClassificationTime;
+    }
+
+    /**
+     * get the no. of documents evaluated while generating this confusion matrix
+     * @return the no. of documents evaluated
+     */
+    public int getNumberOfEvaluatedDocs() {
+      return numberOfEvaluatedDocs;
     }
   }
 }

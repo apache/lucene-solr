@@ -173,7 +173,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         // update weights
         Long previousValue = Util.get(fst, term);
         String termString = term.utf8ToString();
-        weights.put(termString, previousValue + modifier * termFreqLocal);
+        weights.put(termString, previousValue == null ? 0 : previousValue + modifier * termFreqLocal);
       }
     }
     if (updateFST) {
@@ -214,6 +214,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         }
       }
       tokenStream.end();
+      tokenStream.close();
     }
 
     double score = 1 - Math.exp(-1 * Math.abs(threshold - output.doubleValue()) / threshold);
