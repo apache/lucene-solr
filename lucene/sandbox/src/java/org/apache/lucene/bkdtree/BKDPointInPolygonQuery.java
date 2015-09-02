@@ -28,7 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -158,8 +157,6 @@ public class BKDPointInPolygonQuery extends Query {
         BKDTreeSortedNumericDocValues treeDV = (BKDTreeSortedNumericDocValues) sdv;
         BKDTreeReader tree = treeDV.getBKDTreeReader();
         
-        // TODO: make this more efficient: as we recurse the BKD tree we should check whether the
-        // bbox we are recursing into intersects our shape; Apache SIS may have (non-GPL!) code to do this?
         DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon,
                                          new BKDTreeReader.LatLonFilter() {
                                            @Override
@@ -172,13 +169,13 @@ public class BKDPointInPolygonQuery extends Query {
                                              if (GeoUtils.rectWithinPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
                                                                          polyLons, polyLats,
                                                                          minLon, minLat, maxLon, maxLat)) {
-                                               return BKDTreeReader.Relation.INSIDE;
+                                               return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
                                              } else if (GeoUtils.rectCrossesPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
                                                                                  polyLons, polyLats,
                                                                                  minLon, minLat, maxLon, maxLat)) {
-                                               return BKDTreeReader.Relation.CROSSES;
+                                               return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
                                              } else {
-                                               return BKDTreeReader.Relation.OUTSIDE;
+                                               return BKDTreeReader.Relation.SHAPE_OUTSIDE_CELL;
                                              }
                                            }
                                          }, treeDV.delegate);

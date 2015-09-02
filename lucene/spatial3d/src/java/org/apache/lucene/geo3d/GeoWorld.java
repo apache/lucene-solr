@@ -68,11 +68,10 @@ public class GeoWorld extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.noLongitudeBound().noTopLatitudeBound().noBottomLatitudeBound();
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
+    // Unnecessary
+    //bounds.noLongitudeBound().noTopLatitudeBound().noBottomLatitudeBound();
   }
 
   @Override

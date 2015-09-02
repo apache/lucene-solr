@@ -74,11 +74,8 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.addPoint(latitude, longitude);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    bounds.addPoint(this);
   }
 
   @Override

@@ -365,7 +365,7 @@ class BKDTreeWriter {
     long innerNodeCount = 1;
 
     while (countPerLeaf > maxPointsInLeafNode) {
-      countPerLeaf /= 2;
+      countPerLeaf = (countPerLeaf+1)/2;
       innerNodeCount *= 2;
     }
 
@@ -592,6 +592,8 @@ class BKDTreeWriter {
     long latRange = (long) maxLatEnc - (long) minLatEnc;
     long lonRange = (long) maxLonEnc - (long) minLonEnc;
 
+    assert lastLatSorted.count == lastLonSorted.count;
+
     // Compute which dim we should split on at this level:
     int splitDim;
     if (latRange >= lonRange) {
@@ -629,11 +631,10 @@ class BKDTreeWriter {
       //System.out.println("\nleaf:\n  lat range: " + ((long) maxLatEnc-minLatEnc));
       //System.out.println("  lon range: " + ((long) maxLonEnc-minLonEnc));
 
-      assert count == source.count: "count=" + count + " vs source.count=" + source.count;
-
-      // Sort by docID in the leaf so we can .or(DISI) at search time:
+      // Sort by docID in the leaf so we get sequentiality at search time (may not matter?):
       LatLonReader reader = source.writer.getReader(source.start);
 
+      // TODO: we can reuse this
       int[] docIDs = new int[(int) count];
 
       boolean success = false;
@@ -697,13 +698,12 @@ class BKDTreeWriter {
       //long endFP = out.getFilePointer();
       //System.out.println("  bytes/doc: " + ((endFP - startFP) / count));
     } else {
-      // Inner node: sort, partition/recurse
+      // Inner node: partition/recurse
 
       assert nodeID < splitValues.length: "nodeID=" + nodeID + " splitValues.length=" + splitValues.length;
 
       int[] splitValueArray = new int[1];
 
-      assert source.count == count;
       long leftCount = markLeftTree(splitDim, source, bitSet, splitValueArray,
                                     minLatEnc, maxLatEnc, minLonEnc, maxLonEnc);
       int splitValue = splitValueArray[0];
@@ -723,15 +723,14 @@ class BKDTreeWriter {
 
       try {
         leftWriter = getWriter(leftCount);
-        rightWriter = getWriter(nextSource.count - leftCount);
+        rightWriter = getWriter(count - leftCount);
 
         //if (DEBUG) System.out.println("  partition:\n    splitValueEnc=" + splitValue + "\n    " + nextSource + "\n      --> leftSorted=" + leftWriter + "\n      --> rightSorted=" + rightWriter + ")");
-        assert nextSource.count == count;
         reader = nextSource.writer.getReader(nextSource.start);
 
         // TODO: we could compute the split value here for each sub-tree and save an O(N) pass on recursion, but makes code hairier and only
         // changes the constant factor of building, not the big-oh:
-        for (int i=0;i<nextSource.count;i++) {
+        for (int i=0;i<count;i++) {
           boolean result = reader.next();
           assert result;
           int latEnc = reader.latEnc();
@@ -767,7 +766,6 @@ class BKDTreeWriter {
       }
 
       assert leftCount == nextLeftCount: "leftCount=" + leftCount + " nextLeftCount=" + nextLeftCount;
-      assert count == nextSource.count: "count=" + count + " nextSource.count=" + count;
 
       success = false;
       try {

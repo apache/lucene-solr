@@ -140,10 +140,14 @@ public class GeoPath extends GeoBaseDistanceShape {
       }
       final GeoPoint upperPoint = new GeoPoint(planetModel, upperLat, upperLon);
       final GeoPoint lowerPoint = new GeoPoint(planetModel, lowerLat, lowerLon);
+      final GeoPoint point = points.get(0);
+      
+      // Construct normal plane
+      final Plane normalPlane = Plane.constructNormalizedZPlane(upperPoint, lowerPoint, point);
 
-      final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(points.get(0), upperPoint, lowerPoint);
+      final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(point, normalPlane, upperPoint, lowerPoint);
       endPoints.add(onlyEndpoint);
-      this.edgePoints = new GeoPoint[]{upperPoint};
+      this.edgePoints = new GeoPoint[]{onlyEndpoint.circlePlane.getSampleIntersectionPoint(planetModel, normalPlane)};
       return;
     }
     
@@ -278,8 +282,8 @@ public class GeoPath extends GeoBaseDistanceShape {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    bounds = super.getBounds(bounds);
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
     // For building bounds, order matters.  We want to traverse
     // never more than 180 degrees longitude at a pop or we risk having the
     // bounds object get itself inverted.  So do the edges first.
@@ -289,7 +293,6 @@ public class GeoPath extends GeoBaseDistanceShape {
     for (SegmentEndpoint pathPoint : endPoints) {
       pathPoint.getBounds(planetModel, bounds);
     }
-    return bounds;
   }
 
   @Override
@@ -339,7 +342,9 @@ public class GeoPath extends GeoBaseDistanceShape {
     public final GeoPoint[] notablePoints;
     /** No notable points from the circle itself */
     public final static GeoPoint[] circlePoints = new GeoPoint[0];
-
+    /** Null membership */
+    public final static Membership[] NO_MEMBERSHIP = new Membership[0];
+    
     /** Base case.  Does nothing at all.
      */
     public SegmentEndpoint(final GeoPoint point) {
@@ -355,14 +360,12 @@ public class GeoPath extends GeoBaseDistanceShape {
      *@param upperPoint is a point that must be on the circle plane.
      *@param lowerPoint is another point that must be on the circle plane.
      */
-    public SegmentEndpoint(final GeoPoint point, final GeoPoint upperPoint, final GeoPoint lowerPoint) {
+    public SegmentEndpoint(final GeoPoint point, final Plane normalPlane, final GeoPoint upperPoint, final GeoPoint lowerPoint) {
       this.point = point;
-      // Construct normal plane
-      final Plane normalPlane = Plane.constructNormalizedVerticalPlane(upperPoint, lowerPoint, point);
       // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(point, normalPlane, upperPoint, lowerPoint);
-      this.cutoffPlanes = new Membership[0];
-      this.notablePoints = new GeoPoint[0];
+      this.cutoffPlanes = NO_MEMBERSHIP;
+      this.notablePoints = circlePoints;
     }
     
     /** Constructor for case (2).
@@ -533,7 +536,7 @@ public class GeoPath extends GeoBaseDistanceShape {
       bounds.addPoint(point);
       if (circlePlane == null)
         return;
-      circlePlane.recordBounds(planetModel, bounds);
+      bounds.addPlane(planetModel, circlePlane);
     }
 
     @Override
@@ -769,15 +772,11 @@ public class GeoPath extends GeoBaseDistanceShape {
      */
     public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       // We need to do all bounding planes as well as corner points
-      bounds.addPoint(start).addPoint(end);
-      upperConnectingPlane.recordBounds(planetModel, startCutoffPlane, bounds, lowerConnectingPlane, endCutoffPlane);
-      startCutoffPlane.recordBounds(planetModel, lowerConnectingPlane, bounds, endCutoffPlane, upperConnectingPlane);
-      lowerConnectingPlane.recordBounds(planetModel, endCutoffPlane, bounds, upperConnectingPlane, startCutoffPlane);
-      endCutoffPlane.recordBounds(planetModel, upperConnectingPlane, bounds, startCutoffPlane, lowerConnectingPlane);
-      upperConnectingPlane.recordBounds(planetModel, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane);
-      lowerConnectingPlane.recordBounds(planetModel, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
-      startCutoffPlane.recordBounds(planetModel, bounds, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
-      endCutoffPlane.recordBounds(planetModel, bounds, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
+      bounds.addPoint(start).addPoint(end).addPoint(ULHC).addPoint(URHC).addPoint(LRHC).addPoint(LLHC);
+      bounds.addPlane(planetModel, upperConnectingPlane, lowerConnectingPlane, startCutoffPlane, endCutoffPlane);
+      bounds.addPlane(planetModel, lowerConnectingPlane, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
+      bounds.addPlane(planetModel, startCutoffPlane, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
+      bounds.addPlane(planetModel, endCutoffPlane, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
     }
 
   }

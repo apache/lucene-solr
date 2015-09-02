@@ -33,13 +33,13 @@ public interface GeoArea extends Membership {
 
   // Relationship values for "getRelationship()"
   
-  /** The referenced shape CONTAINS this shape */
+  /** The referenced shape CONTAINS this area */
   public static final int CONTAINS = 0;
-  /** The referenced shape IS WITHIN this shape */
+  /** The referenced shape IS WITHIN this area */
   public static final int WITHIN = 1;
-  /** The referenced shape OVERLAPS this shape */
+  /** The referenced shape OVERLAPS this area */
   public static final int OVERLAPS = 2;
-  /** The referenced shape has no relation to this shape */
+  /** The referenced shape has no relation to this area */
   public static final int DISJOINT = 3;
 
   /**
@@ -48,10 +48,17 @@ public interface GeoArea extends Membership {
    * other way around. For example, if this GeoArea is entirely within the
    * shape, then CONTAINS should be returned.  If the shape is entirely enclosed
    * by this GeoArea, then WITHIN should be returned.
-   * Note well: When a shape consists of multiple independent overlapping subshapes,
-   * it is sometimes impossible to determine the distinction between
-   * OVERLAPS and CONTAINS.  In that case, OVERLAPS may be returned even
-   * though the proper result would in fact be CONTAINS.  Code accordingly.
+   *
+   * It is permissible to return OVERLAPS instead of WITHIN if the shape
+   * intersects with the area at even a single point.  So, a circle inscribed in
+   * a rectangle could return either OVERLAPS or WITHIN, depending on
+   * implementation.  It is not permissible to return CONTAINS or DISJOINT
+   * in this circumstance, however.
+   *
+   * Similarly, it is permissible to return OVERLAPS instead of CONTAINS
+   * under conditions where the shape consists of multiple independent overlapping
+   * subshapes, and the area overlaps one of the subshapes.  It is not permissible
+   * to return WITHIN or DISJOINT in this circumstance, however.
    *
    * @param shape is the shape to consider.
    * @return the relationship, from the perspective of the shape.

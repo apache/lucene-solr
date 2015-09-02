@@ -121,9 +121,29 @@ public class GeoPolygonTest {
   @Test
   public void testPolygonBounds() {
     GeoMembershipShape c;
-    Bounds b;
+    LatLonBounds b;
     List<GeoPoint> points;
-
+    XYZBounds xyzb;
+    GeoPoint point;
+    GeoArea area;
+    
+    // BKD failure
+    points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.36716183577912814, 1.4836349969188696));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.7846038240742979, -0.02743348424931823));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.7376479402362607, -0.5072961758807019));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.3760415907667887, 1.4970455334565513));
+    
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, 1);
+    
+    point = new GeoPoint(PlanetModel.WGS84, -0.01580760332365284, -0.03956004622490505);
+    assertTrue(c.isWithin(point));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    assertTrue(area.isWithin(point));
+    
     points = new ArrayList<GeoPoint>();
     points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
@@ -132,7 +152,8 @@ public class GeoPolygonTest {
 
     c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());

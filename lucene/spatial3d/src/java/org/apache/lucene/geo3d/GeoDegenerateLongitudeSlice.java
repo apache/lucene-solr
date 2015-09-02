@@ -98,12 +98,11 @@ public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.noTopLatitudeBound().noBottomLatitudeBound();
-    bounds.addLongitudeSlice(longitude, longitude);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
+    bounds
+      .addVerticalPlane(planetModel, longitude, plane, boundingPlane)
+      .addPoint(planetModel.NORTH_POLE).addPoint(planetModel.SOUTH_POLE);
   }
 
   @Override

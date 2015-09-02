@@ -69,6 +69,10 @@ New Features
 * LUCENE-6737: Add DecimalDigitFilter which folds unicode digits to basic latin.
   (Robert Muir)
 
+* LUCENE-6699: Add integration of BKD tree and geo3d APIs to give
+  fast, very accurate query to find all indexed points within an
+  earth-surface shape (Karl Wright, Mike McCandless)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

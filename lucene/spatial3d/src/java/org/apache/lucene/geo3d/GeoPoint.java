@@ -85,10 +85,12 @@ public class GeoPoint extends Vector {
   public GeoPoint(final double magnitude, final double x, final double y, final double z, double lat, double lon) {
     super(x * magnitude, y * magnitude, z * magnitude);
     this.magnitude = magnitude;
-    if (lat > Math.PI * 0.5 || lat < -Math.PI * 0.5)
-      throw new IllegalArgumentException("Latitude out of range");
-    if (lon < -Math.PI || lon > Math.PI)
-      throw new IllegalArgumentException("Longitude out of range");
+    if (lat > Math.PI * 0.5 || lat < -Math.PI * 0.5) {
+      throw new IllegalArgumentException("Latitude " + lat + " is out of range: must range from -Math.PI/2 to Math.PI/2");
+    }
+    if (lon < -Math.PI || lon > Math.PI) {
+      throw new IllegalArgumentException("Longitude " + lon + " is out of range: must range from -Math.PI to Math.PI");
+    }
     this.latitude = lat;
     this.longitude = lon;
   }
@@ -168,5 +170,25 @@ public class GeoPoint extends Vector {
       this.magnitude = mag = super.magnitude();
     }
     return mag;
+  }
+  
+  /** Compute whether point matches another.
+   *@param x is the x value
+   *@param y is the y value
+   *@param z is the z value
+   *@return true if the same.
+   */
+  public boolean isIdentical(final double x, final double y, final double z) {
+    return Math.abs(this.x - x) < MINIMUM_RESOLUTION &&
+      Math.abs(this.y - y) < MINIMUM_RESOLUTION &&
+      Math.abs(this.z - z) < MINIMUM_RESOLUTION;
+  }
+  
+  @Override
+  public String toString() {
+    if (this.longitude == Double.NEGATIVE_INFINITY) {
+      return super.toString();
+    }
+    return "[lat="+getLatitude()+", lon="+getLongitude()+"]";
   }
 }
