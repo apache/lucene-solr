@@ -195,7 +195,6 @@ final class BKDTreeReader implements Accountable {
       if (cellLatMinEnc > state.latMinEnc || cellLatMaxEnc < state.latMaxEnc ||
           cellLonMinEnc > state.lonMinEnc || cellLonMaxEnc < state.lonMaxEnc) {
 
-        // nocommit explain why this fails, e.g. ot TestBKDTree.testRandomTiny -seed 80479DBEF3DE1A76 -verbose
         Relation r = state.latLonFilter.compare(BKDTreeWriter.decodeLat(cellLatMinEnc),
                                                 BKDTreeWriter.decodeLat(cellLatMaxEnc),
                                                 BKDTreeWriter.decodeLon(cellLonMinEnc),

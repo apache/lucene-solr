@@ -506,8 +506,6 @@ public class TestGeo3DPointField extends LuceneTestCase {
           log.println("  cycle: " + cell + " queue.size()=" + queue.size());
         }
 
-        // nocommit or if the volume is too small?
-        // nocommit randomize 10:
         if (random().nextInt(10) == 7 || cell.splitCount > recurseDepth) {
           if (VERBOSE) {
             log.println("    leaf");
