@@ -31,14 +31,14 @@ public final class MatchAllDocsQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
-    return new RandomAccessWeight(this) {
-      @Override
-      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
-        return new Bits.MatchAllBits(context.reader().maxDoc());
-      }
+    return new ConstantScoreWeight(this) {
       @Override
       public String toString() {
         return "weight(" + MatchAllDocsQuery.this + ")";
+      }
+      @Override
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
       }
       @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
