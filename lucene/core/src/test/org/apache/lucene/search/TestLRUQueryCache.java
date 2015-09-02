@@ -991,7 +991,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     
     try {
       // trigger an eviction
-      searcher.count(new MatchAllDocsQuery());
+      searcher.search(new MatchAllDocsQuery(), new TotalHitCountCollector());
       fail();
     } catch (ConcurrentModificationException e) {
       // expected

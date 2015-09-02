@@ -348,6 +348,29 @@ public class IndexSearcher {
    * Count how many documents match the given query.
    */
   public int count(Query query) throws IOException {
+    query = rewrite(query);
+    while (true) {
+      // remove wrappers that don't matter for counts
+      if (query instanceof ConstantScoreQuery) {
+        query = ((ConstantScoreQuery) query).getQuery();
+      } else {
+        break;
+      }
+    }
+
+    // some counts can be computed in constant time
+    if (query instanceof MatchAllDocsQuery) {
+      return reader.numDocs();
+    } else if (query instanceof TermQuery && reader.hasDeletions() == false) {
+      Term term = ((TermQuery) query).getTerm();
+      int count = 0;
+      for (LeafReaderContext leaf : reader.leaves()) {
+        count += leaf.reader().docFreq(term);
+      }
+      return count;
+    }
+
+    // general case: create a collecor and count matches
     final CollectorManager<TotalHitCountCollector, Integer> collectorManager = new CollectorManager<TotalHitCountCollector, Integer>() {
 
       @Override
