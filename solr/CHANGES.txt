@@ -190,6 +190,8 @@ Bug Fixes
 
 * SOLR-8004: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission (noble)
 
+* SOLR-7984: wrong and misleading error message 'no default request handler is registered' (noble, hossman)
+
 
 Optimizations
 ----------------------

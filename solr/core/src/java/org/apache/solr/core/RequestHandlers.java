@@ -130,12 +130,11 @@ public final class RequestHandlers {
     handlers.init(Collections.emptyMap(),core, modifiedInfos);
     handlers.alias(handlers.getDefault(), "");
     log.info("Registered paths: {}" , StrUtils.join(new ArrayList<>(handlers.keySet()) , ',' ));
-    if(!handlers.alias( "/select","")){
-      if(!handlers.alias( "standard","")){
+    if (handlers.get("") == null && !handlers.alias("/select", "")) {
+      if (handlers.get("") == null && !handlers.alias("standard", "")) {
         log.warn("no default request handler is registered (either '/select' or 'standard')");
       }
     }
-
   }
 
   private PluginInfo applyInitParams(SolrConfig config, PluginInfo info) {
