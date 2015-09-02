@@ -435,6 +435,7 @@ public class ZkStateReader implements Closeable {
 
         }
       });
+      securityData = getSecurityProps(true);
     }
   }
 

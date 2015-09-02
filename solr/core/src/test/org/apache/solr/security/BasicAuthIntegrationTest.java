@@ -34,6 +34,7 @@ import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -64,7 +65,6 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
 
   private static final Logger log = LoggerFactory.getLogger(BasicAuthIntegrationTest.class);
 
-
   @Override
   protected void doExtraTests(MiniSolrCloudCluster miniCluster, SolrZkClient zkClient, ZkStateReader zkStateReader,
                               CloudSolrClient cloudSolrClient, String defaultCollName) throws Exception {
@@ -73,9 +73,20 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
     assertNotNull(rsp.get(CommandOperation.ERR_MSGS));
     zkClient.setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
     String baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
-
     HttpClient cl = cloudSolrClient.getLbClient().getHttpClient();
     verifySecurityStatus(cl, baseUrl + "/admin/authentication", "authentication/class", "solr.BasicAuthPlugin", 20);
+
+    boolean found = false;
+    for (JettySolrRunner jettySolrRunner : miniCluster.getJettySolrRunners()) {
+      if(baseUrl.contains(String.valueOf(jettySolrRunner.getLocalPort()))){
+        found = true;
+        jettySolrRunner.stop();
+        jettySolrRunner.start();
+        verifySecurityStatus(cl, baseUrl + "/admin/authentication", "authentication/class", "solr.BasicAuthPlugin", 20);
+        break;
+      }
+    }
+    assertTrue("No server found to restart , looking for : "+baseUrl , found);
 
     String command = "{\n" +
         "'set-user': {'harry':'HarryIsCool'}\n" +
