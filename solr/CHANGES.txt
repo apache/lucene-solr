@@ -95,6 +95,9 @@ Bug Fixes
 
 * SOLR-7988: SolrJ could not make requests to handlers with '/admin/' prefix (noble , ludovic Boutros)
 
+* SOLR-8000: security.json is not loaded on server start (noble)
+
+
 Optimizations
 ----------------------
 
