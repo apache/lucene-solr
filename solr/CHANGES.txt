@@ -186,6 +186,9 @@ Bug Fixes
 * SOLR-7844: Zookeeper session expiry during shard leader election can cause multiple leaders.
   (Mike Roberts, Mark Miller, Jessica Cheng)
 
+* SOLR-8000: security.json is not loaded on server start (noble)
+
+
 Optimizations
 ----------------------
 
