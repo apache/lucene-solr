@@ -97,7 +97,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
@@ -309,7 +309,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   @SuppressWarnings("unchecked")
   private void processRebalanceLeaders(ZkNodeProps message) throws KeeperException, InterruptedException {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
-        NODE_NAME_PROP, BASE_URL_PROP, REJOIN_AT_HEAD_PROP);
+        CORE_NODE_NAME_PROP, BASE_URL_PROP, REJOIN_AT_HEAD_PROP);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COLLECTION_PROP, message.getStr(COLLECTION_PROP));
@@ -317,7 +317,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     params.set(REJOIN_AT_HEAD_PROP, message.getStr(REJOIN_AT_HEAD_PROP));
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REJOINLEADERELECTION.toString());
     params.set(CORE_NAME_PROP, message.getStr(CORE_NAME_PROP));
-    params.set(NODE_NAME_PROP, message.getStr(NODE_NAME_PROP));
+    params.set(CORE_NODE_NAME_PROP, message.getStr(CORE_NODE_NAME_PROP));
     params.set(ELECTION_NODE_PROP, message.getStr(ELECTION_NODE_PROP));
     params.set(BASE_URL_PROP, message.getStr(BASE_URL_PROP));
 

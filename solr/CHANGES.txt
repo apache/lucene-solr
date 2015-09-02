@@ -95,12 +95,14 @@ Bug Fixes
 
 * SOLR-7988: SolrJ could not make requests to handlers with '/admin/' prefix (noble , ludovic Boutros)
 
+* SOLR-7844: Zookeeper session expiry during shard leader election can cause multiple leaders.
+  (Mike Roberts, Mark Miller, Jessica Cheng)
+
 * SOLR-8000: security.json is not loaded on server start (noble)
 
 * SOLR-8004: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission (noble)
 
 * SOLR-7984: wrong and misleading error message 'no default request handler is registered' (noble, hossman)
-
 
 Optimizations
 ----------------------

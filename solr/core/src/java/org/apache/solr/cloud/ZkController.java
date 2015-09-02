@@ -101,6 +101,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
@@ -175,8 +176,6 @@ public final class ZkController {
   private final ZkCmdExecutor cmdExecutor;
   private final ZkStateReader zkStateReader;
 
-  private final LeaderElector leaderElector;
-  
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
   private final int localHostPort;      // example: 54065
@@ -378,6 +377,7 @@ public final class ZkController {
         } catch (Exception e) {
           log.error("Error trying to stop any Overseer threads", e);
         }
+        closeOutstandingElections(registerOnReconnect);
         markAllAsNotLeader(registerOnReconnect);
       }
     }, zkACLProvider);
@@ -389,7 +389,6 @@ public final class ZkController {
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
     cmdExecutor = new ZkCmdExecutor(clientTimeout);
-    leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient, new Runnable() {
       @Override
       public void run() {
@@ -487,6 +486,32 @@ public final class ZkController {
     }
   }
   
+  private void closeOutstandingElections(final CurrentCoreDescriptorProvider registerOnReconnect) {
+    
+    List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+    if (descriptors != null) {
+      for (CoreDescriptor descriptor : descriptors) {
+        closeExistingElectionContext(descriptor);
+      }
+    }
+  }
+  
+  private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
+    // look for old context - if we find it, cancel it
+    String collection = cd.getCloudDescriptor().getCollectionName();
+    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    
+    ContextKey contextKey = new ContextKey(collection, coreNodeName);
+    ElectionContext prevContext = electionContexts.get(contextKey);
+    
+    if (prevContext != null) {
+      prevContext.close();
+      electionContexts.remove(contextKey);
+    }
+    
+    return contextKey;
+  }
+
   private void markAllAsNotLeader(
       final CurrentCoreDescriptorProvider registerOnReconnect) {
     List<CoreDescriptor> descriptors = registerOnReconnect
@@ -1076,11 +1101,12 @@ public final class ZkController {
     props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    
- 
+    props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+
+
     ZkNodeProps ourProps = new ZkNodeProps(props);
 
-
+    LeaderElector leaderElector = new LeaderElector(zkClient, contextKey, electionContexts);
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
         collection, coreNodeName, ourProps, this, cc);
 
@@ -1885,23 +1911,43 @@ public final class ZkController {
 
   public void rejoinShardLeaderElection(SolrParams params) {
     try {
+      
       String collectionName = params.get(COLLECTION_PROP);
       String shardId = params.get(SHARD_ID_PROP);
-      String nodeName = params.get(NODE_NAME_PROP);
+      String coreNodeName = params.get(CORE_NODE_NAME_PROP);
+      
+      // back compat for SOLR-7844
+      String nodeNameParam = params.get(NODE_NAME_PROP);
+      if (nodeNameParam != null) {
+        coreNodeName = params.get(NODE_NAME_PROP);
+      }
+      
       String coreName = params.get(CORE_NAME_PROP);
       String electionNode = params.get(ELECTION_NODE_PROP);
       String baseUrl = params.get(BASE_URL_PROP);
 
-      ZkNodeProps zkProps = new ZkNodeProps(CORE_NAME_PROP, coreName, NODE_NAME_PROP, nodeName, COLLECTION_PROP, collectionName,
-          SHARD_ID_PROP, shardId, ELECTION_NODE_PROP, electionNode, BASE_URL_PROP, baseUrl);
-
-      ShardLeaderElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId, collectionName,
-          nodeName, zkProps, this, getCoreContainer());
-      LeaderElector elect = new LeaderElector(this.zkClient);
-      context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
-      elect.setup(context);
-
-      elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP));
+      try (SolrCore core = cc.getCore(coreName)) {
+        MDCLoggingContext.setCore(core);
+         
+        log.info("Rejoin the shard leader election.");
+        
+        ContextKey contextKey = new ContextKey(collectionName, coreNodeName);
+        
+        ElectionContext prevContext = electionContexts.get(contextKey);
+        if (prevContext != null) prevContext.cancelElection();
+        
+        ZkNodeProps zkProps = new ZkNodeProps(BASE_URL_PROP, baseUrl, CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
+            
+        LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
+        ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
+            coreNodeName, zkProps, this, getCoreContainer());
+            
+        context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
+        elect.setup(context);
+        electionContexts.put(contextKey, context);
+        
+        elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP));
+      }
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
     }
