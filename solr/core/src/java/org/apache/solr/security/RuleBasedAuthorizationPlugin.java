@@ -88,7 +88,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   @Override
   public AuthorizationResponse authorize(AuthorizationContext context) {
     List<AuthorizationContext.CollectionRequest> collectionRequests = context.getCollectionRequests();
-    if (collectionRequests.isEmpty()) {
+    if (context.getRequestType() == AuthorizationContext.RequestType.ADMIN) {
       MatchStatus flag = checkCollPerm(mapping.get(""), context);
       return flag.rsp;
     }

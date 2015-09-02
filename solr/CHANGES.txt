@@ -188,6 +188,8 @@ Bug Fixes
 
 * SOLR-8000: security.json is not loaded on server start (noble)
 
+* SOLR-8004: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission (noble)
+
 
 Optimizations
 ----------------------

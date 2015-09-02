@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.TestMiniSolrCloudCluster;
@@ -144,6 +145,30 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
 
     verifySecurityStatus(cl, baseUrl+"/admin/authorization", "authorization/permissions[1]/collection", "x", 20);
 
+    httpPost = new HttpPost(baseUrl + "/admin/authorization");
+    setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
+    httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("set-permission", Utils.makeMap
+        ("name","collection-admin-edit", "role", "admin" )))));
+    r = cl.execute(httpPost);
+
+    verifySecurityStatus(cl, baseUrl+"/admin/authorization", "authorization/permissions[2]/name", "collection-admin-edit", 20);
+
+    CollectionAdminRequest.Reload reload = new CollectionAdminRequest.Reload();
+    reload.setCollectionName(cloudSolrClient.getDefaultCollection());
+
+    HttpSolrClient solrClient = new HttpSolrClient(baseUrl);
+    try {
+      rsp = solrClient.request(reload);
+      fail("must have failed");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+
+    }
+
+    httpPost = new HttpPost(baseUrl + "/admin/authorization");
+    setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
+    httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("delete-permission", "collection-admin-edit"))));
+    r = cl.execute(httpPost);//cleanup so that the super class does not need to pass on credentials
+
   }
 
   public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
@@ -206,6 +231,11 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
 
   @Override
   public void testErrorsInShutdown() throws Exception {
+  }
+
+
+  @Override
+  public void testCollectionCreateWithoutCoresThenDelete() throws Exception {
   }
 
   //the password is 'SolrRocks'
