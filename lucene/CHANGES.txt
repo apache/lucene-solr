@@ -83,6 +83,9 @@ Optimizations
 * LUCENE-6746: DisjunctionMaxQuery, BoostingQuery and BoostedQuery now create
   sub weights through IndexSearcher so that they can be cached. (Adrien Grand)
 
+* LUCENE-6754: Optimized IndexSearcher.count for the cases when it can use
+  index statistics instead of collecting all matches. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6730: Hyper-parameter c is ignored in term frequency NormalizationH1.
