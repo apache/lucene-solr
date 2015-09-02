@@ -76,17 +76,8 @@ public class MorfologikFilter extends TokenFilter {
   public MorfologikFilter(final TokenStream in, final String dict) {
     super(in);
     this.input = in;
-
-    // SOLR-4007: temporarily substitute context class loader to allow finding dictionary resources.
-    Thread me = Thread.currentThread();
-    ClassLoader cl = me.getContextClassLoader();
-    try {
-      me.setContextClassLoader(morfologik.stemming.Dictionary.class.getClassLoader());
-      this.stemmer = new DictionaryLookup(morfologik.stemming.Dictionary.getForLanguage(dict));
-      this.lemmaList = Collections.emptyList();
-    } finally {
-      me.setContextClassLoader(cl);
-    }  
+    this.stemmer = new DictionaryLookup(morfologik.stemming.Dictionary.getForLanguage(dict));
+    this.lemmaList = Collections.emptyList();
   }
 
   /**

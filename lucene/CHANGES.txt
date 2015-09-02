@@ -100,6 +100,8 @@ Bug Fixes
 * LUCENE-6748: UsageTrackingQueryCachingPolicy no longer caches trivial queries
   like MatchAllDocsQuery. (Adrien Grand)
 
+* LUCENE-6774: Remove solr hack in MorfologikFilter. (Robert Muir)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
