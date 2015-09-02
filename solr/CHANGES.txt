@@ -17,6 +17,8 @@ Bug Fixes
 
 * SOLR-8000: security.json is not loaded on server start (noble)
 
+* SOLR-8004: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission (noble)
+
 ==================  5.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
