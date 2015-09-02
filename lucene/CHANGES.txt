@@ -119,6 +119,9 @@ Other
 * LUCENE-6768: AbstractFirstPassGroupingCollector.groupSort private member
   is not needed. (Christine Poerschke)
 
+* LUCENE-6761: MatchAllDocsQuery's Scorers do not expose approximations
+  anymore. (Adrien Grand)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
