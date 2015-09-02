@@ -1,4 +1,3 @@
-// -*- c-basic-offset: 2 -*-
 package org.apache.lucene.analysis.morfologik;
 
 /*
@@ -19,10 +18,17 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.IOException;
-import java.util.*;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
-import morfologik.stemming.*;
+import morfologik.stemming.Dictionary;
+import morfologik.stemming.DictionaryLookup;
+import morfologik.stemming.IStemmer;
+import morfologik.stemming.WordData;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -30,7 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.util.*;
+import org.apache.lucene.util.CharsRefBuilder;
 
 /**
  * {@link TokenFilter} using Morfologik library to transform input tokens into lemma and
@@ -64,22 +70,33 @@ public class MorfologikFilter extends TokenFilter {
    * Creates a filter with the default (Polish) dictionary.
    */
   public MorfologikFilter(final TokenStream in) {
-    this(in, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
+    this(in, DictionaryHolder.DEFAULT_DICT);
   }
 
   /**
    * Creates a filter with a given dictionary resource.
    *
    * @param in input token stream.
-   * @param dict Dictionary resource from classpath.
+   * @param dictResource Dictionary resource name in classpath.
    */
-  public MorfologikFilter(final TokenStream in, final String dict) {
+  public MorfologikFilter(final TokenStream in, final String dictResource) {
+    this(in, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE.equals(dictResource) ?
+        DictionaryHolder.DEFAULT_DICT : loadDictionaryResource(dictResource));
+  }
+  
+  /**
+   * Creates a filter with a given dictionary.
+   *
+   * @param in input token stream.
+   * @param dict Dictionary to use for stemming.
+   */
+  public MorfologikFilter(final TokenStream in, final Dictionary dict) {
     super(in);
     this.input = in;
-    this.stemmer = new DictionaryLookup(morfologik.stemming.Dictionary.getForLanguage(dict));
+    this.stemmer = new DictionaryLookup(dict);
     this.lemmaList = Collections.emptyList();
   }
-
+  
   /**
    * A pattern used to split lemma forms.
    */
@@ -162,5 +179,24 @@ public class MorfologikFilter extends TokenFilter {
     lemmaList = Collections.emptyList();
     tagsList.clear();
     super.reset();
+  }
+  
+  /** This method was added, because Morfologik uses context classloader and fails to load from our classloader (bug with absolute path). */
+  static Dictionary loadDictionaryResource(String resource) {
+    Objects.requireNonNull(resource, "Morfologik language code may not be null");
+    final String dictPath = "/morfologik/dictionaries/" + resource + ".dict";
+    final String metaPath = Dictionary.getExpectedFeaturesName(dictPath);
+
+    try (final InputStream dictIn = Objects.requireNonNull(Dictionary.class.getResourceAsStream(dictPath), "Unable to find Morfologik dictionary: " + dictPath);
+        final InputStream metaIn = Objects.requireNonNull(Dictionary.class.getResourceAsStream(metaPath), "Unable to find Morfologik metadata: " + metaPath)) {
+      return Dictionary.readAndClose(dictIn, metaIn);
+    } catch (IOException ioe) {
+      throw new RuntimeException("IOException while loading Morfologik dictionary and metadata.", ioe);
+    }
+  }
+
+  /** This holder is for the default Polish dictionary */
+  static final class DictionaryHolder {
+    static final Dictionary DEFAULT_DICT = loadDictionaryResource(MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
   }
 }
