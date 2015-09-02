@@ -120,6 +120,29 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testCustomTools() throws Exception {
+    assertEquals("", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"custom_tool")));
+    assertEquals("** LATERALUS **", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+            SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.star(\"LATERALUS\")")));
+
+    // Does $log get overridden?
+    assertEquals("** log overridden **", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+            SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$log.star(\"log overridden\")")));
+
+    // Does $response get overridden?  actual blank response because of the bang on $! reference that silences bogus $-references
+    assertEquals("", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$!response.star(\"response overridden??\")")));
+
+    // Custom tools can also have a SolrCore-arg constructor because they are instantiated with SolrCore.createInstance
+    // TODO: do we really need to support this?  no great loss, as a custom tool could take a SolrCore object as a parameter to
+    // TODO: any method, so one could do $mytool.my_method($request.core)
+    // I'm currently inclined to make this feature undocumented/unsupported, as we may want to instantiate classes
+    // in a different manner that only supports no-arg constructors, commented (passing) test case out
+//    assertEquals("collection1", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+//        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.core.name")));
+  }
+
+  @Test
   public void testLocaleFeature() throws Exception {
     assertEquals("Color", h.query(req("q", "*:*", "wt", "velocity", VelocityResponseWriter.TEMPLATE, "locale",
         VelocityResponseWriter.LOCALE,"en_US")));
