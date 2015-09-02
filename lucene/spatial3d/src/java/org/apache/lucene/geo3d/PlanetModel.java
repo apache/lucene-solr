@@ -65,6 +65,14 @@ public class PlanetModel {
   public final GeoPoint NORTH_POLE;
   /** South pole */
   public final GeoPoint SOUTH_POLE;
+  /** Min X pole */
+  public final GeoPoint MIN_X_POLE;
+  /** Max X pole */
+  public final GeoPoint MAX_X_POLE;
+  /** Min Y pole */
+  public final GeoPoint MIN_Y_POLE;
+  /** Max Y pole */
+  public final GeoPoint MAX_Y_POLE;
   
   /** Constructor.
    * @param ab is the x/y scaling factor.
@@ -81,6 +89,10 @@ public class PlanetModel {
     this.inverseCSquared = inverseC * inverseC;
     this.NORTH_POLE = new GeoPoint(c, 0.0, 0.0, 1.0, Math.PI * 0.5, 0.0);
     this.SOUTH_POLE = new GeoPoint(c, 0.0, 0.0, -1.0, -Math.PI * 0.5, 0.0);
+    this.MIN_X_POLE = new GeoPoint(ab, -1.0, 0.0, 0.0, 0.0, -Math.PI);
+    this.MAX_X_POLE = new GeoPoint(ab, 1.0, 0.0, 0.0, 0.0, 0.0);
+    this.MIN_Y_POLE = new GeoPoint(ab, 0.0, -1.0, 0.0, 0.0, -Math.PI * 0.5);
+    this.MAX_Y_POLE = new GeoPoint(ab, 0.0, 1.0, 0.0, 0.0, Math.PI * 0.5);
   }
   
   /** Find the minimum magnitude of all points on the ellipsoid.
@@ -95,6 +107,86 @@ public class PlanetModel {
    */
   public double getMaximumMagnitude() {
     return Math.max(this.ab, this.c);
+  }
+  
+  /** Find the minimum x value.
+   *@return the minimum X value.
+   */
+  public double getMinimumXValue() {
+    return -this.ab;
+  }
+  
+  /** Find the maximum x value.
+   *@return the maximum X value.
+   */
+  public double getMaximumXValue() {
+    return this.ab;
+  }
+
+  /** Find the minimum y value.
+   *@return the minimum Y value.
+   */
+  public double getMinimumYValue() {
+    return -this.ab;
+  }
+  
+  /** Find the maximum y value.
+   *@return the maximum Y value.
+   */
+  public double getMaximumYValue() {
+    return this.ab;
+  }
+  
+  /** Find the minimum z value.
+   *@return the minimum Z value.
+   */
+  public double getMinimumZValue() {
+    return -this.c;
+  }
+  
+  /** Find the maximum z value.
+   *@return the maximum Z value.
+   */
+  public double getMaximumZValue() {
+    return this.c;
+  }
+
+  /** Check if point is on surface.
+   * @param v is the point to check.
+   * @return true if the point is on the planet surface.
+   */
+  public boolean pointOnSurface(final Vector v) {
+    return pointOnSurface(v.x, v.y, v.z);
+  }
+  
+  /** Check if point is on surface.
+   * @param x is the x coord.
+   * @param y is the y coord.
+   * @param z is the z coord.
+   */
+  public boolean pointOnSurface(final double x, final double y, final double z) {
+    // Equation of planet surface is:
+    // x^2 / a^2 + y^2 / b^2 + z^2 / c^2 - 1 = 0
+    return Math.abs((x * x + y * y) * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0) < Vector.MINIMUM_RESOLUTION;
+  }
+
+  /** Check if point is outside surface.
+   * @param v is the point to check.
+   * @return true if the point is outside the planet surface.
+   */
+  public boolean pointOutside(final Vector v) {
+    return pointOutside(v.x, v.y, v.z);
+  }
+  
+  /** Check if point is outside surface.
+   * @param x is the x coord.
+   * @param y is the y coord.
+   * @param z is the z coord.
+   */
+  public boolean pointOutside(final double x, final double y, final double z) {
+    // Equation of planet surface is:
+    // x^2 / a^2 + y^2 / b^2 + z^2 / c^2 - 1 = 0
+    return (x * x + y * y) * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0 > Vector.MINIMUM_RESOLUTION;
   }
   
   /** Compute surface distance between two points.

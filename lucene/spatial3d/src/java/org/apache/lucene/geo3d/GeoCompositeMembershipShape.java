@@ -71,13 +71,10 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
+  public void getBounds(Bounds bounds) {
     for (GeoMembershipShape shape : shapes) {
-      bounds = shape.getBounds(bounds);
+      shape.getBounds(bounds);
     }
-    return bounds;
   }
 
   @Override

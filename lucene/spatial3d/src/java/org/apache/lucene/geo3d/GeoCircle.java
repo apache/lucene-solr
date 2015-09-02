@@ -46,8 +46,10 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       throw new IllegalArgumentException("Latitude out of bounds");
     if (lon < -Math.PI || lon > Math.PI)
       throw new IllegalArgumentException("Longitude out of bounds");
-    if (cutoffAngle <= 0.0 || cutoffAngle > Math.PI)
+    if (cutoffAngle < 0.0 || cutoffAngle > Math.PI)
       throw new IllegalArgumentException("Cutoff angle out of bounds");
+    if (cutoffAngle < Vector.MINIMUM_RESOLUTION)
+      throw new IllegalArgumentException("Cutoff angle cannot be effectively zero");
     this.center = new GeoPoint(planetModel, lat, lon);
     // In an ellipsoidal world, cutoff distances make no sense, unfortunately.  Only membership
     // can be used to make in/out determination.
@@ -78,12 +80,15 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
       this.edgePoints = new GeoPoint[0];
     } else {
       // Construct normal plane
-      final Plane normalPlane = Plane.constructNormalizedVerticalPlane(upperPoint, lowerPoint, center);
+      final Plane normalPlane = Plane.constructNormalizedZPlane(upperPoint, lowerPoint, center);
       // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
       this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
       if (circlePlane == null)
-        throw new RuntimeException("Couldn't construct circle plane.  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
-      this.edgePoints = new GeoPoint[]{upperPoint};
+        throw new IllegalArgumentException("Couldn't construct circle plane, probably too small?  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
+      final GeoPoint recomputedIntersectionPoint = circlePlane.getSampleIntersectionPoint(planetModel, normalPlane);
+      if (recomputedIntersectionPoint == null)
+        throw new IllegalArgumentException("Couldn't construct intersection point, probably circle too small?  Plane = "+circlePlane);
+      this.edgePoints = new GeoPoint[]{recomputedIntersectionPoint};
     }
   }
 
@@ -130,16 +135,14 @@ public class GeoCircle extends GeoBaseDistanceShape implements GeoSizeable {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    bounds = super.getBounds(bounds);
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
     if (circlePlane == null) {
-      // Entire world
-      bounds.noTopLatitudeBound().noBottomLatitudeBound().noLongitudeBound();
-      return bounds;
+      // Entire world; should already be covered
+      return;
     }
     bounds.addPoint(center);
-    circlePlane.recordBounds(planetModel, bounds);
-    return bounds;
+    bounds.addPlane(planetModel, circlePlane);
   }
 
   @Override

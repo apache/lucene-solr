@@ -165,14 +165,54 @@ public class GeoPathTest {
   @Test
   public void testPathBounds() {
     GeoPath c;
-    Bounds b;
+    LatLonBounds b;
+    XYZBounds xyzb;
+    GeoPoint point;
+    int relationship;
+    GeoArea area;
+
+    c = new GeoPath(PlanetModel.WGS84, 0.6894050545377601);
+    c.addPoint(-0.0788176065762948, 0.9431251741731624);
+    c.addPoint(0.510387871458147, 0.5327078872484678);
+    c.addPoint(-0.5624521609859962, 1.5398841746888388);
+    c.addPoint(-0.5025171434638661, -0.5895998642788894);
+    c.done();
+    point = new GeoPoint(PlanetModel.WGS84, 0.023652082107211682, 0.023131910152748437);
+    //System.err.println("Point.x = "+point.x+"; point.y="+point.y+"; point.z="+point.z);
+    assertTrue(c.isWithin(point));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println("minx="+xyzb.getMinimumX()+" maxx="+xyzb.getMaximumX()+" miny="+xyzb.getMinimumY()+" maxy="+xyzb.getMaximumY()+" minz="+xyzb.getMinimumZ()+" maxz="+xyzb.getMaximumZ());
+    //System.err.println("point.x="+point.x+" point.y="+point.y+" point.z="+point.z);
+    relationship = area.getRelationship(c);
+    assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
+    assertTrue(area.isWithin(point));
+    
+    c = new GeoPath(PlanetModel.WGS84, 0.7766715171374766);
+    c.addPoint(-0.2751718361148076, -0.7786721269011477);
+    c.addPoint(0.5728375851539309, -1.2700115736820465);
+    c.done();
+    point = new GeoPoint(PlanetModel.WGS84, -0.01580760332365284, -0.03956004622490505);
+    assertTrue(c.isWithin(point));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println("minx="+xyzb.getMinimumX()+" maxx="+xyzb.getMaximumX()+" miny="+xyzb.getMinimumY()+" maxy="+xyzb.getMaximumY()+" minz="+xyzb.getMinimumZ()+" maxz="+xyzb.getMaximumZ());
+    //System.err.println("point.x="+point.x+" point.y="+point.y+" point.z="+point.z);
+    relationship = area.getRelationship(c);
+    assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
+    assertTrue(area.isWithin(point));
 
     c = new GeoPath(PlanetModel.SPHERE, 0.1);
     c.addPoint(-0.3, -0.3);
     c.addPoint(0.3, 0.3);
     c.done();
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());

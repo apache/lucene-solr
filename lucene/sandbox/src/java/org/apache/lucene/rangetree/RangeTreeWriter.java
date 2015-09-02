@@ -319,7 +319,7 @@ class RangeTreeWriter {
     long innerNodeCount = 1;
 
     while (countPerLeaf > maxValuesInLeafNode) {
-      countPerLeaf /= 2;
+      countPerLeaf = (countPerLeaf+1)/2;
       innerNodeCount *= 2;
     }
 

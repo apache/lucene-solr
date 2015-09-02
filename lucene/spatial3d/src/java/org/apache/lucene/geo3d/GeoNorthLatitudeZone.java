@@ -100,11 +100,10 @@ public class GeoNorthLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.noLongitudeBound().noTopLatitudeBound().addLatitudeZone(bottomLat);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
+    bounds
+      .addHorizontalPlane(planetModel, bottomLat, bottomPlane);
   }
 
   @Override

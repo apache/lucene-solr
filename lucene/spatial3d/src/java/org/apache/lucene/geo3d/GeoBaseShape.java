@@ -32,16 +32,27 @@ public abstract class GeoBaseShape extends BasePlanetObject implements GeoShape 
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
+  public void getBounds(Bounds bounds) {
     if (isWithin(planetModel.NORTH_POLE)) {
-      bounds.noTopLatitudeBound().noLongitudeBound();
+      bounds.noTopLatitudeBound().noLongitudeBound()
+        .addPoint(planetModel.NORTH_POLE);
     }
     if (isWithin(planetModel.SOUTH_POLE)) {
-      bounds.noBottomLatitudeBound().noLongitudeBound();
+      bounds.noBottomLatitudeBound().noLongitudeBound()
+        .addPoint(planetModel.SOUTH_POLE);
     }
-    return bounds;
+    if (isWithin(planetModel.MIN_X_POLE)) {
+      bounds.addPoint(planetModel.MIN_X_POLE);
+    }
+    if (isWithin(planetModel.MAX_X_POLE)) {
+      bounds.addPoint(planetModel.MAX_X_POLE);
+    }
+    if (isWithin(planetModel.MIN_Y_POLE)) {
+      bounds.addPoint(planetModel.MIN_Y_POLE);
+    }
+    if (isWithin(planetModel.MAX_Y_POLE)) {
+      bounds.addPoint(planetModel.MAX_Y_POLE);
+    }
   }
 
 }

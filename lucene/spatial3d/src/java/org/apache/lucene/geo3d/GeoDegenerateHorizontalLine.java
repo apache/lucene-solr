@@ -87,8 +87,8 @@ public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
     final double cosRightLon = Math.cos(rightLon);
 
     // Now build the two points
-    this.LHC = new GeoPoint(planetModel, sinLatitude, sinLeftLon, cosLatitude, cosLeftLon);
-    this.RHC = new GeoPoint(planetModel, sinLatitude, sinRightLon, cosLatitude, cosRightLon);
+    this.LHC = new GeoPoint(planetModel, sinLatitude, sinLeftLon, cosLatitude, cosLeftLon, latitude, leftLon);
+    this.RHC = new GeoPoint(planetModel, sinLatitude, sinRightLon, cosLatitude, cosRightLon, latitude, rightLon);
 
     this.plane = new Plane(planetModel, sinLatitude);
 
@@ -156,11 +156,10 @@ public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   }
 
   @Override
-  public Bounds getBounds(Bounds bounds) {
-    if (bounds == null)
-      bounds = new Bounds();
-    bounds.addLatitudeZone(latitude).addLongitudeSlice(leftLon, rightLon);
-    return bounds;
+  public void getBounds(Bounds bounds) {
+    super.getBounds(bounds);
+    bounds.addHorizontalPlane(planetModel, latitude, plane, leftPlane, rightPlane)
+      .addPoint(LHC).addPoint(RHC);
   }
 
   @Override

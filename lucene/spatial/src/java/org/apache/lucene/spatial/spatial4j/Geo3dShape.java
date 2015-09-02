@@ -24,7 +24,7 @@ import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
-import org.apache.lucene.geo3d.Bounds;
+import org.apache.lucene.geo3d.LatLonBounds;
 import org.apache.lucene.geo3d.GeoArea;
 import org.apache.lucene.geo3d.GeoAreaFactory;
 import org.apache.lucene.geo3d.GeoPoint;
@@ -107,7 +107,8 @@ public class Geo3dShape implements Shape {
   public Rectangle getBoundingBox() {
     Rectangle bbox = this.boundingBox;//volatile read once
     if (bbox == null) {
-      Bounds bounds = shape.getBounds(null);
+      LatLonBounds bounds = new LatLonBounds();
+      shape.getBounds(bounds);
       double leftLon;
       double rightLon;
       if (bounds.checkNoLongitudeBound()) {

@@ -23,8 +23,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class GeoCircleTest {
+import org.apache.lucene.util.LuceneTestCase;
 
+public class GeoCircleTest extends LuceneTestCase {
 
   @Test
   public void testCircleDistance() {
@@ -62,7 +63,8 @@ public class GeoCircleTest {
     assertTrue(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertTrue(c.isWithin(gp));
-    Bounds b = c.getBounds(null);
+    LatLonBounds b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -93,12 +95,157 @@ public class GeoCircleTest {
   @Test
   public void testCircleBounds() {
     GeoCircle c;
-    Bounds b;
+    LatLonBounds b;
+    XYZBounds xyzb;
+    GeoArea area;
+    GeoPoint p1;
+    GeoPoint p2;
+    int relationship;
 
+    // Twelfth BKD discovered failure
+    c = new GeoCircle(PlanetModel.WGS84,-0.00824379317765984,-0.0011677469001838581,0.0011530035396910402);
+    p1 = new GeoPoint(PlanetModel.WGS84,-0.006505092992723671,0.007654282718327381);
+    p2 = new GeoPoint(1.0010681673665647,0.007662608264336381,-0.006512324005914593);
+    assertTrue(!c.isWithin(p1));
+    assertTrue(!c.isWithin(p2));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    relationship = area.getRelationship(c);
+    assertTrue(relationship == GeoArea.OVERLAPS || relationship == GeoArea.WITHIN);
+    // Point is actually outside the bounds, and outside the shape
+    assertTrue(!area.isWithin(p1));
+    // Approximate point the same
+    assertTrue(!area.isWithin(p2));
+    
+    // Eleventh BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,-0.004431288600558495,-0.003687846671278374,1.704543429364245E-8);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
 
+    // Tenth BKD discovered failure
+    c = new GeoCircle(PlanetModel.WGS84,-0.0018829770647349636,-0.001969499061382591,1.3045439293158305E-5);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+
+    // Ninth BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,-4.211990380885122E-5,-0.0022958453508173044,1.4318475623498535E-5);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+    
+    // Eighth BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,0.005321278689117842,-0.00216937368755372,1.5306034422500785E-4);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+
+    // Seventh BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE,-0.0021627146783861745, -0.0017298167021592304,2.0818312293195752E-4);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    //System.err.println(area);
+    relationship = area.getRelationship(c);
+    assertTrue(GeoArea.WITHIN == relationship || GeoArea.OVERLAPS == relationship);
+
+    // Sixth BKD discovered failure
+    c = new GeoCircle(PlanetModel.WGS84,-0.006450320645814321,0.004660694205115142,0.00489710732634323);
+    //xyzb = new XYZBounds();
+    //c.getBounds(xyzb);
+    //System.err.println("xmin="+xyzb.getMinimumX()+", xmax="+xyzb.getMaximumX()+",ymin="+xyzb.getMinimumY()+", ymax="+xyzb.getMaximumY()+",zmin="+xyzb.getMinimumZ()+", zmax="+xyzb.getMaximumZ());
+    //xmin=1.0010356621420726, xmax=1.0011141249179447,ymin=-2.5326643901354566E-4, ymax=0.009584741915757169,zmin=-0.011359874956269283, zmax=-0.0015549504447452225
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,1.0010822580620098,1.0010945779732867,0.007079167343247293,0.007541006774427837,-0.0021855011220022575,-0.001896122718181518);
+    assertTrue(GeoArea.CONTAINS != area.getRelationship(c));
+    /*
+    p1 = new GeoPoint(1.0010893045436076,0.007380935180644008,-0.002140671370616495);
+    // This has a different bounding box, so we can't use it.
+    //p2 = new GeoPoint(PlanetModel.WGS84,-0.002164069780096702, 0.007505617500830066);
+    p2 = new GeoPoint(PlanetModel.WGS84,p1.getLatitude(),p1.getLongitude());
+    assertTrue(PlanetModel.WGS84.pointOnSurface(p2));
+    assertTrue(!c.isWithin(p2));
+    assertTrue(!area.isWithin(p2));
+    assertTrue(!c.isWithin(p1));
+    assertTrue(PlanetModel.WGS84.pointOnSurface(p1)); // This fails
+    assertTrue(!area.isWithin(p1)); // This fails
+    */
+    
+    // Fifth BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE, -0.004282454525970269, -1.6739831367422277E-4, 1.959639723134033E-6);
+    assertTrue(c.isWithin(c.getEdgePoints()[0]));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    assertTrue(GeoArea.WITHIN == area.getRelationship(c) || GeoArea.OVERLAPS == area.getRelationship(c));
+    
+    // Fourth BKD discovered failure
+    c = new GeoCircle(PlanetModel.SPHERE, -0.0048795517261255, 0.004053904306995974, 5.93699764258874E-6);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    assertTrue(GeoArea.WITHIN == area.getRelationship(c) || GeoArea.OVERLAPS == area.getRelationship(c));
+    
+    // Yet another test case from BKD
+    c = new GeoCircle(PlanetModel.WGS84, 0.006229478708446979, 0.005570196723795424, 3.840276763694387E-5);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    p1 = new GeoPoint(PlanetModel.WGS84, 0.006224927111830945, 0.005597367237251763);
+    p2 = new GeoPoint(1.0010836083810235, 0.005603490759433942, 0.006231850560862502);
+    assertTrue(PlanetModel.WGS84.pointOnSurface(p1));
+    //assertTrue(PlanetModel.WGS84.pointOnSurface(p2));
+    assertTrue(c.isWithin(p1));
+    assertTrue(c.isWithin(p2));
+    assertTrue(area.isWithin(p1));
+    assertTrue(area.isWithin(p2));
+    
+    // Another test case from BKD
+    c = new GeoCircle(PlanetModel.SPHERE, -0.005955031040627789, -0.0029274772647399153, 1.601488279374338E-5);
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE,
+      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
+    
+    relationship = area.getRelationship(c);
+    assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
+    
+    // Test case from BKD
+    c = new GeoCircle(PlanetModel.SPHERE, -0.765816119338, 0.991848766844, 0.8153163226330487);
+    p1 = new GeoPoint(0.7692262265236023, -0.055089298115534646, -0.6365973465711254);
+    assertTrue(c.isWithin(p1));
+    xyzb = new XYZBounds();
+    c.getBounds(xyzb);
+    assertTrue(p1.x >= xyzb.getMinimumX() && p1.x <= xyzb.getMaximumX());
+    assertTrue(p1.y >= xyzb.getMinimumY() && p1.y <= xyzb.getMaximumY());
+    assertTrue(p1.z >= xyzb.getMinimumZ() && p1.z <= xyzb.getMaximumZ());
+    
     // Vertical circle cases
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -107,7 +254,8 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -116,7 +264,8 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -125,7 +274,8 @@ public class GeoCircleTest {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -135,13 +285,15 @@ public class GeoCircleTest {
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
     // Horizontal circle cases
     c = new GeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertTrue(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
     assertEquals(Math.PI * 0.5 - 0.1, b.getMinLatitude(), 0.000001);
     c = new GeoCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertTrue(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertTrue(b.checkNoBottomLatitudeBound());
@@ -149,7 +301,8 @@ public class GeoCircleTest {
 
     // Now do a somewhat tilted plane, facing different directions.
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, 0.0, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -159,7 +312,8 @@ public class GeoCircleTest {
     assertEquals(0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -169,7 +323,8 @@ public class GeoCircleTest {
     assertEquals(-Math.PI + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI * 0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -179,7 +334,8 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.5 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, -Math.PI * 0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -190,7 +346,8 @@ public class GeoCircleTest {
 
     // Slightly tilted, PI/4 direction.
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -200,7 +357,8 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, -Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -210,7 +368,8 @@ public class GeoCircleTest {
     assertEquals(-Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, -0.01, Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -220,7 +379,8 @@ public class GeoCircleTest {
     assertEquals(Math.PI * 0.25 + 0.1, b.getRightLongitude(), 0.00001);
 
     c = new GeoCircle(PlanetModel.SPHERE, -0.01, -Math.PI * 0.25, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
@@ -231,7 +391,8 @@ public class GeoCircleTest {
 
     // Now do a somewhat tilted plane.
     c = new GeoCircle(PlanetModel.SPHERE, 0.01, -0.5, 0.1);
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());

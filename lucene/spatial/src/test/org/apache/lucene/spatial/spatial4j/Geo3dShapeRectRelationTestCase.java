@@ -26,7 +26,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
-import org.apache.lucene.geo3d.Bounds;
+import org.apache.lucene.geo3d.LatLonBounds;
 import org.apache.lucene.geo3d.GeoBBox;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
 import org.apache.lucene.geo3d.GeoCircle;
@@ -58,30 +58,31 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
   }
 
   protected GeoBBox getBoundingBox(final GeoShape path) {
-      Bounds bounds = path.getBounds(null);
+    LatLonBounds bounds = new LatLonBounds();
+    path.getBounds(bounds);
 
-      double leftLon;
-      double rightLon;
-      if (bounds.checkNoLongitudeBound()) {
-        leftLon = -Math.PI;
-        rightLon = Math.PI;
-      } else {
-        leftLon = bounds.getLeftLongitude().doubleValue();
-        rightLon = bounds.getRightLongitude().doubleValue();
-      }
-      double minLat;
-      if (bounds.checkNoBottomLatitudeBound()) {
-        minLat = -Math.PI * 0.5;
-      } else {
-        minLat = bounds.getMinLatitude().doubleValue();
-      }
-      double maxLat;
-      if (bounds.checkNoTopLatitudeBound()) {
-        maxLat = Math.PI * 0.5;
-      } else {
-        maxLat = bounds.getMaxLatitude().doubleValue();
-      }
-      return GeoBBoxFactory.makeGeoBBox(planetModel, maxLat, minLat, leftLon, rightLon);
+    double leftLon;
+    double rightLon;
+    if (bounds.checkNoLongitudeBound()) {
+      leftLon = -Math.PI;
+      rightLon = Math.PI;
+    } else {
+      leftLon = bounds.getLeftLongitude().doubleValue();
+      rightLon = bounds.getRightLongitude().doubleValue();
+    }
+    double minLat;
+    if (bounds.checkNoBottomLatitudeBound()) {
+      minLat = -Math.PI * 0.5;
+    } else {
+      minLat = bounds.getMinLatitude().doubleValue();
+    }
+    double maxLat;
+    if (bounds.checkNoTopLatitudeBound()) {
+      maxLat = Math.PI * 0.5;
+    } else {
+      maxLat = bounds.getMaxLatitude().doubleValue();
+    }
+    return GeoBBoxFactory.makeGeoBBox(planetModel, maxLat, minLat, leftLon, rightLon);
   }
 
   abstract class Geo3dRectIntersectionTestHelper extends RectIntersectionTestHelper<Geo3dShape> {

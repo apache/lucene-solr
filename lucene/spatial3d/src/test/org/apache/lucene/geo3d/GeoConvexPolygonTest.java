@@ -70,7 +70,7 @@ public class GeoConvexPolygonTest {
   @Test
   public void testPolygonBounds() {
     GeoConvexPolygon c;
-    Bounds b;
+    LatLonBounds b;
 
     c = new GeoConvexPolygon(PlanetModel.SPHERE, -0.1, -0.5);
     c.addPoint(0.0, -0.6, false);
@@ -78,7 +78,8 @@ public class GeoConvexPolygonTest {
     c.addPoint(0.0, -0.4, false);
     c.done(false);
 
-    b = c.getBounds(null);
+    b = new LatLonBounds();
+    c.getBounds(b);
     assertFalse(b.checkNoLongitudeBound());
     assertFalse(b.checkNoTopLatitudeBound());
     assertFalse(b.checkNoBottomLatitudeBound());
