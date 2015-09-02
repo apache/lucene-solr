@@ -144,6 +144,8 @@ New Features
 
 * SOLR-4316: Add a collections dropdown to angular admin UI (Upayavira, Shalin Shekhar Mangar)
 
+* SOLR-7915: Provide pluggable context tool support for VelocityResponseWriter (Erik Hatcher)
+
 Bug Fixes
 ----------------------
 

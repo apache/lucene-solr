@@ -35,4 +35,20 @@
   <queryResponseWriter name="velocityWithInitProps" class="solr.VelocityResponseWriter">
     <str name="init.properties.file">velocity-init.properties</str>
   </queryResponseWriter>
+
+  <queryResponseWriter name="velocityWithCustomTools" class="solr.VelocityResponseWriter">
+    <!-- Enable params resource loader to make tests leaner, no external template needed -->
+    <bool name="params.resource.loader.enabled">true</bool>
+
+    <lst name="tools">
+      <!-- how someone would typically add a custom tool, with a custom, non-clashing name -->
+      <str name="mytool">org.apache.solr.velocity.MockTool</str>
+
+      <!-- override the $log context object -->
+      <str name="log">org.apache.solr.velocity.MockTool</str>
+
+      <!-- Try to override response, but ignored -->
+      <str name="response">org.apache.solr.velocity.MockTool</str>
+    </lst>
+  </queryResponseWriter>
 </config>
