@@ -59,8 +59,8 @@ public class BoostingQuery extends Query {
       if (needsScores == false) {
         return match.createWeight(searcher, needsScores);
       }
-      final Weight matchWeight = match.createWeight(searcher, needsScores);
-      final Weight contextWeight = context.createWeight(searcher, false);
+      final Weight matchWeight = searcher.createWeight(match, needsScores);
+      final Weight contextWeight = searcher.createWeight(context, false);
       return new Weight(this) {
 
         @Override

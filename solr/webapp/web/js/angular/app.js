@@ -63,6 +63,10 @@ solrAdminApp.config([
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
       }).
+      when('/:core/collection-overview', {
+        templateUrl: 'partials/collection_overview.html',
+        controller: 'CollectionOverviewController'
+      }).
       when('/:core/analysis', {
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
@@ -121,6 +125,11 @@ solrAdminApp.config([
         redirectTo: '/'
       });
 }])
+.constant('Constants', {
+  IS_ROOT_PAGE: 1,
+  IS_CORE_PAGE: 2,
+  IS_COLLECTION_PAGE: 3
+})
 .filter('highlight', function($sce) {
   return function(input, lang) {
     if (lang && input && lang!="text") return hljs.highlight(lang, input).value;
@@ -319,9 +328,17 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, System, Ping) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants) {
+
   $rootScope.hideException = function() {delete $rootScope.exception};
+
   $scope.refresh = function() {
+      $scope.cores = [];
+      $scope.collections = [];
+  }
+
+  $scope.refresh();
+  $scope.resetMenu = function(page, pageType) {
     Cores.list(function(data) {
       $scope.cores = [];
       var currentCoreName = $route.current.params.core;
@@ -329,22 +346,35 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       for (key in data.status) {
         var core = data.status[key];
         $scope.cores.push(core);
-        if (core.name == currentCoreName) {
+        if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
             $scope.currentCore = core;
         }
       }
     });
-    System.get(function(data) {
-      $scope.isCloudEnabled = data.mode.match( /solrcloud/i )
-    });
-  };
-  $scope.refresh();
 
-  $scope.resetMenu = function(page, isMainPage) {
+    System.get(function(data) {
+      $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
+
+      if ($scope.isCloudEnabled) {
+        Collections.list(function (data) {
+          $scope.collections = [];
+          var currentCollectionName = $route.current.params.core;
+          delete $scope.currentCollection;
+          for (key in data.collections) {
+            var collection = {name: data.collections[key]};
+            $scope.collections.push(collection);
+            if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
+              $scope.currentCollection = collection;
+            }
+          }
+        })
+      }
+
+    });
+
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
-    if (isMainPage) delete $scope.currentCore;
   };
 
   $scope.ping = function() {
@@ -357,8 +387,16 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   $scope.dumpCloud = function() {
       $scope.$broadcast("cloud-dump");
   }
-});
 
+  $scope.showCore = function(core) {
+    $location.url("/" + core.name);
+  }
+
+  $scope.showCollection = function(collection) {
+    $location.url("/" + collection.name + "/collection-overview")
+  }
+
+});
 
 
 (function(window, angular, undefined) {

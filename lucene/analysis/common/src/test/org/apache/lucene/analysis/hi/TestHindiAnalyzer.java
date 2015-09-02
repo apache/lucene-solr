@@ -3,6 +3,7 @@ package org.apache.lucene.analysis.hi;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -44,6 +45,27 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new HindiAnalyzer( 
         HindiAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "हिंदी", "हिंदी");
+    a.close();
+  }
+  
+  /**
+   * test we fold digits to latin-1
+   */
+  public void testDigits() throws Exception {
+    HindiAnalyzer a = new HindiAnalyzer();
+    checkOneTerm(a, "१२३४", "1234");
+    a.close();
+  }
+  
+  /**
+   * test that we don't fold digits for back compat behavior
+   * @deprecated remove this test in lucene 7
+   */
+  @Deprecated
+  public void testDigitsBackCompat() throws Exception {
+    HindiAnalyzer a = new HindiAnalyzer();
+    a.setVersion(Version.LUCENE_5_3_0);
+    checkOneTerm(a, "१२३४", "१२३४");
     a.close();
   }
   

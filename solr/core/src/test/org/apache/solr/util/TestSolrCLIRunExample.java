@@ -158,34 +158,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         }
       } else {
         String cmdLine = joinArgs(cmd.getArguments());
-        if (cmdLine.indexOf("post.jar") != -1) {
-          // invocation of the post.jar file ... we'll just hit the SimplePostTool directly vs. trying to invoke another JVM
-          List<String> argsToSimplePostTool = new ArrayList<String>();
-          boolean afterPostJarArg = false;
-          for (String arg : cmd.getArguments()) {
-            if (arg.startsWith("-D")) {
-              arg = arg.substring(2);
-              int eqPos = arg.indexOf("=");
-              System.setProperty(arg.substring(0,eqPos), arg.substring(eqPos+1));
-            } else {
-              if (arg.endsWith("post.jar")) {
-                afterPostJarArg = true;
-              } else {
-                if (afterPostJarArg) {
-                  argsToSimplePostTool.add(arg);
-                }
-              }
-            }
-          }
-          SimplePostTool.main(argsToSimplePostTool.toArray(new String[0]));
-        } else {
-          log.info("Executing command: "+cmdLine);
-          try {
-            return super.execute(cmd);
-          } catch (Exception exc) {
-            log.error("Execute command ["+cmdLine+"] failed due to: "+exc, exc);
-            throw exc;
-          }
+        log.info("Executing command: "+cmdLine);
+        try {
+          return super.execute(cmd);
+        } catch (Exception exc) {
+          log.error("Execute command ["+cmdLine+"] failed due to: "+exc, exc);
+          throw exc;
         }
       }
 
@@ -367,7 +345,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       SolrQuery query = new SolrQuery("*:*");
       QueryResponse qr = solrClient.query(query);
       long numFound = qr.getResults().getNumFound();
-      assertTrue("expected 32 docs in the "+exampleName+" example but found " + numFound + ", output: " + toolOutput,
+      if (numFound == 0) {
+        // brief wait in case of timing issue in getting the new docs committed
+        log.warn("Going to wait for 1 second before re-trying query for techproduct example docs ...");
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException ignore) {
+          Thread.interrupted();
+        }
+        numFound = solrClient.query(query).getResults().getNumFound();
+      }
+      assertTrue("expected 32 docs in the " + exampleName + " example but found " + numFound + ", output: " + toolOutput,
           numFound == 32);
     }
 

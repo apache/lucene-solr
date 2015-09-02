@@ -16,8 +16,8 @@
 */
 
 solrAdminApp.controller('ReplicationController',
-    function($scope, $rootScope, $routeParams, $interval, $timeout, Replication) {
-        $scope.resetMenu("replication");
+    function($scope, $rootScope, $routeParams, $interval, $timeout, Replication, Constants) {
+        $scope.resetMenu("replication", Constants.IS_CORE_PAGE);
 
         $scope.iterationCount = 1;
 

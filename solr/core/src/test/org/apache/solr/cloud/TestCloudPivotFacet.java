@@ -291,7 +291,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
   
   /**
-   * Recursive Helper method for asserting that pivot constraint counds match
+   * Recursive Helper method for asserting that pivot constraint counts match
    * results when filtering on those constraints. Returns the recursive depth reached 
    * (for sanity checking)
    */

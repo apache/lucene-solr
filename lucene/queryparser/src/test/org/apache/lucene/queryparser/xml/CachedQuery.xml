@@ -16,36 +16,36 @@
  limitations under the License.
 -->
 <BooleanQuery fieldName="contents">
-	<Clause occurs="should">
-		<TermQuery>merger</TermQuery>
-	</Clause>
-	<Clause occurs="mustnot">
-		<TermQuery >sumitomo</TermQuery>		
-	</Clause>
-	<Clause occurs="filter">
-		<!--
-			CachedFilter elements can contain any Query or Filter. 
-			CachedFilters are cached in an LRU Cache keyed on the contained query/filter object. 
-			Using this will speed up overall performance for repeated uses of the same expensive 
-			query/filter. The sorts of queries likely to benefit from caching need not necessarily be 
-			complex - e.g. simple TermQuerys with a large DF (document frequency) can be expensive
-			on large indexes. A good example of this might be a term query on a field with only 2 possible 
-			values - "true" or "false". In a large index, querying or filtering on this field requires 
-			reading millions of document ids from disk which can more usefully be cached as a 
-			QueryFilter bitset.
-			
-			For Queries/Filters to be cached and reused the object must implement hashcode and
-			equals methods correctly so that duplicate queries/filters can be detected in the cache.
-			
-			The CoreParser.maxNumCachedFilters property can be used to control the size
-			of the LRU Cache established during the construction of CoreParser instances.
-			-->
-		<CachedQuery>
-			<!-- Example query to be cached for fast, repeated use -->
-			<TermQuery fieldName="contents">bank</TermQuery> 
-			<!-- Alternatively, a filter object can be cached ....
-				<RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
-			-->				
-		</CachedQuery>
-	</Clause>
+  <Clause occurs="should">
+    <TermQuery>merger</TermQuery>
+  </Clause>
+  <Clause occurs="mustnot">
+    <TermQuery >sumitomo</TermQuery>    
+  </Clause>
+  <Clause occurs="filter">
+    <!--
+      CachedFilter elements can contain any Query or Filter. 
+      CachedFilters are cached in an LRU Cache keyed on the contained query/filter object. 
+      Using this will speed up overall performance for repeated uses of the same expensive 
+      query/filter. The sorts of queries likely to benefit from caching need not necessarily be 
+      complex - e.g. simple TermQuerys with a large DF (document frequency) can be expensive
+      on large indexes. A good example of this might be a term query on a field with only 2 possible 
+      values - "true" or "false". In a large index, querying or filtering on this field requires 
+      reading millions of document ids from disk which can more usefully be cached as a 
+      QueryFilter bitset.
+      
+      For Queries/Filters to be cached and reused the object must implement hashcode and
+      equals methods correctly so that duplicate queries/filters can be detected in the cache.
+      
+      The CoreParser.maxNumCachedFilters property can be used to control the size
+      of the LRU Cache established during the construction of CoreParser instances.
+      -->
+    <CachedQuery>
+      <!-- Example query to be cached for fast, repeated use -->
+      <TermQuery fieldName="contents">bank</TermQuery> 
+      <!-- Alternatively, a filter object can be cached ....
+        <RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
+      -->        
+    </CachedQuery>
+  </Clause>
 </BooleanQuery>

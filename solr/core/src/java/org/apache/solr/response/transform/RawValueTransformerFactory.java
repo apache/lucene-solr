@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -108,7 +107,7 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid) {
+    public void transform(SolrDocument doc, int docid, float score) {
       Object val = doc.remove(field);
       if(val==null) {
         return;

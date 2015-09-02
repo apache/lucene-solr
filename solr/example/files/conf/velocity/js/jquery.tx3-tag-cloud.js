@@ -8,25 +8,25 @@
  */
 (function($)
 {
-	var settings;
+  var settings;
     $.fn.tx3TagCloud = function(options)
     {
 
-    	//
-    	// DEFAULT SETTINGS
-    	//
-    	settings = $.extend({
-    		multiplier		: 1
-    	}, options);
-    	main(this);
+      //
+      // DEFAULT SETTINGS
+      //
+      settings = $.extend({
+        multiplier    : 1
+      }, options);
+      main(this);
 
     }
 
     function main(element)
     {
-    	// adding style attr
-    	element.addClass("tx3-tag-cloud");
-    	addListElementFontSize(element);
+      // adding style attr
+      element.addClass("tx3-tag-cloud");
+      addListElementFontSize(element);
     }
 
     /**
@@ -35,36 +35,36 @@
      */
     function addListElementFontSize(element)
     {
-    	var hDataWeight = -9007199254740992;
-    	var lDataWeight = 9007199254740992;
-    	$.each(element.find("li"), function(){
-    		cDataWeight = getDataWeight(this);
-    		if (cDataWeight == undefined)
-    		{
-    			logWarning("No \"data-weight\" attribut defined on <li> element");
-    		}
-    		else
-    		{
-    			hDataWeight = cDataWeight > hDataWeight ? cDataWeight : hDataWeight;
-    			lDataWeight = cDataWeight < lDataWeight ? cDataWeight : lDataWeight;
-    		}
-    	});
-    	$.each(element.find("li"), function(){
-    		var dataWeight = getDataWeight(this);
-    		var percent = Math.abs((dataWeight - lDataWeight)/(lDataWeight - hDataWeight));
-    		$(this).css('font-size', (1 + (percent * settings['multiplier'])) + "em");
-    	});
+      var hDataWeight = -9007199254740992;
+      var lDataWeight = 9007199254740992;
+      $.each(element.find("li"), function(){
+        cDataWeight = getDataWeight(this);
+        if (cDataWeight == undefined)
+        {
+          logWarning("No \"data-weight\" attribut defined on <li> element");
+        }
+        else
+        {
+          hDataWeight = cDataWeight > hDataWeight ? cDataWeight : hDataWeight;
+          lDataWeight = cDataWeight < lDataWeight ? cDataWeight : lDataWeight;
+        }
+      });
+      $.each(element.find("li"), function(){
+        var dataWeight = getDataWeight(this);
+        var percent = Math.abs((dataWeight - lDataWeight)/(lDataWeight - hDataWeight));
+        $(this).css('font-size', (1 + (percent * settings['multiplier'])) + "em");
+      });
 
     }
 
     function getDataWeight(element)
     {
-    	return parseInt($(element).attr("data-weight"));
+      return parseInt($(element).attr("data-weight"));
     }
 
     function logWarning(message)
     {
-    	console.log("[WARNING] " + Date.now() + " : " + message);
+      console.log("[WARNING] " + Date.now() + " : " + message);
     }
 
 }(jQuery));

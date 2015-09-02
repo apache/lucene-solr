@@ -17,8 +17,8 @@
 
 var MB_FACTOR = 1024*1024;
 
-solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $interval, Segments) {
-    $scope.resetMenu("segments");
+solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $interval, Segments, Constants) {
+    $scope.resetMenu("segments", Constants.IS_CORE_PAGE);
 
     $scope.refresh = function() {
 

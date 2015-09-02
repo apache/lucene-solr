@@ -80,7 +80,13 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
 
     @Override
     public Fields fields() throws IOException {
-      return new ExitableFields(super.fields(), queryTimeout);
+      Fields fields = super.fields();
+      if (queryTimeout.isTimeoutEnabled()) {
+        return new ExitableFields(fields, queryTimeout);
+      }
+      else {
+        return fields;  // break out of wrapper as soon as possible
+      }
     }
     
     @Override

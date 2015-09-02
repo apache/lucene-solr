@@ -1,4 +1,4 @@
-/**
+/*
 The MIT License
 
 Copyright (c) 2010-2015 Google, Inc. http://angularjs.org

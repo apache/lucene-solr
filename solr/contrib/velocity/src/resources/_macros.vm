@@ -40,7 +40,7 @@
         #set($pad = " ... ")
       #end
   #else
-    #foreach($v in $doc.getFieldValues($f))$esc.html($v)#end
+    $esc.html($display.list($doc.getFieldValues($f), ", "))
   #end
 #end
 

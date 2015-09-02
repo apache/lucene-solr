@@ -1,5 +1,18 @@
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,7 +38,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.LeaderElector;
-import org.apache.solr.cloud.OverseerProcessor;
+import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -39,21 +52,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
-
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class RebalanceLeaders {
+  private static Logger log = LoggerFactory.getLogger(RebalanceLeaders.class);
+  
   final SolrQueryRequest req;
   final SolrQueryResponse rsp;
   final CollectionsHandler collectionsHandler;
@@ -72,7 +76,7 @@ class RebalanceLeaders {
     String collectionName = req.getParams().get(COLLECTION_PROP);
     if (StringUtils.isBlank(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "The " + COLLECTION_PROP + " is required for the REASSIGNLEADERS command."));
+          String.format(Locale.ROOT, "The " + COLLECTION_PROP + " is required for the Rebalance Leaders command."));
     }
     coreContainer.getZkController().getZkStateReader().updateClusterState();
     ClusterState clusterState = coreContainer.getZkController().getClusterState();
@@ -88,9 +92,9 @@ class RebalanceLeaders {
 
     boolean keepGoing = true;
     for (Slice slice : dc.getSlices()) {
-      insurePreferredIsLeader(results, slice, currentRequests);
+      ensurePreferredIsLeader(results, slice, currentRequests);
       if (currentRequests.size() == max) {
-        CollectionsHandler.log.info("Queued " + max + " leader reassignments, waiting for some to complete.");
+        log.info("Queued " + max + " leader reassignments, waiting for some to complete.");
         keepGoing = waitForLeaderChange(currentRequests, maxWaitSecs, false, results);
         if (keepGoing == false) {
           break; // If we've waited longer than specified, don't continue to wait!
@@ -101,15 +105,15 @@ class RebalanceLeaders {
       keepGoing = waitForLeaderChange(currentRequests, maxWaitSecs, true, results);
     }
     if (keepGoing == true) {
-      CollectionsHandler.log.info("All leader reassignments completed.");
+      log.info("All leader reassignments completed.");
     } else {
-      CollectionsHandler.log.warn("Exceeded specified timeout of ." + maxWaitSecs + "' all leaders may not have been reassigned");
+      log.warn("Exceeded specified timeout of ." + maxWaitSecs + "' all leaders may not have been reassigned");
     }
 
     rsp.getValues().addAll(results);
   }
 
-  private void insurePreferredIsLeader(NamedList<Object> results,
+  private void ensurePreferredIsLeader(NamedList<Object> results,
                                        Slice slice, Map<String, String> currentRequests) throws KeeperException, InterruptedException {
     final String inactivePreferreds = "inactivePreferreds";
     final String alreadyLeaders = "alreadyLeaders";
@@ -160,12 +164,12 @@ class RebalanceLeaders {
 
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
 
-      List<String> electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+      List<String> electionNodes = OverseerTaskProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
           ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
       if (electionNodes.size() < 2) { // if there's only one node in the queue, should already be leader and we shouldn't be here anyway.
-        CollectionsHandler.log.warn("Rebalancing leaders and slice " + slice.getName() + " has less than two elements in the leader " +
-            "election queue, but replica " + replica.getName() + " doesn't think it's the leader. Do nothing");
+        log.info("Rebalancing leaders and slice " + slice.getName() + " has less than two elements in the leader " +
+            "election queue, but replica " + replica.getName() + " doesn't think it's the leader.");
         return;
       }
 
@@ -193,7 +197,7 @@ class RebalanceLeaders {
       throws KeeperException, InterruptedException {
 
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-    List<String> electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+    List<String> electionNodes = OverseerTaskProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
         ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
     // First, queue up the preferred leader at the head of the queue.
@@ -210,12 +214,8 @@ class RebalanceLeaders {
       return; // let's not continue if we didn't get what we expect. Possibly we're offline etc..
     }
 
-    List<String> electionNodesTmp = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
-        ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
-
-
     // Now find other nodes that have the same sequence number as this node and re-queue them at the end of the queue.
-    electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+    electionNodes = OverseerTaskProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
         ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
 
     for (String thisNode : electionNodes) {
@@ -238,7 +238,7 @@ class RebalanceLeaders {
     int oldSeq = LeaderElector.getSeq(electionNode);
     for (int idx = 0; idx < 600; ++idx) {
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-      List<String> electionNodes = OverseerProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
+      List<String> electionNodes = OverseerTaskProcessor.getSortedElectionNodes(zkStateReader.getZkClient(),
           ZkStateReader.getShardLeadersElectPath(collectionName, slice.getName()));
       for (String testNode : electionNodes) {
         if (LeaderElector.getNodeName(testNode).equals(nodeName) && oldSeq != LeaderElector.getSeq(testNode)) {
@@ -250,6 +250,7 @@ class RebalanceLeaders {
     }
     return -1;
   }
+  
   private void rejoinElection(String collectionName, Slice slice, String electionNode, String core,
                               boolean rejoinAtHead) throws KeeperException, InterruptedException {
     Replica replica = slice.getReplica(LeaderElector.getNodeName(electionNode));
@@ -258,7 +259,7 @@ class RebalanceLeaders {
     propMap.put(SHARD_ID_PROP, slice.getName());
     propMap.put(QUEUE_OPERATION, REBALANCELEADERS.toLower());
     propMap.put(CORE_NAME_PROP, core);
-    propMap.put(NODE_NAME_PROP, replica.getName());
+    propMap.put(CORE_NODE_NAME_PROP, replica.getName());
     propMap.put(ZkStateReader.BASE_URL_PROP, replica.getProperties().get(ZkStateReader.BASE_URL_PROP));
     propMap.put(REJOIN_AT_HEAD_PROP, Boolean.toString(rejoinAtHead)); // Get ourselves to be first in line.
     propMap.put(ELECTION_NODE_PROP, electionNode);

@@ -49,6 +49,11 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
     return timeoutAt.get();
   }
 
+  @Override
+  public boolean isTimeoutEnabled() {
+    return get() != null;
+  }
+
   /**
    * Return true if a timeoutAt value is set and the current time has exceeded the set timeOut.
    */

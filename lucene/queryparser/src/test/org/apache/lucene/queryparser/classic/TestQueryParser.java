@@ -156,14 +156,13 @@ public class TestQueryParser extends QueryParserTestBase {
   @SuppressWarnings("rawtype")
   public void testProtectedCtors() throws Exception {
     try {
-      QueryParser.class.getConstructor(new Class[] {CharStream.class});
+      QueryParser.class.getConstructor(CharStream.class);
       fail("please switch public QueryParser(CharStream) to be protected");
     } catch (NoSuchMethodException nsme) {
       // expected
     }
     try {
-      QueryParser.class
-          .getConstructor(new Class[] {QueryParserTokenManager.class});
+      QueryParser.class.getConstructor(QueryParserTokenManager.class);
       fail("please switch public QueryParser(QueryParserTokenManager) to be protected");
     } catch (NoSuchMethodException nsme) {
       // expected

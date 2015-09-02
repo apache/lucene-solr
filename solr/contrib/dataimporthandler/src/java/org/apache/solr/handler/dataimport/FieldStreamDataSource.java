@@ -32,7 +32,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 /**
  * This can be useful for users who have a DB field containing BLOBs which may be Rich documents
  * <p>
- * The datasouce may be configured as follows
+ * The datasource may be configured as follows
  * <p>
  * &lt;dataSource name="f1" type="FieldStreamDataSource" /&gt;
  * <p>

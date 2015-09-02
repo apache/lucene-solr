@@ -17,13 +17,6 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.Utils;
-import org.noggit.JSONWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,6 +25,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.Watcher;
+import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
@@ -110,8 +111,16 @@ public class ClusterState implements JSONWriter.Writable {
     return null;
   }
 
-  public boolean hasCollection(String coll) {
-    return  collectionStates.containsKey(coll) ;
+  /**
+   * Returns true if the specified collection name exists, false otherwise.
+   *
+   * Implementation note: This method resolves the collection reference by calling
+   * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
+   * because the semantics of how collection list is loaded have changed in SOLR-6629.
+   * Please javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
+   */
+  public boolean hasCollection(String collectionName) {
+    return getCollectionOrNull(collectionName) != null;
   }
 
   /**
@@ -170,18 +179,37 @@ public class ClusterState implements JSONWriter.Writable {
     return  collectionStates.get(coll);
   }
 
-  public DocCollection getCollectionOrNull(String coll) {
-    CollectionRef ref = collectionStates.get(coll);
-    return ref == null? null:ref.get();
+  /**
+   * Returns the corresponding {@link DocCollection} object for the given collection name
+   * if such a collection exists. Returns null otherwise.
+   *
+   * Implementation note: This method resolves the collection reference by calling
+   * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
+   * because the semantics of how collection list is loaded have changed in SOLR-6629.
+   * Please javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
+   */
+  public DocCollection getCollectionOrNull(String collectionName) {
+    CollectionRef ref = collectionStates.get(collectionName);
+    return ref == null ? null : ref.get();
   }
 
   /**
    * Get collection names.
+   *
+   * Implementation note: This method resolves the collection reference by calling
+   * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
+   * because the semantics of how collection list is loaded have changed in SOLR-6629.
+   * Please javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public Set<String> getCollections() {
-    return collectionStates.keySet();
+    Set<String> result = new HashSet<>();
+    for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
+      if (entry.getValue().get() != null) {
+        result.add(entry.getKey());
+      }
+    }
+    return result;
   }
-
 
   /**
    * Get names of the currently live nodes.

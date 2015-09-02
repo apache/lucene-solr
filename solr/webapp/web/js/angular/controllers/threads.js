@@ -16,9 +16,8 @@
 */
 
 solrAdminApp.controller('ThreadsController',
-  ["$scope", "Threads",
-  function($scope, Threads){
-    $scope.resetMenu("threads", true);
+  function($scope, Threads, Constants){
+    $scope.resetMenu("threads", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
       Threads.get(function(data) {
         var threadDump = data.system.threadDump;
@@ -48,4 +47,4 @@ solrAdminApp.controller('ThreadsController',
       }
     };
     $scope.refresh();
-}]);
+});

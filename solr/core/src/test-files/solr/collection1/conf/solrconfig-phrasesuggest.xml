@@ -150,7 +150,7 @@
       <!-- Suggester properties -->
       <str name="separator"> </str>
       <str name="suggestFreeTextAnalyzerFieldType">text</str>
-	  <int name="ngrams">2</int>
+    <int name="ngrams">2</int>
     </lst>
     
   </searchComponent>

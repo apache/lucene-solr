@@ -18,7 +18,6 @@
 package org.apache.solr.response;
 
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.common.SolrDocumentList;
@@ -50,7 +49,7 @@ public class PageTool {
         results_found = doc_slice.matches();
         start = doc_slice.offset();
       } else if(docs instanceof ResultContext) {
-        DocList dl = ((ResultContext) docs).docs;
+        DocList dl = ((ResultContext) docs).getDocList();
         results_found = dl.matches();
         start = dl.offset();
       } else if(docs instanceof SolrDocumentList) {

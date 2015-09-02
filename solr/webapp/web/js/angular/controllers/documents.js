@@ -24,8 +24,8 @@ var DOC_PLACEHOLDER = '<doc>\n' +
 var ADD_PLACEHOLDER = '<add>\n' + DOC_PLACEHOLDER + '</add>\n';
 
 solrAdminApp.controller('DocumentsController',
-    function($scope, $rootScope, $routeParams, $location, Luke, Update, FileUpload) {
-        $scope.resetMenu("documents");
+    function($scope, $rootScope, $routeParams, $location, Luke, Update, FileUpload, Constants) {
+        $scope.resetMenu("documents", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
             Luke.schema({core: $routeParams.core}, function(data) {

@@ -17,26 +17,32 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.PrintStreamInfoStream;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Path;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /** Base class for per-LockFactory tests. */
 public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
@@ -186,6 +192,16 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
       this.numIteration = numIteration;
       this.dir = dir;
     }
+
+    private String toString(ByteArrayOutputStream baos) {
+      try {
+        return baos.toString("UTF8");
+      } catch (UnsupportedEncodingException uee) {
+        // shouldn't happen
+        throw new RuntimeException(uee);
+      }
+    }
+  
     @Override
     public void run() {
       IndexWriter writer = null;
@@ -193,8 +209,20 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: WriterThread iter=" + i);
         }
+
+        IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+
+        // We only print the IW infoStream output on exc, below:
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-          writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+          iwc.setInfoStream(new PrintStreamInfoStream(new PrintStream(baos, true, "UTF8")));
+        } catch (UnsupportedEncodingException uee) {
+          // shouldn't happen
+          throw new RuntimeException(uee);
+        }
+        iwc.setOpenMode(OpenMode.APPEND);
+        try {
+          writer = new IndexWriter(dir, iwc);
         } catch (LockObtainFailedException e) {
           // lock obtain timed out
           // NOTE: we should at some point
@@ -202,27 +230,37 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
           // obtains, across IndexReader &
           // IndexWriters should be "fair" (ie
           // FIFO).
-        } catch (Exception e) {
-          hitException = true;
-          System.out.println("Stress Test Index Writer: creation hit unexpected exception: " + e.toString());
-          e.printStackTrace(System.out);
+        } catch (Throwable t) {
+          if (Constants.WINDOWS && t instanceof AccessDeniedException) {
+            // LUCENE-6684: suppress this: on Windows, a file in the curious "pending delete" state can
+            // cause this exc on IW init, where one thread/process deleted an old
+            // segments_N, but the delete hasn't finished yet because other threads/processes
+            // still have it open
+          } else {
+            hitException = true;
+            System.out.println("Stress Test Index Writer: creation hit unexpected exception: " + t.toString());
+            t.printStackTrace(System.out);
+            System.out.println(toString(baos));
+          }
           break;
         }
         if (writer != null) {
           try {
             addDoc(writer);
-          } catch (IOException e) {
+          } catch (Throwable t) {
             hitException = true;
-            System.out.println("Stress Test Index Writer: addDoc hit unexpected exception: " + e.toString());
-            e.printStackTrace(System.out);
+            System.out.println("Stress Test Index Writer: addDoc hit unexpected exception: " + t.toString());
+            t.printStackTrace(System.out);
+            System.out.println(toString(baos));
             break;
           }
           try {
             writer.close();
-          } catch (IOException e) {
+          } catch (Throwable t) {
             hitException = true;
-            System.out.println("Stress Test Index Writer: close hit unexpected exception: " + e.toString());
-            e.printStackTrace(System.out);
+            System.out.println("Stress Test Index Writer: close hit unexpected exception: " + t.toString());
+            t.printStackTrace(System.out);
+            System.out.println(toString(baos));
             break;
           }
           writer = null;
@@ -230,7 +268,7 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
       }
     }
   }
-  
+
   private class SearcherThread extends Thread { 
     private Directory dir;
     private int numIteration;

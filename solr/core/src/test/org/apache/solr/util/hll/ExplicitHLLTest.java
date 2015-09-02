@@ -22,7 +22,7 @@ import java.util.HashSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-import com.carrotsearch.hppc.LongOpenHashSet;
+import com.carrotsearch.hppc.LongHashSet;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
 
@@ -214,8 +214,8 @@ public class ExplicitHLLTest extends LuceneTestCase {
      * Asserts that values in both sets are exactly equal.
      */
     private static void assertElementsEqual(final HLL hllA, final HLL hllB) {
-        final LongOpenHashSet internalSetA = hllA.explicitStorage;
-        final LongOpenHashSet internalSetB = hllB.explicitStorage;
+        final LongHashSet internalSetA = hllA.explicitStorage;
+        final LongHashSet internalSetB = hllB.explicitStorage;
 
         assertTrue(internalSetA.equals(internalSetB));
     }

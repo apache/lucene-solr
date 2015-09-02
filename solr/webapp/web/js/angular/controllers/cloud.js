@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper) {
+    function($scope, $location, Zookeeper, Constants) {
 
         $scope.showDebug = false;
 
@@ -30,13 +30,13 @@ solrAdminApp.controller('CloudController',
 
         var view = $location.search().view ? $location.search().view : "graph";
         if (view == "tree") {
-            $scope.resetMenu("cloud-tree", true);
+            $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
             treeSubController($scope, Zookeeper);
         } else if (view == "rgraph") {
-            $scope.resetMenu("cloud-rgraph", true);
+            $scope.resetMenu("cloud-rgraph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, true);
         } else if (view == "graph") {
-            $scope.resetMenu("cloud-graph", true);
+            $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, false);
         }
     }

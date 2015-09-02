@@ -123,9 +123,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     // We rely on docID order:
     iwc.setMergePolicy(newLogMergePolicy());
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
-    Codec codec = TestUtil.alwaysDocValuesFormat(new RangeTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap));
+    Codec codec = TestUtil.alwaysDocValuesFormat(getDocValuesFormat());
     iwc.setCodec(codec);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
@@ -210,9 +208,7 @@ public class TestRangeTree extends LuceneTestCase {
 
     // We rely on docID order:
     iwc.setMergePolicy(newLogMergePolicy());
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), 1024, 1024*1024);
-    Codec codec = TestUtil.alwaysDocValuesFormat(new RangeTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap));
+    Codec codec = TestUtil.alwaysDocValuesFormat(getDocValuesFormat());
     iwc.setCodec(codec);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
@@ -353,8 +349,6 @@ public class TestRangeTree extends LuceneTestCase {
   }
 
   private static void verify(Bits missing, long[] values) throws Exception {
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
 
     // Else we can get O(N^2) merging:
@@ -362,7 +356,7 @@ public class TestRangeTree extends LuceneTestCase {
     if (mbd != -1 && mbd < values.length/100) {
       iwc.setMaxBufferedDocs(values.length/100);
     }
-    final DocValuesFormat dvFormat = new RangeTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
+    final DocValuesFormat dvFormat = getDocValuesFormat();
     Codec codec = new Lucene53Codec() {
         @Override
         public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -768,4 +762,10 @@ public class TestRangeTree extends LuceneTestCase {
     return v ^ 0x8000000000000000L;
   }
   */
+
+  private static DocValuesFormat getDocValuesFormat() {
+    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
+    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
+    return new RangeTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
+  }
 }

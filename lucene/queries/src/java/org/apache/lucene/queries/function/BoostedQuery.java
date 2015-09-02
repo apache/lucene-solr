@@ -32,7 +32,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -74,7 +73,7 @@ public class BoostedQuery extends Query {
     public BoostedWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       super(BoostedQuery.this);
       this.searcher = searcher;
-      this.qWeight = q.createWeight(searcher, needsScores);
+      this.qWeight = searcher.createWeight(q, needsScores);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
     }

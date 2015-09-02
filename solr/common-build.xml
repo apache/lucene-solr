@@ -76,21 +76,21 @@
   <property name="fullnamever" value="${final.name}"/>
 
   <path id="additional.dependencies">
-  	<fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
-  	<fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
-  	<fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
-  	<fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>  	
-  	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
+    <fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>    
+    <fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
 
   <path id="solr.lucene.libs">
     <!-- List of jars that will be used as the foundation for both
          the base classpath, as well as copied into the lucene-libs dir 
-	 in the release.
+         in the release.
     -->
     <!-- NOTE: lucene-core is explicitly not included because of the 
-	 base.classpath (compilation & tests are done directly against   
-	 the class files w/o needing to build the jar)
+         base.classpath (compilation & tests are done directly against   
+         the class files w/o needing to build the jar)
     -->
     <pathelement location="${analyzers-common.jar}"/>
     <pathelement location="${analyzers-kuromoji.jar}"/>
@@ -128,8 +128,8 @@
       <exclude name="randomizedtesting-runner-*.jar" />
       <exclude name="ant*.jar" />
     </fileset>
-  	<pathelement path="src/test-files"/>
-  	<path refid="test.base.classpath"/>
+    <pathelement path="src/test-files"/>
+    <path refid="test.base.classpath"/>
   </path>
  
   <path id="test.classpath" refid="solr.test.base.classpath"/>
@@ -168,11 +168,11 @@
   </target>
 
   <target name="prep-lucene-jars" 
-  	      depends="jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
-  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox">
-  	  <property name="solr.deps.compiled" value="true"/>
+          depends="jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
+                   jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox">
+      <property name="solr.deps.compiled" value="true"/>
   </target>
-	
+  
   <target name="lucene-jars-to-solr" 
           depends="-lucene-jars-to-solr-not-for-package,-lucene-jars-to-solr-package"/>
   
@@ -249,7 +249,7 @@
 
   <!-- create javadocs for the current module -->
   <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solr-core,check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
-   	<sequential>
+     <sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>
         <solrsources>
@@ -424,7 +424,7 @@
     <ant dir="${common-solr.dir}/test-framework" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-  	<property name="solr.core.compiled" value="true"/>
+    <property name="solr.core.compiled" value="true"/>
     <property name="solr.test.framework.compiled" value="true"/>
   </target>
 
@@ -469,15 +469,15 @@
   </target>
 
   <target name="compile-contrib" description="Compile contrib modules">
-  	<contrib-crawl target="compile-core"/>
+    <contrib-crawl target="compile-core"/>
   </target>
   
   <target name="compile-test-contrib" description="Compile contrib modules' tests">
-  	<contrib-crawl target="compile-test"/>
+    <contrib-crawl target="compile-test"/>
   </target>
 
   <target name="javadocs-contrib" description="Compile contrib modules">
-  	<contrib-crawl target="javadocs"/>
+    <contrib-crawl target="javadocs"/>
   </target>
 
   <target name="jar-contrib" description="Jar contrib modules">

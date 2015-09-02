@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -39,6 +41,15 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     policy.onUse(q1);
     policy.onUse(q2);
     assertEquals(2, policy.frequency(q3));
+  }
+
+  public void testNeverCacheMatchAll() throws Exception {
+    Query q = new MatchAllDocsQuery();
+    UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
+    for (int i = 0; i < 1000; ++i) {
+      policy.onUse(q);
+    }
+    assertFalse(policy.shouldCache(q, SlowCompositeReaderWrapper.wrap(new MultiReader()).getContext()));
   }
 
 }

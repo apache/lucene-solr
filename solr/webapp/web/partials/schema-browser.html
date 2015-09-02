@@ -112,6 +112,8 @@ limitations under the License.
           <div class="trigger">
 
             <button class="submit" ng-click="toggleTerms()"><span ng-class="{loader:isLoadingTerms}">Load Term Info</span></button>
+            <br/>
+            <span ng-show="isCloudEnabled">N.B. Loaded from a single core - not from the whole collection.</span>
 
             <a ng-show="showTerms" ng-click="toggleAutoload()" ng-class="{on:isAutoload}" class="autoload" title="Automatically load Term Info?"><span>Autoload</span></a>
 

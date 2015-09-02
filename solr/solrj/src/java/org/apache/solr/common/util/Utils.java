@@ -84,7 +84,7 @@ public class Utils {
   }
 
   public static byte[] toUTF8(CharArr out) {
-    byte[] arr = new byte[out.size() << 2]; // is 4x the real worst-case upper-bound?
+    byte[] arr = new byte[out.size() * 3];
     int nBytes = ByteUtils.UTF16toUTF8(out, 0, out.size(), arr, 0);
     return Arrays.copyOf(arr, nBytes);
   }

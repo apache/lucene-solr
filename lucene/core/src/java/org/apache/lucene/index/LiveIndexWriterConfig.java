@@ -380,8 +380,7 @@ public class LiveIndexWriterConfig {
   }
 
   /**
-   * Returns the indexing chain set on
-   * {@link IndexWriterConfig#setIndexingChain(IndexingChain)}.
+   * Returns the indexing chain.
    */
   IndexingChain getIndexingChain() {
     return indexingChain;

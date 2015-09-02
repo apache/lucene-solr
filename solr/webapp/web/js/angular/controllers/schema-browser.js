@@ -18,8 +18,8 @@
 var cookie_schema_browser_autoload = 'schema-browser_autoload';
 
 solrAdminApp.controller('SchemaBrowserController',
-    function($scope, $routeParams, $location, $cookies, Luke) {
-        $scope.resetMenu("schema-browser");
+    function($scope, $routeParams, $location, $cookies, Luke, Constants) {
+        $scope.resetMenu("schema-browser", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
             Luke.schema({core: $routeParams.core}, function (schema) {

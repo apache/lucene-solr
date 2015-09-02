@@ -16,5 +16,5 @@
  limitations under the License.
 -->
 <ConstantScoreQuery>
-	<RangeQuery fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
+  <RangeQuery fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
 </ConstantScoreQuery>

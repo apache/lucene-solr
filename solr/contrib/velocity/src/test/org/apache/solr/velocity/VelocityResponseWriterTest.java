@@ -93,6 +93,11 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testEncoding() throws Exception {
+    assertEquals("éñçø∂îñg", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"encoding")));
+  }
+
+  @Test
   public void testMacros() throws Exception {
     // tests that a macro in a custom macros.vm is visible
     assertEquals("test_macro_SUCCESS", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"test_macro_visible")));
@@ -112,6 +117,29 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
 
     assertEquals("01", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"foreach")));
     assertEquals("", h.query(req("q","*:*", "wt","velocityWithInitProps",VelocityResponseWriter.TEMPLATE,"foreach")));
+  }
+
+  @Test
+  public void testCustomTools() throws Exception {
+    assertEquals("", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"custom_tool")));
+    assertEquals("** LATERALUS **", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+            SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.star(\"LATERALUS\")")));
+
+    // Does $log get overridden?
+    assertEquals("** log overridden **", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+            SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$log.star(\"log overridden\")")));
+
+    // Does $response get overridden?  actual blank response because of the bang on $! reference that silences bogus $-references
+    assertEquals("", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$!response.star(\"response overridden??\")")));
+
+    // Custom tools can also have a SolrCore-arg constructor because they are instantiated with SolrCore.createInstance
+    // TODO: do we really need to support this?  no great loss, as a custom tool could take a SolrCore object as a parameter to
+    // TODO: any method, so one could do $mytool.my_method($request.core)
+    // I'm currently inclined to make this feature undocumented/unsupported, as we may want to instantiate classes
+    // in a different manner that only supports no-arg constructors, commented (passing) test case out
+//    assertEquals("collection1", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+//        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.core.name")));
   }
 
   @Test

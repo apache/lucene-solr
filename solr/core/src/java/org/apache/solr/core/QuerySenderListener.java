@@ -70,7 +70,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         for (int i=0; i<values.size(); i++) {
           Object o = values.getVal(i);
           if (o instanceof ResultContext) {
-            o = ((ResultContext)o).docs;
+            o = ((ResultContext)o).getDocList();
           }
           if (o instanceof DocList) {
             DocList docs = (DocList)o;

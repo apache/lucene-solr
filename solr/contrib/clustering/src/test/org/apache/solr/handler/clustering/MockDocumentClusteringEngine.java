@@ -34,4 +34,9 @@ public class MockDocumentClusteringEngine extends DocumentClusteringEngine {
   public NamedList<?> cluster(SolrParams solrParams) {
     return new NamedList<>();
   }
+  
+  @Override
+  public boolean isAvailable() {
+    return true;
+  }
 }

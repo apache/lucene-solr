@@ -27,9 +27,9 @@
                    class="org.apache.solr.search.DelayingSearchComponent"/>
 
   <requestHandler name="/select" class="solr.SearchHandler">
-	  <arr name="first-components">
-	  	<str>delayingSearchComponent</str>
-	  </arr>
+    <arr name="first-components">
+      <str>delayingSearchComponent</str>
+    </arr>
   </requestHandler>
 
   <requestDispatcher handleSelect="true" >

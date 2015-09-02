@@ -31,7 +31,7 @@ import org.junit.Test;
 /**
  * Tests for {@link ConfusionMatrixGenerator}
  */
-public class ConfusionMatrixGeneratorTest extends ClassificationTestBase {
+public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object> {
 
   @Test
   public void testGetConfusionMatrixWithSNB() throws Exception {

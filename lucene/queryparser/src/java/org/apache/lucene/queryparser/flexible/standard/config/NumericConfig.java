@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.flexible.standard.config;
  */
 
 import java.text.NumberFormat;
+import java.util.Objects;
 
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -154,6 +155,11 @@ public class NumericConfig {
     
     return false;
     
+  }
+  
+  @Override
+  public int hashCode() {
+    return Objects.hash(precisionStep, type, format);
   }
   
 }

@@ -31,7 +31,7 @@
 
   <searchComponent class="solr.SuggestComponent" name="suggest">
     
-  	<!-- Suggest component (default index based dictionary) -->
+    <!-- Suggest component (default index based dictionary) -->
     <lst name="suggester">
       <str name="name">suggest_fuzzy_with_high_freq_dict</str>
       <str name="lookupImpl">FuzzyLookupFactory</str>
@@ -42,8 +42,8 @@
 
       <float name="threshold">0.0</float>
     </lst>
-	
-	<!-- Suggest component (default file based dictionary) -->
+  
+  <!-- Suggest component (default file based dictionary) -->
     <lst name="suggester">
       <str name="name">suggest_fuzzy_file_based</str>
       <str name="lookupImpl">FuzzyLookupFactory</str>
@@ -53,7 +53,7 @@
       <str name="buildOnCommit">true</str>
     </lst>
 
-	<!-- Suggest component (Document Dictionary) -->
+  <!-- Suggest component (Document Dictionary) -->
     <lst name="suggester">
       <str name="name">suggest_fuzzy_doc_dict</str>
       <str name="lookupImpl">FuzzyLookupFactory</str>
@@ -65,7 +65,7 @@
       <str name="buildOnStartup">false</str>
     </lst>
 
-	<!-- Suggest component (Document Expression Dictionary) -->
+  <!-- Suggest component (Document Expression Dictionary) -->
     <lst name="suggester">
       <str name="name">suggest_fuzzy_doc_expr_dict</str>
       <str name="dictionaryImpl">DocumentExpressionDictionaryFactory</str>

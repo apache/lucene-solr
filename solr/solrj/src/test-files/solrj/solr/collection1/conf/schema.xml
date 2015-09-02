@@ -430,7 +430,7 @@
    <field name="standardfilt" type="standardfilt" indexed="true" stored="true"/>
    <field name="lowerfilt" type="lowerfilt" indexed="true" stored="true"/>
    <field name="lowerfilt1" type="lowerfilt" indexed="true" stored="true"/>
-	 <field name="lowerfilt1and2" type="lowerfilt" indexed="true" stored="true"/>
+   <field name="lowerfilt1and2" type="lowerfilt" indexed="true" stored="true"/>
    <field name="patterntok" type="patterntok" indexed="true" stored="true"/>
    <field name="patternreplacefilt" type="patternreplacefilt" indexed="true" stored="true"/>
    <field name="porterfilt" type="porterfilt" indexed="true" stored="true"/>
@@ -549,15 +549,15 @@
    <copyField source="title" dest="title_lettertok"/>
 
    <copyField source="title" dest="text"/>
-	 <copyField source="subject" dest="text"/>
+   <copyField source="subject" dest="text"/>
 
-	 <copyField source="lowerfilt1" dest="lowerfilt1and2"/>
-	 <copyField source="lowerfilt" dest="lowerfilt1and2"/>
+   <copyField source="lowerfilt1" dest="lowerfilt1and2"/>
+   <copyField source="lowerfilt" dest="lowerfilt1and2"/>
 
-	 <copyField source="*_t" dest="text"/>
+   <copyField source="*_t" dest="text"/>
 
-	 <copyField source="id"            dest="range_facet_l"/>
-	 <copyField source="range_facet_f" dest="range_facet_d"/>
+   <copyField source="id"            dest="range_facet_l"/>
+   <copyField source="range_facet_f" dest="range_facet_d"/>
 
    <!-- dynamic destination -->
    <copyField source="*_dynamic" dest="dynamic_*"/>

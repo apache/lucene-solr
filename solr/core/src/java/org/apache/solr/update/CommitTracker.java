@@ -89,10 +89,10 @@ public final class CommitTracker implements Runnable {
   
   public synchronized void close() {
     if (pending != null) {
-      pending.cancel(true);
+      pending.cancel(false);
       pending = null;
     }
-    scheduler.shutdownNow();
+    scheduler.shutdown();
   }
   
   /** schedule individual commits */

@@ -260,7 +260,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
 
   /** Expert: Sets the {@link DocumentsWriterPerThreadPool} instance used by the
    * IndexWriter to assign thread-states to incoming indexing threads.
-   * </p>
    * <p>
    * NOTE: The given {@link DocumentsWriterPerThreadPool} instance must not be used with
    * other {@link IndexWriter} instances once it has been initialized / associated with an
@@ -299,22 +298,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   public boolean getReaderPooling() {
     return readerPooling;
-  }
-
-  /** Expert: sets the {@link DocConsumer} chain to be used to process documents.
-   *
-   * <p>Only takes effect when IndexWriter is first created. */
-  IndexWriterConfig setIndexingChain(IndexingChain indexingChain) {
-    if (indexingChain == null) {
-      throw new IllegalArgumentException("indexingChain must not be null");
-    }
-    this.indexingChain = indexingChain;
-    return this;
-  }
-
-  @Override
-  IndexingChain getIndexingChain() {
-    return indexingChain;
   }
 
   /**

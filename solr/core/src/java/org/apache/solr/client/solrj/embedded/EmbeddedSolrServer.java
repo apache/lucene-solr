@@ -189,9 +189,9 @@ public class EmbeddedSolrServer extends SolrClient {
                 public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
                   // write an empty list...
                   SolrDocumentList docs = new SolrDocumentList();
-                  docs.setNumFound(ctx.docs.matches());
-                  docs.setStart(ctx.docs.offset());
-                  docs.setMaxScore(ctx.docs.maxScore());
+                  docs.setNumFound(ctx.getDocList().matches());
+                  docs.setStart(ctx.getDocList().offset());
+                  docs.setMaxScore(ctx.getDocList().maxScore());
                   codec.writeSolrDocumentList(docs);
 
                   // This will transform

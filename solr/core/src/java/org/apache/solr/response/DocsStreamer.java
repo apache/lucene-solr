@@ -24,17 +24,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.response.transform.TransformContext;
 import org.apache.solr.schema.BinaryField;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.FieldType;
@@ -50,8 +45,6 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 
 /**
@@ -59,38 +52,28 @@ import org.apache.solr.search.SolrReturnFields;
  */
 public class DocsStreamer implements Iterator<SolrDocument> {
   public static final Set<Class> KNOWN_TYPES = new HashSet<>();
+
+  private org.apache.solr.response.ResultContext rctx;
   private final DocList docs;
 
-  private SolrIndexSearcher searcher;
-  private final IndexSchema schema;
   private DocTransformer transformer;
   private DocIterator docIterator;
+
   private boolean onlyPseudoFields;
   private Set<String> fnames;
-  private TransformContext context;
   private int idx = -1;
 
-  public DocsStreamer(DocList docList, Query query, SolrQueryRequest req, ReturnFields returnFields) {
-    this.docs = docList;
-    this.schema = req.getSchema();
-    searcher = req.getSearcher();
-    transformer = returnFields.getTransformer();
-    docIterator = docList.iterator();
-    context = new TransformContext();
-    context.query = query;
-    context.wantsScores = returnFields.wantsScore() && docList.hasScores();
-    context.req = req;
-    context.searcher = searcher;
-    context.iterator = docIterator;
-    fnames = returnFields.getLuceneFieldNames();
-    onlyPseudoFields = (fnames == null && !returnFields.wantsAllFields() && !returnFields.hasPatternMatching())
+  public DocsStreamer(ResultContext rctx) {
+    this.rctx = rctx;
+    this.docs = rctx.getDocList();
+    transformer = rctx.getReturnFields().getTransformer();
+    docIterator = this.docs.iterator();
+    fnames = rctx.getReturnFields().getLuceneFieldNames();
+    onlyPseudoFields = (fnames == null && !rctx.getReturnFields().wantsAllFields() && !rctx.getReturnFields().hasPatternMatching())
         || (fnames != null && fnames.size() == 1 && SolrReturnFields.SCORE.equals(fnames.iterator().next()));
-    if (transformer != null) transformer.setContext(context);
+    if (transformer != null) transformer.setContext(rctx);
   }
 
-  public boolean hasScores() {
-    return context.wantsScores;
-  }
 
   public int currentIndex() {
     return idx;
@@ -110,16 +93,17 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       sdoc = new SolrDocument();
     } else {
       try {
-        StoredDocument doc = searcher.doc(id, fnames);
-        sdoc = getDoc(doc, schema);
+        StoredDocument doc = rctx.getSearcher().doc(id, fnames);
+        sdoc = getDoc(doc, rctx.getSearcher().getSchema()); // make sure to use the schema from the searcher and not the request (cross-core)
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + id, e);
       }
     }
 
     if (transformer != null) {
+      boolean doScore = rctx.wantsScores();
       try {
-        transformer.transform(sdoc, id);
+        transformer.transform(sdoc, id, doScore ? docIterator.score() : 0);
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error applying transformer", e);
       }

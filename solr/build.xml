@@ -95,7 +95,7 @@
   <!--LUCENE-3286: Luke is incompatible with new XML QP location and target is not flexible
   when it comes to incompatible changes.  Update when Luke has updated.
   <target name="compile-xml-query-parser">
-  	<ant dir="${common.dir}/queryparser" target="compile-core" inheritAll="false">
+    <ant dir="${common.dir}/queryparser" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -378,7 +378,7 @@
         <include name="webapps" />
         <include name="solr-webapp/**/*" />
         <exclude name="**/.gitignore" />
-      </fileset>    	
+      </fileset>      
     </delete>
   </target>
   
@@ -679,7 +679,7 @@
       <contrib-crawl target="-validate-maven-dependencies"/>
     </sequential>
   </target>
-	 
+   
   <!-- ========================================================================= -->
   <!-- ========================= COMMITTERS' HELPERS =========================== -->
   <!-- ========================================================================= -->
@@ -717,37 +717,37 @@
     <!-- spanish -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/spanish_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_es.txt"/>
-  	<!-- basque -->
+    <!-- basque -->
     <copy verbose="true" file="${analysis-common.res.dir}/eu/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_eu.txt"/>
-  	<!-- persian -->
+    <!-- persian -->
     <copy verbose="true" file="${analysis-common.res.dir}/fa/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_fa.txt"/>
-  	<!-- finnish -->
+    <!-- finnish -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/finnish_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_fi.txt"/>
-  	<!-- french -->
+    <!-- french -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/french_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_fr.txt"/>
         <!-- irish -->
     <copy verbose="true" file="${analysis-common.res.dir}/ga/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_ga.txt"/>
-  	<!-- galician -->
+    <!-- galician -->
     <copy verbose="true" file="${analysis-common.res.dir}/gl/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_gl.txt"/>
-  	<!-- hindi -->
+    <!-- hindi -->
     <copy verbose="true" file="${analysis-common.res.dir}/hi/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_hi.txt"/>
-  	<!-- hungarian -->
+    <!-- hungarian -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/hungarian_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_hu.txt"/>
-  	<!-- armenian -->
+    <!-- armenian -->
     <copy verbose="true" file="${analysis-common.res.dir}/hy/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_hy.txt"/>
-  	<!-- indonesian -->
+    <!-- indonesian -->
     <copy verbose="true" file="${analysis-common.res.dir}/id/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_id.txt"/>
-  	<!-- italian -->
+    <!-- italian -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/italian_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_it.txt"/>
     <!-- japanese -->
@@ -755,31 +755,31 @@
                          tofile="${analysis.conf.dest}/stopwords_ja.txt"/>
     <copy verbose="true" file="${analysis-kuromoji.res.dir}/ja/stoptags.txt"
                          tofile="${analysis.conf.dest}/stoptags_ja.txt"/>
-  	<!-- latvian -->
+    <!-- latvian -->
     <copy verbose="true" file="${analysis-common.res.dir}/lv/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_lv.txt"/>
-  	<!-- dutch -->
+    <!-- dutch -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/dutch_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_nl.txt"/>
-  	<!-- norwegian -->
+    <!-- norwegian -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/norwegian_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_no.txt"/>
-  	<!-- portuguese -->
+    <!-- portuguese -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/portuguese_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_pt.txt"/>
-  	<!-- romanian -->
+    <!-- romanian -->
     <copy verbose="true" file="${analysis-common.res.dir}/ro/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_ro.txt"/>
-  	<!-- russian -->
+    <!-- russian -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/russian_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_ru.txt"/>
-  	<!-- swedish -->
+    <!-- swedish -->
     <copy verbose="true" file="${analysis-common.res.dir}/snowball/swedish_stop.txt"
                          tofile="${analysis.conf.dest}/stopwords_sv.txt"/>
-  	<!-- thai -->
+    <!-- thai -->
     <copy verbose="true" file="${analysis-common.res.dir}/th/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_th.txt"/>
-  	<!-- turkish -->
+    <!-- turkish -->
     <copy verbose="true" file="${analysis-common.res.dir}/tr/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_tr.txt"/>
   </target>

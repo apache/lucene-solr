@@ -250,7 +250,7 @@ public class LineDocSource extends ContentSource {
       try {
         final Class<? extends LineParser> clazz = 
           Class.forName(docDataLineReaderClassName).asSubclass(LineParser.class);
-        Constructor<? extends LineParser> cnstr = clazz.getConstructor(new Class[]{String[].class});
+        Constructor<? extends LineParser> cnstr = clazz.getConstructor(String[].class);
         return cnstr.newInstance((Object)header);
       } catch (Exception e) {
         throw new RuntimeException("Failed to instantiate "+docDataLineReaderClassName, e);

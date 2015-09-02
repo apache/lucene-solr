@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -116,6 +117,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
   SolrCore core;
+  
+  private volatile boolean closed = false;
 
   private static final class CommitVersionInfo {
     public final long version;
@@ -1214,16 +1217,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       @Override
       public void preClose(SolrCore core) {
         try {
-          if (executorService != null) executorService.shutdown();
+          if (executorService != null) executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
         } finally {
-          try {
             if (pollingIndexFetcher != null) {
               pollingIndexFetcher.destroy();
             }
-          } finally {
-            if (executorService != null) ExecutorUtil
-                .shutdownNowAndAwaitTermination(executorService);
-          }
         }
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
@@ -1237,9 +1235,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     core.addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
-        ExecutorUtil.shutdownNowAndAwaitTermination(restoreExecutor);
+        ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
         if (restoreFuture != null) {
-          restoreFuture.cancel(true);
+          restoreFuture.cancel(false);
         }
       }
 

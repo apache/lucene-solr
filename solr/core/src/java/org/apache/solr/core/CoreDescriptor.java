@@ -84,7 +84,7 @@ public class CoreDescriptor {
   private static ImmutableMap<String, String> defaultProperties = new ImmutableMap.Builder<String, String>()
       .put(CORE_CONFIG, "solrconfig.xml")
       .put(CORE_SCHEMA, "schema.xml")
-      .put(CORE_CONFIGSET_PROPERTIES, "configsetprops.json")
+      .put(CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME)
       .put(CORE_DATADIR, "data" + File.separator)
       .put(CORE_TRANSIENT, "false")
       .put(CORE_LOADONSTARTUP, "true")

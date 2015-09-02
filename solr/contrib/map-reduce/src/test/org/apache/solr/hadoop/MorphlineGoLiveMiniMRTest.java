@@ -128,8 +128,8 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     this.inputAvroFile2 = "sample-statuses-20120906-141433.avro";
     this.inputAvroFile3 = "sample-statuses-20120906-141433-medium.avro";
 
-    sliceCount = TEST_NIGHTLY ? 7 : 3;
-    fixShardCount(TEST_NIGHTLY ? 7 : 3);
+    sliceCount = TEST_NIGHTLY ? 5 : 3;
+    fixShardCount(TEST_NIGHTLY ? 5 : 3);
   }
   
   @BeforeClass
@@ -458,7 +458,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       args = new String[]{
           "--output-dir=" + outDir.toString(),
           "--mappers=3",
-          "--reducers=12",
+          "--reducers=6",
           "--fanout=2",
           "--verbose",
           "--go-live",
@@ -520,7 +520,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     // try using zookeeper with replication
     String replicatedCollection = "replicated_collection";
     if (TEST_NIGHTLY) {
-      createCollection(replicatedCollection, 7, 3, 9);
+      createCollection(replicatedCollection, 3, 3, 3);
     } else {
       createCollection(replicatedCollection, 2, 3, 2);
     }
@@ -536,7 +536,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
         "--solr-home-dir=" + MINIMR_CONF_DIR.getAbsolutePath(),
         "--output-dir=" + outDir.toString(),
         "--mappers=3",
-        "--reducers=22",
+        "--reducers=12",
         "--fanout=2",
         "--verbose",
         "--go-live",
@@ -651,7 +651,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     }
     
     if (TEST_NIGHTLY) {
-      createCollection(replicatedCollection, 7, 3, 9);
+      createCollection(replicatedCollection, 3, 3, 3);
     } else {
       createCollection(replicatedCollection, 2, 3, 2);
     }

@@ -18,10 +18,10 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -35,7 +35,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  *
  */
 public abstract class DocTransformer {
-  protected  TransformContext context;
+  protected ResultContext context;
   /**
    *
    * @return The name of the transformer
@@ -44,10 +44,9 @@ public abstract class DocTransformer {
 
   /**
    * This is called before transform and sets
-   * @param context The {@link org.apache.solr.response.transform.TransformContext} stores information about the current state of things in Solr that may be
-   * useful for doing transformations.
+   * @param context The {@link ResultContext} stores information about how the documents were produced.
    */
-  public void setContext( TransformContext context ) {
+  public void setContext( ResultContext context ) {
     this.context = context;
 
   }
@@ -58,9 +57,10 @@ public abstract class DocTransformer {
    *
    * @param doc The document to alter
    * @param docid The Lucene internal doc id
+   * @param score the score for this document
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract void transform(SolrDocument doc, int docid) throws IOException;
+  public abstract void transform(SolrDocument doc, int docid, float score) throws IOException;
 
   /**
    * When a transformer needs access to fields that are not automaticaly derived from the

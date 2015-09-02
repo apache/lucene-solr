@@ -136,7 +136,7 @@ public class Overseer implements Closeable {
 
       log.info("Starting to work on the main queue");
       try {
-        ZkStateWriter zkStateWriter = new ZkStateWriter(reader, stats);
+        ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
         boolean refreshClusterState = true; // let's refresh in the first iteration
         while (!this.isClosed) {
@@ -153,6 +153,7 @@ public class Overseer implements Closeable {
             try {
               reader.updateClusterState();
               clusterState = reader.getClusterState();
+              zkStateWriter = new ZkStateWriter(reader, stats);
               refreshClusterState = false;
 
               // if there were any errors while processing
@@ -187,7 +188,7 @@ public class Overseer implements Closeable {
             }
           }
 
-          DistributedQueue.QueueEvent head = null;
+          byte[] head = null;
           try {
             head = stateUpdateQueue.peek(true);
           } catch (KeeperException e) {
@@ -206,8 +207,8 @@ public class Overseer implements Closeable {
           }
           try {
             while (head != null) {
-              final byte[] data = head.getBytes();
-              final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+              byte[] data = head;
+              final ZkNodeProps message = ZkNodeProps.load(data);
               log.info("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
               // we can batch here because workQueue is our fallback in case a ZK write failed
               clusterState = processQueueItem(message, clusterState, zkStateWriter, true, new ZkStateWriter.ZkWriteCallback() {
@@ -237,13 +238,16 @@ public class Overseer implements Closeable {
             // clean work queue
             while (workQueue.poll() != null);
 
+          } catch (KeeperException.BadVersionException bve) {
+            log.warn("Bad version writing to ZK using compare-and-set, will force refresh cluster state", bve);
+            refreshClusterState = true;
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
               log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
               return;
             }
             log.error("Exception in Overseer main queue loop", e);
-            refreshClusterState = true; // it might have been a bad version error
+            refreshClusterState = true; // force refresh state in case of all errors
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
@@ -305,7 +309,7 @@ public class Overseer implements Closeable {
       try {
         Map m = (Map) Utils.fromJSON(data);
         String id = (String) m.get("id");
-        if(overseerCollectionProcessor.getId().equals(id)){
+        if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
             log.info("I'm exiting , but I'm still the leader");
             zkClient.delete(path,stat.getVersion(),true);
@@ -386,7 +390,7 @@ public class Overseer implements Closeable {
           case QUIT:
             if (myId.equals(message.get("id"))) {
               log.info("Quit command received {}", LeaderElector.getNodeName(myId));
-              overseerCollectionProcessor.close();
+              overseerCollectionConfigSetProcessor.close();
               close();
             } else {
               log.warn("Overseer received wrong QUIT message {}", message);
@@ -782,7 +786,7 @@ public class Overseer implements Closeable {
 
   private final String adminPath;
 
-  private OverseerCollectionProcessor overseerCollectionProcessor;
+  private OverseerCollectionConfigSetProcessor overseerCollectionConfigSetProcessor;
 
   private ZkController zkController;
 
@@ -820,8 +824,8 @@ public class Overseer implements Closeable {
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
     OverseerNodePrioritizer overseerPrioritizer = new OverseerNodePrioritizer(reader, adminPath, shardHandler.getShardHandlerFactory());
-    overseerCollectionProcessor = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
-    ccThread = new OverseerThread(ccTg, overseerCollectionProcessor, "OverseerCollectionProcessor-" + id);
+    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
+    ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
     
     ThreadGroup ohcfTg = new ThreadGroup("Overseer Hdfs SolrCore Failover Thread.");
@@ -918,15 +922,27 @@ public class Overseer implements Closeable {
   }
   
   /* Collection creation queue */
-  static DistributedQueue getCollectionQueue(final SolrZkClient zkClient) {
+  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient) {
     return getCollectionQueue(zkClient, new Stats());
   }
 
-  static DistributedQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats)  {
+  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats)  {
     createOverseerNode(zkClient);
-    return new DistributedQueue(zkClient, "/overseer/collection-queue-work", zkStats);
+    return new OverseerTaskQueue(zkClient, "/overseer/collection-queue-work", zkStats);
   }
-  
+
+  /* The queue for ConfigSet related operations */
+  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient)  {
+    return getConfigSetQueue(zkClient, new Stats());
+  }
+
+  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats)  {
+    // For now, we use the same queue as the collection queue, but ensure
+    // that the actions are prefixed with a unique string.
+    createOverseerNode(zkClient);
+    return getCollectionQueue(zkClient, zkStats);
+  }
+
   private static void createOverseerNode(final SolrZkClient zkClient) {
     try {
       zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT, true);

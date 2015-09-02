@@ -19,11 +19,17 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Locale;
 import java.util.Random;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.ExternalPaths;
@@ -36,8 +42,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  *
@@ -53,9 +57,9 @@ public class JettyWebappTest extends SolrTestCaseJ4
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   Server server;
-  
+
   @Override
-  public void setUp() throws Exception 
+  public void setUp() throws Exception
   {
     super.setUp();
     System.setProperty("solr.solr.home", SolrJettyTestBase.legacyExampleCollection1SolrHome());
@@ -84,7 +88,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
   }
 
   @Override
-  public void tearDown() throws Exception 
+  public void tearDown() throws Exception
   {
     try {
       server.stop();
@@ -102,5 +106,13 @@ public class JettyWebappTest extends SolrTestCaseJ4
     String adminPath = "http://127.0.0.1:"+port+context+"/";
     byte[] bytes = IOUtils.toByteArray( new URL(adminPath).openStream() );
     assertNotNull( bytes ); // real error will be an exception
+
+    HttpClient client = HttpClients.createDefault();
+    HttpRequestBase m = new HttpGet(adminPath);
+    HttpResponse response = client.execute(m);
+    assertEquals(200, response.getStatusLine().getStatusCode());
+    Header header = response.getFirstHeader("X-Frame-Options");
+    assertEquals("DENY", header.getValue().toUpperCase(Locale.ROOT));
+    m.releaseConnection();
   }
 }

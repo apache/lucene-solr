@@ -234,6 +234,9 @@ public class SolrXmlConfig {
         case "infoHandler":
           builder.setInfoHandlerClass(value);
           break;
+        case "configSetsHandler":
+          builder.setConfigSetsHandlerClass(value);
+          break;
         case "coreRootDirectory":
           builder.setCoreRootDirectory(value);
           break;

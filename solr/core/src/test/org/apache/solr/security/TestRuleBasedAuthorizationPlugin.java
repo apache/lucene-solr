@@ -95,7 +95,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals(FORBIDDEN,authResp.statusCode);
 
     values.put("resource","/admin/collections");
-    values.put("collectionRequests",new ArrayList<>());
+    values.put("requestType", AuthorizationContext.RequestType.ADMIN);
     values.put("params", new MapSolrParams(Collections.singletonMap("action", "LIST")));
     values.put("httpMethod","GET");
     authResp = plugin.authorize(context);
@@ -106,6 +106,10 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals(STATUS_OK,authResp.statusCode);
 
     values.put("params", new MapSolrParams(Collections.singletonMap("action", "CREATE")));
+    authResp = plugin.authorize(context);
+    assertEquals(PROMPT_FOR_CREDENTIALS, authResp.statusCode);
+
+    values.put("params", new MapSolrParams(Collections.singletonMap("action", "RELOAD")));
     authResp = plugin.authorize(context);
     assertEquals(PROMPT_FOR_CREDENTIALS, authResp.statusCode);
 

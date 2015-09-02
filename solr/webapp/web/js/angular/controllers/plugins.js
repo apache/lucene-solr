@@ -16,8 +16,8 @@
 */
 
 solrAdminApp.controller('PluginsController',
-    function($scope, $rootScope, $routeParams, $location, Mbeans) {
-        $scope.resetMenu("plugins");
+    function($scope, $rootScope, $routeParams, $location, Mbeans, Constants) {
+        $scope.resetMenu("plugins", Constants.IS_CORE_PAGE);
 
         if ($routeParams.legacytype) {
             // support legacy URLs. Angular cannot change #path without reloading controller

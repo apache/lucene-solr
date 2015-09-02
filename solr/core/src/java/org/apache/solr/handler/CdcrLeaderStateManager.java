@@ -98,7 +98,7 @@ class CdcrLeaderStateManager extends CdcrStateManager {
   private String getZnodePath() {
     String myShardId = core.getCoreDescriptor().getCloudDescriptor().getShardId();
     String myCollection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    return "/collections/" + myCollection + "/leaders/" + myShardId;
+    return "/collections/" + myCollection + "/leaders/" + myShardId + "/leader";
   }
 
   void setAmILeader(boolean amILeader) {

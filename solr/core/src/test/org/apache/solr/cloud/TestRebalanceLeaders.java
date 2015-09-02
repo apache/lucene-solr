@@ -16,6 +16,13 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -29,17 +36,12 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
-
+  private static Logger log = LoggerFactory.getLogger(TestRebalanceLeaders.class);
   public static final String COLLECTION_NAME = "testcollection";
 
   public TestRebalanceLeaders() {
@@ -71,7 +73,6 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(COLLECTION_NAME, false);
 
     listCollection();
-
     rebalanceLeaderTest();
   }
 
@@ -117,16 +118,21 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
   // 3> The node that ZooKeeper thinks is the leader is the one we think should be the leader.
   void checkConsistency() throws InterruptedException, KeeperException {
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
-
-    while (! timeout.hasTimedOut()) {
-      if (checkAppearOnce() &&
-          checkElectionZero() &&
-          checkZkLeadersAgree()) {
+    boolean checkAppearOnce = false;
+    boolean checkElectionZero = false;
+    boolean checkZkLeadersAgree = false;
+    while (!timeout.hasTimedOut()) {
+      checkAppearOnce = checkAppearOnce();
+      checkElectionZero = checkElectionZero();
+      checkZkLeadersAgree = checkZkLeadersAgree();
+      if (checkAppearOnce && checkElectionZero && checkZkLeadersAgree) {
         return;
       }
       Thread.sleep(1000);
     }
-    fail("Checking the rebalance leader command failed");
+
+    fail("Checking the rebalance leader command failed, checkAppearOnce=" + checkAppearOnce + " checkElectionZero="
+        + checkElectionZero + " checkZkLeadersAgree=" + checkZkLeadersAgree);
   }
 
 
@@ -182,7 +188,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
   List<String> getOverseerSort(String key) {
     List<String> ret = null;
     try {
-      ret = OverseerCollectionProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
+      ret = OverseerCollectionConfigSetProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
           "/collections/" + COLLECTION_NAME + "/leader_elect/" + key + "/election");
       return ret;
     } catch (KeeperException e) {
@@ -211,25 +217,26 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
 
   // Do who we _think_ should be the leader agree with the leader nodes?
   Boolean checkZkLeadersAgree() throws KeeperException, InterruptedException {
-    for (Map.Entry<String, Replica> ent : expected.entrySet()) {
-
-      String path = "/collections/" + COLLECTION_NAME + "/leaders/" + ent.getKey();
+    for (Map.Entry<String,Replica> ent : expected.entrySet()) {
+      
+      String path = "/collections/" + COLLECTION_NAME + "/leaders/" + ent.getKey() + "/leader";
       byte[] data = getZkData(cloudClient, path);
-      if (data == null) return false;
-
+      if (data == null) {
+        log.warn("path to check not found {}", path);
+        return false;
+      }
+      
       String repCore = null;
       String zkCore = null;
-
-      if (data == null) {
+      
+      Map m = (Map) Utils.fromJSON(data);
+      zkCore = (String) m.get("core");
+      repCore = ent.getValue().getStr("core");
+      if (zkCore.equals(repCore) == false) {
+        log.warn("leader in zk does not match what we expect: {} != {}", zkCore, repCore);
         return false;
-      } else {
-        Map m = (Map) Utils.fromJSON(data);
-        zkCore = (String) m.get("core");
-        repCore = ent.getValue().getStr("core");
-        if (zkCore.equals(repCore) == false) {
-          return false;
-        }
       }
+      
     }
     return true;
   }

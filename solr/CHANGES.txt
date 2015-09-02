@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
-Carrot2 3.9.0
+Carrot2 3.10.3
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -45,7 +45,13 @@ Upgrading from Solr 5.x
 * SolrClient.shutdown() has been removed, use SolrClient.close() instead.
 
 * The deprecated zkCredientialsProvider element in solrcloud section of solr.xml
-  is now removed. Use the correct spelling (zkCredentialsProvider) instead.
+  is now removed. Use tI'll start looking at it today. - Mark On Wed, Aug 19, 2015 at 10:15 PM Gregory Chanan <he correct spelling (zkCredentialsProvider) instead.
+
+* SOLR-7957: internal/expert - ResultContext was significantly changed and expanded
+  to allow for multiple full query results (DocLists) per Solr request.
+  TransformContext was rendered redundant and was removed. (yonik)
+
+
 
 Detailed Change List
 ----------------------
@@ -59,6 +65,11 @@ New Features
 
 * SOLR-7707: Add StreamExpression Support to RollupStream (Dennis Gove, Joel Bernstein)
 
+Optimizations
+----------------------
+* SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
+  specified.  Speedups of up to 8% were observed.  (yonik)
+
 
 Other Changes
 ----------------------
@@ -71,7 +82,7 @@ Other Changes
 * SOLR-6954: Deprecated SolrClient.shutdown() method removed (Alan Woodward)
 
 * SOLR-7355: Switch from Google's ConcurrentLinkedHashMap to Caffeine.  Only
-  affects HDFS support. (Ben Manes via Shawn Heisey)
+  affects HDFS support. (Ben Manes viI'll start looking at it today. - Mark On Wed, Aug 19, 2015 at 10:15 PM Gregory Chanan <a Shawn Heisey)
 
 * SOLR-7624: Remove deprecated zkCredientialsProvider element in solrcloud section of solr.xml.
   (Xu Zhang, Per Steffensen, Ramkumar Aiyengar, Mark Miller)
@@ -93,11 +104,11 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
-Carrot2 3.9.0
+Carrot2 3.10.3
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.2.11.v20150529
+Jetty 9.2.13.v20150730
 
 Upgrading from Solr 5.3
 -----------------------
@@ -123,6 +134,17 @@ New Features
   Example: description:HDTV OR filter(+promotion:tv +promotion_date:[NOW/DAY TO NOW/DAY+7DAY])
   (yonik)
 
+* SOLR-7775: Allow fromIndex parameter to ScoreJoinQParserPlugin {!join score=.. fromIndex=..}..
+   to refer to a single-sharded collection that has a replica on all nodes where there is a 
+   replica in the to index (Andrei Beliakov via Mikhail Khludnev)
+
+* SOLR-7961: Print Solr's version with command bin/solr version (janhoy)
+
+* SOLR-7789: Introduce a ConfigSet management API (Gregory Chanan)
+
+* SOLR-4316: Add a collections dropdown to angular admin UI (Upayavira, Shalin Shekhar Mangar)
+
+* SOLR-7915: Provide pluggable context tool support for VelocityResponseWriter (Erik Hatcher)
 
 Bug Fixes
 ----------------------
@@ -133,11 +155,71 @@ Bug Fixes
 * SOLR-7836: Possible deadlock when closing refcounted index writers.
   (Jessica Cheng Mallet, Erick Erickson)
 
+* SOLR-7869: Overseer does not handle BadVersionException correctly and, in some cases,
+  can go into an infinite loop if cluster state in ZooKeeper is modified externally.
+  (Scott Blum, shalin)
+
+* SOLR-7920: Resolve XSS issue in Admin UI Schema Browser (David Chiu via Upayavira)
+
+* SOLR-7935: Fix very rare race condition that can cause an update to fail
+  via NullPointerException during a core reload. (yonik)
+
+* SOLR-7941: multivalued params are concatenated when using config API (noble)
+
+* SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
+
+* SOLR-7956: There are interrupts on shutdown in places that can cause ChannelAlreadyClosed
+  exceptions which prevents proper closing of transaction logs, interfere with the IndexWriter,
+  the hdfs client and other things. (Mark Miller, Scott Blum)
+
+* SOLR-7972: Fix VelocityResponseWriter template encoding issue.
+  Templates must be UTF-8 encoded. (Erik Hatcher)
+
+* SOLR-7929: SimplePostTool (also bin/post) -filetypes "*" now works properly in 'web' mode (Erik Hatcher)
+
+* SOLR-7954: Fixed an integer overflow bug in the HyperLogLog code used by the 'cardinality' option
+  of stats.field to prevent ArrayIndexOutOfBoundsException in a distributed search when a large precision
+  is selected and a large number of values exist in each shard (hossman)
+
+* SOLR-7988: SolrJ could not make requests to handlers with '/admin/' prefix (noble , ludovic Boutros)
+
+* SOLR-7844: Zookeeper session expiry during shard leader election can cause multiple leaders.
+  (Mike Roberts, Mark Miller, Jessica Cheng)
+
+* SOLR-8000: security.json is not loaded on server start (noble)
+
+* SOLR-8004: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission (noble)
+
+
 Optimizations
 ----------------------
 
+* SOLR-7918: Filter (DocSet) production from term queries has been optimized and
+  is anywhere from 20% to over 100% faster and produces less garbage on average.
+  (yonik)
+
+* SOLR-6760: New optimized DistributedQueue implementation for overseer increases
+  message processing performance by ~470%.
+  (Noble Paul, Scott Blum, shalin)
+
+* SOLR-6629: Watch /collections zk node on all nodes so that cluster state updates
+  are more efficient especially when cluster has a mix of collections in stateFormat=1
+  and stateFormat=2. (Scott Blum, shalin)
+
+* SOLR-7971: Reduce memory allocated by JavaBinCodec to encode large strings by an amount
+  equal to the string.length().
+  (yonik, Steve Rowe, shalin)
+
+* SOLR-7983: Utils.toUTF8 uses larger buffer than necessary for holding UTF8 data. (shalin)
+
 Other Changes
 ----------------------
+
+* SOLR-7969: Unavailable clustering engines should not fail the core. (Dawid Weiss)
+
+* SOLR-7790, SOLR-7792, SOLR-7791: Update Carrot2 clustering component to 
+  version 3.10.3. Upgrade HPPC library to version 0.7.1, morfologik-stemming 
+  to version 1.10.0. (Dawid Weiss)
 
 * SOLR-7831: Start Scripts: Allow a configurable stack size [-Xss] (Steve Davids via Mark Miller)
 
@@ -147,6 +229,28 @@ Other Changes
 
 * SOLR-7902: Split out use of child timers from RTimer to a sub-class
   (Ramkumar Aiyengar)
+
+* SOLR-7943: Upgrade Jetty to 9.2.13.v20150730. (Bill Bell, shalin)
+
+* SOLR-7007: DistributedUpdateProcessor now logs replay flag as boolean instead of int
+  (Mike Drob via Christine Poerschke)
+
+* SOLR-7960: Start scripts now gives generic help for bin/solr -h and bin/solr --help (janhoy)
+
+* SOLR-7970: Factor out a SearchGroupsFieldCommandResult class.
+  (Christine Poerschke)
+
+* SOLR-7942: Previously removed unlockOnStartup option (LUCENE-6508) now logs warning if configured,
+  will be an error in 6.0.  Also improved error msg if an index is locked on startup  (hossman)
+
+* SOLR-7979: Fix two typos (in a CoreAdminHandler log message and a TestCloudPivotFacet comment).
+  (Mike Drob via Christine Poerschke)
+
+* SOLR-7966: Solr Admin UI Solr now sets the HTTP header X-Frame-Options to DENY
+  to avoid clickjacking. (yonik)
+
+* SOLR-7999: SolrRequestParser tests no longer depend on external URLs
+  that may fail to work.  (Uwe Schindler)
 
 ==================  5.3.0 ==================
 
@@ -378,6 +482,12 @@ Bug Fixes
 
 * SOLR-7908: SegmentsInfoRequestHandler gets a ref counted IndexWriter and does not properly release it.
   (Mark Miller, shalin)
+
+* SOLR-7921: The techproducts example fails when running in a directory that contains spaces.
+  (Ishan Chattopadhyaya via Timothy Potter)
+
+* SOLR-7934: SolrCLI masks underlying cause of create collection failure. (Timothy Potter)
+
 
 Optimizations
 ----------------------
@@ -2355,7 +2465,7 @@ Other Changes
 
 ==================  4.10.2 ==================
 
-Bug FixesAnalyticsComponent
+Bug Fixes
 ----------------------
 
 * SOLR-6509: Solr start scripts interactive mode doesn't honor -z argument (Timothy Potter)
@@ -7521,7 +7631,7 @@ Bug Fixes
 
 * SOLR-2819: Improved speed of parsing hex entities in HTMLStripCharFilter
   (Bernhard Berger, hossman)
-	 	   
+
 * SOLR-2509: StringIndexOutOfBoundsException in the spellchecker collate when the term contains
   a hyphen. (Thomas Gambier caught the bug, Steffen Godskesen did the patch, via Erick Erickson)
 
@@ -8316,7 +8426,7 @@ Other Changes
   (Drew Farris, Robert Muir, Steve Rowe)
 
 * SOLR-2105: Rename RequestHandler param 'update.processor' to 'update.chain'.
-	(Jan Høydahl via Mark Miller)
+  (Jan Høydahl via Mark Miller)
 
 * SOLR-2485: Deprecate BaseResponseWriter, GenericBinaryResponseWriter, and 
   GenericTextResponseWriter.  These classes will be removed in 4.0.  (ryan)
@@ -8560,8 +8670,8 @@ New Features
    (Ankul Garg, Jason Rutherglen, Shalin Shekhar Mangar, Grant Ingersoll, Robert Muir, ab)
 
 * SOLR-1568: Added "native" filtering support for PointType, GeohashField.  Added LatLonType with filtering support too.  See
-  	     http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial.
-	     Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers)
+  http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial.
+  Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers)
 
 * SOLR-2128: Full parameter substitution for function queries.
   Example: q=add($v1,$v2)&v1=mul(popularity,5)&v2=20.0
@@ -9452,7 +9562,7 @@ New Features
 62. SOLR-1145: Add capability to specify an infoStream log file for the underlying Lucene IndexWriter in solrconfig.xml.
     This is an advanced debug log file that can be used to aid developers in fixing IndexWriter bugs. See the commented
     out example in the example solrconfig.xml under the indexDefaults section. 
-	  (Chris Harris, Mark Miller)
+    (Chris Harris, Mark Miller)
 
 63. SOLR-1256: Show the output of CharFilters in analysis.jsp. (koji)
 
@@ -10930,7 +11040,7 @@ Build
 
  2. SOLR-479: Added clover code coverage targets for committers and the nightly build.  Requires 
     the Clover library, as licensed to Apache and only available privately.  To run:
-   	     ant -Drun.clover=true clean clover test generate-clover-reports
+          ant -Drun.clover=true clean clover test generate-clover-reports
 
  3. SOLR-510: Nightly release includes client sources. (koji)
 

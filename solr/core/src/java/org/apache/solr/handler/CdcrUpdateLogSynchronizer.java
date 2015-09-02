@@ -1,5 +1,10 @@
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -34,11 +39,6 @@ import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -101,6 +101,8 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
 
   void shutdown() {
     if (scheduler != null) {
+      // interrupts are often dangerous in Lucene / Solr code, but the
+      // test for this will leak threads without
       scheduler.shutdownNow();
       scheduler = null;
     }

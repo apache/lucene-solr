@@ -47,6 +47,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
@@ -311,9 +312,9 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   // This does not work for the general case of forwarding requests.  It probably currently
   // works OK for real-time get (which is all that BlobHandler uses it for).
   private static void forward(SolrQueryRequest req, String handler ,SolrParams params, SolrQueryResponse rsp){
-    try(LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), params)) {
-      req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
-    }
+    LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), params);
+    SolrRequestInfo.getRequestInfo().addCloseHook( r );  // Close as late as possible...
+    req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
   }
 
 }

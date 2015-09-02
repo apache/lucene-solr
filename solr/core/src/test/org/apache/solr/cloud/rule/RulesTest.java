@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.core.CoreContainer.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 
 public class RulesTest extends AbstractFullDistribZkTestBase {
   static final Logger log = LoggerFactory.getLogger(RulesTest.class);

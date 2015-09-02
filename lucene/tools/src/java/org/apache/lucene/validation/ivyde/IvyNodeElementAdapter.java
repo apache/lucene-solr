@@ -54,8 +54,8 @@ public class IvyNodeElementAdapter {
     @SuppressWarnings("unchecked") List<IvyNode> dependencies = report.getDependencies();
 
     // First pass - build the map of resolved nodes by revision id
-    for (Iterator iter = dependencies.iterator(); iter.hasNext();) {
-      IvyNode node = (IvyNode) iter.next();
+    for (Iterator<IvyNode> iter = dependencies.iterator(); iter.hasNext();) {
+      IvyNode node = iter.next();
       if (node.getAllEvictingNodes() != null) {
         // Nodes that are evicted as a result of conf inheritance still appear
         // as dependencies, but with eviction data. They also appear as evictions.
@@ -68,8 +68,8 @@ public class IvyNodeElementAdapter {
     }
 
     // Second pass - establish relationships between the resolved nodes
-    for (Iterator iter = dependencies.iterator(); iter.hasNext();) {
-      IvyNode node = (IvyNode) iter.next();
+    for (Iterator<IvyNode> iter = dependencies.iterator(); iter.hasNext();) {
+      IvyNode node = iter.next();
       if (node.getAllEvictingNodes() != null) {
         continue; // see note above
       }
@@ -124,8 +124,8 @@ public class IvyNodeElementAdapter {
       if (moduleRevisionMap.containsKey(moduleId)) {
         Collection<IvyNodeElement> conflicts = moduleRevisionMap.get(moduleId);
         conflicts.add(deepDependencies[i]);
-        for (Iterator iter = conflicts.iterator(); iter.hasNext();) {
-          IvyNodeElement conflict = (IvyNodeElement) iter.next();
+        for (Iterator<IvyNodeElement> iter = conflicts.iterator(); iter.hasNext();) {
+          IvyNodeElement conflict = iter.next();
           conflict.setConflicts(conflicts);
         }
       } else {

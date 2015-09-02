@@ -83,6 +83,10 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
    * 
    * <p>If you access the cloned IndexInput after closing the original object,
    * any <code>readXXX</code> methods will throw {@link AlreadyClosedException}.
+   *
+   * <p>This method is NOT thread safe, so if the current {@code IndexInput}
+   * is being used by one thread while {@code clone} is called by another,
+   * disaster could strike.
    */
   @Override
   public IndexInput clone() {

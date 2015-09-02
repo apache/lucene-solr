@@ -31,44 +31,53 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.tartarus.snowball;
 
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.util.Locale;
 
 /**
  * This is the rev 502 of the Snowball SVN trunk,
+ * now located at <a target="_blank" href="https://github.com/snowballstem/snowball/tree/e103b5c257383ee94a96e7fc58cab3c567bf079b">GitHub</a>,
  * but modified:
- * made abstract and introduced abstract method stem to avoid expensive reflection in filter class.
- * refactored StringBuffers to StringBuilder
- * uses char[] as buffer instead of StringBuffer/StringBuilder
- * eq_s,eq_s_b,insert,replace_s take CharSequence like eq_v and eq_v_b
- * reflection calls (Lovins, etc) use EMPTY_ARGS/EMPTY_PARAMS
+ * <ul>
+ * <li>made abstract and introduced abstract method stem to avoid expensive reflection in filter class.
+ * <li>refactored StringBuffers to StringBuilder
+ * <li>uses char[] as buffer instead of StringBuffer/StringBuilder
+ * <li>eq_s,eq_s_b,insert,replace_s take CharSequence like eq_v and eq_v_b
+ * <li>use MethodHandles and fix <a target="_blank" href="http://article.gmane.org/gmane.comp.search.snowball/1139">method visibility bug</a>.
+ * </ul>
  */
-public class Among {
-  private static final Class<?>[] EMPTY_PARAMS = new Class[0];
-
+public final class Among {
+  
   public Among(String s, int substring_i, int result,
-               String methodname, SnowballProgram methodobject) {
+               String methodname, MethodHandles.Lookup methodobject) {
     this.s_size = s.length();
     this.s = s.toCharArray();
     this.substring_i = substring_i;
     this.result = result;
-    this.methodobject = methodobject;
-    if (methodname.length() == 0) {
+    if (methodname.isEmpty()) {
       this.method = null;
     } else {
+      final Class<? extends SnowballProgram> clazz = methodobject.lookupClass().asSubclass(SnowballProgram.class);
       try {
-        this.method = methodobject.getClass().
-            getDeclaredMethod(methodname, EMPTY_PARAMS);
-      } catch (NoSuchMethodException e) {
-        throw new RuntimeException(e);
+        this.method = methodobject.findVirtual(clazz, methodname, MethodType.methodType(boolean.class))
+            .asType(MethodType.methodType(boolean.class, SnowballProgram.class));
+      } catch (NoSuchMethodException | IllegalAccessException e) {
+        throw new RuntimeException(String.format(Locale.ENGLISH,
+            "Snowball program '%s' is broken, cannot access method: boolean %s()",
+            clazz.getSimpleName(), methodname
+        ), e);
       }
     }
   }
 
-    public final int s_size; /* search string */
-    public final char[] s; /* search string */
-    public final int substring_i; /* index to longest matching substring */
-    public final int result;      /* result of the lookup */
-    public final Method method; /* method to use if substring matches */
-    public final SnowballProgram methodobject; /* object to invoke method on */
-   
-};
+  final int s_size; /* search string */
+  final char[] s; /* search string */
+  final int substring_i; /* index to longest matching substring */
+  final int result;      /* result of the lookup */
+  
+  // Make sure this is not accessible outside package for Java security reasons!
+  final MethodHandle method; /* method to use if substring matches */
+  
+}

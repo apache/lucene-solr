@@ -70,6 +70,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -223,6 +224,12 @@ public class SolrCLI {
           + "Supported tools:\n");
       displayToolOptions(System.err);
       exit(1);
+    }
+
+    if (args.length == 1 && Arrays.asList("-v","-version","version").contains(args[0])) {
+      // Simple version tool, no need for its own class
+      System.out.println(Version.LATEST);
+      exit(0);
     }
 
     String configurerClassName = System.getProperty("solr.authentication.httpclient.configurer");
@@ -1446,13 +1453,7 @@ public class SolrCLI {
       try {
         json = getJson(createCollectionUrl);
       } catch (SolrServerException sse) {
-        // check if already exists
-        if (safeCheckCollectionExists(collectionListUrl, collectionName)) {
-          throw new IllegalArgumentException("Collection '"+collectionName+
-              "' already exists!\nChecked collection existence using Collections API command:\n"+collectionListUrl);
-        } else {
-          throw new Exception("Failed to create collection '"+collectionName+"' due to: "+sse.getMessage());
-        }
+        throw new Exception("Failed to create collection '"+collectionName+"' due to: "+sse.getMessage());
       }
 
       CharArr arr = new CharArr();
@@ -1584,18 +1585,7 @@ public class SolrCLI {
 
       echo("\nCreating new core '" + coreName + "' using command:\n" + createCoreUrl + "\n");
 
-      Map<String,Object> json = null;
-      try {
-        json = getJson(createCoreUrl);
-      } catch (SolrServerException sse) {
-        // mostly likely the core already exists ...
-        if (safeCheckCoreExists(coreStatusUrl, coreName)) {
-          // core already exists
-          throw new IllegalArgumentException("Core '"+coreName+"' already exists!\nChecked core existence using Core API command:\n"+coreStatusUrl);
-        } else {
-          throw sse;
-        }
-      }
+      Map<String,Object> json = getJson(createCoreUrl);
 
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(json);
@@ -2150,25 +2140,16 @@ public class SolrCLI {
         }
 
         if (exampledocsDir.isDirectory()) {
-          File postJarFile = new File(exampledocsDir, "post.jar");
           String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
           echo("Indexing tech product example docs from "+exampledocsDir.getAbsolutePath());
-          if (postJarFile.isFile()) {
-            String javaHome = System.getProperty("java.home");
-            String java = javaHome+"/bin/java";
-            String postCmd = String.format(Locale.ROOT, "%s -Durl=\"%s\" -jar %s \"%s\"/*.xml",
-                java, updateUrl, postJarFile.getAbsolutePath(), exampledocsDir.getAbsolutePath());
-            executor.execute(org.apache.commons.exec.CommandLine.parse(postCmd));
+
+          String currentPropVal = System.getProperty("url");
+          System.setProperty("url", updateUrl);
+          SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath()+"/*.xml"});
+          if (currentPropVal != null) {
+            System.setProperty("url", currentPropVal); // reset
           } else {
-            // a bit hacky, but just use SimplePostTool directly
-            String currentPropVal = System.getProperty("url");
-            System.setProperty("url", updateUrl);
-            SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath()+"/*.xml"});
-            if (currentPropVal != null) {
-              System.setProperty("url", currentPropVal); // reset
-            } else {
-              System.clearProperty("url");
-            }
+            System.clearProperty("url");
           }
         } else {
           echo("exampledocs directory not found, skipping indexing step for the techproducts example");

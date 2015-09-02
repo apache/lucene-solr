@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Copyright 2004 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -123,7 +123,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     public DisjunctionMaxWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       super(DisjunctionMaxQuery.this);
       for (Query disjunctQuery : disjuncts) {
-        weights.add(disjunctQuery.createWeight(searcher, needsScores));
+        weights.add(searcher.createWeight(disjunctQuery, needsScores));
       }
       this.needsScores = needsScores;
     }

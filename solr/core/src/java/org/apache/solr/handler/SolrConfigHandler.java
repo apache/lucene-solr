@@ -82,6 +82,7 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
+import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
@@ -91,7 +92,6 @@ public class SolrConfigHandler extends RequestHandlerBase {
   public static final Logger log = LoggerFactory.getLogger(SolrConfigHandler.class);
   public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
   public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
-  public static final String IMMUTABLE_CONFIGSET_ARG = "immutable";
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private Lock reloadLock = new ReentrantLock(true);
   private boolean isImmutableConfigSet = false;
@@ -700,7 +700,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
           prop, expectedVersion, concurrentTasks.size(), collection));
       Thread.currentThread().interrupt();
     } finally {
-      ExecutorUtil.shutdownNowAndAwaitTermination(parallelExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
     }
 
     log.info("Took {}ms to set the property {} to be of version {} for collection {}",

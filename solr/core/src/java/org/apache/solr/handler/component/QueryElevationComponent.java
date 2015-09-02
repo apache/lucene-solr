@@ -17,8 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import com.carrotsearch.hppc.IntIntOpenHashMap;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -72,6 +70,8 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+
+import com.carrotsearch.hppc.IntIntHashMap;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -536,16 +536,16 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
 
-  public static IntIntOpenHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Map<BytesRef, Integer>boosted, Map context) throws IOException {
+  public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Map<BytesRef, Integer>boosted, Map context) throws IOException {
 
-    IntIntOpenHashMap boostDocs = null;
+    IntIntHashMap boostDocs = null;
 
     if(boosted != null) {
 
       //First see if it's already in the request context. Could have been put there
       //by another caller.
       if(context != null) {
-        boostDocs = (IntIntOpenHashMap)context.get(BOOSTED_DOCIDS);
+        boostDocs = (IntIntHashMap) context.get(BOOSTED_DOCIDS);
       }
 
       if(boostDocs != null) {
@@ -555,13 +555,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       SchemaField idField = indexSearcher.getSchema().getUniqueKeyField();
       String fieldName = idField.getName();
-      HashSet<BytesRef> localBoosts = new HashSet(boosted.size()*2);
+      HashSet<BytesRef> localBoosts = new HashSet<>(boosted.size()*2);
       Iterator<BytesRef> boostedIt = boosted.keySet().iterator();
       while(boostedIt.hasNext()) {
         localBoosts.add(boostedIt.next());
       }
 
-      boostDocs = new IntIntOpenHashMap(boosted.size()*2);
+      boostDocs = new IntIntHashMap(boosted.size());
 
       List<LeafReaderContext>leaves = indexSearcher.getTopReaderContext().leaves();
       PostingsEnum postingsEnum = null;

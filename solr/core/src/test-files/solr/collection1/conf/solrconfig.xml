@@ -83,7 +83,7 @@
     -->
     
     <updateLog enable="${enable.update.log:true}">
-  	  <str name="dir">${solr.ulog.dir:}</str>
+      <str name="dir">${solr.ulog.dir:}</str>
     </updateLog> 
     
     <commitWithin>
@@ -198,7 +198,7 @@
      is not specified in the request.
   -->
   <requestHandler name="standard" class="solr.StandardRequestHandler">
-  	<bool name="httpCaching">true</bool>
+    <bool name="httpCaching">true</bool>
   </requestHandler>
 
   <requestHandler name="dismax" class="solr.SearchHandler" >
@@ -269,11 +269,11 @@
       <int name="maxChanges">10</int>
     </lst>
     <lst name="spellchecker">
-			<str name="name">multipleFields</str>
-			<str name="field">lowerfilt1and2</str>
-			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
-			<str name="buildOnCommit">false</str>
-   	</lst>
+      <str name="name">multipleFields</str>
+      <str name="field">lowerfilt1and2</str>
+      <str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
+      <str name="buildOnCommit">false</str>
+     </lst>
     <!-- Example of using different distance measure -->
     <lst name="spellchecker">
       <str name="name">jarowinkler</str>
@@ -377,13 +377,13 @@
     </arr>
   </requestHandler>
   <requestHandler name="spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
-			<lst name="defaults">
-				<str name="defType">dismax</str>
-				<str name="qf">lowerfilt1^1</str>
-			</lst>
-			<arr name="last-components">
-				<str>spellcheck</str>
-			</arr>
+      <lst name="defaults">
+        <str name="defType">dismax</str>
+        <str name="qf">lowerfilt1^1</str>
+      </lst>
+      <arr name="last-components">
+        <str>spellcheck</str>
+      </arr>
  </requestHandler>
  
   <requestHandler name="mltrh" class="org.apache.solr.handler.component.SearchHandler">

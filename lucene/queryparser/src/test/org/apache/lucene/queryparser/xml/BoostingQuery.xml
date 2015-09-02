@@ -16,18 +16,18 @@
  limitations under the License.
 -->
 <BoostingQuery>
-	<!-- Find docs about banks, preferably merger info and preferably not "World bank" -->
-	<Query>
-		<BooleanQuery fieldName="contents">
-			<Clause occurs="should">
-				<TermQuery>merger</TermQuery>
-			</Clause>
-			<Clause occurs="must">
-				<TermQuery>bank</TermQuery>
-			</Clause>
-		</BooleanQuery>	
-	</Query>
-	<BoostQuery boost="0.01">
-			<UserQuery>"world bank"</UserQuery>
-	</BoostQuery>
+  <!-- Find docs about banks, preferably merger info and preferably not "World bank" -->
+  <Query>
+    <BooleanQuery fieldName="contents">
+      <Clause occurs="should">
+        <TermQuery>merger</TermQuery>
+      </Clause>
+      <Clause occurs="must">
+        <TermQuery>bank</TermQuery>
+      </Clause>
+    </BooleanQuery>  
+  </Query>
+  <BoostQuery boost="0.01">
+      <UserQuery>"world bank"</UserQuery>
+  </BoostQuery>
 </BoostingQuery>

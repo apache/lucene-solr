@@ -710,7 +710,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-    DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
+    DocList dl = ((ResultContext) rsp.getValues().get("response")).getDocList();
     StoredDocument d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field in fl is not lazy
     assertFalse( ((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
@@ -735,7 +735,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-    DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
+    DocList dl = ((ResultContext) rsp.getValues().get("response")).getDocList();
     DocIterator di = dl.iterator();    
     StoredDocument d1 = req.getSearcher().doc(di.nextDoc());
     StorableField[] values1 = null;
@@ -757,7 +757,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-    dl = ((ResultContext) rsp.getValues().get("response")).docs;
+    dl = ((ResultContext) rsp.getValues().get("response")).getDocList();
     di = dl.iterator();    
     StoredDocument d2 = req.getSearcher().doc(di.nextDoc());
     // ensure same doc, same lazy field now

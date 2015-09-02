@@ -42,6 +42,7 @@ public class TestJoin extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema12.xml");
   }
 
+
   @Test
   public void testJoin() throws Exception {
     assertU(add(doc("id", "1","name", "john", "title", "Director", "dept_s","Engineering")));
@@ -223,7 +224,7 @@ public class TestJoin extends SolrTestCaseJ4 {
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
            + "\n\texpected="+ JSONUtil.toJSON(resultSet)
-           + "\n\tmodel="+ JSONUtil.toJSON(model)
+           + "\n\tmodel="+ model
           );
 
           // re-execute the request... good for putting a breakpoint here for debugging

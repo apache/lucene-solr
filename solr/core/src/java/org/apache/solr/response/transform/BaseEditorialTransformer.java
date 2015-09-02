@@ -47,7 +47,7 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, float score) {
     //this only gets added if QueryElevationParams.MARK_EXCLUDED is true
     Set<String> ids = getIdSet();
     if (ids != null && ids.isEmpty() == false) {

@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  *   <li>&lt;HANGUL&gt;: A sequence of Hangul characters</li>
  * </ul>
  */
+@SuppressWarnings("fallthrough")
 %%
 
 %unicode 6.3

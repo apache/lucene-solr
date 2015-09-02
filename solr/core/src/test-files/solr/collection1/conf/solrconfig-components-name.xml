@@ -41,8 +41,8 @@
                        class="solr.XMLResponseWriter" />
 
   <requestHandler name="standard" class="solr.StandardRequestHandler">
-  	<bool name="httpCaching">true</bool>
-  	<arr name="first-components">
+    <bool name="httpCaching">true</bool>
+    <arr name="first-components">
       <str>component1</str>
     </arr>
     <arr name="last-components">

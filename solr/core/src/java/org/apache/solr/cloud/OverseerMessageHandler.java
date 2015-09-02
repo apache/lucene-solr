@@ -21,7 +21,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 
 /**
- * Interface for processing messages received by an {@link OverseerProcessor}
+ * Interface for processing messages received by an {@link OverseerTaskProcessor}
  */
 public interface OverseerMessageHandler {
 
@@ -61,8 +61,9 @@ public interface OverseerMessageHandler {
   /**
    * @param taskKey the key associated with the task
    * @param operation the operation being processed
+   * @param message the message being processed
    */
-  void unmarkExclusiveTask(String taskKey, String operation);
+  void unmarkExclusiveTask(String taskKey, String operation, ZkNodeProps message);
 
   /**
    * @param taskKey the key associated with the task

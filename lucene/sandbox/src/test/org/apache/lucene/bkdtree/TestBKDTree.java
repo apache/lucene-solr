@@ -169,9 +169,7 @@ public class TestBKDTree extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // We rely on docID order:
     iwc.setMergePolicy(newLogMergePolicy());
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
-    Codec codec = TestUtil.alwaysDocValuesFormat(new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap));
+    Codec codec = TestUtil.alwaysDocValuesFormat(getDocValuesFormat());
     iwc.setCodec(codec);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
@@ -360,15 +358,13 @@ public class TestBKDTree extends LuceneTestCase {
   private static final double TOLERANCE = 1e-7;
 
   private static void verify(double[] lats, double[] lons) throws Exception {
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
     if (mbd != -1 && mbd < lats.length/100) {
       iwc.setMaxBufferedDocs(lats.length/100);
     }
-    final DocValuesFormat dvFormat = new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
+    final DocValuesFormat dvFormat = getDocValuesFormat();
     Codec codec = new Lucene53Codec() {
         @Override
         public DocValuesFormat getDocValuesFormatForField(String field) {
@@ -616,7 +612,7 @@ public class TestBKDTree extends LuceneTestCase {
   public void testAccountableHasDelegate() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
-    Codec codec = TestUtil.alwaysDocValuesFormat(new BKDTreeDocValuesFormat());
+    Codec codec = TestUtil.alwaysDocValuesFormat(getDocValuesFormat());
     iwc.setCodec(codec);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -631,5 +627,11 @@ public class TestBKDTree extends LuceneTestCase {
     assertEquals(1, hits.totalHits);
     assertTrue(Accountables.toString((Accountable) r.leaves().get(0).reader()).contains("delegate"));
     IOUtils.close(r, w, dir);
+  }
+
+  private static DocValuesFormat getDocValuesFormat() {
+    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
+    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
+    return new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
   }
 }

@@ -273,7 +273,7 @@ sammy.bind
         'types' : []
       }
 
-      $( 'option[value="' + params.route_params.path + '"]', related_select_element )
+      $( 'option[value="' + params.route_params.path.esc() + '"]', related_select_element )
         .attr( 'selected', 'selected' );
 
       related_select_element

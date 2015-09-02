@@ -26,11 +26,11 @@ import org.apache.lucene.util.RamUsageEstimator;
 /**
  * Space optimized random access capable array of values with a fixed number of
  * bits/value. Values are packed contiguously.
- * </p><p>
+ * <p>
  * The implementation strives to perform as fast as possible under the
  * constraint of contiguous bits, by avoiding expensive operations. This comes
  * at the cost of code clarity.
- * </p><p>
+ * <p>
  * Technical details: This implementation is a refinement of a non-branching
  * version. The non-branching get and set methods meant that 2 or 4 atomics in
  * the underlying array were always accessed, even for the cases where only

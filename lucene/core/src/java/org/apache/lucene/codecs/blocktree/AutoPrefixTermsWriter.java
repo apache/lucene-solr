@@ -40,7 +40,7 @@ import org.apache.lucene.util.StringHelper;
 /** Used in the first pass when writing a segment to locate
  *  "appropriate" auto-prefix terms to pre-compile into the index.
  *  This visits every term in the index to find prefixes that
- *  match >= min and <= max number of terms. */
+ *  match {@code >= min} and {@code <= max} number of terms. */
 
 class AutoPrefixTermsWriter {
 

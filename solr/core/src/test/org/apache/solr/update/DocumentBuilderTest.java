@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.schema.CopyField;
@@ -40,7 +41,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.ResultContext;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -345,7 +345,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-      DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
+      DocList dl = ((ResultContext) rsp.getValues().get("response")).getDocList();
       assertTrue("can't find the doc we just added", 1 == dl.size());
       int docid = dl.iterator().nextDoc();
 

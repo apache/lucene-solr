@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 Renaud Delbru. All Rights Reserved.
  */
 package org.apache.solr.cloud;
