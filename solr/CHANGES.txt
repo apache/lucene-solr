@@ -210,9 +210,10 @@ Optimizations
   are more efficient especially when cluster has a mix of collections in stateFormat=1
   and stateFormat=2. (Scott Blum, shalin)
 
-* SOLR-7971: Reduce memory allocated by JavaBinCodec to encode large strings by an amount
-  equal to the string.length().
-  (yonik, Steve Rowe, shalin)
+* SOLR-7971: Reduce memory allocated by JavaBinCodec to encode small strings by an amount
+  equal to the string.length(). JavaBinCodec now uses a double pass approach to write strings
+  larger than 64KB to avoid allocating buffer memory equal to string's UTF8 size.
+  (yonik, Steve Rowe, Mikhail Khludnev, Noble Paul, shalin)
 
 * SOLR-7983: Utils.toUTF8 uses larger buffer than necessary for holding UTF8 data. (shalin)
 
