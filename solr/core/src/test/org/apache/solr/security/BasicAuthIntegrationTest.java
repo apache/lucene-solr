@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.TestMiniSolrCloudCluster;
+import org.apache.solr.cloud.TestMiniSolrCloudClusterBase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -62,7 +62,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 
-public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
+public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
 
   private static final Logger log = LoggerFactory.getLogger(BasicAuthIntegrationTest.class);
 
@@ -164,11 +164,18 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
 
     }
 
-    httpPost = new HttpPost(baseUrl + "/admin/authorization");
+   /* httpPost = new HttpPost(baseUrl + "/admin/authorization");
     setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
     httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("delete-permission", "collection-admin-edit"))));
-    r = cl.execute(httpPost);//cleanup so that the super class does not need to pass on credentials
+    r = cl.execute(httpPost); //cleanup so that the super class does not need to pass on credentials
 
+    for (Slice  slice : zkStateReader.getClusterState().getCollection(defaultCollName).getSlices()) {
+      //ensure that all nodes have removed the collection-admin-edit permission
+      for (Replica replica : slice.getReplicas()) {
+        baseUrl = replica.getStr(BASE_URL_PROP);
+        verifySecurityStatus(cl, baseUrl + "/admin/authorization", "authorization/permissions[2]/name", null, 20);
+      }
+    }*/
   }
 
   public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
@@ -187,7 +194,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
           success = true;
           break;
         }
-      } else if (Objects.equals(String.valueOf(actual), expected)) {
+      } else if (Objects.equals(actual == null ? null : String.valueOf(actual), expected)) {
         success = true;
         break;
       }
@@ -222,21 +229,6 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudCluster {
       return o != null;
     }
   };
-
-
-  @Override
-  public void testErrorsInStartup() throws Exception {
-    //don't do anything
-  }
-
-  @Override
-  public void testErrorsInShutdown() throws Exception {
-  }
-
-
-  @Override
-  public void testCollectionCreateWithoutCoresThenDelete() throws Exception {
-  }
 
   //the password is 'SolrRocks'
   //this could be generated everytime. But , then we will not know if there is any regression
