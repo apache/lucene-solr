@@ -238,12 +238,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       } else {
         writer.addDocument(cmd.getLuceneDocument());
       }
+      if (ulog != null) ulog.add(cmd);
+
     } finally {
       iw.decref();
     }
-    synchronized (solrCoreState.getUpdateLock()) {
-      if (ulog != null) ulog.add(cmd);
-    }
+
   }
 
   private void doNormalUpdate(AddUpdateCommand cmd) throws IOException {
@@ -278,20 +278,23 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
         writer.deleteDocuments(new DeleteByQueryWrapper(bq.build(), core.getLatestSchema()));
       }
+
+
+      // Add to the transaction log *after* successfully adding to the
+      // index, if there was no error.
+      // This ordering ensures that if we log it, it's definitely been
+      // added to the the index.
+      // This also ensures that if a commit sneaks in-between, that we
+      // know everything in a particular
+      // log version was definitely committed.
+      if (ulog != null) ulog.add(cmd);
+
     } finally {
       iw.decref();
     }
 
-    // Add to the transaction log *after* successfully adding to the
-    // index, if there was no error.
-    // This ordering ensures that if we log it, it's definitely been
-    // added to the the index.
-    // This also ensures that if a commit sneaks in-between, that we
-    // know everything in a particular
-    // log version was definitely committed.
-    synchronized (solrCoreState.getUpdateLock()) {
-      if (ulog != null) ulog.add(cmd);
-    }
+
+
   }
 
   private void addAndDelete(AddUpdateCommand cmd, List<UpdateLog.DBQ> deletesAfter) throws IOException {
@@ -323,13 +326,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         for (Query q : dbqList) {
           writer.deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));
         }
+        if (ulog != null) ulog.add(cmd, true); // this needs to be protected by update lock
       }
     } finally {
       iw.decref();
     }
-    synchronized (solrCoreState.getUpdateLock()) {
-      if (ulog != null) ulog.add(cmd, true);
-    }
+
   }
 
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
@@ -434,6 +436,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       // part of a commit.  DBQ needs to signal that a fresh reader will be needed for
       // a realtime view of the index.  When a new searcher is opened after a DBQ, that
       // flag can be cleared.  If those thing happen concurrently, it's not thread safe.
+      // Also, ulog.deleteByQuery clears caches and is thus not safe to be called between
+      // preSoftCommit/postSoftCommit and thus we use the updateLock to prevent this (just
+      // as we use around ulog.preCommit... also see comments in ulog.postSoftCommit)
       //
       synchronized (solrCoreState.getUpdateLock()) {
         if (delAll) {
@@ -447,7 +452,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           }
         }
 
-        if (ulog != null) ulog.deleteByQuery(cmd);
+        if (ulog != null) ulog.deleteByQuery(cmd);  // this needs to be protected by the update lock
       }
 
       madeIt = true;
