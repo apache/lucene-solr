@@ -77,6 +77,8 @@ public class JavaBinCodec {
           NAMED_LST = (byte) (6 << 5), // NamedList
           EXTERN_STRING = (byte) (7 << 5);
 
+  private static final int MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY = 65536;
+
 
   private static byte VERSION = 2;
   private final ObjectResolver resolver;
@@ -614,12 +616,20 @@ public class JavaBinCodec {
       return;
     }
     int end = s.length();
-    int maxSize = end * 3; // 3 is enough, see SOLR-7971
-    if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
-    int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
+    int maxSize = end * ByteUtils.MAX_UTF8_BYTES_PER_CHAR;
 
-    writeTag(STR, sz);
-    daos.write(bytes, 0, sz);
+    if (maxSize <= MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
+      if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
+      int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
+      writeTag(STR, sz);
+      daos.write(bytes, 0, sz);
+    } else {
+      // double pass logic for large strings, see SOLR-7971
+      int sz = ByteUtils.calcUTF16toUTF8Length(s, 0, end);
+      writeTag(STR, sz);
+      if (bytes == null || bytes.length < 8192) bytes = new byte[8192];
+      ByteUtils.writeUTF16toUTF8(s, 0, end, daos, bytes);
+    }
   }
 
   byte[] bytes;

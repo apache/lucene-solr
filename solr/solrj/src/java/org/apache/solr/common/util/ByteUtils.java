@@ -17,9 +17,15 @@
 
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import org.noggit.CharArr;
 
 public class ByteUtils {
+
+  /** Maximum number of UTF8 bytes per UTF16 character. */
+  public static final int MAX_UTF8_BYTES_PER_CHAR = 3;
 
   /** Converts utf8 to utf16 and returns the number of 16 bit Java chars written.
    * Full characters are read, even if this reads past the length passed (and can result in
@@ -121,6 +127,100 @@ public class ByteUtils {
     return upto - resultOffset;
   }
 
+  /** Writes UTF8 into the given OutputStream by first writing to the given scratch array
+   * and then writing the contents of the scratch array to the OutputStream. The given scratch byte array
+   * is used to buffer intermediate data before it is written to the byte buffer.
+   *
+   * @return the number of bytes written
+   */
+  public static int writeUTF16toUTF8(CharSequence s, int offset, int len, OutputStream fos, byte[] scratch) throws IOException {
+    final int end = offset + len;
 
+    int upto = 0, totalBytes = 0;
+    for(int i=offset;i<end;i++) {
+      final int code = (int) s.charAt(i);
+
+      if (upto > scratch.length - 4)  {
+        // a code point may take upto 4 bytes and we don't have enough space, so reset
+        totalBytes += upto;
+        fos.write(scratch, 0, upto);
+        upto = 0;
+      }
+
+      if (code < 0x80)
+        scratch[upto++] = (byte) code;
+      else if (code < 0x800) {
+        scratch[upto++] = (byte) (0xC0 | (code >> 6));
+        scratch[upto++] = (byte)(0x80 | (code & 0x3F));
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        scratch[upto++] = (byte)(0xE0 | (code >> 12));
+        scratch[upto++] = (byte)(0x80 | ((code >> 6) & 0x3F));
+        scratch[upto++] = (byte)(0x80 | (code & 0x3F));
+      } else {
+        // surrogate pair
+        // confirm valid high surrogate
+        if (code < 0xDC00 && (i < end-1)) {
+          int utf32 = (int) s.charAt(i+1);
+          // confirm valid low surrogate and write pair
+          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
+            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
+            i++;
+            scratch[upto++] = (byte)(0xF0 | (utf32 >> 18));
+            scratch[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F));
+            scratch[upto++] = (byte)(0x80 | ((utf32 >> 6) & 0x3F));
+            scratch[upto++] = (byte)(0x80 | (utf32 & 0x3F));
+            continue;
+          }
+        }
+        // replace unpaired surrogate or out-of-order low surrogate
+        // with substitution character
+        scratch[upto++] = (byte) 0xEF;
+        scratch[upto++] = (byte) 0xBF;
+        scratch[upto++] = (byte) 0xBD;
+      }
+    }
+
+    totalBytes += upto;
+    fos.write(scratch, 0, upto);
+
+    return totalBytes;
+  }
+
+  /**
+   * Calculates the number of UTF8 bytes necessary to write a UTF16 string.
+   *
+   * @return the number of bytes written
+   */
+  public static int calcUTF16toUTF8Length(CharSequence s, int offset, int len) {
+    final int end = offset + len;
+
+    int res = 0;
+    for (int i = offset; i < end; i++) {
+      final int code = (int) s.charAt(i);
+
+      if (code < 0x80)
+        res++;
+      else if (code < 0x800) {
+        res += 2;
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        res += 3;
+      } else {
+        // surrogate pair
+        // confirm valid high surrogate
+        if (code < 0xDC00 && (i < end - 1)) {
+          int utf32 = (int) s.charAt(i + 1);
+          // confirm valid low surrogate and write pair
+          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
+            i++;
+            res += 4;
+            continue;
+          }
+        }
+        res += 3;
+      }
+    }
+
+    return res;
+  }
 
 }
