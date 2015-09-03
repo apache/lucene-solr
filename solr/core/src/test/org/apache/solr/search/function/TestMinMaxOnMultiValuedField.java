@@ -261,6 +261,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     // extreme's of the data type
     testSimpleValues(fieldname, int.class, Integer.MIN_VALUE, 42, -550);
     testSimpleValues(fieldname, int.class, Integer.MAX_VALUE, 0, Integer.MIN_VALUE);
+
+    testSimpleSort(fieldname, -42, 666);
   }
   
   /** @see #testSimpleValues */
@@ -275,6 +277,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     // extreme's of the data type
     testSimpleValues(fieldname, long.class, Long.MIN_VALUE, 42L, -550L);
     testSimpleValues(fieldname, long.class, Long.MAX_VALUE, 0L, Long.MIN_VALUE);
+    
+    testSimpleSort(fieldname, -42, 666);
   }
   
   /** @see #testSimpleValues */
@@ -289,6 +293,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     // extreme's of the data type
     testSimpleValues(fieldname, float.class, Float.NEGATIVE_INFINITY, 42.5F, -550.4F);
     testSimpleValues(fieldname, float.class, Float.POSITIVE_INFINITY, 0.0F, Float.NEGATIVE_INFINITY);
+    
+    testSimpleSort(fieldname, -4.2, 6.66);
   }
   
   /** @see #testSimpleValues */
@@ -303,11 +309,14 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     // extreme's of the data type
     testSimpleValues(fieldname, double.class, Double.NEGATIVE_INFINITY, 42.5D, -550.4D);
     testSimpleValues(fieldname, double.class, Double.POSITIVE_INFINITY, 0.0D, Double.NEGATIVE_INFINITY);
+    
+    testSimpleSort(fieldname, -4.2, 6.66);
   }
   
   /** Tests a single doc with a few explicit values, as well as testing exists with and w/o values */
   protected void testSimpleValues(final String fieldname, final Class clazz, final Comparable... vals) {
-
+    clearIndex();
+    
     assert 0 < vals.length;
     
     Comparable min = vals[0];
@@ -327,7 +336,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertU(adoc(doc1));
     assertU(adoc(sdoc("id", "2"))); // fieldname doesn't exist
     assertU(commit());
-    
+
+    // doc with values
     assertQ(fieldname,
             req("q","id:1",
                 "fl","exists_val_min:exists(field("+fieldname+",min))",
@@ -341,6 +351,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
             ,"//"+type+"[@name='val_max']='"+max+"'"
             );
 
+    // doc w/o values
     assertQ(fieldname,
             req("q","id:2",
                 "fl","exists_val_min:exists(field("+fieldname+",min))",
@@ -353,6 +364,87 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
             ,"count(//"+type+"[@name='val_min'])=0"
             ,"count(//"+type+"[@name='val_max'])=0"
             );
+
+    // sanity check no sort error when there are missing values
+    for (String dir : new String[] { "asc", "desc" }) {
+      for (String mm : new String[] { "min", "max" }) {
+        for (String func : new String[] { "field("+fieldname+","+mm+")",
+                                          "def(field("+fieldname+","+mm+"),42)",
+                                          "sum(32,field("+fieldname+","+mm+"))"  }) {
+          assertQ(fieldname,
+                  req("q","*:*", 
+                      "fl", "id",
+                      "sort", func + " " + dir)
+                  ,"//*[@numFound='2']"
+                  // no assumptions about order for now, see bug: SOLR-8005
+                  ,"//float[@name='id']='1.0'"
+                  ,"//float[@name='id']='2.0'"
+                  );
+        }
+      }
+    }
   }
 
+  /** 
+   * Tests sort order of min/max realtive to other docs w/o any values.
+   * @param fieldname The field to test
+   * @param negative a "negative" value for this field (ie: in a function context, is less then the "0")
+   * @param positive a "positive" value for this field (ie: in a function context, is more then the "0")
+   */
+  protected void testSimpleSort(final String fieldname,
+                                final Comparable negative, final Comparable positive) {
+    clearIndex();
+
+    int numDocsExpected = 1;
+    for (int i = 1; i < 4; i++) { // pos docids
+      if (random().nextBoolean()) {
+        assertU(adoc(sdoc("id",i))); // fieldname doesn't exist
+        numDocsExpected++;
+      }
+    }
+    
+    assertU(adoc(sdoc("id", "0",
+                      fieldname, negative,
+                      fieldname, positive)));
+    
+    for (int i = 1; i < 4; i++) { // neg docids
+      if (random().nextBoolean()) {
+        assertU(adoc(sdoc("id",-i))); // fieldname doesn't exist
+        numDocsExpected++;
+      }
+    }
+    assertU(commit());
+
+    // need to wrap with "def" until SOLR-8005 is resolved
+    assertDocWithValsIsFirst(numDocsExpected, "def(field("+fieldname+",min),0) asc");
+    assertDocWithValsIsLast(numDocsExpected,  "def(field("+fieldname+",min),0) desc");
+    
+    assertDocWithValsIsFirst(numDocsExpected, "def(field("+fieldname+",max),0) desc");
+    assertDocWithValsIsLast(numDocsExpected,  "def(field("+fieldname+",max),0) asc");
+
+    // def wrapper shouldn't be needed since it's already part of another function
+    assertDocWithValsIsFirst(numDocsExpected, "sum(32,field("+fieldname+",max)) desc");
+    assertDocWithValsIsLast(numDocsExpected,  "sum(32,field("+fieldname+",max)) asc");
+    
+    assertDocWithValsIsFirst(numDocsExpected, "sum(32,field("+fieldname+",min)) asc");
+    assertDocWithValsIsLast(numDocsExpected,  "sum(32,field("+fieldname+",min)) desc");
+  }
+
+  /** helper for testSimpleSort */
+  private static void assertDocWithValsIsFirst(final int numDocs, final String sort) {
+    assertQ(sort,
+            req("q","*:*", "rows", ""+numDocs, "sort", sort)
+            ,"//result[@numFound='"+numDocs+"']"
+            ,"//result/doc[1]/float[@name='id']='0.0'"
+            );
+  }
+  /** helper for testSimpleSort */
+  private static void assertDocWithValsIsLast(final int numDocs, final String sort) {
+    assertQ(sort,
+            req("q","*:*", "rows", ""+numDocs, "sort", sort)
+            ,"//result[@numFound='"+numDocs+"']"
+            ,"//result/doc["+numDocs+"]/float[@name='id']='0.0'"
+            );
+  }
+  
 }
