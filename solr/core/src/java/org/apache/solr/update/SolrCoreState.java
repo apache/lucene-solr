@@ -39,10 +39,10 @@ public abstract class SolrCoreState {
   public static Logger log = LoggerFactory.getLogger(SolrCoreState.class);
   
   protected boolean closed = false;
-  private final Object deleteLock = new Object();
+  private final Object updateLock = new Object();
   
   public Object getUpdateLock() {
-    return deleteLock;
+    return updateLock;
   }
   
   private int solrCoreStateRefCnt = 1;
