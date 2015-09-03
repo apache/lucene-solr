@@ -192,6 +192,8 @@ Bug Fixes
 
 * SOLR-7984: wrong and misleading error message 'no default request handler is registered' (noble, hossman)
 
+* SOLR-8001: Fixed bugs in field(foo,min) and field(foo,max) when some docs have no values
+  (David Smiley, hossman)
 
 Optimizations
 ----------------------

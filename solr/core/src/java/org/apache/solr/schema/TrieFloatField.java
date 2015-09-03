@@ -78,6 +78,11 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
           @Override
           public float floatVal(int doc) {
             BytesRef bytes = view.get(doc);
+            if (0 == bytes.length) {
+              // the only way this should be possible is for non existent value
+              assert !exists(doc) : "zero bytes for doc, but exists is true";
+              return 0F;
+            }
             return  NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(bytes));
           }
 
@@ -98,8 +103,13 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
               
               @Override
               public void fillValue(int doc) {
-                mval.exists = exists(doc);
-                mval.value = mval.exists ? floatVal(doc) : 0.0F;
+                // micro optimized (eliminate at least one redudnent ord check) 
+                //mval.exists = exists(doc);
+                //mval.value = mval.exists ? floatVal(doc) : 0.0F;
+                //
+                BytesRef bytes = view.get(doc);
+                mval.exists = (0 == bytes.length);
+                mval.value = mval.exists ? NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(bytes)) : 0F;
               }
             };
           }

@@ -77,6 +77,11 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
           @Override
           public int intVal(int doc) {
             BytesRef bytes = view.get(doc);
+            if (0 == bytes.length) {
+              // the only way this should be possible is for non existent value
+              assert !exists(doc) : "zero bytes for doc, but exists is true";
+              return 0;
+            }
             return NumericUtils.prefixCodedToInt(bytes);
           }
 
@@ -97,8 +102,13 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
               
               @Override
               public void fillValue(int doc) {
-                mval.exists = exists(doc);
-                mval.value = mval.exists ? intVal(doc) : 0;
+                // micro optimized (eliminate at least one redudnent ord check) 
+                //mval.exists = exists(doc);
+                //mval.value = mval.exists ? intVal(doc) : 0;
+                //
+                BytesRef bytes = view.get(doc);
+                mval.exists = (0 == bytes.length);
+                mval.value = mval.exists ? NumericUtils.prefixCodedToInt(bytes) : 0;
               }
             };
           }
