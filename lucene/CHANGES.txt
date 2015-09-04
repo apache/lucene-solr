@@ -107,6 +107,8 @@ Bug Fixes
 * LUCENE-6774: Remove classloader hack in MorfologikFilter. (Robert Muir,
   Uwe Schindler)
 
+* LUCENE-6781: Fixed BoostingQuery to rewrite wrapped queries. (Adrien Grand)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
