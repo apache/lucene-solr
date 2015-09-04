@@ -18,7 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
 
@@ -112,21 +114,37 @@ public class MultiCollector implements Collector {
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    final LeafCollector[] leafCollectors = new LeafCollector[collectors.length];
-    for (int i = 0; i < collectors.length; ++i) {
-      leafCollectors[i] = collectors[i].getLeafCollector(context);
+    final List<LeafCollector> leafCollectors = new ArrayList<>();
+    for (Collector collector : collectors) {
+      final LeafCollector leafCollector;
+      try {
+        leafCollector = collector.getLeafCollector(context);
+      } catch (CollectionTerminatedException e) {
+        // this leaf collector does not need this segment
+        continue;
+      }
+      leafCollectors.add(leafCollector);
     }
-    return new MultiLeafCollector(leafCollectors, cacheScores);
+    switch (leafCollectors.size()) {
+      case 0:
+        throw new CollectionTerminatedException();
+      case 1:
+        return leafCollectors.get(0);
+      default:
+        return new MultiLeafCollector(leafCollectors, cacheScores);
+    }
   }
 
   private static class MultiLeafCollector implements LeafCollector {
 
     private final boolean cacheScores;
     private final LeafCollector[] collectors;
+    private int numCollectors;
 
-    private MultiLeafCollector(LeafCollector[] collectors, boolean cacheScores) {
-      this.collectors = collectors;
+    private MultiLeafCollector(List<LeafCollector> collectors, boolean cacheScores) {
+      this.collectors = collectors.toArray(new LeafCollector[collectors.size()]);
       this.cacheScores = cacheScores;
+      this.numCollectors = this.collectors.length;
     }
 
     @Override
@@ -139,10 +157,28 @@ public class MultiCollector implements Collector {
       }
     }
 
+    private void removeCollector(int i) {
+      System.arraycopy(collectors, i + 1, collectors, i, numCollectors - i - 1);
+      --numCollectors;
+      collectors[numCollectors] = null;
+    }
+
     @Override
     public void collect(int doc) throws IOException {
-      for (LeafCollector c : collectors) {
-        c.collect(doc);
+      final LeafCollector[] collectors = this.collectors;
+      int numCollectors = this.numCollectors;
+      for (int i = 0; i < numCollectors; ) {
+        final LeafCollector collector = collectors[i];
+        try {
+          collector.collect(doc);
+          ++i;
+        } catch (CollectionTerminatedException e) {
+          removeCollector(i);
+          numCollectors = this.numCollectors;
+          if (numCollectors == 0) {
+            throw new CollectionTerminatedException();
+          }
+        }
       }
     }
 
