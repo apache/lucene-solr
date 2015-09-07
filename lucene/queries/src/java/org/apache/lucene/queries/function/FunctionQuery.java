@@ -53,15 +53,9 @@ public class FunctionQuery extends Query {
     return func;
   }
 
-  @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    return this;
-  }
-
   protected class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
-    protected float queryNorm;
-    protected float queryWeight;
+    protected float queryNorm = 1f;
     protected final Map context;
 
     public FunctionWeight(IndexSearcher searcher) throws IOException {
@@ -76,24 +70,22 @@ public class FunctionQuery extends Query {
 
     @Override
     public float getValueForNormalization() throws IOException {
-      queryWeight = getBoost();
-      return queryWeight * queryWeight;
+      return queryNorm * queryNorm;
     }
 
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      this.queryNorm = norm * topLevelBoost;
-      queryWeight *= this.queryNorm;
+    public void normalize(float norm, float boost) {
+      this.queryNorm = norm * boost;
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      return new AllScorer(context, this, queryWeight);
+      return new AllScorer(context, this, queryNorm);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context)).explain(doc);
+      return ((AllScorer)scorer(context)).explain(doc, queryNorm);
     }
   }
 
@@ -157,13 +149,13 @@ public class FunctionQuery extends Query {
       return 1;
     }
 
-    public Explanation explain(int doc) throws IOException {
+    public Explanation explain(int doc, float queryNorm) throws IOException {
       float sc = qWeight * vals.floatVal(doc);
 
       return Explanation.match(sc, "FunctionQuery(" + func + "), product of:",
           vals.explain(doc),
-          Explanation.match(getBoost(), "boost"),
-          Explanation.match(weight.queryNorm, "queryNorm"));
+          Explanation.match(queryNorm, "boost"),
+          Explanation.match(weight.queryNorm = 1f, "queryNorm"));
     }
 
   }
@@ -179,9 +171,7 @@ public class FunctionQuery extends Query {
   @Override
   public String toString(String field)
   {
-    float boost = getBoost();
-    return (boost!=1.0?"(":"") + func.toString()
-            + (boost==1.0 ? "" : ")^"+boost);
+    return func.toString();
   }
 
 

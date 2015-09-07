@@ -27,7 +27,6 @@ import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +38,7 @@ import java.util.Set;
 
 /** Matches the union of its clauses.
  */
-public class SpanOrQuery extends SpanQuery implements Cloneable {
+public final class SpanOrQuery extends SpanQuery {
   private List<SpanQuery> clauses;
   private String field;
 
@@ -72,35 +71,19 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   public String getField() { return field; }
 
   @Override
-  public SpanOrQuery clone() {
-    int sz = clauses.size();
-    SpanQuery[] newClauses = new SpanQuery[sz];
-
-    for (int i = 0; i < sz; i++) {
-      newClauses[i] = (SpanQuery) clauses.get(i).clone();
-    }
-    SpanOrQuery soq = new SpanOrQuery(newClauses);
-    soq.setBoost(getBoost());
-    return soq;
-  }
-
-  @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    SpanOrQuery clone = null;
+    SpanOrQuery rewritten = new SpanOrQuery();
+    boolean actuallyRewritten = false;
     for (int i = 0 ; i < clauses.size(); i++) {
       SpanQuery c = clauses.get(i);
       SpanQuery query = (SpanQuery) c.rewrite(reader);
-      if (query != c) {                     // clause rewrote: must clone
-        if (clone == null)
-          clone = this.clone();
-        clone.clauses.set(i,query);
-      }
+      actuallyRewritten |= query != c;
+      rewritten.addClause(query);
     }
-    if (clone != null) {
-      return clone;                        // some clauses rewrote
-    } else {
-      return this;                         // no clauses rewrote
+    if (actuallyRewritten) {
+      return rewritten;
     }
+    return super.rewrite(reader);
   }
 
   @Override
@@ -116,7 +99,6 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
       }
     }
     buffer.append("])");
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

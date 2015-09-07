@@ -132,7 +132,7 @@ public abstract class CompletionQuery extends Query {
         }
       }
     }
-    return this;
+    return super.rewrite(reader);
   }
 
   @Override

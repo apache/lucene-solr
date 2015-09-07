@@ -58,12 +58,7 @@ public class QueryUtils {
 
   /** check very basic hashCode and equals */
   public static void checkHashEquals(Query q) {
-    Query q2 = q.clone();
-    checkEqual(q,q2);
-
-    Query q3 = q.clone();
-    q3.setBoost(7.21792348f);
-    checkUnequal(q,q3);
+    checkEqual(q,q);
 
     // test that a class check is done so that no exception is thrown
     // in the implementation of equals()
@@ -73,7 +68,6 @@ public class QueryUtils {
         return "My Whacky Query";
       }
     };
-    whacky.setBoost(q.getBoost());
     checkUnequal(q, whacky);
     
     // null test
@@ -125,10 +119,6 @@ public class QueryUtils {
           check(random, q1, wrapUnderlyingReader(random, s, +1), false);
         }
         checkExplanations(q1,s);
-        
-        Query q2 = q1.clone();
-        checkEqual(s.rewrite(q1),
-                   s.rewrite(q2));
       }
     } catch (IOException e) {
       throw new RuntimeException(e);

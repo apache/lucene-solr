@@ -22,6 +22,7 @@ import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -430,6 +431,13 @@ public class QueryParsing {
   public static void toString(Query query, IndexSchema schema, Appendable out, int flags) throws IOException {
     boolean writeBoost = true;
 
+    float boost = 1f;
+    if (query instanceof BoostQuery) {
+      BoostQuery bq = (BoostQuery) query;
+      query = bq.getQuery();
+      boost = bq.getBoost();
+    }
+
     if (query instanceof TermQuery) {
       TermQuery q = (TermQuery) query;
       Term t = q.getTerm();
@@ -483,7 +491,7 @@ public class QueryParsing {
       BooleanQuery q = (BooleanQuery) query;
       boolean needParens = false;
 
-      if (q.getBoost() != 1.0 || q.getMinimumNumberShouldMatch() != 0 || q.isCoordDisabled()) {
+      if (q.getMinimumNumberShouldMatch() != 0 || q.isCoordDisabled()) {
         needParens = true;
       }
       if (needParens) {
@@ -559,9 +567,9 @@ public class QueryParsing {
       writeBoost = false;
     }
 
-    if (writeBoost && query.getBoost() != 1.0f) {
+    if (writeBoost && boost != 1.0f) {
       out.append("^");
-      out.append(Float.toString(query.getBoost()));
+      out.append(Float.toString(boost));
     }
 
   }

@@ -59,7 +59,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
     return new AssertingWeight(random, w, needsScores) {
 
       @Override
-      public void normalize(float norm, float topLevelBoost) {
+      public void normalize(float norm, float boost) {
         throw new IllegalStateException("Weight already normalized.");
       }
 

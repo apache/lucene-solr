@@ -1,5 +1,6 @@
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.queryparser.xml.DOMUtils;
@@ -46,8 +47,8 @@ public class SpanNotBuilder extends SpanBuilderBase {
 
     SpanNotQuery snq = new SpanNotQuery(include, exclude);
 
-    snq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return snq;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    return new SpanBoostQuery(snq, boost);
   }
 
 }

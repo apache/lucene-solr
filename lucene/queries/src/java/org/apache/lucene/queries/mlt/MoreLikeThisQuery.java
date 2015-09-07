@@ -78,9 +78,7 @@ public class MoreLikeThisQuery extends Query {
     }
     //make at least half the terms match
     newBq.setMinimumNumberShouldMatch((int) (bq.clauses().size() * percentTermsToMatch));
-    Query rewritten = newBq.build();
-    rewritten.setBoost(bq.getBoost());
-    return rewritten;
+    return newBq.build();
   }
 
   /* (non-Javadoc)

@@ -35,7 +35,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -147,7 +146,7 @@ public class MultiPhraseQuery extends Query {
           allTermStats.add(searcher.termStatistics(term, termContext));
         }
       }
-      stats = similarity.computeWeight(getBoost(),
+      stats = similarity.computeWeight(
           searcher.collectionStatistics(field), 
           allTermStats.toArray(new TermStatistics[allTermStats.size()]));
     }
@@ -167,8 +166,8 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      stats.normalize(queryNorm, topLevelBoost);
+    public void normalize(float queryNorm, float boost) {
+      stats.normalize(queryNorm, boost);
     }
 
     @Override
@@ -251,11 +250,9 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) {
+  public Query rewrite(IndexReader reader) throws IOException {
     if (termArrays.isEmpty()) {
-      MatchNoDocsQuery rewritten = new MatchNoDocsQuery();
-      rewritten.setBoost(getBoost());
-      return rewritten;
+      return new MatchNoDocsQuery();
     } else if (termArrays.size() == 1) {                 // optimize one-term case
       Term[] terms = termArrays.get(0);
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
@@ -263,11 +260,9 @@ public class MultiPhraseQuery extends Query {
       for (int i=0; i<terms.length; i++) {
         builder.add(new TermQuery(terms[i]), BooleanClause.Occur.SHOULD);
       }
-      BooleanQuery boq = builder.build();
-      boq.setBoost(getBoost());
-      return boq;
+      return builder.build();
     } else {
-      return this;
+      return super.rewrite(reader);
     }
   }
 
@@ -321,8 +316,6 @@ public class MultiPhraseQuery extends Query {
       buffer.append("~");
       buffer.append(slop);
     }
-
-    buffer.append(ToStringUtils.boost(getBoost()));
 
     return buffer.toString();
   }

@@ -61,7 +61,7 @@ final class DeleteByQueryWrapper extends Query {
     if (rewritten != in) {
       return new DeleteByQueryWrapper(rewritten, schema);
     } else {
-      return this;
+      return super.rewrite(reader);
     }
   }
   

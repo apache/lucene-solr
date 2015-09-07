@@ -29,11 +29,13 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -278,6 +280,10 @@ public class ComplexPhraseQueryParser extends QueryParser {
           numNegatives++;
         }
 
+        while (qc instanceof BoostQuery) {
+          qc = ((BoostQuery) qc).getQuery();
+        }
+
         if (qc instanceof BooleanQuery) {
           ArrayList<SpanQuery> sc = new ArrayList<>();
           addComplexPhraseClause(sc, (BooleanQuery) qc);
@@ -347,6 +353,13 @@ public class ComplexPhraseQueryParser extends QueryParser {
       for (BooleanClause clause : qc) {
         Query childQuery = clause.getQuery();
 
+        float boost = 1f;
+        while (childQuery instanceof BoostQuery) {
+          BoostQuery bq = (BoostQuery) childQuery;
+          boost *= bq.getBoost();
+          childQuery = bq.getQuery();
+        }
+
         // select the list to which we will add these options
         ArrayList<SpanQuery> chosenList = ors;
         if (clause.getOccur() == BooleanClause.Occur.MUST_NOT) {
@@ -355,8 +368,10 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
         if (childQuery instanceof TermQuery) {
           TermQuery tq = (TermQuery) childQuery;
-          SpanTermQuery stq = new SpanTermQuery(tq.getTerm());
-          stq.setBoost(tq.getBoost());
+          SpanQuery stq = new SpanTermQuery(tq.getTerm());
+          if (boost != 1f) {
+            stq = new SpanBoostQuery(stq, boost);
+          }
           chosenList.add(stq);
         } else if (childQuery instanceof BooleanQuery) {
           BooleanQuery cbq = (BooleanQuery) childQuery;

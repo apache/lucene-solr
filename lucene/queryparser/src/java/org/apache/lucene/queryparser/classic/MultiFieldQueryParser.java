@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -106,7 +107,7 @@ public class MultiFieldQueryParser extends QueryParser
             //Get the boost from the map and apply them
             Float boost = boosts.get(fields[i]);
             if (boost != null) {
-              q.setBoost(boost.floatValue());
+              q = new BoostQuery(q, boost.floatValue());
             }
           }
           q = applySlop(q,slop);
@@ -133,7 +134,6 @@ public class MultiFieldQueryParser extends QueryParser
         builder.add(terms[i], positions[i]);
       }
       q = builder.build();
-      q.setBoost(pq.getBoost());
     } else if (q instanceof MultiPhraseQuery) {
       ((MultiPhraseQuery) q).setSlop(slop);
     }
@@ -153,7 +153,7 @@ public class MultiFieldQueryParser extends QueryParser
             //Get the boost from the map and apply them
             Float boost = boosts.get(fields[i]);
             if (boost != null) {
-              q.setBoost(boost.floatValue());
+              q = new BoostQuery(q, boost.floatValue());
             }
           }
           clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));

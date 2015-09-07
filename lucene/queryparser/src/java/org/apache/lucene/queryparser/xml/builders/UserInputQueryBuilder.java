@@ -3,8 +3,8 @@ package org.apache.lucene.queryparser.xml.builders;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
@@ -73,8 +73,8 @@ public class UserInputQueryBuilder implements QueryBuilder {
         QueryParser parser = createQueryParser(fieldName, analyzer);
         q = parser.parse(text);
       }
-      q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-      return q;
+      float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+      return new BoostQuery(q, boost);
     } catch (ParseException e1) {
       throw new ParserException(e1.getMessage());
     }

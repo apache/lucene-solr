@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automaton;
 
 /** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
@@ -71,7 +70,6 @@ public class PrefixQuery extends AutomatonQuery {
     }
     buffer.append(term.text());
     buffer.append('*');
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

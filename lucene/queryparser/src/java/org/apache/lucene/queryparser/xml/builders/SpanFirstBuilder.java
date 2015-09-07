@@ -1,5 +1,6 @@
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.queryparser.xml.DOMUtils;
@@ -41,8 +42,8 @@ public class SpanFirstBuilder extends SpanBuilderBase {
 
     SpanFirstQuery sfq = new SpanFirstQuery(q, end);
 
-    sfq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return sfq;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    return new SpanBoostQuery(sfq, boost);
   }
 
 }

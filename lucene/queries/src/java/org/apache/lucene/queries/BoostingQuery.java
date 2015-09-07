@@ -49,9 +49,8 @@ public class BoostingQuery extends Query {
 
     public BoostingQuery(Query match, Query context, float boost) {
       this.match = match;
-      this.context = context.clone();        // clone before boost
+      this.context = context; // ignore context-only matches
       this.boost = boost;
-      this.context.setBoost(0.0f);                      // ignore context-only matches
     }
 
     @Override
@@ -59,9 +58,7 @@ public class BoostingQuery extends Query {
       Query matchRewritten = match.rewrite(reader);
       Query contextRewritten = context.rewrite(reader);
       if (match != matchRewritten || context != contextRewritten) {
-        BoostingQuery rewritten = new BoostingQuery(matchRewritten, contextRewritten, boost);
-        rewritten.setBoost(getBoost());
-        return rewritten;
+        return new BoostingQuery(matchRewritten, contextRewritten, boost);
       }
       return super.rewrite(reader);
     }
@@ -101,8 +98,8 @@ public class BoostingQuery extends Query {
         }
 
         @Override
-        public void normalize(float norm, float topLevelBoost) {
-          matchWeight.normalize(norm, topLevelBoost);
+        public void normalize(float norm, float boost) {
+          matchWeight.normalize(norm, boost);
         }
 
         @Override

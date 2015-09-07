@@ -5,6 +5,7 @@ import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.search.payloads.AveragePayloadFunction;
 import org.apache.lucene.search.payloads.PayloadScoreQuery;
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.w3c.dom.Element;
@@ -36,9 +37,9 @@ public class BoostingTermBuilder extends SpanBuilderBase {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);
 
-    PayloadScoreQuery btq = new PayloadScoreQuery(new SpanTermQuery(new Term(fieldName, value)),
+    SpanQuery btq = new PayloadScoreQuery(new SpanTermQuery(new Term(fieldName, value)),
         new AveragePayloadFunction());
-    btq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    btq = new SpanBoostQuery(btq, DOMUtils.getAttribute(e, "boost", 1.0f));
     return btq;
   }
 

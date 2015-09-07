@@ -38,6 +38,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -417,8 +418,7 @@ public class SpellChecker implements java.io.Closeable {
    */
   private static void add(BooleanQuery.Builder q, String name, String value, float boost) {
     Query tq = new TermQuery(new Term(name, value));
-    tq.setBoost(boost);
-    q.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
+    q.add(new BooleanClause(new BoostQuery(tq, boost), BooleanClause.Occur.SHOULD));
   }
 
   /**

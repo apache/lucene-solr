@@ -216,7 +216,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   synchronized DocIdSet get(Query key, LeafReaderContext context) {
-    key = QueryCache.cacheKey(key);
+    assert key instanceof BoostQuery == false;
+    assert key instanceof ConstantScoreQuery == false;
     final Object readerKey = context.reader().getCoreCacheKey();
     final LeafCache leafCache = cache.get(readerKey);
     if (leafCache == null) {
@@ -241,9 +242,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
   synchronized void putIfAbsent(Query query, LeafReaderContext context, DocIdSet set) {
     // under a lock to make sure that mostRecentlyUsedQueries and cache remain sync'ed
     // we don't want to have user-provided queries as keys in our cache since queries are mutable
-    query = query.clone();
-    query.setBoost(1f);
-    assert query == QueryCache.cacheKey(query);
+    assert query instanceof BoostQuery == false;
+    assert query instanceof ConstantScoreQuery == false;
     Query singleton = uniqueQueries.putIfAbsent(query, query);
     if (singleton == null) {
       onQueryCache(singleton, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(query));
@@ -306,7 +306,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * Remove all cache entries for the given query.
    */
   public synchronized void clearQuery(Query query) {
-    final Query singleton = uniqueQueries.remove(QueryCache.cacheKey(query));
+    final Query singleton = uniqueQueries.remove(query);
     if (singleton != null) {
       onEviction(singleton);
     }
@@ -510,12 +510,14 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     DocIdSet get(Query query) {
-      assert query == QueryCache.cacheKey(query);
+      assert query instanceof BoostQuery == false;
+      assert query instanceof ConstantScoreQuery == false;
       return cache.get(query);
     }
 
     void putIfAbsent(Query query, DocIdSet set) {
-      assert query == QueryCache.cacheKey(query);
+      assert query instanceof BoostQuery == false;
+      assert query instanceof ConstantScoreQuery == false;
       if (cache.putIfAbsent(query, set) == null) {
         // the set was actually put
         onDocIdSetCache(HASHTABLE_RAM_BYTES_PER_ENTRY + set.ramBytesUsed());
@@ -523,7 +525,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     void remove(Query query) {
-      assert query == QueryCache.cacheKey(query);
+      assert query instanceof BoostQuery == false;
+      assert query instanceof ConstantScoreQuery == false;
       DocIdSet removed = cache.remove(query);
       if (removed != null) {
         onDocIdSetEviction(HASHTABLE_RAM_BYTES_PER_ENTRY + removed.ramBytesUsed());

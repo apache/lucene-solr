@@ -25,7 +25,7 @@ import org.apache.lucene.search.Weight;
 import java.io.IOException;
 
 /** A simple query that wraps another query and implements ExtendedQuery. */
-public class WrappedQuery extends ExtendedQueryBase {
+public final class WrappedQuery extends ExtendedQueryBase {
   private Query q;
 
   public WrappedQuery(Query q) {
@@ -41,16 +41,6 @@ public class WrappedQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public void setBoost(float b) {
-    q.setBoost(b);
-  }
-
-  @Override
-  public float getBoost() {
-    return q.getBoost();
-  }
-
-  @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return q.createWeight(searcher, needsScores);
   }
@@ -59,13 +49,6 @@ public class WrappedQuery extends ExtendedQueryBase {
   public Query rewrite(IndexReader reader) throws IOException {
     // currently no need to continue wrapping at this point.
     return q.rewrite(reader);
-  }
-
-  @Override
-  public WrappedQuery clone() {
-    WrappedQuery newQ = (WrappedQuery)super.clone();
-    newQ.q = (Query) q.clone();
-    return newQ;
   }
 
   @Override

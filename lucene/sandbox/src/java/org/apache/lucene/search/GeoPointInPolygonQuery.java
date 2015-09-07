@@ -139,7 +139,6 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
         .append(y[i])
         .append("] ");
     }
-    sb.append(ToStringUtils.boost(getBoost()));
 
     return sb.toString();
   }

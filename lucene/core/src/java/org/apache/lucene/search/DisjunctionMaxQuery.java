@@ -42,7 +42,7 @@ import org.apache.lucene.index.Term;
  * include this term in only the best of those multiple fields, without confusing this with the better case of two different terms
  * in the multiple fields.
  */
-public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
+public final class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /* The subqueries */
   private ArrayList<Query> disjuncts = new ArrayList<>();
@@ -118,6 +118,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     /** The Weights for our subqueries, in 1-1 correspondence with disjuncts */
     protected final ArrayList<Weight> weights = new ArrayList<>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
     private final boolean needsScores;
+    private float boost;
 
     /** Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
     public DisjunctionMaxWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
@@ -126,6 +127,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
         weights.add(searcher.createWeight(disjunctQuery, needsScores));
       }
       this.needsScores = needsScores;
+      this.boost = 1f;
     }
 
     @Override
@@ -145,16 +147,15 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
         max = Math.max(max, sub);
         
       }
-      float boost = getBoost();
       return (((sum - max) * tieBreakerMultiplier * tieBreakerMultiplier) + max) * boost * boost;
     }
 
     /** Apply the computed normalization factor to our subqueries */
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      topLevelBoost *= getBoost();  // Incorporate our boost
+    public void normalize(float norm, float boost) {
+      this.boost = boost;
       for (Weight wt : weights) {
-        wt.normalize(norm, topLevelBoost);
+        wt.normalize(norm, boost);
       }
     }
 
@@ -219,34 +220,20 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   public Query rewrite(IndexReader reader) throws IOException {
     int numDisjunctions = disjuncts.size();
     if (numDisjunctions == 1) {
-      Query singleton = disjuncts.get(0);
-      Query result = singleton.rewrite(reader);
-      if (getBoost() != 1.0f) {
-        if (result == singleton) result = result.clone();
-        result.setBoost(getBoost() * result.getBoost());
-      }
-      return result;
+      return disjuncts.get(0);
     }
-    DisjunctionMaxQuery clone = null;
-    for (int i = 0 ; i < numDisjunctions; i++) {
-      Query clause = disjuncts.get(i);
-      Query rewrite = clause.rewrite(reader);
-      if (rewrite != clause) {
-        if (clone == null) clone = this.clone();
-        clone.disjuncts.set(i, rewrite);
-      }
+    DisjunctionMaxQuery rewritten = new DisjunctionMaxQuery(tieBreakerMultiplier);
+    boolean actuallyRewritten = false;
+    for (Query sub : disjuncts) {
+      Query rewrittenSub = sub.rewrite(reader);
+      actuallyRewritten |= rewrittenSub != sub;
+      rewritten.add(rewrittenSub);
     }
-    if (clone != null) return clone;
-    else return this;
-  }
 
-  /** Create a shallow copy of us -- used in rewriting if necessary
-   * @return a copy of us (but reuse, don't copy, our subqueries) */
-  @Override @SuppressWarnings("unchecked")
-  public DisjunctionMaxQuery clone() {
-    DisjunctionMaxQuery clone = (DisjunctionMaxQuery)super.clone();
-    clone.disjuncts = (ArrayList<Query>) this.disjuncts.clone();
-    return clone;
+    if (actuallyRewritten) {
+      return rewritten;
+    }
+    return super.rewrite(reader);
   }
 
   /** Prettyprint us.
@@ -273,10 +260,6 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       buffer.append("~");
       buffer.append(tieBreakerMultiplier);
     }
-    if (getBoost() != 1.0) {
-      buffer.append("^");
-      buffer.append(getBoost());
-    }
     return buffer.toString();
   }
 
@@ -298,9 +281,10 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
    */
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost())
-            + Float.floatToIntBits(tieBreakerMultiplier)
-            + disjuncts.hashCode();
+    int h = super.hashCode();
+    h = 31 * h + Float.floatToIntBits(tieBreakerMultiplier);
+    h = 31 * h + disjuncts.hashCode();
+    return h;
   }
 
 

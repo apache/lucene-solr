@@ -350,8 +350,7 @@ public class TermAutomatonQuery extends Query {
         }
       }
 
-      stats = similarity.computeWeight(getBoost(),
-                                       searcher.collectionStatistics(field),
+      stats = similarity.computeWeight(searcher.collectionStatistics(field),
                                        allTermStats.toArray(new TermStatistics[allTermStats.size()]));
     }
 
@@ -375,8 +374,8 @@ public class TermAutomatonQuery extends Query {
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      stats.normalize(queryNorm, topLevelBoost);
+    public void normalize(float queryNorm, float boost) {
+      stats.normalize(queryNorm, boost);
     }
 
     @Override

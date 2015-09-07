@@ -117,14 +117,6 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return q.createWeight(indexSearcher, needsScores);
     }
 
-    public void setBoost(float boost) {
-      q.setBoost(boost);
-    }
-
-    public float getBoost() {
-      return q.getBoost();
-    }
-
     @Override
     public String toString(String field) {
       return q.toString(field);

@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
@@ -54,7 +55,16 @@ public class MaxScoreQParser extends LuceneQParser {
   @Override
   public Query parse() throws SyntaxError {
     Query q = super.parse();
-    if (!(q instanceof BooleanQuery)) {
+    float boost = 1f;
+    if (q instanceof BoostQuery) {
+      BoostQuery bq = (BoostQuery) q;
+      boost = bq.getBoost();
+      q = bq.getQuery();
+    }
+    if (q instanceof BooleanQuery == false) {
+      if (boost != 1f) {
+        q = new BoostQuery(q, boost);
+      }
       return q;
     }
     BooleanQuery obq = (BooleanQuery)q;
@@ -79,7 +89,9 @@ public class MaxScoreQParser extends LuceneQParser {
       newqb.add(c);
     }
     Query newq = newqb.build();
-    newq.setBoost(obq.getBoost());
+    if (boost != 1f) {
+      newq = new BoostQuery(newq, boost);
+    }
     return newq;
   }
 }

@@ -92,7 +92,7 @@ public abstract class Filter extends Query {
       }
 
       @Override
-      public void normalize(float norm, float topLevelBoost) {}
+      public void normalize(float norm, float boost) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

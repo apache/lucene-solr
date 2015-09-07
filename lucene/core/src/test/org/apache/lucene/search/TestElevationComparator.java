@@ -121,8 +121,7 @@ public class TestElevationComparator extends LuceneTestCase {
      // System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
    }
    BooleanQuery q = b.build();
-   q.setBoost(0);
-   return q;
+   return new BoostQuery(q, 0f);
  }
 
  private Document adoc(String[] vals) {

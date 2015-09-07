@@ -414,7 +414,7 @@ import org.apache.lucene.util.BytesRef;
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            {@link org.apache.lucene.search.Weight#getValueForNormalization() sumOfSquaredWeights} &nbsp; = &nbsp;
- *            {@link org.apache.lucene.search.Query#getBoost() q.getBoost()} <sup><big>2</big></sup>
+ *            {@link org.apache.lucene.search.BoostQuery#getBoost() q.getBoost()} <sup><big>2</big></sup>
  *            &nbsp;&middot;&nbsp;
  *          </td>
  *          <td valign="bottom" align="center" rowspan="1" style="text-align: center">
@@ -443,13 +443,13 @@ import org.apache.lucene.util.BytesRef;
  *      is a search time boost of term <i>t</i> in the query <i>q</i> as
  *      specified in the query text
  *      (see <A HREF="{@docRoot}/../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Boosting_a_Term">query syntax</A>),
- *      or as set by application calls to
- *      {@link org.apache.lucene.search.Query#setBoost(float) setBoost()}.
+ *      or as set by wrapping with
+ *      {@link org.apache.lucene.search.BoostQuery#BoostQuery(org.apache.lucene.search.Query, float) BoostQuery}.
  *      Notice that there is really no direct API for accessing a boost of one term in a multi term query,
  *      but rather multi terms are represented in a query as multi
  *      {@link org.apache.lucene.search.TermQuery TermQuery} objects,
  *      and so the boost of a term in the query is accessible by calling the sub-query
- *      {@link org.apache.lucene.search.Query#getBoost() getBoost()}.
+ *      {@link org.apache.lucene.search.BoostQuery#getBoost() getBoost()}.
  *      <br>&nbsp;<br>
  *    </li>
  *
@@ -684,11 +684,11 @@ public abstract class TFIDFSimilarity extends Similarity {
   public abstract float scorePayload(int doc, int start, int end, BytesRef payload);
 
   @Override
-  public final SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
     final Explanation idf = termStats.length == 1
     ? idfExplain(collectionStats, termStats[0])
     : idfExplain(collectionStats, termStats);
-    return new IDFStats(collectionStats.field(), idf, queryBoost);
+    return new IDFStats(collectionStats.field(), idf);
   }
 
   @Override
@@ -738,16 +738,15 @@ public abstract class TFIDFSimilarity extends Similarity {
     /** The idf and its explanation */
     private final Explanation idf;
     private float queryNorm;
+    private float boost;
     private float queryWeight;
-    private final float queryBoost;
     private float value;
     
-    public IDFStats(String field, Explanation idf, float queryBoost) {
+    public IDFStats(String field, Explanation idf) {
       // TODO: Validate?
       this.field = field;
       this.idf = idf;
-      this.queryBoost = queryBoost;
-      this.queryWeight = idf.getValue() * queryBoost; // compute query weight
+      normalize(1f, 1f);
     }
 
     @Override
@@ -757,9 +756,10 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      this.queryNorm = queryNorm * topLevelBoost;
-      queryWeight *= this.queryNorm;              // normalize query weight
+    public void normalize(float queryNorm, float boost) {
+      this.boost = boost;
+      this.queryNorm = queryNorm;
+      queryWeight = queryNorm * boost * idf.getValue();
       value = queryWeight * idf.getValue();         // idf for document
     }
   }  
@@ -767,8 +767,8 @@ public abstract class TFIDFSimilarity extends Similarity {
   private Explanation explainQuery(IDFStats stats) {
     List<Explanation> subs = new ArrayList<>();
 
-    Explanation boostExpl = Explanation.match(stats.queryBoost, "boost");
-    if (stats.queryBoost != 1.0f)
+    Explanation boostExpl = Explanation.match(stats.boost, "boost");
+    if (stats.boost != 1.0f)
       subs.add(boostExpl);
     subs.add(stats.idf);
 

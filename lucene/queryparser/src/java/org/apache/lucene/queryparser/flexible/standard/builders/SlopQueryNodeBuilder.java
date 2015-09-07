@@ -54,7 +54,6 @@ public class SlopQueryNodeBuilder implements StandardQueryBuilder {
         builder.add(terms[i], positions[i]);
       }
       query = builder.build();
-      query.setBoost(pq.getBoost());
 
     } else {
       ((MultiPhraseQuery) query).setSlop(phraseSlopNode.getValue());

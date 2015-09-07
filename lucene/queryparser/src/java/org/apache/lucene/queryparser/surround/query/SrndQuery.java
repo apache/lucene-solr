@@ -16,8 +16,7 @@ package org.apache.lucene.queryparser.surround.query;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 
 /** Lowest level base class for surround queries */
@@ -47,7 +46,7 @@ public abstract class SrndQuery implements Cloneable {
   public Query makeLuceneQueryField(String fieldName, BasicQueryFactory qf){
     Query q = makeLuceneQueryFieldNoBoost(fieldName, qf);
     if (isWeighted()) {
-      q.setBoost(getWeight() * q.getBoost()); /* weight may be at any level in a SrndQuery */
+      q = new BoostQuery(q, getWeight()); /* weight may be at any level in a SrndQuery */
     }
     return q;
   }

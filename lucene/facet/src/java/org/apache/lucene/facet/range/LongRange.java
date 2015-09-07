@@ -135,9 +135,7 @@ public final class LongRange extends Range {
       if (fastMatchQuery != null) {
         final Query fastMatchRewritten = fastMatchQuery.rewrite(reader);
         if (fastMatchRewritten != fastMatchQuery) {
-          Query rewritten = new ValueSourceQuery(range, fastMatchRewritten, valueSource);
-          rewritten.setBoost(getBoost());
-          return rewritten;
+          return new ValueSourceQuery(range, fastMatchRewritten, valueSource);
         }
       }
       return super.rewrite(reader);

@@ -32,11 +32,13 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
@@ -703,18 +705,27 @@ public class SolrPluginUtils {
    * </p>
    */
   public static void flattenBooleanQuery(BooleanQuery.Builder to, BooleanQuery from) {
+    flattenBooleanQuery(to, from, 1f);
+  }
+
+  private static void flattenBooleanQuery(BooleanQuery.Builder to, BooleanQuery from, float fromBoost) {
 
     for (BooleanClause clause : from.clauses()) {
 
       Query cq = clause.getQuery();
-      cq.setBoost(cq.getBoost() * from.getBoost());
+      float boost = fromBoost;
+      while (cq instanceof BoostQuery) {
+        BoostQuery bq = (BoostQuery) cq;
+        cq = bq.getQuery();
+        boost *= bq.getBoost();
+      }
 
       if (cq instanceof BooleanQuery
           && !clause.isRequired()
           && !clause.isProhibited()) {
 
         /* we can recurse */
-        flattenBooleanQuery(to, (BooleanQuery)cq);
+        flattenBooleanQuery(to, (BooleanQuery)cq, boost);
 
       } else {
         to.add(clause);
@@ -866,7 +877,7 @@ public class SolrPluginUtils {
           Query sub = getFieldQuery(f,queryText,quoted);
           if (null != sub) {
             if (null != a.fields.get(f)) {
-              sub.setBoost(a.fields.get(f));
+              sub = new BoostQuery(sub, a.fields.get(f));
             }
             q.add(sub);
             ok = true;

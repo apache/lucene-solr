@@ -199,7 +199,7 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public final SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
     Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
 
     float avgdl = avgFieldLength(collectionStats);
@@ -209,7 +209,7 @@ public class BM25Similarity extends Similarity {
     for (int i = 0; i < cache.length; i++) {
       cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte)i) / avgdl);
     }
-    return new BM25Stats(collectionStats.field(), idf, queryBoost, avgdl, cache);
+    return new BM25Stats(collectionStats.field(), idf, avgdl, cache);
   }
 
   @Override
@@ -260,10 +260,8 @@ public class BM25Similarity extends Similarity {
     private final Explanation idf;
     /** The average document length. */
     private final float avgdl;
-    /** query's inner boost */
-    private final float queryBoost;
-    /** query's outer boost (only for explain) */
-    private float topLevelBoost;
+    /** query boost */
+    private float boost;
     /** weight (idf * boost) */
     private float weight;
     /** field name, for pulling norms */
@@ -271,26 +269,25 @@ public class BM25Similarity extends Similarity {
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
     private final float cache[];
 
-    BM25Stats(String field, Explanation idf, float queryBoost, float avgdl, float cache[]) {
+    BM25Stats(String field, Explanation idf, float avgdl, float cache[]) {
       this.field = field;
       this.idf = idf;
-      this.queryBoost = queryBoost;
       this.avgdl = avgdl;
       this.cache = cache;
+      normalize(1f, 1f);
     }
 
     @Override
     public float getValueForNormalization() {
       // we return a TF-IDF like normalization to be nice, but we don't actually normalize ourselves.
-      final float queryWeight = idf.getValue() * queryBoost;
-      return queryWeight * queryWeight;
+      return weight * weight;
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
+    public void normalize(float queryNorm, float boost) {
       // we don't normalize with queryNorm at all, we just capture the top-level boost
-      this.topLevelBoost = topLevelBoost;
-      this.weight = idf.getValue() * queryBoost * topLevelBoost;
+      this.boost = boost;
+      this.weight = idf.getValue() * boost;
     } 
   }
 
@@ -315,7 +312,7 @@ public class BM25Similarity extends Similarity {
   }
 
   private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
-    Explanation boostExpl = Explanation.match(stats.queryBoost * stats.topLevelBoost, "boost");
+    Explanation boostExpl = Explanation.match(stats.boost, "boost");
     List<Explanation> subs = new ArrayList<>();
     if (boostExpl.getValue() != 1.0f)
       subs.add(boostExpl);

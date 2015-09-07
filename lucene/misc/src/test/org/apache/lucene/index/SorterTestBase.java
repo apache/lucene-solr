@@ -76,8 +76,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
     
     @Override
-    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return in.computeWeight(queryBoost, collectionStats, termStats);
+    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return in.computeWeight(collectionStats, termStats);
     }
     
     @Override

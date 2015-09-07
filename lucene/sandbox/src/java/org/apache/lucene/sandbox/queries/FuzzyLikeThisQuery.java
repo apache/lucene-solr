@@ -36,6 +36,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.search.Query;
@@ -329,8 +330,8 @@ public class FuzzyLikeThisQuery extends Query
                 //optimize where only one selected variant
                 ScoreTerm st= variants.get(0);
                 Query tq = newTermQuery(reader, st.term);
-                tq.setBoost(st.score); // set the boost to a mix of IDF and score
-                bq.add(tq, BooleanClause.Occur.SHOULD); 
+                // set the boost to a mix of IDF and score
+                bq.add(new BoostQuery(tq, st.score), BooleanClause.Occur.SHOULD); 
             }
             else
             {
@@ -342,8 +343,8 @@ public class FuzzyLikeThisQuery extends Query
                     ScoreTerm st = iterator2.next();
                     // found a match
                     Query tq = newTermQuery(reader, st.term);
-                    tq.setBoost(st.score); // set the boost using the ScoreTerm's score
-                    termVariants.add(tq, BooleanClause.Occur.SHOULD);          // add to query                    
+                    // set the boost using the ScoreTerm's score
+                    termVariants.add(new BoostQuery(tq, st.score), BooleanClause.Occur.SHOULD);          // add to query                    
                 }
                 bq.add(termVariants.build(), BooleanClause.Occur.SHOULD);          // add to query
             }
@@ -351,7 +352,6 @@ public class FuzzyLikeThisQuery extends Query
         //TODO possible alternative step 3 - organize above booleans into a new layer of field-based
         // booleans with a minimum-should-match of NumFields-1?
         Query q = bq.build();
-        q.setBoost(getBoost());
         this.rewrittenQuery=q;
         return q;
     }

@@ -69,8 +69,8 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
-  public void normalize(float queryNorm, float topLevelBoost) {
-    in.normalize(queryNorm, topLevelBoost);
+  public void normalize(float queryNorm, float boost) {
+    in.normalize(queryNorm, boost);
   }
 
   @Override

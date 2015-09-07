@@ -32,6 +32,7 @@ import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfigur
 import org.apache.lucene.queryparser.util.QueryParserTestBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -223,20 +224,22 @@ public class TestQueryParser extends QueryParserTestBase {
     tq = (TermQuery) qp.parse("foo:zoo*");
     assertEquals("zoo", tq.getTerm().text());
     assertEquals(2, type[0]);
-    
-    tq = (TermQuery) qp.parse("foo:zoo*^2");
+
+    BoostQuery bq = (BoostQuery) qp.parse("foo:zoo*^2");
+    tq = (TermQuery) bq.getQuery();
     assertEquals("zoo", tq.getTerm().text());
     assertEquals(2, type[0]);
-    assertEquals(tq.getBoost(), 2, 0);
+    assertEquals(bq.getBoost(), 2, 0);
     
     tq = (TermQuery) qp.parse("foo:*");
     assertEquals("*", tq.getTerm().text());
     assertEquals(1, type[0]); // could be a valid prefix query in the future too
     
-    tq = (TermQuery) qp.parse("foo:*^2");
+    bq = (BoostQuery) qp.parse("foo:*^2");
+    tq = (TermQuery) bq.getQuery();
     assertEquals("*", tq.getTerm().text());
     assertEquals(1, type[0]);
-    assertEquals(tq.getBoost(), 2, 0);
+    assertEquals(bq.getBoost(), 2, 0);
     
     tq = (TermQuery) qp.parse("*:foo");
     assertEquals("*", tq.getTerm().field());
@@ -341,23 +344,23 @@ public class TestQueryParser extends QueryParserTestBase {
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expected, qp.parse("dogs"));
     assertEquals(expected, qp.parse("\"dogs\""));
-    expected.setBoost(2.0f);
+    expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("dogs^2"));
     assertEquals(expected, qp.parse("\"dogs\"^2"));
   }
   
   /** forms multiphrase query */
   public void testSynonymsPhrase() throws Exception {
-    MultiPhraseQuery expected = new MultiPhraseQuery();
-    expected.add(new Term("field", "old"));
-    expected.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
+    MultiPhraseQuery expectedQ = new MultiPhraseQuery();
+    expectedQ.add(new Term("field", "old"));
+    expectedQ.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
     QueryParser qp = new QueryParser("field", new MockSynonymAnalyzer());
-    assertEquals(expected, qp.parse("\"old dogs\""));
+    assertEquals(expectedQ, qp.parse("\"old dogs\""));
     qp.setDefaultOperator(Operator.AND);
-    assertEquals(expected, qp.parse("\"old dogs\""));
-    expected.setBoost(2.0f);
+    assertEquals(expectedQ, qp.parse("\"old dogs\""));
+    BoostQuery expected = new BoostQuery(expectedQ, 2f);
     assertEquals(expected, qp.parse("\"old dogs\"^2"));
-    expected.setSlop(3);
+    expectedQ.setSlop(3);
     assertEquals(expected, qp.parse("\"old dogs\"~3^2"));
   }
   
@@ -411,7 +414,7 @@ public class TestQueryParser extends QueryParserTestBase {
     assertEquals(expected, qp.parse("国"));
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expected, qp.parse("国"));
-    expected.setBoost(2.0f);
+    expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("国^2"));
   }
   
@@ -427,7 +430,7 @@ public class TestQueryParser extends QueryParserTestBase {
     Query expected = expectedB.build();
     QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
     assertEquals(expected, qp.parse("中国"));
-    expected.setBoost(2.0f);
+    expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国^2"));
   }
   
@@ -448,7 +451,7 @@ public class TestQueryParser extends QueryParserTestBase {
     Query expected = expectedB.build();
     QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
     assertEquals(expected, qp.parse("中国国"));
-    expected.setBoost(2.0f);
+    expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国国^2"));
   }
   
@@ -465,7 +468,7 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expected, qp.parse("中国"));
-    expected.setBoost(2.0f);
+    expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国^2"));
   }
   
@@ -487,21 +490,21 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expected, qp.parse("中国国"));
-    expected.setBoost(2.0f);
+    expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国国^2"));
   }
   
   /** forms multiphrase query */
   public void testCJKSynonymsPhrase() throws Exception {
-    MultiPhraseQuery expected = new MultiPhraseQuery();
-    expected.add(new Term("field", "中"));
-    expected.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
+    MultiPhraseQuery expectedQ = new MultiPhraseQuery();
+    expectedQ.add(new Term("field", "中"));
+    expectedQ.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
     QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
     qp.setDefaultOperator(Operator.AND);
-    assertEquals(expected, qp.parse("\"中国\""));
-    expected.setBoost(2.0f);
+    assertEquals(expectedQ, qp.parse("\"中国\""));
+    Query expected = new BoostQuery(expectedQ, 2f);
     assertEquals(expected, qp.parse("\"中国\"^2"));
-    expected.setSlop(3);
+    expectedQ.setSlop(3);
     assertEquals(expected, qp.parse("\"中国\"~3^2"));
   }
 

@@ -55,7 +55,7 @@ public class CompositeVerifyQuery extends Query {
     if (rewritten != indexQuery) {
       return new CompositeVerifyQuery(rewritten, predicateValueSource);
     }
-    return this;
+    return super.rewrite(reader);
   }
 
   @Override

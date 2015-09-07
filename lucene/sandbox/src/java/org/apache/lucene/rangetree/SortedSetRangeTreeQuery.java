@@ -32,7 +32,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
@@ -213,7 +212,6 @@ public class SortedSetRangeTreeQuery extends Query {
       .append(" TO ")
       .append((maxValue == null) ? "*" : maxValue.toString())
       .append(maxInclusive ? ']' : '}')
-      .append(ToStringUtils.boost(getBoost()))
       .toString();
   }
 }

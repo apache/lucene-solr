@@ -17,12 +17,15 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
@@ -31,9 +34,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
 
 /** Finds all previously indexed points that fall within the specified boundings box.
  *
@@ -114,14 +114,12 @@ public class BKDPointInBBoxQuery extends Query {
 
       // E.g.: maxLon = -179, minLon = 179
       BKDPointInBBoxQuery left = new BKDPointInBBoxQuery(field, minLat, maxLat, BKDTreeWriter.MIN_LON_INCL, maxLon);
-      left.setBoost(getBoost());
       q.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
       BKDPointInBBoxQuery right = new BKDPointInBBoxQuery(field, minLat, maxLat, minLon, BKDTreeWriter.MAX_LON_INCL);
-      right.setBoost(getBoost());
       q.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
-      return q.build();
+      return new ConstantScoreQuery(q.build());
     } else {
-      return this;
+      return super.rewrite(reader);
     }
   }
 
@@ -170,7 +168,6 @@ public class BKDPointInBBoxQuery extends Query {
         .append(',')
         .append(maxLat)
         .append("]")
-        .append(ToStringUtils.boost(getBoost()))
         .toString();
   }
 }

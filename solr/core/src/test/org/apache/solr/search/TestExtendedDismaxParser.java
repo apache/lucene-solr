@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
@@ -1054,27 +1055,35 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   private boolean containsClause(Query query, String field, String value,
       int boost, boolean fuzzy) {
-    
+
+    float queryBoost = 1f;
+    if (query instanceof BoostQuery) {
+      BoostQuery bq = (BoostQuery) query;
+      query = bq.getQuery();
+      queryBoost = bq.getBoost();
+    }
+
     if(query instanceof BooleanQuery) {
       return containsClause((BooleanQuery)query, field, value, boost, fuzzy);
     }
     if(query instanceof DisjunctionMaxQuery) {
       return containsClause((DisjunctionMaxQuery)query, field, value, boost, fuzzy);
     }
+    if (boost != queryBoost) {
+      return false;
+    }
     if(query instanceof TermQuery && !fuzzy) {
-      return containsClause((TermQuery)query, field, value, boost);
+      return containsClause((TermQuery)query, field, value);
     }
     if(query instanceof FuzzyQuery && fuzzy) {
-      return containsClause((FuzzyQuery)query, field, value, boost);
+      return containsClause((FuzzyQuery)query, field, value);
     }
     return false;
   }
 
-  private boolean containsClause(FuzzyQuery query, String field, String value,
-      int boost) {
+  private boolean containsClause(FuzzyQuery query, String field, String value) {
     if(query.getTerm().field().equals(field) && 
-       query.getTerm().bytes().utf8ToString().equals(value) && 
-       query.getBoost() == boost) {
+       query.getTerm().bytes().utf8ToString().equals(value)) {
       return true;
     }
     return false;
@@ -1089,10 +1098,9 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     return false;
   }
   
-  private boolean containsClause(TermQuery query, String field, String value, int boost) {
+  private boolean containsClause(TermQuery query, String field, String value) {
     if(query.getTerm().field().equals(field) && 
-       query.getTerm().bytes().utf8ToString().equals(value) && 
-       query.getBoost() == boost) {
+       query.getTerm().bytes().utf8ToString().equals(value)) {
       return true;
     }
     return false;

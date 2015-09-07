@@ -34,9 +34,8 @@ import org.apache.lucene.search.*;
 public class TestSearch extends LuceneTestCase {
 
   public void testNegativeQueryBoost() throws Exception {
-    Query q = new TermQuery(new Term("foo", "bar"));
-    q.setBoost(-42f);
-    assertEquals(-42f, q.getBoost(), 0.0f);
+    BoostQuery q = new BoostQuery(new TermQuery(new Term("foo", "bar")), -42f);
+    assertEquals(-42f, q.getBoost(), 0f);
 
     Directory directory = newDirectory();
     try {

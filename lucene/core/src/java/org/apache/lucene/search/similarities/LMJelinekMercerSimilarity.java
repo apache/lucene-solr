@@ -52,7 +52,7 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   
   @Override
   protected float score(BasicStats stats, float freq, float docLen) {
-    return stats.getTotalBoost() *
+    return stats.getBoost() *
         (float)Math.log(1 +
             ((1 - lambda) * freq / docLen) /
             (lambda * ((LMStats)stats).getCollectionProbability()));
@@ -61,8 +61,8 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   @Override
   protected void explain(List<Explanation> subs, BasicStats stats, int doc,
       float freq, float docLen) {
-    if (stats.getTotalBoost() != 1.0f) {
-      subs.add(Explanation.match(stats.getTotalBoost(), "boost"));
+    if (stats.getBoost() != 1.0f) {
+      subs.add(Explanation.match(stats.getBoost(), "boost"));
     }
     subs.add(Explanation.match(lambda, "lambda"));
     super.explain(subs, stats, doc, freq, docLen);

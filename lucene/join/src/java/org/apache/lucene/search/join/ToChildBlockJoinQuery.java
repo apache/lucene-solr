@@ -91,14 +91,12 @@ public class ToChildBlockJoinQuery extends Query {
   }
 
   private static class ToChildBlockJoinWeight extends Weight {
-    private final Query joinQuery;
     private final Weight parentWeight;
     private final BitSetProducer parentsFilter;
     private final boolean doScores;
 
     public ToChildBlockJoinWeight(Query joinQuery, Weight parentWeight, BitSetProducer parentsFilter, boolean doScores) {
       super(joinQuery);
-      this.joinQuery = joinQuery;
       this.parentWeight = parentWeight;
       this.parentsFilter = parentsFilter;
       this.doScores = doScores;
@@ -109,12 +107,12 @@ public class ToChildBlockJoinQuery extends Query {
 
     @Override
     public float getValueForNormalization() throws IOException {
-      return parentWeight.getValueForNormalization() * joinQuery.getBoost() * joinQuery.getBoost();
+      return parentWeight.getValueForNormalization();
     }
 
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      parentWeight.normalize(norm, topLevelBoost * joinQuery.getBoost());
+    public void normalize(float norm, float boost) {
+      parentWeight.normalize(norm, boost);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -317,13 +315,11 @@ public class ToChildBlockJoinQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query parentRewrite = parentQuery.rewrite(reader);
     if (parentRewrite != parentQuery) {
-      Query rewritten = new ToChildBlockJoinQuery(parentQuery,
+      return new ToChildBlockJoinQuery(parentQuery,
                                 parentRewrite,
                                 parentsFilter);
-      rewritten.setBoost(getBoost());
-      return rewritten;
     } else {
-      return this;
+      return super.rewrite(reader);
     }
   }
 
@@ -351,11 +347,5 @@ public class ToChildBlockJoinQuery extends Query {
     hash = prime * hash + origParentQuery.hashCode();
     hash = prime * hash + parentsFilter.hashCode();
     return hash;
-  }
-
-  @Override
-  public ToChildBlockJoinQuery clone() {
-    return new ToChildBlockJoinQuery(origParentQuery.clone(),
-                                     parentsFilter);
   }
 }

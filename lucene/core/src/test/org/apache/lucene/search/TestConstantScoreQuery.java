@@ -110,17 +110,14 @@ public class TestConstantScoreQuery extends LuceneTestCase {
         }
       });
       
-      final Query csq1 = new ConstantScoreQuery(new TermQuery(new Term ("field", "term")));
-      csq1.setBoost(2.0f);
-      final Query csq2 = new ConstantScoreQuery(csq1);
-      csq2.setBoost(5.0f);
+      final BoostQuery csq1 = new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term ("field", "term"))), 2f);
+      final BoostQuery csq2 = new BoostQuery(new ConstantScoreQuery(csq1), 5f);
       
       final BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(csq1, BooleanClause.Occur.SHOULD);
       bq.add(csq2, BooleanClause.Occur.SHOULD);
       
-      final Query csqbq = new ConstantScoreQuery(bq.build());
-      csqbq.setBoost(17.0f);
+      final BoostQuery csqbq = new BoostQuery(new ConstantScoreQuery(bq.build()), 17f);
       
       checkHits(searcher, csq1, csq1.getBoost(), TermScorer.class);
       checkHits(searcher, csq2, csq2.getBoost(), TermScorer.class);
@@ -212,16 +209,19 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    Filter filter = new QueryWrapperFilter(AssertingQuery.wrap(random(), new TermQuery(new Term("field", "a"))));
+    final Query wrapped = AssertingQuery.wrap(random(), new TermQuery(new Term("field", "a")));
+    Filter filter = new QueryWrapperFilter(wrapped);
     IndexSearcher s = newSearcher(r);
     assert s instanceof AssertingIndexSearcher;
     // this used to fail
     s.search(new ConstantScoreQuery(filter), new TotalHitCountCollector());
     
     // check the rewrite
-    Query rewritten = new ConstantScoreQuery(filter).rewrite(r);
-    assertTrue(rewritten instanceof ConstantScoreQuery);
-    assertTrue(((ConstantScoreQuery) rewritten).getQuery() instanceof AssertingQuery);
+    Query rewritten = filter;
+    for (Query q = rewritten.rewrite(r); q != rewritten; q = rewritten.rewrite(r)) {
+      rewritten = q;
+    }
+    assertEquals(new BoostQuery(new ConstantScoreQuery(wrapped), 0), rewritten);
     
     r.close();
     d.close();

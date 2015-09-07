@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -398,7 +399,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         }
         builder.setSlop(slop);
         query = builder.build();
-        query.setBoost(pq.getBoost());
       }
       if (query instanceof MultiPhraseQuery) {
         ((MultiPhraseQuery) query).setSlop(slop);
@@ -572,19 +572,17 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       // syntax looks like foo:x^=3
       float val = Float.parseFloat(boost.image.substring(1));
       Query newQ = q;
-      if (q instanceof FilterQuery || q instanceof ConstantScoreQuery || q instanceof SolrConstantScoreQuery) {
-        newQ.setBoost(val);
+      if (q instanceof ConstantScoreQuery || q instanceof SolrConstantScoreQuery) {
+        // skip
       } else {
         newQ = new ConstantScoreQuery(q);
-        newQ.setBoost(val);
       }
-      return newQ;
+      return new BoostQuery(newQ, val);
     }
 
     float boostVal = Float.parseFloat(boost.image);
-    q.setBoost(q.getBoost() * boostVal);
 
-    return q;
+    return new BoostQuery(q, boostVal);
   }
 
 
@@ -821,7 +819,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             buffer.append(":");
           }
           buffer.append(term.text());
-          buffer.append(ToStringUtils.boost(getBoost()));
           return buffer.toString();
         }
       };

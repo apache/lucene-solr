@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that matches no documents.
@@ -30,17 +29,11 @@ public class MatchNoDocsQuery extends Query {
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
         // Rewrite to an empty BooleanQuery so no Scorer or Weight is required
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        Query rewritten = builder.build();
-        rewritten.setBoost(getBoost());
-        return rewritten;
+        return new BooleanQuery.Builder().build();
     }
 
     @Override
     public String toString(String field) {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("");
-        buffer.append(ToStringUtils.boost(getBoost()));
-        return buffer.toString();
+        return "";
     }
 }

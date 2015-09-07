@@ -98,9 +98,12 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
 
   @Override
   public void onUse(Query query) {
-    // call possible Query clone and hashCode outside of sync block
+    assert query instanceof BoostQuery == false;
+    assert query instanceof ConstantScoreQuery == false;
+
+    // call hashCode outside of sync block
     // in case it's somewhat expensive:
-    int hashCode = QueryCache.cacheKey(query).hashCode();
+    int hashCode = query.hashCode();
 
     // we only track hash codes to avoid holding references to possible
     // large queries; this may cause rare false positives, but at worse
@@ -111,10 +114,12 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
   }
 
   int frequency(Query query) {
-    
-    // call possible Query clone and hashCode outside of sync block
+    assert query instanceof BoostQuery == false;
+    assert query instanceof ConstantScoreQuery == false;
+
+    // call hashCode outside of sync block
     // in case it's somewhat expensive:
-    int hashCode = QueryCache.cacheKey(query).hashCode();
+    int hashCode = query.hashCode();
 
     synchronized (this) {
       return recentlyUsedFilters.frequency(hashCode);

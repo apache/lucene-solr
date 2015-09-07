@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.GeoProjectionUtils;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.ToStringUtils;
 
 /** Implements a simple point distance query on a GeoPoint field. This is based on
  * {@link org.apache.lucene.search.GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
@@ -74,11 +73,9 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
 
       GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(-180.0D, maxLon,
           minLat, maxLat));
-      left.setBoost(getBoost());
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
       GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(minLon, 180.0D,
           minLat, maxLat));
-      right.setBoost(getBoost());
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return bqb.build();
     }
@@ -151,7 +148,6 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         .append(',')
         .append(maxLat)
         .append("]")
-        .append(ToStringUtils.boost(getBoost()))
         .toString();
   }
 

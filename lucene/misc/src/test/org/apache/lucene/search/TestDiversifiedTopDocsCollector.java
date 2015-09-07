@@ -423,9 +423,9 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float queryBoost,
+    public SimWeight computeWeight(
         CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return sim.computeWeight(queryBoost, collectionStats, termStats);
+      return sim.computeWeight(collectionStats, termStats);
     }
 
     @Override

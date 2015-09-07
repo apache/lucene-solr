@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that matches all documents.
@@ -70,9 +69,6 @@ public final class MatchAllDocsQuery extends Query {
 
   @Override
   public String toString(String field) {
-    StringBuilder buffer = new StringBuilder();
-    buffer.append("*:*");
-    buffer.append(ToStringUtils.boost(getBoost()));
-    return buffer.toString();
+    return "*:*";
   }
 }

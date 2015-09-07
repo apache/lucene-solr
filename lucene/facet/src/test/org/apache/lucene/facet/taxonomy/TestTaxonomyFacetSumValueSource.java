@@ -51,6 +51,7 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -268,8 +269,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     
     FacetsCollector fc = new FacetsCollector(true);
-    ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
-    csq.setBoost(2.0f);
+    BoostQuery csq = new BoostQuery(new ConstantScoreQuery(new MatchAllDocsQuery()), 2f);
     
     TopDocs td = FacetsCollector.search(newSearcher(r), csq, 10, fc);
 

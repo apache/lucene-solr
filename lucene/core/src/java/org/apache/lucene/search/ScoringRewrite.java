@@ -69,8 +69,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
     protected void addClause(BooleanQuery.Builder topLevel, Term term, int docCount,
         float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
-      tq.setBoost(boost);
-      topLevel.add(tq, BooleanClause.Occur.SHOULD);
+      topLevel.add(new BoostQuery(tq, boost), BooleanClause.Occur.SHOULD);
     }
     
     @Override
@@ -95,9 +94,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
       final Query bq = SCORING_BOOLEAN_REWRITE.rewrite(reader, query);
       // strip the scores off
-      final Query result = new ConstantScoreQuery(bq);
-      result.setBoost(query.getBoost());
-      return result;
+      return new ConstantScoreQuery(bq);
     }
   };
 
@@ -120,7 +117,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
         final int pos = sort[i];
         final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
         assert termStates[pos].hasOnlyRealTerms() == false || reader.docFreq(term) == termStates[pos].docFreq();
-        addClause(builder, term, termStates[pos].docFreq(), query.getBoost() * boost[pos], termStates[pos]);
+        addClause(builder, term, termStates[pos].docFreq(), boost[pos], termStates[pos]);
       }
     }
     return build(builder);

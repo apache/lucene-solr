@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.parser.QueryParser;
@@ -127,7 +128,7 @@ public class DisMaxQParser extends QParser {
           Query fq = subQuery(f, FunctionQParserPlugin.NAME).getQuery();
           Float b = ff.get(f);
           if (null != b) {
-            fq.setBoost(b);
+            fq = new BoostQuery(fq, b);
           }
           query.add(fq, BooleanClause.Occur.SHOULD);
         }
@@ -151,7 +152,15 @@ public class DisMaxQParser extends QParser {
       if (1 == boostQueries.size() && 1 == boostParams.length) {
         /* legacy logic */
         Query f = boostQueries.get(0);
-        if (1.0f == f.getBoost() && f instanceof BooleanQuery) {
+        while (f instanceof BoostQuery) {
+          BoostQuery bq = (BoostQuery) f;
+          if (bq .getBoost() == 1f) {
+            f = bq.getQuery();
+          } else {
+            break;
+          }
+        }
+        if (f instanceof BooleanQuery) {
           /* if the default boost was used, and we've got a BooleanQuery
            * extract the subqueries out and use them directly
            */

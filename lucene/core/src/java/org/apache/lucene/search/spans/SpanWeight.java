@@ -101,7 +101,7 @@ public abstract class SpanWeight extends Weight {
       i++;
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
-    return searcher.getSimilarity(true).computeWeight(query.getBoost(), collectionStats, termStats);
+    return searcher.getSimilarity(true).computeWeight(collectionStats, termStats);
   }
 
   /**
@@ -124,9 +124,9 @@ public abstract class SpanWeight extends Weight {
   }
 
   @Override
-  public void normalize(float queryNorm, float topLevelBoost) {
+  public void normalize(float queryNorm, float boost) {
     if (simWeight != null) {
-      simWeight.normalize(queryNorm, topLevelBoost);
+      simWeight.normalize(queryNorm, boost);
     }
   }
 

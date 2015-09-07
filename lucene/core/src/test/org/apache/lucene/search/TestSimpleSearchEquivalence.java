@@ -202,4 +202,16 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     PhraseQuery q2 = builder.build();
     assertSameScores(q1, q2);
   }
+
+  public void testBoostQuerySimplification() throws Exception {
+    float b1 = random().nextFloat() * 10;
+    float b2 = random().nextFloat() * 10;
+    Term term = randomTerm();
+
+    Query q1 = new BoostQuery(new BoostQuery(new TermQuery(term), b2), b1);
+    // Use AssertingQuery to prevent BoostQuery from merging inner and outer boosts
+    Query q2 = new BoostQuery(new AssertingQuery(random(), new BoostQuery(new TermQuery(term), b2)), b1);
+
+    assertSameScores(q1, q2);
+  }
 }

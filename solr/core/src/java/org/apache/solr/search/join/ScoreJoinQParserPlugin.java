@@ -107,7 +107,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         fromCore.close();
         fromHolder.decref();
       }
-      joinQuery.setBoost(getBoost());
       return joinQuery.rewrite(reader);
     }
 
@@ -162,7 +161,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       final Query jq = JoinUtil.createJoinQuery(fromField, true,
           toField, fromQuery, info.getReq().getSearcher(), scoreMode);
-      jq.setBoost(getBoost());
       return jq.rewrite(reader);
     }
 

@@ -97,7 +97,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class ReRankQuery extends RankQuery {
+  private final class ReRankQuery extends RankQuery {
     private Query mainQuery = defaultQuery;
     private Query reRankQuery;
     private int reRankDocs;
@@ -106,19 +106,18 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private Map<BytesRef, Integer> boostedPriority;
 
     public int hashCode() {
-      return mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs+(int)getBoost();
+      return 31 * super.hashCode() + mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs;
     }
 
     public boolean equals(Object o) {
-      if(o instanceof ReRankQuery) {
-        ReRankQuery rrq = (ReRankQuery)o;
-        return (mainQuery.equals(rrq.mainQuery) &&
-                reRankQuery.equals(rrq.reRankQuery) &&
-                reRankWeight == rrq.reRankWeight &&
-                reRankDocs == rrq.reRankDocs &&
-                getBoost() == rrq.getBoost());
+      if (super.equals(o) == false) {
+        return false;
       }
-      return false;
+      ReRankQuery rrq = (ReRankQuery)o;
+      return mainQuery.equals(rrq.mainQuery) &&
+             reRankQuery.equals(rrq.reRankQuery) &&
+             reRankWeight == rrq.reRankWeight &&
+             reRankDocs == rrq.reRankDocs;
     }
 
     public ReRankQuery(Query reRankQuery, int reRankDocs, double reRankWeight, int length) {
@@ -162,17 +161,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     public Query rewrite(IndexReader reader) throws IOException {
       Query q = mainQuery.rewrite(reader);
-      if(q == mainQuery) {
-        return this;
-      } else {
-        return clone().wrap(q);
+      if (q != mainQuery) {
+        return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, length).wrap(q);
       }
-    }
-
-    public ReRankQuery clone() {
-      ReRankQuery clonedQuery =  new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, length);
-      clonedQuery.setBoost(getBoost());
-      return clonedQuery;
+      return super.rewrite(reader);
     }
 
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{

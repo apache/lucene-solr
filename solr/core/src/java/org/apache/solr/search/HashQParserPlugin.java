@@ -108,18 +108,15 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return keysParam.hashCode()+workers+worker+(int)getBoost();
+      return 31 * super.hashCode() + keysParam.hashCode()+workers+worker;
     }
 
     public boolean equals(Object o) {
-      if (o instanceof HashQuery) {
-        HashQuery h = (HashQuery)o;
-        if(keysParam.equals(h.keysParam) && workers == h.workers && worker == h.worker && getBoost() == h.getBoost()) {
-          return true;
-        }
+      if (super.equals(o) == false) {
+        return false;
       }
-
-      return false;
+      HashQuery h = (HashQuery)o;
+      return keysParam.equals(h.keysParam) && workers == h.workers && worker == h.worker;
     }
 
     public HashQuery(String keysParam, int workers, int worker) {

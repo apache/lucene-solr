@@ -102,8 +102,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     // LUCENE-2617: make sure that a term not in the index still contributes to the score via coord factor
     float score = s.search(q.build(), 10).getMaxScore();
-    Query subQuery = new TermQuery(new Term("field", "not_in_index"));
-    subQuery.setBoost(0);
+    Query subQuery = new BoostQuery(new TermQuery(new Term("field", "not_in_index")), 0f);
     q.add(subQuery, BooleanClause.Occur.SHOULD);
     float score2 = s.search(q.build(), 10).getMaxScore();
     assertEquals(score*.5F, score2, 1e-6);
@@ -114,14 +113,12 @@ public class TestBooleanQuery extends LuceneTestCase {
       qq.add(clause);
     }
     PhraseQuery phrase = new PhraseQuery("field", "not_in_index", "another_not_in_index");
-    phrase.setBoost(0);
-    qq.add(phrase, BooleanClause.Occur.SHOULD);
+    qq.add(new BoostQuery(phrase, 0f), BooleanClause.Occur.SHOULD);
     score2 = s.search(qq.build(), 10).getMaxScore();
     assertEquals(score*(1/3F), score2, 1e-6);
 
     // now test BooleanScorer2
-    subQuery = new TermQuery(new Term("field", "b"));
-    subQuery.setBoost(0);
+    subQuery = new BoostQuery(new TermQuery(new Term("field", "b")), 0f);
     q.add(subQuery, BooleanClause.Occur.MUST);
     score2 = s.search(q.build(), 10).getMaxScore();
     assertEquals(score*(2/3F), score2, 1e-6);
@@ -334,7 +331,6 @@ public class TestBooleanQuery extends LuceneTestCase {
   }
 
   public void testOneClauseRewriteOptimization() throws Exception {
-    final float BOOST = 3.5F;
     final String FIELD = "content";
     final String VALUE = "foo";
 
@@ -343,29 +339,20 @@ public class TestBooleanQuery extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
 
     TermQuery expected = new TermQuery(new Term(FIELD, VALUE));
-    expected.setBoost(BOOST);
 
     final int numLayers = atLeast(3);
-    boolean needBoost = true;
     Query actual = new TermQuery(new Term(FIELD, VALUE));
 
     for (int i = 0; i < numLayers; i++) {
-      if (needBoost && 0 == TestUtil.nextInt(random(),0,numLayers)) {
-        needBoost = false;
-        actual.setBoost(BOOST);
-      }
 
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(actual, random().nextBoolean()
              ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST);
       actual = bq.build();
     }
-    if (needBoost) {
-      actual.setBoost(BOOST);
-    }
 
     assertEquals(numLayers + ": " + actual.toString(),
-                 expected, actual.rewrite(r));
+                 expected, new IndexSearcher(r).rewrite(actual));
 
     r.close();
     dir.close();
@@ -462,7 +449,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     }
     bq2Builder.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
     BooleanQuery bq2 = bq2Builder.build();
-    bq2.setBoost(bq.getBoost());
 
     final AtomicBoolean matched = new AtomicBoolean();
     searcher.search(bq, new SimpleCollector() {
@@ -515,7 +501,6 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     BooleanQuery.Builder qBuilder = new BooleanQuery.Builder();
     BooleanQuery q = qBuilder.build();
-    q.setBoost(random().nextFloat());
     qBuilder.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
 
     // With a single clause, we will rewrite to the underlying
@@ -526,7 +511,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     // Make sure it returns null scores
     qBuilder.add(new TermQuery(new Term("field", "b")), Occur.FILTER);
     q = qBuilder.build();
-    q.setBoost(random().nextFloat());
     assertSameScoresWithoutFilters(searcher, q);
 
     // Now with a scoring clause, we need to make sure that
@@ -534,7 +518,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     // query
     qBuilder.add(new TermQuery(new Term("field", "c")), Occur.SHOULD);
     q = qBuilder.build();
-    q.setBoost(random().nextFloat());
     assertSameScoresWithoutFilters(searcher, q);
 
     // FILTER and empty SHOULD
@@ -542,7 +525,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     qBuilder.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
     qBuilder.add(new TermQuery(new Term("field", "e")), Occur.SHOULD);
     q = qBuilder.build();
-    q.setBoost(random().nextFloat());
     assertSameScoresWithoutFilters(searcher, q);
 
     // mix of FILTER and MUST
@@ -550,7 +532,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     qBuilder.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
     qBuilder.add(new TermQuery(new Term("field", "d")), Occur.MUST);
     q = qBuilder.build();
-    q.setBoost(random().nextFloat());
     assertSameScoresWithoutFilters(searcher, q);
 
     // FILTER + minShouldMatch
@@ -560,7 +541,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     qBuilder.add(new TermQuery(new Term("field", "d")), Occur.SHOULD);
     qBuilder.setMinimumNumberShouldMatch(1);
     q = qBuilder.build();
-    q.setBoost(random().nextFloat());
     assertSameScoresWithoutFilters(searcher, q);
 
     reader.close();
@@ -585,8 +565,8 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     // Single clauses rewrite to a term query
     final Query rewritten1 = query1.build().rewrite(reader);
-    assertTrue(rewritten1 instanceof ConstantScoreQuery);
-    assertEquals(0f, rewritten1.getBoost(), 0f);
+    assertTrue(rewritten1 instanceof BoostQuery);
+    assertEquals(0f, ((BoostQuery) rewritten1).getBoost(), 0f);
 
     // When there are two clauses, we cannot rewrite, but if one of them creates
     // a null scorer we will end up with a single filter scorer and will need to

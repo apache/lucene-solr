@@ -21,6 +21,7 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.core.nodes.BoostQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 
 /**
@@ -46,9 +47,8 @@ public class BoostQueryNodeBuilder implements StandardQueryBuilder {
 
     Query query = (Query) child
         .getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
-    query.setBoost(boostNode.getValue());
 
-    return query;
+    return new BoostQuery(query, boostNode.getValue());
 
   }
 

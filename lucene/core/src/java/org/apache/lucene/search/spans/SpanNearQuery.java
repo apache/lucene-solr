@@ -173,7 +173,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     buffer.append(", ");
     buffer.append(inOrder);
     buffer.append(")");
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 
@@ -235,34 +234,24 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    SpanNearQuery clone = null;
+    boolean actuallyRewritten = false;
+    List<SpanQuery> rewrittenClauses = new ArrayList<>();
     for (int i = 0 ; i < clauses.size(); i++) {
       SpanQuery c = clauses.get(i);
       SpanQuery query = (SpanQuery) c.rewrite(reader);
-      if (query != c) {                     // clause rewrote: must clone
-        if (clone == null)
-          clone = this.clone();
-        clone.clauses.set(i,query);
+      actuallyRewritten |= query != c;
+      rewrittenClauses.add(query);
+    }
+    if (actuallyRewritten) {
+      try {
+        SpanNearQuery rewritten = (SpanNearQuery) clone();
+        rewritten.clauses = rewrittenClauses;
+        return rewritten;
+      } catch (CloneNotSupportedException e) {
+        throw new AssertionError(e);
       }
     }
-    if (clone != null) {
-      return clone; // some clauses rewrote
-    } else {
-      return this; // no clauses rewrote
-    }
-  }
-
-  @Override
-  public SpanNearQuery clone() {
-    int sz = clauses.size();
-    SpanQuery[] newClauses = new SpanQuery[sz];
-
-    for (int i = 0; i < sz; i++) {
-      newClauses[i] = (SpanQuery) clauses.get(i).clone();
-    }
-    SpanNearQuery spanNearQuery = new SpanNearQuery(newClauses, slop, inOrder);
-    spanNearQuery.setBoost(getBoost());
-    return spanNearQuery;
+    return super.rewrite(reader);
   }
 
   /** Returns true iff <code>o</code> is equal to this. */

@@ -36,8 +36,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testT2() throws Exception {
     TermQuery termQuery = new TermQuery(new Term(FIELD, "w1"));
-    termQuery.setBoost(100);
-    qtest(termQuery, new int[] { 0,1,2,3 });
+    qtest(new BoostQuery(termQuery, 100), new int[] { 0,1,2,3 });
   }
   
   /* MatchAllDocs */
@@ -47,8 +46,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testMA2() throws Exception {
     Query q=new MatchAllDocsQuery();
-    q.setBoost(1000);
-    qtest(q, new int[] { 0,1,2,3 });
+    qtest(new BoostQuery(q, 1000), new int[] { 0,1,2,3 });
   }
 
   /* some simple phrase tests */
@@ -94,8 +92,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testCSQ3() throws Exception {
     Query q = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
-    q.setBoost(1000);
-    qtest(q, new int[] {0,2});
+    qtest(new BoostQuery(q, 1000), new int[] {0,2});
   }
   
   /* DisjunctionMaxQuery */
@@ -164,13 +161,11 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
 
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
-    boostedQuery.setBoost(100);
-    booleanQuery.add(boostedQuery, BooleanClause.Occur.SHOULD);
+    booleanQuery.add(new BoostQuery(boostedQuery, 100), BooleanClause.Occur.SHOULD);
     q.add(booleanQuery.build());
 
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
-    xxBoostedQuery.setBoost(100000);
-    q.add(xxBoostedQuery);
+    q.add(new BoostQuery(xxBoostedQuery, 100000));
     
     qtest(q, new int[] { 0,2,3 });
   }
@@ -181,13 +176,11 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
 
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
-    boostedQuery.setBoost(100);
-    booleanQuery.add(boostedQuery, BooleanClause.Occur.SHOULD);
+    booleanQuery.add(new BoostQuery(boostedQuery, 100), BooleanClause.Occur.SHOULD);
     q.add(booleanQuery.build());
 
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
-    xxBoostedQuery.setBoost(0);
-    q.add(xxBoostedQuery);
+    q.add(new BoostQuery(xxBoostedQuery, 0));
 
     qtest(q, new int[] { 0,2,3 });
   }
@@ -374,8 +367,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w1"));
-    boostedQuery.setBoost(1000);
-    query.add(boostedQuery, BooleanClause.Occur.SHOULD);
+    query.add(new BoostQuery(boostedQuery, 1000), BooleanClause.Occur.SHOULD);
 
     qtest(query.build(), new int[] { 0,1,2,3 });
   }

@@ -17,6 +17,7 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -40,10 +41,10 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
   @Test
   public void testFallbackToLucene() {
     q = parse("foo");
-    assertTrue(q instanceof TermQuery);
+    assertEquals(new TermQuery(new Term("text", "foo")), q);
 
     q = parse("foo^3.0");
-    assertTrue(q instanceof TermQuery);
+    assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
     assertTrue(q instanceof NumericRangeQuery);
@@ -100,7 +101,8 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
   public void testBoost() {
     // Simple term query
     q = parse("foo^3.0");
-    assertEquals(3.0, q.getBoost(), 1e-15);
+    assertTrue(q instanceof BoostQuery);
+    assertEquals(3.0, ((BoostQuery) q).getBoost(), 1e-15);
 
     // Some DMQ and one plain required
     q = parse("foo^5.0 bar^6.0 +baz^7");
@@ -108,12 +110,12 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
     assertEquals(2, clauses.length);
     assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
     DisjunctionMaxQuery dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
-    float fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().iterator().next().getQuery().getBoost();
-    assertEquals(5.0, fooClause, 1e-15);
-    float barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().iterator().next().getQuery().getBoost();
-    assertEquals(6.0, barClause, 1e-15);
-    assertEquals(7.0, clauses[1].getQuery().getBoost(), 1e-15);
-    assertEquals(1.0, q.getBoost(), 1e-15);
+    Query fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().iterator().next().getQuery();
+    assertEquals(5.0, ((BoostQuery) fooClause).getBoost(), 1e-15);
+    Query barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().iterator().next().getQuery();
+    assertEquals(6.0, ((BoostQuery) barClause).getBoost(), 1e-15);
+    assertEquals(7.0, ((BoostQuery) clauses[1].getQuery()).getBoost(), 1e-15);
+    assertFalse(q instanceof BoostQuery);
 
     // Grouped with parens on top level
     q = parse("(foo^2.0 bar)^3.0");
@@ -121,11 +123,11 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
     assertEquals(1, clauses.length);
     assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
     dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
-    fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().iterator().next().getQuery().getBoost();
-    assertEquals(2.0, fooClause, 1e-15);
-    barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().iterator().next().getQuery().getBoost();
-    assertEquals(1.0, barClause, 1e-15);
-    assertEquals(3.0, q.getBoost(), 1e-15);
+    fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().iterator().next().getQuery();
+    assertEquals(2.0, ((BoostQuery) fooClause).getBoost(), 1e-15);
+    barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().iterator().next().getQuery();
+    assertFalse(barClause instanceof BoostQuery);
+    assertEquals(3.0, ((BoostQuery) q).getBoost(), 1e-15);
   }
 
   //
@@ -148,6 +150,9 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
   }
 
   private BooleanClause[] clauses(Query q) {
+    while (q instanceof BoostQuery) {
+      q = ((BoostQuery) q).getQuery();
+    }
     return ((BooleanQuery) q).clauses().toArray(new BooleanClause[0]);
   }
 }

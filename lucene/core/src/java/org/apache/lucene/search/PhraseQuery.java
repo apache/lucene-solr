@@ -38,7 +38,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -265,21 +264,15 @@ public class PhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (terms.length == 0) {
-      MatchNoDocsQuery q = new MatchNoDocsQuery();
-      q.setBoost(getBoost());
-      return q;
+      return new MatchNoDocsQuery();
     } else if (terms.length == 1) {
-      TermQuery tq = new TermQuery(terms[0]);
-      tq.setBoost(getBoost());
-      return tq;
+      return new TermQuery(terms[0]);
     } else if (positions[0] != 0) {
       int[] newPositions = new int[positions.length];
       for (int i = 0; i < positions.length; ++i) {
         newPositions[i] = positions[i] - positions[0];
       }
-      PhraseQuery rewritten = new PhraseQuery(slop, terms, newPositions);
-      rewritten.setBoost(getBoost());
-      return rewritten;
+      return new PhraseQuery(slop, terms, newPositions);
     } else {
       return super.rewrite(reader);
     }
@@ -375,7 +368,7 @@ public class PhraseQuery extends Query {
         states[i] = TermContext.build(context, term);
         termStats[i] = searcher.termStatistics(term, states[i]);
       }
-      stats = similarity.computeWeight(getBoost(), searcher.collectionStatistics(field), termStats);
+      stats = similarity.computeWeight(searcher.collectionStatistics(field), termStats);
     }
 
     @Override
@@ -392,8 +385,8 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      stats.normalize(queryNorm, topLevelBoost);
+    public void normalize(float queryNorm, float boost) {
+      stats.normalize(queryNorm, boost);
     }
 
     @Override
@@ -513,8 +506,6 @@ public class PhraseQuery extends Query {
       buffer.append("~");
       buffer.append(slop);
     }
-
-    buffer.append(ToStringUtils.boost(getBoost()));
 
     return buffer.toString();
   }

@@ -160,7 +160,7 @@ public abstract class TopTermsRewrite<B> extends TermCollectingRewrite<B> {
 
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes.toBytesRef());
-      addClause(b, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
+      addClause(b, term, st.termState.docFreq(), st.boost, st.termState); // add to query
     }
     return build(b);
   }

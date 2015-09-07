@@ -156,16 +156,12 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
 
       final float boost = random().nextFloat() * 10;
 
-      final Query q1 = DocValuesRangeQuery.newLongRange("dv1", min, max, minInclusive, maxInclusive);
-      q1.setBoost(boost);
-      final ConstantScoreQuery csq1 = new ConstantScoreQuery(DocValuesRangeQuery.newLongRange("dv1", min, max, minInclusive, maxInclusive));
-      csq1.setBoost(boost);
+      final Query q1 = new BoostQuery(DocValuesRangeQuery.newLongRange("dv1", min, max, minInclusive, maxInclusive), boost);
+      final Query csq1 = new BoostQuery(new ConstantScoreQuery(DocValuesRangeQuery.newLongRange("dv1", min, max, minInclusive, maxInclusive)), boost);
       assertSameMatches(searcher, q1, csq1, true);
 
-      final Query q2 = DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(min), toSortableBytes(max), minInclusive, maxInclusive);
-      q2.setBoost(boost);
-      final ConstantScoreQuery csq2 = new ConstantScoreQuery(DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(min), toSortableBytes(max), minInclusive, maxInclusive));
-      csq2.setBoost(boost);
+      final Query q2 = new BoostQuery(DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(min), toSortableBytes(max), minInclusive, maxInclusive), boost);
+      final Query csq2 = new BoostQuery(new ConstantScoreQuery(DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(min), toSortableBytes(max), minInclusive, maxInclusive)), boost);
       assertSameMatches(searcher, q2, csq2, true);
     }
 

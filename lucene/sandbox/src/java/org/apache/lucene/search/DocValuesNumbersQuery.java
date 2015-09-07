@@ -73,7 +73,7 @@ public class DocValuesNumbersQuery extends Query {
 
   @Override
   public int hashCode() {
-    return Objects.hash(field, numbers, getBoost());
+    return 31 * super.hashCode() + Objects.hash(field, numbers);
   }
 
   @Override

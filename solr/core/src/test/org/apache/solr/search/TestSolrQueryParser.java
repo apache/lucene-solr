@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
@@ -154,14 +155,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("fq","id:1", "fl","id,score", "q", subqq+"^3", "qq","text:x^2"
         , "debug","query"
     )
-        ,"/debug/parsedquery=='text:x^6.0'"
+        ,"/debug/parsedquery_toString=='(text:x^2.0)^3.0'"
     );
 
     // boost should multiply
     assertJQ(req("fq","id:1", "fl","id,score", "q", "  {!v=$qq}^3", "qq","text:x^2"
         , "debug","query"
     )
-        ,"/debug/parsedquery=='text:x^6.0'"
+        ,"/debug/parsedquery_toString=='(text:x^2.0)^3.0'"
     );
 
   }
@@ -174,13 +175,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     QParser qParser = QParser.getParser("text:x^=3", "lucene", req);
     Query q = qParser.getQuery();
-    assertTrue( q instanceof ConstantScoreQuery);
-    assertEquals(3.0, q.getBoost(), 0.0f);
+    assertTrue( q instanceof BoostQuery);
+    assertTrue(((BoostQuery) q).getQuery() instanceof ConstantScoreQuery);
+    assertEquals(3.0, ((BoostQuery) q).getBoost(), 0.0f);
 
     qParser = QParser.getParser("(text:x text:y)^=-3", "lucene", req);
     q = qParser.getQuery();
-    assertTrue( q instanceof ConstantScoreQuery );
-    assertEquals(-3.0, q.getBoost(), 0.0f);
+    assertTrue( q instanceof BoostQuery);
+    assertTrue(((BoostQuery) q).getQuery() instanceof ConstantScoreQuery);
+    assertEquals(-3.0, ((BoostQuery) q).getBoost(), 0.0f);
 
     req.close();
   }

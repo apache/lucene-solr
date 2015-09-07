@@ -73,6 +73,12 @@ New Features
   fast, very accurate query to find all indexed points within an
   earth-surface shape (Karl Wright, Mike McCandless)
 
+API Changes
+
+* LUCENE-6590: Query.setBoost(), Query.getBoost() and Query.clone() are gone.
+  In order to apply boosts, you now need to wrap queries in a BoostQuery.
+  (Adrien Grand)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

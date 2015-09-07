@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
@@ -372,17 +373,16 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     }
     
     private Query getBoostedQuery(Query mltquery) {
-      BooleanQuery boostedQuery = (BooleanQuery)mltquery.clone();
+      BooleanQuery boostedQuery = (BooleanQuery)mltquery;
       if (boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
         newQ.setDisableCoord(boostedQuery.isCoordDisabled());
         newQ.setMinimumNumberShouldMatch(boostedQuery.getMinimumNumberShouldMatch());
         for (BooleanClause clause : boostedQuery) {
-          TermQuery q = (TermQuery) clause.getQuery();
-          Float b = this.boostFields.get(q.getTerm().field());
+          Query q = clause.getQuery();
+          Float b = this.boostFields.get(((TermQuery) q).getTerm().field());
           if (b != null) {
-            q = (TermQuery) q.clone();
-            q.setBoost(b*q.getBoost());
+            q = new BoostQuery(q, b);
           }
           newQ.add(q, clause.getOccur());
         }
@@ -482,10 +482,16 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     { 
       Collection<BooleanClause> clauses = ((BooleanQuery)query).clauses();
       for( BooleanClause o : clauses ) {
-        TermQuery q = (TermQuery) o.getQuery();
+        Query q = o.getQuery();
+        float boost = 1f;
+        if (query instanceof BoostQuery) {
+          BoostQuery bq = (BoostQuery) q;
+          q = bq.getQuery();
+          boost = bq.getBoost();
+        }
         InterestingTerm it = new InterestingTerm();
-        it.boost = q.getBoost();
-        it.term = q.getTerm();
+        it.boost = boost;
+        it.term = ((TermQuery) q).getTerm();
         terms.add( it );
       } 
       // alternatively we could use

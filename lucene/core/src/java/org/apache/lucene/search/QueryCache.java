@@ -26,22 +26,6 @@ package org.apache.lucene.search;
 public interface QueryCache {
 
   /**
-   * Return a key for the given query that only takes matching documents into
-   * account. Boosts will be ignored.
-   * @lucene.internal
-   */
-  public static Query cacheKey(Query query) {
-    if (query.getBoost() == 1f) {
-      return query;
-    } else {
-      Query key = query.clone();
-      key.setBoost(1f);
-      assert key == cacheKey(key);
-      return key;
-    }
-  }
-
-  /**
    * Return a wrapper around the provided <code>weight</code> that will cache
    * matching docs per-segment accordingly to the given <code>policy</code>.
    * NOTE: The returned weight will only be equivalent if scores are not needed.

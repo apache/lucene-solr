@@ -216,10 +216,10 @@ public class QueryScorer implements Scorer {
     qse.setWrapIfNotCachingTokenFilter(wrapToCaching);
     qse.setUsePayloads(usePayloads);
     if (reader == null) {
-      this.fieldWeightedSpanTerms = qse.getWeightedSpanTerms(query,
+      this.fieldWeightedSpanTerms = qse.getWeightedSpanTerms(query, 1f,
           tokenStream, field);
     } else {
-      this.fieldWeightedSpanTerms = qse.getWeightedSpanTermsWithScores(query,
+      this.fieldWeightedSpanTerms = qse.getWeightedSpanTermsWithScores(query, 1f,
           tokenStream, field, reader);
     }
     if(qse.isCachedTokenStream()) {

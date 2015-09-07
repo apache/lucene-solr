@@ -90,8 +90,6 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     Query q1 = new MatchAllDocsQuery();
     Query q2 = new MatchAllDocsQuery();
     assertTrue(q1.equals(q2));
-    q1.setBoost(1.5f);
-    assertFalse(q1.equals(q2));
   }
   
   private void addDoc(String text, IndexWriter iw, float boost) throws IOException {

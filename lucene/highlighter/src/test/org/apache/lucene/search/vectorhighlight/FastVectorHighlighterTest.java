@@ -42,6 +42,7 @@ import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -305,7 +306,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     BooleanQuery.Builder phraseB = new BooleanQuery.Builder();
     phraseB.add( clause( "text", "highlight", "words", "together" ), Occur.MUST );
     Query phrase = phraseB.build();
-    phrase.setBoost( 100 );
+    phrase = new BoostQuery(phrase, 100f);
     // Now combine those results in a boolean query which should pull the phrases to the front of the list of fragments 
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add( phrase, Occur.MUST );
@@ -733,7 +734,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     } else {
       q = new PhraseQuery(field, terms);
     }
-    q.setBoost( boost );
+    q = new BoostQuery( q, boost );
     return q;
   }
 

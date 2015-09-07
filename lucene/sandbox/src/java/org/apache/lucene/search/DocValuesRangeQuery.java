@@ -28,7 +28,6 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A range query that works on top of the doc values APIs. Such queries are
@@ -81,7 +80,7 @@ public final class DocValuesRangeQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof DocValuesRangeQuery == false) {
+    if (super.equals(obj) == false) {
       return false;
     }
     final DocValuesRangeQuery that = (DocValuesRangeQuery) obj;
@@ -95,7 +94,7 @@ public final class DocValuesRangeQuery extends Query {
 
   @Override
   public int hashCode() {
-    return Objects.hash(field, lowerVal, upperVal, includeLower, includeUpper, getBoost());
+    return 31 * super.hashCode() + Objects.hash(field, lowerVal, upperVal, includeLower, includeUpper);
   }
 
   @Override
@@ -109,18 +108,15 @@ public final class DocValuesRangeQuery extends Query {
     sb.append(" TO ");
     sb.append(upperVal == null ? "*" : upperVal.toString());
     sb.append(includeUpper ? ']' : '}');
-    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (lowerVal == null && upperVal == null) {
-      final FieldValueQuery rewritten = new FieldValueQuery(field);
-      rewritten.setBoost(getBoost());
-      return rewritten;
+      return new FieldValueQuery(field);
     }
-    return this;
+    return super.rewrite(reader);
   }
 
   @Override

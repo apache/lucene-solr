@@ -63,3 +63,18 @@ AttributeImpl removed the default, reflection-based implementation of
 reflectWith(AtrributeReflector). The method was made abstract. If you have
 implemented your own attribute, make sure to add the required method sigature.
 See the Javadocs for an example.
+
+## Query.setBoost() and Query.clone() are removed (LUCENE-6590)
+
+Query.setBoost has been removed. In order to apply a boost to a Query, you now
+need to wrap it inside a BoostQuery. For instance,
+
+  Query q = ...;
+  float boost = ...;
+  q = new BoostQuery(q, boost);
+
+would be equivalent to the following code with the old setBoost API:
+
+  Query q = ...;
+  float boost = ...;
+  q.setBoost(q.getBoost() * boost);

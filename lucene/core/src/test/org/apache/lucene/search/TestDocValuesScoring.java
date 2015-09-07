@@ -153,8 +153,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return sim.computeWeight(queryBoost, collectionStats, termStats);
+    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return sim.computeWeight(collectionStats, termStats);
     }
 
     @Override

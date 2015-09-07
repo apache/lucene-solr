@@ -150,6 +150,6 @@ public class CompletionWeight extends Weight {
   }
 
   @Override
-  public void normalize(float norm, float topLevelBoost) {
+  public void normalize(float norm, float boost) {
   }
 }

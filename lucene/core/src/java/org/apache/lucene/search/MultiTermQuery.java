@@ -94,9 +94,7 @@ public abstract class MultiTermQuery extends Query {
   public static final RewriteMethod CONSTANT_SCORE_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
-      Query result = new MultiTermQueryConstantScoreWrapper<>(query);
-      result.setBoost(query.getBoost());
-      return result;
+      return new MultiTermQueryConstantScoreWrapper<>(query);
     }
   };
 
@@ -172,8 +170,7 @@ public abstract class MultiTermQuery extends Query {
     @Override
     protected void addClause(BooleanQuery.Builder topLevel, Term term, int docCount, float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
-      tq.setBoost(boost);
-      topLevel.add(tq, BooleanClause.Occur.SHOULD);
+      topLevel.add(new BoostQuery(tq, boost), BooleanClause.Occur.SHOULD);
     }
   }
   
@@ -271,8 +268,7 @@ public abstract class MultiTermQuery extends Query {
     @Override
     protected void addClause(BooleanQuery.Builder topLevel, Term term, int docFreq, float boost, TermContext states) {
       final Query q = new ConstantScoreQuery(new TermQuery(term, states));
-      q.setBoost(boost);
-      topLevel.add(q, BooleanClause.Occur.SHOULD);
+      topLevel.add(new BoostQuery(q, boost), BooleanClause.Occur.SHOULD);
     }
   }
 
@@ -337,7 +333,6 @@ public abstract class MultiTermQuery extends Query {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + Float.floatToIntBits(getBoost());
     result = prime * result + rewriteMethod.hashCode();
     if (field != null) result = prime * result + field.hashCode();
     return result;

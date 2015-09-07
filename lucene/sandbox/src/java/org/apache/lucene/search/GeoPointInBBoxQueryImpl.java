@@ -138,7 +138,6 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
         .append(',')
         .append(maxLat)
         .append("]")
-        .append(ToStringUtils.boost(getBoost()))
         .toString();
   }
 }

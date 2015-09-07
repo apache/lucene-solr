@@ -29,11 +29,11 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that executes high-frequency terms in a optional sub-query to prevent
@@ -148,9 +148,7 @@ public class CommonTermsQuery extends Query {
     if (this.terms.isEmpty()) {
       return new MatchNoDocsQuery();
     } else if (this.terms.size() == 1) {
-      final Query tq = newTermQuery(this.terms.get(0), null);
-      tq.setBoost(getBoost());
-      return tq;
+      return newTermQuery(this.terms.get(0), null);
     }
     final List<LeafReaderContext> leaves = reader.leaves();
     final int maxDoc = reader.maxDoc();
@@ -226,8 +224,7 @@ public class CommonTermsQuery extends Query {
       }
       lowFreq.setMinimumNumberShouldMatch(lowFreqMinShouldMatch);
       Query lowFreqQuery = lowFreq.build();
-      lowFreqQuery.setBoost(lowFreqBoost);
-      builder.add(lowFreqQuery, Occur.MUST);
+      builder.add(new BoostQuery(lowFreqQuery, lowFreqBoost), Occur.MUST);
     }
     if (highFreqQueries.isEmpty() == false) {
       BooleanQuery.Builder highFreq = new BooleanQuery.Builder();
@@ -237,12 +234,9 @@ public class CommonTermsQuery extends Query {
       }
       highFreq.setMinimumNumberShouldMatch(highFreqMinShouldMatch);
       Query highFreqQuery = highFreq.build();
-      highFreqQuery.setBoost(highFreqBoost);
-      builder.add(highFreqQuery, Occur.SHOULD);
+      builder.add(new BoostQuery(highFreqQuery, highFreqBoost), Occur.SHOULD);
     }
-    Query rewritten = builder.build();
-    rewritten.setBoost(getBoost());
-    return rewritten;
+    return builder.build();
   }
   
   public void collectTermContext(IndexReader reader,
@@ -347,8 +341,7 @@ public class CommonTermsQuery extends Query {
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    boolean needParens = (getBoost() != 1.0)
-        || (getLowFreqMinimumNumberShouldMatch() > 0);
+    boolean needParens = (getLowFreqMinimumNumberShouldMatch() > 0);
     if (needParens) {
       buffer.append("(");
     }
@@ -367,9 +360,6 @@ public class CommonTermsQuery extends Query {
       buffer.append(getLowFreqMinimumNumberShouldMatch());
       buffer.append(getHighFreqMinimumNumberShouldMatch());
       buffer.append(")");
-    }
-    if (getBoost() != 1.0f) {
-      buffer.append(ToStringUtils.boost(getBoost()));
     }
     return buffer.toString();
   }

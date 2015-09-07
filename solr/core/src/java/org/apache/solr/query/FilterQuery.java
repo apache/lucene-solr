@@ -20,11 +20,11 @@ package org.apache.solr.query;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.ToStringUtils;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrConstantScoreQuery;
@@ -35,7 +35,6 @@ public class FilterQuery extends ExtendedQueryBase {
 
   public FilterQuery(Query q) {
     this.q = q;
-    setBoost(0);  // default boost is 0;
   }
 
   public Query getQuery() {
@@ -51,16 +50,15 @@ public class FilterQuery extends ExtendedQueryBase {
   public boolean equals(Object obj) {
     if (!(obj instanceof FilterQuery)) return false;
     FilterQuery fq = (FilterQuery)obj;
-    return this.q.equals(fq.q) && this.getBoost() == fq.getBoost();
+    return this.q.equals(fq.q);
   }
 
   @Override
   public String toString(String field) {
     StringBuilder sb = new StringBuilder();
-    sb.append("field(");
+    sb.append("filter(");
     sb.append(q.toString(""));
     sb.append(')');
-    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 
@@ -69,9 +67,7 @@ public class FilterQuery extends ExtendedQueryBase {
   public Query rewrite(IndexReader reader) throws IOException {
     Query newQ = q.rewrite(reader);
     if (newQ != q) {
-      FilterQuery fq = new FilterQuery(newQ);
-      fq.setBoost(this.getBoost());
-      return fq;
+      return new FilterQuery(newQ);
     } else {
       return this;
     }
@@ -83,17 +79,13 @@ public class FilterQuery extends ExtendedQueryBase {
 
     if (!(searcher instanceof SolrIndexSearcher)) {
       // delete-by-query won't have SolrIndexSearcher
-      ConstantScoreQuery csq = new ConstantScoreQuery(q);
-      csq.setBoost(this.getBoost());
-      return csq.createWeight(searcher, needScores);
+      return new BoostQuery(new ConstantScoreQuery(q), 0).createWeight(searcher, needScores);
     }
 
     SolrIndexSearcher solrSearcher = (SolrIndexSearcher)searcher;
     DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
-    SolrConstantScoreQuery csq = new SolrConstantScoreQuery( docs.getTopFilter() );
-    csq.setBoost( this.getBoost() );
-    return csq.createWeight(searcher, needScores);
+    return new BoostQuery(new SolrConstantScoreQuery(docs.getTopFilter()), 0).createWeight(searcher, needScores);
   }
 }

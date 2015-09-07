@@ -56,7 +56,6 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -65,7 +64,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
@@ -875,9 +873,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     public Query rewrite(IndexReader reader) throws IOException {
       final Query inRewritten = in.rewrite(reader);
       if (in != inRewritten) {
-        Query rewritten = new UsedQuery(inRewritten, used);
-        rewritten.setBoost(getBoost());
-        return rewritten;
+        return new UsedQuery(inRewritten, used);
       }
       return super.rewrite(reader);
     }

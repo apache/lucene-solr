@@ -18,13 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Objects;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -149,7 +147,6 @@ public class AutomatonQuery extends MultiTermQuery {
     buffer.append('\n');
     buffer.append(automaton.toString());
     buffer.append("}");
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
   

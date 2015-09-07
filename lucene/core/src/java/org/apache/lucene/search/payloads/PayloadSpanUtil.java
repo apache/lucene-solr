@@ -100,11 +100,9 @@ public class PayloadSpanUtil {
       }
 
       SpanNearQuery sp = new SpanNearQuery(clauses, slop, inorder);
-      sp.setBoost(query.getBoost());
       getPayloads(payloads, sp);
     } else if (query instanceof TermQuery) {
       SpanTermQuery stq = new SpanTermQuery(((TermQuery) query).getTerm());
-      stq.setBoost(query.getBoost());
       getPayloads(payloads, stq);
     } else if (query instanceof SpanQuery) {
       getPayloads(payloads, (SpanQuery) query);
@@ -163,7 +161,6 @@ public class PayloadSpanUtil {
 
         SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps,
                                                       inorder);
-        sp.setBoost(query.getBoost());
         getPayloads(payloads, sp);
       }
     }

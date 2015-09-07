@@ -32,7 +32,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A Query that matches documents containing a term. This may be combined with
@@ -73,7 +72,7 @@ public class TermQuery extends Query {
         termStats = new TermStatistics(term.bytes(), docFreq, totalTermFreq);
       }
      
-      this.stats = similarity.computeWeight(getBoost(), collectionStats, termStats);
+      this.stats = similarity.computeWeight(collectionStats, termStats);
     }
 
     @Override
@@ -92,8 +91,8 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      stats.normalize(queryNorm, topLevelBoost);
+    public void normalize(float queryNorm, float boost) {
+      stats.normalize(queryNorm, boost);
     }
 
     @Override
@@ -207,7 +206,6 @@ public class TermQuery extends Query {
       buffer.append(":");
     }
     buffer.append(term.text());
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

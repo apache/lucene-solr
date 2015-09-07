@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.xml.builders;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
@@ -44,7 +45,6 @@ public class DisjunctionMaxQueryBuilder implements QueryBuilder {
   public Query getQuery(Element e) throws ParserException {
     float tieBreaker = DOMUtils.getAttribute(e, "tieBreaker", 0.0f); 
     DisjunctionMaxQuery dq = new DisjunctionMaxQuery(tieBreaker);
-    dq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
 
     NodeList nl = e.getChildNodes();
     for (int i = 0; i < nl.getLength(); i++) {
@@ -56,6 +56,11 @@ public class DisjunctionMaxQueryBuilder implements QueryBuilder {
       }
     }
 
-    return dq;
+    Query q = dq;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    if (boost != 1f) {
+      q = new BoostQuery(dq, boost);
+    }
+    return q;
   }
 }

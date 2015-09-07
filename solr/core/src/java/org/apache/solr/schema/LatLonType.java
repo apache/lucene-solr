@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexReader;
@@ -31,6 +30,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -38,7 +38,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
-import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.DelegatingCollector;
@@ -308,10 +307,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     return bboxQuery != null ? bboxQuery.rewrite(reader) : this;
   }
 
-  protected class SpatialWeight extends Weight {
+  protected class SpatialWeight extends ConstantScoreWeight {
     protected IndexSearcher searcher;
-    protected float queryNorm;
-    protected float queryWeight;
     protected Map latContext;
     protected Map lonContext;
 
@@ -325,28 +322,13 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public void extractTerms(Set terms) {}
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      queryWeight = getBoost();
-      return queryWeight * queryWeight;
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      this.queryNorm = norm * topLevelBoost;
-      queryWeight *= this.queryNorm;
-    }
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      return new SpatialScorer(context, this, queryWeight);
+      return new SpatialScorer(context, this, score());
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((SpatialScorer)scorer(context)).explain(doc);
+      return ((SpatialScorer)scorer(context)).explain(super.explain(context, doc), doc);
     }
   }
 
@@ -484,24 +466,15 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       return maxDoc;
     }
 
-    public Explanation explain(int doc) throws IOException {
-      advance(doc);
-      boolean matched = this.doc == doc;
-      this.doc = doc;
-
-      float sc = matched ? score() : 0;
+    public Explanation explain(Explanation base, int doc) throws IOException {
+      if (base.isMatch() == false) {
+        return base;
+      }
       double dist = dist(latVals.doubleVal(doc), lonVals.doubleVal(doc));
 
       String description = SpatialDistanceQuery.this.toString();
-
-      if (matched) {
-        return Explanation.match(sc, description + " product of:",
-            Explanation.match((float) dist, "hsin("+latVals.doubleVal(doc)+","+lonVals.doubleVal(doc)),
-            Explanation.match(getBoost(), "boost"),
-            Explanation.match(weight.queryNorm,"queryNorm"));
-      } else {
-        return Explanation.noMatch("No match");
-      }
+      return Explanation.match((float) (base.getValue() * dist), description + " product of:",
+          base, Explanation.match((float) dist, "hsin("+latVals.doubleVal(doc)+","+lonVals.doubleVal(doc)));
     }
 
   }
@@ -552,8 +525,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   @Override
   public String toString(String field)
   {
-    float boost = getBoost();
-    return super.getOptions() + (boost!=1.0?"(":"") +
+    return super.getOptions() +
             (calcDist ? "geofilt" : "bbox") + "(latlonSource="+origField +"(" + latSource + "," + lonSource + ")"
             +",latCenter="+latCenter+",lonCenter="+lonCenter
             +",dist=" + dist
@@ -563,8 +535,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
             +",calcDist="+calcDist
             +",planetRadius="+planetRadius
             // + (bboxQuery == null ? "" : ",bboxQuery="+bboxQuery)
-            +")"
-            + (boost==1.0 ? "" : ")^"+boost);
+            +")";
   }
 
 
@@ -586,7 +557,6 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
             && this.calcDist == other.calcDist
             && this.lonSource.equals(other.lonSource)
             && this.latSource.equals(other.latSource)
-            && this.getBoost() == other.getBoost()
         ;
   }
 

@@ -41,7 +41,7 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * needed.  The purpose is to allow queries to simply care about matching and
  * scoring, and then wrap with this class to add caching.
  */
-public class CachingWrapperQuery extends Query implements Accountable {
+public class CachingWrapperQuery extends Query implements Accountable, Cloneable {
   private Query query; // not final because of clone
   private final QueryCachingPolicy policy;
   private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,DocIdSet>());
@@ -62,29 +62,12 @@ public class CachingWrapperQuery extends Query implements Accountable {
     this(query, QueryCachingPolicy.CacheOnLargeSegments.DEFAULT);
   }
 
-  @Override
-  public CachingWrapperQuery clone() {
-    final CachingWrapperQuery clone = (CachingWrapperQuery) super.clone();
-    clone.query = query.clone();
-    return clone;
-  }
-
   /**
    * Gets the contained query.
    * @return the contained query.
    */
   public Query getQuery() {
     return query;
-  }
-  
-  @Override
-  public float getBoost() {
-    return query.getBoost();
-  }
-  
-  @Override
-  public void setBoost(float b) {
-    query.setBoost(b);
   }
   
   /**
@@ -98,11 +81,16 @@ public class CachingWrapperQuery extends Query implements Accountable {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query rewritten = query.rewrite(reader);
     if (query == rewritten) {
-      return this;
+      return super.rewrite(reader);
     } else {
-      CachingWrapperQuery clone = clone();
-      clone.query = rewritten;
-      return clone;
+      CachingWrapperQuery clone;
+      try {
+        clone = (CachingWrapperQuery) clone();
+        clone.query = rewritten;
+        return clone;
+      } catch (CloneNotSupportedException e) {
+        throw new AssertionError(e);
+      }
     }
   }
 

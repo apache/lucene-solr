@@ -87,7 +87,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     public Query rewrite(IndexReader reader) throws IOException {
       Query q = mainQuery.rewrite(reader);
       if(q == mainQuery) {
-        return this;
+        return super.rewrite(reader);
       } else {
         return clone().wrap(q);
       }
@@ -102,16 +102,15 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return id.hashCode()+((int)getBoost());
+      return 31 * super.hashCode() + id.hashCode();
     }
     
     public boolean equals(Object o) {
-      if(o instanceof ExportQuery) {
-        ExportQuery q = (ExportQuery)o;
-        return (this.id == q.id && getBoost() == q.getBoost());
-      } else {
+      if (super.equals(o) == false) {
         return false;
       }
+      ExportQuery q = (ExportQuery)o;
+      return id == q.id;
     }
     
     public String toString(String s) {
