@@ -475,7 +475,14 @@ public class GeoPath extends GeoBaseDistanceShape {
     public boolean isWithin(final Vector point) {
       if (circlePlane == null)
         return false;
-      return circlePlane.isWithin(point);
+      if (!circlePlane.isWithin(point))
+        return false;
+      for (final Membership m : cutoffPlanes) {
+        if (!m.isWithin(point)) {
+          return false;
+        }
+      }
+      return true;
     }
 
     /** Check if point is within this endpoint.
@@ -487,7 +494,14 @@ public class GeoPath extends GeoBaseDistanceShape {
     public boolean isWithin(final double x, final double y, final double z) {
       if (circlePlane == null)
         return false;
-      return circlePlane.isWithin(x, y, z);
+      if (!circlePlane.isWithin(x, y, z))
+        return false;
+      for (final Membership m : cutoffPlanes) {
+        if (!m.isWithin(x,y,z)) {
+          return false;
+        }
+      }
+      return true;
     }
 
     /** Compute interior path distance.

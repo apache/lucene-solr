@@ -227,6 +227,21 @@ public class TestGeo3DPointField extends LuceneTestCase {
     }
   }
 
+  private static PlanetModel getPlanetModel() {
+    if (random().nextBoolean()) {
+      // Use one of the earth models:
+      if (random().nextBoolean()) {
+        return PlanetModel.WGS84;
+      } else {
+        return PlanetModel.SPHERE;
+      }
+    } else {
+      // Make a randomly squashed planet:
+      double oblateness = random().nextDouble() * 0.5 - 0.25;
+      return new PlanetModel(1.0 + oblateness, 1.0 - oblateness);
+    }
+  }
+
   public void testBKDRandom() throws Exception {
     final List<Point> points = new ArrayList<>();
     int numPoints = atLeast(10000);
@@ -236,12 +251,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
 
-    PlanetModel planetModel;
-    if (random().nextBoolean()) {
-      planetModel = PlanetModel.WGS84;
-    } else {
-      planetModel = PlanetModel.SPHERE;
-    }
+    PlanetModel planetModel = getPlanetModel();
     final double planetMax = planetModel.getMaximumMagnitude();
     
     BKD3DTreeWriter w = new BKD3DTreeWriter(maxPointsInLeaf, maxPointsSortInHeap);
@@ -439,12 +449,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
   /** Tests consistency of GeoArea.getRelationship vs GeoShape.isWithin */
   public void testGeo3DRelations() throws Exception {
 
-    PlanetModel planetModel;
-    if (random().nextBoolean()) {
-      planetModel = PlanetModel.WGS84;
-    } else {
-      planetModel = PlanetModel.SPHERE;
-    }
+    PlanetModel planetModel = getPlanetModel();
 
     int numDocs = atLeast(1000);
     if (VERBOSE) {
@@ -699,9 +704,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
       }
 
       if (fail) {
-        if (VERBOSE) {
-          System.out.print(sw.toString());
-        }
+        System.out.print(sw.toString());
         fail("invalid hits for shape=" + shape);
       }
     }
@@ -898,12 +901,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
 
-    final PlanetModel planetModel;
-    if (random().nextBoolean()) {
-      planetModel = PlanetModel.WGS84;
-    } else {
-      planetModel = PlanetModel.SPHERE;
-    }
+    final PlanetModel planetModel = getPlanetModel();
 
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
