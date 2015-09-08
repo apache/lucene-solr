@@ -115,6 +115,9 @@ Bug Fixes
 
 * LUCENE-6781: Fixed BoostingQuery to rewrite wrapped queries. (Adrien Grand)
 
+* LUCENE-6783: Removed side effects from FuzzyLikeThisQuery.rewrite.
+  (Adrien Grand)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
