@@ -20,27 +20,15 @@ package org.apache.solr.search;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.response.transform.*;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Locale;
 import java.util.Random;
 
 public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   // :TODO: datatypes produced by the functions used may change
-
-  /**
-   * values of the fl param that mean all real fields
-   */
-  private static String[] ALL_REAL_FIELDS = new String[] { "", "*" };
-
-  /**
-   * values of the fl param that mean all real fields and score
-   */
-  private static String[] SCORE_AND_REAL_FIELDS = new String[] {
-      "score", "score,*", "*,score"
-  };
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -341,14 +329,14 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       final boolean aliasId = r.nextBoolean();
       final boolean aliasFoo = r.nextBoolean();
 
-      final String id = TestUtil.randomWhitespace(r, 0, 3) +
+      final String id = randomWhitespace(r, 0, 3) +
         (aliasId ? "aliasId:" : "") +
         "id" + 
-        TestUtil.randomWhitespace(r, 1, 3);
-      final String foo_i = TestUtil.randomWhitespace(r, 0, 3) +
+        randomWhitespace(r, 1, 3);
+      final String foo_i = randomWhitespace(r, 0, 3) +
         (aliasFoo ? "aliasFoo:" : "") +
         "foo_i" + 
-        TestUtil.randomWhitespace(r, 0, 3);
+        randomWhitespace(r, 0, 3);
 
       final String fl = id + (r.nextBoolean() ? "" : ",") + foo_i;
       ReturnFields rf = new SolrReturnFields(req("fl", fl));
@@ -364,6 +352,69 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       assertFalse(rf.wantsField("xxx"));
       assertFalse(rf.wantsAllFields());
     }
+  }
+
+  /** List of characters that match {@link Character#isWhitespace} */
+  private static final char[] WHITESPACE_CHARACTERS = new char[] {
+    // :TODO: is this list exhaustive?
+    '\u0009',
+    '\n',    
+    '\u000B',
+    '\u000C',
+    '\r',    
+    '\u001C',
+    '\u001D',
+    '\u001E',
+    '\u001F',
+    '\u0020',
+    // '\u0085', failed sanity check?
+    '\u1680',
+    // '\u180E', no longer whitespace in Unicode 7.0 (Java 9)!
+    '\u2000',
+    '\u2001',
+    '\u2002',
+    '\u2003',
+    '\u2004',
+    '\u2005',
+    '\u2006',
+    '\u2008',
+    '\u2009',
+    '\u200A',
+    '\u2028',
+    '\u2029',
+    '\u205F',
+    '\u3000',
+  };
+
+  static {
+    // if the JVM/unicode can redefine whitespace once (LUCENE-6760), it might happen again
+    // in the future.  if that happens, fail early with a clera msg, even if java asserts
+    // (used in randomWhitespace) are disbled
+    
+    for (int offset = 0; offset < WHITESPACE_CHARACTERS.length; offset++) {
+      char c = WHITESPACE_CHARACTERS[offset];
+      if (! Character.isWhitespace(c) ) {
+        fail(String.format(Locale.ENGLISH, "Not really whitespace? New JVM/Unicode definitions? WHITESPACE_CHARACTERS[%d] is '\\u%04X'", offset, (int) c));
+      }
+    }
+  }
+  
+  /**
+   * Returns a random string in the specified length range consisting 
+   * entirely of whitespace characters 
+   * @see #WHITESPACE_CHARACTERS
+   */
+  public static String randomWhitespace(Random r, int minLength, int maxLength) {
+    final int end = TestUtil.nextInt(r, minLength, maxLength);
+    StringBuilder out = new StringBuilder();
+    for (int i = 0; i < end; i++) {
+      int offset = TestUtil.nextInt(r, 0, WHITESPACE_CHARACTERS.length-1);
+      char c = WHITESPACE_CHARACTERS[offset];
+      // sanity check
+      assert Character.isWhitespace(c) : String.format(Locale.ENGLISH, "Not really whitespace? WHITESPACE_CHARACTERS[%d] is '\\u%04X'", offset, (int) c);
+      out.append(c);
+    }
+    return out.toString();
   }
 
 }
