@@ -43,7 +43,6 @@ final class BooleanWeight extends Weight {
   final boolean disableCoord;
   final boolean needsScores;
   final float coords[];
-  float boost = 1f;
 
   BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores, boolean disableCoord) throws IOException {
     super(query);
@@ -106,8 +105,6 @@ final class BooleanWeight extends Weight {
       i += 1;
     }
 
-    sum *= boost * boost; // boost each sub-weight
-
     return sum ;
   }
 
@@ -129,7 +126,6 @@ final class BooleanWeight extends Weight {
 
   @Override
   public void normalize(float norm, float boost) {
-    this.boost = boost;
     for (Weight w : weights) {
       // normalize all clauses, (even if non-scoring in case of side affects)
       w.normalize(norm, boost);
