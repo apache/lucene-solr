@@ -113,7 +113,12 @@ public class XYdZSolid extends BaseXYZSolid {
       // First construct a perpendicular plane that will allow us to find a sample point.
       // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
       // Then use it to compute a sample point.
-      zEdges = new GeoPoint[]{zPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+      final GeoPoint intPoint = zPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane);
+      if (intPoint != null) {
+        zEdges = new GeoPoint[]{intPoint};
+      } else {
+        zEdges = EMPTY_POINTS;
+      }
     } else {
       zEdges= EMPTY_POINTS;
     }

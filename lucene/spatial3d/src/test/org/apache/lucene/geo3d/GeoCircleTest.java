@@ -102,6 +102,16 @@ public class GeoCircleTest extends LuceneTestCase {
     GeoPoint p2;
     int relationship;
 
+    // ...
+    c = new GeoCircle(PlanetModel.WGS84, -0.005931145568901605, -0.001942031539653079, 1.2991918568260272E-4);
+    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, 1.001098377143621, 1.001100011578687, -0.00207467080358696, -0.0018136665346280983, -0.006067808248760161, -0.005807683665759485);
+    p1 = new GeoPoint(PlanetModel.WGS84, -0.00591253844632244, -0.0020069187259065093);
+    p2 = new GeoPoint(1.001099185736782, -0.0020091272069679327, -0.005919118245803968);
+    assertTrue(c.isWithin(p1));
+    assertTrue(area.isWithin(p1));
+    relationship = area.getRelationship(c);
+    assertTrue(relationship != GeoArea.DISJOINT);
+
     // Twelfth BKD discovered failure
     c = new GeoCircle(PlanetModel.WGS84,-0.00824379317765984,-0.0011677469001838581,0.0011530035396910402);
     p1 = new GeoPoint(PlanetModel.WGS84,-0.006505092992723671,0.007654282718327381);

@@ -167,7 +167,7 @@ public class PlanetModel {
   public boolean pointOnSurface(final double x, final double y, final double z) {
     // Equation of planet surface is:
     // x^2 / a^2 + y^2 / b^2 + z^2 / c^2 - 1 = 0
-    return Math.abs((x * x + y * y) * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0) < Vector.MINIMUM_RESOLUTION;
+    return Math.abs(x * x * inverseAb * inverseAb + y * y * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0) < Vector.MINIMUM_RESOLUTION;
   }
 
   /** Check if point is outside surface.

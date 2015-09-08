@@ -118,6 +118,9 @@ Bug Fixes
 * LUCENE-6783: Removed side effects from FuzzyLikeThisQuery.rewrite.
   (Adrien Grand)
 
+* LUCENE-6776: Fix geo3d math to handle randomly squashed planet
+  models (Karl Wright via Mike McCandless) 
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.

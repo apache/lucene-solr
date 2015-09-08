@@ -186,7 +186,13 @@ public class XYZSolid extends BaseXYZSolid {
         // First construct a perpendicular plane that will allow us to find a sample point.
         // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
         // Then use it to compute a sample point.
-        minXEdges = new GeoPoint[]{minXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+        final GeoPoint intPoint = minXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane);
+        if (intPoint != null) {
+          minXEdges = new GeoPoint[]{intPoint};
+        } else {
+          // No intersection found?
+          minXEdges = EMPTY_POINTS;
+        }
       } else {
         minXEdges = EMPTY_POINTS;
       }
@@ -199,7 +205,12 @@ public class XYZSolid extends BaseXYZSolid {
         // First construct a perpendicular plane that will allow us to find a sample point.
         // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
         // Then use it to compute a sample point.
-        maxXEdges = new GeoPoint[]{maxXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+        final GeoPoint intPoint = maxXPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane);
+        if (intPoint != null) {
+          maxXEdges = new GeoPoint[]{intPoint};
+        } else {
+          maxXEdges = EMPTY_POINTS;
+        }
       } else {
         maxXEdges = EMPTY_POINTS;
       }
@@ -212,7 +223,12 @@ public class XYZSolid extends BaseXYZSolid {
         // First construct a perpendicular plane that will allow us to find a sample point.
         // This plane is vertical and goes through the points (0,0,0) and (0,1,0)
         // Then use it to compute a sample point.
-        minYEdges = new GeoPoint[]{minYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane)};
+        final GeoPoint intPoint = minYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane);
+        if (intPoint != null) {
+          minYEdges = new GeoPoint[]{intPoint};
+        } else {
+          minYEdges = EMPTY_POINTS;
+        }
       } else {
         minYEdges = EMPTY_POINTS;
       }
@@ -225,7 +241,12 @@ public class XYZSolid extends BaseXYZSolid {
         // First construct a perpendicular plane that will allow us to find a sample point.
         // This plane is vertical and goes through the points (0,0,0) and (0,1,0)
         // Then use it to compute a sample point.
-        maxYEdges = new GeoPoint[]{maxYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane)};
+        final GeoPoint intPoint = maxYPlane.getSampleIntersectionPoint(planetModel, yVerticalPlane);
+        if (intPoint != null) {
+          maxYEdges = new GeoPoint[]{intPoint};
+        } else {
+          maxYEdges = EMPTY_POINTS;
+        }
       } else {
         maxYEdges = EMPTY_POINTS;
       }
@@ -238,7 +259,12 @@ public class XYZSolid extends BaseXYZSolid {
         // First construct a perpendicular plane that will allow us to find a sample point.
         // This plane is vertical and goes through the points (0,0,0) and (1,0,0)
         // Then use it to compute a sample point.
-        minZEdges = new GeoPoint[]{minZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+        final GeoPoint intPoint = minZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane);
+        if (intPoint != null) {
+          minZEdges = new GeoPoint[]{intPoint};
+        } else {
+          minZEdges = EMPTY_POINTS;
+        }
       } else {
         minZEdges = EMPTY_POINTS;
       }
@@ -251,7 +277,12 @@ public class XYZSolid extends BaseXYZSolid {
         // First construct a perpendicular plane that will allow us to find a sample point.
         // This plane is vertical and goes through the points (0,0,0) and (1,0,0) (that is, its orientation doesn't matter)
         // Then use it to compute a sample point.
-        maxZEdges = new GeoPoint[]{maxZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane)};
+        final GeoPoint intPoint = maxZPlane.getSampleIntersectionPoint(planetModel, xVerticalPlane);
+        if (intPoint != null) {
+          maxZEdges = new GeoPoint[]{intPoint};
+        } else {
+          maxZEdges = EMPTY_POINTS;
+        }
       } else {
         maxZEdges = EMPTY_POINTS;
       }
@@ -290,6 +321,16 @@ public class XYZSolid extends BaseXYZSolid {
         return WITHIN;
       return OVERLAPS;
     }
+    
+    /*
+    for (GeoPoint p : getEdgePoints()) {
+      System.err.println(" Edge point "+p+" path.isWithin()? "+path.isWithin(p));
+    }
+    
+    for (GeoPoint p : path.getEdgePoints()) {
+      System.err.println(" path edge point "+p+" isWithin()? "+isWithin(p)+" minx="+minXPlane.evaluate(p)+" maxx="+maxXPlane.evaluate(p)+" miny="+minYPlane.evaluate(p)+" maxy="+maxYPlane.evaluate(p)+" minz="+minZPlane.evaluate(p)+" maxz="+maxZPlane.evaluate(p));
+    }
+    */
     
     //System.err.println(this+" getrelationship with "+path);
     final int insideRectangle = isShapeInsideArea(path);
