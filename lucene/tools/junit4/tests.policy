@@ -67,8 +67,6 @@ grant {
   permission java.lang.RuntimePermission "accessClassInPackage.sun.util";
   // needed for test of IOUtils.spins (maybe it can be avoided)
   permission java.lang.RuntimePermission "getFileStoreAttributes";
-  // analyzers/morfologik: needed for a horrible context classloader hack for solr in morfologikfilter: nuke this
-  permission java.lang.RuntimePermission "setContextClassLoader";
   // analyzers/uima: needed by UIMA message localization... (?)
   permission java.lang.RuntimePermission "createSecurityManager";
   permission java.lang.RuntimePermission "createClassLoader";

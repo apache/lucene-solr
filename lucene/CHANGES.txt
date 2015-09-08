@@ -4,6 +4,13 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 
+======================= Lucene 5.3.1 =======================
+
+Bug Fixes
+
+* LUCENE-6774: Remove classloader hack in MorfologikFilter. (Robert Muir,
+  Uwe Schindler)
+
 ======================= Lucene 5.3.0 =======================
 
 New Features
