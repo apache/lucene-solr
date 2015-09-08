@@ -32,7 +32,10 @@ class DistanceRewriteQuery extends RewriteQuery<DistanceQuery> {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    return srndQuery.getSpanNearQuery(reader, fieldName, getBoost(), qf);
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
+    return srndQuery.getSpanNearQuery(reader, fieldName, qf);
   }
 }
 

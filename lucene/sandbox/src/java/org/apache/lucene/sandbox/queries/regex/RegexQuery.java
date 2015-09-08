@@ -74,7 +74,6 @@ public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
       buffer.append(":");
     }
     buffer.append(term.text());
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

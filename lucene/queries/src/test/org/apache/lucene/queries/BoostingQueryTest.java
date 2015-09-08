@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -47,9 +48,10 @@ public class BoostingQueryTest extends LuceneTestCase {
   public void testRewrite() throws IOException {
     IndexReader reader = new MultiReader();
     BoostingQuery q = new BoostingQuery(new MatchNoDocsQuery(), new MatchAllDocsQuery(), 3);
-    Query rewritten = q.rewrite(reader);
+    Query rewritten = new IndexSearcher(reader).rewrite(q);
     Query expectedRewritten = new BoostingQuery(new BooleanQuery.Builder().build(), new MatchAllDocsQuery(), 3);
     assertEquals(expectedRewritten, rewritten);
     assertSame(rewritten, rewritten.rewrite(reader));
   }
+
 }

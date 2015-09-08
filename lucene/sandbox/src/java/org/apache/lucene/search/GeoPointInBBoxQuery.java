@@ -17,8 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.ToStringUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
  * {@link org.apache.lucene.search.NumericRangeQuery} and is implemented using a
@@ -55,15 +56,16 @@ public class GeoPointInBBoxQuery extends Query {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) {
+  public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     if (maxLon < minLon) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
 
       GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, -180.0D, minLat, maxLon, maxLat);
-      left.setBoost(getBoost());
       bq.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
       GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, minLon, minLat, 180.0D, maxLat);
-      right.setBoost(getBoost());
       bq.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return bq.build();
     }
@@ -90,7 +92,6 @@ public class GeoPointInBBoxQuery extends Query {
         .append(',')
         .append(maxLat)
         .append("]")
-        .append(ToStringUtils.boost(getBoost()))
         .toString();
   }
 

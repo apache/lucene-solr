@@ -35,7 +35,7 @@ import org.apache.lucene.util.ToStringUtils;
 /** Removes matches which overlap with another SpanQuery or which are
  * within x tokens before or y tokens after another SpanQuery.
  */
-public class SpanNotQuery extends SpanQuery implements Cloneable {
+public final class SpanNotQuery extends SpanQuery {
   private SpanQuery include;
   private SpanQuery exclude;
   private final int pre;
@@ -89,17 +89,9 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     buffer.append(", ");
     buffer.append(Integer.toString(post));
     buffer.append(")");
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 
-  @Override
-  public SpanNotQuery clone() {
-    SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery) include.clone(),
-                                                                (SpanQuery) exclude.clone(), pre, post);
-    spanNotQuery.setBoost(getBoost());
-    return spanNotQuery;
-  }
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
@@ -201,24 +193,15 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    SpanNotQuery clone = null;
-
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     SpanQuery rewrittenInclude = (SpanQuery) include.rewrite(reader);
-    if (rewrittenInclude != include) {
-      clone = this.clone();
-      clone.include = rewrittenInclude;
-    }
     SpanQuery rewrittenExclude = (SpanQuery) exclude.rewrite(reader);
-    if (rewrittenExclude != exclude) {
-      if (clone == null) clone = this.clone();
-      clone.exclude = rewrittenExclude;
+    if (rewrittenInclude != include || rewrittenExclude != exclude) {
+      return new SpanNotQuery(rewrittenInclude, rewrittenExclude);
     }
-
-    if (clone != null) {
-      return clone;                        // some clauses rewrote
-    } else {
-      return this;                         // no clauses rewrote
-    }
+    return super.rewrite(reader);
   }
 
     /** Returns true iff <code>o</code> is equal to this. */

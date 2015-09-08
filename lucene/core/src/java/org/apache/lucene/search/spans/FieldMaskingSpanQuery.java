@@ -23,7 +23,6 @@ import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * <p>Wrapper to allow {@link SpanQuery} objects participate in composite 
@@ -68,9 +67,9 @@ import org.apache.lucene.util.ToStringUtils;
  * but with the term statistics of the real field. This may lead to exceptions,
  * poor performance, and unexpected scoring behaviour.
  */
-public class FieldMaskingSpanQuery extends SpanQuery {
-  private SpanQuery maskedQuery;
-  private String field;
+public final class FieldMaskingSpanQuery extends SpanQuery {
+  private final SpanQuery maskedQuery;
+  private final String field;
     
   public FieldMaskingSpanQuery(SpanQuery maskedQuery, String maskedField) {
     this.maskedQuery = Objects.requireNonNull(maskedQuery);
@@ -96,19 +95,17 @@ public class FieldMaskingSpanQuery extends SpanQuery {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     FieldMaskingSpanQuery clone = null;
 
     SpanQuery rewritten = (SpanQuery) maskedQuery.rewrite(reader);
     if (rewritten != maskedQuery) {
-      clone = (FieldMaskingSpanQuery) this.clone();
-      clone.maskedQuery = rewritten;
+      return new FieldMaskingSpanQuery(rewritten, field);
     }
 
-    if (clone != null) {
-      return clone;
-    } else {
-      return this;
-    }
+    return super.rewrite(reader);
   }
 
   @Override
@@ -117,7 +114,6 @@ public class FieldMaskingSpanQuery extends SpanQuery {
     buffer.append("mask(");
     buffer.append(maskedQuery.toString(field));
     buffer.append(")");
-    buffer.append(ToStringUtils.boost(getBoost()));
     buffer.append(" as ");
     buffer.append(this.field);
     return buffer.toString();

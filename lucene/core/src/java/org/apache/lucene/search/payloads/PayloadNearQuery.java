@@ -40,7 +40,6 @@ import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * This class is very similar to
@@ -115,7 +114,6 @@ public class PayloadNearQuery extends SpanNearQuery {
     buffer.append(", ");
     buffer.append(inOrder);
     buffer.append(")");
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

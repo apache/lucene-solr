@@ -70,22 +70,16 @@ public class TestWildcard extends LuceneTestCase {
       assertMatches(searcher, wq, 1);
 
       wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
-      wq.setBoost(0.1F);
       Query q = searcher.rewrite(wq);
       assertTrue(q instanceof TermQuery);
-      assertEquals(q.getBoost(), wq.getBoost(), 0);
       
       wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
-      wq.setBoost(0.2F);
       q = searcher.rewrite(wq);
       assertTrue(q instanceof MultiTermQueryConstantScoreWrapper);
-      assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       
       wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
-      wq.setBoost(0.4F);
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
-      assertEquals(q.getBoost(), wq.getBoost(), 0.1);
       reader.close();
       indexStore.close();
   }

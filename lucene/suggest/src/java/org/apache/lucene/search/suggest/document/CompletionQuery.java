@@ -95,6 +95,9 @@ public abstract class CompletionQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     byte type = 0;
     boolean first = true;
     Terms terms;
@@ -132,7 +135,7 @@ public abstract class CompletionQuery extends Query {
         }
       }
     }
-    return this;
+    return super.rewrite(reader);
   }
 
   @Override

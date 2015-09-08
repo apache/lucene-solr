@@ -25,18 +25,17 @@ import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
- * A query that wraps another query and simply returns a constant score equal to the
- * query boost for every document that matches the query.
- * It therefore simply strips of all scores and returns a constant one.
+ * A query that wraps another query and simply returns a constant score equal to
+ * 1 for every document that matches the query.
+ * It therefore simply strips of all scores and always returns 1.
  */
-public class ConstantScoreQuery extends Query {
-  protected final Query query;
+public final class ConstantScoreQuery extends Query {
+  private final Query query;
 
   /** Strips off scores from the passed in Query. The hits will get a constant score
-   * dependent on the boost factor of this query. */
+   * of 1. */
   public ConstantScoreQuery(Query query) {
     this.query = Objects.requireNonNull(query, "Query must not be null");
   }
@@ -48,23 +47,25 @@ public class ConstantScoreQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
+
     Query rewritten = query.rewrite(reader);
 
-    if (rewritten.getClass() == getClass()) {
-      if (getBoost() != rewritten.getBoost()) {
-        rewritten = rewritten.clone();
-        rewritten.setBoost(getBoost());
-      }
-      return rewritten;
-    }
-
     if (rewritten != query) {
-      rewritten = new ConstantScoreQuery(rewritten);
-      rewritten.setBoost(this.getBoost());
+      return new ConstantScoreQuery(rewritten);
+    }
+
+    if (rewritten.getClass() == ConstantScoreQuery.class) {
       return rewritten;
     }
 
-    return this;
+    if (rewritten.getClass() == BoostQuery.class) {
+      return new ConstantScoreQuery(((BoostQuery) rewritten).getQuery());
+    }
+
+    return super.rewrite(reader);
   }
 
   /** We return this as our {@link BulkScorer} so that if the CSQ
@@ -161,7 +162,6 @@ public class ConstantScoreQuery extends Query {
     return new StringBuilder("ConstantScore(")
       .append(query.toString(field))
       .append(')')
-      .append(ToStringUtils.boost(getBoost()))
       .toString();
   }
 

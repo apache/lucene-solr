@@ -22,8 +22,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
@@ -66,5 +68,15 @@ public abstract class SpanQuery extends Query {
       w.extractTermContexts(terms);
     }
     return terms;
+  }
+
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    if (super.getBoost() != 1f) {
+      SpanQuery rewritten = (SpanQuery) clone();
+      rewritten.setBoost(1f);
+      return new SpanBoostQuery(rewritten, super.getBoost());
+    }
+    return this;
   }
 }

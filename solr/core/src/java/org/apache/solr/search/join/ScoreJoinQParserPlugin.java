@@ -88,6 +88,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
+      if (getBoost() != 1f) {
+        return super.rewrite(reader);
+      }
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
       CoreContainer container = info.getReq().getCore().getCoreDescriptor().getCoreContainer();
@@ -107,7 +110,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         fromCore.close();
         fromHolder.decref();
       }
-      joinQuery.setBoost(getBoost());
       return joinQuery.rewrite(reader);
     }
 
@@ -159,10 +161,12 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
+      if (getBoost() != 1f) {
+        return super.rewrite(reader);
+      }
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       final Query jq = JoinUtil.createJoinQuery(fromField, true,
           toField, fromQuery, info.getReq().getSearcher(), scoreMode);
-      jq.setBoost(getBoost());
       return jq.rewrite(reader);
     }
 

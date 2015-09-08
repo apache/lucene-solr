@@ -12,6 +12,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queries.mlt.MoreLikeThisQuery;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -98,9 +99,12 @@ public class LikeThisQueryBuilder implements QueryBuilder {
       mlt.setMinDocFreq(minDocFreq);
     }
 
-    mlt.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-
-    return mlt;
+    Query q = mlt;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    if (boost != 1f) {
+      q = new BoostQuery(mlt, boost);
+    }
+    return q;
   }
 
 }

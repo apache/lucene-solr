@@ -78,7 +78,7 @@ import java.util.Collections;
  * <a name="querytime">Query time</a>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
- *   <li>The {@link #computeWeight(float, CollectionStatistics, TermStatistics...)} method is called a single time,
+ *   <li>The {@link #computeWeight(CollectionStatistics, TermStatistics...)} method is called a single time,
  *       allowing the implementation to compute any statistics (such as IDF, average document length, etc)
  *       across <i>the entire collection</i>. The {@link TermStatistics} and {@link CollectionStatistics} passed in 
  *       already contain all of the raw statistics involved, so a Similarity can freely use any combination
@@ -158,16 +158,15 @@ public abstract class Similarity {
   /**
    * Compute any collection-level weight (e.g. IDF, average document length, etc) needed for scoring a query.
    *
-   * @param queryBoost the query-time boost.
    * @param collectionStats collection-level statistics, such as the number of tokens in the collection.
    * @param termStats term-level statistics, such as the document frequency of a term across the collection.
    * @return SimWeight object with the information this Similarity needs to score a query.
    */
-  public abstract SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats);
+  public abstract SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats);
 
   /**
    * Creates a new {@link Similarity.SimScorer} to score matching documents from a segment of the inverted index.
-   * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
+   * @param weight collection information from {@link #computeWeight(CollectionStatistics, TermStatistics...)}
    * @param context segment of the inverted index to be scored.
    * @return SloppySimScorer for scoring documents across <code>context</code>
    * @throws IOException if there is a low-level I/O error
@@ -243,8 +242,11 @@ public abstract class Similarity {
      * <p>
      * NOTE: a Similarity implementation might not use this normalized value at all,
      * it's not required. However, it's usually a good idea to at least incorporate 
-     * the topLevelBoost (e.g. from an outer BooleanQuery) into its score.
+     * the boost into its score.
+     * <p>
+     * NOTE: If this method is called several times, it behaves as if only the
+     * last call was performed.
      */
-    public abstract void normalize(float queryNorm, float topLevelBoost);
+    public abstract void normalize(float queryNorm, float boost);
   }
 }

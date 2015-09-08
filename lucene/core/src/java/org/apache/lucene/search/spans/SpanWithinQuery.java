@@ -27,7 +27,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 
 /** Keep matches that are contained within another Spans. */
-public class SpanWithinQuery extends SpanContainQuery {
+public final class SpanWithinQuery extends SpanContainQuery {
 
   /** Construct a SpanWithinQuery matching spans from <code>little</code>
    * that are inside of <code>big</code>.
@@ -35,19 +35,12 @@ public class SpanWithinQuery extends SpanContainQuery {
    * <code>big</code> and <code>little</code> must be in the same field.
    */
   public SpanWithinQuery(SpanQuery big, SpanQuery little) {
-    super(big, little, little.getBoost());
+    super(big, little);
   }
 
   @Override
   public String toString(String field) {
     return toString(field, "SpanWithin");
-  }
-
-  @Override
-  public SpanWithinQuery clone() {
-    return new SpanWithinQuery(
-          (SpanQuery) big.clone(),
-          (SpanQuery) little.clone());
   }
 
   @Override

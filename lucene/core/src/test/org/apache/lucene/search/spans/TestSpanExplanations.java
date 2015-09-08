@@ -19,8 +19,6 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.search.*;
 
-import static org.apache.lucene.search.spans.SpanTestUtil.*;
-
 /**
  * TestExplanations subclass focusing on span queries
  */
@@ -34,8 +32,7 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
   }
   public void testST2() throws Exception {
     SpanQuery q = st("w1");
-    q.setBoost(1000);
-    qtest(q, new int[] {0,1,2,3});
+    qtest(new BoostQuery(q, 1000), new int[] {0,1,2,3});
   }
   public void testST4() throws Exception {
     SpanQuery q = st("xx");
@@ -43,8 +40,7 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
   }
   public void testST5() throws Exception {
     SpanQuery q = st("xx");
-    q.setBoost(1000);
-    qtest(q, new int[] {2,3});
+    qtest(new BoostQuery(q, 1000), new int[] {2,3});
   }
 
   /* some SpanFirstQueries */
@@ -55,8 +51,7 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
   }
   public void testSF2() throws Exception {
     SpanQuery q = sf(("w1"),1);
-    q.setBoost(1000);
-    qtest(q, new int[] {0,1,2,3});
+    qtest(new BoostQuery(q, 1000), new int[] {0,1,2,3});
   }
   public void testSF4() throws Exception {
     SpanQuery q = sf(("xx"),2);
@@ -68,8 +63,7 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
   }
   public void testSF6() throws Exception {
     SpanQuery q = sf(("yy"),4);
-    q.setBoost(1000);
-    qtest(q, new int[] {2});
+    qtest(new BoostQuery(q, 1000), new int[] {2});
   }
   
   /* some SpanOrQueries */
@@ -150,8 +144,7 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
   }
   public void testSNot2() throws Exception {
     SpanQuery q = snot(sf("w1",10),st("QQ"));
-    q.setBoost(1000);
-    qtest(q, new int[] {0,1,2,3});
+    qtest(new BoostQuery(q, 1000), new int[] {0,1,2,3});
   }
   public void testSNot4() throws Exception {
     SpanQuery q = snot(sf("w1",10),st("xx"));
@@ -159,18 +152,15 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
   }
   public void testSNot5() throws Exception {
     SpanQuery q = snot(sf("w1",10),st("xx"));
-    q.setBoost(1000);
-    qtest(q, new int[] {0,1,2,3});
+    qtest(new BoostQuery(q, 1000), new int[] {0,1,2,3});
   }
   public void testSNot7() throws Exception {
     SpanQuery f = snear("w1","w3",10,true);
-    f.setBoost(1000);
     SpanQuery q = snot(f, st("xx"));
     qtest(q, new int[] {0,1,3});
   }
   public void testSNot10() throws Exception {
     SpanQuery t = st("xx");
-    t.setBoost(10000);
     SpanQuery q = snot(snear("w1","w3",10,true), t);
     qtest(q, new int[] {0,1,3});
   }

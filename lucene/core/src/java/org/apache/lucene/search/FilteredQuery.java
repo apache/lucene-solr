@@ -26,7 +26,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
 
 
 /**
@@ -77,12 +76,13 @@ public class FilteredQuery extends Query {
   
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
     builder.add(query, Occur.MUST);
     builder.add(strategy.rewrite(filter), Occur.FILTER);
-    Query rewritten = builder.build();
-    rewritten.setBoost(getBoost());
-    return rewritten;
+    return builder.build();
   }
 
   /** Returns this FilteredQuery's (unfiltered) Query */
@@ -108,7 +108,6 @@ public class FilteredQuery extends Query {
     buffer.append(query.toString(s));
     buffer.append(")->");
     buffer.append(filter);
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

@@ -94,7 +94,7 @@ public class TestConjunctions extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float queryBoost,
+    public SimWeight computeWeight(
         CollectionStatistics collectionStats, TermStatistics... termStats) {
       return new SimWeight() {
         @Override

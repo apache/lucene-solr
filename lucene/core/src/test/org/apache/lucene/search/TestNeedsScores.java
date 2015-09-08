@@ -28,7 +28,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -144,7 +143,7 @@ public class TestNeedsScores extends LuceneTestCase {
     public Query rewrite(IndexReader reader) throws IOException {
       Query in2 = in.rewrite(reader);
       if (in2 == in) {
-        return this;
+        return super.rewrite(reader);
       } else {
         return new AssertNeedsScores(in2, value);
       }

@@ -57,11 +57,14 @@ final class DeleteByQueryWrapper extends Query {
   
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     Query rewritten = in.rewrite(reader);
     if (rewritten != in) {
       return new DeleteByQueryWrapper(rewritten, schema);
     } else {
-      return this;
+      return super.rewrite(reader);
     }
   }
   

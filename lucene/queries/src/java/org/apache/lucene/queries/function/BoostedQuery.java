@@ -39,8 +39,8 @@ import org.apache.lucene.util.ToStringUtils;
  */
 // TODO: BoostedQuery and BoostingQuery in the same module? 
 // something has to give
-public class BoostedQuery extends Query {
-  private Query q;
+public final class BoostedQuery extends Query {
+  private final Query q;
   private final ValueSource boostVal; // optional, can be null
 
   public BoostedQuery(Query subQuery, ValueSource boostVal) {
@@ -53,11 +53,14 @@ public class BoostedQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     Query newQ = q.rewrite(reader);
-    if (newQ == q) return this;
-    BoostedQuery bq = (BoostedQuery)this.clone();
-    bq.q = newQ;
-    return bq;
+    if (newQ != q) {
+      return new BoostedQuery(newQ, boostVal);
+    }
+    return super.rewrite(reader);
   }
 
   @Override
@@ -66,13 +69,11 @@ public class BoostedQuery extends Query {
   }
 
   private class BoostedWeight extends Weight {
-    final IndexSearcher searcher;
     Weight qWeight;
     Map fcontext;
 
     public BoostedWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       super(BoostedQuery.this);
-      this.searcher = searcher;
       this.qWeight = searcher.createWeight(q, needsScores);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
@@ -85,15 +86,12 @@ public class BoostedQuery extends Query {
 
     @Override
     public float getValueForNormalization() throws IOException {
-      float sum = qWeight.getValueForNormalization();
-      sum *= getBoost() * getBoost();
-      return sum ;
+      return qWeight.getValueForNormalization();
     }
 
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      topLevelBoost *= getBoost();
-      qWeight.normalize(norm, topLevelBoost);
+    public void normalize(float norm, float boost) {
+      qWeight.normalize(norm, boost);
     }
 
     @Override
@@ -102,7 +100,7 @@ public class BoostedQuery extends Query {
       if (subQueryScorer == null) {
         return null;
       }
-      return new BoostedQuery.CustomScorer(context, this, getBoost(), subQueryScorer, boostVal);
+      return new BoostedQuery.CustomScorer(context, this, subQueryScorer, boostVal);
     }
 
     @Override
@@ -120,22 +118,20 @@ public class BoostedQuery extends Query {
 
   private class CustomScorer extends FilterScorer {
     private final BoostedQuery.BoostedWeight weight;
-    private final float qWeight;
     private final FunctionValues vals;
     private final LeafReaderContext readerContext;
 
-    private CustomScorer(LeafReaderContext readerContext, BoostedQuery.BoostedWeight w, float qWeight,
+    private CustomScorer(LeafReaderContext readerContext, BoostedQuery.BoostedWeight w,
         Scorer scorer, ValueSource vs) throws IOException {
       super(scorer);
       this.weight = w;
-      this.qWeight = qWeight;
       this.readerContext = readerContext;
       this.vals = vs.getValues(weight.fcontext, readerContext);
     }
 
     @Override   
     public float score() throws IOException {
-      float score = qWeight * in.score() * vals.floatVal(in.docID());
+      float score = in.score() * vals.floatVal(in.docID());
 
       // Current Lucene priority queues can't handle NaN and -Infinity, so
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
@@ -164,7 +160,6 @@ public class BoostedQuery extends Query {
   public String toString(String field) {
     StringBuilder sb = new StringBuilder();
     sb.append("boost(").append(q.toString(field)).append(',').append(boostVal).append(')');
-    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 
@@ -178,11 +173,9 @@ public class BoostedQuery extends Query {
 
   @Override
   public int hashCode() {
-    int h = q.hashCode();
-    h ^= (h << 17) | (h >>> 16);
-    h += boostVal.hashCode();
-    h ^= (h << 8) | (h >>> 25);
-    h += Float.floatToIntBits(getBoost());
+    int h = super.hashCode();
+    h = 31 * h + q.hashCode();
+    h = 31 * h + boostVal.hashCode();
     return h;
   }
 

@@ -228,6 +228,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       
       @Override
       public Query rewrite(IndexReader reader) throws IOException {
+        if (getBoost() != 1f) {
+          return super.rewrite(reader);
+        }
         CommonTermsQuery query = new CommonTermsQuery(Occur.MUST, Occur.SHOULD, 3);
         query.add(new Term(FIELD_NAME, "this"));//stop-word
         query.add(new Term(FIELD_NAME, "long"));

@@ -39,7 +39,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -274,9 +273,9 @@ public class PhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (terms.isEmpty()) {
-      MatchNoDocsQuery q = new MatchNoDocsQuery();
-      q.setBoost(getBoost());
-      return q;
+      Query rewritten = new MatchNoDocsQuery();
+      rewritten.setBoost(getBoost());
+      return rewritten;
     } else if (terms.size() == 1) {
       TermQuery tq = new TermQuery(terms.get(0));
       tq.setBoost(getBoost());
@@ -387,7 +386,7 @@ public class PhraseQuery extends Query {
         states[i] = TermContext.build(context, term);
         termStats[i] = searcher.termStatistics(term, states[i]);
       }
-      stats = similarity.computeWeight(getBoost(), searcher.collectionStatistics(field), termStats);
+      stats = similarity.computeWeight(searcher.collectionStatistics(field), termStats);
     }
 
     @Override
@@ -404,8 +403,8 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      stats.normalize(queryNorm, topLevelBoost);
+    public void normalize(float queryNorm, float boost) {
+      stats.normalize(queryNorm, boost);
     }
 
     @Override
@@ -528,8 +527,6 @@ public class PhraseQuery extends Query {
       buffer.append("~");
       buffer.append(slop);
     }
-
-    buffer.append(ToStringUtils.boost(getBoost()));
 
     return buffer.toString();
   }

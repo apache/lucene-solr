@@ -372,9 +372,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     builder.setSlop(5);
     q = builder.build();
     assertEquals("field:\"? hi|hello ? ? ? test\"~5", q.toString());
-
-    q.setBoost(2);
-    assertEquals("field:\"? hi|hello ? ? ? test\"~5^2.0", q.toString());
   }
 
   public void testWrappedPhrase() throws IOException {

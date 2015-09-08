@@ -34,6 +34,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -109,13 +110,14 @@ public class TestMoreLikeThis extends LuceneTestCase {
         originalValues.size(), clauses.size());
 
     for (BooleanClause clause : clauses) {
-      TermQuery tq = (TermQuery) clause.getQuery();
+      BoostQuery bq = (BoostQuery) clause.getQuery();
+      TermQuery tq = (TermQuery) bq.getQuery();
       Float termBoost = originalValues.get(tq.getTerm().text());
       assertNotNull("Expected term " + tq.getTerm().text(), termBoost);
 
       float totalBoost = termBoost * boostFactor;
       assertEquals("Expected boost of " + totalBoost + " for term '"
-          + tq.getTerm().text() + "' got " + tq.getBoost(), totalBoost, tq
+          + tq.getTerm().text() + "' got " + bq.getBoost(), totalBoost, bq
           .getBoost(), 0.0001);
     }
     analyzer.close();
@@ -136,8 +138,9 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Collection<BooleanClause> clauses = query.clauses();
 
     for (BooleanClause clause : clauses) {
-      TermQuery tq = (TermQuery) clause.getQuery();
-      originalValues.put(tq.getTerm().text(), tq.getBoost());
+      BoostQuery bq = (BoostQuery) clause.getQuery();
+      TermQuery tq = (TermQuery) bq.getQuery();
+      originalValues.put(tq.getTerm().text(), bq.getBoost());
     }
     analyzer.close();
     return originalValues;

@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.highlight.Highlighter;
@@ -114,8 +115,14 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
     @Override
     protected void extractUnknownQuery(Query query,
         Map<String, WeightedSpanTerm> terms) throws IOException {
+      float boost = 1f;
+      while (query instanceof BoostQuery) {
+        BoostQuery bq = (BoostQuery) query;
+        boost *= bq.getBoost();
+        query = bq.getQuery();
+      }
       if (query instanceof CustomQuery) {
-        extractWeightedTerms(terms, new TermQuery(((CustomQuery) query).term));
+        extractWeightedTerms(terms, new TermQuery(((CustomQuery) query).term), boost);
       }
     }
 

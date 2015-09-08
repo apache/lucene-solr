@@ -60,6 +60,9 @@ public class MoreLikeThisQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     MoreLikeThis mlt = new MoreLikeThis(reader);
 
     mlt.setFieldNames(moreLikeFields);
@@ -78,9 +81,7 @@ public class MoreLikeThisQuery extends Query {
     }
     //make at least half the terms match
     newBq.setMinimumNumberShouldMatch((int) (bq.clauses().size() * percentTermsToMatch));
-    Query rewritten = newBq.build();
-    rewritten.setBoost(bq.getBoost());
-    return rewritten;
+    return newBq.build();
   }
 
   /* (non-Javadoc)

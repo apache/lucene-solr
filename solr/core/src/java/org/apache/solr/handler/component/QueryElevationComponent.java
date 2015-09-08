@@ -30,6 +30,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
@@ -153,7 +154,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         this.priority.put(new BytesRef(id), max--);
       }
       this.include = include.build();
-      this.include.setBoost(0);
 
       if (exclude == null || exclude.isEmpty()) {
         this.exclude = null;
@@ -420,12 +420,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // Change the query to insert forced documents
       if (exclusive == true) {
         //we only want these results
-        rb.setQuery(booster.include);
+        rb.setQuery(new BoostQuery(booster.include, 0f));
       } else {
         BooleanQuery.Builder newq = new BooleanQuery.Builder();
         newq.setDisableCoord(true);
         newq.add(query, BooleanClause.Occur.SHOULD);
-        newq.add(booster.include, BooleanClause.Occur.SHOULD);
+        newq.add(new BoostQuery(booster.include, 0f), BooleanClause.Occur.SHOULD);
         if (booster.exclude != null) {
           if (markExcludes == false) {
             for (TermQuery tq : booster.exclude) {

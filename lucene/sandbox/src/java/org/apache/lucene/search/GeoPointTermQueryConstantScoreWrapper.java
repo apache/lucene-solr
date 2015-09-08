@@ -51,7 +51,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointTermQuery> 
       return false;
     }
     final GeoPointTermQueryConstantScoreWrapper<?> that = (GeoPointTermQueryConstantScoreWrapper<?>) o;
-    return this.query.equals(that.query) && this.getBoost() == that.getBoost();
+    return this.query.equals(that.query);
   }
 
   @Override

@@ -31,12 +31,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
@@ -50,7 +50,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.InitParams;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -76,6 +75,8 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SyntaxError;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -676,18 +677,27 @@ public class SolrPluginUtils {
    * </p>
    */
   public static void flattenBooleanQuery(BooleanQuery.Builder to, BooleanQuery from) {
+    flattenBooleanQuery(to, from, 1f);
+  }
+
+  private static void flattenBooleanQuery(BooleanQuery.Builder to, BooleanQuery from, float fromBoost) {
 
     for (BooleanClause clause : from.clauses()) {
 
       Query cq = clause.getQuery();
-      cq.setBoost(cq.getBoost() * from.getBoost());
+      float boost = fromBoost;
+      while (cq instanceof BoostQuery) {
+        BoostQuery bq = (BoostQuery) cq;
+        cq = bq.getQuery();
+        boost *= bq.getBoost();
+      }
 
       if (cq instanceof BooleanQuery
           && !clause.isRequired()
           && !clause.isProhibited()) {
 
         /* we can recurse */
-        flattenBooleanQuery(to, (BooleanQuery)cq);
+        flattenBooleanQuery(to, (BooleanQuery)cq, boost);
 
       } else {
         to.add(clause);
@@ -839,7 +849,7 @@ public class SolrPluginUtils {
           Query sub = getFieldQuery(f,queryText,quoted);
           if (null != sub) {
             if (null != a.fields.get(f)) {
-              sub.setBoost(a.fields.get(f));
+              sub = new BoostQuery(sub, a.fields.get(f));
             }
             q.add(sub);
             ok = true;

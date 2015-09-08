@@ -88,14 +88,12 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
         for (Term term : queryTerms) {
           bq.add(new TermQuery(term), Occur.SHOULD);
         }
-        Query q1 = new ConstantScoreQuery(bq.build());
-        q1.setBoost(boost);
+        Query q1 = new BoostQuery(new ConstantScoreQuery(bq.build()), boost);
         List<String> bytesTerms = new ArrayList<>();
         for (Term term : queryTerms) {
           bytesTerms.add(term.text());
         }
-        final Query q2 = new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0]));
-        q2.setBoost(boost);
+        final Query q2 = new BoostQuery(new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0])), boost);
         assertSameMatches(searcher, q1, q2, true);
       }
 
@@ -200,14 +198,12 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
         for (Term term : queryTerms) {
           bq.add(new TermQuery(term), Occur.SHOULD);
         }
-        Query q1 = new ConstantScoreQuery(bq.build());
-        q1.setBoost(boost);
+        Query q1 = new BoostQuery(new ConstantScoreQuery(bq.build()), boost);
         List<String> bytesTerms = new ArrayList<>();
         for (Term term : queryTerms) {
           bytesTerms.add(term.text());
         }
-        final Query q2 = new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0]));
-        q2.setBoost(boost);
+        final Query q2 = new BoostQuery(new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0])), boost);
 
         BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
         bq1.add(q1, Occur.MUST);

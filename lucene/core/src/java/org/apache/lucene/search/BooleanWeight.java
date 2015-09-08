@@ -105,8 +105,6 @@ final class BooleanWeight extends Weight {
       i += 1;
     }
 
-    sum *= query.getBoost() * query.getBoost();             // boost each sub-weight
-
     return sum ;
   }
 
@@ -127,11 +125,10 @@ final class BooleanWeight extends Weight {
   }
 
   @Override
-  public void normalize(float norm, float topLevelBoost) {
-    topLevelBoost *= query.getBoost();                  // incorporate boost
+  public void normalize(float norm, float boost) {
     for (Weight w : weights) {
       // normalize all clauses, (even if non-scoring in case of side affects)
-      w.normalize(norm, topLevelBoost);
+      w.normalize(norm, boost);
     }
   }
 

@@ -42,6 +42,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -106,10 +107,8 @@ public class TermsQueryTest extends LuceneTestCase {
           bq.add(new TermQuery(t), Occur.SHOULD);
         }
         final Query q1 = new ConstantScoreQuery(bq.build());
-        q1.setBoost(boost);
         final Query q2 = new TermsQuery(queryTerms);
-        q2.setBoost(boost);
-        assertSameMatches(searcher, q1, q2, true);
+        assertSameMatches(searcher, new BoostQuery(q1, boost), new BoostQuery(q2, boost), true);
       }
 
       reader.close();

@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Objects;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -39,9 +38,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
   
   @Override
   public Query rewrite(IndexReader reader, MultiTermQuery query) {
-    Query result = new ConstantScoreQuery(new MultiTermQueryDocValuesWrapper(query));
-    result.setBoost(query.getBoost());
-    return result;
+    return new ConstantScoreQuery(new MultiTermQueryDocValuesWrapper(query));
   }
   
   static class MultiTermQueryDocValuesWrapper extends Query {
@@ -63,18 +60,16 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     
     @Override
     public final boolean equals(final Object o) {
-      if (o==this) return true;
-      if (o==null) return false;
-      if (this.getClass().equals(o.getClass())) {
-        final MultiTermQueryDocValuesWrapper that = (MultiTermQueryDocValuesWrapper) o;
-        return this.query.equals(that.query) && this.getBoost() == that.getBoost();
+      if (super.equals(o) == false) {
+        return false;
       }
-      return false;
+      MultiTermQueryDocValuesWrapper that = (MultiTermQueryDocValuesWrapper) o;
+      return query.equals(that.query);
     }
     
     @Override
     public final int hashCode() {
-      return Objects.hash(getClass(), query, getBoost());
+      return 31 * super.hashCode() + query.hashCode();
     }
     
     /** Returns the field name for this query */

@@ -15,6 +15,7 @@ package org.apache.lucene.queryparser.xml.builders;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;

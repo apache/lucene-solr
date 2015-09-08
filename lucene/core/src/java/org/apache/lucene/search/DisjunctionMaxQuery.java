@@ -42,7 +42,7 @@ import org.apache.lucene.index.Term;
  * include this term in only the best of those multiple fields, without confusing this with the better case of two different terms
  * in the multiple fields.
  */
-public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
+public final class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /* The subqueries */
   private ArrayList<Query> disjuncts = new ArrayList<>();
@@ -145,16 +145,14 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
         max = Math.max(max, sub);
         
       }
-      float boost = getBoost();
-      return (((sum - max) * tieBreakerMultiplier * tieBreakerMultiplier) + max) * boost * boost;
+      return (((sum - max) * tieBreakerMultiplier * tieBreakerMultiplier) + max);
     }
 
     /** Apply the computed normalization factor to our subqueries */
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      topLevelBoost *= getBoost();  // Incorporate our boost
+    public void normalize(float norm, float boost) {
       for (Weight wt : weights) {
-        wt.normalize(norm, topLevelBoost);
+        wt.normalize(norm, boost);
       }
     }
 
@@ -217,36 +215,25 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
    * @return an optimized copy of us (which may not be a copy if there is nothing to optimize) */
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     int numDisjunctions = disjuncts.size();
     if (numDisjunctions == 1) {
-      Query singleton = disjuncts.get(0);
-      Query result = singleton.rewrite(reader);
-      if (getBoost() != 1.0f) {
-        if (result == singleton) result = result.clone();
-        result.setBoost(getBoost() * result.getBoost());
-      }
-      return result;
+      return disjuncts.get(0);
     }
-    DisjunctionMaxQuery clone = null;
-    for (int i = 0 ; i < numDisjunctions; i++) {
-      Query clause = disjuncts.get(i);
-      Query rewrite = clause.rewrite(reader);
-      if (rewrite != clause) {
-        if (clone == null) clone = this.clone();
-        clone.disjuncts.set(i, rewrite);
-      }
+    DisjunctionMaxQuery rewritten = new DisjunctionMaxQuery(tieBreakerMultiplier);
+    boolean actuallyRewritten = false;
+    for (Query sub : disjuncts) {
+      Query rewrittenSub = sub.rewrite(reader);
+      actuallyRewritten |= rewrittenSub != sub;
+      rewritten.add(rewrittenSub);
     }
-    if (clone != null) return clone;
-    else return this;
-  }
 
-  /** Create a shallow copy of us -- used in rewriting if necessary
-   * @return a copy of us (but reuse, don't copy, our subqueries) */
-  @Override @SuppressWarnings("unchecked")
-  public DisjunctionMaxQuery clone() {
-    DisjunctionMaxQuery clone = (DisjunctionMaxQuery)super.clone();
-    clone.disjuncts = (ArrayList<Query>) this.disjuncts.clone();
-    return clone;
+    if (actuallyRewritten) {
+      return rewritten;
+    }
+    return super.rewrite(reader);
   }
 
   /** Prettyprint us.
@@ -273,10 +260,6 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       buffer.append("~");
       buffer.append(tieBreakerMultiplier);
     }
-    if (getBoost() != 1.0) {
-      buffer.append("^");
-      buffer.append(getBoost());
-    }
     return buffer.toString();
   }
 
@@ -298,9 +281,10 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
    */
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost())
-            + Float.floatToIntBits(tieBreakerMultiplier)
-            + disjuncts.hashCode();
+    int h = super.hashCode();
+    h = 31 * h + Float.floatToIntBits(tieBreakerMultiplier);
+    h = 31 * h + disjuncts.hashCode();
+    return h;
   }
 
 

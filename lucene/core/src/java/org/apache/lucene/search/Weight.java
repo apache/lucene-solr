@@ -94,8 +94,8 @@ public abstract class Weight {
   /** The value for normalization of contained query clauses (e.g. sum of squared weights). */
   public abstract float getValueForNormalization() throws IOException;
 
-  /** Assigns the query normalization factor and boost from parent queries to this. */
-  public abstract void normalize(float norm, float topLevelBoost);
+  /** Assigns the query normalization factor and boost to this. */
+  public abstract void normalize(float norm, float boost);
 
   /**
    * Returns a {@link Scorer} which can iterate in order over all matching

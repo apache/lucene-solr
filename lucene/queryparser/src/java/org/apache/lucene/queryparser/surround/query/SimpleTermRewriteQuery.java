@@ -36,6 +36,9 @@ class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     final List<Query> luceneSubQueries = new ArrayList<>();
     srndQuery.visitMatchingTerms(reader, fieldName,
     new SimpleTerm.MatchingTermVisitor() {

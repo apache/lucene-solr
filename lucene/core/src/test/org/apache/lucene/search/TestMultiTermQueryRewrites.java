@@ -143,9 +143,10 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   
   private void checkBooleanQueryBoosts(BooleanQuery bq) {
     for (BooleanClause clause : bq.clauses()) {
-      final TermQuery mtq = (TermQuery) clause.getQuery();
+      final BoostQuery boostQ = (BoostQuery) clause.getQuery();
+      final TermQuery mtq = (TermQuery) boostQ.getQuery();
       assertEquals("Parallel sorting of boosts in rewrite mode broken",
-        Float.parseFloat(mtq.getTerm().text()), mtq.getBoost(), 0);
+        Float.parseFloat(mtq.getTerm().text()), boostQ.getBoost(), 0);
     }
   }
   

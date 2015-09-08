@@ -34,7 +34,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
@@ -76,14 +75,15 @@ class TermsIncludingScoreQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     final Query originalQueryRewrite = originalQuery.rewrite(reader);
     if (originalQueryRewrite != originalQuery) {
-      Query rewritten = new TermsIncludingScoreQuery(field, multipleValuesPerDocument, terms, scores,
+      return new TermsIncludingScoreQuery(field, multipleValuesPerDocument, terms, scores,
           ords, originalQueryRewrite, originalQuery);
-      rewritten.setBoost(getBoost());
-      return rewritten;
     } else {
-      return this;
+      return super.rewrite(reader);
     }
   }
 
@@ -146,12 +146,12 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public float getValueForNormalization() throws IOException {
-        return originalWeight.getValueForNormalization() * TermsIncludingScoreQuery.this.getBoost() * TermsIncludingScoreQuery.this.getBoost();
+        return originalWeight.getValueForNormalization();
       }
 
       @Override
-      public void normalize(float norm, float topLevelBoost) {
-        originalWeight.normalize(norm, topLevelBoost * TermsIncludingScoreQuery.this.getBoost());
+      public void normalize(float norm, float boost) {
+        originalWeight.normalize(norm, boost);
       }
 
       @Override

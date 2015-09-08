@@ -136,7 +136,6 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   public void testRewrite0() throws Exception {
     SpanQuery q = new FieldMaskingSpanQuery
       (new SpanTermQuery(new Term("last", "sally")) , "first");
-    q.setBoost(8.7654321f);
     SpanQuery qr = (SpanQuery) searcher.rewrite(q);
 
     QueryUtils.checkEqual(q, qr);
@@ -195,16 +194,6 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkUnequal(q1, q3);
     QueryUtils.checkUnequal(q1, q4);
     QueryUtils.checkUnequal(q1, q5);
-    
-    SpanQuery qA = new FieldMaskingSpanQuery
-      (new SpanTermQuery(new Term("last", "sally")) , "first");
-    qA.setBoost(9f);
-    SpanQuery qB = new FieldMaskingSpanQuery
-      (new SpanTermQuery(new Term("last", "sally")) , "first");
-    QueryUtils.checkUnequal(qA, qB);
-    qB.setBoost(9f);
-    QueryUtils.checkEqual(qA, qB);
-    
   }
   
   public void testNoop0() throws Exception {

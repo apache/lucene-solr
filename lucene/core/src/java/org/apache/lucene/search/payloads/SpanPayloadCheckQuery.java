@@ -153,15 +153,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       buffer.append(';');
     }
     buffer.append(")");
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
-  }
-
-  @Override
-  public SpanPayloadCheckQuery clone() {
-    SpanPayloadCheckQuery result = new SpanPayloadCheckQuery((SpanQuery) match.clone(), payloadToMatch);
-    result.setBoost(getBoost());
-    return result;
   }
 
   @Override

@@ -1,6 +1,7 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.queries.BoostingQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -47,10 +48,12 @@ public class BoostingQueryBuilder implements QueryBuilder {
     boostQueryElem = DOMUtils.getFirstChildOrFail(boostQueryElem);
     Query boostQuery = factory.getQuery(boostQueryElem);
 
-    BoostingQuery bq = new BoostingQuery(mainQuery, boostQuery, boost);
+    Query bq = new BoostingQuery(mainQuery, boostQuery, boost);
 
-    bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    if (boost != 1f) {
+      return new BoostQuery(bq, boost);
+    }
     return bq;
-
   }
 }

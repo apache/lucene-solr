@@ -144,12 +144,12 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public float getValueForNormalization() throws IOException {
-      return childWeight.getValueForNormalization() * joinQuery.getBoost() * joinQuery.getBoost();
+      return childWeight.getValueForNormalization();
     }
 
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      childWeight.normalize(norm, topLevelBoost * joinQuery.getBoost());
+    public void normalize(float norm, float boost) {
+      childWeight.normalize(norm, boost);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -411,16 +411,17 @@ public class ToParentBlockJoinQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     final Query childRewrite = childQuery.rewrite(reader);
     if (childRewrite != childQuery) {
-      Query rewritten = new ToParentBlockJoinQuery(origChildQuery,
+      return new ToParentBlockJoinQuery(origChildQuery,
                                 childRewrite,
                                 parentsFilter,
                                 scoreMode);
-      rewritten.setBoost(getBoost());
-      return rewritten;
     } else {
-      return this;
+      return super.rewrite(reader);
     }
   }
 

@@ -190,11 +190,11 @@ public class TestTopFieldCollector extends LuceneTestCase {
     text.setStringValue("baz");
     w.addDocument(doc);
     IndexReader reader = w.getReader();
-    TermQuery foo = new TermQuery(new Term("text", "foo"));
-    TermQuery bar = new TermQuery(new Term("text", "bar"));
-    bar.setBoost(2);
-    TermQuery baz = new TermQuery(new Term("text", "baz"));
-    baz.setBoost(3);
+    Query foo = new TermQuery(new Term("text", "foo"));
+    Query bar = new TermQuery(new Term("text", "bar"));
+    foo = new BoostQuery(foo, 2);
+    Query baz = new TermQuery(new Term("text", "baz"));
+    baz = new BoostQuery(baz, 3);
     Query query = new BooleanQuery.Builder()
         .add(foo, Occur.SHOULD)
         .add(bar, Occur.SHOULD)

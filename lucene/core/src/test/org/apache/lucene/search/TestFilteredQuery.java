@@ -217,6 +217,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     assertEquals(hits1.length, hits2.length);
     
     for (int i = 0; i < hits1.length; i++) {
+      assertEquals(hits1[i].doc, hits2[i].doc);
       assertEquals(hits1[i].score, hits2[i].score, 0.000001f);
     }
   }
@@ -538,7 +539,6 @@ public class TestFilteredQuery extends LuceneTestCase {
     // QueryWrapperFilter has special rewrite rules
     FilteredQuery fq2 = new FilteredQuery(query, new QueryWrapperFilter(new MatchAllDocsQuery()));
     fq2.setBoost(fq.getBoost());
-    fq2.setBoost(42);
     assertEquals(searcher.search(fq, 1).scoreDocs[0].score, searcher.search(fq2, 1).scoreDocs[0].score, 10e-5);
     reader.close();
     dir.close();

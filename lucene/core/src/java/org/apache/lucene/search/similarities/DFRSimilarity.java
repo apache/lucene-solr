@@ -109,15 +109,15 @@ public class DFRSimilarity extends SimilarityBase {
   @Override
   protected float score(BasicStats stats, float freq, float docLen) {
     float tfn = normalization.tfn(stats, freq, docLen);
-    return stats.getTotalBoost() *
+    return stats.getBoost() *
         basicModel.score(stats, tfn) * afterEffect.score(stats, tfn);
   }
   
   @Override
   protected void explain(List<Explanation> subs,
       BasicStats stats, int doc, float freq, float docLen) {
-    if (stats.getTotalBoost() != 1.0f) {
-      subs.add(Explanation.match(stats.getTotalBoost(), "boost"));
+    if (stats.getBoost() != 1.0f) {
+      subs.add(Explanation.match(stats.getBoost(), "boost"));
     }
     
     Explanation normExpl = normalization.explain(stats, freq, docLen);

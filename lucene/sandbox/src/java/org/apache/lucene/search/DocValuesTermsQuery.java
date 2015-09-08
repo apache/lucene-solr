@@ -121,13 +121,10 @@ public class DocValuesTermsQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof DocValuesTermsQuery == false) {
+    if (super.equals(obj) == false) {
       return false;
     }
     DocValuesTermsQuery that = (DocValuesTermsQuery) obj;
-    if (!super.equals(obj)) {
-      return false;
-    }
     if (!field.equals(that.field)) {
       return false;
     }
@@ -136,7 +133,7 @@ public class DocValuesTermsQuery extends Query {
 
   @Override
   public int hashCode() {
-    return Objects.hash(field, Arrays.asList(terms), getBoost());
+    return 31 * super.hashCode() + Objects.hash(field, Arrays.asList(terms));
   }
 
   @Override

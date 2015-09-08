@@ -23,7 +23,7 @@ import java.util.Random;
 import org.apache.lucene.index.IndexReader;
 
 /** Assertion-enabled query. */
-public class AssertingQuery extends Query {
+public final class AssertingQuery extends Query {
 
   private final Random random;
   private final Query in;
@@ -64,28 +64,16 @@ public class AssertingQuery extends Query {
   }
 
   @Override
-  public Query clone() {
-    return wrap(new Random(random.nextLong()), in.clone());
-  }
-
-  @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     final Query rewritten = in.rewrite(reader);
     if (rewritten == in) {
-      return this;
+      return super.rewrite(reader);
     } else {
       return wrap(new Random(random.nextLong()), rewritten);
     }
-  }
-
-  @Override
-  public float getBoost() {
-    return in.getBoost();
-  }
-
-  @Override
-  public void setBoost(float b) {
-    in.setBoost(b);
   }
 
 }

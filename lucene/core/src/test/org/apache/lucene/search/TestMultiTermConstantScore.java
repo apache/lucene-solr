@@ -225,8 +225,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     
     search.setSimilarity(new DefaultSimilarity());
     Query q = csrq("data", "1", "6", T, T);
-    q.setBoost(100);
-    search.search(q, new SimpleCollector() {
+    search.search(new BoostQuery(q, 100), new SimpleCollector() {
       private int base = 0;
       private Scorer scorer;
       @Override
@@ -252,8 +251,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     // Ensure that boosting works to score one clause of a query higher
     // than another.
     //
-    Query q1 = csrq("data", "A", "A", T, T); // matches document #0
-    q1.setBoost(.1f);
+    Query q1 = new BoostQuery(csrq("data", "A", "A", T, T), .1f); // matches document #0
     Query q2 = csrq("data", "Z", "Z", T, T); // matches document #1
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setDisableCoord(true);
@@ -265,8 +263,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     Assert.assertEquals(0, hits[1].doc);
     assertTrue(hits[0].score > hits[1].score);
 
-    q1 = csrq("data", "A", "A", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE); // matches document #0
-    q1.setBoost(.1f);
+    q1 = new BoostQuery(csrq("data", "A", "A", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE), .1f); // matches document #0
     q2 = csrq("data", "Z", "Z", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE); // matches document #1
     bq = new BooleanQuery.Builder();
     bq.setDisableCoord(true);
@@ -278,8 +275,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     Assert.assertEquals(0, hits[1].doc);
     assertTrue(hits[0].score > hits[1].score);
 
-    q1 = csrq("data", "A", "A", T, T); // matches document #0
-    q1.setBoost(10f);
+    q1 = new BoostQuery(csrq("data", "A", "A", T, T), 10f); // matches document #0
     q2 = csrq("data", "Z", "Z", T, T); // matches document #1
     bq = new BooleanQuery.Builder();
     bq.add(q1, BooleanClause.Occur.SHOULD);

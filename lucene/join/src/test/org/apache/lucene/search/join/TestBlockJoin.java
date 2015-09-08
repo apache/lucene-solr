@@ -48,6 +48,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
@@ -420,8 +421,7 @@ public class TestBlockJoin extends LuceneTestCase {
     BooleanQuery.Builder bqB = new BooleanQuery.Builder();
     bqB.add(q, BooleanClause.Occur.MUST);
     BooleanQuery bq = bqB.build();
-    bq.setBoost(2f);
-    s.search(bq, 10);
+    s.search(new BoostQuery(bq, 2f), 10);
     r.close();
     dir.close();
   }

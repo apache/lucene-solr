@@ -88,7 +88,7 @@ public class IndexSearcher {
     }
 
     @Override
-    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
       return new SimWeight() {
 
         @Override
@@ -97,7 +97,7 @@ public class IndexSearcher {
         }
 
         @Override
-        public void normalize(float queryNorm, float topLevelBoost) {}
+        public void normalize(float queryNorm, float boost) {}
 
       };
     }

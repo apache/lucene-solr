@@ -4,6 +4,7 @@ import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.queryparser.xml.QueryBuilderFactory;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
@@ -40,7 +41,10 @@ public class ConstantScoreQueryBuilder implements QueryBuilder {
     Element queryElem = DOMUtils.getFirstChildOrFail(e);
 
     Query q = new ConstantScoreQuery(queryFactory.getQuery(queryElem));
-    q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    if (boost != 1f) {
+      q = new BoostQuery(q, boost);
+    }
     return q;
   }
 

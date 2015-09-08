@@ -28,7 +28,6 @@ import org.apache.solr.common.params.SolrParams;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 public class ExportQParserPlugin extends QParserPlugin {
 
@@ -62,14 +61,6 @@ public class ExportQParserPlugin extends QParserPlugin {
     private Query mainQuery;
     private Object id;
 
-    public Query clone() {
-      ExportQuery clone = new ExportQuery();
-      clone.id = id;
-      clone.leafCount = leafCount;
-      clone.mainQuery = mainQuery;
-      return clone;
-    }
-
     public RankQuery wrap(Query mainQuery) {
       this.mainQuery = mainQuery;
       return this;
@@ -84,6 +75,9 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
+      if (getBoost() != 1f) {
+        return super.rewrite(reader);
+      }
       return this.mainQuery.rewrite(reader);
     }
 
@@ -95,16 +89,15 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return id.hashCode()+((int)getBoost());
+      return 31 * super.hashCode() + id.hashCode();
     }
     
     public boolean equals(Object o) {
-      if(o instanceof ExportQuery) {
-        ExportQuery q = (ExportQuery)o;
-        return (this.id == q.id && getBoost() == q.getBoost());
-      } else {
+      if (super.equals(o) == false) {
         return false;
       }
+      ExportQuery q = (ExportQuery)o;
+      return id == q.id;
     }
     
     public String toString(String s) {
@@ -118,6 +111,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     public ExportQuery(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
       this.leafCount = request.getSearcher().getTopReaderContext().leaves().size();
       id = new Object();
+      mainQuery = new MatchNoDocsQuery();
     }
   }
   

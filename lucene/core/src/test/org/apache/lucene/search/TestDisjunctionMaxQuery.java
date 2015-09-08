@@ -516,8 +516,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   /** macro */
   protected Query tq(String f, String t, float b) {
     Query q = tq(f, t);
-    q.setBoost(b);
-    return q;
+    return new BoostQuery(q, b);
   }
   
   protected void printHits(String test, ScoreDoc[] h, IndexSearcher searcher)

@@ -171,25 +171,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      int hashCode = collapseField.hashCode();
+      int hashCode = super.hashCode();
+      hashCode = 31 * hashCode + collapseField.hashCode();
       hashCode = max!=null ? hashCode+max.hashCode():hashCode;
       hashCode = min!=null ? hashCode+min.hashCode():hashCode;
       hashCode = hashCode+nullPolicy;
-      hashCode = hashCode*((1+Float.floatToIntBits(this.getBoost()))*31);
       return hashCode;
     }
 
     public boolean equals(Object o) {
+      if (super.equals(o) == false) {
+        return false;
+      }
 
-      if(o instanceof CollapsingPostFilter) {
-        CollapsingPostFilter c = (CollapsingPostFilter)o;
-        if(this.collapseField.equals(c.collapseField) &&
-           ((this.max == null && c.max == null) || (this.max != null && c.max != null && this.max.equals(c.max))) &&
-           ((this.min == null && c.min == null) || (this.min != null && c.min != null && this.min.equals(c.min))) &&
-           this.nullPolicy == c.nullPolicy &&
-           this.getBoost()==c.getBoost()) {
-          return true;
-        }
+      CollapsingPostFilter c = (CollapsingPostFilter)o;
+      if(this.collapseField.equals(c.collapseField) &&
+         ((this.max == null && c.max == null) || (this.max != null && c.max != null && this.max.equals(c.max))) &&
+         ((this.min == null && c.min == null) || (this.min != null && c.min != null && this.min.equals(c.min))) &&
+         this.nullPolicy == c.nullPolicy) {
+        return true;
       }
       return false;
     }

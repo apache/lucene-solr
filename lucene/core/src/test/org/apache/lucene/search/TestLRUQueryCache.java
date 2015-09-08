@@ -241,16 +241,14 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final IndexSearcher searcher = newSearcher(reader);
 
     final Query query1 = new TermQuery(new Term("color", "blue"));
-    query1.setBoost(random().nextFloat());
     // different instance yet equal
     final Query query2 = new TermQuery(new Term("color", "blue"));
-    query2.setBoost(random().nextFloat());
 
     final LRUQueryCache queryCache = new LRUQueryCache(Integer.MAX_VALUE, Long.MAX_VALUE);
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
 
-    searcher.search(new ConstantScoreQuery(query1), 1);
+    searcher.search(new BoostQuery(new ConstantScoreQuery(query1), random().nextFloat()), 1);
     assertEquals(1, queryCache.cachedQueries().size());
 
     queryCache.clearQuery(query2);
@@ -472,8 +470,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     Query[] queries = new Query[10 + random().nextInt(10)];
     for (int i = 0; i < queries.length; ++i) {
-      queries[i] = new TermQuery(new Term("color", RandomPicks.randomFrom(random(), Arrays.asList("red", "blue", "green", "yellow"))));
-      queries[i].setBoost(random().nextFloat());
+      queries[i] = new BoostQuery(new TermQuery(new Term("color", RandomPicks.randomFrom(random(), Arrays.asList("red", "blue", "green", "yellow")))), random().nextFloat());
     }
 
     searcher.setQueryCache(queryCache);
@@ -481,10 +478,14 @@ public class TestLRUQueryCache extends LuceneTestCase {
     for (int i = 0; i < 20; ++i) {
       final int idx = random().nextInt(queries.length);
       searcher.search(new ConstantScoreQuery(queries[idx]), 1);
-      if (actualCounts.containsKey(queries[idx])) {
-        actualCounts.put(queries[idx], 1 + actualCounts.get(queries[idx]));
+      Query cacheKey = queries[idx];
+      while (cacheKey instanceof BoostQuery) {
+        cacheKey = ((BoostQuery) cacheKey).getQuery();
+      }
+      if (actualCounts.containsKey(cacheKey)) {
+        actualCounts.put(cacheKey, 1 + actualCounts.get(cacheKey));
       } else {
-        actualCounts.put(queries[idx], 1);
+        actualCounts.put(cacheKey, 1);
       }
     }
 
@@ -749,23 +750,10 @@ public class TestLRUQueryCache extends LuceneTestCase {
     dir2.close();
   }
 
-  private static Query cacheKey(Query query) {
-    if (query.getBoost() == 1f) {
-      return query;
-    } else {
-      Query key = query.clone();
-      key.setBoost(1f);
-      assert key == cacheKey(key);
-      return key;
-    }
-  }
-
   public void testUseRewrittenQueryAsCacheKey() throws IOException {
     final Query expectedCacheKey = new TermQuery(new Term("foo", "bar"));
     final BooleanQuery.Builder query = new BooleanQuery.Builder();
-    final Query sub = expectedCacheKey.clone();
-    sub.setBoost(42);
-    query.add(sub, Occur.MUST);
+    query.add(new BoostQuery(expectedCacheKey, 42f), Occur.MUST);
 
     final LRUQueryCache queryCache = new LRUQueryCache(1000000, 10000000);
     Directory dir = newDirectory();
@@ -782,13 +770,13 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
       @Override
       public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
-        assertEquals(expectedCacheKey, cacheKey(query));
+        assertEquals(expectedCacheKey, query);
         return true;
       }
 
       @Override
       public void onUse(Query query) {
-        assertEquals(expectedCacheKey, cacheKey(query));
+        assertEquals(expectedCacheKey, query);
       }
     };
 

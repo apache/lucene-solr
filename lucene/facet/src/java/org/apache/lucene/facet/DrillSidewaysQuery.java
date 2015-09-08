@@ -63,6 +63,9 @@ class DrillSidewaysQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     Query newQuery = baseQuery;
     while(true) {
       Query rewrittenQuery = newQuery.rewrite(reader);
@@ -72,7 +75,7 @@ class DrillSidewaysQuery extends Query {
       newQuery = rewrittenQuery;
     }
     if (newQuery == baseQuery) {
-      return this;
+      return super.rewrite(reader);
     } else {
       return new DrillSidewaysQuery(newQuery, drillDownCollector, drillSidewaysCollectors, drillDownQueries, scoreSubDocsAtOnce);
     }
@@ -101,8 +104,8 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
-      public void normalize(float norm, float topLevelBoost) {
-        baseWeight.normalize(norm, topLevelBoost);
+      public void normalize(float norm, float boost) {
+        baseWeight.normalize(norm, boost);
       }
 
       @Override

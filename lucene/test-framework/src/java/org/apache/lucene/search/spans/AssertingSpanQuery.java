@@ -48,20 +48,13 @@ public class AssertingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public void setBoost(float b) {
-    in.setBoost(b);
-  }
-
-  @Override
-  public float getBoost() {
-    return in.getBoost();
-  }
-
-  @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     Query q = in.rewrite(reader);
     if (q == in) {
-      return this;
+      return super.rewrite(reader);
     } else if (q instanceof SpanQuery) {
       return new AssertingSpanQuery((SpanQuery) q);
     } else {
@@ -71,7 +64,7 @@ public class AssertingSpanQuery extends SpanQuery {
 
   @Override
   public Query clone() {
-    return new AssertingSpanQuery((SpanQuery) in.clone());
+    return new AssertingSpanQuery((SpanQuery) in);
   }
 
   @Override

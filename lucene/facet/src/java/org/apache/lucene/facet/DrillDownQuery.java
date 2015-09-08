@@ -28,7 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -39,8 +39,8 @@ import org.apache.lucene.search.TermQuery;
  * want to drill-down over.
  * <p>
  * <b>NOTE:</b> if you choose to create your own {@link Query} by calling
- * {@link #term}, it is recommended to wrap it with {@link ConstantScoreQuery}
- * and set the {@link ConstantScoreQuery#setBoost(float) boost} to {@code 0.0f},
+ * {@link #term}, it is recommended to wrap it in a {@link BoostQuery}
+ * with a boost of {@code 0.0f},
  * so that it does not affect the scores of the documents.
  * 
  * @lucene.experimental
@@ -138,6 +138,9 @@ public final class DrillDownQuery extends Query {
   
   @Override
   public Query rewrite(IndexReader r) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(r);
+    }
     BooleanQuery rewritten = getBooleanQuery();
     if (rewritten.clauses().isEmpty()) {
       return new MatchAllDocsQuery();

@@ -1,6 +1,7 @@
 package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.queryparser.xml.DOMUtils;
@@ -34,8 +35,8 @@ public class SpanTermBuilder extends SpanBuilderBase {
     String value = DOMUtils.getNonBlankTextOrFail(e);
     SpanTermQuery stq = new SpanTermQuery(new Term(fieldName, value));
 
-    stq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return stq;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    return new SpanBoostQuery(stq, boost);
   }
 
 }

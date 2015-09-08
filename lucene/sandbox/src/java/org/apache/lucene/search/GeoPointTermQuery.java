@@ -63,9 +63,7 @@ abstract class GeoPointTermQuery extends MultiTermQuery {
   public static final RewriteMethod GEO_CONSTANT_SCORE_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
-      Query result = new GeoPointTermQueryConstantScoreWrapper<>((GeoPointTermQuery)query);
-      result.setBoost(query.getBoost());
-      return result;
+      return new GeoPointTermQueryConstantScoreWrapper<>((GeoPointTermQuery)query);
     }
   };
 

@@ -159,16 +159,11 @@ public class TestTermRangeQuery extends LuceneTestCase {
   public void testEqualsHashcode() {
     Query query = TermRangeQuery.newStringRange("content", "A", "C", true, true);
     
-    query.setBoost(1.0f);
     Query other = TermRangeQuery.newStringRange("content", "A", "C", true, true);
-    other.setBoost(1.0f);
 
     assertEquals("query equals itself is true", query, query);
     assertEquals("equivalent queries are equal", query, other);
     assertEquals("hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
-
-    other.setBoost(2.0f);
-    assertFalse("Different boost queries are not equal", query.equals(other));
 
     other = TermRangeQuery.newStringRange("notcontent", "A", "C", true, true);
     assertFalse("Different fields are not equal", query.equals(other));

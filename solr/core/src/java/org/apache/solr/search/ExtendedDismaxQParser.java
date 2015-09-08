@@ -40,6 +40,7 @@ import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -473,8 +474,8 @@ public class ExtendedDismaxQParser extends QParser {
         for (String f : ff.keySet()) {
           Query fq = subQuery(f, FunctionQParserPlugin.NAME).getQuery();
           Float b = ff.get(f);
-          if (null != b) {
-            fq.setBoost(b);
+          if (null != b && b.floatValue() != 1f) {
+            fq = new BoostQuery(fq, b);
           }
           boostFunctions.add(fq);
         }
@@ -1213,8 +1214,8 @@ public class ExtendedDismaxQParser extends QParser {
         Query sub = getAliasedQuery();
         if (sub != null) {
           Float boost = a.fields.get(f);
-          if (boost != null) {
-            sub.setBoost(boost);
+          if (boost != null && boost.floatValue() != 1f) {
+            sub = new BoostQuery(sub, boost);
           }
           lst.add(sub);
         }

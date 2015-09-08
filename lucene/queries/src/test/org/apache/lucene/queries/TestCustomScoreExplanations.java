@@ -23,6 +23,7 @@ import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.search.BaseExplanationTestCase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -37,8 +38,7 @@ public class TestCustomScoreExplanations extends BaseExplanationTestCase {
   public void testBoost() throws Exception {
     Query q = new TermQuery(new Term(FIELD, "w1"));
     CustomScoreQuery csq = new CustomScoreQuery(q, new FunctionQuery(new ConstValueSource(5)));
-    csq.setBoost(4);
-    qtest(csq, new int[] { 0,1,2,3 });
+    qtest(new BoostQuery(csq, 4), new int[] { 0,1,2,3 });
   }
   
   public void testTopLevelBoost() throws Exception {
@@ -48,7 +48,6 @@ public class TestCustomScoreExplanations extends BaseExplanationTestCase {
     bqB.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     bqB.add(csq, BooleanClause.Occur.MUST);
     BooleanQuery bq = bqB.build();
-    bq.setBoost(6);
-    qtest(bq, new int[] { 0,1,2,3 });
+    qtest(new BoostQuery(bq, 6), new int[] { 0,1,2,3 });
   }
 }

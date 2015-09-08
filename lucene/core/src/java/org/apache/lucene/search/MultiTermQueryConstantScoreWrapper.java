@@ -96,7 +96,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
       return false;
     }
     final MultiTermQueryConstantScoreWrapper<?> that = (MultiTermQueryConstantScoreWrapper<?>) o;
-    return this.query.equals(that.query) && this.getBoost() == that.getBoost();
+    return this.query.equals(that.query);
   }
 
   @Override
@@ -157,8 +157,9 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
             bq.add(new TermQuery(new Term(query.field, t.term), termContext), Occur.SHOULD);
           }
           Query q = new ConstantScoreQuery(bq.build());
-          q.setBoost(score());
-          return new WeightOrDocIdSet(searcher.rewrite(q).createWeight(searcher, needsScores));
+          final Weight weight = searcher.rewrite(q).createWeight(searcher, needsScores);
+          weight.normalize(1f, score());
+          return new WeightOrDocIdSet(weight);
         }
 
         // Too many terms: go back to the terms we already collected and start building the bit set

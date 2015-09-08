@@ -39,6 +39,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -63,10 +64,23 @@ public class QueryUtils {
       check(filtered.getQuery());
       check(filtered.getFilter());
     }
+
+    try {
+      IndexSearcher dummySearcher = new IndexSearcher(new MultiReader());
+      Query clone = q.clone();
+      clone.setBoost((float) Math.PI);
+      Query rewritten = dummySearcher.rewrite(clone);
+      Assert.assertTrue("Query " + clone.getClass() + " does not propagate Query.rewrite call to super.rewrite",
+          rewritten instanceof BoostQuery || rewritten instanceof SpanBoostQuery);
+    } catch (IOException ioe) {
+      throw new AssertionError("Unexpected I/O error", ioe);
+    }
   }
 
   /** check very basic hashCode and equals */
   public static void checkHashEquals(Query q) {
+    checkEqual(q,q);
+
     Query q2 = q.clone();
     checkEqual(q,q2);
 
@@ -82,7 +96,6 @@ public class QueryUtils {
         return "My Whacky Query";
       }
     };
-    whacky.setBoost(q.getBoost());
     checkUnequal(q, whacky);
     
     // null test
@@ -134,10 +147,6 @@ public class QueryUtils {
           check(random, q1, wrapUnderlyingReader(random, s, +1), false);
         }
         checkExplanations(q1,s);
-        
-        Query q2 = q1.clone();
-        checkEqual(s.rewrite(q1),
-                   s.rewrite(q2));
       }
     } catch (IOException e) {
       throw new RuntimeException(e);

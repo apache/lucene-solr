@@ -64,6 +64,9 @@ public abstract class Filter extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     return FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY.rewrite(this);
   }
 }

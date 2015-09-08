@@ -6,6 +6,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
@@ -67,8 +68,8 @@ public class TermsQueryBuilder implements QueryBuilder {
     }
 
     Query q = bq.build();
-    q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return q;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    return new BoostQuery(q, boost);
   }
 
 }

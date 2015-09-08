@@ -1,5 +1,6 @@
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.queryparser.xml.DOMUtils;
@@ -48,8 +49,8 @@ public class SpanOrBuilder extends SpanBuilderBase {
     }
     SpanQuery[] clauses = clausesList.toArray(new SpanQuery[clausesList.size()]);
     SpanOrQuery soq = new SpanOrQuery(clauses);
-    soq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return soq;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    return new SpanBoostQuery(soq, boost);
   }
 
 }

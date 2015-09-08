@@ -46,10 +46,10 @@ public abstract class PerFieldSimilarityWrapper extends Similarity {
   }
 
   @Override
-  public final SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
     PerFieldSimWeight weight = new PerFieldSimWeight();
     weight.delegate = get(collectionStats.field());
-    weight.delegateWeight = weight.delegate.computeWeight(queryBoost, collectionStats, termStats);
+    weight.delegateWeight = weight.delegate.computeWeight(collectionStats, termStats);
     return weight;
   }
 
@@ -74,8 +74,8 @@ public abstract class PerFieldSimilarityWrapper extends Similarity {
     }
     
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      delegateWeight.normalize(queryNorm, topLevelBoost);
+    public void normalize(float queryNorm, float boost) {
+      delegateWeight.normalize(queryNorm, boost);
     }
   }
 }

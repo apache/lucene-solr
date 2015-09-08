@@ -37,21 +37,16 @@ public class BasicStats extends Similarity.SimWeight {
   protected long totalTermFreq;
   
   // -------------------------- Boost-related stuff --------------------------
-  
-  /** Query's inner boost. */
-  protected final float queryBoost;
-  /** Any outer query's boost. */
-  protected float topLevelBoost;
+
   /** For most Similarities, the immediate and the top level query boosts are
    * not handled differently. Hence, this field is just the product of the
    * other two. */
-  protected float totalBoost;
+  protected float boost;
   
-  /** Constructor. Sets the query boost. */
-  public BasicStats(String field, float queryBoost) {
+  /** Constructor. */
+  public BasicStats(String field) {
     this.field = field;
-    this.queryBoost = queryBoost;
-    this.totalBoost = queryBoost;
+    normalize(1f, 1f);
   }
   
   // ------------------------- Getter/setter methods -------------------------
@@ -128,19 +123,17 @@ public class BasicStats extends Similarity.SimWeight {
    * {@link #normalize(float, float)}, etc.
    */
   protected float rawNormalizationValue() {
-    return queryBoost;
+    return boost;
   }
   
-  /** No normalization is done. {@code topLevelBoost} is saved in the object,
-   * however. */
+  /** No normalization is done. {@code boost} is saved in the object, however. */
   @Override
-  public void normalize(float queryNorm, float topLevelBoost) {
-    this.topLevelBoost = topLevelBoost;
-    totalBoost = queryBoost * topLevelBoost;
+  public void normalize(float queryNorm, float boost) {
+    this.boost = boost;
   }
   
   /** Returns the total boost. */
-  public float getTotalBoost() {
-    return totalBoost;
+  public float getBoost() {
+    return boost;
   }
 }

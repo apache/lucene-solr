@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 
@@ -121,7 +120,6 @@ public class TermRangeQuery extends AutomatonQuery {
     buffer.append(" TO ");
     buffer.append(upperTerm != null ? ("*".equals(Term.toString(upperTerm)) ? "\\*" : Term.toString(upperTerm)) : "*");
     buffer.append(includeUpper ? ']' : '}');
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

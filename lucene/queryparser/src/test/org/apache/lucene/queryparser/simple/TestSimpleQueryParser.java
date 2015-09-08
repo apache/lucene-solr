@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -480,10 +481,10 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.setDisableCoord(true);
     Query field0 = new TermQuery(new Term("field0", "foo"));
-    field0.setBoost(5f);
+    field0 = new BoostQuery(field0, 5f);
     expected.add(field0, Occur.SHOULD);
     Query field1 = new TermQuery(new Term("field1", "foo"));
-    field1.setBoost(10f);
+    field1 = new BoostQuery(field1, 10f);
     expected.add(field1, Occur.SHOULD);
 
     Analyzer analyzer = new MockAnalyzer(random());
@@ -501,20 +502,20 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     BooleanQuery.Builder foo = new BooleanQuery.Builder();
     foo.setDisableCoord(true);
     Query field0 = new TermQuery(new Term("field0", "foo"));
-    field0.setBoost(5f);
+    field0 = new BoostQuery(field0, 5f);
     foo.add(field0, Occur.SHOULD);
     Query field1 = new TermQuery(new Term("field1", "foo"));
-    field1.setBoost(10f);
+    field1 = new BoostQuery(field1, 10f);
     foo.add(field1, Occur.SHOULD);
     expected.add(foo.build(), Occur.SHOULD);
 
     BooleanQuery.Builder bar = new BooleanQuery.Builder();
     bar.setDisableCoord(true);
     field0 = new TermQuery(new Term("field0", "bar"));
-    field0.setBoost(5f);
+    field0 = new BoostQuery(field0, 5f);
     bar.add(field0, Occur.SHOULD);
     field1 = new TermQuery(new Term("field1", "bar"));
-    field1.setBoost(10f);
+    field1 = new BoostQuery(field1, 10f);
     bar.add(field1, Occur.SHOULD);
     expected.add(bar.build(), Occur.SHOULD);
 

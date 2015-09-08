@@ -6,6 +6,7 @@ import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.sandbox.queries.FuzzyLikeThisQuery;
 import org.apache.lucene.sandbox.queries.SlowFuzzyQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -60,8 +61,12 @@ public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
       fbq.addTerms(value, fieldName, minSimilarity, prefixLength);
     }
 
-    fbq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return fbq;
+    Query q = fbq;
+    float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+    if (boost != 1f) {
+      q = new BoostQuery(fbq, boost);
+    }
+    return q;
   }
 
 }

@@ -111,19 +111,17 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     builder.append("SpanMultiTermQueryWrapper(");
     builder.append(query.toString(field));
     builder.append(")");
-    if (getBoost() != 1F) {
-      builder.append('^');
-      builder.append(getBoost());
-    }
     return builder.toString();
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     final Query q = query.rewrite(reader);
     if (!(q instanceof SpanQuery))
       throw new UnsupportedOperationException("You can only use SpanMultiTermQueryWrapper with a suitable SpanRewriteMethod.");
-    q.setBoost(q.getBoost() * getBoost()); // multiply boost
     return q;
   }
   
@@ -177,7 +175,6 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
       @Override
       protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost, TermContext states) {
         final SpanTermQuery q = new SpanTermQuery(term, states);
-        q.setBoost(boost);
         topLevel.addClause(q);
       }
     };
@@ -226,7 +223,6 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
         @Override
         protected void addClause(SpanOrQuery topLevel, Term term, int docFreq, float boost, TermContext states) {
           final SpanTermQuery q = new SpanTermQuery(term, states);
-          q.setBoost(boost);
           topLevel.addClause(q);
         }
       };

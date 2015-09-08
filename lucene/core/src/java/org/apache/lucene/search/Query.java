@@ -44,16 +44,16 @@ import org.apache.lucene.index.IndexReader;
 public abstract class Query implements Cloneable {
   private float boost = 1.0f;                     // query boost factor
 
-  /** Sets the boost for this query clause to <code>b</code>.  Documents
-   * matching this clause will (in addition to the normal weightings) have
-   * their score multiplied by <code>b</code>.
+  /** Sets the boost for this query clause to <code>b</code>.
+   * @deprecated Use {@link BoostQuery} instead to apply boosts.
    */
+  @Deprecated
   public void setBoost(float b) { boost = b; }
 
-  /** Gets the boost for this clause.  Documents matching
-   * this clause will (in addition to the normal weightings) have their score
-   * multiplied by <code>b</code>.   The boost is 1.0 by default.
+  /** Gets the boost for this clause.
+   * @deprecated Use {@link BoostQuery} instead to apply boosts.
    */
+  @Deprecated
   public float getBoost() { return boost; }
 
   /** Prints a query to a string, with <code>field</code> assumed to be the 
@@ -84,10 +84,19 @@ public abstract class Query implements Cloneable {
    * of TermQuerys.
    */
   public Query rewrite(IndexReader reader) throws IOException {
+    if (boost != 1f) {
+      Query rewritten = clone();
+      rewritten.setBoost(1f);
+      return new BoostQuery(rewritten, boost);
+    }
     return this;
   }
 
-  /** Returns a clone of this query. */
+  /** Returns a clone of this query.
+   *  @deprecated Cloning was only useful for modifying boosts. Now that
+   *  {@link #setBoost(float)} is deprecated, queries should be considered
+   *  immutable. */
+  @Deprecated
   @Override
   public Query clone() {
     try {
@@ -99,7 +108,7 @@ public abstract class Query implements Cloneable {
 
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ getClass().hashCode();
+    return Float.floatToIntBits(boost) ^ getClass().hashCode();
   }
 
   @Override

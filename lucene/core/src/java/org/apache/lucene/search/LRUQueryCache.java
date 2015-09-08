@@ -88,17 +88,6 @@ import org.apache.lucene.util.RoaringDocIdSet;
  */
 public class LRUQueryCache implements QueryCache, Accountable {
 
-  private static Query cacheKey(Query query) {
-    if (query.getBoost() == 1f) {
-      return query;
-    } else {
-      Query key = query.clone();
-      key.setBoost(1f);
-      assert key == cacheKey(key);
-      return key;
-    }
-  }
-
   // memory usage of a simple term query
   static final long QUERY_DEFAULT_RAM_BYTES_USED = 192;
 
@@ -227,7 +216,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   synchronized DocIdSet get(Query key, LeafReaderContext context) {
-    key = cacheKey(key);
+    assert key.getBoost() == 1f;
+    assert key instanceof BoostQuery == false;
+    assert key instanceof ConstantScoreQuery == false;
     final Object readerKey = context.reader().getCoreCacheKey();
     final LeafCache leafCache = cache.get(readerKey);
     if (leafCache == null) {
@@ -252,9 +243,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
   synchronized void putIfAbsent(Query query, LeafReaderContext context, DocIdSet set) {
     // under a lock to make sure that mostRecentlyUsedQueries and cache remain sync'ed
     // we don't want to have user-provided queries as keys in our cache since queries are mutable
-    query = query.clone();
-    query.setBoost(1f);
-    assert query == cacheKey(query);
+    assert query instanceof BoostQuery == false;
+    assert query instanceof ConstantScoreQuery == false;
+    assert query.getBoost() == 1f;
     Query singleton = uniqueQueries.get(query);
     if (singleton == null) {
       uniqueQueries.put(query, query);
@@ -318,7 +309,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * Remove all cache entries for the given query.
    */
   public synchronized void clearQuery(Query query) {
-    final Query singleton = uniqueQueries.remove(cacheKey(query));
+    final Query singleton = uniqueQueries.remove(query);
     if (singleton != null) {
       onEviction(singleton);
     }
@@ -522,20 +513,27 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     DocIdSet get(Query query) {
-      assert query == cacheKey(query);
+      assert query instanceof BoostQuery == false;
+      assert query instanceof ConstantScoreQuery == false;
+      assert query.getBoost() == 1f;
       return cache.get(query);
     }
 
     void putIfAbsent(Query query, DocIdSet set) {
-      assert query == cacheKey(query);
+      assert query instanceof BoostQuery == false;
+      assert query instanceof ConstantScoreQuery == false;
+      assert query.getBoost() == 1f;
       if (cache.containsKey(query) == false) {
         cache.put(query, set);
+        // the set was actually put
         onDocIdSetCache(HASHTABLE_RAM_BYTES_PER_ENTRY + set.ramBytesUsed());
       }
     }
 
     void remove(Query query) {
-      assert query == cacheKey(query);
+      assert query instanceof BoostQuery == false;
+      assert query instanceof ConstantScoreQuery == false;
+      assert query.getBoost() == 1f;
       DocIdSet removed = cache.remove(query);
       if (removed != null) {
         onDocIdSetEviction(HASHTABLE_RAM_BYTES_PER_ENTRY + removed.ramBytesUsed());

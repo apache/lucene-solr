@@ -71,12 +71,10 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
 
     Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
                                 new QueryWrapperFilter(matchTheseItems(new int[] {1,3})));
-    t.setBoost(1000);
-    q.add(t, Occur.SHOULD);
+    q.add(new BoostQuery(t, 1000), Occur.SHOULD);
     
     t = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
-    t.setBoost(30);
-    q.add(t, Occur.SHOULD);
+    q.add(new BoostQuery(t, 30), Occur.SHOULD);
     
     DisjunctionMaxQuery dm = new DisjunctionMaxQuery(0.2f);
     dm.add(snear(st("w2"),
@@ -131,12 +129,10 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     
     Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
                                 new QueryWrapperFilter(matchTheseItems(new int[] {1,3})));
-    t.setBoost(1000);
-    q.add(t, Occur.SHOULD);
+    q.add(new BoostQuery(t, 1000), Occur.SHOULD);
     
     t = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
-    t.setBoost(-20.0f);
-    q.add(t, Occur.SHOULD);
+    q.add(new BoostQuery(t, -20), Occur.SHOULD);
     
     DisjunctionMaxQuery dm = new DisjunctionMaxQuery(0.2f);
     dm.add(snear(st("w2"),
@@ -171,9 +167,8 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     builder.add(snear("w2","w3",1,true), Occur.SHOULD);
     builder.add(snear("w1","w3",3,true), Occur.SHOULD);
     BooleanQuery b = builder.build(); 
-    b.setBoost(0.0f);
     
-    q.add(b, Occur.SHOULD);
+    q.add(new BoostQuery(b, 0), Occur.SHOULD);
     
     qtest(q.build(), new int[] { 0,1,2 });
   }
@@ -189,26 +184,22 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
 
   public void testT3() throws Exception {
     TermQuery query = new TermQuery(new Term(FIELD, "w1"));
-    query.setBoost(0);
-    bqtest(query, new int[] { 0,1,2,3 });
+    bqtest(new BoostQuery(query, 0), new int[] { 0,1,2,3 });
   }
 
   public void testMA3() throws Exception {
     Query q=new MatchAllDocsQuery();
-    q.setBoost(0);
-    bqtest(q, new int[] { 0,1,2,3 });
+    bqtest(new BoostQuery(q, 0), new int[] { 0,1,2,3 });
   }
   
   public void testFQ5() throws Exception {
     TermQuery query = new TermQuery(new Term(FIELD, "xx"));
-    query.setBoost(0);
     bqtest(new FilteredQuery(query, new QueryWrapperFilter(matchTheseItems(new int[] {1,3}))), new int[] {3});
   }
   
   public void testCSQ4() throws Exception {
     Query q = new ConstantScoreQuery(matchTheseItems(new int[] {3}));
-    q.setBoost(0);
-    bqtest(q, new int[] {3});
+    bqtest(new BoostQuery(q, 0), new int[] {3});
   }
   
   public void testDMQ10() throws Exception {
@@ -217,17 +208,14 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();;
     query.add(new TermQuery(new Term(FIELD, "yy")), Occur.SHOULD);
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
-    boostedQuery.setBoost(100);
-    query.add(boostedQuery, Occur.SHOULD);
+    query.add(new BoostQuery(boostedQuery, 100), Occur.SHOULD);
 
     q.add(query.build());
 
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
-    xxBoostedQuery.setBoost(0);
 
-    q.add(xxBoostedQuery);
-    q.setBoost(0.0f);
-    bqtest(q, new int[] { 0,2,3 });
+    q.add(new BoostQuery(xxBoostedQuery, 0));
+    bqtest(new BoostQuery(q, 0), new int[] { 0,2,3 });
   }
   
   public void testMPQ7() throws Exception {
@@ -235,8 +223,7 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     q.add(ta(new String[] {"w1"}));
     q.add(ta(new String[] {"w2"}));
     q.setSlop(1);
-    q.setBoost(0.0f);
-    bqtest(q, new int[] { 0,1,2 });
+    bqtest(new BoostQuery(q, 0), new int[] { 0,1,2 });
   }
   
   public void testBQ12() throws Exception {
@@ -244,8 +231,7 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();;
     query.add(new TermQuery(new Term(FIELD, "w1")), Occur.SHOULD);
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w2"));
-    boostedQuery.setBoost(0);
-    query.add(boostedQuery, Occur.SHOULD);
+    query.add(new BoostQuery(boostedQuery, 0), Occur.SHOULD);
     
     qtest(query.build(), new int[] { 0,1,2,3 });
   }
@@ -254,8 +240,7 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();;
     query.add(new TermQuery(new Term(FIELD, "w1")), Occur.SHOULD);
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
-    boostedQuery.setBoost(0);
-    query.add(boostedQuery, Occur.MUST_NOT);
+    query.add(new BoostQuery(boostedQuery, 0), Occur.MUST_NOT);
 
     qtest(query.build(), new int[] { 1,2,3 });
   }
@@ -263,8 +248,7 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     // NOTE: using qtest not bqtest
     BooleanQuery.Builder query = new BooleanQuery.Builder();;
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w1"));
-    boostedQuery.setBoost(0);
-    query.add(boostedQuery, Occur.MUST);
+    query.add(new BoostQuery(boostedQuery, 0), Occur.MUST);
     query.add(new TermQuery(new Term(FIELD, "w2")), Occur.SHOULD);
     
     qtest(query.build(), new int[] { 0,1,2,3 });
@@ -275,66 +259,57 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     builder.add(new TermQuery(new Term(FIELD, "w2")), Occur.SHOULD);
 
     Query query = builder.build();
-    query.setBoost(0);
 
-    bqtest(query, new int[] { 0,1,2,3 });
+    bqtest(new BoostQuery(query, 0), new int[] { 0,1,2,3 });
   }
   public void testBQ22() throws Exception {
     BooleanQuery.Builder builder = new BooleanQuery.Builder();;
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w1"));
-    boostedQuery.setBoost(0);
-    builder.add(boostedQuery, Occur.MUST);
+    builder.add(new BoostQuery(boostedQuery, 0), Occur.MUST);
     builder.add(new TermQuery(new Term(FIELD, "w2")), Occur.SHOULD);
     BooleanQuery query = builder.build();
-    query.setBoost(0);
 
-    bqtest(query, new int[] { 0,1,2,3 });
+    bqtest(new BoostQuery(query, 0), new int[] { 0,1,2,3 });
   }
 
   public void testST3() throws Exception {
     SpanQuery q = st("w1");
-    q.setBoost(0);
-    bqtest(q, new int[] {0,1,2,3});
+    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
   }
   public void testST6() throws Exception {
     SpanQuery q = st("xx");
-    q.setBoost(0);
-    qtest(q, new int[] {2,3});
+    qtest(new SpanBoostQuery(q, 0), new int[] {2,3});
   }
 
   public void testSF3() throws Exception {
     SpanQuery q = sf(("w1"),1);
-    q.setBoost(0);
-    bqtest(q, new int[] {0,1,2,3});
+    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
   }
   public void testSF7() throws Exception {
     SpanQuery q = sf(("xx"),3);
-    q.setBoost(0);
-    bqtest(q, new int[] {2,3});
+    bqtest(new SpanBoostQuery(q, 0), new int[] {2,3});
   }
   
   public void testSNot3() throws Exception {
     SpanQuery q = snot(sf("w1",10),st("QQ"));
-    q.setBoost(0);
-    bqtest(q, new int[] {0,1,2,3});
+    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
   }
   public void testSNot6() throws Exception {
     SpanQuery q = snot(sf("w1",10),st("xx"));
-    q.setBoost(0);
-    bqtest(q, new int[] {0,1,2,3});
+    bqtest(new SpanBoostQuery(q, 0), new int[] {0,1,2,3});
   }
 
   public void testSNot8() throws Exception {
     // NOTE: using qtest not bqtest
     SpanQuery f = snear("w1","w3",10,true);
-    f.setBoost(0);
+    f = new SpanBoostQuery(f, 0);
     SpanQuery q = snot(f, st("xx"));
     qtest(q, new int[] {0,1,3});
   }
   public void testSNot9() throws Exception {
     // NOTE: using qtest not bqtest
     SpanQuery t = st("xx");
-    t.setBoost(0);
+    t = new SpanBoostQuery(t, 0);
     SpanQuery q = snot(snear("w1","w3",10,true), t);
     qtest(q, new int[] {0,1,3});
   }

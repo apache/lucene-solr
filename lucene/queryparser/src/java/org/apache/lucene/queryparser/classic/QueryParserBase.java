@@ -503,7 +503,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
         builder.add(terms[i], positions[i]);
       }
       query = builder.build();
-      query.setBoost(pq.getBoost());
     }
     if (query instanceof MultiPhraseQuery) {
       ((MultiPhraseQuery) query).setSlop(slop);
@@ -902,7 +901,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
 
       // avoid boosting null queries, such as those caused by stop words
       if (q != null) {
-        q.setBoost(f);
+        q = new BoostQuery(q, f);
       }
     }
     return q;

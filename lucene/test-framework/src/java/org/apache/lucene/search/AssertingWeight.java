@@ -53,8 +53,8 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public void normalize(float norm, float topLevelBoost) {
-    in.normalize(norm, topLevelBoost);
+  public void normalize(float norm, float boost) {
+    in.normalize(norm, boost);
   }
 
   @Override

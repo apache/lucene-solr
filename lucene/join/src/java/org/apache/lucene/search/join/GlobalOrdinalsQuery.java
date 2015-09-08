@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -97,12 +98,9 @@ final class GlobalOrdinalsQuery extends Query {
         '}';
   }
 
-  final class W extends Weight {
+  final class W extends ConstantScoreWeight {
 
     private final Weight approximationWeight;
-
-    private float queryNorm;
-    private float queryWeight;
 
     W(Query query, Weight approximationWeight) {
       super(query);
@@ -119,22 +117,10 @@ final class GlobalOrdinalsQuery extends Query {
         int segmentOrd = values.getOrd(doc);
         if (segmentOrd != -1) {
           BytesRef joinValue = values.lookupOrd(segmentOrd);
-          return Explanation.match(queryNorm, "Score based on join value " + joinValue.utf8ToString());
+          return Explanation.match(score(), "Score based on join value " + joinValue.utf8ToString());
         }
       }
       return Explanation.noMatch("Not a match");
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      queryWeight = getBoost();
-      return queryWeight * queryWeight;
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      this.queryNorm = norm * topLevelBoost;
-      queryWeight *= this.queryNorm;
     }
 
     @Override
@@ -149,9 +135,9 @@ final class GlobalOrdinalsQuery extends Query {
         return null;
       }
       if (globalOrds != null) {
-        return new OrdinalMapScorer(this, queryNorm, foundOrds, values, approximationScorer, globalOrds.getGlobalOrds(context.ord));
+        return new OrdinalMapScorer(this, score(), foundOrds, values, approximationScorer, globalOrds.getGlobalOrds(context.ord));
       } {
-        return new SegmentOrdinalScorer(this, queryNorm, foundOrds, values, approximationScorer);
+        return new SegmentOrdinalScorer(this, score(), foundOrds, values, approximationScorer);
       }
     }
 

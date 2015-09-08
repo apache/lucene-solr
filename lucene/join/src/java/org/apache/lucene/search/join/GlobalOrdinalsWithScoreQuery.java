@@ -30,7 +30,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 
@@ -111,9 +110,6 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
     private final Weight approximationWeight;
 
-    private float queryNorm;
-    private float queryWeight;
-
     W(Query query, Weight approximationWeight) {
       super(query);
       this.approximationWeight = approximationWeight;
@@ -144,14 +140,13 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
     @Override
     public float getValueForNormalization() throws IOException {
-      queryWeight = getBoost();
-      return queryWeight * queryWeight;
+      return 1f;
     }
 
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      this.queryNorm = norm * topLevelBoost;
-      queryWeight *= this.queryNorm;
+    public void normalize(float norm, float boost) {
+      // no normalization, we ignore the normalization process
+      // and produce scores based on the join
     }
 
     @Override

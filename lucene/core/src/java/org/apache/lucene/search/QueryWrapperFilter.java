@@ -46,9 +46,7 @@ public class QueryWrapperFilter extends Filter {
   
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    ConstantScoreQuery rewritten = new ConstantScoreQuery(query);
-    rewritten.setBoost(0);
-    return rewritten;
+    return new BoostQuery(new ConstantScoreQuery(query), 0f);
   }
   
   /** returns the inner Query */

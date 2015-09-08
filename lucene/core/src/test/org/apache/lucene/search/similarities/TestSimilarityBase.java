@@ -165,7 +165,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /** Creates the default statistics object that the specific tests modify. */
   private BasicStats createStats() {
-    BasicStats stats = new BasicStats("spoof", 1);
+    BasicStats stats = new BasicStats("spoof");
     stats.setNumberOfDocuments(NUMBER_OF_DOCUMENTS);
     stats.setNumberOfFieldTokens(NUMBER_OF_FIELD_TOKENS);
     stats.setAvgFieldLength(AVG_FIELD_LENGTH);
@@ -189,9 +189,10 @@ public class TestSimilarityBase extends LuceneTestCase {
    */
   private void unitTestCore(BasicStats stats, float freq, int docLen) {
     for (SimilarityBase sim : sims) {
-      BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
+      BasicStats realStats = (BasicStats) sim.computeWeight(
           toCollectionStats(stats), 
           toTermStats(stats));
+      realStats.normalize(1f, stats.getBoost());
       float score = sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
           realStats, 1, Explanation.match(freq, "freq"), docLen).getValue();
@@ -521,9 +522,10 @@ public class TestSimilarityBase extends LuceneTestCase {
    */
   private void correctnessTestCore(SimilarityBase sim, float gold) {
     BasicStats stats = createStats();
-    BasicStats realStats = (BasicStats) sim.computeWeight(stats.getTotalBoost(),
+    BasicStats realStats = (BasicStats) sim.computeWeight(
         toCollectionStats(stats), 
         toTermStats(stats));
+    realStats.normalize(1f, stats.getBoost());
     float score = sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(
         sim.toString() + " score not correct.", gold, score, FLOAT_EPSILON);

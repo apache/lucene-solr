@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
@@ -191,7 +192,9 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     final SolrQueryRequest req = req("q", "{!join from=movieId_s to=id score=" + score + " b=200}title:movie", "fl", "id,score", "omitHeader", "true");
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
     final Query luceneQ = QParser.getParser(req.getParams().get("q"), null, req).getQuery().rewrite(req.getSearcher().getLeafReader());
-    assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(luceneQ.getBoost()));
+    assertTrue(luceneQ instanceof BoostQuery);
+    float boost = ((BoostQuery) luceneQ).getBoost();
+    assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(boost));
     SolrRequestInfo.clearRequestInfo();
     req.close();
   }

@@ -20,6 +20,7 @@ package org.apache.lucene.search.payloads;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BaseExplanationTestCase;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -65,8 +66,7 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
   public void testPT2() throws Exception {
     for (PayloadFunction fn : functions) {
       SpanQuery q = pt("w1", fn, false);
-      q.setBoost(1000);
-      qtest(q, new int[] {0,1,2,3});
+      qtest(new SpanBoostQuery(q, 1000), new int[] {0,1,2,3});
       q = pt("w1", fn, true);
       q.setBoost(1000);
       qtest(q, new int[] {0,1,2,3});
@@ -83,8 +83,7 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
   public void testPT5() throws Exception {
     for (PayloadFunction fn : functions) {
       SpanQuery q = pt("xx", fn, false);
-      q.setBoost(1000);
-      qtest(q, new int[] {2,3});
+      qtest(new SpanBoostQuery(q, 1000), new int[] {2,3});
       q = pt("xx", fn, true);
       q.setBoost(1000);
       qtest(q, new int[] {2,3});

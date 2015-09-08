@@ -34,8 +34,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * Query that sets document score as a programmatic function of several (sub) scores:
@@ -47,7 +45,7 @@ import org.apache.lucene.util.ToStringUtils;
  * 
  * @lucene.experimental
  */
-public class CustomScoreQuery extends Query {
+public class CustomScoreQuery extends Query implements Cloneable {
 
   private Query subQuery;
   private Query[] scoringQueries; // never null (empty array if there are no valSrcQueries).
@@ -88,6 +86,9 @@ public class CustomScoreQuery extends Query {
   /*(non-Javadoc) @see org.apache.lucene.search.Query#rewrite(org.apache.lucene.index.IndexReader) */
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     CustomScoreQuery clone = null;
     
     final Query sq = subQuery.rewrite(reader);
@@ -110,11 +111,11 @@ public class CustomScoreQuery extends Query {
   /*(non-Javadoc) @see org.apache.lucene.search.Query#clone() */
   @Override
   public CustomScoreQuery clone() {
-    CustomScoreQuery clone = (CustomScoreQuery)super.clone();
-    clone.subQuery = subQuery.clone();
+    CustomScoreQuery clone = (CustomScoreQuery) super.clone();
+    clone.subQuery = subQuery;
     clone.scoringQueries = new Query[scoringQueries.length];
     for(int i = 0; i < scoringQueries.length; i++) {
-      clone.scoringQueries[i] = scoringQueries[i].clone();
+      clone.scoringQueries[i] = scoringQueries[i];
     }
     return clone;
   }
@@ -129,7 +130,7 @@ public class CustomScoreQuery extends Query {
     }
     sb.append(")");
     sb.append(strict?" STRICT" : "");
-    return sb.toString() + ToStringUtils.boost(getBoost());
+    return sb.toString();
   }
 
   /** Returns true if <code>o</code> is equal to this. */
@@ -139,12 +140,8 @@ public class CustomScoreQuery extends Query {
       return true;
     if (!super.equals(o))
       return false;
-    if (getClass() != o.getClass()) {
-      return false;
-    }
     CustomScoreQuery other = (CustomScoreQuery)o;
-    if (this.getBoost() != other.getBoost() ||
-        !this.subQuery.equals(other.subQuery) ||
+    if (!this.subQuery.equals(other.subQuery) ||
         this.strict != other.strict ||
         this.scoringQueries.length != other.scoringQueries.length) {
       return false;
@@ -155,8 +152,8 @@ public class CustomScoreQuery extends Query {
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return (getClass().hashCode() + subQuery.hashCode() + Arrays.hashCode(scoringQueries))
-      ^ Float.floatToIntBits(getBoost()) ^ (strict ? 1234 : 4321);
+    return (super.hashCode() + subQuery.hashCode() + Arrays.hashCode(scoringQueries))
+      ^ (strict ? 1234 : 4321);
   }
   
   /**
@@ -199,9 +196,7 @@ public class CustomScoreQuery extends Query {
     public float getValueForNormalization() throws IOException {
       float sum = subQueryWeight.getValueForNormalization();
       for (Weight valSrcWeight : valSrcWeights) {
-        if (qStrict) {
-          valSrcWeight.getValueForNormalization(); // do not include ValueSource part in the query normalization
-        } else {
+        if (qStrict == false) { // otherwise do not include ValueSource part in the query normalization
           sum += valSrcWeight.getValueForNormalization();
         }
       }
@@ -210,8 +205,8 @@ public class CustomScoreQuery extends Query {
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#normalize(float) */
     @Override
-    public void normalize(float norm, float topLevelBoost) {
-      // note we DONT incorporate our boost, nor pass down any topLevelBoost 
+    public void normalize(float norm, float boost) {
+      // note we DONT incorporate our boost, nor pass down any boost 
       // (e.g. from outer BQ), as there is no guarantee that the CustomScoreProvider's 
       // function obeys the distributive law... it might call sqrt() on the subQuery score
       // or some other arbitrary function other than multiplication.
@@ -224,7 +219,7 @@ public class CustomScoreQuery extends Query {
           valSrcWeight.normalize(norm, 1f);
         }
       }
-      queryWeight = topLevelBoost * getBoost();
+      queryWeight = boost;
     }
 
     @Override

@@ -56,7 +56,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * Specialization for a disjunction over many terms that behaves like a
@@ -142,6 +141,9 @@ public class TermsQuery extends Query implements Accountable {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
     if (termData.size() <= threshold) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
@@ -149,9 +151,7 @@ public class TermsQuery extends Query implements Accountable {
       for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
         bq.add(new TermQuery(new Term(iterator.field(), BytesRef.deepCopyOf(term))), Occur.SHOULD);
       }
-      ConstantScoreQuery csq = new ConstantScoreQuery(bq.build());
-      csq.setBoost(getBoost());
-      return csq;
+      return new ConstantScoreQuery(bq.build());
     }
     return super.rewrite(reader);
   }
@@ -188,7 +188,6 @@ public class TermsQuery extends Query implements Accountable {
       builder.append(iterator.field()).append(':');
       builder.append(term.utf8ToString());
     }
-    builder.append(ToStringUtils.boost(getBoost()));
 
     return builder.toString();
   }
@@ -309,8 +308,9 @@ public class TermsQuery extends Query implements Accountable {
             bq.add(new TermQuery(new Term(t.field, t.term), termContext), Occur.SHOULD);
           }
           Query q = new ConstantScoreQuery(bq.build());
-          q.setBoost(score());
-          return new WeightOrDocIdSet(searcher.rewrite(q).createWeight(searcher, needsScores));
+          final Weight weight = searcher.rewrite(q).createWeight(searcher, needsScores);
+          weight.normalize(1f, score());
+          return new WeightOrDocIdSet(weight);
         } else {
           assert builder != null;
           return new WeightOrDocIdSet(builder.build());

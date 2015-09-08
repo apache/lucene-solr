@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 
@@ -53,13 +54,19 @@ public class QueryUtils {
    * @return Absolute version of the Query
    */
   public static Query getAbs(Query q) {
+    if (q instanceof BoostQuery) {
+      BoostQuery bq = (BoostQuery) q;
+      Query subQ = bq.getQuery();
+      Query absSubQ = getAbs(subQ);
+      if (absSubQ == subQ) return q;
+      return new BoostQuery(absSubQ, bq.getBoost());
+    }
+
     if (q instanceof WrappedQuery) {
       Query subQ = ((WrappedQuery)q).getWrappedQuery();
       Query absSubQ = getAbs(subQ);
       if (absSubQ == subQ) return q;
-      WrappedQuery newQ = (WrappedQuery)q.clone();
-      newQ.setWrappedQuery(absSubQ);
-      return newQ;
+      return new WrappedQuery(absSubQ);
     }
 
     if (!(q instanceof BooleanQuery)) return q;
@@ -89,9 +96,7 @@ public class QueryUtils {
       for (BooleanClause clause : clauses) {
         newBqB.add(clause.getQuery(), BooleanClause.Occur.SHOULD);
       }
-      Query newBq = newBqB.build();
-      newBq.setBoost(bq.getBoost());
-      return newBq;
+      return newBqB.build();
     }
   }
 
@@ -109,6 +114,12 @@ public class QueryUtils {
    * The query passed in *must* be a negative query.
    */
   public static Query fixNegativeQuery(Query q) {
+    float boost = 1f;
+    if (q instanceof BoostQuery) {
+      BoostQuery bq = (BoostQuery) q;
+      boost = bq.getBoost();
+      q = bq.getQuery();
+    }
     BooleanQuery bq = (BooleanQuery) q;
     BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
     newBqB.setDisableCoord(bq.isCoordDisabled());
@@ -118,8 +129,7 @@ public class QueryUtils {
     }
     newBqB.add(new MatchAllDocsQuery(), Occur.MUST);
     BooleanQuery newBq = newBqB.build();
-    newBq.setBoost(bq.getBoost());
-    return newBq;
+    return new BoostQuery(newBq, boost);
   }
 
 }

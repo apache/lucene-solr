@@ -50,7 +50,6 @@ public class SpanNearPayloadCheckQuery extends SpanPayloadCheckQuery {
       buffer.append(';');
     }
     buffer.append(")");
-    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

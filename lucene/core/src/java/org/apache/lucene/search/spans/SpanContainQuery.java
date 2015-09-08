@@ -35,7 +35,7 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   SpanQuery big;
   SpanQuery little;
 
-  SpanContainQuery(SpanQuery big, SpanQuery little, float boost) {
+  SpanContainQuery(SpanQuery big, SpanQuery little) {
     this.big = Objects.requireNonNull(big);
     this.little = Objects.requireNonNull(little);
     Objects.requireNonNull(big.getField());
@@ -43,7 +43,6 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     if (! big.getField().equals(little.getField())) {
       throw new IllegalArgumentException("big and little not same field");
     }
-    this.setBoost(boost);
   }
 
   @Override
@@ -105,22 +104,19 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public abstract SpanContainQuery clone();
-
-  @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    SpanContainQuery clone = null;
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     SpanQuery rewrittenBig = (SpanQuery) big.rewrite(reader);
-    if (rewrittenBig != big) {
-      clone = this.clone();
-      clone.big = rewrittenBig;
-    }
     SpanQuery rewrittenLittle = (SpanQuery) little.rewrite(reader);
-    if (rewrittenLittle != little) {
-      if (clone == null) clone = this.clone();
+    if (big != rewrittenBig || little != rewrittenLittle) {
+      SpanContainQuery clone = (SpanContainQuery) super.clone();
+      clone.big = rewrittenBig;
       clone.little = rewrittenLittle;
+      return clone;
     }
-    return (clone != null) ? clone : this;
+    return super.rewrite(reader);
   }
 
   @Override

@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -534,7 +535,10 @@ public class SimpleQueryParser extends QueryBuilder {
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createBooleanQuery(entry.getKey(), text, defaultOperator);
       if (q != null) {
-        q.setBoost(entry.getValue());
+        float boost = entry.getValue();
+        if (boost != 1f) {
+          q = new BoostQuery(q, boost);
+        }
         bq.add(q, BooleanClause.Occur.SHOULD);
       }
     }
@@ -549,10 +553,11 @@ public class SimpleQueryParser extends QueryBuilder {
     bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = new FuzzyQuery(new Term(entry.getKey(), text), fuzziness);
-      if (q != null) {
-        q.setBoost(entry.getValue());
-        bq.add(q, BooleanClause.Occur.SHOULD);
+      float boost = entry.getValue();
+      if (boost != 1f) {
+        q = new BoostQuery(q, boost);
       }
+      bq.add(q, BooleanClause.Occur.SHOULD);
     }
     return simplify(bq.build());
   }
@@ -566,7 +571,10 @@ public class SimpleQueryParser extends QueryBuilder {
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createPhraseQuery(entry.getKey(), text, slop);
       if (q != null) {
-        q.setBoost(entry.getValue());
+        float boost = entry.getValue();
+        if (boost != 1f) {
+          q = new BoostQuery(q, boost);
+        }
         bq.add(q, BooleanClause.Occur.SHOULD);
       }
     }
@@ -580,9 +588,12 @@ public class SimpleQueryParser extends QueryBuilder {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
-      PrefixQuery prefix = new PrefixQuery(new Term(entry.getKey(), text));
-      prefix.setBoost(entry.getValue());
-      bq.add(prefix, BooleanClause.Occur.SHOULD);
+      Query q = new PrefixQuery(new Term(entry.getKey(), text));
+      float boost = entry.getValue();
+      if (boost != 1f) {
+        q = new BoostQuery(q, boost);
+      }
+      bq.add(q, BooleanClause.Occur.SHOULD);
     }
     return simplify(bq.build());
   }

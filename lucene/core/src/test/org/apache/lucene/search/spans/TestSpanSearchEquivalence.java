@@ -454,4 +454,16 @@ public class TestSpanSearchEquivalence extends SearchEquivalenceTestBase {
     Query q2 = spanQuery(new SpanContainingQuery(nearQuery, termQuery));
     assertSameSet(q1, q2);
   }
+
+  public void testSpanBoostQuerySimplification() throws Exception {
+    float b1 = random().nextFloat() * 10;
+    float b2 = random().nextFloat() * 10;
+    Term term = randomTerm();
+
+    Query q1 = new SpanBoostQuery(new SpanBoostQuery(new SpanTermQuery(term), b2), b1);
+    // Use AssertingQuery to prevent BoostQuery from merging inner and outer boosts
+    Query q2 = new SpanBoostQuery(new AssertingSpanQuery(new SpanBoostQuery(new SpanTermQuery(term), b2)), b1);
+
+    assertSameScores(q1, q2);
+  }
 }

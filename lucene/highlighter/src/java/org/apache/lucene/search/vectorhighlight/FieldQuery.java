@@ -28,10 +28,10 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FilteredQuery;
@@ -65,18 +65,24 @@ public class FieldQuery {
   FieldQuery( Query query, IndexReader reader, boolean phraseHighlight, boolean fieldMatch ) throws IOException {
     this.fieldMatch = fieldMatch;
     Set<Query> flatQueries = new LinkedHashSet<>();
-    flatten( query, reader, flatQueries );
+    flatten( query, reader, flatQueries, 1f );
     saveTerms( flatQueries, reader );
     Collection<Query> expandQueries = expand( flatQueries );
 
     for( Query flatQuery : expandQueries ){
       QueryPhraseMap rootMap = getRootMap( flatQuery );
       rootMap.add( flatQuery, reader );
+      float boost = 1f;
+      while (flatQuery instanceof BoostQuery) {
+        BoostQuery bq = (BoostQuery) flatQuery;
+        flatQuery = bq.getQuery();
+        boost *= bq.getBoost();
+      }
       if( !phraseHighlight && flatQuery instanceof PhraseQuery ){
         PhraseQuery pq = (PhraseQuery)flatQuery;
         if( pq.getTerms().length > 1 ){
           for( Term term : pq.getTerms() )
-            rootMap.addTerm( term, flatQuery.getBoost() );
+            rootMap.addTerm( term, boost );
         }
       }
     }
@@ -89,79 +95,72 @@ public class FieldQuery {
     this (query, null, phraseHighlight, fieldMatch);
   }
 
-  void flatten( Query sourceQuery, IndexReader reader, Collection<Query> flatQueries ) throws IOException{
+  void flatten( Query sourceQuery, IndexReader reader, Collection<Query> flatQueries, float boost ) throws IOException{
+    while (sourceQuery instanceof BoostQuery) {
+      BoostQuery bq = (BoostQuery) sourceQuery;
+      sourceQuery = bq.getQuery();
+      boost *= bq.getBoost();
+    }
     if( sourceQuery instanceof BooleanQuery ){
       BooleanQuery bq = (BooleanQuery)sourceQuery;
       for( BooleanClause clause : bq ) {
         if( !clause.isProhibited() ) {
-          flatten( applyParentBoost( clause.getQuery(), bq ), reader, flatQueries );
+          flatten( clause.getQuery(), reader, flatQueries, boost );
         }
       }
     } else if( sourceQuery instanceof DisjunctionMaxQuery ){
       DisjunctionMaxQuery dmq = (DisjunctionMaxQuery)sourceQuery;
       for( Query query : dmq ){
-        flatten( applyParentBoost( query, dmq ), reader, flatQueries );
+        flatten( query, reader, flatQueries, boost );
       }
     }
     else if( sourceQuery instanceof TermQuery ){
+      if (boost != 1f) {
+        sourceQuery = new BoostQuery(sourceQuery, boost);
+      }
       if( !flatQueries.contains( sourceQuery ) )
         flatQueries.add( sourceQuery );
     }
     else if( sourceQuery instanceof PhraseQuery ){
-      if( !flatQueries.contains( sourceQuery ) ){
-        PhraseQuery pq = (PhraseQuery)sourceQuery;
-        if( pq.getTerms().length > 1 )
-          flatQueries.add( pq );
-        else if( pq.getTerms().length == 1 ){
-          Query flat = new TermQuery( pq.getTerms()[0] );
-          flat.setBoost( pq.getBoost() );
-          flatQueries.add( flat );
-        }
+      PhraseQuery pq = (PhraseQuery)sourceQuery;
+      if( pq.getTerms().length == 1 )
+        sourceQuery = new TermQuery( pq.getTerms()[0] );
+      if (boost != 1f) {
+        sourceQuery = new BoostQuery(sourceQuery, boost);
       }
+      flatQueries.add(sourceQuery);
     } else if (sourceQuery instanceof ConstantScoreQuery) {
       final Query q = ((ConstantScoreQuery) sourceQuery).getQuery();
       if (q != null) {
-        flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
+        flatten( q, reader, flatQueries, boost);
       }
     } else if (sourceQuery instanceof FilteredQuery) {
       final Query q = ((FilteredQuery) sourceQuery).getQuery();
       if (q != null) {
-        flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
+        flatten( q, reader, flatQueries, boost);
       }
     } else if (sourceQuery instanceof CustomScoreQuery) {
       final Query q = ((CustomScoreQuery) sourceQuery).getSubQuery();
       if (q != null) {
-        flatten( applyParentBoost( q, sourceQuery ), reader, flatQueries);
+        flatten( q, reader, flatQueries, boost);
       }
     } else if (reader != null) {
       Query query = sourceQuery;
+      Query rewritten;
       if (sourceQuery instanceof MultiTermQuery) {
-        MultiTermQuery copy = (MultiTermQuery) sourceQuery.clone();
-        copy.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(MAX_MTQ_TERMS));
-        query = copy;
+        rewritten = new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(MAX_MTQ_TERMS).rewrite(reader, (MultiTermQuery) query);
+      } else {
+        rewritten = query.rewrite(reader);
       }
-      Query rewritten = query.rewrite(reader);
       if (rewritten != query) {
         // only rewrite once and then flatten again - the rewritten query could have a speacial treatment
         // if this method is overwritten in a subclass.
-        flatten(rewritten, reader, flatQueries);
+        flatten(rewritten, reader, flatQueries, boost);
         
       } 
       // if the query is already rewritten we discard it
     }
     // else discard queries
-  }
-
-  /**
-   * Push parent's boost into a clone of query if parent has a non 1 boost.
-   */
-  protected Query applyParentBoost( Query query, Query parent ) {
-    if ( parent.getBoost() == 1 ) {
-      return query;
-    }
-    Query cloned = query.clone();
-    cloned.setBoost( query.getBoost() * parent.getBoost() );
-    return cloned;
   }
   
   /*
@@ -180,11 +179,23 @@ public class FieldQuery {
       Query query = i.next();
       i.remove();
       expandQueries.add( query );
+      float queryBoost = 1f;
+      while (query instanceof BoostQuery) {
+        BoostQuery bq = (BoostQuery) query;
+        queryBoost *= bq.getBoost();
+        query = bq.getQuery();
+      }
       if( !( query instanceof PhraseQuery ) ) continue;
       for( Iterator<Query> j = flatQueries.iterator(); j.hasNext(); ){
         Query qj = j.next();
+        float qjBoost = 1f;
+        while (qj instanceof BoostQuery) {
+          BoostQuery bq = (BoostQuery) qj;
+          qjBoost *= bq.getBoost();
+          qj = bq.getQuery();
+        }
         if( !( qj instanceof PhraseQuery ) ) continue;
-        checkOverlap( expandQueries, (PhraseQuery)query, (PhraseQuery)qj );
+        checkOverlap( expandQueries, (PhraseQuery)query, queryBoost, (PhraseQuery)qj, qjBoost );
       }
     }
     return expandQueries;
@@ -197,13 +208,13 @@ public class FieldQuery {
    * ex2) A="b c", B="a b" => overlap; expandQueries={"a b c"}
    * ex3) A="a b", B="c d" => no overlap; expandQueries={}
    */
-  private void checkOverlap( Collection<Query> expandQueries, PhraseQuery a, PhraseQuery b ){
+  private void checkOverlap( Collection<Query> expandQueries, PhraseQuery a, float aBoost, PhraseQuery b, float bBoost ){
     if( a.getSlop() != b.getSlop() ) return;
     Term[] ats = a.getTerms();
     Term[] bts = b.getTerms();
     if( fieldMatch && !ats[0].field().equals( bts[0].field() ) ) return;
-    checkOverlap( expandQueries, ats, bts, a.getSlop(), a.getBoost() );
-    checkOverlap( expandQueries, bts, ats, b.getSlop(), b.getBoost() );
+    checkOverlap( expandQueries, ats, bts, a.getSlop(), aBoost);
+    checkOverlap( expandQueries, bts, ats, b.getSlop(), bBoost );
   }
 
   /*
@@ -239,8 +250,10 @@ public class FieldQuery {
           pqBuilder.add( new Term( src[0].field(), dest[k].text() ) );
         }
         pqBuilder.setSlop( slop );
-        PhraseQuery pq = pqBuilder.build();
-        pq.setBoost( boost );
+        Query pq = pqBuilder.build();
+        if (boost != 1f) {
+          pq = new BoostQuery(pq, 1f);
+        }
         if(!expandQueries.contains( pq ) )
           expandQueries.add( pq );
       }
@@ -263,6 +276,9 @@ public class FieldQuery {
    */
   private String getKey( Query query ){
     if( !fieldMatch ) return null;
+    while (query instanceof BoostQuery) {
+      query = ((BoostQuery) query).getQuery();
+    }
     if( query instanceof TermQuery )
       return ((TermQuery)query).getTerm().field();
     else if ( query instanceof PhraseQuery ){
@@ -299,8 +315,11 @@ public class FieldQuery {
    *      - fieldMatch==false
    *          termSetMap=Map<null,Set<"john","lennon">>
    */
-    void saveTerms( Collection<Query> flatQueries, IndexReader reader ) throws IOException{
+  void saveTerms( Collection<Query> flatQueries, IndexReader reader ) throws IOException{
     for( Query query : flatQueries ){
+      while (query instanceof BoostQuery) {
+        query = ((BoostQuery) query).getQuery();
+      }
       Set<String> termSet = getTermSet( query );
       if( query instanceof TermQuery )
         termSet.add( ((TermQuery)query).getTerm().text() );
@@ -391,9 +410,15 @@ public class FieldQuery {
       return map;
     }
 
-      void add( Query query, IndexReader reader ) {
+    void add( Query query, IndexReader reader ) {
+      float boost = 1f;
+      while (query instanceof BoostQuery) {
+        BoostQuery bq = (BoostQuery) query;
+        query = bq.getQuery();
+        boost = bq.getBoost();
+      }
       if( query instanceof TermQuery ){
-        addTerm( ((TermQuery)query).getTerm(), query.getBoost() );
+        addTerm( ((TermQuery)query).getTerm(), boost );
       }
       else if( query instanceof PhraseQuery ){
         PhraseQuery pq = (PhraseQuery)query;
@@ -404,7 +429,7 @@ public class FieldQuery {
           qpm = getOrNewMap( map, term.text() );
           map = qpm.subMap;
         }
-        qpm.markTerminal( pq.getSlop(), pq.getBoost() );
+        qpm.markTerminal( pq.getSlop(), boost );
       }
       else
         throw new RuntimeException( "query \"" + query.toString() + "\" must be flatten first." );

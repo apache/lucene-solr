@@ -51,11 +51,14 @@ public class CompositeVerifyQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     final Query rewritten = indexQuery.rewrite(reader);
     if (rewritten != indexQuery) {
       return new CompositeVerifyQuery(rewritten, predicateValueSource);
     }
-    return this;
+    return super.rewrite(reader);
   }
 
   @Override

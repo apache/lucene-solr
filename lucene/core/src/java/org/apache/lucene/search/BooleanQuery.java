@@ -28,7 +28,6 @@ import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -205,26 +204,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     if (minimumNumberShouldMatch == 0 && clauses.size() == 1) {// optimize 1-clause queries
       BooleanClause c = clauses.get(0);
       if (!c.isProhibited()) {  // just return clause
 
-        Query query = c.getQuery().rewrite(reader);    // rewrite first
+        Query query = c.getQuery();
 
-        if (c.isScoring()) {
-          if (getBoost() != 1.0f) {                 // incorporate boost
-            if (query == c.getQuery()) {                   // if rewrite was no-op
-              query = query.clone();         // then clone before boost
-            }
-            // Since the BooleanQuery only has 1 clause, the BooleanQuery will be
-            // written out. Therefore the rewritten Query's boost must incorporate both
-            // the clause's boost, and the boost of the BooleanQuery itself
-            query.setBoost(getBoost() * query.getBoost());
-          }
-        } else {
-          // our single clause is a filter
-          query = new ConstantScoreQuery(query);
-          query.setBoost(0);
+        if (c.isScoring() == false) {
+          // our single clause is a filter, so we need to disable scoring
+          query = new BoostQuery(new ConstantScoreQuery(query), 0);
         }
 
         return query;
@@ -244,9 +235,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       builder.add(rewritten, clause.getOccur());
     }
     if (actuallyRewritten) {
-      BooleanQuery rewritten = builder.build();
-      rewritten.setBoost(getBoost());
-      return rewritten;
+      return builder.build();
     }
     return super.rewrite(reader);
   }
@@ -255,7 +244,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    boolean needParens= getBoost() != 1.0 || getMinimumNumberShouldMatch() > 0;
+    boolean needParens = getMinimumNumberShouldMatch() > 0;
     if (needParens) {
       buffer.append("(");
     }
@@ -286,10 +275,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     if (getMinimumNumberShouldMatch()>0) {
       buffer.append('~');
       buffer.append(getMinimumNumberShouldMatch());
-    }
-
-    if (getBoost() != 1.0f) {
-      buffer.append(ToStringUtils.boost(getBoost()));
     }
 
     return buffer.toString();
