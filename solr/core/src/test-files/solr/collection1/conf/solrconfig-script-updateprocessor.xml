@@ -103,9 +103,16 @@
       <str name="script">throw.error.on.add.updateprocessor.js</str>
     </processor>
   </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="missing-functions">
     <processor class="solr.StatelessScriptUpdateProcessorFactory">
       <str name="script">missing.functions.updateprocessor.js</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="javascript-compatibility">
+    <processor class="solr.StatelessScriptUpdateProcessorFactory">
+      <str name="script">cross-compatible.js</str>
     </processor>
   </updateRequestProcessorChain>
 

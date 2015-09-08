@@ -195,6 +195,8 @@ Bug Fixes
 * SOLR-8001: Fixed bugs in field(foo,min) and field(foo,max) when some docs have no values
   (David Smiley, hossman)
 
+* SOLR-7978: Fixed example/files update-script.js to be Java 7 and 8 compatible. (Erik Hatcher)
+
 Optimizations
 ----------------------
 
