@@ -26,6 +26,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Objects;
 
 /**  
@@ -137,21 +139,26 @@ public class FilterFileChannel extends FileChannel {
   @Override
   protected void implCloseChannel() throws IOException {
     // our only way to call delegate.implCloseChannel()
-    for (Class<?> clazz = delegate.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
-      final Method method;
-      try {
-        method = clazz.getDeclaredMethod("implCloseChannel");
-      } catch (NoSuchMethodException e) {
-        continue;
+    AccessController.doPrivileged(new PrivilegedAction<Void>() {
+      @Override
+      public Void run() {
+        for (Class<?> clazz = delegate.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+          final Method method;
+          try {
+            method = clazz.getDeclaredMethod("implCloseChannel");
+          } catch (NoSuchMethodException e) {
+            continue;
+          }
+          try {
+            method.setAccessible(true);
+            method.invoke(delegate);
+            return null;
+          } catch (ReflectiveOperationException e) {
+            throw new IOError(e);
+          }
+        }
+        throw new AssertionError();
       }
-      try {
-        method.setAccessible(true);
-        method.invoke(delegate);
-        return;
-      } catch (ReflectiveOperationException e) {
-        throw new IOError(e);
-      }
-    }
-    throw new AssertionError();
+    });
   }
 }
