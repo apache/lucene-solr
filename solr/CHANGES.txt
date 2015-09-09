@@ -265,6 +265,8 @@ Bug Fixes
 
 * SOLR-7988: SolrJ could not make requests to handlers with '/admin/' prefix (noble , ludovic Boutros)
 
+* SOLR-6188: Fixed error loading ICU classes with solr. prefix.  Now jars in
+  the default sharedLib directory are only loaded once. (Shawn Heisey)
 
 ==================  5.3.0 ==================
 
