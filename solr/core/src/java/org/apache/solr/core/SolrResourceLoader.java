@@ -140,8 +140,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
     
     this.classLoader = createClassLoader(null, parent);
-    addToClassLoader("./lib/", null, true);
-    reloadLuceneSPI();
     this.coreProperties = coreProperties;
   }
 
