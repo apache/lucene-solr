@@ -166,36 +166,22 @@ Bug Fixes
 
 * SOLR-7941: multivalued params are concatenated when using config API (noble)
 
-* SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
-
 * SOLR-7956: There are interrupts on shutdown in places that can cause ChannelAlreadyClosed
   exceptions which prevents proper closing of transaction logs, interfere with the IndexWriter,
   the hdfs client and other things. (Mark Miller, Scott Blum)
-
-* SOLR-7972: Fix VelocityResponseWriter template encoding issue.
-  Templates must be UTF-8 encoded. (Erik Hatcher)
-
-* SOLR-7929: SimplePostTool (also bin/post) -filetypes "*" now works properly in 'web' mode (Erik Hatcher)
 
 * SOLR-7954: Fixed an integer overflow bug in the HyperLogLog code used by the 'cardinality' option
   of stats.field to prevent ArrayIndexOutOfBoundsException in a distributed search when a large precision
   is selected and a large number of values exist in each shard (hossman)
 
-* SOLR-7988: SolrJ could not make requests to handlers with '/admin/' prefix (noble , ludovic Boutros)
-
 * SOLR-7844: Zookeeper session expiry during shard leader election can cause multiple leaders.
   (Mike Roberts, Mark Miller, Jessica Cheng)
-
-* SOLR-8000: security.json is not loaded on server start (noble)
-
-* SOLR-8004: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission (noble)
 
 * SOLR-7984: wrong and misleading error message 'no default request handler is registered' (noble, hossman)
 
 * SOLR-8001: Fixed bugs in field(foo,min) and field(foo,max) when some docs have no values
   (David Smiley, hossman)
 
-* SOLR-7978: Fixed example/files update-script.js to be Java 7 and 8 compatible. (Erik Hatcher)
 
 Optimizations
 ----------------------
@@ -258,6 +244,27 @@ Other Changes
 
 * SOLR-7999: SolrRequestParser tests no longer depend on external URLs
   that may fail to work.  (Uwe Schindler)
+
+==================  5.3.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-7949: Resolve XSS issue in Admin UI stats page (David Chiu via janhoy)
+
+* SOLR-8000: security.json is not loaded on server start (noble)
+
+* SOLR-8004: RuleBasedAuthorization plugin does not work for the collection-admin-edit permission (noble)
+
+* SOLR-7972: Fix VelocityResponseWriter template encoding issue.
+  Templates must be UTF-8 encoded. (Erik Hatcher)
+
+* SOLR-7929: SimplePostTool (also bin/post) -filetypes "*" now works properly in 'web' mode (Erik Hatcher)
+
+* SOLR-7978: Fixed example/files update-script.js to be Java 7 and 8 compatible. (Erik Hatcher)
+
+* SOLR-7988: SolrJ could not make requests to handlers with '/admin/' prefix (noble , ludovic Boutros)
+
 
 ==================  5.3.0 ==================
 

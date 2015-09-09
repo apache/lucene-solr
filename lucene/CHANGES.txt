@@ -116,9 +116,6 @@ Bug Fixes
 * LUCENE-6748: UsageTrackingQueryCachingPolicy no longer caches trivial queries
   like MatchAllDocsQuery. (Adrien Grand)
 
-* LUCENE-6774: Remove classloader hack in MorfologikFilter. (Robert Muir,
-  Uwe Schindler)
-
 * LUCENE-6781: Fixed BoostingQuery to rewrite wrapped queries. (Adrien Grand)
 
 * LUCENE-6783: Removed side effects from FuzzyLikeThisQuery.rewrite.
@@ -163,11 +160,6 @@ Tests
 * LUCENE-6752: Add Math#random() to forbiddenapis.  (Uwe Schindler,
   Mikhail Khludnev, Andrei Beliakov)
 
-* LUCENE-6760, SOLR-7958: Move TestUtil#randomWhitespace to the only
-  Solr test that is using it. The method is not useful for Lucene tests
-  (and easily breaks, e.g., in Java 9 caused by Unicode version updates).
-  (Uwe Schindler)
-
 Changes in Backwards Compatibility Policy
 
 * LUCENE-6742: The Lovins & Finnish implementation of SnowballFilter
@@ -183,6 +175,21 @@ Changes in Runtime Behavior
 
 * LUCENE-6784: IndexSearcher's query caching is enabled by default. Run
   indexSearcher.setQueryCache(null) to disable. (Adrien Grand)
+
+======================= Lucene 5.3.1 =======================
+
+Bug Fixes
+
+* LUCENE-6774: Remove classloader hack in MorfologikFilter. (Robert Muir,
+  Uwe Schindler)
+
+Tests
+
+* LUCENE-6760, SOLR-7958: Move TestUtil#randomWhitespace to the only
+  Solr test that is using it. The method is not useful for Lucene tests
+  (and easily breaks, e.g., in Java 9 caused by Unicode version updates).
+  (Uwe Schindler)
+
 
 ======================= Lucene 5.3.0 =======================
 
