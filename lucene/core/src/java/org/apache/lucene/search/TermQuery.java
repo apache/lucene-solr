@@ -32,6 +32,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A Query that matches documents containing a term. This may be combined with
@@ -206,6 +207,7 @@ public class TermQuery extends Query {
       buffer.append(":");
     }
     buffer.append(term.text());
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

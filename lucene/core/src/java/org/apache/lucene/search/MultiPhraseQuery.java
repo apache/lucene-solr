@@ -35,6 +35,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -320,6 +321,7 @@ public class MultiPhraseQuery extends Query {
       buffer.append(slop);
     }
 
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

@@ -30,6 +30,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A {@link Query} that blends index statistics across multiple terms.
@@ -259,6 +260,7 @@ public final class BlendedTermQuery extends Query {
       builder.append(termQuery.toString(field));
     }
     builder.append(")");
+    builder.append(ToStringUtils.boost(getBoost()));
     return builder.toString();
   }
 
