@@ -1093,7 +1093,7 @@ public class SimplePostTool {
           // Raw content type of form "text/html; encoding=utf-8"
           String rawContentType = conn.getContentType();
           String type = rawContentType.split(";")[0];
-          if(typeSupported(type)) {
+          if(typeSupported(type) || "*".equals(fileTypes)) {
             String encoding = conn.getContentEncoding();
             InputStream is;
             if (encoding != null && encoding.equalsIgnoreCase("gzip")) {

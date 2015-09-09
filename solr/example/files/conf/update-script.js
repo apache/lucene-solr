@@ -1,6 +1,15 @@
-/*
-  See http://wiki.apache.org/solr/ScriptUpdateProcessor for more details.
-*/
+function get_class(name) {
+  var clazz;
+  try {
+    // Java8 Nashorn
+    clazz = eval("Java.type(name).class");
+  } catch(e) {
+    // Java7 Rhino
+    clazz = eval("Packages."+name);
+  }
+
+  return clazz;
+}
 
 function processAdd(cmd) {
 
@@ -69,10 +78,9 @@ function processAdd(cmd) {
          .getIndexAnalyzer();
 
   var token_stream =
-       analyzer.tokenStream("content", new java.io.StringReader(doc.getFieldValue("content")));
-
-  var term_att = token_stream.getAttribute(Packages.org.apache.lucene.analysis.tokenattributes.CharTermAttribute);
-  var type_att = token_stream.getAttribute(Packages.org.apache.lucene.analysis.tokenattributes.TypeAttribute);
+       analyzer.tokenStream("content", doc.getFieldValue("content"));
+  var term_att = token_stream.getAttribute(get_class("org.apache.lucene.analysis.tokenattributes.CharTermAttribute"));
+  var type_att = token_stream.getAttribute(get_class("org.apache.lucene.analysis.tokenattributes.TypeAttribute"));
   token_stream.reset();
   while (token_stream.incrementToken()) {
     doc.addField(type_att.type().replaceAll(/\<|\>/g,"").toLowerCase()+"_ss", term_att.toString());
