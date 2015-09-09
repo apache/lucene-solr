@@ -126,9 +126,14 @@ public class IndexSearcher {
 
   };
 
-  // disabled by default
-  private static QueryCache DEFAULT_QUERY_CACHE = null;
+  private static QueryCache DEFAULT_QUERY_CACHE;
   private static QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
+  static {
+    final int maxCachedQueries = 1000;
+    // min of 32MB or 5% of the heap size
+    final long maxRamBytesUsed = Math.min(1L << 25, Runtime.getRuntime().maxMemory() / 20);
+    DEFAULT_QUERY_CACHE = new LRUQueryCache(maxCachedQueries, maxRamBytesUsed);
+  }
 
   final IndexReader reader; // package private for testing!
   
