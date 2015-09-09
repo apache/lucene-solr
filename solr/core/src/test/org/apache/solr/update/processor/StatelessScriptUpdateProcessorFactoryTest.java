@@ -268,4 +268,14 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
     fail("Did not get exception from script");
   }
 
+  public void testJavaScriptCompatibility() throws Exception  {
+    final String chain = "javascript-compatibility";
+    SolrInputDocument d = processAdd(chain,
+                                 doc(f("id", "5"),
+                                     f("name", " foo "),
+                                     f("subject", "BAR")));
+    assertEquals("bar", d.getFieldValue("term_s"));
+
+  }
+
 }
