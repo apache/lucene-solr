@@ -17,15 +17,23 @@ package org.apache.lucene.analysis.morfologik;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+
+import morfologik.stemming.Dictionary;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Filter factory for {@link MorfologikFilter}. For backward compatibility polish
  * dictionary is used as default. You can change dictionary resource 
- * by dictionary-resource parameter.
+ * by dictionary-resource parameter:
  * <pre class="prettyprint">
  * &lt;fieldType name="text_polish" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -34,18 +42,23 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * 
+ * <p>Alternatively, you can pass in the filenames of FSA ({@code ".dict"} and features "{@code ".info"}" file
+ * (if the features file is not given, its name is derived from the FSA file):
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_polish" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.MorfologikFilterFactory" dictionary-fsa-file="mylang.dict" dictionary-features-file="mylang.info" /&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * 
  * @see <a href="http://morfologik.blogspot.com/">Morfologik web site</a>
  */
-public class MorfologikFilterFactory extends TokenFilterFactory {
+public class MorfologikFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   /**
    * The default dictionary resource (for Polish). 
    */
   public static final String DEFAULT_DICTIONARY_RESOURCE = "pl";
-
-  /**
-   * Stemming dictionary resource. See {@link MorfologikAnalyzer} for more details. 
-   */
-  private final String dictionaryResource;
 
   /** Schema attribute. */
   @Deprecated
@@ -53,6 +66,18 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
 
   /** Dictionary resource */
   public static final String DICTIONARY_RESOURCE_ATTRIBUTE = "dictionary-resource";
+
+  /** Dictionary FSA file (should have {@code ".dict"} suffix), loaded from {@link ResourceLoader}. */
+  public static final String DICTIONARY_FSA_FILE_ATTRIBUTE = "dictionary-fsa-file";
+
+  /** Dictionary features/properties file, loaded from {@link ResourceLoader}. If not given, this
+   * loads the file with same name like {@link #DICTIONARY_FSA_FILE_ATTRIBUTE}, but with
+   * {@code ".info"} suffix.
+   */
+  public static final String DICTIONARY_FEATURES_FILE_ATTRIBUTE = "dictionary-features-file";
+
+  private final String dictionaryFsaFile, dictionaryFeaturesFile, dictionaryResource;
+  private Dictionary dictionary; // initialized on inform()
 
   /** Creates a new MorfologikFilterFactory */
   public MorfologikFilterFactory(Map<String,String> args) {
@@ -66,7 +91,26 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
           + ". Perhaps you wanted to use 'dictionary-resource' attribute instead?");
     }
 
-    dictionaryResource = get(args, DICTIONARY_RESOURCE_ATTRIBUTE, DEFAULT_DICTIONARY_RESOURCE);
+    // first check FSA and features (at least FSA must be given, features name is guessed):
+    dictionaryFsaFile = get(args, DICTIONARY_FSA_FILE_ATTRIBUTE);
+    dictionaryFeaturesFile = get(args, DICTIONARY_FEATURES_FILE_ATTRIBUTE,
+        (dictionaryFsaFile == null) ? null : Dictionary.getExpectedFeaturesName(dictionaryFsaFile));
+    
+    if (dictionaryFsaFile == null && dictionaryFeaturesFile == null) {
+      // if we have no FSA/features combination, we resolve the classpath resource:
+      dictionaryResource = get(args, DICTIONARY_RESOURCE_ATTRIBUTE, DEFAULT_DICTIONARY_RESOURCE);
+    } else if (dictionaryFsaFile == null || dictionaryFeaturesFile == null) {
+      // if we have incomplete FSA/features tuple in args
+      throw new IllegalArgumentException(String.format(Locale.ENGLISH, "Missing '%s' or '%s' attribute.",
+          DICTIONARY_FSA_FILE_ATTRIBUTE, DICTIONARY_FEATURES_FILE_ATTRIBUTE));      
+    } else {
+      dictionaryResource = null;
+      if (get(args, DICTIONARY_RESOURCE_ATTRIBUTE) != null) {
+        // fail if both is given: FSA/features files + classpath resource
+        throw new IllegalArgumentException(String.format(Locale.ENGLISH, "Cannot give '%s' and '%s'/'%s' at the same time.",
+            DICTIONARY_RESOURCE_ATTRIBUTE, DICTIONARY_FSA_FILE_ATTRIBUTE, DICTIONARY_FEATURES_FILE_ATTRIBUTE));
+      }
+    }
     
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -74,7 +118,22 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
   }
 
   @Override
+  public void inform(ResourceLoader loader) throws IOException {
+    if (dictionaryFsaFile != null) {
+      assert dictionaryFeaturesFile != null;
+      assert dictionaryResource == null;
+      try (final InputStream dictIn = loader.openResource(dictionaryFsaFile);
+          final InputStream metaIn = loader.openResource(dictionaryFeaturesFile)) {
+        this.dictionary = Dictionary.readAndClose(dictIn, metaIn);
+      }
+    } else {
+      assert dictionaryResource != null;
+      this.dictionary = MorfologikFilter.loadDictionaryResource(dictionaryResource);
+    }
+  }
+
+  @Override
   public TokenStream create(TokenStream ts) {
-    return new MorfologikFilter(ts, dictionaryResource);
+    return new MorfologikFilter(ts, Objects.requireNonNull(dictionary, "MorfologikFilterFactory was not fully initialized."));
   }
 }
