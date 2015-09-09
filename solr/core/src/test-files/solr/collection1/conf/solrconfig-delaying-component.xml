@@ -37,4 +37,24 @@
     <httpCaching never304="true" />
   </requestDispatcher>
 
+  <query>
+    <filterCache
+      class="solr.search.FastLRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0"/>
+
+    <queryResultCache
+      class="solr.search.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0"/>
+
+    <documentCache
+      class="solr.search.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0"/>
+  </query>
+
 </config>
