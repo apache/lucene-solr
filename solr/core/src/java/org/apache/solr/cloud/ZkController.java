@@ -17,8 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
@@ -46,6 +44,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
@@ -98,8 +97,16 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
-import com.google.common.base.Strings;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 
 /**
  * Handle ZooKeeper interactions.
@@ -1198,7 +1205,7 @@ public final class ZkController {
           if (state == Replica.State.ACTIVE) {
             // trying to become active, so leader-initiated state must be recovering
             if (lirState == Replica.State.RECOVERING) {
-              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.ACTIVE, null);
+              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.ACTIVE, null, true);
             } else if (lirState == Replica.State.DOWN) {
               throw new SolrException(ErrorCode.INVALID_STATE,
                   "Cannot publish state of core '" + cd.getName() + "' as active without recovering first!");
@@ -1206,7 +1213,7 @@ public final class ZkController {
           } else if (state == Replica.State.RECOVERING) {
             // if it is currently DOWN, then trying to enter into recovering state is good
             if (lirState == Replica.State.DOWN) {
-              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.RECOVERING, null);
+              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.RECOVERING, null, true);
             }
           }
         }
@@ -1972,8 +1979,9 @@ public final class ZkController {
    * to it.
    */
   public boolean ensureReplicaInLeaderInitiatedRecovery(
+      final CoreContainer container,
       final String collection, final String shardId, final ZkCoreNodeProps replicaCoreProps,
-      String leaderCoreNodeName, boolean forcePublishState, boolean retryOnConnLoss)
+      String leaderCoreNodeName, boolean forcePublishState)
       throws KeeperException, InterruptedException {
     final String replicaUrl = replicaCoreProps.getCoreUrl();
 
@@ -1991,7 +1999,6 @@ public final class ZkController {
     // about the same replica having trouble and we only need to send the "needs"
     // recovery signal once
     boolean nodeIsLive = true;
-    boolean publishDownState = false;
     String replicaNodeName = replicaCoreProps.getNodeName();
     String replicaCoreNodeName = ((Replica) replicaCoreProps.getNodeProps()).getName();
     assert replicaCoreNodeName != null : "No core name for replica " + replicaNodeName;
@@ -2003,16 +2010,30 @@ public final class ZkController {
         }
       }
 
-      // if the replica's state is not DOWN right now, make it so ...
-      // we only really need to try to send the recovery command if the node itself is "live"
+      // we only really need to try to start the LIR process if the node itself is "live"
       if (getZkStateReader().getClusterState().liveNodesContain(replicaNodeName)) {
+
+        LeaderInitiatedRecoveryThread lirThread =
+            new LeaderInitiatedRecoveryThread(this,
+                container,
+                collection,
+                shardId,
+                replicaCoreProps,
+                120,
+                leaderCoreNodeName); // core node name of current leader
+        ExecutorService executor = container.getUpdateShardHandler().getUpdateExecutor();
+        try {
+          MDC.put("DistributedUpdateProcessor.replicaUrlToRecover", replicaCoreProps.getCoreUrl());
+          executor.execute(lirThread);
+        } finally {
+          MDC.remove("DistributedUpdateProcessor.replicaUrlToRecover");
+        }
+
         // create a znode that requires the replica needs to "ack" to verify it knows it was out-of-sync
-        updateLeaderInitiatedRecoveryState(collection, shardId, replicaCoreNodeName, Replica.State.DOWN, leaderCoreNodeName);
         replicasInLeaderInitiatedRecovery.put(replicaUrl,
             getLeaderInitiatedRecoveryZnodePath(collection, shardId, replicaCoreNodeName));
         log.info("Put replica core={} coreNodeName={} on " +
             replicaNodeName + " into leader-initiated recovery.", replicaCoreProps.getCoreName(), replicaCoreNodeName);
-        publishDownState = true;
       } else {
         nodeIsLive = false; // we really don't need to send the recovery request if the node is NOT live
         log.info("Node " + replicaNodeName +
@@ -2021,20 +2042,6 @@ public final class ZkController {
         // publishDownState will be false to avoid publishing the "down" state too many times
         // as many errors can occur together and will each call into this method (SOLR-6189)        
       }
-    }
-
-    if (publishDownState || forcePublishState) {
-      String replicaCoreName = replicaCoreProps.getCoreName();
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
-          ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-          ZkStateReader.BASE_URL_PROP, replicaCoreProps.getBaseUrl(),
-          ZkStateReader.CORE_NAME_PROP, replicaCoreProps.getCoreName(),
-          ZkStateReader.NODE_NAME_PROP, replicaCoreProps.getNodeName(),
-          ZkStateReader.SHARD_ID_PROP, shardId,
-          ZkStateReader.COLLECTION_PROP, collection);
-      log.warn("Leader is publishing core={} coreNodeName ={} state={} on behalf of un-reachable replica {}; forcePublishState? " + forcePublishState,
-          replicaCoreName, replicaCoreNodeName, Replica.State.DOWN.toString(), replicaUrl);
-      overseerJobQueue.offer(Utils.toJSON(m));
     }
 
     return nodeIsLive;
@@ -2107,8 +2114,8 @@ public final class ZkController {
     return stateObj;
   }
 
-  private void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName, 
-      Replica.State state, String leaderCoreNodeName) {
+  public void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName,
+      Replica.State state, String leaderCoreNodeName, boolean retryOnConnLoss) {
     if (collection == null || shardId == null || coreNodeName == null) {
       log.warn("Cannot set leader-initiated recovery state znode to "
           + state.toString() + " using: collection=" + collection
@@ -2121,7 +2128,7 @@ public final class ZkController {
     if (state == Replica.State.ACTIVE) {
       // since we're marking it active, we don't need this znode anymore, so delete instead of update
       try {
-        zkClient.delete(znodePath, -1, false);
+        zkClient.delete(znodePath, -1, retryOnConnLoss);
       } catch (Exception justLogIt) {
         log.warn("Failed to delete znode " + znodePath, justLogIt);
       }
@@ -2134,24 +2141,30 @@ public final class ZkController {
     } catch (Exception exc) {
       log.warn(exc.getMessage(), exc);
     }
-    if (stateObj == null)
+    if (stateObj == null) {
       stateObj = Utils.makeMap();
+    }
 
     stateObj.put(ZkStateReader.STATE_PROP, state.toString());
     // only update the createdBy value if it's not set
-    if (stateObj.get("createdByNodeName") == null)
-      stateObj.put("createdByNodeName", String.valueOf(this.nodeName));
+    if (stateObj.get("createdByNodeName") == null) {
+      stateObj.put("createdByNodeName", this.nodeName);
+    }
+    if (stateObj.get("createdByCoreNodeName") == null && leaderCoreNodeName != null)  {
+      stateObj.put("createdByCoreNodeName", leaderCoreNodeName);
+    }
 
     byte[] znodeData = Utils.toJSON(stateObj);
 
     try {
       if (state == Replica.State.DOWN) {
-        markShardAsDownIfLeader(collection, shardId, leaderCoreNodeName, znodePath, znodeData);
+        markShardAsDownIfLeader(collection, shardId, leaderCoreNodeName, znodePath, znodeData, retryOnConnLoss);
       } else {
+        // must retry on conn loss otherwise future election attempts may assume wrong LIR state
         if (zkClient.exists(znodePath, true)) {
-          zkClient.setData(znodePath, znodeData, true);
+          zkClient.setData(znodePath, znodeData, retryOnConnLoss);
         } else {
-          zkClient.makePath(znodePath, znodeData, true);
+          zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
         }
       }
       log.info("Wrote {} to {}", state.toString(), znodePath);
@@ -2172,22 +2185,23 @@ public final class ZkController {
    * doesn't let us mark a node as down *after* we've already lost our session
    */
   private void markShardAsDownIfLeader(String collection, String shardId, String leaderCoreNodeName,
-                                       String znodePath, byte[] znodeData) throws KeeperException, InterruptedException {
+                                       String znodePath, byte[] znodeData,
+                                       boolean retryOnConnLoss) throws KeeperException, InterruptedException {
     String leaderSeqPath = getLeaderSeqPath(collection, leaderCoreNodeName);
     if (leaderSeqPath == null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
+      throw new NotLeaderException(ErrorCode.SERVER_ERROR,
           "Failed to update data to 'down' for znode: " + znodePath +
               " because the zookeeper leader sequence for leader: " + leaderCoreNodeName + " is null");
     }
-    if (zkClient.exists(znodePath, true)) {
+    if (zkClient.exists(znodePath, retryOnConnLoss)) {
       List<Op> ops = new ArrayList<>(2);
       ops.add(Op.check(leaderSeqPath, -1)); // version doesn't matter, the seq path is unique
       ops.add(Op.setData(znodePath, znodeData, -1));
-      zkClient.multi(ops, true);
+      zkClient.multi(ops, retryOnConnLoss);
     } else {
       String parentZNodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId);
       try {
-        zkClient.makePath(parentZNodePath, true);
+        zkClient.makePath(parentZNodePath, retryOnConnLoss);
       } catch (KeeperException.NodeExistsException nee) {
         // if it exists, that's great!
       }
@@ -2195,7 +2209,7 @@ public final class ZkController {
       ops.add(Op.check(leaderSeqPath, -1)); // version doesn't matter, the seq path is unique
       ops.add(Op.create(znodePath, znodeData, zkClient.getZkACLProvider().getACLsToAdd(znodePath),
           CreateMode.PERSISTENT));
-      zkClient.multi(ops, true);
+      zkClient.multi(ops, retryOnConnLoss);
     }
   }
 
@@ -2472,5 +2486,14 @@ public final class ZkController {
     ContextKey key = new ContextKey(collection, coreNodeName);
     ElectionContext context = electionContexts.get(key);
     return context != null ? context.leaderSeqPath : null;
+  }
+
+  /**
+   * Thrown during leader initiated recovery process if current node is not leader
+   */
+  public static class NotLeaderException extends SolrException  {
+    public NotLeaderException(ErrorCode code, String msg) {
+      super(code, msg);
+    }
   }
 }

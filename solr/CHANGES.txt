@@ -182,6 +182,10 @@ Bug Fixes
 * SOLR-8001: Fixed bugs in field(foo,min) and field(foo,max) when some docs have no values
   (David Smiley, hossman)
 
+* SOLR-7819: ZK connection loss or session timeout do not stall indexing threads anymore. All activity
+  related to leader initiated recovery is performed by a dedicated LIR thread in the background.
+  (Ramkumar Aiyengar, shalin)
+
 
 Optimizations
 ----------------------

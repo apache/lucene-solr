@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.fs.Path;
@@ -467,20 +466,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 }
               }
               
-              LeaderInitiatedRecoveryThread lirThread = 
-                  new LeaderInitiatedRecoveryThread(zkController,
-                                                    cc,
-                                                    collection,
-                                                    shardId,
-                                                    coreNodeProps,
-                                                    120,
-                                                    coreNodeName);
-              zkController.ensureReplicaInLeaderInitiatedRecovery(
+              zkController.ensureReplicaInLeaderInitiatedRecovery(cc,
                   collection, shardId, coreNodeProps, coreNodeName,
-                  false /* forcePublishState */, true /* retryOnConnLoss */);
-
-              ExecutorService executor = cc.getUpdateShardHandler().getUpdateExecutor();
-              executor.execute(lirThread);
+                  false /* forcePublishState */);
             }              
           }
         }
