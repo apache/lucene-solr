@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(CloudExitableDirectoryReaderTest.class);
   private static final int NUM_DOCS_PER_TYPE = 20;
+  private static final String sleep = "2";
   
   public CloudExitableDirectoryReaderTest() {
     configString = "solrconfig-tlog-with-delayingcomponent.xml";
@@ -71,7 +72,7 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
   }
 
   public void doTimeoutTests() throws Exception {
-    assertPartialResults(params("q", "name:a*", "timeAllowed", "1"));
+    assertPartialResults(params("q", "name:a*", "timeAllowed", "1", "sleep", sleep));
 
     /*
     query rewriting for NUM_DOCS_PER_TYPE terms should take less 
@@ -81,9 +82,9 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
     int fiveSeconds = 5000;
     
     Integer timeAllowed = TestUtil.nextInt(random(), fiveSeconds, Integer.MAX_VALUE);
-    assertSuccess(params("q", "name:a*", "timeAllowed",timeAllowed.toString()));
+    assertSuccess(params("q", "name:a*", "timeAllowed", timeAllowed.toString()));
 
-    assertPartialResults(params("q", "name:a*", "timeAllowed", "1"));
+    assertPartialResults(params("q", "name:a*", "timeAllowed", "1", "sleep", sleep));
 
     timeAllowed = TestUtil.nextInt(random(), fiveSeconds, Integer.MAX_VALUE);
     assertSuccess(params("q", "name:b*", "timeAllowed",timeAllowed.toString()));

@@ -1254,15 +1254,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
 
-    try {
-      if (filter == null) {
-        super.search(query, collector);
-      } else {
-        Filter luceneFilter = filter.getTopFilter();
-        super.search(new FilteredQuery(query, luceneFilter), collector);
-      }
-    } catch ( ExitableDirectoryReader.ExitingReaderException e) {
-        log.warn("Query: " + query + "; " + e.getMessage());
+    if (filter == null) {
+      super.search(query, collector);
+    } else {
+      Filter luceneFilter = filter.getTopFilter();
+      super.search(new FilteredQuery(query, luceneFilter), collector);
     }
     return collector.getDocSet();
   }

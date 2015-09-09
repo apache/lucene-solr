@@ -35,8 +35,11 @@ public class DelayingSearchComponent extends SearchComponent{
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
+    int sleep = rb.req.getParams().getInt("sleep",0);
     try {
-      Thread.sleep(1000);
+      if (sleep > 0) {
+        Thread.sleep(sleep);
+      }
     } catch (InterruptedException e) {
       // Do nothing?
     }
