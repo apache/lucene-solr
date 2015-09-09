@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -68,6 +67,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Collections.EMPTY_MAP;
+import static org.apache.solr.common.params.CommonParams.*;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 
@@ -125,10 +125,6 @@ public class CoreContainer {
   private String hostName;
 
   private final JarRepository jarRepository = new JarRepository(this);
-
-  public static final String CORES_HANDLER_PATH = "/admin/cores";
-  public static final String COLLECTIONS_HANDLER_PATH = "/admin/collections";
-  public static final String INFO_HANDLER_PATH = "/admin/info";
 
   private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
@@ -407,8 +403,8 @@ public class CoreContainer {
     containerHandlers.put(INFO_HANDLER_PATH, infoHandler);
     coreAdminHandler   = createHandler(cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     containerHandlers.put(CORES_HANDLER_PATH, coreAdminHandler);
-    containerHandlers.put("/admin/authorization", securityConfHandler);
-    containerHandlers.put("/admin/authentication", securityConfHandler);
+    containerHandlers.put(AUTHZ_PATH, securityConfHandler);
+    containerHandlers.put(AUTHC_PATH, securityConfHandler);
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
 

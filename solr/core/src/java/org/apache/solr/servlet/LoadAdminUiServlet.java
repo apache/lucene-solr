@@ -20,6 +20,7 @@ package org.apache.solr.servlet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
@@ -62,7 +63,7 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
         };
         String[] replace = new String[] {
             StringEscapeUtils.escapeJavaScript(request.getContextPath()),
-            StringEscapeUtils.escapeJavaScript(CoreContainer.CORES_HANDLER_PATH),
+            StringEscapeUtils.escapeJavaScript(CommonParams.CORES_HANDLER_PATH),
             StringEscapeUtils.escapeJavaScript(pack.getSpecificationVersion())
         };
         
