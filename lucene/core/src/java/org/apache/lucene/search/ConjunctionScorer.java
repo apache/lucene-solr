@@ -25,9 +25,9 @@ import java.util.List;
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
 
-  private final ConjunctionDISI disi;
-  private final Scorer[] scorers;
-  private final float coord;
+  final ConjunctionDISI disi;
+  final Scorer[] scorers;
+  final float coord;
 
   ConjunctionScorer(Weight weight, List<? extends DocIdSetIterator> required, List<Scorer> scorers) {
     this(weight, required, scorers, 1f);
