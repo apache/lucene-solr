@@ -1137,7 +1137,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   protected void comparePartialResponses(QueryResponse rsp, QueryResponse controlRsp, List<String> upShards)
   {
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
-    
+
     assertNotNull("missing shard info", sinfo);
     assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, shardsArr.length, sinfo.size());
     // identify each one
@@ -1151,7 +1151,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           found = true;
           // make sure that it responded if it's up
           if (upShards.contains(s)) {
-            assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
+            // this is no longer true if there was a query timeout on an up shard
+            // assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
             assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
           }
           else {

@@ -131,11 +131,9 @@ public class DocSetUtil {
     int maxDoc = searcher.getIndexReader().maxDoc();
     DocSetCollector collector = new DocSetCollector((maxDoc >> 6) + 5, maxDoc);
 
-    try {
-      searcher.search(query, collector);
-    } catch ( ExitableDirectoryReader.ExitingReaderException e) {
-      searcher.log.warn("Query: " + query + "; " + e.getMessage());
-    }
+    // This may throw an ExitableDirectoryReader.ExitingReaderException
+    // but we should not catch it here, as we don't know how this DocSet will be used (it could be negated before use) or cached.
+    searcher.search(query, collector);
 
     return collector.getDocSet();
   }
