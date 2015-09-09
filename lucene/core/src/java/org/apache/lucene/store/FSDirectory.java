@@ -17,7 +17,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -256,7 +255,7 @@ public abstract class FSDirectory extends BaseDirectory {
 
   final class FSIndexOutput extends OutputStreamIndexOutput {
     /**
-     * The maximum chunk size is 8192 bytes, because {@link FileOutputStream} mallocs
+     * The maximum chunk size is 8192 bytes, because file channel mallocs
      * a native buffer outside of stack if the write buffer size is larger.
      */
     static final int CHUNK_SIZE = 8192;
