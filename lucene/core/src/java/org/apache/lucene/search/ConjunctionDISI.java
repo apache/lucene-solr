@@ -54,7 +54,9 @@ public class ConjunctionDISI extends DocIdSetIterator {
   /** Adds the iterator, possibly splitting up into two phases or collapsing if it is another conjunction */
   private static void addIterator(DocIdSetIterator disi, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
     // Check for exactly this class for collapsing. Subclasses can do their own optimizations.
-    if (disi.getClass() == ConjunctionDISI.class || disi.getClass() == TwoPhase.class) {
+    if (disi.getClass() == ConjunctionScorer.class) {
+      addIterator(((ConjunctionScorer) disi).disi, allIterators, twoPhaseIterators);
+    } else if (disi.getClass() == ConjunctionDISI.class || disi.getClass() == TwoPhase.class) {
       ConjunctionDISI conjunction = (ConjunctionDISI) disi;
       // subconjuctions have already split themselves into two phase iterators and others, so we can take those
       // iterators as they are and move them up to this conjunction

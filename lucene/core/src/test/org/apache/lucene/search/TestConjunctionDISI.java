@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -246,7 +247,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
     }
   }
 
-  public void testCollapseSubConjunctions() throws IOException {
+  public void testCollapseSubConjunctions(boolean wrapWithScorer) throws IOException {
     final int iters = atLeast(100);
     for (int iter = 0; iter < iters; ++iter) {
       final int maxDoc = TestUtil.nextInt(random(), 100, 10000);
@@ -273,7 +274,13 @@ public class TestConjunctionDISI extends LuceneTestCase {
       for (int subIter = 0; subIter < subIters && iterators.size() > 3; ++subIter) {
         final int subSeqStart = TestUtil.nextInt(random(), 0, iterators.size() - 2);
         final int subSeqEnd = TestUtil.nextInt(random(), subSeqStart + 2, iterators.size());
-        final ConjunctionDISI subConjunction = ConjunctionDISI.intersect(iterators.subList(subSeqStart, subSeqEnd));
+        List<DocIdSetIterator> subIterators = iterators.subList(subSeqStart, subSeqEnd);
+        DocIdSetIterator subConjunction;
+        if (wrapWithScorer) {
+          subConjunction = new ConjunctionScorer(null, subIterators, Collections.<Scorer>emptyList());
+        } else {
+          subConjunction = ConjunctionDISI.intersect(subIterators);
+        }
         iterators.set(subSeqStart, subConjunction);
         int toRemove = subSeqEnd - subSeqStart - 1;
         while (toRemove-- > 0) {
@@ -291,4 +298,11 @@ public class TestConjunctionDISI extends LuceneTestCase {
     }
   }
 
+  public void testCollapseSubConjunctionDISIs() throws IOException {
+    testCollapseSubConjunctions(false);
+  }
+
+  public void testCollapseSubConjunctionScorers() throws IOException {
+    testCollapseSubConjunctions(true);
+  }
 }
