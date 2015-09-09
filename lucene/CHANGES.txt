@@ -113,11 +113,6 @@ Bug Fixes
   test data.  In addition, the performance of those filters was improved
   significantly.  (Uwe Schindler, Robert Muir)
 
-* LUCENE-6748: UsageTrackingQueryCachingPolicy no longer caches trivial queries
-  like MatchAllDocsQuery. (Adrien Grand)
-
-* LUCENE-6781: Fixed BoostingQuery to rewrite wrapped queries. (Adrien Grand)
-
 * LUCENE-6783: Removed side effects from FuzzyLikeThisQuery.rewrite.
   (Adrien Grand)
 
@@ -182,6 +177,11 @@ Bug Fixes
 
 * LUCENE-6774: Remove classloader hack in MorfologikFilter. (Robert Muir,
   Uwe Schindler)
+
+* LUCENE-6748: UsageTrackingQueryCachingPolicy no longer caches trivial queries
+  like MatchAllDocsQuery. (Adrien Grand)
+
+* LUCENE-6781: Fixed BoostingQuery to rewrite wrapped queries. (Adrien Grand)
 
 Tests
 
