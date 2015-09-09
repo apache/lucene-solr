@@ -17,14 +17,145 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDefaultSimilarity extends LuceneTestCase {
+  private Directory directory;
+  private IndexReader indexReader;
+  private IndexSearcher indexSearcher;
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    directory = newDirectory();
+    try (IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig())) {
+      Document document = new Document();
+      document.add(new StringField("test", "hit", Store.NO));
+      indexWriter.addDocument(document);
+      indexWriter.commit();
+    }
+    indexReader = DirectoryReader.open(directory);
+    indexSearcher = newSearcher(indexReader);
+    indexSearcher.setSimilarity(new DefaultSimilarity());
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    IOUtils.close(indexReader, directory);
+    super.tearDown();
+  }
+  
   // Javadocs give this as an example so we test to make sure it's correct:
   public void testPrecisionLoss() throws Exception {
     DefaultSimilarity sim = new DefaultSimilarity();
     float v = sim.decodeNormValue(sim.encodeNormValue(.89f));
     assertEquals(0.875f, v, 0.0001f);
+  }
+
+
+  public void testHit() throws IOException {
+    Query query = new TermQuery(new Term("test", "hit"));
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertTrue(topDocs.scoreDocs[0].score != 0);
+  }
+
+  public void testMiss() throws IOException {
+    Query query = new TermQuery(new Term("test", "miss"));
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(0, topDocs.totalHits);
+  }
+
+  public void testEmpty() throws IOException {
+    Query query = new TermQuery(new Term("empty", "miss"));
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(0, topDocs.totalHits);
+  }
+
+  public void testBQHit() throws IOException {
+    Query query = new BooleanQuery.Builder()
+      .add(new TermQuery(new Term("test", "hit")), Occur.SHOULD)
+      .build();
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertTrue(topDocs.scoreDocs[0].score != 0);
+  }
+
+  public void testBQHitOrMiss() throws IOException {
+    Query query = new BooleanQuery.Builder()
+      .add(new TermQuery(new Term("test", "hit")), Occur.SHOULD)
+      .add(new TermQuery(new Term("test", "miss")), Occur.SHOULD)
+      .build();
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertTrue(topDocs.scoreDocs[0].score != 0);
+  }
+
+  public void testBQHitOrEmpty() throws IOException {
+    Query query = new BooleanQuery.Builder()
+      .add(new TermQuery(new Term("test", "hit")), Occur.SHOULD)
+      .add(new TermQuery(new Term("empty", "miss")), Occur.SHOULD)
+      .build();
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertTrue(topDocs.scoreDocs[0].score != 0);
+  }
+
+  public void testDMQHit() throws IOException {
+    Query query = new DisjunctionMaxQuery(
+      Arrays.asList(
+        new TermQuery(new Term("test", "hit"))),
+      0);
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertTrue(topDocs.scoreDocs[0].score != 0);
+  }
+
+  public void testDMQHitOrMiss() throws IOException {
+    Query query = new DisjunctionMaxQuery(
+      Arrays.asList(
+        new TermQuery(new Term("test", "hit")),
+        new TermQuery(new Term("test", "miss"))),
+      0);
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertTrue(topDocs.scoreDocs[0].score != 0);
+  }
+
+  public void testDMQHitOrEmpty() throws IOException {
+    Query query = new DisjunctionMaxQuery(
+      Arrays.asList(
+        new TermQuery(new Term("test", "hit")),
+        new TermQuery(new Term("empty", "miss"))),
+      0);
+    TopDocs topDocs = indexSearcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertTrue(topDocs.scoreDocs[0].score != 0);
   }
 }

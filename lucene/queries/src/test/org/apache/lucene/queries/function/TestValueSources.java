@@ -226,7 +226,7 @@ public class TestValueSources extends LuceneTestCase {
     try {
       searcher.setSimilarity(new DefaultSimilarity());
       ValueSource vs = new IDFValueSource("bogus", "bogus", "text", new BytesRef("test"));
-      assertHits(new FunctionQuery(vs), new float[] { 0.5945349f, 0.5945349f });
+      assertHits(new FunctionQuery(vs), new float[] { 1.0f, 1.0f });
       assertAllExist(vs);
     } finally {
       searcher.setSimilarity(saved);
@@ -398,7 +398,7 @@ public class TestValueSources extends LuceneTestCase {
       searcher.setSimilarity(new DefaultSimilarity());
       
       ValueSource vs = new QueryValueSource(new TermQuery(new Term("string","bar")), 42F);
-      assertHits(new FunctionQuery(vs), new float[] { 42F, 1F });
+      assertHits(new FunctionQuery(vs), new float[] { 42F, 1.4054651F });
 
       // valuesource should exist only for things matching the term query
       // sanity check via quick & dirty wrapper arround tf

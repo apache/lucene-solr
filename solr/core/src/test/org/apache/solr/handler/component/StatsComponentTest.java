@@ -1014,15 +1014,15 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertQ("functions over a query",
             req("q","*:*", "stats", "true",
                 "stats.field", "{!lucene key=k}foo_t:cow")
-            // scores are: 1.0, 0.625, 0.5, & "missing"
-            , kpre + "double[@name='min'][.='0.5']"
-            , kpre + "double[@name='max'][.='1.0']"
-            , kpre + "double[@name='sum'][.='2.125']"
+            // TODO: change to not rely on exact scores
+            , kpre + "double[@name='min'][.='0.6115717887878418']"
+            , kpre + "double[@name='max'][.='1.2231435775756836']"
+            , kpre + "double[@name='sum'][.='2.5991801023483276']"
             , kpre + "long[@name='count'][.='3']"
             , kpre + "long[@name='missing'][.='1']"
-            , kpre + "double[@name='sumOfSquares'][.='1.640625']"
-            , kpre + "double[@name='mean'][.='0.7083333333333334']"
-            , kpre + "double[@name='stddev'][.='0.2602082499332666']"
+            , kpre + "double[@name='sumOfSquares'][.='2.4545065967701163']"
+            , kpre + "double[@name='mean'][.='0.8663933674494425']"
+            , kpre + "double[@name='stddev'][.='0.3182720497380833']"
             );
     
   }

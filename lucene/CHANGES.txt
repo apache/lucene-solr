@@ -28,6 +28,9 @@ New Features
   length computations, to avoid skew from documents that don't have the field.
   (Ahmet Arslan via Robert Muir)
 
+* LUCENE-6758: Use docCount+1 for DefaultSimilarity's IDF, so that queries 
+  containing nonexistent fields won't screw up querynorm. (Terry Smith, Robert Muir)
+
 * SOLR-7876: The QueryTimeout interface now has a isTimeoutEnabled method
   that can return false to exit from ExitableDirectoryReader wrapping at
   the point fields() is called. (yonik)

@@ -121,17 +121,6 @@ public class TestTermScorer extends LuceneTestCase {
     // The scores should be the same
     assertTrue(doc0.score + " does not equal: " + doc5.score,
         doc0.score == doc5.score);
-    /*
-     * Score should be (based on Default Sim.: All floats are approximate tf = 1
-     * numDocs = 6 docFreq(all) = 2 idf = ln(6/3) + 1 = 1.693147 idf ^ 2 =
-     * 2.8667 boost = 1 lengthNorm = 1 //there is 1 term in every document coord
-     * = 1 sumOfSquaredWeights = (idf * boost) ^ 2 = 1.693147 ^ 2 = 2.8667
-     * queryNorm = 1 / (sumOfSquaredWeights)^0.5 = 1 /(1.693147) = 0.590
-     * 
-     * score = 1 * 2.8667 * 1 * 1 * 0.590 = 1.69
-     */
-    assertTrue(doc0.score + " does not equal: " + 1.6931472f,
-        doc0.score == 1.6931472f);
   }
   
   public void testNext() throws Exception {
@@ -145,10 +134,8 @@ public class TestTermScorer extends LuceneTestCase {
     Scorer ts = weight.scorer(context);
     assertTrue("next did not return a doc",
         ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue("score is not correct", ts.score() == 1.6931472f);
     assertTrue("next did not return a doc",
         ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue("score is not correct", ts.score() == 1.6931472f);
     assertTrue("next returned a doc and it should not have",
         ts.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
   }

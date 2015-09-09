@@ -79,10 +79,6 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     if (clients.size() == 1) {
       // only one shard
       assertEquals(controlScore, shardScore);
-    } else {
-      assertTrue("control:" + controlScore.floatValue() + " shard:"
-          + shardScore.floatValue(),
-          controlScore.floatValue() > shardScore.floatValue());
     }
   }
   

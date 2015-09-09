@@ -346,7 +346,7 @@ import org.apache.lucene.util.BytesRef;
  *          </td>
  *          <td valign="middle" align="center">
  *            <table summary="inverse document frequency computation">
- *               <tr><td align="center" style="text-align: center"><small>docCount</small></td></tr>
+ *               <tr><td align="center" style="text-align: center"><small>docCount+1</small></td></tr>
  *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
  *               <tr><td align="center" style="text-align: center"><small>docFreq+1</small></td></tr>
  *            </table>
