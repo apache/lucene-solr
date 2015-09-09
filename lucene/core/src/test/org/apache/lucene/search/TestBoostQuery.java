@@ -67,4 +67,10 @@ public class TestBoostQuery extends LuceneTestCase {
     assertEquals(new BoostQuery(new ConstantScoreQuery(new MatchAllDocsQuery()), 0), searcher.rewrite(q));
   }
 
+  public void testBoost() {
+    BoostQuery q = new BoostQuery(new MatchAllDocsQuery(), 2);
+    assertEquals(2, q.getBoost(), 0f);
+    q.setBoost(3);
+    assertEquals(3, q.getBoost(), 0f);
+  }
 }

@@ -54,13 +54,12 @@ public final class BoostQuery extends Query {
       )));
 
   private final Query query;
-  private final float boost;
 
   /** Sole constructor: wrap {@code query} in such a way that the produced
    *  scores will be boosted by {@code boost}. */
   public BoostQuery(Query query, float boost) {
     this.query = Objects.requireNonNull(query);
-    this.boost = boost;
+    setBoost(boost);
   }
 
   /**
@@ -70,11 +69,10 @@ public final class BoostQuery extends Query {
     return query;
   }
 
-  /**
-   * Return the applied boost.
-   */
+  @Override
   public float getBoost() {
-    return boost;
+    // overridden to remove the deprecation warning
+    return super.getBoost();
   }
 
   @Override
@@ -83,45 +81,39 @@ public final class BoostQuery extends Query {
       return false;
     }
     BoostQuery that = (BoostQuery) obj;
-    return query.equals(that.query)
-        && Float.floatToIntBits(boost) == Float.floatToIntBits(that.boost);
+    return query.equals(that.query);
   }
 
   @Override
   public int hashCode() {
     int h = super.hashCode();
     h = 31 * h + query.hashCode();
-    h = 31 * h + Float.floatToIntBits(boost);
     return h;
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    if (super.getBoost() != 1f) {
-      return super.rewrite(reader);
-    }
-
     final Query rewritten = query.rewrite(reader);
 
-    if (boost == 1f) {
+    if (getBoost() == 1f) {
       return rewritten;
     }
 
     if (rewritten.getClass() == BoostQuery.class) {
       BoostQuery in = (BoostQuery) rewritten;
-      return new BoostQuery(in.query, boost * in.boost);
+      return new BoostQuery(in.query, getBoost() * in.getBoost());
     }
 
-    if (boost == 0f && rewritten.getClass() != ConstantScoreQuery.class) {
+    if (getBoost() == 0f && rewritten.getClass() != ConstantScoreQuery.class) {
       // so that we pass needScores=false
       return new BoostQuery(new ConstantScoreQuery(rewritten), 0f);
     }
 
     if (query != rewritten) {
-      return new BoostQuery(rewritten, boost);
+      return new BoostQuery(rewritten, getBoost());
     }
 
-    return super.rewrite(reader);
+    return this;
   }
 
   @Override
@@ -136,7 +128,7 @@ public final class BoostQuery extends Query {
       builder.append(")");
     }
     builder.append("^");
-    builder.append(boost);
+    builder.append(getBoost());
     return builder.toString();
   }
 
@@ -147,7 +139,7 @@ public final class BoostQuery extends Query {
       return weight;
     }
     // Apply the query boost, this may impact the return value of getValueForNormalization()
-    weight.normalize(1f, boost);
+    weight.normalize(1f, getBoost());
     return new Weight(this) {
 
       @Override
@@ -167,7 +159,7 @@ public final class BoostQuery extends Query {
 
       @Override
       public void normalize(float norm, float boost) {
-        weight.normalize(norm, BoostQuery.this.boost * boost);
+        weight.normalize(norm, BoostQuery.this.getBoost() * boost);
       }
 
       @Override
