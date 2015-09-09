@@ -144,6 +144,9 @@ Other
 * LUCENE-6761: MatchAllDocsQuery's Scorers do not expose approximations
   anymore. (Adrien Grand)
 
+* LUCENE-6775: Improved MorfologikFilterFactory to allow loading of
+  custom dictionaries from ResourceLoader.  (Uwe Schindler)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
