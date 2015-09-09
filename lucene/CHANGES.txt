@@ -181,6 +181,9 @@ Changes in Runtime Behavior
   removes the collector that threw this exception from the list of sub
   collectors to collect. (Adrien Grand)
 
+* LUCENE-6784: IndexSearcher's query caching is enabled by default. Run
+  indexSearcher.setQueryCache(null) to disable. (Adrien Grand)
+
 ======================= Lucene 5.3.0 =======================
 
 New Features
