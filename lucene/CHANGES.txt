@@ -11,6 +11,11 @@ Bug Fixes
 * LUCENE-6774: Remove classloader hack in MorfologikFilter. (Robert Muir,
   Uwe Schindler)
 
+* LUCENE-6781: Fixed BoostingQuery to rewrite wrapped queries. (Adrien Grand)
+
+* LUCENE-6748: UsageTrackingQueryCachingPolicy no longer caches trivial queries
+  like MatchAllDocsQuery. (Adrien Grand)
+
 Tests
 
 * LUCENE-6760, SOLR-7958: Move TestUtil#randomWhitespace to the only

@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.Bits;
 
 /**
  * The BoostingQuery class can be used to effectively demote results that match a given query. 
@@ -52,6 +52,18 @@ public class BoostingQuery extends Query {
       this.context = context.clone();        // clone before boost
       this.boost = boost;
       this.context.setBoost(0.0f);                      // ignore context-only matches
+    }
+
+    @Override
+    public Query rewrite(IndexReader reader) throws IOException {
+      Query matchRewritten = match.rewrite(reader);
+      Query contextRewritten = context.rewrite(reader);
+      if (match != matchRewritten || context != contextRewritten) {
+        BoostingQuery rewritten = new BoostingQuery(matchRewritten, contextRewritten, boost);
+        rewritten.setBoost(getBoost());
+        return rewritten;
+      }
+      return super.rewrite(reader);
     }
 
     @Override
