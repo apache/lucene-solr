@@ -419,48 +419,33 @@ final class IndexFileDeleter implements Closeable {
    * is non-null, we will only delete files corresponding to
    * that segment.
    */
-  void refresh(String segmentName) throws IOException {
+  void refresh() throws IOException {
     assert locked();
+    deletable.clear();
 
     String[] files = directory.listAll();
-    String segmentPrefix1;
-    String segmentPrefix2;
-    if (segmentName != null) {
-      segmentPrefix1 = segmentName + ".";
-      segmentPrefix2 = segmentName + "_";
-    } else {
-      segmentPrefix1 = null;
-      segmentPrefix2 = null;
-    }
 
     Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
 
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
       m.reset(fileName);
-      if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
-          !fileName.endsWith("write.lock") &&
+      if (!fileName.endsWith("write.lock") &&
           !refCounts.containsKey(fileName) &&
           (m.matches() || fileName.startsWith(IndexFileNames.SEGMENTS) 
               // we only try to clear out pending_segments_N during rollback(), because we don't ref-count it
               // TODO: this is sneaky, should we do this, or change TestIWExceptions? rollback closes anyway, and 
               // any leftover file will be deleted/retried on next IW bootup anyway...
-              || (segmentName == null && fileName.startsWith(IndexFileNames.PENDING_SEGMENTS)))) {
+              || fileName.startsWith(IndexFileNames.PENDING_SEGMENTS))) {
         // Unreferenced file, so remove it
         if (infoStream.isEnabled("IFD")) {
-          infoStream.message("IFD", "refresh [prefix=" + segmentName + "]: removing newly created unreferenced file \"" + fileName + "\"");
+          infoStream.message("IFD", "refresh: removing newly created unreferenced file \"" + fileName + "\"");
         }
         deletable.add(fileName);
       }
     }
 
     deletePendingFiles();
-  }
-
-  void refresh() throws IOException {
-    assert locked();
-    deletable.clear();
-    refresh(null);
   }
 
   @Override

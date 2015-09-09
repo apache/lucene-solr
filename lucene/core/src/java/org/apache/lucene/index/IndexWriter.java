@@ -2620,17 +2620,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         return;
       }
 
-      boolean success = false;
-      try {
-        merger.merge();                // merge 'em
-        success = true;
-      } finally {
-        if (!success) { 
-          synchronized(this) {
-            deleter.refresh(info.name);
-          }
-        }
-      }
+      merger.merge();                // merge 'em
 
       SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, -1L, -1L, -1L);
 
@@ -2671,17 +2661,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      success = false;
-      try {
-        codec.segmentInfoFormat().write(trackingDir, info, context);
-        success = true;
-      } finally {
-        if (!success) {
-          synchronized(this) {
-            deleter.refresh(info.name);
-          }
-        }
-      }
+      codec.segmentInfoFormat().write(trackingDir, info, context);
 
       info.addFiles(trackingDir.getCreatedFiles());
 
@@ -3676,9 +3656,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "hit exception during merge");
             }
-            if (merge.info != null && !segmentInfos.contains(merge.info)) {
-              deleter.refresh(merge.info.info.name);
-            }
           } else if (merge.rateLimiter.getAbort() == false && (merge.maxNumSegments != -1 || (!closed && !closing))) {
             // This merge (and, generally, any change to the
             // segments) may now enable new merges, so we call
@@ -4083,19 +4060,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       merge.mergeStartNS = System.nanoTime();
 
       // This is where all the work happens:
-      boolean success3 = false;
-      try {
-        if (merger.shouldMerge()) {
-          merger.merge();
-        }
-        success3 = true;
-      } finally {
-        if (!success3) {
-          synchronized(this) {  
-            deleter.refresh(merge.info.info.name);
-          }
-        }
+      if (merger.shouldMerge()) {
+        merger.merge();
       }
+
       MergeState mergeState = merger.mergeState;
       assert mergeState.segmentInfo == merge.info.info;
       merge.info.info.setFiles(new HashSet<>(dirWrapper.getCreatedFiles()));
@@ -4702,10 +4670,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   
   /**
    * Cleans up residuals from a segment that could not be entirely flushed due to an error
-   * @see IndexFileDeleter#refresh(String) 
    */
   synchronized final void flushFailed(SegmentInfo info) throws IOException {
-    deleter.refresh(info.name);
+    // TODO: this really should be a tragic
+    Collection<String> files;
+    try {
+      files = info.files();
+    } catch (IllegalStateException ise) {
+      // OK
+      files = null;
+    }
+    if (files != null) {
+      deleter.deleteNewFiles(files);
+    }
   }
   
   final int purge(boolean forced) throws IOException {
