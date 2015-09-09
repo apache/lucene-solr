@@ -160,6 +160,7 @@ public final class BoostedQuery extends Query {
   public String toString(String field) {
     StringBuilder sb = new StringBuilder();
     sb.append("boost(").append(q.toString(field)).append(',').append(boostVal).append(')');
+    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 

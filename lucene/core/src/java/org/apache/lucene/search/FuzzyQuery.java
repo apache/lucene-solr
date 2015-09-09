@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the fuzzy search query. The similarity measurement
@@ -171,6 +172,7 @@ public class FuzzyQuery extends MultiTermQuery {
     buffer.append(term.text());
     buffer.append('~');
     buffer.append(Integer.toString(maxEdits));
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
   

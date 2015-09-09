@@ -32,6 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
@@ -199,6 +200,7 @@ public class BKDPointInPolygonQuery extends Query {
         .append(polyLats[i])
         .append("] ");
     }
+    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 }

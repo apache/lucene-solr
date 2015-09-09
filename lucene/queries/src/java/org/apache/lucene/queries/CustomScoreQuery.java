@@ -34,6 +34,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * Query that sets document score as a programmatic function of several (sub) scores:
@@ -130,6 +131,7 @@ public class CustomScoreQuery extends Query implements Cloneable {
     }
     sb.append(")");
     sb.append(strict?" STRICT" : "");
+    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 

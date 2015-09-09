@@ -129,6 +129,7 @@ public class SpanTermQuery extends SpanQuery {
       buffer.append(term.text());
     else
       buffer.append(term.toString());
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

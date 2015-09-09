@@ -819,6 +819,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             buffer.append(":");
           }
           buffer.append(term.text());
+          buffer.append(ToStringUtils.boost(getBoost()));
           return buffer.toString();
         }
       };

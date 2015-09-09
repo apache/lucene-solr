@@ -181,6 +181,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     buffer.append(", ");
     buffer.append(inOrder);
     buffer.append(")");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanQuery; // javadocs
 import org.apache.lucene.search.FuzzyQuery; // javadocs
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the classic fuzzy search query. The similarity measurement
@@ -165,6 +166,7 @@ public class SlowFuzzyQuery extends MultiTermQuery {
     buffer.append(term.text());
     buffer.append('~');
     buffer.append(Float.toString(minimumSimilarity));
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
   

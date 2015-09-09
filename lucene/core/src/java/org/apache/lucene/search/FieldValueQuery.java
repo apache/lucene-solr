@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A {@link Query} that matches documents that have a value for a given field
@@ -54,7 +55,7 @@ public final class FieldValueQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return "FieldValueQuery [field=" + this.field + "]";
+    return "FieldValueQuery [field=" + this.field + "]" + ToStringUtils.boost(getBoost());
   }
 
   @Override

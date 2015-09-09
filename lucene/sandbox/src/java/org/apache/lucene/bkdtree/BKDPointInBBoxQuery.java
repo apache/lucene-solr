@@ -34,6 +34,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Finds all previously indexed points that fall within the specified boundings box.
  *
@@ -171,6 +172,7 @@ public class BKDPointInBBoxQuery extends Query {
         .append(',')
         .append(maxLat)
         .append("]")
+        .append(ToStringUtils.boost(getBoost()))
         .toString();
   }
 }

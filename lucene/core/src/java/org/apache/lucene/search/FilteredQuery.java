@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
 
 
 /**
@@ -108,6 +109,7 @@ public class FilteredQuery extends Query {
     buffer.append(query.toString(s));
     buffer.append(")->");
     buffer.append(filter);
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

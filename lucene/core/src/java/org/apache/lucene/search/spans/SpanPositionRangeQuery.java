@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
 
 
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
@@ -69,6 +70,7 @@ public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
     buffer.append(", ").append(start).append(", ");
     buffer.append(end);
     buffer.append(")");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

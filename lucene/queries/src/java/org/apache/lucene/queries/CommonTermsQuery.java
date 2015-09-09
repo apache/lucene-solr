@@ -34,6 +34,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that executes high-frequency terms in a optional sub-query to prevent
@@ -364,6 +365,7 @@ public class CommonTermsQuery extends Query {
       buffer.append(getHighFreqMinimumNumberShouldMatch());
       buffer.append(")");
     }
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
   

@@ -25,6 +25,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ToStringUtils;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrConstantScoreQuery;
@@ -59,6 +60,7 @@ public class FilterQuery extends ExtendedQueryBase {
     sb.append("filter(");
     sb.append(q.toString(""));
     sb.append(')');
+    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 

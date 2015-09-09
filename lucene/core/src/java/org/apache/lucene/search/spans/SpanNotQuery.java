@@ -89,6 +89,7 @@ public final class SpanNotQuery extends SpanQuery {
     buffer.append(", ");
     buffer.append(Integer.toString(post));
     buffer.append(")");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

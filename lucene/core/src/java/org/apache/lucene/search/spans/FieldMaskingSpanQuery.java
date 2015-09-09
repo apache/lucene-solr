@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * <p>Wrapper to allow {@link SpanQuery} objects participate in composite 
@@ -116,6 +117,7 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
     buffer.append(")");
     buffer.append(" as ");
     buffer.append(this.field);
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
   

@@ -29,6 +29,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
@@ -152,6 +153,7 @@ public class NumericRangeTreeQuery extends Query {
       .append(" TO ")
       .append((maxValue == null) ? "*" : maxValue.toString())
       .append(maxInclusive ? ']' : '}')
+      .append(ToStringUtils.boost(getBoost()))
       .toString();
   }
 }

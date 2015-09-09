@@ -34,6 +34,7 @@ import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.util.ToStringUtils;
 
 
 /** Matches the union of its clauses.
@@ -102,6 +103,7 @@ public final class SpanOrQuery extends SpanQuery {
       }
     }
     buffer.append("])");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

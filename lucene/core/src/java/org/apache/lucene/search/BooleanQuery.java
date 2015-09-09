@@ -28,6 +28,7 @@ import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -244,7 +245,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    boolean needParens = getMinimumNumberShouldMatch() > 0;
+    boolean needParens = getBoost() != 1.0 || getMinimumNumberShouldMatch() > 0;
     if (needParens) {
       buffer.append("(");
     }
@@ -277,6 +278,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       buffer.append(getMinimumNumberShouldMatch());
     }
 
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

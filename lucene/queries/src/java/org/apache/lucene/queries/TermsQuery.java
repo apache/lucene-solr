@@ -56,6 +56,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * Specialization for a disjunction over many terms that behaves like a
@@ -188,7 +189,7 @@ public class TermsQuery extends Query implements Accountable {
       builder.append(iterator.field()).append(':');
       builder.append(term.utf8ToString());
     }
-
+    builder.append(ToStringUtils.boost(getBoost()));
     return builder.toString();
   }
 
