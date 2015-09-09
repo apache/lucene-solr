@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
@@ -87,6 +88,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     int numWorkers = params.getInt("numWorkers", 1);
     String workerCollection = params.get("workerCollection", defaultWorkerCollection);
     String workerZkhost = params.get("workerZkhost",defaultZkhost);
+    String mode = params.get("aggregationMode", "map_reduce");
     StreamContext context = new StreamContext();
     try {
 
@@ -94,7 +96,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         throw new Exception("sql parameter cannot be null");
       }
 
-      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, numWorkers, workerCollection, workerZkhost);
+      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, numWorkers, workerCollection, workerZkhost, AggregationMode.getMode(mode));
       context.numWorkers = numWorkers;
       context.setSolrClientCache(StreamHandler.clientCache);
       tupleStream.setStreamContext(context);
@@ -126,7 +128,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     public static TupleStream parse(String sql,
                                     int numWorkers,
                                     String workerCollection,
-                                    String workerZkhost) throws IOException {
+                                    String workerZkhost,
+                                    AggregationMode aggregationMode) throws IOException {
       SqlParser parser = new SqlParser();
       Statement statement = parser.createStatement(sql);
 
@@ -137,7 +140,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       TupleStream sqlStream = null;
 
       if(sqlVistor.groupByQuery) {
-        sqlStream = doGroupByWithAggregates(sqlVistor, numWorkers, workerCollection, workerZkhost);
+        if(aggregationMode == AggregationMode.FACET) {
+          sqlStream = doGroupByWithAggregatesFacets(sqlVistor);
+        } else {
+          sqlStream = doGroupByWithAggregates(sqlVistor, numWorkers, workerCollection, workerZkhost);
+        }
       } else {
         sqlStream = doSelect(sqlVistor);
       }
@@ -227,6 +234,56 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
         }
       }
+    }
+
+    return tupleStream;
+  }
+
+  private static TupleStream doGroupByWithAggregatesFacets(SQLVisitor sqlVisitor) throws IOException {
+
+    Set<String> fieldSet = new HashSet();
+    Bucket[] buckets = getBuckets(sqlVisitor.groupBy, fieldSet);
+    Metric[] metrics = getMetrics(sqlVisitor.fields, fieldSet);
+    if(metrics.length == 0) {
+      throw new IOException("Group by queries must include atleast one aggregate function.");
+    }
+
+    TableSpec tableSpec = new TableSpec(sqlVisitor.table, defaultZkhost);
+
+    String zkHost = tableSpec.zkHost;
+    String collection = tableSpec.collection;
+    Map<String, String> params = new HashMap();
+
+    params.put(CommonParams.Q, sqlVisitor.query);
+
+    int limit = sqlVisitor.limit > 0 ? sqlVisitor.limit : 100;
+
+    FieldComparator[] sorts = null;
+
+    if(sqlVisitor.sorts == null) {
+      sorts = new FieldComparator[buckets.length];
+      for(int i=0; i<sorts.length; i++) {
+        sorts[i] = new FieldComparator("index", ComparatorOrder.ASCENDING);
+      }
+    } else {
+      sorts = getComps(sqlVisitor.sorts);
+    }
+
+    TupleStream tupleStream = new FacetStream(zkHost,
+                                              collection,
+                                              params,
+                                              buckets,
+                                              metrics,
+                                              sorts,
+                                              limit);
+
+    if(sqlVisitor.havingExpression != null) {
+      tupleStream = new HavingStream(tupleStream, sqlVisitor.havingExpression);
+    }
+
+    if(sqlVisitor.limit > 0)
+    {
+      tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
     }
 
     return tupleStream;
@@ -407,6 +464,20 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       return new MultipleFieldComparator(comps);
     }
   }
+
+  private static FieldComparator[] getComps(List<SortItem> sortItems) {
+    FieldComparator[] comps = new FieldComparator[sortItems.size()];
+    for(int i=0; i<sortItems.size(); i++) {
+      SortItem sortItem = sortItems.get(i);
+      String ordering = sortItem.getOrdering().toString();
+      ComparatorOrder comparatorOrder = ascDescComp(ordering);
+      String sortKey = sortItem.getSortKey().toString();
+      comps[i] = new FieldComparator(stripQuotes(sortKey), comparatorOrder);
+    }
+
+    return comps;
+  }
+
 
   private static String fields(Set<String> fieldSet) {
     StringBuilder buf = new StringBuilder();
@@ -775,6 +846,22 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
       Tuple tuple = stream.read();
       return tuple;
+    }
+  }
+
+  public static enum AggregationMode {
+
+    MAP_REDUCE,
+    FACET;
+
+    public static AggregationMode getMode(String mode) throws IOException{
+      if(mode.equalsIgnoreCase("facet")) {
+        return FACET;
+      } else if(mode.equalsIgnoreCase("map_reduce")) {
+        return MAP_REDUCE;
+      } else {
+        throw new IOException("Invalid aggregation mode:"+mode);
+      }
     }
   }
 
