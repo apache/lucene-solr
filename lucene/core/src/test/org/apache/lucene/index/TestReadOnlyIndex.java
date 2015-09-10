@@ -34,6 +34,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestReadOnlyIndex extends LuceneTestCase {
@@ -57,6 +58,11 @@ public class TestReadOnlyIndex extends LuceneTestCase {
     iwriter.close();
     directory.close();
     analyzer.close();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    indexPath = null;
   }
   
   public void testReadOnlyIndex() throws Exception {
