@@ -53,6 +53,20 @@ public class FieldQueryTest extends AbstractTestCase {
     boost = usually() ? 1F : random().nextFloat() * 10000;
   }
 
+  public void testHandlesDeprecatedBoosts() throws Exception {
+    Query q1 = new TermQuery(new Term("foo", "bar"));
+    q1.setBoost(5);
+    Query q2 = new BoostQuery(new TermQuery(new Term("foo", "bar")), 5);
+
+    FieldQuery fq1 = new FieldQuery(q1, true, true);
+    FieldQuery fq2 = new FieldQuery(q2, true, true);
+    Set<Query> flatQueries1 = new HashSet<>();
+    Set<Query> flatQueries2 = new HashSet<>();
+    fq1.flatten(q1, reader, flatQueries1, 1f);
+    fq1.flatten(q2, reader, flatQueries2, 1f);
+    assertEquals(flatQueries1, flatQueries2);
+  }
+
   public void testFlattenBoolean() throws Exception {
     initBoost();
     BooleanQuery.Builder booleanQueryB = new BooleanQuery.Builder();

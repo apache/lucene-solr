@@ -96,10 +96,18 @@ public class FieldQuery {
   }
 
   void flatten( Query sourceQuery, IndexReader reader, Collection<Query> flatQueries, float boost ) throws IOException{
-    while (sourceQuery instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) sourceQuery;
-      sourceQuery = bq.getQuery();
-      boost *= bq.getBoost();
+    while (true) {
+      if (sourceQuery.getBoost() != 1f) {
+        boost *= sourceQuery.getBoost();
+        sourceQuery = sourceQuery.clone();
+        sourceQuery.setBoost(1f);
+      } else if (sourceQuery instanceof BoostQuery) {
+        BoostQuery bq = (BoostQuery) sourceQuery;
+        sourceQuery = bq.getQuery();
+        boost *= bq.getBoost();
+      } else {
+        break;
+      }
     }
     if( sourceQuery instanceof BooleanQuery ){
       BooleanQuery bq = (BooleanQuery)sourceQuery;
