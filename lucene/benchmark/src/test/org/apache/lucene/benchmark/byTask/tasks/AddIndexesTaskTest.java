@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** Tests the functionality of {@link AddIndexesTask}. */
@@ -54,6 +55,11 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
     } finally {
       tmpDir.close();
     }
+  }
+  
+  @AfterClass
+  public static void afterClassAddIndexesTaskTest() {
+    testDir = inputDir = null;
   }
   
   private PerfRunData createPerfRunData() throws Exception {

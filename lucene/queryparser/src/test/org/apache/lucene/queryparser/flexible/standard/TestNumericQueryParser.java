@@ -71,7 +71,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
   private static Locale LOCALE;
   private static TimeZone TIMEZONE;
   private static Map<String,Number> RANDOM_NUMBER_MAP;
-  final private static EscapeQuerySyntax ESCAPER = new EscapeQuerySyntaxImpl();
+  private static EscapeQuerySyntax ESCAPER = new EscapeQuerySyntaxImpl();
   final private static String DATE_FIELD_NAME = "date";
   private static int DATE_STYLE;
   private static int TIME_STYLE;
@@ -526,6 +526,11 @@ public class TestNumericQueryParser extends LuceneTestCase {
     directory.close();
     directory = null;
     qp = null;
+    LOCALE = null;
+    TIMEZONE = null;
+    NUMBER_FORMAT = null;
+    DATE_FORMAT = null;
+    ESCAPER = null;
   }
   
 }

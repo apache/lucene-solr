@@ -57,12 +57,6 @@ grant {
   permission java.lang.RuntimePermission "getStackTrace";
   // needed for mock filesystems in tests
   permission java.lang.RuntimePermission "fileSystemProvider";
-  // needed for mock filesystems in tests (to capture implCloseChannel) 
-  permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.ch";
-  // needed by junit nested compat tests (due to static fields reflection), TODO clean these up:
-  permission java.lang.RuntimePermission "accessClassInPackage.sun.util.calendar";
-  permission java.lang.RuntimePermission "accessClassInPackage.sun.util.locale";
-  permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
   // needed by queryparser/ NLS., TODO clean this up:
   permission java.lang.RuntimePermission "accessClassInPackage.sun.util";
   // needed for test of IOUtils.spins (maybe it can be avoided)
