@@ -140,14 +140,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
     String replicaUrl = replicaCoreNodeProps.getCoreUrl();
 
-    assertTrue(!zkController.isReplicaInRecoveryHandling(replicaUrl));
-    assertTrue(zkController.ensureReplicaInLeaderInitiatedRecovery(testCollectionName, shardId, replicaCoreNodeProps, leader.getName(), false, true));
-    assertTrue(zkController.isReplicaInRecoveryHandling(replicaUrl));
+    zkController.updateLeaderInitiatedRecoveryState(testCollectionName, shardId, notLeader.getName(), Replica.State.DOWN, leader.getName(), true);
     Map<String,Object> lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
     assertNotNull(lirStateMap);
     assertSame(Replica.State.DOWN, Replica.State.getState((String) lirStateMap.get(ZkStateReader.STATE_PROP)));
-    zkController.removeReplicaFromLeaderInitiatedRecoveryHandling(replicaUrl);
-    assertTrue(!zkController.isReplicaInRecoveryHandling(replicaUrl));
 
     // test old non-json format handling
     SolrZkClient zkClient = zkController.getZkClient();
