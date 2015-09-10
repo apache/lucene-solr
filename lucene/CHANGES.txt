@@ -102,6 +102,10 @@ Optimizations
 * LUCENE-6773: Nested conjunctions now iterate over documents as if clauses
   were all at the same level. (Adrien Grand)
 
+* LUCENE-6777: Reuse BytesRef when visiting term ranges in
+  GeoPointTermsEnum to reduce GC pressure (Nick Knize via Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-6730: Hyper-parameter c is ignored in term frequency NormalizationH1.
