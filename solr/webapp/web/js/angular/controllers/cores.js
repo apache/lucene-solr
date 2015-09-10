@@ -140,17 +140,25 @@ solrAdminApp.controller('CoreAdminController',
       }
 
       $scope.reloadCore = function() {
+        if ($scope.initFailures[$scope.selectedCore]) {
+          delete $scope.initFailures[$scope.selectedCore];
+          $scope.showInitFailures = Object.keys(data.initFailures).length>0;
+        }
         Cores.reload({core: $scope.selectedCore},
-          function(successData) {
-            $scope.reloadSuccess = true;
-            $timeout(function() {$scope.reloadSuccess=false}, 1000);
-          },
-          function(failureData) {
-            $scope.reloadFailure = true;
-            $timeout(function() {$scope.reloadFailure=false}, 1000);
-            $scope.selectedCore = null;
-            $scope.refresh();
-            $location.path("/~cores");
+          function(data) {
+            if (data.error) {
+              $scope.reloadFailure = true;
+              $timeout(function() {
+                $scope.reloadFailure = false;
+                $route.reload();
+              }, 1000);
+            } else {
+              $scope.reloadSuccess = true;
+              $timeout(function () {
+                $scope.reloadSuccess = false;
+                $route.reload();
+              }, 1000);
+            }
           });
       };
 
