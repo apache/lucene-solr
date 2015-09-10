@@ -26,7 +26,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.geo3d.GeoArea;
 import org.apache.lucene.geo3d.GeoAreaFactory;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
-import org.apache.lucene.geo3d.GeoCircle;
+import org.apache.lucene.geo3d.GeoStandardCircle;
 import org.apache.lucene.geo3d.GeoPath;
 import org.apache.lucene.geo3d.GeoPoint;
 import org.apache.lucene.geo3d.GeoPolygonFactory;
@@ -101,7 +101,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     IndexSearcher s = newSearcher(r, false);
     assertEquals(1, s.search(new PointInGeo3DShapeQuery(PlanetModel.WGS84,
                                                         "field",
-                                                        new GeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1).totalHits);
+                                                        new GeoStandardCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1).totalHits);
     w.close();
     r.close();
     dir.close();
@@ -122,7 +122,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     try {
       s.search(new PointInGeo3DShapeQuery(PlanetModel.SPHERE,
                                           "field",
-                                          new GeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1);
+                                          new GeoStandardCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1);
       fail("did not hit exc");      
     } catch (IllegalStateException ise) {
       // expected
@@ -845,7 +845,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
         }
 
         try {
-          return new GeoCircle(planetModel, lat, lon, angle);
+          return new GeoStandardCircle(planetModel, lat, lon, angle);
         } catch (IllegalArgumentException iae) {
           // angle is too small; try again:
           continue;

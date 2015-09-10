@@ -29,7 +29,7 @@ import com.spatial4j.core.shape.Point;
 import org.apache.lucene.geo3d.LatLonBounds;
 import org.apache.lucene.geo3d.GeoBBox;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
-import org.apache.lucene.geo3d.GeoCircle;
+import org.apache.lucene.geo3d.GeoStandardCircle;
 import org.apache.lucene.geo3d.GeoPath;
 import org.apache.lucene.geo3d.GeoPoint;
 import org.apache.lucene.geo3d.GeoPolygonFactory;
@@ -111,14 +111,14 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       protected Geo3dShape generateRandomShape(Point nearP) {
         final int circleRadius = 180 - random().nextInt(180);//no 0-radius
         final Point point = nearP;
-        final GeoShape shape = new GeoCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
+        final GeoShape shape = new GeoStandardCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
             circleRadius * DEGREES_TO_RADIANS);
         return new Geo3dShape(planetModel, shape, ctx);
       }
 
       @Override
       protected Point randomPointInEmptyShape(Geo3dShape shape) {
-        GeoPoint geoPoint = ((GeoCircle)shape.shape).getCenter();
+        GeoPoint geoPoint = ((GeoStandardCircle)shape.shape).getCenter();
         return geoPointToSpatial4jPoint(geoPoint);
       }
 

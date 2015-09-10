@@ -18,9 +18,18 @@ package org.apache.lucene.geo3d;
  */
 
 /**
- * Interface describing circular area with a center and radius.
+ * GeoBasePolygon objects are the base class of most GeoPolygon objects.
  *
  * @lucene.experimental
  */
-public interface GeoCircle extends GeoDistanceShape, GeoSizeable {
+public abstract class GeoBasePolygon extends GeoBaseMembershipShape implements GeoPolygon {
+
+  /** Constructor.
+   *@param planetModel is the planet model to use.
+   */
+  public GeoBasePolygon(final PlanetModel planetModel) {
+    super(planetModel);
+  }
+
 }
+  

@@ -18,9 +18,10 @@ package org.apache.lucene.geo3d;
  */
 
 /**
- * Interface describing circular area with a center and radius.
+ * GeoPolygon interface description.
  *
  * @lucene.experimental
  */
-public interface GeoCircle extends GeoDistanceShape, GeoSizeable {
+public interface GeoPolygon extends GeoMembershipShape {
+
 }

@@ -29,7 +29,7 @@ public class XYZSolidTest extends LuceneTestCase {
     // Something bigger than the world
     s = new XYZSolid(PlanetModel.SPHERE, -2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
     // Any shape, except whole world, should be within.
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.WITHIN, s.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     // An XYZSolid represents a surface shape, which when larger than the world is in fact
@@ -39,13 +39,13 @@ public class XYZSolidTest extends LuceneTestCase {
     // Something overlapping the world on only one side
     s = new XYZSolid(PlanetModel.SPHERE, -2.0, 0.0, -2.0, 2.0, -2.0, 2.0);
     // Some things should be disjoint...
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, s.getRelationship(shape));
     // And, some things should be within... 
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
     assertEquals(GeoArea.WITHIN, s.getRelationship(shape));
     // And, some things should overlap.
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.OVERLAPS, s.getRelationship(shape));
 
     // Partial world should be contained by GeoWorld object...
@@ -55,7 +55,7 @@ public class XYZSolidTest extends LuceneTestCase {
     // Something inside the world
     s = new XYZSolid(PlanetModel.SPHERE, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1);
     // All shapes should be disjoint
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, s.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.DISJOINT, s.getRelationship(shape));
@@ -70,7 +70,7 @@ public class XYZSolidTest extends LuceneTestCase {
     // Basic test of the factory method - non-degenerate
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, -2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
     // Any shape, except whole world, should be within.
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.WITHIN, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     // An XYZSolid represents a surface shape, which when larger than the world is in fact
@@ -80,7 +80,7 @@ public class XYZSolidTest extends LuceneTestCase {
     // Build a degenerate point, not on sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     // disjoint with everything?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
@@ -88,17 +88,17 @@ public class XYZSolidTest extends LuceneTestCase {
     // Build a degenerate point that IS on the sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0);
     // inside everything that it touches?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
 
     // Build a shape degenerate in (x,y), which has no points on sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, 0.0, 0.0, -0.1, 0.1);
     // disjoint with everything?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
@@ -106,31 +106,31 @@ public class XYZSolidTest extends LuceneTestCase {
     // Build a shape degenerate in (x,y) which has one point on sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, 0.0, 0.0, -0.1, 1.1);
     // inside everything that it touches?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
 
     // Build a shape degenerate in (x,y) which has two points on sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, 0.0, 0.0, -1.1, 1.1);
     // inside everything that it touches?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
     
     // Build a shape degenerate in (x,z), which has no points on sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, -0.1, 0.1, 0.0, 0.0);
     // disjoint with everything?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
@@ -138,25 +138,25 @@ public class XYZSolidTest extends LuceneTestCase {
     // Build a shape degenerate in (x,z) which has one point on sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, -0.1, 1.1, 0.0, 0.0);
     // inside everything that it touches?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
 
     // Build a shape degenerate in (x,y) which has two points on sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, -1.1, 1.1, 0.0, 0.0);
     // inside everything that it touches?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
 
     // MHL for y-z check
@@ -164,7 +164,7 @@ public class XYZSolidTest extends LuceneTestCase {
     // Build a shape that is degenerate in x, which has zero points intersecting sphere
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, -0.1, 0.1, -0.1, 0.1);
     // disjoint with everything?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
@@ -172,7 +172,7 @@ public class XYZSolidTest extends LuceneTestCase {
     // Build a shape that is degenerate in x, which has zero points intersecting sphere, second variation
     solid = GeoAreaFactory.makeGeoArea(PlanetModel.SPHERE, 0.0, 0.0, -0.1, 0.1, 1.1, 1.2);
     // disjoint with everything?
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
@@ -182,17 +182,17 @@ public class XYZSolidTest extends LuceneTestCase {
     // inside everything that it touches?
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
 
     // Build a shape that is disjoint in X but intersects sphere in a half circle in Y
@@ -200,17 +200,17 @@ public class XYZSolidTest extends LuceneTestCase {
     // inside everything that it touches?
     shape = new GeoWorld(PlanetModel.SPHERE);
     assertEquals(GeoArea.CONTAINS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, -Math.PI * 0.5, 0.1);
     assertEquals(GeoArea.DISJOINT, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
-    shape = new GeoCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
+    shape = new GeoStandardCircle(PlanetModel.SPHERE, -Math.PI * 0.5, 0.0, 0.1);
     assertEquals(GeoArea.OVERLAPS, solid.getRelationship(shape));
 
     // MHL for degenerate Y

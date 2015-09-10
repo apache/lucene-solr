@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @lucene.experimental
  */
-public class GeoConvexPolygon extends GeoBaseMembershipShape {
+public class GeoConvexPolygon extends GeoBasePolygon {
   /** The list of polygon points */
   protected final List<GeoPoint> points;
   /** A bitset describing, for each edge, whether it is internal or not */
