@@ -57,8 +57,6 @@ grant {
   permission java.lang.RuntimePermission "getStackTrace";
   // needed for mock filesystems in tests
   permission java.lang.RuntimePermission "fileSystemProvider";
-  // needed by queryparser/ NLS., TODO clean this up:
-  permission java.lang.RuntimePermission "accessClassInPackage.sun.util";
   // needed for test of IOUtils.spins (maybe it can be avoided)
   permission java.lang.RuntimePermission "getFileStoreAttributes";
   // analyzers/uima: needed by UIMA message localization... (?)
