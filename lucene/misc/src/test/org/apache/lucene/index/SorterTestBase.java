@@ -220,6 +220,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
     unsortedReader.close();
     sortedReader.close();
     dir.close();
+    unsortedReader = sortedReader = null;
+    dir = null;
   }
   
   @Test
