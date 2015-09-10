@@ -42,7 +42,8 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   protected final double maxLat;
 
   protected Range currentRange;
-  private BytesRef currentCell;
+  private final BytesRefBuilder currentCell = new BytesRefBuilder();
+  private final BytesRefBuilder nextSubRange = new BytesRefBuilder();
 
   private final List<Range> rangeBounds = new LinkedList<>();
 
@@ -102,7 +103,7 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
     // if cell is within and a factor of the precision step, or it crosses the edge of the shape add the range
     final boolean within = res % GeoPointField.PRECISION_STEP == 0 && cellWithin(minLon, minLat, maxLon, maxLat);
     if (within || (level == DETAIL_LEVEL && cellIntersectsShape(minLon, minLat, maxLon, maxLat))) {
-      rangeBounds.add(new Range(start, res, level, !within));
+      rangeBounds.add(new Range(start, res, !within));
     } else if (level < DETAIL_LEVEL && cellIntersectsMBR(minLon, minLat, maxLon, maxLat)) {
       computeRange(start, (short) (res - 1));
     }
@@ -146,7 +147,7 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
 
   private void nextRange() {
     currentRange = rangeBounds.remove(0);
-    currentCell = currentRange.cell;
+    currentRange.fillBytesRef(currentCell);
   }
 
   @Override
@@ -157,20 +158,19 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
       }
 
       // if the new upper bound is before the term parameter, the sub-range is never a hit
-      if (term != null && term.compareTo(currentCell) > 0) {
+      if (term != null && term.compareTo(currentCell.get()) > 0) {
         nextRange();
         if (!rangeBounds.isEmpty()) {
           continue;
         }
       }
       // never seek backwards, so use current term if lower bound is smaller
-      return (term != null && term.compareTo(currentCell) > 0) ?
-          term : currentCell;
+      return (term != null && term.compareTo(currentCell.get()) > 0) ?
+          term : currentCell.get();
     }
 
     // no more sub-range enums available
     assert rangeBounds.isEmpty();
-    currentCell = null;
     return null;
   }
 
@@ -185,12 +185,13 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   @Override
   protected AcceptStatus accept(BytesRef term) {
     // validate value is in range
-    while (currentCell == null || term.compareTo(currentCell) > 0) {
+    while (currentCell == null || term.compareTo(currentCell.get()) > 0) {
       if (rangeBounds.isEmpty()) {
         return AcceptStatus.END;
       }
       // peek next sub-range, only seek if the current term is smaller than next lower bound
-      if (term.compareTo(rangeBounds.get(0).cell) < 0) {
+      rangeBounds.get(0).fillBytesRef(this.nextSubRange);
+      if (term.compareTo(this.nextSubRange.get()) < 0) {
         return AcceptStatus.NO_AND_SEEK;
       }
       // step forward to next range without seeking, as next range is less or equal current term
@@ -206,22 +207,32 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
    * Internal class to represent a range along the space filling curve
    */
   protected final class Range implements Comparable<Range> {
-    final BytesRef cell;
-    final short level;
+    final short shift;
+    final long start;
     final boolean boundary;
 
-    Range(final long lower, final short res, final short level, boolean boundary) {
-      this.level = level;
+    Range(final long lower, final short shift, boolean boundary) {
       this.boundary = boundary;
+      this.start = lower;
+      this.shift = shift;
+    }
 
-      BytesRefBuilder brb = new BytesRefBuilder();
-      NumericUtils.longToPrefixCodedBytes(lower, res, brb);
-      this.cell = brb.get();
+    /**
+     * Encode as a BytesRef using a reusable object. This allows us to lazily create the BytesRef (which is
+     * quite expensive), only when we need it.
+     */
+    private void fillBytesRef(BytesRefBuilder result) {
+      assert result != null;
+      NumericUtils.longToPrefixCoded(start, shift, result);
     }
 
     @Override
     public int compareTo(Range other) {
-      return this.cell.compareTo(other.cell);
+      final int result = Short.compare(this.shift, other.shift);
+      if (result == 0) {
+        return Long.compare(this.start, other.start);
+      }
+      return result;
     }
   }
 }
