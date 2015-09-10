@@ -90,10 +90,12 @@ limitations under the License.
 
     <div id="main" class="clearfix">
 
-      <div class="header-message" id="init-failures" ng-show="initFailures">
+      <div class="header-message" id="init-failures" ng-show="showInitFailures">
 
           <h2>SolrCore Initialization Failures</h2>
-          <ul></ul>
+          <ul>
+              <li ng-repeat="(core,error) in initFailures"><strong>{{core}}:</strong> {{error}}</li>
+          </ul>
           <p>Please check your logs for more information</p>
 
       </div>
@@ -113,11 +115,8 @@ limitations under the License.
     <p>Continuing to load data...</p>
   </div>
       </div>
-
-      <div id="http-exception" class="header-message" ng-show="exception">
-        <h2>Exception</h2>
-  <p>{{exception}}</p>
-  <a ng-click="hideException()">hide exception</a>
+      <div id="http-exception" class="header-message" ng-repeat="(url, exception) in exceptions">
+        <div class="exception">{{exception.msg}}</div>
       </div>
 
       <div id="content-wrapper">

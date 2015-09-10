@@ -352,6 +352,18 @@ ul
   display: none;
 }
 
+.exception
+{
+  background-color: #f00;
+  background-image: url( ../../img/ico/construction.png );
+  background-position: 10px 50%;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px;
+  padding-left: 35px;
+}
+
 #content-wrapper
 {
   margin-left: 150px;
@@ -720,5 +732,18 @@ pre.syntax .tex .formula
   box-shadow: 1px 1px 0 #d8d8d8;
   -moz-box-shadow: 1px 1px 0 #d8d8d8;
   -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+  color: #333;
+}
+
+.exception .show-exception {
+  margin-top: 4px;
+  display: block;
+  position: absolute;
+  right: 10px;
+  top: 7px;
+  color: #fff;
+}
+
+#exception .show-exception a:hover {
   color: #333;
 }
