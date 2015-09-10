@@ -53,8 +53,6 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
     // try to load a class; we use string comparison because classloader may be different...
     assertEquals("org.apache.lucene.analysis.util.RollingCharBuffer",
         rl.newInstance("org.apache.lucene.analysis.util.RollingCharBuffer", Object.class).getClass().getName());
-    // theoretically classes should also be loadable:
-    IOUtils.closeWhileHandlingException(rl.openResource("java/lang/String.class"));
   }
   
   public void testBaseDir() throws Exception {
