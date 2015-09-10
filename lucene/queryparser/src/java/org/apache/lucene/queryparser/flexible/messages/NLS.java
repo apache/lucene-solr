@@ -19,8 +19,6 @@ package org.apache.lucene.queryparser.flexible.messages;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -125,27 +123,22 @@ public class NLS {
   private static void load(Class<? extends NLS> clazz) {
     final Field[] fieldArray = clazz.getDeclaredFields();
 
-    boolean isFieldAccessible = (clazz.getModifiers() & Modifier.PUBLIC) != 0;
-
     // build a map of field names to Field objects
     final int len = fieldArray.length;
     Map<String, Field> fields = new HashMap<>(len * 2);
     for (int i = 0; i < len; i++) {
       fields.put(fieldArray[i].getName(), fieldArray[i]);
-      loadfieldValue(fieldArray[i], isFieldAccessible, clazz);
+      loadfieldValue(fieldArray[i], clazz);
     }
   }
 
-  private static void loadfieldValue(Field field, boolean isFieldAccessible,
-      Class<? extends NLS> clazz) {
+  private static void loadfieldValue(Field field, Class<? extends NLS> clazz) {
     int MOD_EXPECTED = Modifier.PUBLIC | Modifier.STATIC;
     int MOD_MASK = MOD_EXPECTED | Modifier.FINAL;
     if ((field.getModifiers() & MOD_MASK) != MOD_EXPECTED)
       return;
 
     // Set a value for this empty field.
-    if (!isFieldAccessible)
-      makeAccessible(field);
     try {
       field.set(null, field.getName());
       validateMessage(field.getName(), clazz);
@@ -176,23 +169,6 @@ public class NLS {
       // ignore all other errors and exceptions
       // since this code is just a test to see if the message is present on the
       // system
-    }
-  }
-
-  /*
-   * Make a class field accessible
-   */
-  private static void makeAccessible(final Field field) {
-    if (System.getSecurityManager() == null) {
-      field.setAccessible(true);
-    } else {
-      AccessController.doPrivileged(new PrivilegedAction<Void>() {
-        @Override
-        public Void run() {
-          field.setAccessible(true);
-          return null;
-        }
-      });
     }
   }
 }
