@@ -151,6 +151,10 @@ Other
 * LUCENE-6775: Improved MorfologikFilterFactory to allow loading of
   custom dictionaries from ResourceLoader.  (Uwe Schindler)
 
+* LUCENE-6797: Make GeoCircle an interface and use a factory to create
+  it, to eventually handle degenerate cases (Karl Wright via Mike
+  McCandless)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also

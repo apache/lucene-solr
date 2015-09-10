@@ -34,7 +34,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
-import org.apache.lucene.geo3d.GeoCircle;
+import org.apache.lucene.geo3d.GeoStandardCircle;
 import org.apache.lucene.geo3d.GeoPath;
 import org.apache.lucene.geo3d.GeoPoint;
 import org.apache.lucene.geo3d.GeoPolygonFactory;
@@ -166,7 +166,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
           final int circleRadius = random().nextInt(179) + 1;
           final Point point = randomPoint();
           try {
-            final GeoShape shape = new GeoCircle(PlanetModel.SPHERE, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
+            final GeoShape shape = new GeoStandardCircle(PlanetModel.SPHERE, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
               circleRadius * DEGREES_TO_RADIANS);
             return new Geo3dShape(shape, ctx);
           } catch (IllegalArgumentException e) {

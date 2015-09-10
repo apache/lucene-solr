@@ -21,6 +21,7 @@ import org.apache.lucene.geo3d.GeoArea;
 import org.apache.lucene.geo3d.GeoBBox;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
 import org.apache.lucene.geo3d.GeoCircle;
+import org.apache.lucene.geo3d.GeoStandardCircle;
 import org.apache.lucene.geo3d.GeoPath;
 import org.apache.lucene.geo3d.GeoPoint;
 import org.apache.lucene.geo3d.PlanetModel;
@@ -50,7 +51,7 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelation
   public void testFailure2() {
     final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(planetModel, -74 * RADIANS_PER_DEGREE, -90 * RADIANS_PER_DEGREE,
         0 * RADIANS_PER_DEGREE, 26 * RADIANS_PER_DEGREE);
-    final GeoCircle circle = new GeoCircle(planetModel, -87.3647352103 * RADIANS_PER_DEGREE, 52.3769709972 * RADIANS_PER_DEGREE, 1 * RADIANS_PER_DEGREE);
+    final GeoCircle circle = new GeoStandardCircle(planetModel, -87.3647352103 * RADIANS_PER_DEGREE, 52.3769709972 * RADIANS_PER_DEGREE, 1 * RADIANS_PER_DEGREE);
     assertTrue(GeoArea.DISJOINT == rect.getRelationship(circle));
     // This is what the test failure claimed...
     //assertTrue(GeoArea.CONTAINS == rect.getRelationship(circle));

@@ -36,9 +36,9 @@ public class GeoPolygonFactory {
    * @param pointList        is a list of the GeoPoints to build an arbitrary polygon out of.
    * @param convexPointIndex is the index of a single convex point whose conformation with
    *                         its neighbors determines inside/outside for the entire polygon.
-   * @return a GeoMembershipShape corresponding to what was specified.
+   * @return a GeoPolygon corresponding to what was specified.
    */
-  public static GeoMembershipShape makeGeoPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final int convexPointIndex) {
+  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final int convexPointIndex) {
     // The basic operation uses a set of points, two points determining one particular edge, and a sided plane
     // describing membership.
     return buildPolygonShape(planetModel, pointList, convexPointIndex, getLegalIndex(convexPointIndex + 1, pointList.size()),
@@ -55,14 +55,14 @@ public class GeoPolygonFactory {
    * @param isInternalEdge is true if the specified edge is an internal one.
    * @return a GeoMembershipShape corresponding to what was specified.
    */
-  public static GeoMembershipShape buildPolygonShape(final PlanetModel planetModel, final List<GeoPoint> pointsList, final int startPointIndex, final int endPointIndex, final SidedPlane startingEdge, final boolean isInternalEdge) {
+  public static GeoPolygon buildPolygonShape(final PlanetModel planetModel, final List<GeoPoint> pointsList, final int startPointIndex, final int endPointIndex, final SidedPlane startingEdge, final boolean isInternalEdge) {
     // Algorithm as follows:
     // Start with sided edge.  Go through all points in some order.  For each new point, determine if the point is within all edges considered so far.
     // If not, put it into a list of points for recursion.  If it is within, add new edge and keep going.
     // Once we detect a point that is within, if there are points put aside for recursion, then call recursively.
 
     // Current composite.  This is what we'll actually be returning.
-    final GeoCompositeMembershipShape rval = new GeoCompositeMembershipShape();
+    final GeoCompositePolygon rval = new GeoCompositePolygon();
 
     final List<GeoPoint> recursionList = new ArrayList<GeoPoint>();
     final List<GeoPoint> currentList = new ArrayList<GeoPoint>();

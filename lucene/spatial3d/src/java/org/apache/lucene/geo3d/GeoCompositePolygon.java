@@ -18,9 +18,15 @@ package org.apache.lucene.geo3d;
  */
 
 /**
- * Interface describing circular area with a center and radius.
+ * GeoCompositePolygon is a specific implementation of GeoMembershipShape, which implements GeoPolygon explicitly.
  *
  * @lucene.experimental
  */
-public interface GeoCircle extends GeoDistanceShape, GeoSizeable {
+public class GeoCompositePolygon extends GeoCompositeMembershipShape implements GeoPolygon {
+  /** Constructor.
+   */
+  public GeoCompositePolygon() {
+  }
+
 }
+  

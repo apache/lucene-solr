@@ -18,9 +18,18 @@ package org.apache.lucene.geo3d;
  */
 
 /**
- * Interface describing circular area with a center and radius.
+ * GeoCircles have all the characteristics of GeoBaseDistanceShapes, plus GeoSizeable.
  *
  * @lucene.experimental
  */
-public interface GeoCircle extends GeoDistanceShape, GeoSizeable {
+public abstract class GeoBaseCircle extends GeoBaseDistanceShape implements GeoCircle {
+
+  /** Constructor.
+   *@param planetModel is the planet model to use.
+   */
+  public GeoBaseCircle(final PlanetModel planetModel) {
+    super(planetModel);
+  }
+
 }
+

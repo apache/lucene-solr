@@ -17,10 +17,30 @@ package org.apache.lucene.geo3d;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+
 /**
- * Interface describing circular area with a center and radius.
+ * Class which constructs a GeoCircle representing an arbitrary circle.
  *
  * @lucene.experimental
  */
-public interface GeoCircle extends GeoDistanceShape, GeoSizeable {
+public class GeoCircleFactory {
+  private GeoCircleFactory() {
+  }
+
+  /**
+   * Create a GeoCircle of the right kind given the specified bounds.
+   * @param planetModel is the planet model.
+   * @param latitude is the center latitude.
+   * @param longitude is the center longitude.
+   * @param radius is the radius angle.
+   * @return a GeoCircle corresponding to what was specified.
+   */
+  public static GeoCircle makeGeoCircle(final PlanetModel planetModel, final double latitude, final double longitude, final double radius) {
+    // TODO: MHL for degenerate cases
+    return new GeoStandardCircle(planetModel, latitude, longitude, radius);
+  }
+
 }
