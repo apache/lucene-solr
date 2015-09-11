@@ -46,43 +46,11 @@ import org.apache.lucene.util.FixedBitSet;
 /** @lucene.experimental */
 public class DocSetUtil {
 
-  private static DocSet createDocSetByIterator(SolrIndexSearcher searcher, Filter filter) throws IOException {
-    int maxDoc = searcher.getIndexReader().maxDoc();
-
-    Map fcontext = null;
-    if (filter instanceof SolrFilter) {
-      fcontext = ValueSource.newContext(searcher);
-      ((SolrFilter) filter).createWeight(fcontext, searcher);
-    }
-
-    DocSetCollector collector = new DocSetCollector((maxDoc >> 6) + 5, maxDoc);
-
-    for (LeafReaderContext readerContext : searcher.getIndexReader().getContext().leaves()) {
-      collector.doSetNextReader(readerContext);
-      Bits acceptDocs = readerContext.reader().getLiveDocs();
-
-      DocIdSet docIdSet = filter instanceof SolrFilter
-          ? ((SolrFilter) filter).getDocIdSet(fcontext, readerContext, acceptDocs)
-          : filter.getDocIdSet(readerContext, acceptDocs);
-
-      if (docIdSet == null) continue;
-      DocIdSetIterator iter = docIdSet.iterator();
-
-      for (;;) {
-        int id = iter.nextDoc();
-        if (id == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        collector.collect(id);
-      }
-
-    }
-
-    return collector.getDocSet();
-
-  }
-
-  private static boolean equals(DocSet a, DocSet b) {
+  /**
+   * Iterates DocSets to test for equality - slow and for testing purposes only.
+   * @lucene.internal
+   */
+  public static boolean equals(DocSet a, DocSet b) {
     DocIterator iter1 = a.iterator();
     DocIterator iter2 = b.iterator();
 
