@@ -54,7 +54,6 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
 
-  @Test
   public void testGeoHash() {
     int numPoints = atLeast(100);
     String randomGeoHashString;
@@ -90,7 +89,6 @@ public class TestGeoUtils extends LuceneTestCase {
    * Pass condition: lat=42.6, lng=-5.6 should be encoded as "ezs42e44yx96",
    * lat=57.64911 lng=10.40744 should be encoded as "u4pruydqqvj8"
    */
-  @Test
   public void testEncode() {
     String hash = GeoHashUtils.stringEncode(-5.6, 42.6, 12);
     assertEquals("ezs42e44yx96", hash);
@@ -103,7 +101,6 @@ public class TestGeoUtils extends LuceneTestCase {
    * Pass condition: lat=52.3738007, lng=4.8909347 should be encoded and then
    * decoded within 0.00001 of the original value
    */
-  @Test
   public void testDecodePreciseLongitudeLatitude() {
     final String geohash = GeoHashUtils.stringEncode(4.8909347, 52.3738007);
     final long hash = GeoHashUtils.mortonEncode(geohash);
@@ -116,7 +113,6 @@ public class TestGeoUtils extends LuceneTestCase {
    * Pass condition: lat=84.6, lng=10.5 should be encoded and then decoded
    * within 0.00001 of the original value
    */
-  @Test
   public void testDecodeImpreciseLongitudeLatitude() {
     final String geohash = GeoHashUtils.stringEncode(10.5, 84.6);
 
@@ -126,7 +122,6 @@ public class TestGeoUtils extends LuceneTestCase {
     assertEquals(10.5, GeoUtils.mortonUnhashLon(hash), 0.00001D);
   }
 
-  @Test
   public void testDecodeEncode() {
     final String geoHash = "u173zq37x014";
     assertEquals(geoHash, GeoHashUtils.stringEncode(4.8909347, 52.3738007));
@@ -139,7 +134,6 @@ public class TestGeoUtils extends LuceneTestCase {
     assertEquals(geoHash, GeoHashUtils.stringEncode(lon, lat));
   }
 
-  @Test
   public void testNeighbors() {
     String geohash = "gcpv";
     List<String> expectedNeighbors = new ArrayList<>();
@@ -199,6 +193,18 @@ public class TestGeoUtils extends LuceneTestCase {
     neighbors = new ArrayList<>();
     GeoHashUtils.addNeighbors(geohash, neighbors );
     assertEquals(expectedNeighbors, neighbors);
+  }
+
+  public void testClosestPointOnBBox() {
+    double[] result = new double[2];
+    GeoDistanceUtils.closestPointOnBBox(20, 30, 40, 50, 70, 70, result);
+    assertEquals(40.0, result[0], 0.0);
+    assertEquals(50.0, result[1], 0.0);
+
+    GeoDistanceUtils.closestPointOnBBox(-20, -20, 0, 0, 70, 70, result);
+    // nocommit this fails but should pass?
+    assertEquals(0.0, result[0], 0.0);
+    assertEquals(0.0, result[1], 0.0);
   }
 
   public static double randomLatFullRange() {
