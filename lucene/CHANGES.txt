@@ -155,6 +155,9 @@ Other
   it, to eventually handle degenerate cases (Karl Wright via Mike
   McCandless)
 
+* LUCENE-6800: Use XYZSolidFactory to create XYZSolids (Karl Wright
+  via Mike McCandless)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also

@@ -27,7 +27,7 @@ public class XYZSolidTest extends LuceneTestCase {
     XYZSolid s;
     GeoShape shape;
     // Something bigger than the world
-    s = new XYZSolid(PlanetModel.SPHERE, -2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
+    s = new StandardXYZSolid(PlanetModel.SPHERE, -2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
     // Any shape, except whole world, should be within.
     shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.WITHIN, s.getRelationship(shape));
@@ -37,7 +37,7 @@ public class XYZSolidTest extends LuceneTestCase {
     assertEquals(GeoArea.OVERLAPS, s.getRelationship(shape));
 
     // Something overlapping the world on only one side
-    s = new XYZSolid(PlanetModel.SPHERE, -2.0, 0.0, -2.0, 2.0, -2.0, 2.0);
+    s = new StandardXYZSolid(PlanetModel.SPHERE, -2.0, 0.0, -2.0, 2.0, -2.0, 2.0);
     // Some things should be disjoint...
     shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, s.getRelationship(shape));
@@ -53,7 +53,7 @@ public class XYZSolidTest extends LuceneTestCase {
     assertEquals(GeoArea.CONTAINS, s.getRelationship(shape));
     
     // Something inside the world
-    s = new XYZSolid(PlanetModel.SPHERE, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1);
+    s = new StandardXYZSolid(PlanetModel.SPHERE, -0.1, 0.1, -0.1, 0.1, -0.1, 0.1);
     // All shapes should be disjoint
     shape = new GeoStandardCircle(PlanetModel.SPHERE, 0.0, 0.0, 0.1);
     assertEquals(GeoArea.DISJOINT, s.getRelationship(shape));
