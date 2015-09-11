@@ -62,8 +62,6 @@ public final class Lucene46RWSegmentInfoFormat extends Lucene46SegmentInfoFormat
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(output);
-        // TODO: are we doing this outside of the tracking wrapper? why must SIWriter cleanup like this?
-        IOUtils.deleteFilesIgnoringExceptions(si.dir, fileName);
       } else {
         output.close();
       }

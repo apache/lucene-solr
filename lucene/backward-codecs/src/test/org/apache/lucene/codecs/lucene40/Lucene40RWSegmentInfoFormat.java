@@ -60,8 +60,6 @@ public final class Lucene40RWSegmentInfoFormat extends Lucene40SegmentInfoFormat
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(output);
-        // TODO: why must we do this? do we not get tracking dir wrapper?
-        IOUtils.deleteFilesIgnoringExceptions(si.dir, fileName);
       } else {
         output.close();
       }
