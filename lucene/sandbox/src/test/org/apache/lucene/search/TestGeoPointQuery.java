@@ -69,8 +69,12 @@ public class TestGeoPointQuery extends LuceneTestCase {
   // determining the possible haversine error
   private static final int DISTANCE_ERR = 1000;
 
+  private static boolean smallBBox;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    smallBBox = random().nextBoolean();
+
     directory = newDirectory();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
@@ -140,6 +144,11 @@ public class TestGeoPointQuery extends LuceneTestCase {
   private TopDocs geoDistanceQuery(double lon, double lat, double radius, int limit) throws Exception {
     GeoPointDistanceQuery q = new GeoPointDistanceQuery(FIELD_NAME, lon, lat, radius);
     return searcher.search(q, limit);
+  }
+
+  @Test
+  public void testRectCrossesCircle() throws Exception {
+    assertTrue(GeoUtils.rectCrossesCircle(-180, -90, 180, 0.0, 0.667, 0.0, 88000.0));
   }
 
   @Test
@@ -225,10 +234,9 @@ public class TestGeoPointQuery extends LuceneTestCase {
   /**
    * Explicitly large
    */
-  @Nightly
   public void testGeoDistanceQueryHuge() throws Exception {
-    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 2000000, 20);
-    assertEquals("GeoDistanceQuery failed", 13, td.totalHits);
+    TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 6000000, 20);
+    assertEquals("GeoDistanceQuery failed",18, td.totalHits);
   }
 
   @Test
@@ -252,7 +260,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
     doTestRandom(10);
   }
 
-  public void testRandom() throws Exception {
+  public void testRandomMedium() throws Exception {
     doTestRandom(10000);
   }
 
@@ -304,13 +312,13 @@ public class TestGeoPointQuery extends LuceneTestCase {
         if (x == 0) {
           // Identical lat to old point
           lats[docID] = lats[oldDocID];
-          lons[docID] = TestGeoUtils.randomLon();
+          lons[docID] = randomLon();
           if (VERBOSE) {
             //System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat as doc=" + oldDocID + ")");
           }
         } else if (x == 1) {
           // Identical lon to old point
-          lats[docID] = TestGeoUtils.randomLat();
+          lats[docID] = randomLat();
           lons[docID] = lons[oldDocID];
           if (VERBOSE) {
             //System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lon as doc=" + oldDocID + ")");
@@ -325,8 +333,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
           }
         }
       } else {
-        lats[docID] = TestGeoUtils.randomLat();
-        lons[docID] = TestGeoUtils.randomLon();
+        lats[docID] = randomLat();
+        lons[docID] = randomLon();
         haveRealDoc = true;
         if (VERBOSE) {
           //System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID]);
@@ -382,6 +390,9 @@ public class TestGeoPointQuery extends LuceneTestCase {
     // Make sure queries are thread safe:
     int numThreads = TestUtil.nextInt(random(), 2, 5);
 
+    // nocommit
+    numThreads = 1;
+
     List<Thread> threads = new ArrayList<>();
     final int iters = atLeast(10);
 
@@ -412,7 +423,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
               VerifyHits verifyHits;
 
-              if (random().nextBoolean()) {
+              // nocommit
+              if (false && random().nextBoolean()) {
                 GeoBoundingBox bbox = randomBBox();
 
                 query = new GeoPointInBBoxQuery(FIELD_NAME, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
@@ -433,8 +445,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
                       }
                     }
                    };
-              } else if (random().nextBoolean()) {
-                
+              // nocommit
+              } else if (true || random().nextBoolean()) {
                 // generate a random bounding box
                 GeoBoundingBox bbox = randomBBox();
 
@@ -442,8 +454,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
                 double centerLon = bbox.minLon + ((bbox.maxLon - bbox.minLon)/2.0);
 
                 // radius (in meters) as a function of the random generated bbox
-                final double radius = GeoDistanceUtils.vincentyDistance(centerLon, centerLat, centerLon, bbox.minLat);
-                //final double radius = SloppyMath.haversin(centerLat, centerLon, bbox.minLat, centerLon)*1000;
+                final double radius = SloppyMath.haversin(centerLon, centerLat, centerLon, bbox.minLat)*1000.0;
+
                 if (VERBOSE) {
                   System.out.println("\t radius = " + radius);
                 }
@@ -463,7 +475,6 @@ public class TestGeoPointQuery extends LuceneTestCase {
                       }
                     }
                    };
-                
               } else {
                 GeoBoundingBox bbox = randomBBox();
 
@@ -617,10 +628,10 @@ public class TestGeoPointQuery extends LuceneTestCase {
   }
 
   private static GeoBoundingBox randomBBox() {
-    double lat0 = TestGeoUtils.randomLat();
-    double lat1 = TestGeoUtils.randomLat();
-    double lon0 = TestGeoUtils.randomLon();
-    double lon1 = TestGeoUtils.randomLon();
+    double lat0 = randomLat();
+    double lat1 = randomLat();
+    double lon0 = randomLon();
+    double lon1 = randomLon();
 
     if (lat1 < lat0) {
       double x = lat0;
@@ -628,6 +639,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
       lat1 = x;
     }
 
+    // nocommit this means we never test dateline crossing in the random test?
     if (lon1 < lon0) {
       double x = lon0;
       lon0 = lon1;
@@ -635,5 +647,21 @@ public class TestGeoPointQuery extends LuceneTestCase {
     }
 
     return new GeoBoundingBox(lon0, lon1, lat0, lat1);
+  }
+
+  private static double randomLat() {
+    if (smallBBox) {
+      return 2.0 * (random().nextDouble()-0.5);
+    } else {
+      return -90 + 180.0 * random().nextDouble();
+    }
+  }
+
+  private static double randomLon() {
+    if (smallBBox) {
+      return 2.0 * (random().nextDouble()-0.5);
+    } else {
+      return -180 + 360.0 * random().nextDouble();
+    }
   }
 }

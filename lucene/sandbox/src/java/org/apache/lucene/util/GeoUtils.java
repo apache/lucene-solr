@@ -25,8 +25,6 @@ import java.util.ArrayList;
  * @lucene.experimental
  */
 public final class GeoUtils {
-  private static final short MIN_LON = -180;
-  private static final short MIN_LAT = -90;
   public static final short BITS = 32;
   private static final double LON_SCALE = ((0x1L<<BITS)-1)/360.0D;
   private static final double LAT_SCALE = ((0x1L<<BITS)-1)/180.0D;
@@ -61,19 +59,19 @@ public final class GeoUtils {
   }
 
   private static long scaleLon(final double val) {
-    return (long) ((val-MIN_LON) * LON_SCALE);
+    return (long) ((val-GeoProjectionUtils.MIN_LON) * LON_SCALE);
   }
 
   private static long scaleLat(final double val) {
-    return (long) ((val-MIN_LAT) * LAT_SCALE);
+    return (long) ((val-GeoProjectionUtils.MIN_LAT) * LAT_SCALE);
   }
 
   private static double unscaleLon(final long val) {
-    return (val / LON_SCALE) + MIN_LON;
+    return (val / LON_SCALE) + GeoProjectionUtils.MIN_LON;
   }
 
   private static double unscaleLat(final long val) {
-    return (val / LAT_SCALE) + MIN_LAT;
+    return (val / LAT_SCALE) + GeoProjectionUtils.MIN_LAT;
   }
 
   public static double compare(final double v1, final double v2) {
@@ -317,19 +315,14 @@ public final class GeoUtils {
   public static boolean rectCrossesCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                           final double centerLon, final double centerLat, final double radius) {
     return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius)
-        || lineCrossesSphere(rMinX, rMinY, 0, rMaxX, rMinY, 0, centerLon, centerLat, 0, radius)
-        || lineCrossesSphere(rMaxX, rMinY, 0, rMaxX, rMaxY, 0, centerLon, centerLat, 0, radius)
-        || lineCrossesSphere(rMaxX, rMaxY, 0, rMinX, rMaxY, 0, centerLon, centerLat, 0, radius)
-        || lineCrossesSphere(rMinX, rMaxY, 0, rMinX, rMinY, 0, centerLon, centerLat, 0, radius);
+        || isClosestPointOnRectWithinRange(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius);
   }
 
-  public static boolean circleWithinRect(double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-  final double centerLon, final double centerLat, final double radius) {
-    return !(centerLon < rMinX || centerLon > rMaxX || centerLat > rMaxY || centerLat < rMinY
-        || SloppyMath.haversin(rMinY, centerLon, centerLat, centerLon) < radius
-        || SloppyMath.haversin(rMaxY, centerLon, centerLat, centerLon) < radius
-        || SloppyMath.haversin(centerLat, rMinX, centerLat, centerLon) < radius
-        || SloppyMath.haversin(centerLat, rMaxX, centerLat, centerLon) < radius);
+  public static boolean isClosestPointOnRectWithinRange(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                                        final double centerLon, final double centerLat, final double radius) {
+    double[] closestPt = {0, 0};
+    GeoDistanceUtils.closestPointOnBBox(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, closestPt);
+    return SloppyMath.haversin(centerLat, centerLon, closestPt[1], closestPt[0])*1000.0 <= radius;
   }
 
   /**

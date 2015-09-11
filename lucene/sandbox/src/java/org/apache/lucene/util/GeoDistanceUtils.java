@@ -110,6 +110,38 @@ public class GeoDistanceUtils {
   }
 
   /**
+   *  Finds the closest point to a rectangle (defined by rMinX, rMinY, rMaxX, rMaxY) from the given (lon, lat) point
+   *  the result is provided in closestPt
+   */
+  public static void closestPointOnBBox(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                        final double lon, final double lat, double[] closestPt) {
+    assert closestPt != null && closestPt.length == 2;
+
+    closestPt[0] = 0;
+    closestPt[1] = 0;
+
+    if (lon > rMaxX) {
+      closestPt[0] = rMaxX;
+    } else if (lon < rMinX) {
+      closestPt[0] = rMinX;
+    }
+
+    if (lat > rMaxY) {
+      closestPt[1] = rMaxY;
+    } else if (lat < rMinY) {
+      closestPt[1] = rMinY;
+    }
+
+    if (closestPt[0] == 0) {
+      closestPt[0] = lon;
+    }
+
+    if (closestPt[1] == 0) {
+      closestPt[1] = lat;
+    }
+  }
+
+  /**
    * Compute the inverse haversine to determine distance in degrees longitude for provided distance in meters
    * @param lat latitude to compute delta degrees lon
    * @param distance distance in meters to convert to degrees lon

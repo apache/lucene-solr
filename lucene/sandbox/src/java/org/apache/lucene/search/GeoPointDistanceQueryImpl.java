@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
@@ -51,6 +52,23 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     GeoPointRadiusTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
                             final double maxLon, final double maxLat) {
       super(tenum, minLon, minLat, maxLon, maxLat);
+    }
+
+    /**
+     * Computes the maximum shift for the given pointDistanceQuery. This prevents unnecessary depth traversal
+     * given the size of the distance query.
+     */
+    @Override
+    protected short computeMaxShift() {
+      final short shiftFactor;
+
+      if (query.radius > 2000000) {
+        shiftFactor = 5;
+      } else {
+        shiftFactor = 4;
+      }
+
+      return (short)(GeoPointField.PRECISION_STEP * shiftFactor);
     }
 
     @Override
@@ -99,5 +117,9 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     int result = super.hashCode();
     result = 31 * result + query.hashCode();
     return result;
+  }
+
+  public double getRadius() {
+    return query.getRadius();
   }
 }

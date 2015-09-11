@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.GeoDistanceUtils;
 import org.apache.lucene.util.GeoProjectionUtils;
 import org.apache.lucene.util.GeoUtils;
 
@@ -83,13 +84,34 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   }
 
   static GeoBoundingBox computeBBox(final double centerLon, final double centerLat, final double radius) {
-    double[] t = GeoProjectionUtils.pointFromLonLatBearing(centerLon, centerLat, 0, radius, null);
-    double[] r = GeoProjectionUtils.pointFromLonLatBearing(centerLon, centerLat, 90, radius, null);
-    double[] b = GeoProjectionUtils.pointFromLonLatBearing(centerLon, centerLat, 180, radius, null);
-    double[] l = GeoProjectionUtils.pointFromLonLatBearing(centerLon, centerLat, 270, radius, null);
+    final double radLat = StrictMath.toRadians(centerLat);
+    final double radLon = StrictMath.toRadians(centerLon);
+    double radDistance = (radius + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
+    double minLat = radLat - radDistance;
+    double maxLat = radLat + radDistance;
+    double minLon;
+    double maxLon;
 
-    return new GeoBoundingBox(GeoUtils.normalizeLon(l[0]), GeoUtils.normalizeLon(r[0]), GeoUtils.normalizeLat(b[1]),
-        GeoUtils.normalizeLat(t[1]));
+    if (minLat > GeoProjectionUtils.MIN_LAT_RADIANS && maxLat < GeoProjectionUtils.MAX_LAT_RADIANS) {
+      double deltaLon = StrictMath.asin(StrictMath.sin(radDistance) / StrictMath.cos(radLat));
+      minLon = radLon - deltaLon;
+      if (minLon < GeoProjectionUtils.MIN_LON_RADIANS) {
+        minLon += 2d * StrictMath.PI;
+      }
+      maxLon = radLon + deltaLon;
+      if (maxLon > GeoProjectionUtils.MAX_LON_RADIANS) {
+        maxLon -= 2d * StrictMath.PI;
+      }
+    } else {
+      // a pole is within the distance
+      minLat = StrictMath.max(minLat, GeoProjectionUtils.MIN_LAT_RADIANS);
+      maxLat = StrictMath.min(maxLat, GeoProjectionUtils.MAX_LAT_RADIANS);
+      minLon = GeoProjectionUtils.MIN_LON_RADIANS;
+      maxLon = GeoProjectionUtils.MAX_LON_RADIANS;
+    }
+
+    return new GeoBoundingBox(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
+        StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
   }
 
   @Override
