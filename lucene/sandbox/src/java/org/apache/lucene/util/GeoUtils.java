@@ -246,11 +246,11 @@ public final class GeoUtils {
    *
    * @param lon longitudinal center of circle (in degrees)
    * @param lat latitudinal center of circle (in degrees)
-   * @param radius distance radius of circle (in meters)
+   * @param radiusMeters distance radius of circle (in meters)
    * @return a list of lon/lat points representing the circle
    */
   @SuppressWarnings({"unchecked","rawtypes"})
-  public static ArrayList<double[]> circleToPoly(final double lon, final double lat, final double radius) {
+  public static ArrayList<double[]> circleToPoly(final double lon, final double lat, final double radiusMeters) {
     double angle;
     // a little under-sampling (to limit the number of polygonal points): using archimedes estimation of pi
     final int sides = 25;
@@ -262,7 +262,7 @@ public final class GeoUtils {
     final int sidesLen = sides-1;
     for (int i=0; i<sidesLen; ++i) {
       angle = (i*360/sides);
-      pt = GeoProjectionUtils.pointFromLonLatBearing(lon, lat, angle, radius, pt);
+      pt = GeoProjectionUtils.pointFromLonLatBearing(lon, lat, angle, radiusMeters, pt);
       lons[i] = pt[0];
       lats[i] = pt[1];
     }
@@ -289,40 +289,40 @@ public final class GeoUtils {
   }
 
   private static boolean rectAnyCornersOutsideCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                                     final double centerLon, final double centerLat, final double radius) {
-    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radius
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radius);
+                                                     final double centerLon, final double centerLat, final double radiusMeters) {
+    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radiusMeters);
   }
 
   private static boolean rectAnyCornersInCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                                final double centerLon, final double centerLat, final double radius) {
-    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 <= radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 <= radius
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radius);
+                                                final double centerLon, final double centerLat, final double radiusMeters) {
+    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 <= radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 <= radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radiusMeters);
   }
 
   public static boolean rectWithinCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                         final double centerLon, final double centerLat, final double radius) {
-    return !(rectAnyCornersOutsideCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius));
+                                         final double centerLon, final double centerLat, final double radiusMeters) {
+    return !(rectAnyCornersOutsideCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters));
   }
 
   /**
    * Computes whether a rectangle crosses a circle
    */
   public static boolean rectCrossesCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                          final double centerLon, final double centerLat, final double radius) {
-    return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius)
-        || isClosestPointOnRectWithinRange(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius);
+                                          final double centerLon, final double centerLat, final double radiusMeters) {
+    return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters)
+        || isClosestPointOnRectWithinRange(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters);
   }
 
-  public static boolean isClosestPointOnRectWithinRange(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                                        final double centerLon, final double centerLat, final double radius) {
+  private static boolean isClosestPointOnRectWithinRange(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                                         final double centerLon, final double centerLat, final double radiusMeters) {
     double[] closestPt = {0, 0};
     GeoDistanceUtils.closestPointOnBBox(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, closestPt);
-    return SloppyMath.haversin(centerLat, centerLon, closestPt[1], closestPt[0])*1000.0 <= radius;
+    return SloppyMath.haversin(centerLat, centerLon, closestPt[1], closestPt[0])*1000.0 <= radiusMeters;
   }
 
   /**
@@ -337,12 +337,13 @@ public final class GeoUtils {
    * @param centerLon longitudinal location of center search point (in degrees)
    * @param centerLat latitudinal location of center search point (in degrees)
    * @param centerAlt altitude of the center point (in meters)
-   * @param radius search sphere radius (in meters)
+   * @param radiusMeters search sphere radius (in meters)
    * @return whether the provided line segment is a secant of the
    */
+  // nocommit can/should we remove this?
   private static boolean lineCrossesSphere(double lon1, double lat1, double alt1, double lon2,
                                            double lat2, double alt2, double centerLon, double centerLat,
-                                           double centerAlt, double radius) {
+                                           double centerAlt, double radiusMeters) {
     // convert to cartesian 3d (in meters)
     double[] ecf1 = GeoProjectionUtils.llaToECF(lon1, lat1, alt1, null);
     double[] ecf2 = GeoProjectionUtils.llaToECF(lon2, lat2, alt2, null);
@@ -357,7 +358,7 @@ public final class GeoUtils {
 
     final double a = dX*dX + dY*dY + dZ*dZ;
     final double b = 2 * (fX*dX + fY*dY + fZ*dZ);
-    final double c = (fX*fX + fY*fY + fZ*fZ) - (radius*radius);
+    final double c = (fX*fX + fY*fY + fZ*fZ) - (radiusMeters*radiusMeters);
 
     double discrim = (b*b)-(4*a*c);
     if (discrim < 0) {

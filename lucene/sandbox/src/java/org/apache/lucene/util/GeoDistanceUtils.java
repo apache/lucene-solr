@@ -110,8 +110,9 @@ public class GeoDistanceUtils {
   }
 
   /**
-   *  Finds the closest point to a rectangle (defined by rMinX, rMinY, rMaxX, rMaxY) from the given (lon, lat) point
-   *  the result is provided in closestPt
+   *  Finds the closest point within a rectangle (defined by rMinX, rMinY, rMaxX, rMaxY) to the given (lon, lat) point
+   *  the result is provided in closestPt.  When the point is outside the rectangle, the closest point is on an edge
+   *  or corner of the rectangle; else, the closest point is the point itself.
    */
   public static void closestPointOnBBox(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                         final double lon, final double lat, double[] closestPt) {

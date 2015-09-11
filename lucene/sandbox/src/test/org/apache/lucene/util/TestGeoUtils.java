@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.lucene.search.TestGeoPointQuery;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -210,7 +211,6 @@ public class TestGeoUtils extends LuceneTestCase {
   public static double randomLatFullRange() {
     return (180d * random().nextDouble()) - 90d;
   }
-
   public static double randomLonFullRange() {
     return (360d * random().nextDouble()) - 180d;
   }
@@ -222,4 +222,74 @@ public class TestGeoUtils extends LuceneTestCase {
   public static double randomLon() {
     return GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
   }
+
+  // nocommit test other APIs, e.g. bbox around a circle
+  public void testRandomRectsAndCircles() throws Exception {
+    int iters = atLeast(1000);
+    int iter = 0;
+
+    while (iter < iters) {
+
+      // Random rect:
+      double minLat = randomLat();
+      double maxLat = randomLat();
+      double minLon = randomLon();
+      double maxLon = randomLon();
+
+      if (maxLat < minLat) {
+        double x = minLat;
+        minLat = maxLat;
+        maxLat = x;
+      }
+
+      if (maxLon < minLon) {
+        // nocommit but what about testing crossing the dateline?
+        double x = minLon;
+        minLon = maxLon;
+        maxLon = x;
+      }
+
+      double centerLat = randomLat();
+      double centerLon = randomLon();
+      double radiusMeters = 10000000*random().nextDouble();
+
+      boolean expected;
+      if (GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLon, centerLon, centerLat, radiusMeters) == false) {
+        // Rect and circle are disjoint
+        expected = false;
+      } else if (GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLon, centerLon, centerLat, radiusMeters)) {
+        // Rect fully contained inside circle
+        expected = true;
+      } else {
+        // TODO: would be nice to somehow test this case too
+        continue;
+      }
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " rect: lon=" + minLon + " TO " + maxLon + ", lat=" + minLat + " TO " + maxLat + "; circle: lon=" + centerLon + " lat=" + centerLat + " radiusMeters=" + radiusMeters);
+        if (expected) {
+          System.out.println("  circle fully contains rect");
+        } else {
+          System.out.println("  circle and rect are disjoint");
+        }
+      }
+
+      iter++;
+
+      // Randomly pick points inside the rect and check distance to the center:
+      int iters2 = atLeast(1000);
+      for(int iter2=0;iter2<iters2;iter2++) {
+        double lon = minLon + random().nextDouble() * (maxLon - minLon);
+        double lat = minLat + random().nextDouble() * (maxLat - minLat);
+        double distanceMeters = SloppyMath.haversin(centerLat, centerLon, lat, lon)*1000.0;
+        boolean actual = distanceMeters < radiusMeters;
+        if (expected != actual) {
+          System.out.println("  lon=" + lon + " lat=" + lat + " distanceMeters=" + distanceMeters);
+          assertEquals(expected, actual);
+        }
+      }
+    }
+  }
+
+
 }

@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.GeoUtils;
 
+// nocommit rename to GeoRect?  It's not just a bounding box ... it's any rect ...
+
 /** NOTE: package private; just used so {@link GeoPointInPolygonQuery} can communicate its bounding box to {@link GeoPointInBBoxQuery}. */
 class GeoBoundingBox {
   public final double minLon;
@@ -43,5 +45,10 @@ class GeoBoundingBox {
     this.maxLon = maxLon;
     this.minLat = minLat;
     this.maxLat = maxLat;
+  }
+
+  @Override
+  public String toString() {
+    return "GeoBoundingBox(lon=" + minLon + " TO " + maxLon + ", lat=" + minLat + " TO " + maxLat + ")";
   }
 }

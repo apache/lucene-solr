@@ -146,18 +146,15 @@ public class TestGeoPointQuery extends LuceneTestCase {
     return searcher.search(q, limit);
   }
 
-  @Test
   public void testRectCrossesCircle() throws Exception {
     assertTrue(GeoUtils.rectCrossesCircle(-180, -90, 180, 0.0, 0.667, 0.0, 88000.0));
   }
 
-  @Test
   public void testBBoxQuery() throws Exception {
     TopDocs td = bboxQuery(-96.7772, 32.778650, -96.77690000, 32.778950, 5);
     assertEquals("GeoBoundingBoxQuery failed", 4, td.totalHits);
   }
 
-  @Test
   public void testPolyQuery() throws Exception {
     TopDocs td = polygonQuery(new double[]{-96.7682647, -96.8280029, -96.6288757, -96.4929199,
             -96.6041564, -96.7449188, -96.76826477, -96.7682647},
@@ -166,7 +163,6 @@ public class TestGeoPointQuery extends LuceneTestCase {
     assertEquals("GeoPolygonQuery failed", 2, td.totalHits);
   }
 
-  @Test
   public void testPacManPolyQuery() throws Exception {
     // pacman
     double[] px = {0, 10, 10, 0, -8, -10, -8, 0, 10, 10, 0};
@@ -190,25 +186,21 @@ public class TestGeoPointQuery extends LuceneTestCase {
     assertTrue(GeoUtils.rectWithinPoly(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
   }
 
-  @Test
   public void testBBoxCrossDateline() throws Exception {
     TopDocs td = bboxQuery(179.0, -45.0, -179.0, -44.0, 20);
     assertEquals("BBoxCrossDateline query failed", 2, td.totalHits);
   }
 
-  @Test
   public void testWholeMap() throws Exception {
     TopDocs td = bboxQuery(-179.9, -89.9, 179.9, 89.9, 20);
     assertEquals("testWholeMap failed", 24, td.totalHits);
   }
 
-  @Test
   public void smallTest() throws Exception {
     TopDocs td = geoDistanceQuery(-73.998776, 40.720611, 1, 20);
     assertEquals("smallTest failed", 2, td.totalHits);
   }
 
-  @Test
   public void testInvalidBBox() throws Exception {
     try {
       bboxQuery(179.0, -92.0, 181.0, -91.0, 20);
@@ -218,13 +210,11 @@ public class TestGeoPointQuery extends LuceneTestCase {
     throw new Exception("GeoBoundingBox should not accept invalid lat/lon");
   }
 
-  @Test
   public void testGeoDistanceQuery() throws Exception {
     TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 6000, 20);
     assertEquals("GeoDistanceQuery failed", 2, td.totalHits);
   }
 
-  @Test
   public void testMultiValuedQuery() throws Exception {
     TopDocs td = bboxQuery(-96.4538113027811, 32.7559529921407, -96.7706036567688, 32.7756745755423, 20);
     // 3 single valued docs + 2 multi-valued docs
@@ -239,13 +229,11 @@ public class TestGeoPointQuery extends LuceneTestCase {
     assertEquals("GeoDistanceQuery failed",18, td.totalHits);
   }
 
-  @Test
   public void testGeoDistanceQueryCrossDateline() throws Exception {
     TopDocs td = geoDistanceQuery(-179.9538113027811, 32.94823588839368, 120000, 20);
     assertEquals("GeoDistanceQuery failed", 3, td.totalHits);
   }
 
-  @Test
   public void testInvalidGeoDistanceQuery() throws Exception {
     try {
       geoDistanceQuery(181.0, 92.0, 120000, 20);
@@ -264,7 +252,6 @@ public class TestGeoPointQuery extends LuceneTestCase {
     doTestRandom(10000);
   }
 
-  @Test
   public void testMortonEncoding() throws Exception {
     long hash = GeoUtils.mortonHash(180, 90);
     assertEquals(180.0, GeoUtils.mortonUnhashLon(hash), 0);
@@ -453,6 +440,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
                 double centerLat = bbox.minLat + ((bbox.maxLat - bbox.minLat)/2.0);
                 double centerLon = bbox.minLon + ((bbox.maxLon - bbox.minLon)/2.0);
 
+                // nocommit just make a random point and radius?
+
                 // radius (in meters) as a function of the random generated bbox
                 final double radius = SloppyMath.haversin(centerLon, centerLat, centerLon, bbox.minLat)*1000.0;
 
@@ -627,7 +616,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
          || (tMaxLon - tLon) == 0 || (tMaxLat - tLat) == 0);
   }
 
-  private static GeoBoundingBox randomBBox() {
+  public static GeoBoundingBox randomBBox() {
     double lat0 = randomLat();
     double lat1 = randomLat();
     double lon0 = randomLon();
