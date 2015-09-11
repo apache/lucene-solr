@@ -186,8 +186,7 @@ public class TermsQuery extends Query implements Accountable {
         builder.append(' ');
       }
       first = false;
-      builder.append(iterator.field()).append(':');
-      builder.append(term.utf8ToString());
+      builder.append(new Term(iterator.field(), term).toString());
     }
     builder.append(ToStringUtils.boost(getBoost()));
     return builder.toString();
