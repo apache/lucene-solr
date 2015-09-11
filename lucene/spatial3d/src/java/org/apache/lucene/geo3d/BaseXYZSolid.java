@@ -22,7 +22,7 @@ package org.apache.lucene.geo3d;
  *
  * @lucene.internal
  */
-public abstract class BaseXYZSolid extends BasePlanetObject implements GeoArea {
+public abstract class BaseXYZSolid extends BasePlanetObject implements XYZSolid {
 
   /** Unit vector in x */
   protected static final Vector xUnitVector = new Vector(1.0, 0.0, 0.0);

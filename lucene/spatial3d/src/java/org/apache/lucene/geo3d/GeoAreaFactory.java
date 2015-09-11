@@ -50,32 +50,7 @@ public class GeoAreaFactory {
    * @param maxZ is the max Z boundary
    */
   public static GeoArea makeGeoArea(final PlanetModel planetModel, final double minX, final double maxX, final double minY, final double maxY, final double minZ, final double maxZ) {
-    if (Math.abs(maxX - minX) < Vector.MINIMUM_RESOLUTION) {
-      if (Math.abs(maxY - minY) < Vector.MINIMUM_RESOLUTION) {
-        if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-          return new dXdYdZSolid(planetModel, (minX+maxX) * 0.5, (minY+maxY) * 0.5, minZ);
-        } else {
-          return new dXdYZSolid(planetModel, (minX+maxX) * 0.5, (minY+maxY) * 0.5, minZ, maxZ);
-        }
-      } else {
-        if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-          return new dXYdZSolid(planetModel, (minX+maxX) * 0.5, minY, maxY, (minZ+maxZ) * 0.5);
-        } else {
-          return new dXYZSolid(planetModel, (minX+maxX) * 0.5, minY, maxY, minZ, maxZ);
-        }
-      }
-    }
-    if (Math.abs(maxY - minY) < Vector.MINIMUM_RESOLUTION) {
-      if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-        return new XdYdZSolid(planetModel, minX, maxX, (minY+maxY) * 0.5, (minZ+maxZ) * 0.5);
-      } else {
-        return new XdYZSolid(planetModel, minX, maxX, (minY+maxY) * 0.5, minZ, maxZ);
-      }
-    }
-    if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-      return new XYdZSolid(planetModel, minX, maxX, minY, maxY, (minZ+maxZ) * 0.5);
-    }
-    return new XYZSolid(planetModel, minX, maxX, minY, maxY, minZ, maxZ);
+    return XYZSolidFactory.makeXYZSolid(planetModel, minX, maxX, minY, maxY, minZ, maxZ);
   }
   
 }
