@@ -17,10 +17,6 @@ package org.apache.lucene.geo3d;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.List;
-
 /**
  * Class which constructs a GeoCircle representing an arbitrary circle.
  *
@@ -39,7 +35,9 @@ public class GeoCircleFactory {
    * @return a GeoCircle corresponding to what was specified.
    */
   public static GeoCircle makeGeoCircle(final PlanetModel planetModel, final double latitude, final double longitude, final double radius) {
-    // TODO: MHL for degenerate cases
+    if (radius < Vector.MINIMUM_RESOLUTION) {
+      return new GeoDegeneratePoint(planetModel, latitude, longitude);
+    }
     return new GeoStandardCircle(planetModel, latitude, longitude, radius);
   }
 
