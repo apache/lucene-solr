@@ -24,7 +24,6 @@ import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -165,17 +164,29 @@ public class SystemInfoHandler extends RequestHandlerBase
     info.add( "arch", os.getArch() );
     info.add( "systemLoadAverage", os.getSystemLoadAverage());
 
+    // This is a public Oracle/OpenJDK extension, but may not be in other JDKs:
     // com.sun.management.OperatingSystemMXBean
-    addGetterIfAvaliable( os, "committedVirtualMemorySize", info);
-    addGetterIfAvaliable( os, "freePhysicalMemorySize", info);
-    addGetterIfAvaliable( os, "freeSwapSpaceSize", info);
-    addGetterIfAvaliable( os, "processCpuTime", info);
-    addGetterIfAvaliable( os, "totalPhysicalMemorySize", info);
-    addGetterIfAvaliable( os, "totalSwapSpaceSize", info);
+    try {
+      Class<?> intf = Class.forName("com.sun.management.OperatingSystemMXBean");
+      addGetterIfAvaliable( os, intf, "committedVirtualMemorySize", info);
+      addGetterIfAvaliable( os, intf, "freePhysicalMemorySize", info);
+      addGetterIfAvaliable( os, intf, "freeSwapSpaceSize", info);
+      addGetterIfAvaliable( os, intf, "processCpuTime", info);
+      addGetterIfAvaliable( os, intf, "totalPhysicalMemorySize", info);
+      addGetterIfAvaliable( os, intf, "totalSwapSpaceSize", info);
+    } catch (Exception e) {
+      // ignore
+    }
 
+    // This is a public Oracle/OpenJDK extension, but may not be in other JDKs:
     // com.sun.management.UnixOperatingSystemMXBean
-    addGetterIfAvaliable( os, "openFileDescriptorCount", info );
-    addGetterIfAvaliable( os, "maxFileDescriptorCount", info );
+    try {
+      Class<?> intf = Class.forName("com.sun.management.UnixOperatingSystemMXBean");
+      addGetterIfAvaliable( os, intf, "openFileDescriptorCount", info );
+      addGetterIfAvaliable( os, intf, "maxFileDescriptorCount", info );
+    } catch (Exception e) {
+      // ignore
+    }
 
     try { 
       if( !os.getName().toLowerCase(Locale.ROOT).startsWith( "windows" ) ) {
@@ -183,9 +194,8 @@ public class SystemInfoHandler extends RequestHandlerBase
         info.add( "uname",  execute( "uname -a" ) );
         info.add( "uptime", execute( "uptime" ) );
       }
-    }
-    catch( Exception ex ) {
-      ex.printStackTrace();
+    } catch( Exception ex ) {
+      log.warn("Unable to execute command line tools.", ex);
     } 
     return info;
   }
@@ -199,19 +209,17 @@ public class SystemInfoHandler extends RequestHandlerBase
    * 
    * it is package protected so it can be tested...
    */
-  static void addGetterIfAvaliable( Object obj, String getter, NamedList<Object> info )
+  static void addGetterIfAvaliable( Object obj, Class<?> intf, String property, NamedList<Object> info )
   {
-    // This is a 1.6 function, so lets do a little magic to *try* to make it work
     try {
-      String n = Character.toUpperCase( getter.charAt(0) ) + getter.substring( 1 );
-      Method m = obj.getClass().getMethod( "get" + n );
-      m.setAccessible(true);
-      Object v = m.invoke( obj, (Object[])null );
+      String method = "get" + Character.toUpperCase( property.charAt(0) ) + property.substring( 1 );
+      Object v = intf.getMethod( method ).invoke( intf.cast(obj) );
       if( v != null ) {
-        info.add( getter, v );
+        info.add( property, v );
       }
+    } catch( Exception ex ) {
+      // ignore
     }
-    catch( Exception ex ) {} // don't worry, this only works for 1.6
   }
   
   
