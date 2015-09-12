@@ -17,6 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,11 +34,13 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
@@ -160,75 +166,61 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-    info.add(NAME, os.getName());
-    info.add( "version", os.getVersion() );
-    info.add( "arch", os.getArch() );
-    info.add( "systemLoadAverage", os.getSystemLoadAverage());
-
-    // This is a public Oracle/OpenJDK extension, but may not be in other JDKs:
-    // com.sun.management.OperatingSystemMXBean
+    info.add(NAME, os.getName()); // add at least this one
     try {
-      final Class<? extends PlatformManagedObject> intf = Class.forName("com.sun.management.OperatingSystemMXBean")
-          .asSubclass(PlatformManagedObject.class);
-      final PlatformManagedObject bean = ManagementFactory.getPlatformMXBean(intf);
-      if (bean != null) {
-        addMXBeanProperty( bean, intf, "committedVirtualMemorySize", info);
-        addMXBeanProperty( bean, intf, "freePhysicalMemorySize", info);
-        addMXBeanProperty( bean, intf, "freeSwapSpaceSize", info);
-        addMXBeanProperty( bean, intf, "processCpuTime", info);
-        addMXBeanProperty( bean, intf, "totalPhysicalMemorySize", info);
-        addMXBeanProperty( bean, intf, "totalSwapSpaceSize", info);
-      }
-    } catch (Exception e) {
-      // ignore
+      // add remaining ones dynamically using Java Beans API
+      addMXBeanProperties(os, OperatingSystemMXBean.class, info);
+    } catch (IntrospectionException | ReflectiveOperationException e) {
+      log.warn("Unable to fetch properties of OperatingSystemMXBean.", e);
     }
 
-    // This is a public Oracle/OpenJDK extension, but may not be in other JDKs:
-    // com.sun.management.UnixOperatingSystemMXBean
-    try {
-      final Class<? extends PlatformManagedObject> intf = Class.forName("com.sun.management.UnixOperatingSystemMXBean")
-          .asSubclass(PlatformManagedObject.class);
-      final PlatformManagedObject bean = ManagementFactory.getPlatformMXBean(intf);
-      if (bean != null) {
-        addMXBeanProperty( bean, intf, "openFileDescriptorCount", info );
-        addMXBeanProperty( bean, intf, "maxFileDescriptorCount", info );
+    // There are some additional beans we want to add (not available on all JVMs):
+    for (String clazz : Arrays.asList(
+        "com.sun.management.OperatingSystemMXBean",
+        "com.sun.management.UnixOperatingSystemMXBean", 
+        "com.ibm.lang.management.OperatingSystemMXBean"
+    )) {
+      try {
+        final Class<? extends PlatformManagedObject> intf = Class.forName(clazz)
+            .asSubclass(PlatformManagedObject.class);
+        addMXBeanProperties(os, intf, info);
+      } catch (ClassNotFoundException e) {
+        // ignore
+      } catch (IntrospectionException | ReflectiveOperationException e) {
+        log.warn("Unable to fetch properties of JVM-specific OperatingSystemMXBean.", e);
       }
-    } catch (Exception e) {
-      // ignore
     }
 
+    // Try some command line things:
     try { 
-      if( !os.getName().toLowerCase(Locale.ROOT).startsWith( "windows" ) ) {
-        // Try some command line things
+      if (!Constants.WINDOWS) {
         info.add( "uname",  execute( "uname -a" ) );
         info.add( "uptime", execute( "uptime" ) );
       }
     } catch( Exception ex ) {
-      log.warn("Unable to execute command line tools.", ex);
+      log.warn("Unable to execute command line tools to get operating system properties.", ex);
     } 
     return info;
   }
   
   /**
-   * Try to run a getter function on a {@link PlatformManagedObject}.
+   * Add all bean properties of a {@link PlatformManagedObject} to the given {@link NamedList}.
    * <p>
-   * If you are running a OpenJDK/Oracle JVM, there are nice functions in:
+   * If you are running a OpenJDK/Oracle JVM, there are nice properties in:
    * {@code com.sun.management.UnixOperatingSystemMXBean} and
    * {@code com.sun.management.OperatingSystemMXBean}
-   * <p>
-   * If the given bean does not have the property, it is handled like {@code null}
-   * and not added to the given named list.
    */
-  static void addMXBeanProperty(PlatformManagedObject obj, Class<? extends PlatformManagedObject> intf,
-      String property, NamedList<Object> info) {
-    try {
-      final String method = "get" + Character.toUpperCase( property.charAt(0) ) + property.substring( 1 );
-      final Object v = intf.getMethod( method ).invoke( intf.cast(obj) );
-      if( v != null ) {
-        info.add( property, v );
+  static <T extends PlatformManagedObject> void addMXBeanProperties(T obj, Class<? extends T> intf, NamedList<Object> info)
+      throws IntrospectionException, ReflectiveOperationException {
+    if (intf.isInstance(obj)) {
+      final BeanInfo beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
+        final String name = desc.getName();
+        final Object v = desc.getReadMethod().invoke(obj);
+        if(v != null && info.get(name) == null) {
+          info.add(name, v);
+        }
       }
-    } catch (Exception e) {
-      log.warn("Cannot get property '{}' of MXBean interface: {}", property, intf.getName());
     }
   }
   
