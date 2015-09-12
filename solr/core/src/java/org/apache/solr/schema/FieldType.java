@@ -63,6 +63,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
@@ -720,12 +721,11 @@ public abstract class FieldType extends FieldProperties {
           part2 == null ? null : new BytesRef(toInternal(part2)),
           minInclusive, maxInclusive);
     } else {
-      MultiTermQuery rangeQuery = TermRangeQuery.newStringRange(
+      SolrRangeQuery rangeQuery = new SolrRangeQuery(
             field.getName(),
-            part1 == null ? null : toInternal(part1),
-            part2 == null ? null : toInternal(part2),
+            part1 == null ? null : new BytesRef(toInternal(part1)),
+            part2 == null ? null : new BytesRef(toInternal(part2)),
             minInclusive, maxInclusive);
-      rangeQuery.setRewriteMethod(getRewriteMethod(parser, field));
       return rangeQuery;
     }
   }

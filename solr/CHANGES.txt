@@ -72,6 +72,11 @@ Optimizations
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
   specified.  Speedups of up to 8% were observed.  (yonik)
 
+* SOLR-8037: Speed up creation of filters from term range queries (i.e. non-numeric range queries)
+  and use the filter cache for term range queries that are part of larger queries.  Some observed
+  speedups were up to 2.5x for production of filters, and up to 10x for query evaluation with
+  embedded term range queres that resulted in filter cache hits.  (yonik)
+
 
 Other Changes
 ----------------------

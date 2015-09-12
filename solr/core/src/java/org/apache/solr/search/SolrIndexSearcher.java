@@ -462,6 +462,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     return fieldNames;
   }
 
+  public SolrCache<Query,DocSet> getFilterCache() {
+    return filterCache;
+  }
+
   /**
    * Returns a collection of the names of all stored fields which can be
    * highlighted the index reader knows about.
@@ -919,12 +923,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       DocSet absAnswer = filterCache.get(absQ);
       if (absAnswer!=null) {
         if (positive) return absAnswer;
-        else return getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
+        else return getLiveDocs().andNot(absAnswer);
       }
     }
 
     DocSet absAnswer = getDocSetNC(absQ, null);
-    DocSet answer = positive ? absAnswer : getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
+    DocSet answer = positive ? absAnswer : getLiveDocs().andNot(absAnswer);
 
     if (filterCache != null) {
       // cache negative queries as positive
@@ -948,7 +952,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
+  private BitDocSet liveDocs;
 
+  public BitDocSet getLiveDocs() throws IOException {
+    // going through the filter cache will provide thread safety here
+    if (liveDocs == null) {
+       liveDocs = getDocSetBits(matchAllDocsQuery);
+    }
+    return liveDocs;
+  }
 
   public static class ProcessedFilter {
     public DocSet answer;  // the answer, if non-null
@@ -1129,7 +1141,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     // Are all of our normal cached filters negative?
     if (end > 0 && answer==null) {
-      answer = getPositiveDocSet(matchAllDocsQuery);
+      answer = getLiveDocs();
     }
 
     // do negative queries first to shrink set size
@@ -1152,7 +1164,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     } else {
       if (postFilters == null) {
         if (answer == null) {
-          answer = getPositiveDocSet(matchAllDocsQuery);
+          answer = getLiveDocs();
         }
         // "answer" is the only part of the filter, so set it.
         pf.answer = answer;
@@ -2150,7 +2162,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     // if both negative, we need to create a temp DocSet since we
     // don't have a counting method that takes three.
-    DocSet all = getPositiveDocSet(matchAllDocsQuery);
+    DocSet all = getLiveDocs();
 
     // -a -b == *:*.andNot(a).andNotSize(b) == *.*.andNotSize(a.union(b))
     // we use the last form since the intermediate DocSet should normally be smaller.

@@ -285,8 +285,7 @@ public class BitDocSet extends DocSetBase {
         }
 
         final int base = context.docBase;
-        final int maxDoc = reader.maxDoc();
-        final int max = base + maxDoc;   // one past the max doc in this segment.
+        final int max = base + reader.maxDoc();   // one past the max doc in this segment.
 
         return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
@@ -302,10 +301,11 @@ public class BitDocSet extends DocSetBase {
 
               @Override
               public int nextDoc() {
-                if (pos >= bs.length() - 1) {
+                int next = pos+1;
+                if (next >= max) {
                   return adjustedDoc = NO_MORE_DOCS;
                 } else {
-                  pos = bs.nextSetBit(pos + 1);
+                  pos = bs.nextSetBit(next);
                   return adjustedDoc = pos < max ? pos - base : NO_MORE_DOCS;
                 }
               }
@@ -314,7 +314,7 @@ public class BitDocSet extends DocSetBase {
               public int advance(int target) {
                 if (target == NO_MORE_DOCS) return adjustedDoc = NO_MORE_DOCS;
                 int adjusted = target + base;
-                if (adjusted >= bs.length()) {
+                if (adjusted >= max) {
                   return adjustedDoc = NO_MORE_DOCS;
                 } else {
                   pos = bs.nextSetBit(adjusted);
@@ -326,6 +326,7 @@ public class BitDocSet extends DocSetBase {
               public long cost() {
                 // we don't want to actually compute cardinality, but
                 // if it's already been computed, we use it (pro-rated for the segment)
+                int maxDoc = max-base;
                 if (size != -1) {
                   return (long)(size * ((FixedBitSet.bits2words(maxDoc)<<6) / (float)bs.length()));
                 } else {
@@ -350,7 +351,7 @@ public class BitDocSet extends DocSetBase {
 
               @Override
               public int length() {
-                return maxDoc;
+                return max-base;
               }
             };
           }
