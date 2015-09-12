@@ -24,22 +24,19 @@ package org.apache.lucene.util;
  * <p>Pulled from <a href="http://www.javapuzzlers.com">Java Puzzlers</a>.</p>
  * @see <a href="http://www.amazon.com/Java-Puzzlers-Traps-Pitfalls-Corner/dp/032133678X">http://www.amazon.com/Java-Puzzlers-Traps-Pitfalls-Corner/dp/032133678X</a>
  */
-@SuppressWarnings({"unchecked","rawtypes"})
 public final class Rethrow {
-  /**
-   * Classy puzzler to rethrow any checked exception as an unchecked one.
-   */
-  private static class Rethrower<T extends Throwable> {
-    private void rethrow(Throwable t) throws T {
-      throw (T) t;
-    }
-  }
-  
+  private Rethrow() {}
+
   /**
    * Rethrows <code>t</code> (identical object).
    */
   public static void rethrow(Throwable t) {
-    new Rethrower<Error>().rethrow(t);
+    Rethrow.<Error>rethrow0(t);
+  }
+  
+  @SuppressWarnings("unchecked")
+  private static <T extends Throwable> void rethrow0(Throwable t) throws T {
+    throw (T) t;
   }
 }
 
