@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -167,13 +168,17 @@ public class SystemInfoHandler extends RequestHandlerBase
     // This is a public Oracle/OpenJDK extension, but may not be in other JDKs:
     // com.sun.management.OperatingSystemMXBean
     try {
-      Class<?> intf = Class.forName("com.sun.management.OperatingSystemMXBean");
-      addGetterIfAvaliable( os, intf, "committedVirtualMemorySize", info);
-      addGetterIfAvaliable( os, intf, "freePhysicalMemorySize", info);
-      addGetterIfAvaliable( os, intf, "freeSwapSpaceSize", info);
-      addGetterIfAvaliable( os, intf, "processCpuTime", info);
-      addGetterIfAvaliable( os, intf, "totalPhysicalMemorySize", info);
-      addGetterIfAvaliable( os, intf, "totalSwapSpaceSize", info);
+      final Class<? extends PlatformManagedObject> intf = Class.forName("com.sun.management.OperatingSystemMXBean")
+          .asSubclass(PlatformManagedObject.class);
+      final PlatformManagedObject bean = ManagementFactory.getPlatformMXBean(intf);
+      if (bean != null) {
+        addMXBeanProperty( bean, intf, "committedVirtualMemorySize", info);
+        addMXBeanProperty( bean, intf, "freePhysicalMemorySize", info);
+        addMXBeanProperty( bean, intf, "freeSwapSpaceSize", info);
+        addMXBeanProperty( bean, intf, "processCpuTime", info);
+        addMXBeanProperty( bean, intf, "totalPhysicalMemorySize", info);
+        addMXBeanProperty( bean, intf, "totalSwapSpaceSize", info);
+      }
     } catch (Exception e) {
       // ignore
     }
@@ -181,9 +186,13 @@ public class SystemInfoHandler extends RequestHandlerBase
     // This is a public Oracle/OpenJDK extension, but may not be in other JDKs:
     // com.sun.management.UnixOperatingSystemMXBean
     try {
-      Class<?> intf = Class.forName("com.sun.management.UnixOperatingSystemMXBean");
-      addGetterIfAvaliable( os, intf, "openFileDescriptorCount", info );
-      addGetterIfAvaliable( os, intf, "maxFileDescriptorCount", info );
+      final Class<? extends PlatformManagedObject> intf = Class.forName("com.sun.management.UnixOperatingSystemMXBean")
+          .asSubclass(PlatformManagedObject.class);
+      final PlatformManagedObject bean = ManagementFactory.getPlatformMXBean(intf);
+      if (bean != null) {
+        addMXBeanProperty( bean, intf, "openFileDescriptorCount", info );
+        addMXBeanProperty( bean, intf, "maxFileDescriptorCount", info );
+      }
     } catch (Exception e) {
       // ignore
     }
@@ -201,24 +210,25 @@ public class SystemInfoHandler extends RequestHandlerBase
   }
   
   /**
-   * Try to run a getter function.  This is useful because java 1.6 has a few extra
-   * useful functions on the <code>OperatingSystemMXBean</code>
-   * 
-   * If you are running a sun jvm, there are nice functions in:
-   * UnixOperatingSystemMXBean and com.sun.management.OperatingSystemMXBean
-   * 
-   * it is package protected so it can be tested...
+   * Try to run a getter function on a {@link PlatformManagedObject}.
+   * <p>
+   * If you are running a OpenJDK/Oracle JVM, there are nice functions in:
+   * {@code com.sun.management.UnixOperatingSystemMXBean} and
+   * {@code com.sun.management.OperatingSystemMXBean}
+   * <p>
+   * If the given bean does not have the property, it is handled like {@code null}
+   * and not added to the given named list.
    */
-  static void addGetterIfAvaliable( Object obj, Class<?> intf, String property, NamedList<Object> info )
-  {
+  static void addMXBeanProperty(PlatformManagedObject obj, Class<? extends PlatformManagedObject> intf,
+      String property, NamedList<Object> info) {
     try {
-      String method = "get" + Character.toUpperCase( property.charAt(0) ) + property.substring( 1 );
-      Object v = intf.getMethod( method ).invoke( intf.cast(obj) );
+      final String method = "get" + Character.toUpperCase( property.charAt(0) ) + property.substring( 1 );
+      final Object v = intf.getMethod( method ).invoke( intf.cast(obj) );
       if( v != null ) {
         info.add( property, v );
       }
-    } catch( Exception ex ) {
-      // ignore
+    } catch (Exception e) {
+      log.warn("Cannot get property '{}' of MXBean interface: {}", property, intf.getName());
     }
   }
   
@@ -322,7 +332,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> jmx = new SimpleOrderedMap<>();
     try{
       RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
-      jmx.add( "bootclasspath", mx.getBootClassPath());
+      if (mx.isBootClassPathSupported()) {
+        jmx.add( "bootclasspath", mx.getBootClassPath());
+      }
       jmx.add( "classpath", mx.getClassPath() );
 
       // the input arguments passed to the Java virtual machine
