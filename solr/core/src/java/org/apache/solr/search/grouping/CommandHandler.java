@@ -189,7 +189,7 @@ public class CommandHandler {
   private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
     int maxDoc = searcher.maxDoc();
     final Collector collector;
-    final DocSetCollector docSetCollector = new DocSetCollector(maxDoc >> 6, maxDoc);
+    final DocSetCollector docSetCollector = new DocSetCollector(maxDoc);
     List<Collector> allCollectors = new ArrayList<>(collectors);
     allCollectors.add(docSetCollector);
     searchWithTimeLimiter(query, filter, MultiCollector.wrap(allCollectors));

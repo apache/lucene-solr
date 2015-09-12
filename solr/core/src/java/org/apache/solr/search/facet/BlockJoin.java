@@ -26,6 +26,7 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetCollector;
+import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.QueryContext;
 
 /** @lucene.experimental */
@@ -36,7 +37,7 @@ public class BlockJoin {
    */
   public static DocSet toChildren(DocSet parentInput, BitDocSet parentList, DocSet acceptDocs, QueryContext qcontext) throws IOException {
     FixedBitSet parentBits = parentList.getBits();
-    DocSetCollector collector = new DocSetCollector(qcontext.searcher().maxDoc()>>6, qcontext.searcher().maxDoc());
+    DocSetCollector collector = new DocSetCollector(qcontext.searcher().maxDoc());
     DocIterator iter = parentInput.iterator();
     while (iter.hasNext()) {
       int parentDoc = iter.nextDoc();
@@ -56,7 +57,7 @@ public class BlockJoin {
   /** childInput may also contain parents (i.e. a parent or below will all roll up to that parent) */
   public static DocSet toParents(DocSet childInput, BitDocSet parentList, QueryContext qcontext) throws IOException {
     FixedBitSet parentBits = parentList.getBits();
-    DocSetCollector collector = new DocSetCollector(qcontext.searcher().maxDoc()>>6, qcontext.searcher().maxDoc());
+    DocSetCollector collector = new DocSetCollector(qcontext.searcher().maxDoc());
     DocIterator iter = childInput.iterator();
     int currentParent = -1;
     while (iter.hasNext()) {

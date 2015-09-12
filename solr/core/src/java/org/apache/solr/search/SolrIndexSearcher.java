@@ -965,7 +965,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private DocSet getDocSetScore(List<Query> queries) throws IOException {
     Query main = queries.remove(0);
     ProcessedFilter pf = getProcessedFilter(null, queries);
-    DocSetCollector setCollector = new DocSetCollector(maxDoc()>>6, maxDoc());
+    DocSetCollector setCollector = new DocSetCollector(maxDoc());
     Collector collector = setCollector;
     if (pf.postFilter != null) {
       pf.postFilter.setLastDelegate(collector);
@@ -1008,7 +1008,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (pf.answer != null) return pf.answer;
 
 
-    DocSetCollector setCollector = new DocSetCollector(maxDoc()>>6, maxDoc());
+    DocSetCollector setCollector = new DocSetCollector(maxDoc());
     Collector collector = setCollector;
     if (pf.postFilter != null) {
       pf.postFilter.setLastDelegate(collector);
@@ -1181,7 +1181,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       if (result != null) return result;
     }
 
-    int smallSetSize = maxDoc()>>6;
+    int smallSetSize = DocSetUtil.smallSetSize(maxDoc());
     int scratchSize = Math.min(smallSetSize, largestPossible);
     if (deState.scratch == null || deState.scratch.length < scratchSize)
       deState.scratch = new int[scratchSize];
@@ -1706,7 +1706,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     int maxDoc = maxDoc();
-    int smallSetSize = maxDoc>>6;
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
@@ -1719,7 +1718,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final float[] topscore = new float[] { Float.NEGATIVE_INFINITY };
 
       Collector collector;
-      final DocSetCollector setCollector = new DocSetCollector(smallSetSize, maxDoc);
+      final DocSetCollector setCollector = new DocSetCollector(maxDoc);
 
        if (!needScores) {
          collector = setCollector;
@@ -1762,7 +1761,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     } else {
 
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
-      DocSetCollector setCollector = new DocSetCollector(maxDoc>>6, maxDoc);
+      DocSetCollector setCollector = new DocSetCollector(maxDoc);
       Collector collector = MultiCollector.wrap(topCollector, setCollector);
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
