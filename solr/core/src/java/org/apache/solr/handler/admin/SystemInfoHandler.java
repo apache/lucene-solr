@@ -29,6 +29,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -216,9 +217,15 @@ public class SystemInfoHandler extends RequestHandlerBase
       final BeanInfo beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
         final String name = desc.getName();
-        final Object v = desc.getReadMethod().invoke(obj);
-        if(v != null && info.get(name) == null) {
-          info.add(name, v);
+        if (info.get(name) == null) {
+          try {
+            final Object v = desc.getReadMethod().invoke(obj);
+            if(v != null) {
+              info.add(name, v);
+            }
+          } catch (InvocationTargetException ite) {
+            // ignore (some properties throw UOE)
+          }
         }
       }
     }
