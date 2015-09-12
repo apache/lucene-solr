@@ -1240,4 +1240,9 @@ public class Dictionary {
       }
     }
   }
+  
+  /** Returns true if this dictionary was constructed with the {@code ignoreCase} option */
+  public boolean getIgnoreCase() {
+    return ignoreCase;
+  }
 }
