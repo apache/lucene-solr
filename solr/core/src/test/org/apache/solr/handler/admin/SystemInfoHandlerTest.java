@@ -36,11 +36,11 @@ public class SystemInfoHandlerTest extends LuceneTestCase {
     info.add( "version", os.getVersion() );
     info.add( "arch", os.getArch() );
 
-    // make another using addGetterIfAvaliable 
+    // make another using addMXBeanProperty() 
     SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<>();
-    SystemInfoHandler.addGetterIfAvaliable( os, OperatingSystemMXBean.class, "name", info2 );
-    SystemInfoHandler.addGetterIfAvaliable( os, OperatingSystemMXBean.class, "version", info2 );
-    SystemInfoHandler.addGetterIfAvaliable( os, OperatingSystemMXBean.class, "arch", info2 );
+    SystemInfoHandler.addMXBeanProperty( os, OperatingSystemMXBean.class, "name", info2 );
+    SystemInfoHandler.addMXBeanProperty( os, OperatingSystemMXBean.class, "version", info2 );
+    SystemInfoHandler.addMXBeanProperty( os, OperatingSystemMXBean.class, "arch", info2 );
     
     // make sure they got the same thing
     assertEquals( info.toString(), info2.toString() );
