@@ -150,9 +150,7 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
         VelocityResponseWriter.LOCALE,"en_UK")));
 
     // Test that $resource.get(key,baseName,locale) works with specified locale
-    assertEquals("Colour", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$resource.get(\"color\",\"resources\",\"en_UK\")")));
-
+    assertEquals("Colour", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"resource_get")));
   }
 
   @Test
