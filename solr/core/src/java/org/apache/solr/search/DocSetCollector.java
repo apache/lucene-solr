@@ -40,6 +40,10 @@ public class DocSetCollector extends SimpleCollector {
   // in case there are only a few.
   final int[] scratch;
 
+  public DocSetCollector(int maxDoc) {
+    this(DocSetUtil.smallSetSize(maxDoc), maxDoc);
+  }
+
   public DocSetCollector(int smallSetSize, int maxDoc) {
     this.smallSetSize = smallSetSize;
     this.maxDoc = maxDoc;
