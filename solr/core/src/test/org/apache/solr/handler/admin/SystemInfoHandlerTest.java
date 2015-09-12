@@ -38,9 +38,9 @@ public class SystemInfoHandlerTest extends LuceneTestCase {
 
     // make another using addGetterIfAvaliable 
     SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<>();
-    SystemInfoHandler.addGetterIfAvaliable( os, "name", info2 );
-    SystemInfoHandler.addGetterIfAvaliable( os, "version", info2 );
-    SystemInfoHandler.addGetterIfAvaliable( os, "arch", info2 );
+    SystemInfoHandler.addGetterIfAvaliable( os, OperatingSystemMXBean.class, "name", info2 );
+    SystemInfoHandler.addGetterIfAvaliable( os, OperatingSystemMXBean.class, "version", info2 );
+    SystemInfoHandler.addGetterIfAvaliable( os, OperatingSystemMXBean.class, "arch", info2 );
     
     // make sure they got the same thing
     assertEquals( info.toString(), info2.toString() );
