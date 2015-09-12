@@ -19,9 +19,15 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -30,6 +36,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class PingRequestHandlerTest extends SolrTestCaseJ4 {
+  protected int NUM_SERVERS = 5;
+  protected int NUM_SHARDS = 2;
+  protected int REPLICATION_FACTOR = 2;
 
   private final String fileName = this.getClass().getName() + ".server-enabled";
   private File healthcheckFile = null;
@@ -164,6 +173,48 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
+ public void testPingInClusterWithNoHealthCheck() throws Exception {
+   
+    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
+
+    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+
+    try {
+      assertNotNull(miniCluster.getZkServer());
+      List<JettySolrRunner> jettys = miniCluster.getJettySolrRunners();
+      assertEquals(NUM_SERVERS, jettys.size());
+      for (JettySolrRunner jetty : jettys) {
+        assertTrue(jetty.isRunning());
+      }
+
+      // create collection
+      String collectionName = "testSolrCloudCollection";
+      String configName = "solrCloudCollectionConfig";
+      File configDir = new File(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+      miniCluster.uploadConfigDir(configDir, configName);
+      miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, null); 
+   
+      // Send distributed and non-distributed ping query
+      SolrPingWithDistrib reqDistrib = new SolrPingWithDistrib();
+      reqDistrib.setDistrib(true);
+      SolrPingResponse rsp = reqDistrib.process(cloudSolrClient, collectionName);
+      assertEquals(0, rsp.getStatus()); 
+      
+      SolrPing reqNonDistrib = new SolrPing();
+      rsp = reqNonDistrib.process(cloudSolrClient, collectionName);
+      assertEquals(0, rsp.getStatus());   
+
+      // delete the collection we created earlier
+      miniCluster.deleteCollection(collectionName);
+
+    }
+    finally {
+      miniCluster.shutdown();
+    } 
+  }
+
+
   /**
    * Helper Method: Executes the request against the handler, returns 
    * the response, and closes the request.
@@ -180,5 +231,13 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     }
     return rsp;
   }
+
+  class SolrPingWithDistrib extends SolrPing {
+    public SolrPing setDistrib(boolean distrib) {   
+      getParams().add("distrib", distrib ? "true" : "false");
+      return this;    
+    }      
+  }
+  
 
 }
