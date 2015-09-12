@@ -188,6 +188,8 @@ Bug Fixes
   related to leader initiated recovery is performed by a dedicated LIR thread in the background.
   (Ramkumar Aiyengar, shalin)
 
+* SOLR-7746: Ping requests stopped working with distrib=true in Solr 5.2.1.  (Michael Sun)
+
 
 Optimizations
 ----------------------

@@ -23,18 +23,19 @@ import java.nio.file.Files;
 import java.util.Date;
 import java.util.Locale;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.DateFormatUtil;
-import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.commons.io.FileUtils;
+import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,10 +54,13 @@ import org.slf4j.LoggerFactory;
  * executed.  If the request succeeds, then the PingRequestHandler
  * will respond back with a simple "OK" status.  If the request fails,
  * then the PingRequestHandler will respond back with the
- * corrisponding HTTP Error code.  Clients (such as load balancers)
+ * corresponding HTTP Error code.  Clients (such as load balancers)
  * can be configured to poll the PingRequestHandler monitoring for
  * these types of responses (or for a simple connection failure) to
  * know if there is a problem with the Solr server.
+ * 
+ * Note in case isShard=true, PingRequestHandler respond back with 
+ * what the delegated handler returns (by default it's /select handler).
  * </p>
  *
  * <pre class="prettyprint">
@@ -233,7 +237,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     SolrCore core = req.getCore();
     
     // Get the RequestHandler
-    String qt = params.get( CommonParams.QT );//optional; you get the default otherwise
+    String qt = params.get( CommonParams.QT );//optional; you get the default otherwise    
     SolrRequestHandler handler = core.getRequestHandler( qt );
     if( handler == null ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
@@ -241,27 +245,54 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
     
     if( handler instanceof PingRequestHandler ) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-          "Cannot execute the PingRequestHandler recursively" );
+      // In case it's a query for shard, use default handler     
+      if (params.getBool(ShardParams.IS_SHARD, false)) {
+        handler = core.getRequestHandler( null );
+        ModifiableSolrParams wparams = new ModifiableSolrParams(params);
+        wparams.remove(CommonParams.QT);
+        req.setParams(wparams);
+      } else { 
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+            "Cannot execute the PingRequestHandler recursively" );
+      }
     }
     
     // Execute the ping query and catch any possible exception
     Throwable ex = null;
-    try {
-      SolrQueryResponse pingrsp = new SolrQueryResponse();
-      core.execute(handler, req, pingrsp );
-      ex = pingrsp.getException();
-    }
-    catch( Exception e ) {
-      ex = e;
-    }
     
-    // Send an error or an 'OK' message (response code will be 200)
-    if( ex != null ) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-          "Ping query caused exception: "+ex.getMessage(), ex );
-    }
-    rsp.add( "status", "OK" );
+    // In case it's a query for shard, return the result from delegated handler for distributed query to merge result
+    if (params.getBool(ShardParams.IS_SHARD, false)) {
+      try {
+        core.execute(handler, req, rsp );
+        ex = rsp.getException(); 
+      }
+      catch( Exception e ) {
+        ex = e;
+      }
+      // Send an error or return
+      if( ex != null ) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+            "Ping query caused exception: "+ex.getMessage(), ex );
+      }
+    } else {
+      try {
+        SolrQueryResponse pingrsp = new SolrQueryResponse();
+        core.execute(handler, req, pingrsp );
+        ex = pingrsp.getException();       
+      }
+      catch( Exception e ) {
+        ex = e;
+      }
+      
+      // Send an error or an 'OK' message (response code will be 200)
+      if( ex != null ) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+            "Ping query caused exception: "+ex.getMessage(), ex );
+      }
+      
+      rsp.add( "status", "OK" );     
+    }   
+
   }
   
   protected void handleEnable(boolean enable) throws SolrException {
