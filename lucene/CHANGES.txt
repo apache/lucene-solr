@@ -164,6 +164,9 @@ Other
 * LUCENE-6798: Geo3d now models degenerate (too tiny) circles as a
   single point (Karl Wright via Mike McCandless)
 
+* LUCENE-6770: Add javadocs that FSDirectory canonicalizes the path.
+  (Uwe Schindler, Vladimir Kuzmin)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
