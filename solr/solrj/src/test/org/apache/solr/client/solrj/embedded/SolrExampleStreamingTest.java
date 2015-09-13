@@ -46,6 +46,19 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   public static void beforeTest() throws Exception {
     createJetty(legacyExampleCollection1SolrHome());
   }
+  
+  public class ErrorTrackingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+    public Throwable lastError = null;
+
+    public ErrorTrackingConcurrentUpdateSolrClient(String solrServerUrl, int queueSize, int threadCount) {
+      super(solrServerUrl, queueSize, threadCount);
+    }
+    
+    @Override
+    public void handleError(Throwable ex) {
+      handledException = lastError = ex;
+    }
+  }
 
   @Override
   public SolrClient createNewSolrClient()
@@ -54,15 +67,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       // setup the server...
       String url = jetty.getBaseUrl().toString() + "/collection1";
       // smaller queue size hits locks more often
-      ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient( url, 2, 5 ) {
-        
-        public Throwable lastError = null;
-        @Override
-        public void handleError(Throwable ex) {
-          handledException = lastError = ex;
-        }
-      };
-
+      ConcurrentUpdateSolrClient concurrentClient = new ErrorTrackingConcurrentUpdateSolrClient( url, 2, 5 );
       concurrentClient.setParser(new XMLResponseParser());
       concurrentClient.setRequestWriter(new RequestWriter());
       return concurrentClient;

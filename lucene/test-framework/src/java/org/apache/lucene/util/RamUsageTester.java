@@ -20,6 +20,8 @@ package org.apache.lucene.util;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -199,8 +201,14 @@ public final class RamUsageTester {
           shallowInstanceSize = RamUsageEstimator.adjustForField(shallowInstanceSize, f);
 
           if (!f.getType().isPrimitive()) {
-            f.setAccessible(true);
-            referenceFields.add(f);
+            referenceFields.add(AccessController.doPrivileged(new PrivilegedAction<Field>() {
+              @Override
+              @SuppressForbidden(reason = "We need to access private fields of measured objects.")
+              public Field run() {
+                f.setAccessible(true);
+                return f;
+              }
+            }));
           }
         }
       }

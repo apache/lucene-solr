@@ -106,6 +106,7 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
       if (Modifier.isStatic(f.getModifiers())) continue;
       reflector.reflect(interf, f.getName(), AccessController.doPrivileged(new PrivilegedAction<Object>() {
         @Override
+        @SuppressForbidden(reason = "This methods needs to access private attribute fields. Method will be abstract in 6.x")
         public Object run() {
           try {
             f.setAccessible(true);

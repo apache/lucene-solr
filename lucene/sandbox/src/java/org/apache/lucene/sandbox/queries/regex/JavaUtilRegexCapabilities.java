@@ -21,9 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * An implementation tying Java's built-in java.util.regex to RegexQuery.

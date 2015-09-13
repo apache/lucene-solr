@@ -19,8 +19,11 @@ package org.apache.solr.client.solrj.beans;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SuppressForbidden;
 
 import java.lang.reflect.*;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.concurrent.ConcurrentHashMap;
@@ -134,9 +137,16 @@ public class DocumentObjectBinder {
       superClazz = superClazz.getSuperclass();
     }
     boolean childFieldFound = false;
-    for (AccessibleObject member : members) {
+    for (final AccessibleObject member : members) {
       if (member.isAnnotationPresent(Field.class)) {
-        member.setAccessible(true);
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+          @Override
+          @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
+          public Void run() {
+            member.setAccessible(true);
+            return null;
+          }
+        });
         DocField df = new DocField(member);
         if (df.child != null) {
           if (childFieldFound)

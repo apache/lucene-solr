@@ -22,9 +22,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.SocketAddress;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -55,34 +58,45 @@ public class SolrZooKeeper extends ZooKeeper {
       @Override
       public void run() {
         try {
-          final ClientCnxn cnxn = getConnection();
-          synchronized (cnxn) {
-            try {
-              final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
-              sendThreadFld.setAccessible(true);
-              Object sendThread = sendThreadFld.get(cnxn);
-              if (sendThread != null) {
-                Method method = sendThread.getClass().getDeclaredMethod("testableCloseSocket");
-                method.setAccessible(true);
-                try {
-                  method.invoke(sendThread);
-                } catch (InvocationTargetException e) {
-                  // is fine
-                }
-              }
-            } catch (Exception e) {
-              throw new RuntimeException("Closing Zookeeper send channel failed.", e);
+          AccessController.doPrivileged(new PrivilegedAction<Void>() {
+            @Override
+            public Void run() {
+              return closeZookeeperChannel();
             }
-          }
+          });
         } finally {
           spawnedThreads.remove(this);
         }
+      }
+      
+      @SuppressForbidden(reason = "Hack for Zookeper needs access to private methods.")
+      Void closeZookeeperChannel() {
+        final ClientCnxn cnxn = getConnection();
+        synchronized (cnxn) {
+          try {
+            final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
+            sendThreadFld.setAccessible(true);
+            Object sendThread = sendThreadFld.get(cnxn);
+            if (sendThread != null) {
+              Method method = sendThread.getClass().getDeclaredMethod("testableCloseSocket");
+              method.setAccessible(true);
+              try {
+                method.invoke(sendThread);
+              } catch (InvocationTargetException e) {
+                // is fine
+              }
+            }
+          } catch (Exception e) {
+            throw new RuntimeException("Closing Zookeeper send channel failed.", e);
+          }
+        }
+        return null; // Void
       }
     };
     spawnedThreads.add(t);
     t.start();
   }
-
+  
   @Override
   public synchronized void close() throws InterruptedException {
     for (Thread t : spawnedThreads) {

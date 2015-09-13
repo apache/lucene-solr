@@ -29,7 +29,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -685,23 +684,12 @@ public abstract class LuceneTestCase extends Assert {
   /** Tells {@link IndexWriter} to enforce the specified limit as the maximum number of documents in one index; call
    *  {@link #restoreIndexWriterMaxDocs} once your test is done. */
   public void setIndexWriterMaxDocs(int limit) {
-    Method m;
-    try {
-      m = IndexWriter.class.getDeclaredMethod("setMaxDocs", int.class);
-    } catch (NoSuchMethodException nsme) {
-      throw new RuntimeException(nsme);
-    }
-    m.setAccessible(true);
-    try {
-      m.invoke(IndexWriter.class, limit);
-    } catch (IllegalAccessException | InvocationTargetException iae) {
-      throw new RuntimeException(iae);
-    }
+    IndexWriterMaxDocsChanger.setMaxDocs(limit);
   }
 
-  /** Returns the default {@link IndexWriter#MAX_DOCS} limit. */
+  /** Returns to the default {@link IndexWriter#MAX_DOCS} limit. */
   public void restoreIndexWriterMaxDocs() {
-    setIndexWriterMaxDocs(IndexWriter.MAX_DOCS);
+    IndexWriterMaxDocsChanger.restoreMaxDocs();
   }
 
   // -----------------------------------------------------------------

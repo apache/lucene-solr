@@ -25,10 +25,9 @@ import junit.framework.Assert;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -48,7 +47,6 @@ import org.apache.solr.client.solrj.response.RangeFacet.Count;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
@@ -61,7 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -458,27 +455,18 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       } catch (Throwable t) {
         Assert.fail("should have thrown a SolrException! not: " + t);
       }
-    } else if (client instanceof ConcurrentUpdateSolrClient) {
+    } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
       //XXX concurrentupdatesolrserver reports errors differently
-      ConcurrentUpdateSolrClient concurrentClient = (ConcurrentUpdateSolrClient) client;
-      Field field = getConcurrentClientExceptionField(concurrentClient);
-      field.set(concurrentClient, null);
+      ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (ErrorTrackingConcurrentUpdateSolrClient) client;
+      concurrentClient.lastError = null;
       concurrentClient.add(doc);
       concurrentClient.blockUntilFinished();
-      Throwable lastError = (Throwable)field.get(concurrentClient);
-      assertNotNull("Should throw exception!", lastError); //XXX 
+      assertNotNull("Should throw exception!", concurrentClient.lastError); 
     } else {
       log.info("Ignoring update test for client:" + client.getClass().getName());
     }
   }
   
-  private static Field getConcurrentClientExceptionField(Object cs)
-      throws SecurityException, NoSuchFieldException, IllegalArgumentException {
-    Field field = cs.getClass().getDeclaredField("lastError");
-    field.setAccessible(true);
-    return field;
-  }
-
   @Test
   public void testAugmentFields() throws Exception
   {    
@@ -1639,7 +1627,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         fail("Operation should throw an exception!");
       } else {
         client.commit(); //just to be sure the client has sent the doc
-        assertTrue("ConcurrentUpdateSolrClient did not report an error", ((Throwable) getConcurrentClientExceptionField(client).get(client)).getMessage().contains("Conflict"));
+        ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (ErrorTrackingConcurrentUpdateSolrClient) client;
+        assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
+        assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("Conflict"));
       }
     } catch (SolrException se) {
       assertTrue("No identifiable error message", se.getMessage().contains("version conflict for unique"));

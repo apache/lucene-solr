@@ -79,8 +79,9 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   private final DeleteSlice globalSlice;
   private final BufferedUpdates globalBufferedUpdates;
-  /* only acquired to update the global deletes */
-  private final ReentrantLock globalBufferLock = new ReentrantLock();
+  
+  // only acquired to update the global deletes, pkg-private for access by tests:
+  final ReentrantLock globalBufferLock = new ReentrantLock();
 
   final long generation;
   

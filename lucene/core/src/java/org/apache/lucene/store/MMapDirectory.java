@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
 
 import org.apache.lucene.store.ByteBufferIndexInput.BufferCleaner;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.SuppressForbidden;
 
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
@@ -164,6 +165,7 @@ public class MMapDirectory extends FSDirectory {
    */
   public static final boolean UNMAP_SUPPORTED = AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
     @Override
+    @SuppressForbidden(reason = "Java 9 Jigsaw whitelists access to sun.misc.Cleaner, so setAccessible works")
     public Boolean run() {
       try {
         Class<?> clazz = Class.forName("java.nio.DirectByteBuffer");
@@ -313,6 +315,7 @@ public class MMapDirectory extends FSDirectory {
       try {
         AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
           @Override
+          @SuppressForbidden(reason = "Java 9 Jigsaw whitelists access to sun.misc.Cleaner, so setAccessible works")
           public Void run() throws Exception {
             final Method getCleanerMethod = buffer.getClass()
               .getMethod("cleaner");
