@@ -126,6 +126,11 @@ Bug Fixes
 * LUCENE-6792: Fix TermsQuery.toString() to work with binary terms.
   (Ruslan Muzhikov, Robert Muir)
 
+* LUCENE-5503: When Highlighter's WeightedSpanTermExtractor converts a
+  PhraseQuery to an equivalent SpanQuery, it would sometimes use a slop that is
+  too low (no highlight) or determine inOrder wrong.
+  (Tim Allison via David Smiley)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
