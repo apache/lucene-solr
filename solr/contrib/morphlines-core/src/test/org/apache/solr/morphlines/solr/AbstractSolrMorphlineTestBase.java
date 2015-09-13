@@ -100,6 +100,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     if (savedLocale != null) {
       Locale.setDefault(savedLocale);
     }
+    savedLocale = null;
   }
 
   protected static void myInitCore(String baseDirName) throws Exception {

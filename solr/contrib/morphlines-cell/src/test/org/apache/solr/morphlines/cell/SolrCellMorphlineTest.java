@@ -39,6 +39,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
 
   private Map<String,Integer> expectedRecords = new HashMap<>();
   private Map<String, Map<String, Object>> expectedRecordContents = new HashMap<>();
+  
   @BeforeClass
   public static void beforeClass2() {
     assumeFalse("FIXME: Morphlines currently has issues with Windows paths", Constants.WINDOWS);

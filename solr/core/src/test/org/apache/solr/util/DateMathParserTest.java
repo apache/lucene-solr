@@ -17,6 +17,8 @@
 
 package org.apache.solr.util;
 
+import static org.apache.solr.util.DateFormatUtil.UTC;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.DateMathParser;
 
@@ -26,10 +28,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.Locale;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.HashSet;
-
 import java.util.Map;
 import java.util.HashMap;
 import java.text.ParseException;
@@ -39,8 +37,6 @@ import java.text.ParseException;
  */
 public class DateMathParserTest extends LuceneTestCase {
 
-  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
-  
   /**
    * A formatter for specifying every last nuance of a Date for easy
    * refernece in assertion statements
