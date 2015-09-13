@@ -46,14 +46,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   
   public static File SOLRHOME;
-
-  protected static ZkTestServer zkServer;
-
-  protected static String zkDir;
-
-
-  @BeforeClass
-  public static void azt_beforeClass() throws Exception {
+  static {
     try {
       SOLRHOME = new File(TEST_HOME());
     } catch (RuntimeException e) {
@@ -61,7 +54,15 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       // solrj tests not working with TEST_HOME()
       // must override getSolrHome
     }
+  }
+  
+  protected static ZkTestServer zkServer;
 
+  protected static String zkDir;
+
+
+  @BeforeClass
+  public static void azt_beforeClass() throws Exception {
     zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -160,7 +161,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       zkServer = null;
     }
     zkDir = null;
-    SOLRHOME = null;
   }
 
   protected void printLayout(String zkHost) throws Exception {
