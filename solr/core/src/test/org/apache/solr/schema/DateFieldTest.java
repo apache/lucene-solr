@@ -34,11 +34,10 @@ import java.util.TimeZone;
 import java.util.Locale;
 
 public class DateFieldTest extends SolrTestCaseJ4 {
-  public static TimeZone UTC = DateFormatUtil.UTC;
   private final String testInstanceDir = TEST_HOME() + File.separator + "collection1";
   private final String testConfHome = testInstanceDir + File.separator + "conf"+ File.separator;
   private TrieDateField f = null;
-  private DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
+  private DateMathParser p = new DateMathParser(DateFormatUtil.UTC, Locale.ROOT);
 
   @Override
   public void setUp()  throws Exception {

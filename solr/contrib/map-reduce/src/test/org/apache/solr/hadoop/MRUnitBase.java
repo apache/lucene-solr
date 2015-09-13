@@ -46,6 +46,7 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
   @AfterClass
   public static void teardownClass() throws Exception {
     if (solrHomeZip != null) Files.delete(solrHomeZip.toPath());
+    solrHomeZip = null;
   }
   
   protected void setupHadoopConfig(Configuration config) throws IOException {

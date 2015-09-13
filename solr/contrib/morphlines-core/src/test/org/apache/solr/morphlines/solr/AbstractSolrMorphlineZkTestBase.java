@@ -20,6 +20,7 @@ package org.apache.solr.morphlines.solr;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ListMultimap;
 import com.typesafe.config.Config;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -27,6 +28,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.kitesdk.morphline.api.Collector;
 import org.kitesdk.morphline.api.Command;
@@ -70,6 +72,11 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
     solrHomeDirectory = createTempDir().toFile();
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(SOLR_INSTANCE_DIR, solrHomeDirectory);
+  }
+  
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    solrHomeDirectory = null;
   }
   
   @Override

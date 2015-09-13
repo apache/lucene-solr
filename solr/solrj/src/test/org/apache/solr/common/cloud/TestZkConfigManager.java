@@ -51,6 +51,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   @AfterClass
   public static void shutdownZkServer() throws IOException, InterruptedException {
     zkServer.shutdown();
+    zkServer = null;
   }
 
   @Test
