@@ -18,9 +18,8 @@ package org.apache.lucene.sandbox.queries.regex;
  */
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.regexp.CharacterIterator;
 import org.apache.regexp.RE;
 import org.apache.regexp.REProgram;
@@ -40,6 +39,11 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
   private static Method getPrefixMethod;
 
   static {
+    initClass();
+  }
+  
+  @SuppressForbidden(reason = "TODO: Remove this class completely and also the hack around setAccessible!")
+  private static void initClass() {
     try {
       getPrefixMethod = REProgram.class.getMethod("getPrefix");
     } catch (Exception e) {

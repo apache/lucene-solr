@@ -17,8 +17,10 @@ package org.apache.solr.cloud;
  */
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
@@ -30,8 +32,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
@@ -49,15 +49,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   private ZkStateReader reader;
 
   private NodeConfig cfg;
-
-  private SolrDispatchFilter solrDispatchFilter;
-
-  @After
-  public void after() {
-    if (solrDispatchFilter != null) {
-      solrDispatchFilter.destroy();
-    }
-  }
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
     File tmpDir = createTempDir().toFile();
@@ -95,13 +86,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     props.setProperty("solr.test.sys.prop1", "propone");
     props.setProperty("solr.test.sys.prop2", "proptwo");
 
-    Method method = SolrDispatchFilter.class.getDeclaredMethod("loadNodeConfig", String.class, Properties.class);
-    method.setAccessible(true);
-    if (solrDispatchFilter != null) solrDispatchFilter.destroy();
-    solrDispatchFilter = new SolrDispatchFilter();
-    Object obj = method.invoke(solrDispatchFilter, solrHome.getAbsolutePath(), props);
-    cfg = (NodeConfig) obj;
-
+    cfg = SolrDispatchFilter.loadNodeConfig(solrHome.getAbsolutePath(), props);
     log.info("####SETUP_END " + getTestName());
   }
 
@@ -155,9 +140,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       System.setProperty("hostPort", "8787");
       setUpZkAndDiskXml(false, false); // solr.xml not on disk either
       fail("Should have thrown an exception here");
-    } catch (InvocationTargetException ite) {
+    } catch (SolrException solre) {
       assertTrue("Should be failing to create default solr.xml in code",
-          ite.getCause().getMessage().contains("solr.xml does not exist"));
+          solre.getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();
     }
