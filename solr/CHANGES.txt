@@ -153,6 +153,10 @@ New Features
 
 * SOLR-7915: Provide pluggable context tool support for VelocityResponseWriter (Erik Hatcher)
 
+* LUCENE-6795: SystemInfoHandler was improved to also show detailed operating
+  system statistics on IBM J9 virtual machines. It also no longer fails on Java 9
+  with Jigsaw module system.  (Uwe Schindler)
+
 Bug Fixes
 ----------------------
 
