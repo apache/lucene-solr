@@ -2014,15 +2014,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     
     // Ensure that only one thread actually gets to do the
     // closing, and make sure no commit is also in progress:
-    synchronized(commitLock) {
-      if (shouldClose(true)) {
-        rollbackInternal();
-      }
+    if (shouldClose(true)) {
+      rollbackInternal();
     }
   }
 
   private void rollbackInternal() throws IOException {
+    // Make sure no commit is running, else e.g. we can close while another thread is still fsync'ing:
+    synchronized(commitLock) {
+      rollbackInternalNoCommit();
+    }
+  }
 
+  private void rollbackInternalNoCommit() throws IOException {
     boolean success = false;
 
     if (infoStream.isEnabled("IW")) {

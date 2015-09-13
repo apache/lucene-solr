@@ -131,6 +131,10 @@ Bug Fixes
   too low (no highlight) or determine inOrder wrong.
   (Tim Allison via David Smiley)
 
+* LUCENE-6790: Fix IndexWriter thread safety when one thread is
+  handling a tragic exception but another is still committing (Mike
+  McCandless)
+
 Other
 
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
