@@ -121,33 +121,19 @@ public class WeightedSpanTermExtractor {
       for (int i = 0; i < phraseQueryTerms.length; i++) {
         clauses[i] = new SpanTermQuery(phraseQueryTerms[i]);
       }
-      int slop = phraseQuery.getSlop();
+
+      // sum position increments beyond 1
+      int positionGaps = 0;
       int[] positions = phraseQuery.getPositions();
-      // add largest position increment to slop
-      if (positions.length > 0) {
-        int lastPos = positions[0];
-        int largestInc = 0;
-        int sz = positions.length;
-        for (int i = 1; i < sz; i++) {
-          int pos = positions[i];
-          int inc = pos - lastPos;
-          if (inc > largestInc) {
-            largestInc = inc;
-          }
-          lastPos = pos;
-        }
-        if(largestInc > 1) {
-          slop += largestInc;
-        }
+      if (positions.length >= 2) {
+        // positions are in increasing order.   max(0,...) is just a safeguard.
+        positionGaps = Math.max(0, positions[positions.length-1] - positions[0] - positions.length + 1);
       }
 
-      boolean inorder = false;
+      //if original slop is 0 then require inOrder
+      boolean inorder = (phraseQuery.getSlop() == 0);
 
-      if (slop == 0) {
-        inorder = true;
-      }
-
-      SpanNearQuery sp = new SpanNearQuery(clauses, slop, inorder);
+      SpanNearQuery sp = new SpanNearQuery(clauses, phraseQuery.getSlop() + positionGaps, inorder);
       extractWeightedSpanTerms(terms, sp, boost);
     } else if (query instanceof TermQuery) {
       extractWeightedTerms(terms, query, boost);
