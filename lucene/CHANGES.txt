@@ -172,6 +172,13 @@ Other
 * LUCENE-6770: Add javadocs that FSDirectory canonicalizes the path.
   (Uwe Schindler, Vladimir Kuzmin)
 
+* LUCENE-6795: Fix various places where code used
+  AccessibleObject#setAccessible() without a privileged block. Code
+  without a hard requirement to do reflection were rewritten. This
+  makes Lucene and Solr ready for Java 9 Jigsaw's module system, where
+  reflection on Java's runtime classes is very restricted.
+  (Robert Muir, Uwe Schindler)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
