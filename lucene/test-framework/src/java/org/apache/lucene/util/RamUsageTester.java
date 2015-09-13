@@ -187,37 +187,37 @@ public final class RamUsageTester {
    * a given class.
    */
   private static ClassCache createCacheEntry(final Class<?> clazz) {
-    ClassCache cachedInfo;
-    long shallowInstanceSize = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
-    final ArrayList<Field> referenceFields = new ArrayList<>(32);
-    for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
-      if (c == Class.class) {
-        // prevent inspection of Class' fields, throws SecurityException in Java 9!
-        continue; 
-      }
-      final Field[] fields = c.getDeclaredFields();
-      for (final Field f : fields) {
-        if (!Modifier.isStatic(f.getModifiers())) {
-          shallowInstanceSize = RamUsageEstimator.adjustForField(shallowInstanceSize, f);
-
-          if (!f.getType().isPrimitive()) {
-            referenceFields.add(AccessController.doPrivileged(new PrivilegedAction<Field>() {
-              @Override
-              @SuppressForbidden(reason = "We need to access private fields of measured objects.")
-              public Field run() {
+    return AccessController.doPrivileged(new PrivilegedAction<ClassCache>() {
+      @Override
+      @SuppressForbidden(reason = "We need to access private fields of measured objects.")
+      public ClassCache run() {
+        ClassCache cachedInfo;
+        long shallowInstanceSize = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
+        final ArrayList<Field> referenceFields = new ArrayList<>(32);
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+          if (c == Class.class) {
+            // prevent inspection of Class' fields, throws SecurityException in Java 9!
+            continue; 
+          }
+          final Field[] fields = c.getDeclaredFields();
+          for (final Field f : fields) {
+            if (!Modifier.isStatic(f.getModifiers())) {
+              shallowInstanceSize = RamUsageEstimator.adjustForField(shallowInstanceSize, f);
+    
+              if (!f.getType().isPrimitive()) {
                 f.setAccessible(true);
-                return f;
+                referenceFields.add(f);
               }
-            }));
+            }
           }
         }
-      }
-    }
 
-    cachedInfo = new ClassCache(
-        RamUsageEstimator.alignObjectSize(shallowInstanceSize), 
-        referenceFields.toArray(new Field[referenceFields.size()]));
-    return cachedInfo;
+        cachedInfo = new ClassCache(
+            RamUsageEstimator.alignObjectSize(shallowInstanceSize), 
+            referenceFields.toArray(new Field[referenceFields.size()]));
+        return cachedInfo;
+      }
+    });
   }
 
 }
