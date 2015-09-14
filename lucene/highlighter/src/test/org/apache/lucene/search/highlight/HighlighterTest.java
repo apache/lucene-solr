@@ -17,6 +17,8 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,9 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -56,11 +55,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
-import org.apache.lucene.queries.CustomScoreProvider;
 import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -81,8 +78,8 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
-import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
@@ -1957,7 +1954,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     }
     try (IndexReader reader = DirectoryReader.open(dir)) {
       Query query = new SpanPayloadCheckQuery(new SpanTermQuery(new Term(FIELD_NAME, "words")),
-          Collections.singleton("pos: 1".getBytes("UTF-8")));//just match the first "word" occurrence
+          Collections.singletonList(new BytesRef("pos: 1")));//just match the first "word" occurrence
       IndexSearcher searcher = newSearcher(reader);
       QueryScorer scorer = new QueryScorer(query, searcher.getIndexReader(), FIELD_NAME);
       scorer.setUsePayloads(true);

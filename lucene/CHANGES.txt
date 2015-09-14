@@ -82,6 +82,9 @@ API Changes
   In order to apply boosts, you now need to wrap queries in a BoostQuery.
   (Adrien Grand)
 
+* LUCENE-6716: SpanPayloadCheckQuery now takes a List<BytesRef> rather than
+  a Collection<byte[]>. (Alan Woodward)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the
