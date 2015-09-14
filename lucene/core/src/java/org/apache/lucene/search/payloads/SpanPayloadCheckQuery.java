@@ -37,7 +37,6 @@ import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * Only return those matches that have a specific payload at the given position.
@@ -165,7 +164,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     buffer.append(match.toString(field));
     buffer.append(", payloadRef: ");
     for (BytesRef bytes : payloadToMatch) {
-      buffer.append(bytes.utf8ToString());
+      buffer.append(Term.toString(bytes));
       buffer.append(';');
     }
     buffer.append(")");
