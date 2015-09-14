@@ -60,7 +60,7 @@ public class NormValueSource extends ValueSource {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(true), field);
     if (similarity == null) {
-      throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
+      throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as ClassicSimilarity)");
     }
     final NumericDocValues norms = readerContext.reader().getNormValues(field);
 

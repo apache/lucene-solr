@@ -38,7 +38,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -63,7 +63,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
    * http://issues.apache.org/jira/browse/LUCENE-323
    * </p>
    */
-  private static class TestSimilarity extends DefaultSimilarity {
+  private static class TestSimilarity extends ClassicSimilarity {
     
     public TestSimilarity() {}
     

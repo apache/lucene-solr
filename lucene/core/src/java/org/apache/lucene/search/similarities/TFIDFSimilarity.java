@@ -308,13 +308,13 @@ import org.apache.lucene.util.BytesRef;
  *      two term-queries with that same term and hence the computation would still be correct (although
  *      not very efficient).
  *      The default computation for <i>tf(t in d)</i> in
- *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#tf(float) DefaultSimilarity} is:
+ *      {@link org.apache.lucene.search.similarities.ClassicSimilarity#tf(float) ClassicSimilarity} is:
  *
  *      <br>&nbsp;<br>
  *      <table cellpadding="2" cellspacing="2" border="0" style="width:auto; margin-left:auto; margin-right:auto" summary="term frequency computation">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
- *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#tf(float) tf(t in d)} &nbsp; = &nbsp;
+ *            {@link org.apache.lucene.search.similarities.ClassicSimilarity#tf(float) tf(t in d)} &nbsp; = &nbsp;
  *          </td>
  *          <td valign="top" align="center" rowspan="1">
  *               frequency<sup><big>&frac12;</big></sup>
@@ -333,13 +333,13 @@ import org.apache.lucene.util.BytesRef;
  *      <i>idf(t)</i> appears for <i>t</i> in both the query and the document,
  *      hence it is squared in the equation.
  *      The default computation for <i>idf(t)</i> in
- *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(long, long) DefaultSimilarity} is:
+ *      {@link org.apache.lucene.search.similarities.ClassicSimilarity#idf(long, long) ClassicSimilarity} is:
  *
  *      <br>&nbsp;<br>
  *      <table cellpadding="2" cellspacing="2" border="0" style="width:auto; margin-left:auto; margin-right:auto" summary="inverse document frequency computation">
  *        <tr>
  *          <td valign="middle" align="right">
- *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#idf(long, long) idf(t)}&nbsp; = &nbsp;
+ *            {@link org.apache.lucene.search.similarities.ClassicSimilarity#idf(long, long) idf(t)}&nbsp; = &nbsp;
  *          </td>
  *          <td valign="middle" align="center">
  *            1 + log <big>(</big>
@@ -381,14 +381,14 @@ import org.apache.lucene.util.BytesRef;
  *      This is a search time factor computed by the Similarity in effect at search time.
  *
  *      The default computation in
- *      {@link org.apache.lucene.search.similarities.DefaultSimilarity#queryNorm(float) DefaultSimilarity}
+ *      {@link org.apache.lucene.search.similarities.ClassicSimilarity#queryNorm(float) ClassicSimilarity}
  *      produces a <a href="http://en.wikipedia.org/wiki/Euclidean_norm#Euclidean_norm">Euclidean norm</a>:
  *      <br>&nbsp;<br>
  *      <table cellpadding="1" cellspacing="0" border="0" style="width:auto; margin-left:auto; margin-right:auto" summary="query normalization computation">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            queryNorm(q)  &nbsp; = &nbsp;
- *            {@link org.apache.lucene.search.similarities.DefaultSimilarity#queryNorm(float) queryNorm(sumOfSquaredWeights)}
+ *            {@link org.apache.lucene.search.similarities.ClassicSimilarity#queryNorm(float) queryNorm(sumOfSquaredWeights)}
  *            &nbsp; = &nbsp;
  *          </td>
  *          <td valign="middle" align="center" rowspan="1">

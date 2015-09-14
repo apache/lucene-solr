@@ -27,7 +27,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -223,7 +223,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     // test for correct application of query normalization
     // must use a non score normalizing method for this.
     
-    search.setSimilarity(new DefaultSimilarity());
+    search.setSimilarity(new ClassicSimilarity());
     Query q = csrq("data", "1", "6", T, T);
     search.search(new BoostQuery(q, 100), new SimpleCollector() {
       private int base = 0;

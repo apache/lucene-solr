@@ -37,7 +37,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanContainingQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -234,7 +234,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     directory = null;
   }
 
-  static class BoostingSimilarity extends DefaultSimilarity {
+  static class BoostingSimilarity extends ClassicSimilarity {
 
     @Override
     public float queryNorm(float sumOfSquaredWeights) {

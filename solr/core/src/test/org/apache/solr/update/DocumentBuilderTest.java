@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -352,11 +352,11 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       SolrIndexSearcher searcher = req.getSearcher();
       LeafReader reader = SlowCompositeReaderWrapper.wrap(searcher.getTopReaderContext().reader());
 
-      assertTrue("similarity doesn't extend DefaultSimilarity, " + 
+      assertTrue("similarity doesn't extend ClassicSimilarity, " + 
                  "config or defaults have changed since test was written",
-                 searcher.getSimilarity(true) instanceof DefaultSimilarity);
+                 searcher.getSimilarity(true) instanceof ClassicSimilarity);
 
-      DefaultSimilarity sim = (DefaultSimilarity) searcher.getSimilarity(true);
+      ClassicSimilarity sim = (ClassicSimilarity) searcher.getSimilarity(true);
       
       NumericDocValues titleNorms = reader.getNormValues("title");
       NumericDocValues fooNorms = reader.getNormValues("foo_t");
@@ -380,7 +380,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   /**
    * Given a length, and boost returns the expected encoded norm 
    */
-  private static byte expectedNorm(final DefaultSimilarity sim,
+  private static byte expectedNorm(final ClassicSimilarity sim,
                                    final int length, final float boost) {
     return (byte) sim.encodeNormValue(boost / ((float) Math.sqrt(length)));
   }

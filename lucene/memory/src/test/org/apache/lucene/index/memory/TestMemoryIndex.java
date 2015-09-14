@@ -30,7 +30,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Before;
@@ -90,7 +90,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertThat(mi.search(new TermQuery(new Term("f1", "wibble"))), not(is(0.0f)));
 
     // check we can set the Similarity again
-    mi.setSimilarity(new DefaultSimilarity());
+    mi.setSimilarity(new ClassicSimilarity());
 
   }
 
@@ -144,7 +144,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     float n1 = reader.getNormValues("f1").get(0);
 
     // Norms are re-computed when we change the Similarity
-    mi.setSimilarity(new DefaultSimilarity() {
+    mi.setSimilarity(new ClassicSimilarity() {
       @Override
       public float lengthNorm(FieldInvertState state) {
         return 74;

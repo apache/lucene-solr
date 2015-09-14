@@ -59,6 +59,11 @@ API Changes
 * LUCENE-6706: PayloadTermQuery and PayloadNearQuery have been removed.
   Instead, use PayloadScoreQuery to wrap any SpanQuery. (Alan Woodward)
 
+Changes in Runtime Behavior
+
+* LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
+  Use ClassicSimilarity to get the old vector space DefaultSimilarity. (Robert Muir)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features

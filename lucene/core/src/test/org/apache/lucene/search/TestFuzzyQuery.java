@@ -31,7 +31,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -259,7 +259,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarity(new DefaultSimilarity()); //avoid randomisation of similarity algo by test framework
+    searcher.setSimilarity(new ClassicSimilarity()); //avoid randomisation of similarity algo by test framework
     writer.close();
     String searchTerms[] = { "smith", "smythe", "smdssasd" };
     for (String searchTerm : searchTerms) {
@@ -296,7 +296,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarity(new DefaultSimilarity()); //avoid randomisation of similarity algo by test framework
+    searcher.setSimilarity(new ClassicSimilarity()); //avoid randomisation of similarity algo by test framework
 
     writer.close();
 

@@ -38,7 +38,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestDefaultSimilarity extends LuceneTestCase {
+public class TestClassicSimilarity extends LuceneTestCase {
   private Directory directory;
   private IndexReader indexReader;
   private IndexSearcher indexSearcher;
@@ -55,7 +55,7 @@ public class TestDefaultSimilarity extends LuceneTestCase {
     }
     indexReader = DirectoryReader.open(directory);
     indexSearcher = newSearcher(indexReader);
-    indexSearcher.setSimilarity(new DefaultSimilarity());
+    indexSearcher.setSimilarity(new ClassicSimilarity());
   }
 
   @Override
@@ -66,7 +66,7 @@ public class TestDefaultSimilarity extends LuceneTestCase {
   
   // Javadocs give this as an example so we test to make sure it's correct:
   public void testPrecisionLoss() throws Exception {
-    DefaultSimilarity sim = new DefaultSimilarity();
+    ClassicSimilarity sim = new ClassicSimilarity();
     float v = sim.decodeNormValue(sim.encodeNormValue(.89f));
     assertEquals(0.875f, v, 0.0001f);
   }

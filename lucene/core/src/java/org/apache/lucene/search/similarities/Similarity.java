@@ -42,7 +42,7 @@ import java.util.Collections;
  * an information retrieval <i>model</i>.  If you are instead looking for a convenient way 
  * to alter Lucene's scoring, consider extending a higher-level implementation
  * such as {@link TFIDFSimilarity}, which implements the vector space model with this API, or 
- * just tweaking the default implementation: {@link DefaultSimilarity}.
+ * just tweaking the default implementation: {@link BM25Similarity}.
  * <p>
  * Similarity determines how Lucene weights terms, and Lucene interacts with
  * this class at both <a href="#indextime">index-time</a> and 
@@ -56,7 +56,7 @@ import java.util.Collections;
  * information.
  * <p>
  * Implementations should carefully consider how the normalization is encoded: while
- * Lucene's classical {@link TFIDFSimilarity} encodes a combination of index-time boost
+ * Lucene's {@link BM25Similarity} encodes a combination of index-time boost
  * and length normalization information with {@link SmallFloat} into a single byte, this 
  * might not be suitable for all purposes.
  * <p>

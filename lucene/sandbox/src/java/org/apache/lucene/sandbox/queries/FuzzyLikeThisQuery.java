@@ -41,7 +41,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -68,7 +68,7 @@ public class FuzzyLikeThisQuery extends Query
     // a better way might be to convert this into multitermquery rewrite methods.
     // the rewrite method can 'average' the TermContext's term statistics (docfreq,totalTermFreq) 
     // provided to TermQuery, so that the general idea is agnostic to any scoring system...
-    static TFIDFSimilarity sim=new DefaultSimilarity();
+    static TFIDFSimilarity sim=new ClassicSimilarity();
     ArrayList<FieldVals> fieldVals=new ArrayList<>();
     Analyzer analyzer;
 

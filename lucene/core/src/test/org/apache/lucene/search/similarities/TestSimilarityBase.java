@@ -579,7 +579,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   // LUCENE-5221
   public void testDiscountOverlapsBoost() throws IOException {
-    DefaultSimilarity expected = new DefaultSimilarity();
+    ClassicSimilarity expected = new ClassicSimilarity();
     SimilarityBase actual = new DFRSimilarity(new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
     expected.setDiscountOverlaps(false);
     actual.setDiscountOverlaps(false);

@@ -34,7 +34,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanFirstQuery;
@@ -57,7 +57,7 @@ import java.util.Set;
 
 public class TestPayloadSpans extends LuceneTestCase {
   private IndexSearcher searcher;
-  private Similarity similarity = new DefaultSimilarity();
+  private Similarity similarity = new ClassicSimilarity();
   protected IndexReader indexReader;
   private IndexReader closeIndexReader;
   private Directory directory;

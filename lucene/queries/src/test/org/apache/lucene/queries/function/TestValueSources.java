@@ -80,7 +80,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -224,7 +224,7 @@ public class TestValueSources extends LuceneTestCase {
   public void testIDF() throws Exception {
     Similarity saved = searcher.getSimilarity(true);
     try {
-      searcher.setSimilarity(new DefaultSimilarity());
+      searcher.setSimilarity(new ClassicSimilarity());
       ValueSource vs = new IDFValueSource("bogus", "bogus", "text", new BytesRef("test"));
       assertHits(new FunctionQuery(vs), new float[] { 1.0f, 1.0f });
       assertAllExist(vs);
@@ -343,7 +343,7 @@ public class TestValueSources extends LuceneTestCase {
     Similarity saved = searcher.getSimilarity(true);
     try {
       // no norm field (so agnostic to indexed similarity)
-      searcher.setSimilarity(new DefaultSimilarity());
+      searcher.setSimilarity(new ClassicSimilarity());
       ValueSource vs = new NormValueSource("byte");
       assertHits(new FunctionQuery(vs), new float[] { 0f, 0f });
 
@@ -395,7 +395,7 @@ public class TestValueSources extends LuceneTestCase {
     Similarity saved = searcher.getSimilarity(true);
 
     try {
-      searcher.setSimilarity(new DefaultSimilarity());
+      searcher.setSimilarity(new ClassicSimilarity());
       
       ValueSource vs = new QueryValueSource(new TermQuery(new Term("string","bar")), 42F);
       assertHits(new FunctionQuery(vs), new float[] { 42F, 1.4054651F });
@@ -502,7 +502,7 @@ public class TestValueSources extends LuceneTestCase {
     Similarity saved = searcher.getSimilarity(true);
     try {
       // no norm field (so agnostic to indexed similarity)
-      searcher.setSimilarity(new DefaultSimilarity());
+      searcher.setSimilarity(new ClassicSimilarity());
 
       ValueSource vs = new TFValueSource("bogus", "bogus", "text", new BytesRef("test"));
       assertHits(new FunctionQuery(vs), 

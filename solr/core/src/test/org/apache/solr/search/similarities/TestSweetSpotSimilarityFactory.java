@@ -18,7 +18,7 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
@@ -36,7 +36,7 @@ public class TestSweetSpotSimilarityFactory extends BaseSimilarityTestCase {
     SweetSpotSimilarity sim = getSimilarity("text", SweetSpotSimilarity.class);
 
     // SSS tf w/defaults should behave just like DS
-    DefaultSimilarity d = new DefaultSimilarity();
+    ClassicSimilarity d = new ClassicSimilarity();
     for (int i = 0; i <=1000; i++) {
       assertEquals("tf: i="+i, d.tf(i), sim.tf(i), 0.0F);
     }
@@ -52,7 +52,7 @@ public class TestSweetSpotSimilarityFactory extends BaseSimilarityTestCase {
     SweetSpotSimilarity sim = getSimilarity("text_baseline", 
                                             SweetSpotSimilarity.class);
     
-    DefaultSimilarity d = new DefaultSimilarity();
+    ClassicSimilarity d = new ClassicSimilarity();
 
     // constant up to 6
     for (int i = 1; i <=6; i++) {

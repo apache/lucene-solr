@@ -43,7 +43,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.Bits;
@@ -147,7 +147,7 @@ public class IndexSearcher {
   private final ExecutorService executor;
 
   // the default Similarity
-  private static final Similarity defaultSimilarity = new DefaultSimilarity();
+  private static final Similarity defaultSimilarity = new BM25Similarity();
 
   private QueryCache queryCache = DEFAULT_QUERY_CACHE;
   private QueryCachingPolicy queryCachingPolicy = DEFAULT_CACHING_POLICY;
@@ -335,7 +335,7 @@ public class IndexSearcher {
    *  When {@code needsScores} is {@code true}, this returns the
    *  {@link Similarity} that has been set through {@link #setSimilarity(Similarity)}
    *  or the {@link #getDefaultSimilarity()} default {@link Similarity} if none
-   *  has been set explicitely. */
+   *  has been set explicitly. */
   public Similarity getSimilarity(boolean needsScores) {
     return needsScores ? similarity : NON_SCORING_SIMILARITY;
   }

@@ -32,7 +32,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -313,7 +313,7 @@ public final class MoreLikeThis {
    * Constructor requiring an IndexReader.
    */
   public MoreLikeThis(IndexReader ir) {
-    this(ir, new DefaultSimilarity());
+    this(ir, new ClassicSimilarity());
   }
 
   public MoreLikeThis(IndexReader ir, TFIDFSimilarity sim) {

@@ -42,7 +42,7 @@ import org.apache.lucene.util.SmallFloat;
  * Last, note that search time is too late to modify this <i>norm</i> part of
  * scoring, e.g. by using a different {@link Similarity} for search.
  */
-public class DefaultSimilarity extends TFIDFSimilarity {
+public class ClassicSimilarity extends TFIDFSimilarity {
   
   /** Cache of decoded bytes. */
   private static final float[] NORM_TABLE = new float[256];
@@ -54,7 +54,7 @@ public class DefaultSimilarity extends TFIDFSimilarity {
   }
 
   /** Sole constructor: parameter-free */
-  public DefaultSimilarity() {}
+  public ClassicSimilarity() {}
   
   /** Implemented as <code>overlap / maxOverlap</code>. */
   @Override
@@ -168,6 +168,6 @@ public class DefaultSimilarity extends TFIDFSimilarity {
 
   @Override
   public String toString() {
-    return "DefaultSimilarity";
+    return "ClassicSimilarity";
   }
 }

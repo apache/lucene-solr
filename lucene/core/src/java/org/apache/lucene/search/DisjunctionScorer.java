@@ -28,7 +28,7 @@ import java.util.List;
 abstract class DisjunctionScorer extends Scorer {
 
   private final boolean needsScores;
-  private final DisiPriorityQueue<Scorer> subScorers;
+  final DisiPriorityQueue<Scorer> subScorers;
   private final long cost;
 
   /** Linked list of scorers which are on the current doc */

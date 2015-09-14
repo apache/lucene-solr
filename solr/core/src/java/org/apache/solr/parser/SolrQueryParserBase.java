@@ -152,7 +152,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     try {
       // TopLevelQuery is a Query followed by the end-of-input (EOF)
       Query res = TopLevelQuery(null);  // pass null so we can tell later if an explicit field was provided or not
-      return res!=null ? res : newBooleanQuery(false).build();
+      return res!=null ? res : newBooleanQuery().build();
     }
     catch (ParseException | TokenMgrError tme) {
       throw new SyntaxError("Cannot parse '" +query+ "': " + tme.getMessage(), tme);
@@ -488,30 +488,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    *
    * @return Resulting {@link org.apache.lucene.search.Query} object.
    */
-  protected Query getBooleanQuery(List<BooleanClause> clauses) throws SyntaxError {
-    return getBooleanQuery(clauses, false);
-  }
-
-  /**
-   * Factory method for generating query, given a set of clauses.
-   * By default creates a boolean query composed of clauses passed in.
-   *
-   * Can be overridden by extending classes, to modify query being
-   * returned.
-   *
-   * @param clauses List that contains {@link org.apache.lucene.search.BooleanClause} instances
-   *    to join.
-   * @param disableCoord true if coord scoring should be disabled.
-   *
-   * @return Resulting {@link org.apache.lucene.search.Query} object.
-   */
-  protected Query getBooleanQuery(List<BooleanClause> clauses, boolean disableCoord)
-    throws SyntaxError
+  protected Query getBooleanQuery(List<BooleanClause> clauses) throws SyntaxError
   {
     if (clauses.size()==0) {
       return null; // all clause words were filtered away by the analyzer.
     }
-    BooleanQuery.Builder query = newBooleanQuery(disableCoord);
+    BooleanQuery.Builder query = newBooleanQuery();
     for(final BooleanClause clause: clauses) {
       query.add(clause);
     }

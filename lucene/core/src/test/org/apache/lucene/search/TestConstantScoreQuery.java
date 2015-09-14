@@ -31,7 +31,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
@@ -103,7 +103,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       searcher.setQueryCache(null); // to assert on scorer impl
       
       // set a similarity that does not normalize our boost away
-      searcher.setSimilarity(new DefaultSimilarity() {
+      searcher.setSimilarity(new ClassicSimilarity() {
         @Override
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f;

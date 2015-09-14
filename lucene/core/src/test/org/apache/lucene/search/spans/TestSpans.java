@@ -35,7 +35,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -286,7 +286,7 @@ public class TestSpans extends LuceneTestCase {
     for (int i = 0, c = leaves.size(); i < c; i++) {
       final LeafReaderContext ctx = leaves.get(i);
      
-      final Similarity sim = new DefaultSimilarity() {
+      final Similarity sim = new ClassicSimilarity() {
         @Override
         public float sloppyFreq(int distance) {
           return 0.0f;

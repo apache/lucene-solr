@@ -52,7 +52,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     sims = new ArrayList<>();
-    sims.add(new DefaultSimilarity());
+    sims.add(new ClassicSimilarity());
     sims.add(new BM25Similarity());
     // TODO: not great that we dup this all with TestSimilarityBase
     for (BasicModel basicModel : TestSimilarityBase.BASIC_MODELS) {

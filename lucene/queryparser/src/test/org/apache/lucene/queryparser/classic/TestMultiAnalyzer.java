@@ -50,12 +50,12 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     assertEquals("\"foo foobar blah\"", qp.parse("\"foo foobar blah\"").toString());
 
     // two tokens at the same position:
-    assertEquals("(multi multi2) foo", qp.parse("multi foo").toString());
-    assertEquals("foo (multi multi2)", qp.parse("foo multi").toString());
-    assertEquals("(multi multi2) (multi multi2)", qp.parse("multi multi").toString());
-    assertEquals("+(foo (multi multi2)) +(bar (multi multi2))",
+    assertEquals("Synonym(multi multi2) foo", qp.parse("multi foo").toString());
+    assertEquals("foo Synonym(multi multi2)", qp.parse("foo multi").toString());
+    assertEquals("Synonym(multi multi2) Synonym(multi multi2)", qp.parse("multi multi").toString());
+    assertEquals("+(foo Synonym(multi multi2)) +(bar Synonym(multi multi2))",
         qp.parse("+(foo multi) +(bar multi)").toString());
-    assertEquals("+(foo (multi multi2)) field:\"bar (multi multi2)\"",
+    assertEquals("+(foo Synonym(multi multi2)) field:\"bar (multi multi2)\"",
         qp.parse("+(foo multi) field:\"bar multi\"").toString());
 
     // phrases:
@@ -65,12 +65,12 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
         qp.parse("\"foo multi foobar multi\"").toString());
 
     // fields:
-    assertEquals("(field:multi field:multi2) field:foo", qp.parse("field:multi field:foo").toString());
+    assertEquals("Synonym(field:multi field:multi2) field:foo", qp.parse("field:multi field:foo").toString());
     assertEquals("field:\"(multi multi2) foo\"", qp.parse("field:\"multi foo\"").toString());
 
     // three tokens at one position:
-    assertEquals("triplemulti multi3 multi2", qp.parse("triplemulti").toString());
-    assertEquals("foo (triplemulti multi3 multi2) foobar",
+    assertEquals("Synonym(multi2 multi3 triplemulti)", qp.parse("triplemulti").toString());
+    assertEquals("foo Synonym(multi2 multi3 triplemulti) foobar",
         qp.parse("foo triplemulti foobar").toString());
 
     // phrase with non-default slop:
@@ -89,7 +89,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
     // non-default operator:
     qp.setDefaultOperator(QueryParserBase.AND_OPERATOR);
-    assertEquals("+(multi multi2) +foo", qp.parse("multi foo").toString());
+    assertEquals("+Synonym(multi multi2) +foo", qp.parse("multi foo").toString());
 
   }
     

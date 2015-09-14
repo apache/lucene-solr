@@ -35,7 +35,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.similarities.Similarity.SimWeight;
 import org.apache.lucene.store.Directory;
@@ -89,7 +89,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     r = DirectoryReader.open(dir);
     reader = getOnlySegmentReader(r);
     searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(new DefaultSimilarity() {
+    searcher.setSimilarity(new ClassicSimilarity() {
       @Override
       public float queryNorm(float sumOfSquaredWeights) {
         return 1; // we disable queryNorm, both for debugging and ease of impl

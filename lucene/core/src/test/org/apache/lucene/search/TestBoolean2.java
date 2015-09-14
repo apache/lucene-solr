@@ -27,7 +27,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -65,7 +65,7 @@ public class TestBoolean2 extends LuceneTestCase {
     littleReader = DirectoryReader.open(directory);
     searcher = newSearcher(littleReader);
     // this is intentionally using the baseline sim, because it compares against bigSearcher (which uses a random one)
-    searcher.setSimilarity(new DefaultSimilarity());
+    searcher.setSimilarity(new ClassicSimilarity());
 
     // Make big index
     dir2 = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(directory));
@@ -242,7 +242,7 @@ public class TestBoolean2 extends LuceneTestCase {
     int[] expDocNrs = {2, 3};
     Similarity oldSimilarity = searcher.getSimilarity(true);
     try {
-      searcher.setSimilarity(new DefaultSimilarity(){
+      searcher.setSimilarity(new ClassicSimilarity(){
         @Override
         public float coord(int overlap, int maxOverlap) {
           return overlap / ((float)maxOverlap - 1);
@@ -279,7 +279,7 @@ public class TestBoolean2 extends LuceneTestCase {
           searcher.setSimilarity(bigSearcher.getSimilarity(true)); // random sim
           QueryUtils.check(random(), q1, searcher);
         } finally {
-          searcher.setSimilarity(new DefaultSimilarity()); // restore
+          searcher.setSimilarity(new ClassicSimilarity()); // restore
         }
 
         TopFieldCollector collector = TopFieldCollector.create(sort, 1000,

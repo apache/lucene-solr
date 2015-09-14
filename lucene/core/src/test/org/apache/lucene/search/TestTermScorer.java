@@ -31,7 +31,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -52,7 +52,7 @@ public class TestTermScorer extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMergePolicy(newLogMergePolicy())
-        .setSimilarity(new DefaultSimilarity()));
+        .setSimilarity(new ClassicSimilarity()));
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
       doc
@@ -62,7 +62,7 @@ public class TestTermScorer extends LuceneTestCase {
     indexReader = SlowCompositeReaderWrapper.wrap(writer.getReader());
     writer.close();
     indexSearcher = newSearcher(indexReader);
-    indexSearcher.setSimilarity(new DefaultSimilarity());
+    indexSearcher.setSimilarity(new ClassicSimilarity());
   }
   
   @Override

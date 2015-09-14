@@ -32,6 +32,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 
 /**
@@ -280,28 +281,25 @@ public class QueryBuilder {
    * Creates simple boolean query from the cached tokenstream contents 
    */
   private Query analyzeBoolean(String field, TokenStream stream) throws IOException {
-    BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
-
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     
     stream.reset();
+    List<Term> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      Query currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
-      q.add(currentQuery, BooleanClause.Occur.SHOULD);
+      terms.add(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
     }
     
-    return q.build();
+    return newSynonymQuery(terms.toArray(new Term[terms.size()]));
   }
 
-  private void add(BooleanQuery.Builder q, BooleanQuery current, BooleanClause.Occur operator) {
-    if (current.clauses().isEmpty()) {
+  private void add(BooleanQuery.Builder q, List<Term> current, BooleanClause.Occur operator) {
+    if (current.isEmpty()) {
       return;
     }
-    if (current.clauses().size() == 1) {
-      q.add(current.clauses().iterator().next().getQuery(), operator);
+    if (current.size() == 1) {
+      q.add(newTermQuery(current.get(0)), operator);
     } else {
-      q.add(current, operator);
+      q.add(newSynonymQuery(current.toArray(new Term[current.size()])), operator);
     }
   }
 
@@ -309,8 +307,8 @@ public class QueryBuilder {
    * Creates complex boolean query from the cached tokenstream contents 
    */
   private Query analyzeMultiBoolean(String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
-    BooleanQuery.Builder q = newBooleanQuery(false);
-    BooleanQuery.Builder currentQuery = newBooleanQuery(true);
+    BooleanQuery.Builder q = newBooleanQuery();
+    List<Term> currentQuery = new ArrayList<>();
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
@@ -318,12 +316,12 @@ public class QueryBuilder {
     stream.reset();
     while (stream.incrementToken()) {
       if (posIncrAtt.getPositionIncrement() != 0) {
-        add(q, currentQuery.build(), operator);
-        currentQuery = newBooleanQuery(true);
+        add(q, currentQuery, operator);
+        currentQuery.clear();
       }
-      currentQuery.add(newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef()))), BooleanClause.Occur.SHOULD);
+      currentQuery.add(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
     }
-    add(q, currentQuery.build(), operator);
+    add(q, currentQuery, operator);
     
     return q.build();
   }
@@ -393,13 +391,20 @@ public class QueryBuilder {
    * Builds a new BooleanQuery instance.
    * <p>
    * This is intended for subclasses that wish to customize the generated queries.
-   * @param disableCoord disable coord
    * @return new BooleanQuery instance
    */
-  protected BooleanQuery.Builder newBooleanQuery(boolean disableCoord) {
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    builder.setDisableCoord(disableCoord);
-    return builder;
+  protected BooleanQuery.Builder newBooleanQuery() {
+    return new BooleanQuery.Builder();
+  }
+  
+  /**
+   * Builds a new SynonymQuery instance.
+   * <p>
+   * This is intended for subclasses that wish to customize the generated queries.
+   * @return new Query instance
+   */
+  protected Query newSynonymQuery(Term terms[]) {
+    return new SynonymQuery(terms);
   }
   
   /**

@@ -49,7 +49,7 @@ public class TestLongNormValueSource extends LuceneTestCase {
   static IndexSearcher searcher;
   static Analyzer analyzer;
   
-  private static Similarity sim = new PreciseDefaultSimilarity();
+  private static Similarity sim = new PreciseClassicSimilarity();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -120,10 +120,10 @@ public class TestLongNormValueSource extends LuceneTestCase {
 
 
 /** Encodes norm as 4-byte float. */
-class PreciseDefaultSimilarity extends TFIDFSimilarity {
+class PreciseClassicSimilarity extends TFIDFSimilarity {
 
   /** Sole constructor: parameter-free */
-  public PreciseDefaultSimilarity() {}
+  public PreciseClassicSimilarity() {}
 
   /** Implemented as <code>overlap / maxOverlap</code>. */
   @Override

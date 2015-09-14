@@ -230,4 +230,15 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
 
     assertSameScores(q1, q2);
   }
+  
+  public void testBooleanOrVsSynonym() throws Exception {
+    Term t1 = randomTerm();
+    Term t2 = randomTerm();
+    assertEquals(t1.field(), t2.field());
+    SynonymQuery q1 = new SynonymQuery(t1, t2);
+    BooleanQuery.Builder q2 = new BooleanQuery.Builder();
+    q2.add(new TermQuery(t1), Occur.SHOULD);
+    q2.add(new TermQuery(t2), Occur.SHOULD);
+    assertSameSet(q1, q2.build());
+  }
 }

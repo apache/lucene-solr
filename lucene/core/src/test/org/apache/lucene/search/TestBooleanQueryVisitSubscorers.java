@@ -37,6 +37,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ChildScorer;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -68,8 +69,11 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     writer.close();
     // we do not use newSearcher because the assertingXXX layers break
     // the toString representations we are relying on
+    // TODO: clean that up
     searcher = new IndexSearcher(reader);
+    searcher.setSimilarity(new ClassicSimilarity());
     scorerSearcher = new ScorerIndexSearcher(reader);
+    scorerSearcher.setSimilarity(new ClassicSimilarity());
   }
   
   @Override
