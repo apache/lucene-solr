@@ -20,7 +20,6 @@ package org.apache.lucene.search.payloads;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -49,7 +48,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** basic test of payload-spans */
-public class TestPayloadBasics extends LuceneTestCase {
+public class TestPayloadCheckQuery extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexReader reader;
   private static Directory directory;
@@ -94,8 +93,8 @@ public class TestPayloadBasics extends LuceneTestCase {
   
   public void testSpanPayloadCheck() throws Exception {
     SpanQuery term1 = new SpanTermQuery(new Term("field", "five"));
-    BytesRef pay = new BytesRef(("pos: " + 5).getBytes(StandardCharsets.UTF_8));
-    SpanQuery query = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay.bytes));
+    BytesRef pay = new BytesRef("pos: " + 5);
+    SpanQuery query = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay));
     checkHits(query, new int[]
       {1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285, 1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855, 1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995});
     assertTrue(searcher.explain(query, 1125).getValue() > 0.0f);
@@ -103,18 +102,18 @@ public class TestPayloadBasics extends LuceneTestCase {
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "hundred"));
     SpanNearQuery snq;
     SpanQuery[] clauses;
-    List<byte[]> list;
+    List<BytesRef> list;
     BytesRef pay2;
     clauses = new SpanQuery[2];
     clauses[0] = term1;
     clauses[1] = term2;
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
-    pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
+    pay = new BytesRef("pos: " + 0);
+    pay2 = new BytesRef("pos: " + 1);
     list = new ArrayList<>();
-    list.add(pay.bytes);
-    list.add(pay2.bytes);
-    query = new SpanNearPayloadCheckQuery(snq, list);
+    list.add(pay);
+    list.add(pay2);
+    query = new SpanPayloadCheckQuery(snq, list);
     checkHits(query, new int[]
       {500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599});
     clauses = new SpanQuery[3];
@@ -122,14 +121,14 @@ public class TestPayloadBasics extends LuceneTestCase {
     clauses[1] = term2;
     clauses[2] = new SpanTermQuery(new Term("field", "five"));
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
-    pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
-    BytesRef pay3 = new BytesRef(("pos: " + 2).getBytes(StandardCharsets.UTF_8));
+    pay = new BytesRef("pos: " + 0);
+    pay2 = new BytesRef("pos: " + 1);
+    BytesRef pay3 = new BytesRef("pos: " + 2);
     list = new ArrayList<>();
-    list.add(pay.bytes);
-    list.add(pay2.bytes);
-    list.add(pay3.bytes);
-    query = new SpanNearPayloadCheckQuery(snq, list);
+    list.add(pay);
+    list.add(pay2);
+    list.add(pay3);
+    query = new SpanPayloadCheckQuery(snq, list);
     checkHits(query, new int[]
       {505});
   }
@@ -141,13 +140,21 @@ public class TestPayloadBasics extends LuceneTestCase {
     SpanTermQuery term4 = new SpanTermQuery(new Term("field", "four"));
     SpanNearQuery nearQuery = new SpanNearQuery(new SpanQuery[]{term5, term100, term4}, 0, false);
 
-    List<byte[]> payloads = new ArrayList<>();
-    payloads.add(("pos: " + 2).getBytes(StandardCharsets.UTF_8));
-    payloads.add(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
-    payloads.add(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+    List<BytesRef> payloads = new ArrayList<>();
+    payloads.add(new BytesRef("pos: " + 2));
+    payloads.add(new BytesRef("pos: " + 1));
+    payloads.add(new BytesRef("pos: " + 0));
 
     SpanPayloadCheckQuery payloadQuery = new SpanPayloadCheckQuery(nearQuery, payloads);
     checkHits(payloadQuery, new int[]{ 405 });
+
+    payloads.clear();
+    payloads.add(new BytesRef("pos: " + 0));
+    payloads.add(new BytesRef("pos: " + 1));
+    payloads.add(new BytesRef("pos: " + 2));
+
+    payloadQuery = new SpanPayloadCheckQuery(nearQuery, payloads);
+    checkHits(payloadQuery, new int[]{ 504 });
 
   }
 
@@ -169,16 +176,16 @@ public class TestPayloadBasics extends LuceneTestCase {
     query = new SpanPositionRangeQuery(oneThousHunThree, 0, 6);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
-    Collection<byte[]> payloads = new ArrayList<>();
+    List<BytesRef> payloads = new ArrayList<>();
     BytesRef pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
     BytesRef pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
     BytesRef pay3 = new BytesRef(("pos: " + 3).getBytes(StandardCharsets.UTF_8));
     BytesRef pay4 = new BytesRef(("pos: " + 4).getBytes(StandardCharsets.UTF_8));
-    payloads.add(pay.bytes);
-    payloads.add(pay2.bytes);
-    payloads.add(pay3.bytes);
-    payloads.add(pay4.bytes);
-    query = new SpanNearPayloadCheckQuery(oneThousHunThree, payloads);
+    payloads.add(pay);
+    payloads.add(pay2);
+    payloads.add(pay3);
+    payloads.add(pay4);
+    query = new SpanPayloadCheckQuery(oneThousHunThree, payloads);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
   }

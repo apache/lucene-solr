@@ -17,13 +17,12 @@ package org.apache.lucene.search.payloads;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
@@ -32,10 +31,12 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
+import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -43,14 +44,14 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class SpanPayloadCheckQuery extends SpanQuery {
 
-  protected final Collection<byte[]> payloadToMatch;
+  protected final List<BytesRef> payloadToMatch;
   protected final SpanQuery match;
 
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
-   * @param payloadToMatch The {@link java.util.Collection} of payloads to match
+   * @param payloadToMatch The {@link java.util.List} of payloads to match
    */
-  public SpanPayloadCheckQuery(SpanQuery match, Collection<byte[]> payloadToMatch) {
+  public SpanPayloadCheckQuery(SpanQuery match, List<BytesRef> payloadToMatch) {
     this.match = match;
     this.payloadToMatch = payloadToMatch;
   }
@@ -90,14 +91,14 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
-      final PayloadSpanCollector collector = new PayloadSpanCollector();
+      final PayloadChecker collector = new PayloadChecker();
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
       return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
         protected AcceptStatus accept(Spans candidate) throws IOException {
           collector.reset();
           candidate.collect(collector);
-          return checkPayloads(collector.getPayloads());
+          return collector.match();
         }
       };
     }
@@ -118,27 +119,42 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
   }
 
-  /**
-   * Check to see if the collected payloads match the required set.
-   *
-   * @param candidate a collection of payloads from the current Spans
-   * @return whether or not the payloads match
-   */
-  protected AcceptStatus checkPayloads(Collection<byte[]> candidate) {
-    if (candidate.size() == payloadToMatch.size()){
-      //TODO: check the byte arrays are the same
-      Iterator<byte[]> toMatchIter = payloadToMatch.iterator();
-      //check each of the byte arrays, in order
-      for (byte[] candBytes : candidate) {
-        //if one is a mismatch, then return false
-        if (Arrays.equals(candBytes, toMatchIter.next()) == false){
-          return AcceptStatus.NO;
-        }
+  private class PayloadChecker implements SpanCollector {
+
+    int upto = 0;
+    boolean matches = true;
+
+    @Override
+    public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
+      if (!matches)
+        return;
+      if (upto >= payloadToMatch.size()) {
+        matches = false;
+        return;
       }
-      //we've verified all the bytes
-      return AcceptStatus.YES;
-    } else {
-      return AcceptStatus.NO;
+      BytesRef payload = postings.getPayload();
+      if (payloadToMatch.get(upto) == null) {
+        matches = payload == null;
+        upto++;
+        return;
+      }
+      if (payload == null) {
+        matches = false;
+        upto++;
+        return;
+      }
+      matches = payloadToMatch.get(upto).bytesEquals(payload);
+      upto++;
+    }
+
+    AcceptStatus match() {
+      return matches && upto == payloadToMatch.size() ? AcceptStatus.YES : AcceptStatus.NO;
+    }
+
+    @Override
+    public void reset() {
+      this.upto = 0;
+      this.matches = true;
     }
   }
 
@@ -148,8 +164,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     buffer.append("spanPayCheck(");
     buffer.append(match.toString(field));
     buffer.append(", payloadRef: ");
-    for (byte[] bytes : payloadToMatch) {
-      ToStringUtils.byteArray(buffer, bytes);
+    for (BytesRef bytes : payloadToMatch) {
+      buffer.append(Term.toString(bytes));
       buffer.append(';');
     }
     buffer.append(")");

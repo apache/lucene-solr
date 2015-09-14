@@ -16,9 +16,11 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import java.util.Collection;
+import java.util.List;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 
@@ -33,9 +35,9 @@ public class SpanNearPayloadCheckQuery extends SpanPayloadCheckQuery {
 
   /**
    * @param match          The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
-   * @param payloadToMatch The {@link java.util.Collection} of payloads to match
+   * @param payloadToMatch The {@link java.util.List} of payloads to match
    */
-  public SpanNearPayloadCheckQuery(SpanNearQuery match, Collection<byte[]> payloadToMatch) {
+  public SpanNearPayloadCheckQuery(SpanNearQuery match, List<BytesRef> payloadToMatch) {
     super(match, payloadToMatch);
   }
 
@@ -45,8 +47,8 @@ public class SpanNearPayloadCheckQuery extends SpanPayloadCheckQuery {
     buffer.append("spanPayCheck(");
     buffer.append(match.toString(field));
     buffer.append(", payloadRef: ");
-    for (byte[] bytes : payloadToMatch) {
-      ToStringUtils.byteArray(buffer, bytes);
+    for (BytesRef bytes : payloadToMatch) {
+      buffer.append(Term.toString(bytes));
       buffer.append(';');
     }
     buffer.append(")");
