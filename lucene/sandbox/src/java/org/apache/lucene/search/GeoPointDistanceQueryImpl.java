@@ -62,7 +62,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     protected short computeMaxShift() {
       final short shiftFactor;
 
-      if (query.radius > 2000000) {
+      if (query.radius > 1000000) {
         shiftFactor = 5;
       } else {
         shiftFactor = 4;

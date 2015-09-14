@@ -121,23 +121,30 @@ public class GeoDistanceUtils {
     closestPt[0] = 0;
     closestPt[1] = 0;
 
+    boolean xSet = true;
+    boolean ySet = true;
+
     if (lon > rMaxX) {
       closestPt[0] = rMaxX;
     } else if (lon < rMinX) {
       closestPt[0] = rMinX;
+    } else {
+      xSet = false;
     }
 
     if (lat > rMaxY) {
       closestPt[1] = rMaxY;
     } else if (lat < rMinY) {
       closestPt[1] = rMinY;
+    } else {
+      ySet = false;
     }
 
-    if (closestPt[0] == 0) {
+    if (closestPt[0] == 0 && xSet == false) {
       closestPt[0] = lon;
     }
 
-    if (closestPt[1] == 0) {
+    if (closestPt[1] == 0 && ySet == false) {
       closestPt[1] = lat;
     }
   }

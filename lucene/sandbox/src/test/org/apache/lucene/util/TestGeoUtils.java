@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.search.TestGeoPointQuery;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * Tests class for methods in GeoUtils
@@ -253,13 +251,18 @@ public class TestGeoUtils extends LuceneTestCase {
       double centerLon = randomLon();
       double radiusMeters = 10000000*random().nextDouble();
 
-      boolean expected;
-      if (GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLon, centerLon, centerLat, radiusMeters) == false) {
+      boolean expected = false;
+      boolean circleFullyInside = false;
+      BBox bbox = computeBBox(centerLon, centerLat, radiusMeters);
+      if (GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat, centerLon, centerLat, radiusMeters) == false) {
         // Rect and circle are disjoint
         expected = false;
-      } else if (GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLon, centerLon, centerLat, radiusMeters)) {
+      } else if (GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat, centerLon, centerLat, radiusMeters)) {
         // Rect fully contained inside circle
         expected = true;
+      } else if (GeoUtils.rectWithin(bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat, minLon, minLat, maxLon, maxLat)) {
+        // circle fully contained inside rect
+        circleFullyInside = true;
       } else {
         // TODO: would be nice to somehow test this case too
         continue;
@@ -269,6 +272,8 @@ public class TestGeoUtils extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " rect: lon=" + minLon + " TO " + maxLon + ", lat=" + minLat + " TO " + maxLat + "; circle: lon=" + centerLon + " lat=" + centerLat + " radiusMeters=" + radiusMeters);
         if (expected) {
           System.out.println("  circle fully contains rect");
+        } else if (circleFullyInside) {
+          System.out.println("  rect fully contains circle");
         } else {
           System.out.println("  circle and rect are disjoint");
         }
@@ -283,6 +288,10 @@ public class TestGeoUtils extends LuceneTestCase {
         double lat = minLat + random().nextDouble() * (maxLat - minLat);
         double distanceMeters = SloppyMath.haversin(centerLat, centerLon, lat, lon)*1000.0;
         boolean actual = distanceMeters < radiusMeters;
+        if (circleFullyInside) {
+          // nocommit why even test this?  expected will always be == actual when circleFullyInside
+          expected = circleFullyInside && actual;
+        }
         if (expected != actual) {
           System.out.println("  lon=" + lon + " lat=" + lat + " distanceMeters=" + distanceMeters);
           assertEquals(expected, actual);
@@ -291,5 +300,52 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
 
+  /**
+   * Compute Bounding Box for a circle using WGS-84 parameters
+   */
+  // nocommit should this be in GeoUtils?
+  static BBox computeBBox(final double centerLon, final double centerLat, final double radius) {
+    final double radLat = StrictMath.toRadians(centerLat);
+    final double radLon = StrictMath.toRadians(centerLon);
+    double radDistance = (radius + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
+    double minLat = radLat - radDistance;
+    double maxLat = radLat + radDistance;
+    double minLon;
+    double maxLon;
 
+    if (minLat > GeoProjectionUtils.MIN_LAT_RADIANS && maxLat < GeoProjectionUtils.MAX_LAT_RADIANS) {
+      double deltaLon = StrictMath.asin(StrictMath.sin(radDistance) / StrictMath.cos(radLat));
+      minLon = radLon - deltaLon;
+      if (minLon < GeoProjectionUtils.MIN_LON_RADIANS) {
+        minLon += 2d * StrictMath.PI;
+      }
+      maxLon = radLon + deltaLon;
+      if (maxLon > GeoProjectionUtils.MAX_LON_RADIANS) {
+        maxLon -= 2d * StrictMath.PI;
+      }
+    } else {
+      // a pole is within the distance
+      minLat = StrictMath.max(minLat, GeoProjectionUtils.MIN_LAT_RADIANS);
+      maxLat = StrictMath.min(maxLat, GeoProjectionUtils.MAX_LAT_RADIANS);
+      minLon = GeoProjectionUtils.MIN_LON_RADIANS;
+      maxLon = GeoProjectionUtils.MAX_LON_RADIANS;
+    }
+
+    return new BBox(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
+        StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
+  }
+
+  static class BBox {
+    final double minLon;
+    final double minLat;
+    final double maxLon;
+    final double maxLat;
+
+    BBox(final double minLon, final double maxLon, final double minLat, final double maxLat) {
+      this.minLon = minLon;
+      this.minLat = minLat;
+      this.maxLon = maxLon;
+      this.maxLat = maxLat;
+    }
+  }
 }

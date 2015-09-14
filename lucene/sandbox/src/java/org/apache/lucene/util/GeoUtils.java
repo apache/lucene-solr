@@ -341,6 +341,7 @@ public final class GeoUtils {
    * @return whether the provided line segment is a secant of the
    */
   // nocommit can/should we remove this?
+  // todo not used for 2d at the moment. used for 3d w/ altitude (we can keep or add back)
   private static boolean lineCrossesSphere(double lon1, double lat1, double alt1, double lon2,
                                            double lat2, double alt2, double centerLon, double centerLat,
                                            double centerAlt, double radiusMeters) {
