@@ -42,6 +42,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.GeoDistanceUtils;
+import org.apache.lucene.util.GeoProjectionUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -185,6 +186,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
     assertFalse(GeoUtils.rectCrossesPoly(-5, 0,  0.000001, 5, px, py, xMin, yMin, xMax, yMax));
     assertTrue(GeoUtils.rectWithinPoly(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
   }
+
+  // nocommit carry over testAllLat/LonEqual, or just merge BKD/GeoPoint tests
 
   public void testBBoxCrossDateline() throws Exception {
     TopDocs td = bboxQuery(179.0, -45.0, -179.0, -44.0, 20);
@@ -434,22 +437,18 @@ public class TestGeoPointQuery extends LuceneTestCase {
                    };
               // nocommit
               } else if (true || random().nextBoolean()) {
-                // generate a random bounding box
-                GeoBoundingBox bbox = randomBBox();
 
-                double centerLat = bbox.minLat + ((bbox.maxLat - bbox.minLat)/2.0);
-                double centerLon = bbox.minLon + ((bbox.maxLon - bbox.minLon)/2.0);
+                final double centerLat = randomLat();
+                final double centerLon = randomLon();
 
-                // nocommit just make a random point and radius?
-
-                // radius (in meters) as a function of the random generated bbox
-                final double radius = SloppyMath.haversin(centerLon, centerLat, centerLon, bbox.minLat)*1000.0;
+                // nocommit is this max value right (i want to at most span the entire earth)?:
+                final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * 2.0 * Math.PI;
 
                 if (VERBOSE) {
-                  System.out.println("\t radius = " + radius);
+                  System.out.println("\t radiusMeters = " + radiusMeters);
                 }
-                // query using the centroid of the bounding box
-                query = new GeoPointDistanceQuery(FIELD_NAME, centerLon, centerLat, radius);
+
+                query = new GeoPointDistanceQuery(FIELD_NAME, centerLon, centerLat, radiusMeters);
 
                 verifyHits = new VerifyHits() {
                     @Override
@@ -457,10 +456,10 @@ public class TestGeoPointQuery extends LuceneTestCase {
                       if (Double.isNaN(pointLat) || Double.isNaN(pointLon)) {
                         return null;
                       }
-                      if (radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radius)) {
+                      if (radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radiusMeters)) {
                         return null;
                       } else {
-                        return distanceContainsPt(centerLon, centerLat, pointLon, pointLat, radius);
+                        return distanceContainsPt(centerLon, centerLat, pointLon, pointLat, radiusMeters);
                       }
                     }
                    };
@@ -571,6 +570,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
   }
 
   private static boolean distanceContainsPt(double lonA, double latA, double lonB, double latB, final double radius) {
+    // nocommit why quantize here when we have radiusQueryCanBeWrong?
     final long hashedPtA = GeoUtils.mortonHash(lonA, latA);
     lonA = GeoUtils.mortonUnhashLon(hashedPtA);
     latA = GeoUtils.mortonUnhashLat(hashedPtA);
