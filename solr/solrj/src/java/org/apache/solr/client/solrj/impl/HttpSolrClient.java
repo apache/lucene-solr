@@ -51,6 +51,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -61,6 +62,7 @@ import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -74,6 +76,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
@@ -230,10 +234,21 @@ public class HttpSolrClient extends SolrClient {
     return request(request, processor, null);
   }
   
-  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor, String collection) throws SolrServerException, IOException {
-    return executeMethod(createMethod(request, collection),processor);
+  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor, String collection)
+      throws SolrServerException, IOException {
+    HttpRequestBase method = createMethod(request, collection);
+    setBasicAuthHeader(request, method);
+    return executeMethod(method, processor);
   }
-  
+
+  private void setBasicAuthHeader(SolrRequest request, HttpRequestBase method) throws UnsupportedEncodingException {
+    if (request.getBasicAuthUser() != null && request.getBasicAuthPassword() != null) {
+      String userPass = request.getBasicAuthUser() + ":" + request.getBasicAuthPassword();
+      String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+      method.setHeader(new BasicHeader("Authorization", "Basic " + encoded));
+    }
+  }
+
   /**
    * @lucene.experimental
    */
