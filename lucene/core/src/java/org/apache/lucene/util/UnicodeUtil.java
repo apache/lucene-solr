@@ -179,11 +179,21 @@ public final class UnicodeUtil {
    *  for length characters. It is the responsibility of the
    *  caller to make sure that the destination array is large enough.
    */
-  // TODO: broken if incoming result.offset != 0
   public static int UTF16toUTF8(final CharSequence s, final int offset, final int length, byte[] out) {
+    return UTF16toUTF8(s, offset, length, out, 0);
+  }
+
+  /** Encode characters from this String, starting at offset
+   *  for length characters. Output to the destination array
+   *  will begin at {@code outOffset}. It is the responsibility of the
+   *  caller to make sure that the destination array is large enough.
+   *  <p>
+   *  note this method returns the final output offset (outOffset + number of bytes written)
+   */
+  public static int UTF16toUTF8(final CharSequence s, final int offset, final int length, byte[] out, int outOffset) {
     final int end = offset + length;
 
-    int upto = 0;
+    int upto = outOffset;
     for(int i=offset;i<end;i++) {
       final int code = (int) s.charAt(i);
 
@@ -221,6 +231,43 @@ public final class UnicodeUtil {
     }
     //assert matches(s, offset, length, out, upto);
     return upto;
+  }
+
+  /**
+   * Calculates the number of UTF8 bytes necessary to write a UTF16 string.
+   *
+   * @return the number of bytes written
+   */
+  public static int calcUTF16toUTF8Length(final CharSequence s, final int offset, final int len) {
+    final int end = offset + len;
+
+    int res = 0;
+    for (int i = offset; i < end; i++) {
+      final int code = (int) s.charAt(i);
+
+      if (code < 0x80)
+        res++;
+      else if (code < 0x800) {
+        res += 2;
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        res += 3;
+      } else {
+        // surrogate pair
+        // confirm valid high surrogate
+        if (code < 0xDC00 && (i < end - 1)) {
+          int utf32 = (int) s.charAt(i + 1);
+          // confirm valid low surrogate and write pair
+          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
+            i++;
+            res += 4;
+            continue;
+          }
+        }
+        res += 3;
+      }
+    }
+
+    return res;
   }
 
   // Only called from assert

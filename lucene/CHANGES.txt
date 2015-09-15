@@ -114,6 +114,10 @@ Optimizations
   GeoPointTermsEnum to reduce GC pressure (Nick Knize via Mike
   McCandless)
 
+* LUCENE-6779: Reduce memory allocated by CompressingStoredFieldsWriter to write
+  strings larger than 64kb by an amount equal to string's utf8 size.
+  (Dawid Weiss, Robert Muir, shalin)
+
 Bug Fixes
 
 * LUCENE-6730: Hyper-parameter c is ignored in term frequency NormalizationH1.
