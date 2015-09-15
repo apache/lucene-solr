@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -38,7 +39,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.junit.Test;
@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -98,6 +97,12 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(30000);
 
     testLeaderInitiatedRecoveryCRUD();
+
+    // Tests that if we set a minRf that's not satisfied, no recovery is requested, but if minRf is satisfied,
+    // recovery is requested
+    testMinRf();
+
+    waitForThingsToLevelOut(30000);
 
     // test a 1x2 collection
     testRf2();
@@ -162,6 +167,90 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       // don't fail the test
       log.warn("Could not delete collection {} after test completed", testCollectionName);
     }
+  }
+
+  protected void testMinRf() throws Exception {
+    // create a collection that has 1 shard and 3 replicas
+    String testCollectionName = "collMinRf_1x3";
+    createCollection(testCollectionName, 1, 3, 1);
+    cloudClient.setDefaultCollection(testCollectionName);
+
+    sendDoc(1, 2);
+
+    List<Replica> notLeaders =
+        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
+    assertTrue("Expected 2 non-leader replicas for collection " + testCollectionName
+            + " but found " + notLeaders.size() + "; clusterState: "
+            + printClusterStateInfo(testCollectionName),
+        notLeaders.size() == 2);
+
+    assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 1);
+
+    // Now introduce a network partition between the leader and 1 replica, so a minRf of 2 is still achieved
+    SocketProxy proxy0 = getProxyForReplica(notLeaders.get(0));
+
+    proxy0.close();
+
+    // indexing during a partition
+    int achievedRf = sendDoc(2, 2);
+    assertEquals("Unexpected achieved replication factor", 2, achievedRf);
+
+    Thread.sleep(sleepMsBeforeHealPartition);
+
+    // Verify that the partitioned replica is DOWN
+    ZkStateReader zkr = cloudClient.getZkStateReader();
+    zkr.updateClusterState(); // force the state to be fresh
+    ClusterState cs = zkr.getClusterState();
+    Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
+    Slice slice = slices.iterator().next();
+    Replica partitionedReplica = slice.getReplica(notLeaders.get(0).getName());
+    assertEquals("The partitioned replica did not get marked down",
+        Replica.State.DOWN.toString(), partitionedReplica.getStr(ZkStateReader.STATE_PROP));
+
+    proxy0.reopen();
+
+    notLeaders =
+        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
+
+    // Since minRf is achieved, we expect recovery, so we expect seeing 2 documents
+    assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 2);
+
+    // Now introduce a network partition between the leader and both of its replicas, so a minRf of 2 is NOT achieved
+    proxy0 = getProxyForReplica(notLeaders.get(0));
+    proxy0.close();
+    SocketProxy proxy1 = getProxyForReplica(notLeaders.get(1));
+    proxy1.close();
+
+    achievedRf = sendDoc(3, 2);
+    assertEquals("Unexpected achieved replication factor", 1, achievedRf);
+
+    Thread.sleep(sleepMsBeforeHealPartition);
+
+    // Verify that the partitioned replicas are NOT DOWN since minRf wasn't achieved
+    ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 1);
+
+    proxy0.reopen();
+    proxy1.reopen();
+
+    notLeaders =
+        ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
+
+    // Check that doc 3 is on the leader but not on the notLeaders
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
+    HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
+    assertDocExists(leaderSolr, testCollectionName, "3");
+
+    for (Replica notLeader : notLeaders) {
+      HttpSolrClient notLeaderSolr = getHttpSolrClient(notLeader, testCollectionName);
+      assertDocNotExists(notLeaderSolr, testCollectionName, "3");
+    }
+
+    // Retry sending doc 3
+    achievedRf = sendDoc(3, 2);
+    assertEquals("Unexpected achieved replication factor", 3, achievedRf);
+
+    // Now doc 3 should be on all replicas
+    assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 3);
   }
 
   protected void testRf2() throws Exception {
@@ -480,19 +569,29 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       }
     }
   }
-  
+
   protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + coll;
     return new HttpSolrClient(url);
   }
 
-  protected void sendDoc(int docId) throws Exception {
+  protected int sendDoc(int docId) throws Exception {
+    return sendDoc(docId, null);
+  }
+  
+  protected int sendDoc(int docId, Integer minRf) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
 
-    sendDocsWithRetry(Collections.singletonList(doc), 2, 3, 100);
+    UpdateRequest up = new UpdateRequest();
+    if (minRf != null) {
+      up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
+    }
+    up.add(doc);
+
+    return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up));
   }
 
   /**
@@ -501,11 +600,22 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
    */
   @SuppressWarnings("rawtypes")
   protected void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
-    NamedList rsp = solr.request(qr);
+    NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), new Integer(docId));
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
+  }
+
+  protected void assertDocNotExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+    NamedList rsp = realTimeGetDocId(solr, docId);
+    String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), new Integer(docId));
+    assertTrue("Doc with id=" + docId + " is found in " + solr.getBaseURL()
+        + " due to: " + match + "; rsp="+rsp, match != null);
+  }
+
+  private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
+    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
+    return solr.request(qr);
   }
 
   protected int getReplicaPort(Replica replica) {
