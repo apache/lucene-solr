@@ -21,8 +21,8 @@ import org.apache.lucene.util.GeoUtils;
 
 // nocommit rename to GeoRect?  It's not just a bounding box ... it's any rect ...
 
-/** NOTE: package private; just used so {@link GeoPointInPolygonQuery} can communicate its bounding box to {@link GeoPointInBBoxQuery}. */
-class GeoBoundingBox {
+/** Represents a lat/lon rectangle. */
+public class GeoBoundingBox {
   public final double minLon;
   public final double maxLon;
   public final double minLat;

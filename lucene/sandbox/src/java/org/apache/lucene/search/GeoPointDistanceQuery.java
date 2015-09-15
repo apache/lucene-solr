@@ -43,15 +43,15 @@ import org.apache.lucene.util.GeoUtils;
 public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   protected final double centerLon;
   protected final double centerLat;
-  protected final double radius;
+  protected final double radiusMeters;
 
   /** NOTE: radius is in meters. */
-  public GeoPointDistanceQuery(final String field, final double centerLon, final double centerLat, final double radius) {
-    this(field, computeBBox(centerLon, centerLat, radius), centerLon, centerLat, radius);
+  public GeoPointDistanceQuery(final String field, final double centerLon, final double centerLat, final double radiusMeters) {
+    this(field, computeBBox(centerLon, centerLat, radiusMeters), centerLon, centerLat, radiusMeters);
   }
 
   private GeoPointDistanceQuery(final String field, GeoBoundingBox bbox, final double centerLon,
-                                final double centerLat, final double radius) {
+                                final double centerLat, final double radiusMeters) {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
 
     if (GeoUtils.isValidLon(centerLon) == false) {
@@ -62,9 +62,13 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
       throw new IllegalArgumentException("invalid centerLat " + centerLat);
     }
 
+    if (radiusMeters <= 0.0) {
+      throw new IllegalArgumentException("invalid radiusMeters " + radiusMeters);
+    }
+
     this.centerLon = centerLon;
     this.centerLat = centerLat;
-    this.radius = radius;
+    this.radiusMeters = radiusMeters;
   }
 
   @Override
@@ -83,10 +87,11 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     return new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(this.minLon, this.maxLon, this.minLat, this.maxLat));
   }
 
-  static GeoBoundingBox computeBBox(final double centerLon, final double centerLat, final double radius) {
+  // nocommit move this to util
+  public static GeoBoundingBox computeBBox(final double centerLon, final double centerLat, final double radiusMeters) {
     final double radLat = StrictMath.toRadians(centerLat);
     final double radLon = StrictMath.toRadians(centerLon);
-    double radDistance = (radius + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
+    double radDistance = (radiusMeters + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
     double minLat = radLat - radDistance;
     double maxLat = radLat + radDistance;
     double minLon;
@@ -124,7 +129,7 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
 
     if (Double.compare(that.centerLat, centerLat) != 0) return false;
     if (Double.compare(that.centerLon, centerLon) != 0) return false;
-    if (Double.compare(that.radius, radius) != 0) return false;
+    if (Double.compare(that.radiusMeters, radiusMeters) != 0) return false;
 
     return true;
   }
@@ -137,7 +142,7 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(centerLat);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
-    temp = Double.doubleToLongBits(radius);
+    temp = Double.doubleToLongBits(radiusMeters);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }
@@ -158,17 +163,8 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         .append(centerLat)
         .append(']')
         .append(" Distance: ")
-        .append(radius)
-        .append(" m")
-        .append(" Lower Left: [")
-        .append(minLon)
-        .append(',')
-        .append(minLat)
-        .append(']')
-        .append(" Upper Right: [")
-        .append(maxLon)
-        .append(',')
-        .append(maxLat)
+        .append(radiusMeters)
+        .append(" meters")
         .append("]")
         .toString();
   }
@@ -181,7 +177,7 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     return this.centerLat;
   }
 
-  public double getRadius() {
-    return this.radius;
+  public double getRadiusMeters() {
+    return this.radiusMeters;
   }
 }

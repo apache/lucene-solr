@@ -131,13 +131,39 @@ final class BKDTreeReader implements Accountable {
     return state.docs.build(hitCount);
   }
 
+  private boolean accept(QueryState state, int docID) throws IOException {
+    //System.out.println("    check accept docID=" + docID);
+    state.sndv.setDocument(docID);
+    // How many values this doc has:
+    int count = state.sndv.count();
+    for(int j=0;j<count;j++) {
+      long enc = state.sndv.valueAt(j);
+
+      int latEnc = (int) ((enc>>32) & 0xffffffffL);
+      int lonEnc = (int) (enc & 0xffffffffL);
+
+      if (latEnc >= state.latMinEnc &&
+          latEnc < state.latMaxEnc &&
+          lonEnc >= state.lonMinEnc &&
+          lonEnc < state.lonMaxEnc &&
+          (state.latLonFilter == null ||
+           state.latLonFilter.accept(BKDTreeWriter.decodeLat(latEnc), BKDTreeWriter.decodeLon(lonEnc)))) {
+        //System.out.println("      yes");
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /** Fast path: this is called when the query rect fully encompasses all cells under this node. */
   private int addAll(QueryState state, int nodeID) throws IOException {
-
+    //System.out.println("  addAll nodeID=" + nodeID);
     //long latRange = (long) cellLatMaxEnc - (long) cellLatMinEnc;
     //long lonRange = (long) cellLonMaxEnc - (long) cellLonMinEnc;
 
     if (nodeID >= leafNodeOffset) {
+      //System.out.println("    leaf");
 
       /*
       System.out.println("A: " + BKDTreeWriter.decodeLat(cellLatMinEnc)
@@ -161,6 +187,8 @@ final class BKDTreeReader implements Accountable {
       state.docs.grow(count);
       for(int i=0;i<count;i++) {
         int docID = state.in.readInt();
+        assert accept(state, docID);
+        //System.out.println("  docID=" + docID);
         state.docs.add(docID);
       }
 
@@ -187,6 +215,8 @@ final class BKDTreeReader implements Accountable {
                         int nodeID,
                         int cellLatMinEnc, int cellLatMaxEnc, int cellLonMinEnc, int cellLonMaxEnc)
     throws IOException {
+
+    //System.out.println("BKD: intersect nodeID=" + nodeID);
 
     // 2.06 sec -> 1.52 sec for 225 OSM London queries:
     if (state.latLonFilter != null) {
@@ -230,6 +260,8 @@ final class BKDTreeReader implements Accountable {
     //System.out.println("\nintersect node=" + nodeID + " vs " + leafNodeOffset);
 
     if (nodeID >= leafNodeOffset) {
+      //System.out.println("  intersect leaf");
+
       // Leaf node; scan and filter all points in this block:
       //System.out.println("    intersect leaf nodeID=" + nodeID + " vs leafNodeOffset=" + leafNodeOffset + " fp=" + leafBlockFPs[nodeID-leafNodeOffset]);
       int hitCount = 0;
@@ -256,27 +288,9 @@ final class BKDTreeReader implements Accountable {
       state.docs.grow(count);
       for(int i=0;i<count;i++) {
         int docID = state.in.readInt();
-        state.sndv.setDocument(docID);
-        // How many values this doc has:
-        int docValueCount = state.sndv.count();
-        for(int j=0;j<docValueCount;j++) {
-          long enc = state.sndv.valueAt(j);
-
-          int latEnc = (int) ((enc>>32) & 0xffffffffL);
-          int lonEnc = (int) (enc & 0xffffffffL);
-
-          if (latEnc >= state.latMinEnc &&
-              latEnc < state.latMaxEnc &&
-              lonEnc >= state.lonMinEnc &&
-              lonEnc < state.lonMaxEnc &&
-              (state.latLonFilter == null ||
-               state.latLonFilter.accept(BKDTreeWriter.decodeLat(latEnc), BKDTreeWriter.decodeLon(lonEnc)))) {
-            state.docs.add(docID);
-            hitCount++;
-
-            // Stop processing values for this doc:
-            break;
-          }
+        if (accept(state, docID)) {
+          state.docs.add(docID);
+          hitCount++;
         }
       }
 

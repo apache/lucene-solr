@@ -17,6 +17,16 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.lucene53.Lucene53Codec;
@@ -40,20 +50,15 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.GeoDistanceUtils;
+import org.apache.lucene.util.GeoProjectionUtils;
+import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 // TODO: can test framework assert we don't leak temp files?
 
@@ -61,9 +66,16 @@ public class TestBKDTree extends LuceneTestCase {
 
   private static boolean smallBBox;
 
+  // error threshold for point-distance queries (in meters)
+  // @todo haversine is sloppy, would be good to have a better heuristic for
+  // determining the possible haversine error
+
   @BeforeClass
   public static void beforeClass() {
     smallBBox = random().nextBoolean();
+    if (VERBOSE && smallBBox) {
+      System.out.println("TEST: using small bbox");
+    }
   }
 
   public void testAllLatEqual() throws Exception {
@@ -299,55 +311,55 @@ public class TestBKDTree extends LuceneTestCase {
 
     boolean haveRealDoc = false;
 
-    for (int docID=0;docID<numPoints;docID++) {
+    for (int id=0;id<numPoints;id++) {
       int x = random().nextInt(20);
       if (x == 17) {
         // Some docs don't have a point:
-        lats[docID] = Double.NaN;
+        lats[id] = Double.NaN;
         if (VERBOSE) {
-          System.out.println("  doc=" + docID + " is missing");
+          System.out.println("  id=" + id + " is missing");
         }
         continue;
       }
 
-      if (docID > 0 && x < 3 && haveRealDoc) {
-        int oldDocID;
+      if (id > 0 && x < 3 && haveRealDoc) {
+        int oldID;
         while (true) {
-          oldDocID = random().nextInt(docID);
-          if (Double.isNaN(lats[oldDocID]) == false) {
+          oldID = random().nextInt(id);
+          if (Double.isNaN(lats[oldID]) == false) {
             break;
           }
         }
             
         if (x == 0) {
           // Identical lat to old point
-          lats[docID] = lats[oldDocID];
-          lons[docID] = randomLon();
+          lats[id] = lats[oldID];
+          lons[id] = randomLon();
           if (VERBOSE) {
-            System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat as doc=" + oldDocID + ")");
+            System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id] + " (same lat as doc=" + oldID + ")");
           }
         } else if (x == 1) {
           // Identical lon to old point
-          lats[docID] = randomLat();
-          lons[docID] = lons[oldDocID];
+          lats[id] = randomLat();
+          lons[id] = lons[oldID];
           if (VERBOSE) {
-            System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lon as doc=" + oldDocID + ")");
+            System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id] + " (same lon as doc=" + oldID + ")");
           }
         } else {
           assert x == 2;
           // Fully identical point:
-          lats[docID] = lats[oldDocID];
-          lons[docID] = lons[oldDocID];
+          lats[id] = lats[oldID];
+          lons[id] = lons[oldID];
           if (VERBOSE) {
-            System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID] + " (same lat/lon as doc=" + oldDocID + ")");
+            System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id] + " (same lat/lon as doc=" + oldID + ")");
           }
         }
       } else {
-        lats[docID] = randomLat();
-        lons[docID] = randomLon();
+        lats[id] = randomLat();
+        lons[id] = randomLon();
         haveRealDoc = true;
         if (VERBOSE) {
-          System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + lons[docID]);
+          System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id]);
         }
       }
     }
@@ -402,7 +414,8 @@ public class TestBKDTree extends LuceneTestCase {
         }
       }
     }
-    if (random().nextBoolean()) {
+    // nocommit
+    if (true || random().nextBoolean()) {
       w.forceMerge(1);
     }
     final IndexReader r = DirectoryReader.open(w, true);
@@ -412,6 +425,8 @@ public class TestBKDTree extends LuceneTestCase {
     IndexSearcher s = newSearcher(r, false);
 
     int numThreads = TestUtil.nextInt(random(), 2, 5);
+    // nocommit
+    numThreads = 1;
 
     List<Thread> threads = new ArrayList<>();
     final int iters = atLeast(100);
@@ -437,100 +452,105 @@ public class TestBKDTree extends LuceneTestCase {
             NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
             for (int iter=0;iter<iters && failed.get() == false;iter++) {
-              double lat0 = randomLat();
-              double lat1 = randomLat();
-              double lon0 = randomLon();
-              double lon1 = randomLon();
-
-              if (lat1 < lat0) {
-                double x = lat0;
-                lat0 = lat1;
-                lat1 = x;
-              }
-
-              boolean crossesDateLine;
-              if (lon1 < lon0) {
-                if (random().nextBoolean()) {
-                  double x = lon0;
-                  lon0 = lon1;
-                  lon1 = x;
-                  crossesDateLine = false;
-                } else {
-                  crossesDateLine = true;
-                }
-              } else {
-                crossesDateLine = false;
-              }
 
               if (VERBOSE) {
-                System.out.println("\nTEST: iter=" + iter + " lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + " crossesDateLine=" + crossesDateLine);
+                System.out.println("\nTEST: iter=" + iter + " s=" + s);
               }
-
               Query query;
+              VerifyHits verifyHits;
+
+              if (random().nextBoolean()) {
+                // BBox 
+                final GeoBoundingBox bbox = randomBBox(true);
+
+                query = new BKDPointInBBoxQuery("point", bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
+
+                verifyHits = new VerifyHits() {
+                    @Override
+                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                      return rectContainsPointEnc(bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon, pointLat, pointLon);
+                    }
+                    @Override
+                    protected void describe(int docID, double lat, double lon) {
+                    }
+                  };
+
+              // nocommit change this to always temporarily for more efficient beasting:
+              } else if (random().nextBoolean()) {
+                // Distance
+
+                final double centerLat = randomLat();
+                final double centerLon = randomLon();
+
+                // nocommit is this max value right (i want to at most span the entire earth)?:
+                final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * 2.0 * Math.PI;
+
+                if (VERBOSE) {
+                  System.out.println("  radiusMeters = " + new DecimalFormat("#,###.00").format(radiusMeters));
+                }
+
+                query = new BKDDistanceQuery("point", centerLat, centerLon, radiusMeters);
+
+                verifyHits = new VerifyHits() {
+                    @Override
+                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                      double distanceKM = SloppyMath.haversin(centerLat, centerLon, pointLat, pointLon);
+                      boolean result = distanceKM*1000.0 <= radiusMeters;
+                      //System.out.println("  shouldMatch?  centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " result=" + result + " distanceMeters=" + (distanceKM * 1000));
+                      return result;
+                    }
+
+                    @Override
+                    protected void describe(int docID, double pointLat, double pointLon) {
+                      double distanceKM = SloppyMath.haversin(centerLat, centerLon, pointLat, pointLon);
+                      System.out.println("  docID=" + docID + " centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " distanceMeters=" + (distanceKM * 1000) + " vs radiusMeters=" + radiusMeters);
+                    }
+                   };
+
               // TODO: get poly query working with dateline crossing too (how?)!
-              if (crossesDateLine || random().nextBoolean()) {
-                query = new BKDPointInBBoxQuery("point", lat0, lat1, lon0, lon1);
               } else {
+                final GeoBoundingBox bbox = randomBBox(false);
+
+                // Polygon
                 double[] lats = new double[5];
                 double[] lons = new double[5];
-                lats[0] = lat0;
-                lons[0] = lon0;
-                lats[1] = lat1;
-                lons[1] = lon0;
-                lats[2] = lat1;
-                lons[2] = lon1;
-                lats[3] = lat0;
-                lons[3] = lon1;
-                lats[4] = lat0;
-                lons[4] = lon0;
+                lats[0] = bbox.minLat;
+                lons[0] = bbox.minLon;
+                lats[1] = bbox.maxLat;
+                lons[1] = bbox.minLon;
+                lats[2] = bbox.maxLat;
+                lons[2] = bbox.maxLon;
+                lats[3] = bbox.minLat;
+                lons[3] = bbox.maxLon;
+                lats[4] = bbox.minLat;
+                lons[4] = bbox.minLon;
                 query = new BKDPointInPolygonQuery("point", lats, lons);
+
+                verifyHits = new VerifyHits() {
+                    @Override
+                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                      if (Math.abs(bbox.minLat-pointLat) < TOLERANCE ||
+                          Math.abs(bbox.maxLat-pointLat) < TOLERANCE ||
+                          Math.abs(bbox.minLon-pointLon) < TOLERANCE ||
+                          Math.abs(bbox.maxLon-pointLon) < TOLERANCE) {
+                        // The poly check quantizes slightly differently, so we allow for boundary cases to disagree
+                        return null;
+                      } else {
+                        return rectContainsPointEnc(bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon, pointLat, pointLon);
+                      }
+                    }
+
+                    @Override
+                    protected void describe(int docID, double lat, double lon) {
+                    }
+                  };
               }
 
               if (VERBOSE) {
-                System.out.println("  using query: " + query);
+                System.out.println("  query=" + query);
               }
 
-              final FixedBitSet hits = new FixedBitSet(r.maxDoc());
-              s.search(query, new SimpleCollector() {
-
-                  private int docBase;
-
-                  @Override
-                  public boolean needsScores() {
-                    return false;
-                  }
-
-                  @Override
-                  protected void doSetNextReader(LeafReaderContext context) throws IOException {
-                    docBase = context.docBase;
-                  }
-
-                  @Override
-                  public void collect(int doc) {
-                    hits.set(docBase+doc);
-                  }
-                });
-
-              if (VERBOSE) {
-                System.out.println("  hitCount: " + hits.cardinality());
-              }
-      
-              for(int docID=0;docID<r.maxDoc();docID++) {
-                int id = (int) docIDToID.get(docID);
-                boolean expected = deleted.contains(id) == false && rectContainsPointEnc(lat0, lat1, lon0, lon1, lats[id], lons[id]);
-                if (hits.get(docID) != expected) {
-                  if (query instanceof BKDPointInPolygonQuery &&
-                      (Math.abs(lat0-lats[id]) < TOLERANCE ||
-                       Math.abs(lat1-lats[id]) < TOLERANCE ||
-                       Math.abs(lon0-lons[id]) < TOLERANCE ||
-                       Math.abs(lon1-lons[id]) < TOLERANCE)) {
-                    // The poly check quantizes slightly differently, so we allow for boundary cases to disagree
-                  } else {
-                    // We do exact quantized comparison so the bbox query should never disagree:
-                    fail(Thread.currentThread().getName() + ": iter=" + iter + " id=" + id + " docID=" + docID + " lat=" + lats[id] + " lon=" + lons[id] + " (bbox: lat=" + lat0 + " TO " + lat1 + " lon=" + lon0 + " TO " + lon1 + ") expected " + expected + " but got: " + hits.get(docID) + " deleted?=" + deleted.contains(id) + " query=" + query + " crossesDateLine=" + crossesDateLine);
-                  }
-                }
-              }
+              verifyHits.test(s, docIDToID, deleted, query, lats, lons);
             }
           }
         };
@@ -550,8 +570,8 @@ public class TestBKDTree extends LuceneTestCase {
                                               double pointLat, double pointLon) {
     if (Double.isNaN(pointLat)) {
       return false;
-    }
-    int rectLatMinEnc = BKDTreeWriter.encodeLat(rectLatMin);
+    } 
+   int rectLatMinEnc = BKDTreeWriter.encodeLat(rectLatMin);
     int rectLatMaxEnc = BKDTreeWriter.encodeLat(rectLatMax);
     int rectLonMinEnc = BKDTreeWriter.encodeLon(rectLonMin);
     int rectLonMaxEnc = BKDTreeWriter.encodeLon(rectLonMax);
@@ -601,6 +621,14 @@ public class TestBKDTree extends LuceneTestCase {
     }
   }
 
+  static double quantizeLat(double lat) {
+    return BKDTreeWriter.decodeLat(BKDTreeWriter.encodeLat(lat));
+  }
+
+  static double quantizeLon(double lon) {
+    return BKDTreeWriter.decodeLon(BKDTreeWriter.encodeLon(lon));
+  }
+
   public void testEncodeDecodeMax() throws Exception {
     int x = BKDTreeWriter.encodeLat(Math.nextAfter(90.0, Double.POSITIVE_INFINITY));
     assertTrue(x < Integer.MAX_VALUE);
@@ -632,6 +660,126 @@ public class TestBKDTree extends LuceneTestCase {
   private static DocValuesFormat getDocValuesFormat() {
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
+    if (VERBOSE) {
+      System.out.println("  BKD params: maxPointsInLeaf=" + maxPointsInLeaf + " maxPointsSortInHeap=" + maxPointsSortInHeap);
+    }
     return new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
+  }
+
+  private static abstract class VerifyHits {
+
+    public void test(IndexSearcher s, NumericDocValues docIDToID, Set<Integer> deleted, Query query, double[] lats, double[] lons) throws Exception {
+      int maxDoc = s.getIndexReader().maxDoc();
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+          private int docBase;
+
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
+
+          @Override
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
+            docBase = context.docBase;
+          }
+
+          @Override
+          public void collect(int doc) {
+            hits.set(docBase+doc);
+          }
+        });
+
+      for(int docID=0;docID<maxDoc;docID++) {
+        int id = (int) docIDToID.get(docID);
+        Boolean expected;
+        if (deleted.contains(id)) {
+          expected = false;
+        } else if (Double.isNaN(lats[id])) {
+          expected = false;
+        } else {
+          expected = shouldMatch(lats[id], lons[id]);
+        }
+
+        // null means it's a borderline case which is allowed to be wrong:
+        if (expected != null) {
+          if (hits.get(docID) != expected) {
+            if (expected) {
+              System.out.println(Thread.currentThread().getName() + ": id=" + id + " should match but did not");
+            } else {
+              System.out.println(Thread.currentThread().getName() + ": id=" + id + " should not match but did");
+            }
+            System.out.println("  query=" + query +
+                               " docID=" + docID + "\n  lat=" + lats[id] + " lon=" + lons[id] +
+                               "\n  deleted?=" + deleted.contains(id));
+            if (Double.isNaN(lats[id]) == false) {
+              describe(docID, lats[id], lons[id]);
+            }
+            fail("wrong hit");
+          }
+        }
+      }
+    }
+
+    /** Return true if we definitely should match, false if we definitely
+     *  should not match, and null if it's a borderline case which might
+     *  go either way. */
+    protected abstract Boolean shouldMatch(double lat, double lon);
+
+    protected abstract void describe(int docID, double lat, double lon);
+  }
+
+  private static GeoBoundingBox randomBBox(boolean canCrossDateLine) {
+    double lat0 = randomLat();
+    double lat1 = randomLat();
+    double lon0 = randomLon();
+    double lon1 = randomLon();
+
+    if (lat1 < lat0) {
+      double x = lat0;
+      lat0 = lat1;
+      lat1 = x;
+    }
+
+    if (canCrossDateLine == false && lon1 < lon0) {
+      double x = lon0;
+      lon0 = lon1;
+      lon1 = x;
+    }
+
+    // Don't fixup lon0/lon1, so we can sometimes cross dateline:
+    return new GeoBoundingBox(lon0, lon1, lat0, lat1);
+  }
+
+  static class GeoBoundingBox {
+    public final double minLon;
+    public final double maxLon;
+    public final double minLat;
+    public final double maxLat;
+
+    public GeoBoundingBox(double minLon, double maxLon, double minLat, double maxLat) {
+      if (GeoUtils.isValidLon(minLon) == false) {
+        throw new IllegalArgumentException("invalid minLon " + minLon);
+      }
+      if (GeoUtils.isValidLon(maxLon) == false) {
+        throw new IllegalArgumentException("invalid maxLon " + minLon);
+      }
+      if (GeoUtils.isValidLat(minLat) == false) {
+        throw new IllegalArgumentException("invalid minLat " + minLat);
+      }
+      if (GeoUtils.isValidLat(maxLat) == false) {
+        throw new IllegalArgumentException("invalid maxLat " + minLat);
+      }
+      this.minLon = minLon;
+      this.maxLon = maxLon;
+      this.minLat = minLat;
+      this.maxLat = maxLat;
+    }
+
+    @Override
+    public String toString() {
+      return "GeoBoundingBox(lat=" + minLat + " TO " + maxLat + " lon=" + minLon + " TO " + maxLon + " crossesDateLine=" + (maxLon < minLon) + ")";
+    }
   }
 }

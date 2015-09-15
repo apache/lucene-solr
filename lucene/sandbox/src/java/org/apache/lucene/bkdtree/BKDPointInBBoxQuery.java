@@ -18,6 +18,7 @@ package org.apache.lucene.bkdtree;
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -78,7 +79,6 @@ public class BKDPointInBBoxQuery extends Query {
     // used in the first pass:
 
     return new ConstantScoreWeight(this) {
-
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
@@ -96,9 +96,7 @@ public class BKDPointInBBoxQuery extends Query {
 
         DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon, null, treeDV.delegate);
 
-        final DocIdSetIterator disi = result.iterator();
-
-        return new ConstantScoreScorer(this, score(), disi);
+        return new ConstantScoreScorer(this, score(), result.iterator());
       }
     };
   }

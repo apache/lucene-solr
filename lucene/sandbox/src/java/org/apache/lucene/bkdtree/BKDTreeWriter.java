@@ -128,7 +128,6 @@ class BKDTreeWriter {
   }
 
   public void add(double lat, double lon, int docID) throws IOException {
-
     if (validLat(lat) == false) {
       throw new IllegalArgumentException("invalid lat: " + lat);
     }
@@ -691,6 +690,7 @@ class BKDTreeWriter {
         // on those lists:
         int docID = docIDs[i];
         if (docID != lastDocID) {
+          //System.out.println("  docID=" + docID);
           out.writeInt(docID);
           lastDocID = docID;
         }

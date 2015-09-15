@@ -62,7 +62,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     protected short computeMaxShift() {
       final short shiftFactor;
 
-      if (query.radius > 1000000) {
+      if (query.radiusMeters > 1000000) {
         shiftFactor = 5;
       } else {
         shiftFactor = 4;
@@ -73,12 +73,12 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radius);
+      return GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radiusMeters);
     }
 
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radius);
+      return GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radiusMeters);
     }
 
     @Override
@@ -95,7 +95,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
      */
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return (SloppyMath.haversin(query.centerLat, query.centerLon, lat, lon) * 1000.0 <= query.radius);
+      return (SloppyMath.haversin(query.centerLat, query.centerLon, lat, lon) * 1000.0 <= query.radiusMeters);
     }
   }
 
@@ -119,7 +119,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     return result;
   }
 
-  public double getRadius() {
-    return query.getRadius();
+  public double getRadiusMeters() {
+    return query.getRadiusMeters();
   }
 }
