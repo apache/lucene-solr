@@ -45,6 +45,21 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
   private Set<String> queryParams;
+
+  private String basicAuthUser, basicAuthPwd;
+
+  public SolrRequest setBasicAuthCredentials(String user, String password) {
+    this.basicAuthUser = user;
+    this.basicAuthPwd = password;
+    return this;
+  }
+
+  public String getBasicAuthUser(){
+    return basicAuthUser;
+  }
+  public String getBasicAuthPassword(){
+    return basicAuthPwd;
+  }
   
   //---------------------------------------------------------
   //---------------------------------------------------------

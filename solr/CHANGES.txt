@@ -157,6 +157,8 @@ New Features
   system statistics on IBM J9 virtual machines. It also no longer fails on Java 9
   with Jigsaw module system.  (Uwe Schindler)
 
+* SOLR-8053: Basic auth support in SolrJ (noble)
+
 Bug Fixes
 ----------------------
 
