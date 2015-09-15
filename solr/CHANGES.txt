@@ -264,6 +264,9 @@ Other Changes
 * SOLR-7999: SolrRequestParser tests no longer depend on external URLs
   that may fail to work.  (Uwe Schindler)
 
+* SOLR-8034: Leader no longer puts replicas in recovery in case of a failed update, when minRF
+  isn't achieved. (Jessica Cheng, Timothy Potter, Anshum Gupta)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
