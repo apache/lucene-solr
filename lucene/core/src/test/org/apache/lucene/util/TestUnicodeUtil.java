@@ -214,4 +214,14 @@ public class TestUnicodeUtil extends LuceneTestCase {
       assertEquals(cRef.toString(), unicode);
     }
   }
+
+  public void testCalcUTF16toUTF8Length() {
+    int num = atLeast(5000);
+    for (int i = 0; i < num; i++) {
+      String unicode = TestUtil.randomUnicodeString(random());
+      byte[] utf8 = new byte[unicode.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR];
+      int len = UnicodeUtil.UTF16toUTF8(unicode, 0, unicode.length(), utf8);
+      assertEquals(len, UnicodeUtil.calcUTF16toUTF8Length(unicode, 0, unicode.length()));
+    }
+  }
 }

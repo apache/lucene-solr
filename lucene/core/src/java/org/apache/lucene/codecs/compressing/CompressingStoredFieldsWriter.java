@@ -40,9 +40,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.GrowableByteArrayDataOutput;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -245,8 +243,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     numChunks++;
   }
   
-  byte scratchBytes[] = new byte[16];
-
   @Override
   public void writeField(FieldInfo info, IndexableField field)
       throws IOException {
@@ -293,11 +289,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       bufferedDocs.writeVInt(bytes.length);
       bufferedDocs.writeBytes(bytes.bytes, bytes.offset, bytes.length);
     } else if (string != null) {
-      // this is just an optimized writeString() that re-uses scratchBytes.
-      scratchBytes = ArrayUtil.grow(scratchBytes, string.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR);
-      int length = UnicodeUtil.UTF16toUTF8(string, 0, string.length(), scratchBytes);
-      bufferedDocs.writeVInt(length);
-      bufferedDocs.writeBytes(scratchBytes, length);
+      bufferedDocs.writeString(string);
     } else {
       if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
         bufferedDocs.writeZInt(number.intValue());

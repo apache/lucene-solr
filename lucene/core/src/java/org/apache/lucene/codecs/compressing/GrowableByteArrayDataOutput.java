@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.codecs.compressing;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,7 +17,11 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * A {@link DataOutput} that can be used to build a byte[].
@@ -25,10 +29,16 @@ import org.apache.lucene.store.DataOutput;
  */
 public final class GrowableByteArrayDataOutput extends DataOutput {
 
+  /** Minimum utf8 byte size of a string over which double pass over string is to save memory during encode */
+  static final int MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING = 65536;
+
   /** The bytes */
   public byte[] bytes;
   /** The length */
   public int length;
+
+  // scratch for utf8 encoding of small strings
+  byte[] scratchBytes = new byte[16];
 
   /** Create a {@link GrowableByteArrayDataOutput} with the given initial capacity. */
   public GrowableByteArrayDataOutput(int cp) {
@@ -52,4 +62,22 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
     length = newLength;
   }
 
+  @Override
+  public void writeString(String string) throws IOException {
+    int maxLen = string.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR;
+    if (maxLen <= MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING)  {
+      // string is small enough that we don't need to save memory by falling back to double-pass approach
+      // this is just an optimized writeString() that re-uses scratchBytes.
+      scratchBytes = ArrayUtil.grow(scratchBytes, maxLen);
+      int len = UnicodeUtil.UTF16toUTF8(string, 0, string.length(), scratchBytes);
+      writeVInt(len);
+      writeBytes(scratchBytes, len);
+    } else  {
+      // use a double pass approach to avoid allocating a large intermediate buffer for string encoding
+      int numBytes = UnicodeUtil.calcUTF16toUTF8Length(string, 0, string.length());
+      writeVInt(numBytes);
+      bytes = ArrayUtil.grow(bytes, length + numBytes);
+      length = UnicodeUtil.UTF16toUTF8(string, 0, string.length(), bytes, length);
+    }
+  }
 }
