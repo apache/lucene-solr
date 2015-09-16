@@ -56,7 +56,7 @@
     -->
     <init-param>
       <param-name>excludePatterns</param-name>
-      <param-value>/css/*,/js/*,/img/*,/tpl/*</param-value>
+      <param-value>/css/.+,/js/.+,/img/.+,/tpl/.+</param-value>
     </init-param>
   </filter>
 
