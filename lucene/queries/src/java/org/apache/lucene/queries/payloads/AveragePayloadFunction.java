@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,26 +17,25 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+
 /**
- * Calculates the minimum payload seen
+ * Calculate the final score as the average score of all payloads seen.
+ * <p>
+ * Is thread safe and completely reusable. 
  *
  **/
-public class MinPayloadFunction extends PayloadFunction {
+public class AveragePayloadFunction extends PayloadFunction{
 
   @Override
   public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
-    if (numPayloadsSeen == 0) {
-      return currentPayloadScore;
-    } else {
-      return Math.min(currentPayloadScore, currentScore);
-    }
+    return currentPayloadScore + currentScore;
   }
 
   @Override
   public float docScore(int docId, String field, int numPayloadsSeen, float payloadScore) {
-    return numPayloadsSeen > 0 ? payloadScore : 1;
+    return numPayloadsSeen > 0 ? (payloadScore / numPayloadsSeen) : 1;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -55,5 +54,4 @@ public class MinPayloadFunction extends PayloadFunction {
       return false;
     return true;
   }
-
 }

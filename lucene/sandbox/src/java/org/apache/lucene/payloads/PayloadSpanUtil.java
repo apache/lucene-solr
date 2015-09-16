@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.payloads;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,7 +30,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -107,8 +106,6 @@ public class PayloadSpanUtil {
       getPayloads(payloads, stq);
     } else if (query instanceof SpanQuery) {
       getPayloads(payloads, (SpanQuery) query);
-    } else if (query instanceof FilteredQuery) {
-      queryToSpanQuery(((FilteredQuery) query).getQuery(), payloads);
     } else if (query instanceof DisjunctionMaxQuery) {
 
       for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator
@@ -191,5 +188,4 @@ public class PayloadSpanUtil {
       }
     }
   }
-
 }

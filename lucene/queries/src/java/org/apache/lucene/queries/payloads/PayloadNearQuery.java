@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
@@ -34,6 +35,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
@@ -52,11 +54,11 @@ import org.apache.lucene.util.ToStringUtils;
  * ({@link DefaultSimilarity}), you must override {@link DefaultSimilarity#scorePayload(int, int, int, BytesRef)},
  * which returns 1 by default.
  * <p>
- * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
+ * Payload scores are aggregated using a pluggable {@link org.apache.lucene.queries.payloads.PayloadFunction}.
  *
  * @see org.apache.lucene.search.similarities.Similarity.SimScorer#computePayloadFactor(int, int, int, BytesRef)
  *
- * @deprecated use {@link PayloadScoreQuery} to wrap {@link SpanNearQuery}
+ * @deprecated use {@link org.apache.lucene.queries.payloads.PayloadScoreQuery} to wrap {@link SpanNearQuery}
  */
 @Deprecated
 public class PayloadNearQuery extends SpanNearQuery {
@@ -181,11 +183,12 @@ public class PayloadNearQuery extends SpanNearQuery {
     }
   }
 
-  public class PayloadNearSpanScorer extends SpanScorer {
+  public class PayloadNearSpanScorer extends SpanScorer implements SpanCollector {
+
     Spans spans;
     protected float payloadScore;
     private int payloadsSeen;
-    private final PayloadSpanCollector collector = new PayloadSpanCollector();
+    private final List<byte[]> payloads = new ArrayList<>();
 
     protected PayloadNearSpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
@@ -225,15 +228,30 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     @Override
     protected void doCurrentSpans() throws IOException {
-      collector.reset();
-      spans.collect(collector);
-      processPayloads(collector.getPayloads(), spans.startPosition(), spans.endPosition());
+      reset();
+      spans.collect(this);
+      processPayloads(payloads, spans.startPosition(), spans.endPosition());
     }
 
     @Override
     public float scoreCurrentDoc() throws IOException {
       return super.scoreCurrentDoc()
           * function.docScore(docID(), fieldName, payloadsSeen, payloadScore);
+    }
+
+    @Override
+    public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
+      BytesRef payload = postings.getPayload();
+      if (payload == null)
+        return;
+      final byte[] bytes = new byte[payload.length];
+      System.arraycopy(payload.bytes, payload.offset, bytes, 0, payload.length);
+      payloads.add(bytes);
+    }
+
+    @Override
+    public void reset() {
+      this.payloads.clear();
     }
   }
 

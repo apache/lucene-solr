@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,44 +49,36 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
     });
   }
 
-  /** macro for payloadtermquery */
-  private SpanQuery pt(String s, PayloadFunction fn, boolean includeSpanScore) {
-    return new PayloadTermQuery(new Term(FIELD,s), fn, includeSpanScore);
+  /** macro for payloadscorequery */
+  private SpanQuery pt(String s, PayloadFunction fn) {
+    return new PayloadScoreQuery(new SpanTermQuery(new Term(FIELD,s)), fn);
   }
   
   /* simple PayloadTermQueries */
   
   public void testPT1() throws Exception {
     for (PayloadFunction fn : functions) {
-      qtest(pt("w1", fn, false), new int[] {0,1,2,3});
-      qtest(pt("w1", fn, true), new int[] {0,1,2,3});
+      qtest(pt("w1", fn), new int[] {0,1,2,3});
     }
   }
 
   public void testPT2() throws Exception {
     for (PayloadFunction fn : functions) {
-      SpanQuery q = pt("w1", fn, false);
+      SpanQuery q = pt("w1", fn);
       qtest(new SpanBoostQuery(q, 1000), new int[] {0,1,2,3});
-      q = pt("w1", fn, true);
-      q.setBoost(1000);
-      qtest(q, new int[] {0,1,2,3});
     }
   }
 
   public void testPT4() throws Exception {
     for (PayloadFunction fn : functions) {
-      qtest(pt("xx", fn, false), new int[] {2,3});
-      qtest(pt("xx", fn, true), new int[] {2,3});
+      qtest(pt("xx", fn), new int[] {2,3});
     }
   }
 
   public void testPT5() throws Exception {
     for (PayloadFunction fn : functions) {
-      SpanQuery q = pt("xx", fn, false);
+      SpanQuery q = pt("xx", fn);
       qtest(new SpanBoostQuery(q, 1000), new int[] {2,3});
-      q = pt("xx", fn, true);
-      q.setBoost(1000);
-      qtest(q, new int[] {2,3});
     }
   }
 

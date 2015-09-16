@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -264,7 +264,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     String[] wordList = words.split("[\\s]+");
     SpanQuery clauses[] = new SpanQuery[wordList.length];
     for (int i=0;i<clauses.length;i++) {
-      clauses[i] = new PayloadTermQuery(new Term(fieldName, wordList[i]), new AveragePayloadFunction());  
+      clauses[i] = new PayloadTermQuery(new Term(fieldName, wordList[i]), new AveragePayloadFunction());
     } 
     return new SpanNearQuery(clauses, 10000, false);
   }
