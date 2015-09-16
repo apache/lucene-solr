@@ -201,6 +201,10 @@ Bug Fixes
 
 * SOLR-7746: Ping requests stopped working with distrib=true in Solr 5.2.1.  (Michael Sun)
 
+* SOLR-6547: ClassCastException in SolrResponseBase.getQTime on update response from CloudSolrClient
+  when parallelUpdates is enabled (default) and multiple docs are sent as a single update.
+  (kevin, hossman, shalin)
+
 
 Optimizations
 ----------------------
