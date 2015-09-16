@@ -205,6 +205,8 @@ Bug Fixes
   when parallelUpdates is enabled (default) and multiple docs are sent as a single update.
   (kevin, hossman, shalin)
 
+* SOLR-8058: Fix the exclusion filter so that collections that start with js, css, img, tpl
+  can be accessed. (Upayavira, Steve Rowe, Anshum Gupta) 
 
 Optimizations
 ----------------------

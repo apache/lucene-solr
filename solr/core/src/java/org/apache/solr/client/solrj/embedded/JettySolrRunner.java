@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.servlet.BaseHolder;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -85,6 +86,8 @@ public class JettySolrRunner {
   private volatile boolean startedBefore = false;
 
   private LinkedList<FilterHolder> extraFilters;
+
+  private static final String excludePatterns = "/css/.+,/js/.+,/img/.+,/tpl/.+";
   
   private int proxyPort = -1;
 
@@ -333,9 +336,10 @@ public class JettySolrRunner {
           String pathSpec = config.extraServlets.get(servletHolder);
           root.addServlet(servletHolder, pathSpec);
         }
-
-        dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
-
+        dispatchFilter = root.getServletHandler().newFilterHolder(BaseHolder.Source.EMBEDDED);
+        dispatchFilter.setHeldClass(SolrDispatchFilter.class);
+        dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
+        root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST));
       }
 
       @Override
