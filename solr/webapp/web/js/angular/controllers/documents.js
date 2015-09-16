@@ -116,7 +116,7 @@ solrAdminApp.controller('DocumentsController',
                     $scope.responseStatus = failure;
                 };
                 if (contentType == "json") {
-                  Update.postJson(params, postData, callack, failure);
+                  Update.postJson(params, postData, callback, failure);
                 } else if (contentType == "xml") {
                   Update.postXml(params, postData, callback, failure);
                 } else if (contentType == "csv") {

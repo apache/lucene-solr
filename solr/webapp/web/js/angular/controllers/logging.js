@@ -71,7 +71,11 @@ solrAdminApp.controller('LoggingController',
         }
       */
       });
-      $timeout($scope.refresh, 10000);
+      $scope.timeout = $timeout($scope.refresh, 10000);
+      var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+        $timeout.cancel($scope.timeout);
+        onRouteChangeOff();
+      });
     };
     $scope.refresh();
 

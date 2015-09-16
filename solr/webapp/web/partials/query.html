@@ -48,7 +48,7 @@ limitations under the License.
         <label for="sort" title="Sort field or function with asc|desc.">
           <a rel="help">sort</a>
         </label>
-        <input type="text" id="sort" name="sort" title="Sort field or function with asc|desc.">
+        <input type="text" ng-model="query.sort" id="sort" name="sort" title="Sort field or function with asc|desc.">
 
         <label for="start" title="Number of leading documents to skip and number of documents to return after 'start'. (Integers)">
           <a rel="help">start</a>,
@@ -87,12 +87,12 @@ limitations under the License.
         </select>
 
         <label for="indent" class="checkbox" title="Indent results.">
-          <input type="checkbox" ng-model="query.indent" name="indent" id="indent" value="true" title="Indent results." checked="checked">
+          <input type="checkbox" ng-model="query.indent" name="indent" id="indent" title="Indent results." ng-true-value="'true'" ng-false-value="'false'">
           <a rel="help">indent</a>
         </label>
 
         <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">
-          <input type="checkbox" ng-model="query.debugQuery" name="debugQuery" id="debugQuery" value="true" title="Show timing and diagnostics.">
+          <input type="checkbox" ng-model="query.debugQuery" name="debugQuery" id="debugQuery" title="Show timing and diagnostics." ng-true-value="'true'" ng-false-value="'false'">
           <a rel="help">debugQuery</a>
         </label>
 
