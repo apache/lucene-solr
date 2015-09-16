@@ -23,6 +23,8 @@ solrAdminApp.controller('ReplicationController',
 
         $scope.refresh = function() {
             Replication.details({core:$routeParams.core}, function(response) {
+                var timeout;
+                var interval;
                 if ($scope.interval) $interval.cancel($scope.interval);
                 $scope.isSlave = (response.details.isSlave === 'true');
                 if ($scope.isSlave) {
@@ -31,17 +33,23 @@ solrAdminApp.controller('ReplicationController',
                     $scope.versions = getSlaveVersions(response.details);
                     $scope.settings = getSlaveSettings(response.details);
                     if ($scope.settings.isReplicating) {
-                        $timeout($scope.refresh, 1000);
+                        timeout = $timeout($scope.refresh, 1000);
                     } else if(!$scope.settings.isPollingDisabled && $scope.settings.pollInterval) {
-                        $scope.interval = $interval(function() {
+                        interval = $scope.interval = $interval(function() {
                             $scope.settings.tick--;
                         }, 1000, $scope.settings.tick);
-                        $timeout($scope.refresh, 1000*(1+$scope.settings.tick));
+                        timeout = $timeout($scope.refresh, 1000*(1+$scope.settings.tick));
                     }
                 } else {
                     $scope.versions = getMasterVersions(response.details);
                 }
                 $scope.master = getMasterSettings(response.details, $scope.isSlave);
+
+                var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+                    if (interval) $interval.cancel(interval);
+                    if (timeout) $timeout.cancel(timeout);
+                    onRouteChangeOff();
+                });
             });
 
         };

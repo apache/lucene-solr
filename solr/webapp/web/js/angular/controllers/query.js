@@ -20,15 +20,19 @@ solrAdminApp.controller('QueryController',
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     // @todo read URL parameters into scope
-    $scope.query = {wt: 'json', q:'*:*', indent:'on'};
+    $scope.query = {wt: 'json', q:'*:*', indent:'true'};
     $scope.filters = [{fq:""}];
     $scope.dismax = {defType: "dismax"};
     $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: true};
-    $scope.hl = {hl:"on"};
-    $scope.facet = {facet: "on"};
+    $scope.hl = {hl:"true"};
+    $scope.facet = {facet: "true"};
     $scope.spatial = {};
-    $scope.spellcheck = {spellcheck:"on"};
+    $scope.spellcheck = {spellcheck:"true"};
     $scope.qt = "/select";
+
+    if ($location.search().q) {
+      $scope.query.q = $location.search()["q"];
+    }
 
     $scope.doQuery = function() {
       var params = {};
@@ -74,7 +78,7 @@ solrAdminApp.controller('QueryController',
       params.doNotIntercept=true;
       params.core = $routeParams.core;
       params.handler = qt;
-      var url = "/solr/" + $routeParams.core + qt + "?" + Query.url(params);
+      var url = Query.url(params);
       Query.query(params, function(data) {
         $scope.lang = $scope.query.wt;
         $scope.response = data;

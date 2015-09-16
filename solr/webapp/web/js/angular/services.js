@@ -21,6 +21,21 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource('/solr/admin/info/system', {"wt":"json", "_":Date.now()});
   }])
+.factory('Collections',
+  ['$resource', function($resource) {
+    return $resource('/solr/admin/collections',
+    {'wt':'json', '_':Date.now()}, {
+    "list": {params:{action: "LIST"}},
+    "status": {params:{action: "CLUSTERSTATUS"}},
+    "add": {params:{action: "CREATE"}},
+    "delete": {params:{action: "DELETE"}},
+    "rename": {params:{action: "RENAME"}},
+    "createAlias": {params:{action: "CREATEALIAS"}},
+    "deleteAlias": {params:{action: "DELETEALIAS"}},
+    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}},
+    "optimize": {params:{}}
+    });
+  }])
 .factory('Cores',
   ['$resource', function($resource) {
     return $resource('/solr/admin/cores',
@@ -34,15 +49,6 @@ solrAdminServices.factory('System',
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core", doNotIntercept: "true"}},
     "optimize": {params:{}}
     });
-  }])
-.factory('Collections',
-  ['$resource', function($resource) {
-    return $resource('/solr/admin/collections',
-      {wt: 'json', _:Date.now()}, {
-        "list": {params:{action: "LIST"}},
-        "status": {params:{action: "CLUSTERSTATUS"}}
-      }
-    )
   }])
 .factory('Logging',
   ['$resource', function($resource) {
@@ -59,7 +65,16 @@ solrAdminServices.factory('System',
       "dump": {params: {dump: "true"}},
       "liveNodes": {params: {path: '/live_nodes'}},
       "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
-      "detail": {params: {detail: "true", path: "@path"}}
+      "detail": {params: {detail: "true", path: "@path"}},
+      "configs": {params: {detail:false, path: "/configs/"}},
+      "aliases": {params: {detail: "true", path: "/aliases.json"}, transformResponse:function(data) {
+        var znode = $.parseJSON(data).znode;
+        if (znode.data) {
+          return {aliases: $.parseJSON(znode.data).collection};
+        } else {
+          return {aliases: {}};
+        }
+      }}
     });
   }])
 .factory('Properties',
@@ -194,7 +209,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Query',
     ['$resource', function($resource) {
-       var resource = $resource('/solr/:core:handler', {core: '@core', handler: '@handler'}, {
+       var resource = $resource('/solr/:core:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
            "query": {
                method: "GET", transformResponse: function (data) {
                    return {data: data}
@@ -210,7 +225,7 @@ solrAdminServices.factory('System',
                    }
                }
            }
-           return "/solr/" + params.core + params.handler + "?" + qs.join("&");
+           return "/solr/" + params.core + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
     }])
