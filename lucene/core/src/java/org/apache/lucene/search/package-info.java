@@ -33,7 +33,7 @@
  * <h2>Search Basics</h2>
  * <p>
  * Lucene offers a wide variety of {@link org.apache.lucene.search.Query} implementations, most of which are in
- * this package, its subpackages ({@link org.apache.lucene.search.spans spans}, {@link org.apache.lucene.search.payloads payloads}),
+ * this package, its subpackage ({@link org.apache.lucene.search.spans spans},
  * or the <a href="{@docRoot}/../queries/overview-summary.html">queries module</a>. These implementations can be combined in a wide 
  * variety of ways to provide complex querying capabilities along with information about where matches took place in the document 
  * collection. The <a href="#query">Query Classes</a> section below highlights some of the more important Query classes. For details 

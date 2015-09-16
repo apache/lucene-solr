@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,7 +22,7 @@ import org.apache.lucene.search.Explanation;
  * An abstract class that defines a way for PayloadScoreQuery instances to transform
  * the cumulative effects of payload scores for a document.
  * 
- * @see org.apache.lucene.search.payloads.PayloadScoreQuery for more information
+ * @see org.apache.lucene.queries.payloads.PayloadScoreQuery for more information
  * 
  * @lucene.experimental This class and its derivations are experimental and subject to
  *               change

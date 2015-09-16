@@ -20,8 +20,8 @@
  * <p>
  *   The following Query implementations are provided:
  *   <ol>
- *    <li>{@link org.apache.lucene.search.payloads.PayloadScoreQuery PayloadScoreQuery} -- For all terms matched by
+ *    <li>{@link org.apache.lucene.queries.payloads.PayloadScoreQuery PayloadScoreQuery} -- For all terms matched by
  *        a SpanQuery, boost the score based on the value of the payload located at those terms.</li>
  *   </ol>
  */
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
