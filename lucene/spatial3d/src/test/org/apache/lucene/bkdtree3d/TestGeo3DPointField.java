@@ -557,7 +557,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
                 hits.add(docID);
               }
             }
-            break;
+            continue;
           case GeoArea.OVERLAPS:
             if (VERBOSE) {
               log.println("    GeoArea.OVERLAPS: keep splitting");
