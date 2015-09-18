@@ -152,6 +152,11 @@
   </servlet-mapping>
 
   <servlet-mapping>
+    <servlet-name>LoadAdminUI</servlet-name>
+    <url-pattern>/index.html</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
     <servlet-name>SolrRestApi</servlet-name>
     <url-pattern>/schema/*</url-pattern>
   </servlet-mapping>

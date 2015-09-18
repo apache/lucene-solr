@@ -87,13 +87,13 @@ limitations under the License.
         </select>
 
         <label for="indent" class="checkbox" title="Indent results.">
-          <input type="checkbox" ng-model="query.indent" name="indent" id="indent" title="Indent results." ng-true-value="'true'" ng-false-value="'false'">
-          <a rel="help">indent</a>
+          <input type="checkbox" ng-model="query.indent" name="indent" id="indent" title="Indent results." ng-true-value="'on'" ng-false-value="''">
+          indent
         </label>
 
         <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">
-          <input type="checkbox" ng-model="query.debugQuery" name="debugQuery" id="debugQuery" title="Show timing and diagnostics." ng-true-value="'true'" ng-false-value="'false'">
-          <a rel="help">debugQuery</a>
+          <input type="checkbox" ng-model="query.debugQuery" name="debugQuery" id="debugQuery" title="Show timing and diagnostics." ng-true-value="'on'" ng-false-value="''">
+          debugQuery
         </label>
 
         </div>
@@ -244,7 +244,7 @@ limitations under the License.
       <fieldset class="facet optional">
         <legend>
           <label for="facet" class="checkbox" title="Enable faceting.">
-            <input type="checkbox" ng-model="isFacet" name="facet" id="facet" value="true">
+            <input type="checkbox" ng-model="isFacet" name="facet" id="facet">
             facet
           </label>
         </legend>
@@ -265,7 +265,7 @@ limitations under the License.
       <fieldset class="spatial optional">
         <legend>
           <label for="spatial" class="checkbox" title="Show spatial options">
-            <input type="checkbox" ng-model="isSpatial" name="spatial" id="spatial" value="true">
+            <input type="checkbox" ng-model="isSpatial" name="spatial" id="spatial">
             spatial
           </label>
         </legend>
@@ -286,7 +286,7 @@ limitations under the License.
       <fieldset class="spellcheck optional">
         <legend>
           <label for="spellcheck" class="checkbox" title="Enable spellchecking.">
-            <input type="checkbox" ng-model="isSpellcheck" name="spellcheck" id="spellcheck" value="true">
+            <input type="checkbox" ng-model="isSpellcheck" name="spellcheck" id="spellcheck">
             spellcheck
           </label>
         </legend>

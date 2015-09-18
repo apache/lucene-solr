@@ -46,7 +46,7 @@ solrAdminServices.factory('System',
     "unload": {params:{action: "UNLOAD", core: "@core"}},
     "rename": {params:{action: "RENAME"}},
     "swap": {params:{}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core", doNotIntercept: "true"}},
+    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}},
     "optimize": {params:{}}
     });
   }])
@@ -160,12 +160,12 @@ solrAdminServices.factory('System',
 .factory('DataImport',
   ['$resource', function($resource) {
     return $resource('/solr/:core/dataimport', {core: '@core', indent:'on', wt:'json', _:Date.now()}, {
-      "config": {params: {command: "show-config", doNotIntercept: "true"},
+      "config": {params: {command: "show-config"}, headers: {doNotIntercept: "true"},
                  transformResponse: function(data) {
                     return {config: data};
                  }
                 },
-      "status": {params: {command: "status", doNotIntercept: "true"}},
+      "status": {params: {command: "status"}, headers: {doNotIntercept: "true"}},
       "reload": {params: {command: "reload-config"}},
       "post": {method: "POST",
                 headers: {'Content-type': 'application/x-www-form-urlencoded'},
@@ -211,15 +211,17 @@ solrAdminServices.factory('System',
     ['$resource', function($resource) {
        var resource = $resource('/solr/:core:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
            "query": {
-               method: "GET", transformResponse: function (data) {
-                   return {data: data}
-               }
+             method: "GET",
+             transformResponse: function (data) {
+               return {data: data}
+             },
+             headers: {doNotIntercept: "true"}
            }
        });
        resource.url = function(params) {
            var qs = [];
            for (key in params) {
-               if (key != "core" && key != "handler" && key != "doNotIntercept") {
+               if (key != "core" && key != "handler") {
                    for (var i in params[key]) {
                        qs.push(key + "=" + params[key][i]);
                    }
