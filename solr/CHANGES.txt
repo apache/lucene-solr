@@ -67,6 +67,8 @@ New Features
 
 * SOLR-7903: Add the FacetStream to the Streaming API and wire it into the SQLHandler (Joel Bernstein)
 
+* SOLR-7986: JDBC Driver for SQL Interface (Uwe Schindler, Joel Bernstein)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
