@@ -157,9 +157,9 @@ public class IndexFetcher {
 
   private volatile boolean stop = false;
 
-  private boolean useInternal = false;
+  private boolean useInternalCompression = false;
 
-  private boolean useExternal = false;
+  private boolean useExternalCompression = false;
 
   private final HttpClient myHttpClient;
 
@@ -188,13 +188,13 @@ public class IndexFetcher {
     
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
-    useInternal = INTERNAL.equals(compress);
-    useExternal = EXTERNAL.equals(compress);
+    useInternalCompression = INTERNAL.equals(compress);
+    useExternalCompression = EXTERNAL.equals(compress);
     String connTimeout = (String) initArgs.get(HttpClientUtil.PROP_CONNECTION_TIMEOUT);
     String readTimeout = (String) initArgs.get(HttpClientUtil.PROP_SO_TIMEOUT);
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    myHttpClient = createHttpClient(solrCore, connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword, useExternal);
+    myHttpClient = createHttpClient(solrCore, connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
 
   /**
@@ -1440,7 +1440,7 @@ public class IndexFetcher {
       } else {
         params.set(FILE, fileName);
       }
-      if (useInternal) {
+      if (useInternalCompression) {
         params.set(COMPRESSION, "true");
       }
       //use checksum
@@ -1466,7 +1466,7 @@ public class IndexFetcher {
         QueryRequest req = new QueryRequest(params);
         response = client.request(req);
         is = (InputStream) response.get("stream");
-        if(useInternal) {
+        if(useInternalCompression) {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
