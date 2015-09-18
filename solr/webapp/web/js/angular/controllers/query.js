@@ -20,14 +20,14 @@ solrAdminApp.controller('QueryController',
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     // @todo read URL parameters into scope
-    $scope.query = {wt: 'json', q:'*:*', indent:'true'};
+    $scope.query = {wt: 'json', q:'*:*', indent:'on'};
     $scope.filters = [{fq:""}];
     $scope.dismax = {defType: "dismax"};
     $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: true};
-    $scope.hl = {hl:"true"};
-    $scope.facet = {facet: "true"};
+    $scope.hl = {hl:"on"};
+    $scope.facet = {facet: "on"};
     $scope.spatial = {};
-    $scope.spellcheck = {spellcheck:"true"};
+    $scope.spellcheck = {spellcheck:"on"};
     $scope.qt = "/select";
 
     if ($location.search().q) {
@@ -75,7 +75,6 @@ solrAdminApp.controller('QueryController',
         copy(params, $scope.filters[filter]);
       }
 
-      params.doNotIntercept=true;
       params.core = $routeParams.core;
       params.handler = qt;
       var url = Query.url(params);
