@@ -1055,6 +1055,8 @@ Other Changes
 
 * SOLR-7662: Refactored response writing to consolidate the logic in  one place (Noble Paul)
 
+* SOLR-7110: Added option to optimize JavaBinCodec to minimize string Object creation (Noble Paul)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -1372,7 +1374,8 @@ Optimizations
  * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations 
    where local params disable all stats (hossman)
 
- * SOLR-7110: Optimize JavaBinCodec to minimize string Object creation (Noble Paul)
+ * SOLR-7050: realtime get should internally load only fields specified in fl.
+   (yonik, Noble Paul)
 
 Other Changes
 ----------------------
