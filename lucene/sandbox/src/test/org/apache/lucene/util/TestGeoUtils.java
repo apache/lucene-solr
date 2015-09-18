@@ -25,8 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.search.GeoBoundingBox;
-import org.apache.lucene.search.GeoPointDistanceQuery;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -442,7 +440,7 @@ public class TestGeoUtils extends LuceneTestCase {
         log.println("\nTEST: iter=" + iter + " radiusMeters=" + radiusMeters + " centerLon=" + centerLon + " centerLat=" + centerLat);
       }
 
-      GeoBoundingBox bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
+      GeoRect bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
       
       Set<Integer> hits = new HashSet<>();
 

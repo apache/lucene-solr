@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,18 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.GeoUtils;
-
-// nocommit rename to GeoRect?  It's not just a bounding box ... it's any rect ...
-
 /** Represents a lat/lon rectangle. */
-public class GeoBoundingBox {
+public class GeoRect {
   public final double minLon;
   public final double maxLon;
   public final double minLat;
   public final double maxLat;
 
-  public GeoBoundingBox(double minLon, double maxLon, double minLat, double maxLat) {
+  public GeoRect(double minLon, double maxLon, double minLat, double maxLat) {
     if (GeoUtils.isValidLon(minLon) == false) {
       throw new IllegalArgumentException("invalid minLon " + minLon);
     }
@@ -45,10 +41,13 @@ public class GeoBoundingBox {
     this.maxLon = maxLon;
     this.minLat = minLat;
     this.maxLat = maxLat;
+    assert maxLat >= minLat;
+
+    // NOTE: cannot assert maxLon >= minLon since this rect could cross the dateline
   }
 
   @Override
   public String toString() {
-    return "GeoBoundingBox(lon=" + minLon + " TO " + maxLon + ", lat=" + minLat + " TO " + maxLat + ")";
+    return "GeoRect(lon=" + minLon + " TO " + maxLon + ", lat=" + minLat + " TO " + maxLat + ")";
   }
 }

@@ -17,14 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.ToStringUtils;
 
-import java.io.IOException;
-import java.util.Arrays;
+// nocommit javadoc wtf this query does about the dateline!
 
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
  * {@code GeoPointInBBoxQueryImpl} and is implemented using a
@@ -60,7 +62,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   }
 
   /** Common constructor, used only internally. */
-  private GeoPointInPolygonQuery(final String field, GeoBoundingBox bbox, final double[] polyLons, final double[] polyLats) {
+  private GeoPointInPolygonQuery(final String field, GeoRect bbox, final double[] polyLons, final double[] polyLats) {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
@@ -183,7 +185,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     }
   }
 
-  private static GeoBoundingBox computeBBox(double[] polyLons, double[] polyLats) {
+  private static GeoRect computeBBox(double[] polyLons, double[] polyLats) {
     if (polyLons.length != polyLats.length) {
       throw new IllegalArgumentException("polyLons and polyLats must be equal length");
     }
@@ -206,7 +208,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
       maxLat = Math.max(polyLats[i], maxLat);
     }
 
-    return new GeoBoundingBox(minLon, maxLon, minLat, maxLat);
+    return new GeoRect(minLon, maxLon, minLat, maxLat);
   }
 
   /**

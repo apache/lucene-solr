@@ -41,17 +41,15 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.GeoDistanceUtils;
 import org.apache.lucene.util.GeoProjectionUtils;
+import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
-import org.apache.lucene.util.TestGeoUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * Unit testing for basic GeoPoint query logic
@@ -417,7 +415,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
               // nocommit
               if (false && random().nextBoolean()) {
-                GeoBoundingBox bbox = randomBBox();
+                GeoRect bbox = randomBBox();
 
                 query = new GeoPointInBBoxQuery(FIELD_NAME, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
                 verifyHits = new VerifyHits() {
@@ -469,7 +467,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
                     }
                    };
               } else {
-                GeoBoundingBox bbox = randomBBox();
+                GeoRect bbox = randomBBox();
 
                 double[] pLats = new double[5];
                 double[] pLons = new double[5];
@@ -586,7 +584,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
     return (SloppyMath.haversin(latA, lonA, latB, lonB)*1000.0 <= radius);
   }
 
-  private static boolean rectContainsPointEnc(GeoBoundingBox bbox, double pointLat, double pointLon) {
+  private static boolean rectContainsPointEnc(GeoRect bbox, double pointLat, double pointLon) {
     // We should never see a deleted doc here?
     assert Double.isNaN(pointLat) == false;
     return GeoUtils.bboxContains(pointLon, pointLat, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
@@ -608,7 +606,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
     return delta < DISTANCE_ERR;
   }
 
-  private static boolean bboxQueryCanBeWrong(GeoBoundingBox bbox, double lat, double lon) {
+  private static boolean bboxQueryCanBeWrong(GeoRect bbox, double lat, double lon) {
     // we can tolerate variance at the GeoUtils.TOLERANCE decimal place
     final int tLon = (int)(lon/(GeoUtils.TOLERANCE-1));
     final int tLat = (int)(lat/(GeoUtils.TOLERANCE-1));
@@ -621,7 +619,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
          || (tMaxLon - tLon) == 0 || (tMaxLat - tLat) == 0);
   }
 
-  public static GeoBoundingBox randomBBox() {
+  public static GeoRect randomBBox() {
     double lat0 = randomLat();
     double lat1 = randomLat();
     double lon0 = randomLon();
@@ -640,7 +638,7 @@ public class TestGeoPointQuery extends LuceneTestCase {
       lon1 = x;
     }
 
-    return new GeoBoundingBox(lon0, lon1, lat0, lat1);
+    return new GeoRect(lon0, lon1, lat0, lat1);
   }
 
   private static double randomLat() {

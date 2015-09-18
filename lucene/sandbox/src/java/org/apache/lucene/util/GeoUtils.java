@@ -19,8 +19,6 @@ package org.apache.lucene.util;
 
 import java.util.ArrayList;
 
-import org.apache.lucene.search.GeoBoundingBox;
-
 /**
  * Basic reusable geo-spatial utility methods
  *
@@ -109,8 +107,8 @@ public final class GeoUtils {
     return (off <= 180 ? off : 360-off) - 90;
   }
 
-  public static final boolean bboxContains(final double lon, final double lat, final double minLon,
-                                           final double minLat, final double maxLon, final double maxLat) {
+  public static boolean bboxContains(final double lon, final double lat, final double minLon,
+                                     final double minLat, final double maxLon, final double maxLat) {
     return (compare(lon, minLon) >= 0 && compare(lon, maxLon) <= 0
           && compare(lat, minLat) >= 0 && compare(lat, maxLat) <= 0);
   }
@@ -331,7 +329,7 @@ public final class GeoUtils {
   /**
    * Compute Bounding Box for a circle using WGS-84 parameters
    */
-  public static GeoBoundingBox circleToBBox(final double centerLon, final double centerLat, final double radiusMeters) {
+  public static GeoRect circleToBBox(final double centerLon, final double centerLat, final double radiusMeters) {
     final double radLat = StrictMath.toRadians(centerLat);
     final double radLon = StrictMath.toRadians(centerLon);
     double radDistance = (radiusMeters + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
@@ -358,10 +356,11 @@ public final class GeoUtils {
       maxLon = GeoProjectionUtils.MAX_LON_RADIANS;
     }
 
-    return new GeoBoundingBox(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
+    return new GeoRect(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
         StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
   }
 
+  /*
   /**
    * Computes whether or a 3dimensional line segment intersects or crosses a sphere
    *
@@ -376,9 +375,8 @@ public final class GeoUtils {
    * @param centerAlt altitude of the center point (in meters)
    * @param radiusMeters search sphere radius (in meters)
    * @return whether the provided line segment is a secant of the
-   */
-  // nocommit can/should we remove this?
-  // todo not used for 2d at the moment. used for 3d w/ altitude (we can keep or add back)
+   * /
+  // NOTE: not used for 2d at the moment. used for 3d w/ altitude (we can keep or add back)
   private static boolean lineCrossesSphere(double lon1, double lat1, double alt1, double lon2,
                                            double lat2, double alt2, double centerLon, double centerLat,
                                            double centerAlt, double radiusMeters) {
@@ -414,6 +412,7 @@ public final class GeoUtils {
 
     return true;
   }
+  */
 
   public static boolean isValidLat(double lat) {
     return Double.isNaN(lat) == false && lat >= MIN_LAT_INCL && lat <= MAX_LAT_INCL;

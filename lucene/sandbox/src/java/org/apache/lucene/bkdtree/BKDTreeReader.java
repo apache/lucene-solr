@@ -132,7 +132,7 @@ final class BKDTreeReader implements Accountable {
   }
 
   private boolean accept(QueryState state, int docID) throws IOException {
-    System.out.println("    check accept docID=" + docID);
+    //System.out.println("    check accept docID=" + docID);
     state.sndv.setDocument(docID);
     // How many values this doc has:
     int count = state.sndv.count();
@@ -141,7 +141,7 @@ final class BKDTreeReader implements Accountable {
 
       int latEnc = (int) ((enc>>32) & 0xffffffffL);
       int lonEnc = (int) (enc & 0xffffffffL);
-      System.out.println("      lat=" + BKDTreeWriter.decodeLat(latEnc) + " lon=" + BKDTreeWriter.decodeLon(lonEnc));
+      //System.out.println("      lat=" + BKDTreeWriter.decodeLat(latEnc) + " lon=" + BKDTreeWriter.decodeLon(lonEnc));
 
       if (latEnc >= state.latMinEnc &&
           latEnc < state.latMaxEnc &&
@@ -217,8 +217,8 @@ final class BKDTreeReader implements Accountable {
                         int cellLatMinEnc, int cellLatMaxEnc, int cellLonMinEnc, int cellLonMaxEnc)
     throws IOException {
 
-    System.out.println("\nBKD: intersect nodeID=" + nodeID + " lat=" + BKDTreeWriter.decodeLat(state.latMinEnc) + " TO " + BKDTreeWriter.decodeLat(state.latMaxEnc) +
-                       " lon=" + BKDTreeWriter.decodeLon(state.lonMinEnc) + " TO " + BKDTreeWriter.decodeLon(state.lonMaxEnc));
+    //System.out.println("\nBKD: intersect nodeID=" + nodeID + " lat=" + BKDTreeWriter.decodeLat(state.latMinEnc) + " TO " + BKDTreeWriter.decodeLat(state.latMaxEnc) +
+    //" lon=" + BKDTreeWriter.decodeLon(state.lonMinEnc) + " TO " + BKDTreeWriter.decodeLon(state.lonMaxEnc));
 
     // 2.06 sec -> 1.52 sec for 225 OSM London queries:
     if (state.latLonFilter != null) {
@@ -242,7 +242,7 @@ final class BKDTreeReader implements Accountable {
           // The cell crosses the shape boundary, so we fall through and do full filtering
         }
       } else {
-        System.out.println("  straight recurse");
+        //System.out.println("  straight recurse");
       }
     // TODO: clean this up: the bbox case should also just be a filter, and we should assert filter != null at the start
     } else if (state.latMinEnc <= cellLatMinEnc && state.latMaxEnc >= cellLatMaxEnc && state.lonMinEnc <= cellLonMinEnc && state.lonMaxEnc >= cellLonMaxEnc) {
@@ -270,7 +270,7 @@ final class BKDTreeReader implements Accountable {
       int hitCount = 0;
 
       long fp = leafBlockFPs[nodeID-leafNodeOffset];
-      System.out.println("  intersect leaf fp=" + fp);
+      //System.out.println("  intersect leaf fp=" + fp);
       if (fp == 0) {
         // Dead end node (adversary case):
         //System.out.println("    dead-end leaf");
@@ -316,57 +316,57 @@ final class BKDTreeReader implements Accountable {
 
       if (dim == 0) {
 
-        System.out.println("  split on lat=" + BKDTreeWriter.decodeLat(splitValue));
+        //System.out.println("  split on lat=" + BKDTreeWriter.decodeLat(splitValue));
 
         // Inner node split on lat:
 
         // Left node:
         if (state.latMinEnc < splitValue) {
-          System.out.println("  recurse left");
+          //System.out.println("  recurse left");
           count += intersect(state,
                              2*nodeID,
                              cellLatMinEnc, splitValue, cellLonMinEnc, cellLonMaxEnc);
         } else {
-          System.out.println("  no recurse left");
+          //System.out.println("  no recurse left");
         }
 
         // Right node:
         if (state.latMaxEnc >= splitValue) {
-          System.out.println("  recurse right");
+          //System.out.println("  recurse right");
           count += intersect(state,
                              2*nodeID+1,
                              splitValue, cellLatMaxEnc, cellLonMinEnc, cellLonMaxEnc);
         } else {
-          System.out.println("  no recurse right");
+          //System.out.println("  no recurse right");
         }
 
       } else {
         // Inner node split on lon:
         assert dim == 1;
 
-        System.out.println("  split on lon=" + BKDTreeWriter.decodeLon(splitValue));
+        //System.out.println("  split on lon=" + BKDTreeWriter.decodeLon(splitValue));
 
         // Left node:
         if (state.lonMinEnc < splitValue) {
-          System.out.println("  recurse left");
+          //System.out.println("  recurse left");
           count += intersect(state,
                              2*nodeID,
                              cellLatMinEnc, cellLatMaxEnc, cellLonMinEnc, splitValue);
         } else {
-          System.out.println("  no recurse left");
+          //System.out.println("  no recurse left");
         }
 
         // Right node:
         if (state.lonMaxEnc >= splitValue) {
-          System.out.println("  recurse right");
+          //System.out.println("  recurse right");
           count += intersect(state,
                              2*nodeID+1,
                              cellLatMinEnc, cellLatMaxEnc, splitValue, cellLonMaxEnc);
         } else {
-          System.out.println("  no recurse right");
+          //System.out.println("  no recurse right");
         }
       }
-      System.out.println("  return nodeID=" + nodeID);
+      //System.out.println("  return nodeID=" + nodeID);
       return count;
     }
   }

@@ -18,32 +18,25 @@ package org.apache.lucene.bkdtree;
  */
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.GeoBoundingBox;
-import org.apache.lucene.search.GeoPointDistanceQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.GeoProjectionUtils;
+import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
-import org.apache.lucene.util.ToStringUtils;
 
 /** Finds all previously indexed points that fall within the specified distance from a center point.
  *
@@ -74,13 +67,13 @@ public class BKDDistanceQuery extends Query {
     this.centerLon = centerLon;
     this.radiusMeters = radiusMeters;
 
-    GeoBoundingBox bbox = GeoPointDistanceQuery.computeBBox(centerLon, centerLat, radiusMeters);
+    GeoRect bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
     minLon = bbox.minLon;
     minLat = bbox.minLat;
     maxLon = bbox.maxLon;
     maxLat = bbox.maxLat;
 
-    System.out.println("distance query bbox: lon=" + minLon + " TO " + maxLon + "; lat=" + minLat + " TO " + maxLat);
+    //System.out.println("distance query bbox: lon=" + minLon + " TO " + maxLon + "; lat=" + minLat + " TO " + maxLat);
     assert minLat <= maxLat: "minLat=" + minLat + " maxLat=" + maxLat;
   }
 
@@ -132,32 +125,32 @@ public class BKDDistanceQuery extends Query {
                                            public boolean accept(double lat, double lon) {
                                              double distanceMeters = SloppyMath.haversin(centerLat, centerLon, lat, lon) * 1000.0;
                                              boolean result = distanceMeters <= radiusMeters;
-                                             System.out.println("accept? centerLat=" + centerLat + " centerLon=" + centerLon + " lat=" + lat + " lon=" + lon + " distanceMeters=" + distanceMeters + " vs " + radiusMeters + " result=" + result);
+                                             //System.out.println("accept? centerLat=" + centerLat + " centerLon=" + centerLon + " lat=" + lat + " lon=" + lon + " distanceMeters=" + distanceMeters + " vs " + radiusMeters + " result=" + result);
                                              return result;
                                            }
 
                                            @Override
                                            public BKDTreeReader.Relation compare(double cellLatMin, double cellLatMax, double cellLonMin, double cellLonMax) {
-                                             System.out.println("compare lat=" + cellLatMin + " TO " + cellLatMax + "; lon=" + cellLonMin + " TO " + cellLonMax);
+                                             //System.out.println("compare lat=" + cellLatMin + " TO " + cellLatMax + "; lon=" + cellLonMin + " TO " + cellLonMax);
                                              if (GeoUtils.rectWithinCircle(cellLonMin, cellLatMin, cellLonMax, cellLatMax, centerLon, centerLat, radiusMeters)) {
                                                // nocommit hacky workaround:
                                                if (cellLonMax - cellLonMin < 100 && cellLatMax - cellLatMin < 50) {
-                                                 System.out.println("  CELL_INSIDE_SHAPE");
+                                                 //System.out.println("  CELL_INSIDE_SHAPE");
                                                  return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
                                                } else {
-                                                 System.out.println("  HACK: SHAPE_CROSSES_CELL");
+                                                 //System.out.println("  HACK: SHAPE_CROSSES_CELL");
                                                  return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
                                                }
                                              } else if (GeoUtils.rectCrossesCircle(cellLonMin, cellLatMin, cellLonMax, cellLatMax, centerLon, centerLat, radiusMeters)) {
-                                               System.out.println("  SHAPE_CROSSES_CELL");
+                                               //System.out.println("  SHAPE_CROSSES_CELL");
                                                return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
                                              } else {
                                                // nocommit hacky workaround:
                                                if (cellLonMax - cellLonMin < 100 && cellLatMax - cellLatMin < 50) {
-                                                 System.out.println("  SHAPE_OUTSIDE_CELL");
+                                                 //System.out.println("  SHAPE_OUTSIDE_CELL");
                                                  return BKDTreeReader.Relation.SHAPE_OUTSIDE_CELL;
                                                } else {
-                                                 System.out.println("  HACK: SHAPE_CROSSES_CELL");
+                                                 //System.out.println("  HACK: SHAPE_CROSSES_CELL");
                                                  return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
                                                }
                                              }
@@ -177,7 +170,7 @@ public class BKDDistanceQuery extends Query {
     }
 
     if (maxLon < minLon) {
-      System.out.println("BKD crosses dateline");
+      //System.out.println("BKD crosses dateline");
       // Crosses date line: we just rewrite into OR of two bboxes:
 
       // Disable coord here because a multi-valued doc could match both circles and get unfairly boosted:

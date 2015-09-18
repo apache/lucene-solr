@@ -18,15 +18,16 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.GeoDistanceUtils;
-import org.apache.lucene.util.GeoProjectionUtils;
+import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
+
+// nocommit fix javadocs below: lineCrossesSphere is not used anymore?
 
 /** Implements a simple point distance query on a GeoPoint field. This is based on
  * {@link org.apache.lucene.search.GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
  * like {@code GeoPointInBBoxQueryImpl} candidate terms are queried using the numeric ranges based on
  * the morton codes of the min and max lat/lon pairs that intersect the boundary of the point-radius
- * circle (see {@link org.apache.lucene.util.GeoUtils#lineCrossesSphere}. Terms
+ * circle (see org.apache.lucene.util.GeoUtils#lineCrossesSphere). Terms
  * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
  * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversin}.
  * All morton value comparisons are subject to the same precision tolerance defined in
@@ -50,7 +51,7 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     this(field, GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters), centerLon, centerLat, radiusMeters);
   }
 
-  private GeoPointDistanceQuery(final String field, GeoBoundingBox bbox, final double centerLon,
+  private GeoPointDistanceQuery(final String field, GeoRect bbox, final double centerLon,
                                 final double centerLat, final double radiusMeters) {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
 
@@ -76,15 +77,15 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     if (maxLon < minLon) {
       BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
-      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(-180.0D, maxLon,
+      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, new GeoRect(GeoUtils.MIN_LON_INCL, maxLon,
           minLat, maxLat));
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
-      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(minLon, 180.0D,
+      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, new GeoRect(minLon, GeoUtils.MAX_LON_INCL,
           minLat, maxLat));
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return bqb.build();
     }
-    return new GeoPointDistanceQueryImpl(field, this, new GeoBoundingBox(this.minLon, this.maxLon, this.minLat, this.maxLat));
+    return new GeoPointDistanceQueryImpl(field, this, new GeoRect(this.minLon, this.maxLon, this.minLat, this.maxLat));
   }
 
   @Override
