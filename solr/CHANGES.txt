@@ -206,7 +206,7 @@ Bug Fixes
   (kevin, hossman, shalin)
 
 * SOLR-8058: Fix the exclusion filter so that collections that start with js, css, img, tpl
-  can be accessed. (Upayavira, Steve Rowe, Anshum Gupta) 
+  can be accessed. (Upayavira, Steve Rowe, Anshum Gupta)
 
 Optimizations
 ----------------------
@@ -272,6 +272,8 @@ Other Changes
 
 * SOLR-8034: Leader no longer puts replicas in recovery in case of a failed update, when minRF
   isn't achieved. (Jessica Cheng, Timothy Potter, Anshum Gupta)
+
+* SOLR-8066: SolrCore.checkStale method doesn't restore interrupt status. (shalin)
 
 ==================  5.3.1 ==================
 
