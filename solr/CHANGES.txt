@@ -1471,6 +1471,9 @@ Optimizations
  * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations
    where local params disable all stats (hossman)
 
+ * SOLR-7050: realtime get should internally load only fields specified in fl.
+   (yonik, Noble Paul)
+
 Other Changes
 ----------------------
 
