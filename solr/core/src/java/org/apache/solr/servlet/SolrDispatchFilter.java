@@ -195,9 +195,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     // No need to even create the HttpSolrCall object if this path is excluded.
     if(excludePatterns != null) {
-      String servletPath = ((HttpServletRequest) request).getServletPath();
+      String requestPath = ((HttpServletRequest) request).getServletPath();
+      String extraPath = ((HttpServletRequest)request).getPathInfo();
+      if (extraPath != null) { // In embedded mode, servlet path is empty - include all post-context path here for testing 
+        requestPath += extraPath;
+      }
       for (Pattern p : excludePatterns) {
-        Matcher matcher = p.matcher(servletPath);
+        Matcher matcher = p.matcher(requestPath);
         if (matcher.lookingAt()) {
           chain.doFilter(request, response);
           return;

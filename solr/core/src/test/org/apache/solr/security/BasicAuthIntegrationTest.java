@@ -18,6 +18,7 @@ package org.apache.solr.security;
  */
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,7 @@ import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -163,19 +165,19 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     } catch (HttpSolrClient.RemoteSolrException e) {
 
     }
+    cloudSolrClient.request(new CollectionAdminRequest.Reload()
+        .setCollectionName(defaultCollName)
+        .setBasicAuthCredentials("harry", "HarryIsUberCool"));
 
-   /* httpPost = new HttpPost(baseUrl + "/admin/authorization");
-    setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
-    httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("delete-permission", "collection-admin-edit"))));
-    r = cl.execute(httpPost); //cleanup so that the super class does not need to pass on credentials
+    try {
+      cloudSolrClient.request(new CollectionAdminRequest.Reload()
+          .setCollectionName(defaultCollName)
+          .setBasicAuthCredentials("harry", "Cool12345"));
+      fail("This should not succeed");
+    } catch (HttpSolrClient.RemoteSolrException e) {
 
-    for (Slice  slice : zkStateReader.getClusterState().getCollection(defaultCollName).getSlices()) {
-      //ensure that all nodes have removed the collection-admin-edit permission
-      for (Replica replica : slice.getReplicas()) {
-        baseUrl = replica.getStr(BASE_URL_PROP);
-        verifySecurityStatus(cl, baseUrl + "/admin/authorization", "authorization/permissions[2]/name", null, 20);
-      }
-    }*/
+    }
+
   }
 
   public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {

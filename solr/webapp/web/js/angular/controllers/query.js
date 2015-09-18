@@ -30,6 +30,10 @@ solrAdminApp.controller('QueryController',
     $scope.spellcheck = {spellcheck:"on"};
     $scope.qt = "/select";
 
+    if ($location.search().q) {
+      $scope.query.q = $location.search()["q"];
+    }
+
     $scope.doQuery = function() {
       var params = {};
 
@@ -71,10 +75,9 @@ solrAdminApp.controller('QueryController',
         copy(params, $scope.filters[filter]);
       }
 
-      params.doNotIntercept=true;
       params.core = $routeParams.core;
       params.handler = qt;
-      var url = "/solr/" + $routeParams.core + qt + "?" + Query.url(params);
+      var url = Query.url(params);
       Query.query(params, function(data) {
         $scope.lang = $scope.query.wt;
         $scope.response = data;

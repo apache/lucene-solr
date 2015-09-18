@@ -30,7 +30,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -39,7 +39,7 @@ import org.junit.Test;
 
 public class TestIndexWriterConfig extends LuceneTestCase {
 
-  private static final class MySimilarity extends DefaultSimilarity {
+  private static final class MySimilarity extends ClassicSimilarity {
     // Does not implement anything - used only for type checking on IndexWriterConfig.
   }
 

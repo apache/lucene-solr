@@ -347,7 +347,7 @@ public class Grouping {
 
     DocSetCollector setCollector = null;
     if (getDocSet && allGroupHeadsCollector == null) {
-      setCollector = new DocSetCollector(maxDoc >> 6, maxDoc);
+      setCollector = new DocSetCollector(maxDoc);
       collectors.add(setCollector);
     }
     Collector allCollectors = MultiCollector.wrap(collectors);

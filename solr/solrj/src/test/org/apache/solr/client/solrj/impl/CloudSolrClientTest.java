@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -29,6 +30,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -110,12 +112,25 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void test() throws Exception {
+    testParallelUpdateQTime();
     checkCollectionParameters();
     allTests();
     stateVersionParamTest();
     customHttpClientTest();
     testOverwriteOption();
     preferLocalShardsTest();
+  }
+
+  private void testParallelUpdateQTime() throws Exception {
+    UpdateRequest req = new UpdateRequest();
+    for (int i=0; i<10; i++)  {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", String.valueOf(TestUtil.nextInt(random(), 1000, 1100)));
+      req.add(doc);
+    }
+    UpdateResponse response = req.process(cloudClient);
+    // See SOLR-6547, we just need to ensure that no exception is thrown here
+    assertTrue(response.getQTime() >= 0);
   }
 
   private void testOverwriteOption() throws Exception, SolrServerException,

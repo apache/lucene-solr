@@ -30,7 +30,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -44,7 +44,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(r);
 
     // We rely on more tokens = lower score:
-    searcher.setSimilarity(new DefaultSimilarity());
+    searcher.setSimilarity(new ClassicSimilarity());
 
     return searcher;
   }
@@ -70,7 +70,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     IndexSearcher searcher = getSearcher(r);
-    searcher.setSimilarity(new DefaultSimilarity());
+    searcher.setSimilarity(new ClassicSimilarity());
 
     TopDocs hits = searcher.search(bq.build(), 10);
     assertEquals(2, hits.totalHits);
@@ -125,7 +125,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     IndexSearcher searcher = getSearcher(r);
-    searcher.setSimilarity(new DefaultSimilarity());
+    searcher.setSimilarity(new ClassicSimilarity());
 
     TopDocs hits = searcher.search(bq.build(), 10);
     assertEquals(2, hits.totalHits);

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
@@ -326,7 +326,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", "{!func}docfreq($field,$value)", "fq","id:6", "field","a_t", "value","cow"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}termfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='5.0'");
 
-    TFIDFSimilarity similarity = new DefaultSimilarity();
+    TFIDFSimilarity similarity = new ClassicSimilarity();
 
     // make sure it doesn't get a NPE if no terms are present in a field.
     assertQ(req("fl","*,score","q", "{!func}termfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");

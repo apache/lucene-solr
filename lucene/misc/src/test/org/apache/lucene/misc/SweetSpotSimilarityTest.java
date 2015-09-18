@@ -18,7 +18,7 @@
 
 package org.apache.lucene.misc;
 
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
@@ -44,7 +44,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     final SweetSpotSimilarity ss = new SweetSpotSimilarity();
     ss.setLengthNormFactors(1,1,0.5f,true);
 
-    Similarity d = new DefaultSimilarity();
+    Similarity d = new ClassicSimilarity();
     Similarity s = ss;
 
 
@@ -200,7 +200,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
   
     SweetSpotSimilarity ss = new SweetSpotSimilarity();
 
-    TFIDFSimilarity d = new DefaultSimilarity();
+    TFIDFSimilarity d = new ClassicSimilarity();
     TFIDFSimilarity s = ss;
     
     // tf equal

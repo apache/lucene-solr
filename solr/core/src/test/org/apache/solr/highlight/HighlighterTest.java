@@ -28,8 +28,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.payloads.SpanPayloadCheckQuery;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -1108,7 +1109,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
 
     //Create query matching this payload
     Query query = new SpanPayloadCheckQuery(new SpanTermQuery(new Term(FIELD_NAME, "word")),
-        Collections.singleton(new byte[]{0,0,0,7}));//bytes for integer 7
+        Collections.singletonList(new BytesRef(new byte[]{0, 0, 0, 7})));//bytes for integer 7
 
     //invoke highlight component... the hard way
     final SearchComponent hlComp = h.getCore().getSearchComponent("highlight");

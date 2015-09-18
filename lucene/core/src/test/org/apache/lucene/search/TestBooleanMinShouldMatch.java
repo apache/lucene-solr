@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
@@ -398,7 +398,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     public void testRewriteCoord1() throws Exception {
       final Similarity oldSimilarity = s.getSimilarity(true);
       try {
-        s.setSimilarity(new DefaultSimilarity() {
+        s.setSimilarity(new ClassicSimilarity() {
           @Override
           public float coord(int overlap, int maxOverlap) {
             return overlap / ((float)maxOverlap + 1);
@@ -420,7 +420,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     public void testRewriteNegate() throws Exception {
       final Similarity oldSimilarity = s.getSimilarity(true);
       try {
-        s.setSimilarity(new DefaultSimilarity() {
+        s.setSimilarity(new ClassicSimilarity() {
           @Override
           public float coord(int overlap, int maxOverlap) {
             return overlap / ((float)maxOverlap + 1);

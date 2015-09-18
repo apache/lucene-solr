@@ -27,13 +27,16 @@ java.util.Properties#load(java.io.InputStream)
 java.util.Properties#save(java.io.OutputStream,java.lang.String)
 java.util.Properties#store(java.io.OutputStream,java.lang.String)
 
+@defaultMessage Accessing private members of foreign classes breaks in security-sensitive environments. In addition, it no longer works with Java 9 on runtime classes.
+java.lang.reflect.AccessibleObject#setAccessible(boolean)
+java.lang.reflect.AccessibleObject#setAccessible(java.lang.reflect.AccessibleObject[],boolean)
+
 java.lang.Character#codePointBefore(char[],int) @ Implicit start offset is error-prone when the char[] is a buffer and the first chars are random chars
 java.lang.Character#codePointAt(char[],int) @ Implicit end offset is error-prone when the char[] is a buffer and the last chars are random chars
 
 java.io.File#delete() @ use Files.delete for real exception, IOUtils.deleteFilesIgnoringExceptions if you dont care
 
-@defaultMessage Use shuffle(List, Random) instead so that it can be reproduced
-java.util.Collections#shuffle(java.util.List)
+java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instead so that it can be reproduced
 
 # START: forbidden-apis patch
 # TODO: remove this once forbidden-apis was updated to next version with following commit:

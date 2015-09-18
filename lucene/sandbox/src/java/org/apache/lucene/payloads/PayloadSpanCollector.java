@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.payloads;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

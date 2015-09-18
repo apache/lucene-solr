@@ -192,6 +192,11 @@ solrAdminApp.controller('DataImportController',
             $cookies.dataimport_autorefresh = $scope.autorefresh ? true : null;
             if ($scope.autorefresh) {
                 $scope.refreshTimeout = $interval($scope.refreshStatus, dataimport_timeout);
+                var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+                    $interval.cancel($scope.refreshTimeout);
+                    onRouteChangeOff();
+                });
+
             } else if ($scope.refreshTimeout) {
                 $interval.cancel($scope.refreshTimeout);
             }

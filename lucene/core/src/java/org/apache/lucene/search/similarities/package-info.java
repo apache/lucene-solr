@@ -32,7 +32,7 @@
  * <a name="sims"></a>
  * <h2>Summary of the Ranking Methods</h2>
  * 
- * <p>{@link org.apache.lucene.search.similarities.DefaultSimilarity} is the original Lucene
+ * <p>{@link org.apache.lucene.search.similarities.ClassicSimilarity} is the original Lucene
  * scoring function. It is based on a highly optimized 
  * <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model</a>. For more
  * information, see {@link org.apache.lucene.search.similarities.TFIDFSimilarity}.
@@ -57,7 +57,7 @@
  * 
  * Since {@link org.apache.lucene.search.similarities.SimilarityBase} is not
  * optimized to the same extent as
- * {@link org.apache.lucene.search.similarities.DefaultSimilarity} and
+ * {@link org.apache.lucene.search.similarities.ClassicSimilarity} and
  * {@link org.apache.lucene.search.similarities.BM25Similarity}, a difference in
  * performance is to be expected when using the methods listed above. However,
  * optimizations can always be implemented in subclasses; see
@@ -81,7 +81,7 @@
  * 
  * <p>To make this change, implement your own {@link org.apache.lucene.search.similarities.Similarity} (likely
  *     you'll want to simply subclass an existing method, be it
- *     {@link org.apache.lucene.search.similarities.DefaultSimilarity} or a descendant of
+ *     {@link org.apache.lucene.search.similarities.ClassicSimilarity} or a descendant of
  *     {@link org.apache.lucene.search.similarities.SimilarityBase}), and
  *     then register the new class by calling
  *     {@link org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)}
@@ -109,7 +109,7 @@
  * subclassing the Similarity, one can simply introduce a new basic model and tell
  * {@link org.apache.lucene.search.similarities.DFRSimilarity} to use it.
  * 
- * <h3>Changing {@linkplain org.apache.lucene.search.similarities.DefaultSimilarity}</h3>
+ * <h3>Changing {@linkplain org.apache.lucene.search.similarities.ClassicSimilarity}</h3>
  * <p>
  *     If you are interested in use cases for changing your similarity, see the Lucene users's mailing list at <a
  *         href="http://www.gossamer-threads.com/lists/lucene/java-user/39125">Overriding Similarity</a>.
@@ -126,7 +126,7 @@
  *         <li><p>Changing Length Normalization &mdash; By overriding
  *             {@link org.apache.lucene.search.similarities.Similarity#computeNorm(org.apache.lucene.index.FieldInvertState state)},
  *             it is possible to discount how the length of a field contributes
- *             to a score. In {@link org.apache.lucene.search.similarities.DefaultSimilarity},
+ *             to a score. In {@link org.apache.lucene.search.similarities.ClassicSimilarity},
  *             lengthNorm = 1 / (numTerms in field)^0.5, but if one changes this to be
  *             1 / (numTerms in field), all fields will be treated
  *             <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">"fairly"</a>.</li>

@@ -46,43 +46,16 @@ import org.apache.lucene.util.FixedBitSet;
 /** @lucene.experimental */
 public class DocSetUtil {
 
-  private static DocSet createDocSetByIterator(SolrIndexSearcher searcher, Filter filter) throws IOException {
-    int maxDoc = searcher.getIndexReader().maxDoc();
-
-    Map fcontext = null;
-    if (filter instanceof SolrFilter) {
-      fcontext = ValueSource.newContext(searcher);
-      ((SolrFilter) filter).createWeight(fcontext, searcher);
-    }
-
-    DocSetCollector collector = new DocSetCollector((maxDoc >> 6) + 5, maxDoc);
-
-    for (LeafReaderContext readerContext : searcher.getIndexReader().getContext().leaves()) {
-      collector.doSetNextReader(readerContext);
-      Bits acceptDocs = readerContext.reader().getLiveDocs();
-
-      DocIdSet docIdSet = filter instanceof SolrFilter
-          ? ((SolrFilter) filter).getDocIdSet(fcontext, readerContext, acceptDocs)
-          : filter.getDocIdSet(readerContext, acceptDocs);
-
-      if (docIdSet == null) continue;
-      DocIdSetIterator iter = docIdSet.iterator();
-
-      for (;;) {
-        int id = iter.nextDoc();
-        if (id == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        collector.collect(id);
-      }
-
-    }
-
-    return collector.getDocSet();
-
+  /** The cut-off point for small sets (SortedIntDocSet) vs large sets (BitDocSet) */
+  public static int smallSetSize(int maxDoc) {
+    return (maxDoc>>6)+5;  // The +5 is for better test coverage for small sets
   }
 
-  private static boolean equals(DocSet a, DocSet b) {
+  /**
+   * Iterates DocSets to test for equality - slow and for testing purposes only.
+   * @lucene.internal
+   */
+  public static boolean equals(DocSet a, DocSet b) {
     DocIterator iter1 = a.iterator();
     DocIterator iter2 = b.iterator();
 
@@ -129,7 +102,7 @@ public class DocSetUtil {
   public static DocSet createDocSetGeneric(SolrIndexSearcher searcher, Query query) throws IOException {
 
     int maxDoc = searcher.getIndexReader().maxDoc();
-    DocSetCollector collector = new DocSetCollector((maxDoc >> 6) + 5, maxDoc);
+    DocSetCollector collector = new DocSetCollector(maxDoc);
 
     // This may throw an ExitableDirectoryReader.ExitingReaderException
     // but we should not catch it here, as we don't know how this DocSet will be used (it could be negated before use) or cached.
@@ -141,7 +114,7 @@ public class DocSetUtil {
   public static DocSet createDocSet(SolrIndexSearcher searcher, Term term) throws IOException {
     DirectoryReader reader = searcher.getRawReader();  // raw reader to avoid extra wrapping overhead
     int maxDoc = searcher.getIndexReader().maxDoc();
-    int smallSetSize = (maxDoc >> 6) + 5;
+    int smallSetSize = smallSetSize(maxDoc);
 
 
     String field = term.field();
@@ -219,7 +192,7 @@ public class DocSetUtil {
 
     BitDocSet docSet = new BitDocSet( new FixedBitSet(bits, maxDoc), sz );
 
-    int smallSetSize = (maxDoc >> 6) + 5;
+    int smallSetSize = smallSetSize(maxDoc);
     if (sz < smallSetSize) {
       // make this optional?
       DocSet smallSet = toSmallSet( docSet );

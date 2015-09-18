@@ -80,7 +80,7 @@ public final class QueryTermExtractor
           try
             {
                 int docFreq=reader.docFreq(new Term(fieldName,terms[i].term));
-                //IDF algorithm taken from DefaultSimilarity class
+                //IDF algorithm taken from ClassicSimilarity class
                 float idf=(float)(Math.log(totalNumDocs/(double)(docFreq+1)) + 1.0);
                 terms[i].weight*=idf;
             } 

@@ -17,7 +17,7 @@ package org.apache.solr.search.similarities;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.util.Version;
 import org.junit.After;
 
@@ -37,7 +37,7 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
   public void testCurrent() throws Exception {
     // no sys prop set, rely on LATEST
     initCore("solrconfig-basic.xml","schema-tiny.xml");
-    DefaultSimilarity sim = getSimilarity("text", DefaultSimilarity.class);
+    ClassicSimilarity sim = getSimilarity("text", ClassicSimilarity.class);
     assertEquals(true, sim.getDiscountOverlaps());
   }
 }

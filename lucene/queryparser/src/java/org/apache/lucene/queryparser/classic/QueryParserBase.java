@@ -116,7 +116,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     try {
       // TopLevelQuery is a Query followed by the end-of-input (EOF)
       Query res = TopLevelQuery(field);
-      return res!=null ? res : newBooleanQuery(false).build();
+      return res!=null ? res : newBooleanQuery().build();
     }
     catch (ParseException | TokenMgrError tme) {
       // rethrow to include the original query:
@@ -688,30 +688,10 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getBooleanQuery(List<BooleanClause> clauses) throws ParseException {
-    return getBooleanQuery(clauses, false);
-  }
-
-  /**
-   * Factory method for generating query, given a set of clauses.
-   * By default creates a boolean query composed of clauses passed in.
-   *
-   * Can be overridden by extending classes, to modify query being
-   * returned.
-   *
-   * @param clauses List that contains {@link org.apache.lucene.search.BooleanClause} instances
-   *    to join.
-   * @param disableCoord true if coord scoring should be disabled.
-   *
-   * @return Resulting {@link org.apache.lucene.search.Query} object.
-   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
-   */
-  protected Query getBooleanQuery(List<BooleanClause> clauses, boolean disableCoord)
-    throws ParseException
-  {
     if (clauses.size()==0) {
       return null; // all clause words were filtered away by the analyzer.
     }
-    BooleanQuery.Builder query = newBooleanQuery(disableCoord);
+    BooleanQuery.Builder query = newBooleanQuery();
     for(final BooleanClause clause: clauses) {
       query.add(clause);
     }

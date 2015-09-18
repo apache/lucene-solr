@@ -35,12 +35,10 @@ import org.apache.lucene.util.SmallFloat;
  * Susan Jones, Micheline Hancock-Beaulieu, and Mike Gatford. Okapi at TREC-3.
  * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
- * @lucene.experimental
  */
 public class BM25Similarity extends Similarity {
   private final float k1;
   private final float b;
-  // TODO: should we add a delta like sifaka.cs.uiuc.edu/~ylv2/pub/sigir11-bm25l.pdf ?
 
   /**
    * BM25 with the supplied parameter values.
@@ -54,8 +52,8 @@ public class BM25Similarity extends Similarity {
   
   /** BM25 with these default values:
    * <ul>
-   *   <li>{@code k1 = 1.2},
-   *   <li>{@code b = 0.75}.</li>
+   *   <li>{@code k1 = 1.2}</li>
+   *   <li>{@code b = 0.75}</li>
    * </ul>
    */
   public BM25Similarity() {
@@ -333,7 +331,7 @@ public class BM25Similarity extends Similarity {
    * Returns the <code>k1</code> parameter
    * @see #BM25Similarity(float, float) 
    */
-  public float getK1() {
+  public final float getK1() {
     return k1;
   }
   
@@ -341,7 +339,7 @@ public class BM25Similarity extends Similarity {
    * Returns the <code>b</code> parameter 
    * @see #BM25Similarity(float, float) 
    */
-  public float getB() {
+  public final float getB() {
     return b;
   }
 }

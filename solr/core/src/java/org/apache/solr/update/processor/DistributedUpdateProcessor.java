@@ -870,6 +870,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
         }
 
+        // If the client specified minRf and we didn't achieve the minRf, don't send recovery and let client retry
+        if (replicationTracker != null && replicationTracker.getAchievedRf() < replicationTracker.minRf) {
+          continue;
+        }
+
         if (cloudDesc.getCoreNodeName().equals(leaderCoreNodeName) && foundErrorNodeInReplicaList) {
           try {
             // if false, then the node is probably not "live" anymore

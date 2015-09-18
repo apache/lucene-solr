@@ -37,7 +37,7 @@ import org.apache.lucene.search.similarities.BasicModelIn;
 import org.apache.lucene.search.similarities.BasicModelIne;
 import org.apache.lucene.search.similarities.BasicModelP;
 import org.apache.lucene.search.similarities.DFRSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Distribution;
 import org.apache.lucene.search.similarities.DistributionLL;
 import org.apache.lucene.search.similarities.DistributionSPL;
@@ -63,7 +63,7 @@ import org.apache.lucene.search.similarities.Similarity;
  * for the same field.
  */
 public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
-  final DefaultSimilarity defaultSim = new DefaultSimilarity();
+  final ClassicSimilarity defaultSim = new ClassicSimilarity();
   final List<Similarity> knownSims;
   Map<String,Similarity> previousMappings = new HashMap<>();
   final int perFieldSeed;
@@ -139,7 +139,7 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
   static List<Similarity> allSims;
   static {
     allSims = new ArrayList<>();
-    allSims.add(new DefaultSimilarity());
+    allSims.add(new ClassicSimilarity());
     allSims.add(new BM25Similarity());
     for (BasicModel basicModel : BASIC_MODELS) {
       for (AfterEffect afterEffect : AFTER_EFFECTS) {

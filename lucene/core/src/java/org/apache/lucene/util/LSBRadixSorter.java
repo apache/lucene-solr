@@ -21,8 +21,9 @@ import java.util.Arrays;
 
 /**
  * A LSB Radix sorter for unsigned int values.
+ * @lucene.internal
  */
-final class LSBRadixSorter {
+public final class LSBRadixSorter {
 
   private static final int INSERTION_SORT_THRESHOLD = 30;
   private static final int HISTOGRAM_SIZE = 256;

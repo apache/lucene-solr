@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -37,7 +37,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -255,7 +255,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     CheckHits.checkHitCollector(random(), query.build(), PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
-  static class BoostingSimilarity extends DefaultSimilarity {
+  static class BoostingSimilarity extends ClassicSimilarity {
 
     @Override
     public float queryNorm(float sumOfSquaredWeights) {
@@ -298,7 +298,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
   }
 
-  static class FullSimilarity extends DefaultSimilarity{
+  static class FullSimilarity extends ClassicSimilarity{
     public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[offset];

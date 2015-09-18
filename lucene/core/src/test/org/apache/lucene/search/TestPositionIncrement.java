@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
@@ -38,9 +38,8 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.payloads.PayloadSpanCollector;
-import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
+import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -201,6 +200,22 @@ public class TestPositionIncrement extends LuceneTestCase {
     store.close();
   }
 
+  static class PayloadSpanCollector implements SpanCollector {
+
+    List<BytesRef> payloads = new ArrayList<>();
+
+    @Override
+    public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
+      if (postings.getPayload() != null)
+        payloads.add(BytesRef.deepCopyOf(postings.getPayload()));
+    }
+
+    @Override
+    public void reset() {
+      payloads.clear();
+    }
+  }
+
   public void testPayloadsPos0() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockPayloadAnalyzer());
@@ -248,12 +263,11 @@ public class TestPositionIncrement extends LuceneTestCase {
         }
         collector.reset();
         pspans.collect(collector);
-        Collection<byte[]> payloads = collector.getPayloads();
         sawZero |= pspans.startPosition() == 0;
-        for (byte[] bytes : payloads) {
+        for (BytesRef payload : collector.payloads) {
           count++;
           if (VERBOSE) {
-            System.out.println("  payload: " + new String(bytes, StandardCharsets.UTF_8));
+            System.out.println("  payload: " + Term.toString(payload));
           }
         }
       }
@@ -276,17 +290,6 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(4, count);
     assertTrue(sawZero);
 
-    sawZero = false;
-    PayloadSpanUtil psu = new PayloadSpanUtil(is.getTopReaderContext());
-    Collection<byte[]> pls = psu.getPayloadsForQuery(snq);
-    count = pls.size();
-    for (byte[] bytes : pls) {
-      String s = new String(bytes, StandardCharsets.UTF_8);
-      //System.out.println(s);
-      sawZero |= s.equals("pos: 0");
-    }
-    assertEquals(8, count);
-    assertTrue(sawZero);
     writer.close();
     is.getIndexReader().close();
     dir.close();

@@ -28,6 +28,7 @@ import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
@@ -136,7 +137,7 @@ public class TextField extends FieldType {
     Analyzer multiAnalyzer = getMultiTermAnalyzer();
     BytesRef lower = analyzeMultiTerm(field.getName(), part1, multiAnalyzer);
     BytesRef upper = analyzeMultiTerm(field.getName(), part2, multiAnalyzer);
-    return new TermRangeQuery(field.getName(), lower, upper, minInclusive, maxInclusive);
+    return new SolrRangeQuery(field.getName(), lower, upper, minInclusive, maxInclusive);
   }
 
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {

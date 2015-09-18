@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
 
 import org.apache.lucene.store.ByteBufferIndexInput.BufferCleaner;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.SuppressForbidden;
 
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
@@ -165,6 +166,7 @@ public class MMapDirectory extends FSDirectory {
   public static final boolean UNMAP_SUPPORTED =
       AccessController.doPrivileged((PrivilegedAction<Boolean>) MMapDirectory::checkUnmapSupported);
   
+  @SuppressForbidden(reason = "Java 9 Jigsaw whitelists access to sun.misc.Cleaner, so setAccessible works")
   private static boolean checkUnmapSupported() {
     try {
       Class<?> clazz = Class.forName("java.nio.DirectByteBuffer");
@@ -307,16 +309,20 @@ public class MMapDirectory extends FSDirectory {
     return newIoe;
   }
   
-  private static final BufferCleaner CLEANER = (ByteBufferIndexInput parent, ByteBuffer buffer) -> {
+  private static final BufferCleaner CLEANER = (final ByteBufferIndexInput parent, final ByteBuffer buffer) -> {
     try {
-      AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
-        final Method getCleanerMethod = buffer.getClass().getMethod("cleaner");
-        getCleanerMethod.setAccessible(true);
-        final Object cleaner = getCleanerMethod.invoke(buffer);
-        if (cleaner != null) {
-          cleaner.getClass().getMethod("clean").invoke(cleaner);
+      AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+        @Override
+        @SuppressForbidden(reason = "Java 9 Jigsaw whitelists access to sun.misc.Cleaner, so setAccessible works")
+        public Void run() throws Exception {
+          final Method getCleanerMethod = buffer.getClass().getMethod("cleaner");
+          getCleanerMethod.setAccessible(true);
+          final Object cleaner = getCleanerMethod.invoke(buffer);
+          if (cleaner != null) {
+            cleaner.getClass().getMethod("clean").invoke(cleaner);
+          }
+          return null;
         }
-        return null;
       });
     } catch (PrivilegedActionException e) {
       throw new IOException("Unable to unmap the mapped buffer: " + parent.toString(), e.getCause());

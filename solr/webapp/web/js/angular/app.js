@@ -194,10 +194,8 @@ solrAdminApp.config([
             browser.locale = match[1] + '_' + match[3];
         }
 
-        var result= ( input || 0 ).toString().replace(/\B(?=(\d{3})+(?!\d))/g,
+        return ( input || 0 ).toString().replace(/\B(?=(\d{3})+(?!\d))/g,
             sep[ browser.locale ] || sep[ browser.language ] || sep['_']);
-        console.log(result);
-        return result;
     };
 })
 .filter('orderObjectBy', function() {
@@ -294,7 +292,7 @@ solrAdminApp.config([
     if (activeRequests == 0) {
       $rootScope.$broadcast('loadingStatusInactive');
     }
-    if (rejection.config.params.doNotIntercept) {
+    if (rejection.config.headers.doNotIntercept) {
         return rejection;
     }
     if (rejection.status === 0) {
@@ -405,6 +403,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $location.url("/" + collection.name + "/collection-overview")
   }
 
+  $scope.$on('$routeChangeStart', function() {
+      $rootScope.exceptions = {};
+  });
 });
 
 

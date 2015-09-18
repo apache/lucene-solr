@@ -678,5 +678,10 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
 
     qtest(query.build(), new int[] { 0,1,2,3 });
   }
+  
+  public void testSynonymQuery() throws Exception {
+    SynonymQuery query = new SynonymQuery(new Term(FIELD, "w1"), new Term(FIELD, "w2"));
+    qtest(query, new int[] { 0,1,2,3 });
+  }
 
 }

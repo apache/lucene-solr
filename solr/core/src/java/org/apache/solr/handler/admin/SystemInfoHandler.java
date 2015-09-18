@@ -17,24 +17,31 @@
 
 package org.apache.solr.handler.admin;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
@@ -160,58 +167,68 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-    info.add(NAME, os.getName());
-    info.add( "version", os.getVersion() );
-    info.add( "arch", os.getArch() );
-    info.add( "systemLoadAverage", os.getSystemLoadAverage());
+    info.add(NAME, os.getName()); // add at least this one
+    try {
+      // add remaining ones dynamically using Java Beans API
+      addMXBeanProperties(os, OperatingSystemMXBean.class, info);
+    } catch (IntrospectionException | ReflectiveOperationException e) {
+      log.warn("Unable to fetch properties of OperatingSystemMXBean.", e);
+    }
 
-    // com.sun.management.OperatingSystemMXBean
-    addGetterIfAvaliable( os, "committedVirtualMemorySize", info);
-    addGetterIfAvaliable( os, "freePhysicalMemorySize", info);
-    addGetterIfAvaliable( os, "freeSwapSpaceSize", info);
-    addGetterIfAvaliable( os, "processCpuTime", info);
-    addGetterIfAvaliable( os, "totalPhysicalMemorySize", info);
-    addGetterIfAvaliable( os, "totalSwapSpaceSize", info);
+    // There are some additional beans we want to add (not available on all JVMs):
+    for (String clazz : Arrays.asList(
+        "com.sun.management.OperatingSystemMXBean",
+        "com.sun.management.UnixOperatingSystemMXBean", 
+        "com.ibm.lang.management.OperatingSystemMXBean"
+    )) {
+      try {
+        final Class<? extends PlatformManagedObject> intf = Class.forName(clazz)
+            .asSubclass(PlatformManagedObject.class);
+        addMXBeanProperties(os, intf, info);
+      } catch (ClassNotFoundException e) {
+        // ignore
+      } catch (IntrospectionException | ReflectiveOperationException e) {
+        log.warn("Unable to fetch properties of JVM-specific OperatingSystemMXBean.", e);
+      }
+    }
 
-    // com.sun.management.UnixOperatingSystemMXBean
-    addGetterIfAvaliable( os, "openFileDescriptorCount", info );
-    addGetterIfAvaliable( os, "maxFileDescriptorCount", info );
-
+    // Try some command line things:
     try { 
-      if( !os.getName().toLowerCase(Locale.ROOT).startsWith( "windows" ) ) {
-        // Try some command line things
+      if (!Constants.WINDOWS) {
         info.add( "uname",  execute( "uname -a" ) );
         info.add( "uptime", execute( "uptime" ) );
       }
-    }
-    catch( Exception ex ) {
-      ex.printStackTrace();
+    } catch( Exception ex ) {
+      log.warn("Unable to execute command line tools to get operating system properties.", ex);
     } 
     return info;
   }
   
   /**
-   * Try to run a getter function.  This is useful because java 1.6 has a few extra
-   * useful functions on the <code>OperatingSystemMXBean</code>
-   * 
-   * If you are running a sun jvm, there are nice functions in:
-   * UnixOperatingSystemMXBean and com.sun.management.OperatingSystemMXBean
-   * 
-   * it is package protected so it can be tested...
+   * Add all bean properties of a {@link PlatformManagedObject} to the given {@link NamedList}.
+   * <p>
+   * If you are running a OpenJDK/Oracle JVM, there are nice properties in:
+   * {@code com.sun.management.UnixOperatingSystemMXBean} and
+   * {@code com.sun.management.OperatingSystemMXBean}
    */
-  static void addGetterIfAvaliable( Object obj, String getter, NamedList<Object> info )
-  {
-    // This is a 1.6 function, so lets do a little magic to *try* to make it work
-    try {
-      String n = Character.toUpperCase( getter.charAt(0) ) + getter.substring( 1 );
-      Method m = obj.getClass().getMethod( "get" + n );
-      m.setAccessible(true);
-      Object v = m.invoke( obj, (Object[])null );
-      if( v != null ) {
-        info.add( getter, v );
+  static <T extends PlatformManagedObject> void addMXBeanProperties(T obj, Class<? extends T> intf, NamedList<Object> info)
+      throws IntrospectionException, ReflectiveOperationException {
+    if (intf.isInstance(obj)) {
+      final BeanInfo beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
+        final String name = desc.getName();
+        if (info.get(name) == null) {
+          try {
+            final Object v = desc.getReadMethod().invoke(obj);
+            if(v != null) {
+              info.add(name, v);
+            }
+          } catch (InvocationTargetException ite) {
+            // ignore (some properties throw UOE)
+          }
+        }
       }
     }
-    catch( Exception ex ) {} // don't worry, this only works for 1.6
   }
   
   
@@ -314,7 +331,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> jmx = new SimpleOrderedMap<>();
     try{
       RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
-      jmx.add( "bootclasspath", mx.getBootClassPath());
+      if (mx.isBootClassPathSupported()) {
+        jmx.add( "bootclasspath", mx.getBootClassPath());
+      }
       jmx.add( "classpath", mx.getClassPath() );
 
       // the input arguments passed to the Java virtual machine

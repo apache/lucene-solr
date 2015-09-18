@@ -26,7 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
@@ -154,7 +154,7 @@ public class TestNorms extends LuceneTestCase {
 
 
   public class MySimProvider extends PerFieldSimilarityWrapper {
-    Similarity delegate = new DefaultSimilarity();
+    Similarity delegate = new ClassicSimilarity();
 
     @Override
     public float queryNorm(float sumOfSquaredWeights) {

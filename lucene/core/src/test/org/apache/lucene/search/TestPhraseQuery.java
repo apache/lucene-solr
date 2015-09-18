@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -306,7 +306,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig(new MockAnalyzer(random()))
           .setMergePolicy(newLogMergePolicy())
-          .setSimilarity(new DefaultSimilarity()));
+          .setSimilarity(new ClassicSimilarity()));
 
     Document doc = new Document();
     doc.add(newTextField("field", "foo firstname lastname foo", Field.Store.YES));
@@ -324,7 +324,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarity(new DefaultSimilarity());
+    searcher.setSimilarity(new ClassicSimilarity());
     PhraseQuery query = new PhraseQuery(Integer.MAX_VALUE, "field", "firstname", "lastname");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(3, hits.length);

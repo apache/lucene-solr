@@ -321,4 +321,9 @@ public class TermsQueryTest extends LuceneTestCase {
     wrapped.close();
     dir.close();
   }
+  
+  public void testBinaryToString() {
+    TermsQuery query = new TermsQuery(new Term("field", new BytesRef(new byte[] { (byte) 0xff, (byte) 0xfe })));
+    assertEquals("field:[ff fe]", query.toString());
+  }
 }

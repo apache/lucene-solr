@@ -18,7 +18,7 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarity; // jdoc
+import org.apache.lucene.search.similarities.ClassicSimilarity; // jdoc
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
@@ -28,7 +28,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  * <p>Factory for {@link SweetSpotSimilarity}.</p>
  * <p>
  * <code>SweetSpotSimilarity</code> is an extension of 
- * {@link DefaultSimilarity} that provides additional tuning options for 
+ * {@link ClassicSimilarity} that provides additional tuning options for 
  * specifying the "sweetspot" of optimal <code>tf</code> and 
  * <code>lengthNorm</code> values in the source data.
  * </p>

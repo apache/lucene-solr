@@ -1931,22 +1931,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       if (w == null) {
         IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-        final MergeScheduler ms = iwc.getMergeScheduler();
-        if (ms instanceof ConcurrentMergeScheduler) {
-          final ConcurrentMergeScheduler suppressFakeIOE = new ConcurrentMergeScheduler() {
-              @Override
-              protected void handleMergeException(Directory dir, Throwable exc) {
-                // suppress only FakeIOException:
-                if (!(exc instanceof FakeIOException)) {
-                  super.handleMergeException(dir, exc);
-                }
-              }
-            };
-          final ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) ms;
-          suppressFakeIOE.setMaxMergesAndThreads(cms.getMaxMergeCount(), cms.getMaxThreadCount());
-          iwc.setMergeScheduler(suppressFakeIOE);
-        }
-        
         w = new RandomIndexWriter(random(), dir, iwc);
         // Since we hit exc during merging, a partial
         // forceMerge can easily return when there are still
@@ -2046,6 +2030,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
       }
       shouldFail.set(false);
+
+      if (w != null) {
+        MergeScheduler ms = w.w.getConfig().getMergeScheduler();
+        if (ms instanceof ConcurrentMergeScheduler) {
+          ((ConcurrentMergeScheduler) ms).sync();
+        }
+
+        if (w.w.getTragicException() != null) {
+          // Tragic exc in CMS closed the writer
+          w = null;
+        }
+      }
 
       IndexReader r;
 

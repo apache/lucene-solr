@@ -59,6 +59,11 @@ API Changes
 * LUCENE-6706: PayloadTermQuery and PayloadNearQuery have been removed.
   Instead, use PayloadScoreQuery to wrap any SpanQuery. (Alan Woodward)
 
+Changes in Runtime Behavior
+
+* LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
+  Use ClassicSimilarity to get the old vector space DefaultSimilarity. (Robert Muir)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
@@ -81,6 +86,12 @@ API Changes
 * LUCENE-6590: Query.setBoost(), Query.getBoost() and Query.clone() are gone.
   In order to apply boosts, you now need to wrap queries in a BoostQuery.
   (Adrien Grand)
+
+* LUCENE-6716: SpanPayloadCheckQuery now takes a List<BytesRef> rather than
+  a Collection<byte[]>. (Alan Woodward)
+
+* LUCENE-6489: The various span payload queries have been moved to the queries
+  submodule, and PayloadSpanUtil is now in sandbox. (Alan Woodward)
 
 Optimizations
 
@@ -106,6 +117,10 @@ Optimizations
   GeoPointTermsEnum to reduce GC pressure (Nick Knize via Mike
   McCandless)
 
+* LUCENE-6779: Reduce memory allocated by CompressingStoredFieldsWriter to write
+  strings larger than 64kb by an amount equal to string's utf8 size.
+  (Dawid Weiss, Robert Muir, shalin)
+
 Bug Fixes
 
 * LUCENE-6730: Hyper-parameter c is ignored in term frequency NormalizationH1.
@@ -122,6 +137,18 @@ Bug Fixes
 
 * LUCENE-6776: Fix geo3d math to handle randomly squashed planet
   models (Karl Wright via Mike McCandless) 
+
+* LUCENE-6792: Fix TermsQuery.toString() to work with binary terms.
+  (Ruslan Muzhikov, Robert Muir)
+
+* LUCENE-5503: When Highlighter's WeightedSpanTermExtractor converts a
+  PhraseQuery to an equivalent SpanQuery, it would sometimes use a slop that is
+  too low (no highlight) or determine inOrder wrong.
+  (Tim Allison via David Smiley)
+
+* LUCENE-6790: Fix IndexWriter thread safety when one thread is
+  handling a tragic exception but another is still committing (Mike
+  McCandless)
 
 Other
 
@@ -160,6 +187,16 @@ Other
 
 * LUCENE-6798: Geo3d now models degenerate (too tiny) circles as a
   single point (Karl Wright via Mike McCandless)
+
+* LUCENE-6770: Add javadocs that FSDirectory canonicalizes the path.
+  (Uwe Schindler, Vladimir Kuzmin)
+
+* LUCENE-6795: Fix various places where code used
+  AccessibleObject#setAccessible() without a privileged block. Code
+  without a hard requirement to do reflection were rewritten. This
+  makes Lucene and Solr ready for Java 9 Jigsaw's module system, where
+  reflection on Java's runtime classes is very restricted.
+  (Robert Muir, Uwe Schindler)
 
 Build
 

@@ -68,8 +68,10 @@ limitations under the License.
                 <dl ng-show="replica.show">
                   <dt>Base URL: </dt><dd>{{replica.base_url}}</dd>
                   <dt>Core: </dt><dd><a href="{{replica.base_url}}/{{replica.core}}">{{replica.core}}</a></dd>
+                  <dt>Active: </dt>
+                    <dd class="ico value" ng-class="replica.state == 'active' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
                   <dt>Leader: </dt>
-                    <dd class="ico value" ng-class="selectedCollection.autoAddReplicas ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
+                    <dd class="ico value" ng-class="replica.leader == 'true' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
                 </dl>
               </div>
 

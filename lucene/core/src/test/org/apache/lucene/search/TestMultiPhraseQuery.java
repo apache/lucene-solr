@@ -33,7 +33,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -334,7 +334,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarity(new DefaultSimilarity() { 
+    searcher.setSimilarity(new ClassicSimilarity() { 
       @Override
       public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
         return Explanation.match(10f, "just a test");

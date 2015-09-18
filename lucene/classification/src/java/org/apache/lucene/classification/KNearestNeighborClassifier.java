@@ -36,7 +36,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
@@ -61,7 +61,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    * @param leafReader     the reader on the index to be used for classification
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param similarity     the {@link Similarity} to be used by the underlying {@link IndexSearcher} or {@code null}
-   *                       (defaults to {@link org.apache.lucene.search.similarities.DefaultSimilarity})
+   *                       (defaults to {@link org.apache.lucene.search.similarities.ClassicSimilarity})
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
    * @param k              the no. of docs to select in the MLT results to find the nearest neighbor
@@ -81,7 +81,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     if (similarity != null) {
       this.indexSearcher.setSimilarity(similarity);
     } else {
-      this.indexSearcher.setSimilarity(new DefaultSimilarity());
+      this.indexSearcher.setSimilarity(new ClassicSimilarity());
     }
     if (minDocsFreq > 0) {
       mlt.setMinDocFreq(minDocsFreq);

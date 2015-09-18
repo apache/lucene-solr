@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * the License.
  */
 
-import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -149,10 +148,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       NoSuchFieldException, IllegalArgumentException, IllegalAccessException,
       InterruptedException {
     final DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
-    Field field = DocumentsWriterDeleteQueue.class
-        .getDeclaredField("globalBufferLock");
-    field.setAccessible(true);
-    ReentrantLock lock = (ReentrantLock) field.get(queue);
+    ReentrantLock lock = queue.globalBufferLock;
     lock.lock();
     Thread t = new Thread() {
       @Override

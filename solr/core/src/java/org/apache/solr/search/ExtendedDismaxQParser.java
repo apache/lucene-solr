@@ -1010,8 +1010,8 @@ public class ExtendedDismaxQParser extends QParser {
     }
     
     @Override
-    protected Query getBooleanQuery(List<BooleanClause> clauses, boolean disableCoord) throws SyntaxError {
-      Query q = super.getBooleanQuery(clauses, disableCoord);
+    protected Query getBooleanQuery(List<BooleanClause> clauses) throws SyntaxError {
+      Query q = super.getBooleanQuery(clauses);
       if (q != null) {
         q = QueryUtils.makeQueryable(q);
       }

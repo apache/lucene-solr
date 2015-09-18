@@ -17,22 +17,22 @@ package org.apache.solr.search.similarities;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity; // javadoc
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * Factory for {@link DefaultSimilarity}
+ * Factory for {@link ClassicSimilarity}
  * <p>
- * DefaultSimilarity is Lucene's default scoring implementation, based
+ * ClassicSimilarity is Lucene's original scoring implementation, based
  * upon the Vector Space Model.
  * <p>
  * Optional settings:
  * <ul>
  *   <li>discountOverlaps (bool): Sets
- *       {@link DefaultSimilarity#setDiscountOverlaps(boolean)}</li>
+ *       {@link ClassicSimilarity#setDiscountOverlaps(boolean)}</li>
  * </ul>
  * @see TFIDFSimilarity
  * @lucene.experimental
@@ -40,13 +40,13 @@ import org.apache.solr.schema.SimilarityFactory;
 public class DefaultSimilarityFactory extends SimilarityFactory {
 
   /** Init param name for specifying the value to use in 
-   * {@link DefaultSimilarity#setDiscountOverlaps(boolean)} 
+   * {@link ClassicSimilarity#setDiscountOverlaps(boolean)} 
    */
   public static final String DISCOUNT_OVERLAPS = "discountOverlaps";
 
   /** 
-   * Controls the value of {@link DefaultSimilarity#setDiscountOverlaps(boolean)} 
-   * on newly constructed instances of {@link DefaultSimilarity}
+   * Controls the value of {@link ClassicSimilarity#setDiscountOverlaps(boolean)} 
+   * on newly constructed instances of {@link ClassicSimilarity}
    */
   protected boolean discountOverlaps = true;
 
@@ -58,7 +58,7 @@ public class DefaultSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    DefaultSimilarity sim = new DefaultSimilarity();
+    ClassicSimilarity sim = new ClassicSimilarity();
     sim.setDiscountOverlaps(discountOverlaps);
     return sim;
   }

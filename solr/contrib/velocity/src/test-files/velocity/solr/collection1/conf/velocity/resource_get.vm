@@ -1,0 +1,1 @@
+$resource.get("color","resources","en_UK")

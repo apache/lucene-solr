@@ -59,6 +59,11 @@ solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $in
         $scope.autorefresh = !$scope.autorefresh;
         if ($scope.autorefresh) {
             $scope.interval = $interval($scope.refresh, 1000);
+            var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+              $interval.cancel($scope.interval);
+              onRouteChangeOff();
+            });
+
         } else if ($scope.interval) {
             $interval.cancel($scope.interval);
         }

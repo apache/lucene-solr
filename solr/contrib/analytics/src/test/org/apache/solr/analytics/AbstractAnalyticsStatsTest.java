@@ -41,6 +41,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.PercentileCalculator;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -73,16 +75,28 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   }
 
   static private Document doc;
-  static private XPathFactory xPathFact =  XPathFactory.newInstance();
+  static private XPathFactory xPathFact;
 
   static private String rawResponse;
+  
+  @BeforeClass
+  public static void beforeClassAbstractAnalysis() {
+    xPathFact = XPathFactory.newInstance();
+  }
+  
+  @AfterClass
+  public static void afterClassAbstractAnalysis() {
+    xPathFact = null;
+    doc = null;
+    rawResponse = null;
+    defaults.clear();
+  }
 
   public static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true); // never forget this!
     DocumentBuilder builder = factory.newDocumentBuilder();
     doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8))));
-    xPathFact = XPathFactory.newInstance();
     rawResponse = response;
   }
 

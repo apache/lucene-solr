@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.search.similarities.DefaultSimilarity; // javadocs
+import org.apache.lucene.search.similarities.ClassicSimilarity; // javadocs
 import org.apache.lucene.search.similarities.Similarity; // javadocs
 
 // TODO: how to handle versioning here...?
@@ -59,7 +59,7 @@ public interface IndexableField extends GeneralField {
    * <p>The boost is used to compute the norm factor for the field.  By
    * default, in the {@link Similarity#computeNorm(FieldInvertState)} method, 
    * the boost value is multiplied by the length normalization factor and then
-   * rounded by {@link DefaultSimilarity#encodeNormValue(float)} before it is stored in the
+   * rounded by {@link ClassicSimilarity#encodeNormValue(float)} before it is stored in the
    * index.  One should attempt to ensure that this product does not overflow
    * the range of that encoding.
    * <p>
@@ -68,7 +68,7 @@ public interface IndexableField extends GeneralField {
    * omits normalization values ({@link IndexableFieldType#omitNorms()} returns true).
    *
    * @see Similarity#computeNorm(FieldInvertState)
-   * @see DefaultSimilarity#encodeNormValue(float)
+   * @see ClassicSimilarity#encodeNormValue(float)
    */
   public float boost();
 }

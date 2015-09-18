@@ -17,7 +17,7 @@ package org.apache.solr.search.similarities;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
@@ -33,14 +33,14 @@ public class TestDefaultSimilarityFactory extends BaseSimilarityTestCase {
   /** default parameters */
   public void testDefaults() throws Exception {
     Similarity sim = getSimilarity("text");
-    assertEquals(DefaultSimilarity.class, sim.getClass());
-    assertEquals(true, ((DefaultSimilarity)sim).getDiscountOverlaps());
+    assertEquals(ClassicSimilarity.class, sim.getClass());
+    assertEquals(true, ((ClassicSimilarity)sim).getDiscountOverlaps());
   }
   /** explicit params */
   public void testParams() throws Exception {
     Similarity sim = getSimilarity("text_overlap");
-    assertEquals(DefaultSimilarity.class, sim.getClass());
-    assertEquals(false, ((DefaultSimilarity)sim).getDiscountOverlaps());
+    assertEquals(ClassicSimilarity.class, sim.getClass());
+    assertEquals(false, ((ClassicSimilarity)sim).getDiscountOverlaps());
   }
 
 }

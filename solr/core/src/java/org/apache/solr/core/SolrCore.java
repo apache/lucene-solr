@@ -2640,7 +2640,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     } catch (KeeperException e) {
       log.error("error refreshing solrconfig ", e);
     } catch (InterruptedException e) {
-      Thread.currentThread().isInterrupted();
+      Thread.currentThread().interrupt();
     }
     return false;
   }

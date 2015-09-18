@@ -67,10 +67,17 @@ New Features
 
 * SOLR-7903: Add the FacetStream to the Streaming API and wire it into the SQLHandler (Joel Bernstein)
 
+* SOLR-7986: JDBC Driver for SQL Interface (Uwe Schindler, Joel Bernstein)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
   specified.  Speedups of up to 8% were observed.  (yonik)
+
+* SOLR-8037: Speed up creation of filters from term range queries (i.e. non-numeric range queries)
+  and use the filter cache for term range queries that are part of larger queries.  Some observed
+  speedups were up to 2.5x for production of filters, and up to 10x for query evaluation with
+  embedded term range queres that resulted in filter cache hits.  (yonik)
 
 
 Other Changes
@@ -148,6 +155,12 @@ New Features
 
 * SOLR-7915: Provide pluggable context tool support for VelocityResponseWriter (Erik Hatcher)
 
+* LUCENE-6795: SystemInfoHandler was improved to also show detailed operating
+  system statistics on IBM J9 virtual machines. It also no longer fails on Java 9
+  with Jigsaw module system.  (Uwe Schindler)
+
+* SOLR-8053: Basic auth support in SolrJ (noble)
+
 Bug Fixes
 ----------------------
 
@@ -188,6 +201,14 @@ Bug Fixes
   related to leader initiated recovery is performed by a dedicated LIR thread in the background.
   (Ramkumar Aiyengar, shalin)
 
+* SOLR-7746: Ping requests stopped working with distrib=true in Solr 5.2.1.  (Michael Sun)
+
+* SOLR-6547: ClassCastException in SolrResponseBase.getQTime on update response from CloudSolrClient
+  when parallelUpdates is enabled (default) and multiple docs are sent as a single update.
+  (kevin, hossman, shalin)
+
+* SOLR-8058: Fix the exclusion filter so that collections that start with js, css, img, tpl
+  can be accessed. (Upayavira, Steve Rowe, Anshum Gupta)
 
 Optimizations
 ----------------------
@@ -251,6 +272,11 @@ Other Changes
 * SOLR-7999: SolrRequestParser tests no longer depend on external URLs
   that may fail to work.  (Uwe Schindler)
 
+* SOLR-8034: Leader no longer puts replicas in recovery in case of a failed update, when minRF
+  isn't achieved. (Jessica Cheng, Timothy Potter, Anshum Gupta)
+
+* SOLR-8066: SolrCore.checkStale method doesn't restore interrupt status. (shalin)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
@@ -273,6 +299,9 @@ Bug Fixes
 
 * SOLR-7990: Use of timeAllowed can cause incomplete filters to be cached and incorrect
   results to be returned on subsequent requests. (Erick Erickson, yonik)
+
+* SOLR-8041: Fix VelocityResponseWriter's $resource.get(key,baseName,locale) to use specified locale.
+  (Erik Hatcher)
 
 ==================  5.3.0 ==================
 
@@ -1125,6 +1154,8 @@ Other Changes
 
 * SOLR-7662: Refactored response writing to consolidate the logic in  one place (Noble Paul)
 
+* SOLR-7110: Added option to optimize JavaBinCodec to minimize string Object creation (Noble Paul)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -1441,6 +1472,9 @@ Optimizations
 
  * SOLR-7239: improved performance of min & max in StatsComponent, as well as situations
    where local params disable all stats (hossman)
+
+ * SOLR-7050: realtime get should internally load only fields specified in fl.
+   (yonik, Noble Paul)
 
 Other Changes
 ----------------------

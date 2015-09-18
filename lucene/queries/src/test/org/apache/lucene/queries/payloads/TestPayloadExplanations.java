@@ -1,4 +1,4 @@
-package org.apache.lucene.search.payloads;
+package org.apache.lucene.queries.payloads;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,7 +19,7 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BaseExplanationTestCase;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -41,7 +41,7 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    searcher.setSimilarity(new DefaultSimilarity() {
+    searcher.setSimilarity(new ClassicSimilarity() {
       @Override
       public float scorePayload(int doc, int start, int end, BytesRef payload) {
         return 1 + (payload.hashCode() % 10);
