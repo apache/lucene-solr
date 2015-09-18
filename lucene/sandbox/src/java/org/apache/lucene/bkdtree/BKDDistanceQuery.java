@@ -80,7 +80,7 @@ public class BKDDistanceQuery extends Query {
     maxLon = bbox.maxLon;
     maxLat = bbox.maxLat;
 
-    //System.out.println("distance query bbox: lon=" + minLon + " TO " + maxLon + "; lat=" + minLat + " TO " + maxLat);
+    System.out.println("distance query bbox: lon=" + minLon + " TO " + maxLon + "; lat=" + minLat + " TO " + maxLat);
     assert minLat <= maxLat: "minLat=" + minLat + " maxLat=" + maxLat;
   }
 
@@ -99,6 +99,7 @@ public class BKDDistanceQuery extends Query {
     this.maxLat = maxLat;
     this.minLon = minLon;
     this.maxLon = maxLon;
+    //System.out.println("  rewrite bbox: lat=" + minLat + " TO " + maxLat + " lon=" + minLon + " TO " + maxLon);
   }    
 
   @Override
@@ -137,16 +138,28 @@ public class BKDDistanceQuery extends Query {
 
                                            @Override
                                            public BKDTreeReader.Relation compare(double cellLatMin, double cellLatMax, double cellLonMin, double cellLonMax) {
-                                             //System.out.println("compare lat=" + cellLatMin + " TO " + cellLatMax + "; lon=" + cellLonMin + " TO " + cellLonMax);
+                                             System.out.println("compare lat=" + cellLatMin + " TO " + cellLatMax + "; lon=" + cellLonMin + " TO " + cellLonMax);
                                              if (GeoUtils.rectWithinCircle(cellLonMin, cellLatMin, cellLonMax, cellLatMax, centerLon, centerLat, radiusMeters)) {
-                                               //System.out.println("  CELL_INSIDE_SHAPE");
-                                               return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
+                                               // nocommit hacky workaround:
+                                               if (cellLonMax - cellLonMin < 100 && cellLatMax - cellLatMin < 50) {
+                                                 System.out.println("  CELL_INSIDE_SHAPE");
+                                                 return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
+                                               } else {
+                                                 System.out.println("  HACK: SHAPE_CROSSES_CELL");
+                                                 return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
+                                               }
                                              } else if (GeoUtils.rectCrossesCircle(cellLonMin, cellLatMin, cellLonMax, cellLatMax, centerLon, centerLat, radiusMeters)) {
-                                               //System.out.println("  SHAPE_CROSSES_CELL");
+                                               System.out.println("  SHAPE_CROSSES_CELL");
                                                return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
                                              } else {
-                                               //System.out.println("  SHAPE_OUTSIDE_CELL");
-                                               return BKDTreeReader.Relation.SHAPE_OUTSIDE_CELL;
+                                               // nocommit hacky workaround:
+                                               if (cellLonMax - cellLonMin < 100 && cellLatMax - cellLatMin < 50) {
+                                                 System.out.println("  SHAPE_OUTSIDE_CELL");
+                                                 return BKDTreeReader.Relation.SHAPE_OUTSIDE_CELL;
+                                               } else {
+                                                 System.out.println("  HACK: SHAPE_CROSSES_CELL");
+                                                 return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
+                                               }
                                              }
                                            }
                                          }, treeDV.delegate);
@@ -164,6 +177,7 @@ public class BKDDistanceQuery extends Query {
     }
 
     if (maxLon < minLon) {
+      System.out.println("BKD crosses dateline");
       // Crosses date line: we just rewrite into OR of two bboxes:
 
       // Disable coord here because a multi-valued doc could match both circles and get unfairly boosted:
@@ -171,10 +185,10 @@ public class BKDDistanceQuery extends Query {
       q.setDisableCoord(true);
 
       // E.g.: maxLon = -179, minLon = 179
-      BKDDistanceQuery left = new BKDDistanceQuery(field, centerLat, centerLon, radiusMeters, minLat, maxLat, BKDTreeWriter.MIN_LON_INCL, maxLon);
-      q.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
-      BKDDistanceQuery right = new BKDDistanceQuery(field, centerLat, centerLon, radiusMeters, minLat, maxLat, minLon, BKDTreeWriter.MAX_LON_INCL);
-      q.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
+      q.add(new BooleanClause(new BKDDistanceQuery(field, centerLat, centerLon, radiusMeters, minLat, maxLat, BKDTreeWriter.MIN_LON_INCL, maxLon),
+                              BooleanClause.Occur.SHOULD));
+      q.add(new BooleanClause(new BKDDistanceQuery(field, centerLat, centerLon, radiusMeters, minLat, maxLat, minLon, BKDTreeWriter.MAX_LON_INCL),
+                              BooleanClause.Occur.SHOULD));
       return q.build();
     } else {
       return this;
@@ -192,6 +206,10 @@ public class BKDDistanceQuery extends Query {
     if (Double.compare(that.centerLat, centerLat) != 0) return false;
     if (Double.compare(that.centerLon, centerLon) != 0) return false;
     if (Double.compare(that.radiusMeters, radiusMeters) != 0) return false;
+    if (Double.compare(that.minLon, minLon) != 0) return false;
+    if (Double.compare(that.maxLon, maxLon) != 0) return false;
+    if (Double.compare(that.minLat, minLat) != 0) return false;
+    if (Double.compare(that.maxLat, maxLat) != 0) return false;
 
     return true;
   }
@@ -205,6 +223,14 @@ public class BKDDistanceQuery extends Query {
     temp = Double.doubleToLongBits(centerLat);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(radiusMeters);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(minLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(minLat);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLat);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }
