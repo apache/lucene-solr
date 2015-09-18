@@ -459,7 +459,8 @@ public class TestBKDTree extends LuceneTestCase {
               Query query;
               VerifyHits verifyHits;
 
-              if (random().nextBoolean()) {
+              // nocommit:
+              if (false && random().nextBoolean()) {
                 // BBox 
                 final GeoBoundingBox bbox = randomBBox(true);
 
@@ -476,14 +477,17 @@ public class TestBKDTree extends LuceneTestCase {
                   };
 
               // nocommit change this to always temporarily for more efficient beasting:
-              } else if (random().nextBoolean()) {
+              } else if (true || random().nextBoolean()) {
                 // Distance
 
                 final double centerLat = randomLat();
                 final double centerLon = randomLon();
 
                 // nocommit is this max value right (i want to at most span the entire earth)?:
-                final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * 2.0 * Math.PI;
+                // final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * 2.0 * Math.PI;
+
+                // So the query can cover at most 50% of the earth's surface:
+                final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * Math.PI / 2.0;
 
                 if (VERBOSE) {
                   System.out.println("  radiusMeters = " + new DecimalFormat("#,###.00").format(radiusMeters));

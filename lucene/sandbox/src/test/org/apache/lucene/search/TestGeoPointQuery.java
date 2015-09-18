@@ -75,6 +75,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     smallBBox = random().nextBoolean();
+    // nocommit
+    smallBBox = false;
 
     directory = newDirectory();
 
@@ -442,7 +444,10 @@ public class TestGeoPointQuery extends LuceneTestCase {
                 final double centerLon = randomLon();
 
                 // nocommit is this max value right (i want to at most span the entire earth)?:
-                final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * 2.0 * Math.PI;
+                // final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * 2.0 * Math.PI;
+
+                // Span at most 50% of the earth surface:
+                final double radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * Math.PI * 0.5;
 
                 if (VERBOSE) {
                   System.out.println("\t radiusMeters = " + radiusMeters);
