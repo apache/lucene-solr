@@ -32,9 +32,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
-
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
+
 import static org.hamcrest.CoreMatchers.*;
 
 import java.io.IOException;
@@ -46,6 +46,8 @@ import java.util.Set;
  */
 public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase {
   
+  final private static String[] scoreModes = {"avg","max","min","total"};
+
   public DistribJoinFromCollectionTest() {
     super();
   }
@@ -119,20 +121,23 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
   private void testJoins(String toColl, String fromColl, Integer toDocId, boolean isScoresTest)
       throws SolrServerException, IOException {
     // verify the join with fromIndex works
-    final String[] scoreModes = {"avg","max","min","total"};
-    String joinQ = "{!join " + anyScoreMode(isScoresTest, scoreModes)
-                   + "from=join_s fromIndex=" + fromColl + " to=join_s}match_s:c";
+    final String fromQ = "match_s:c match_s:not_1_0_score_after_weight_normalization";
+    {
+    final String joinQ = "{!join " + anyScoreMode(isScoresTest)
+                   + "from=join_s fromIndex=" + fromColl + 
+                   " to=join_s}" + fromQ;
     QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
     QueryResponse rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
     SolrDocumentList hits = rsp.getResults();
-    assertTrue("Expected 1 doc", hits.getNumFound() == 1);
+    assertTrue("Expected 1 doc, got "+hits, hits.getNumFound() == 1);
     SolrDocument doc = hits.get(0);
     assertEquals(toDocId, doc.getFirstValue("id"));
     assertEquals("b", doc.getFirstValue("get_s"));
     assertScore(isScoresTest, doc);
+    }
 
     //negative test before creating an alias
-    checkAbsentFromIndex(fromColl, toColl, isScoresTest, scoreModes);
+    checkAbsentFromIndex(fromColl, toColl, isScoresTest);
 
     // create an alias for the fromIndex and then query through the alias
     String alias = fromColl+"Alias";
@@ -141,46 +146,48 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
     request.setAliasedCollections(fromColl);
     request.process(cloudClient);
 
-    joinQ = "{!join " + anyScoreMode(isScoresTest, scoreModes)
-            + "from=join_s fromIndex=" + alias + " to=join_s}match_s:c";
-    qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-    rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
-    hits = rsp.getResults();
-    assertTrue("Expected 1 doc", hits.getNumFound() == 1);
-    doc = hits.get(0);
-    assertEquals(toDocId, doc.getFirstValue("id"));
-    assertEquals("b", doc.getFirstValue("get_s"));
-    assertScore(isScoresTest, doc);
+    {
+      final String joinQ = "{!join " + anyScoreMode(isScoresTest)
+              + "from=join_s fromIndex=" + alias + " to=join_s}"+fromQ;
+      final QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
+      final QueryResponse rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
+      final SolrDocumentList hits = rsp.getResults();
+      assertTrue("Expected 1 doc", hits.getNumFound() == 1);
+      SolrDocument doc = hits.get(0);
+      assertEquals(toDocId, doc.getFirstValue("id"));
+      assertEquals("b", doc.getFirstValue("get_s"));
+      assertScore(isScoresTest, doc);
+    }
 
     //negative test after creating an alias
-    checkAbsentFromIndex(fromColl, toColl, isScoresTest, scoreModes);
+    checkAbsentFromIndex(fromColl, toColl, isScoresTest);
 
-    // verify join doesn't work if no match in the "from" index
-    joinQ = "{!join " + (anyScoreMode(isScoresTest, scoreModes))
-            + "from=join_s fromIndex=" + fromColl + " to=join_s}match_s:d";
-    qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-    rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
-    hits = rsp.getResults();
-    assertTrue("Expected no hits", hits.getNumFound() == 0);
-    assertScore(isScoresTest, doc);
+    {
+      // verify join doesn't work if no match in the "from" index
+      final String joinQ = "{!join " + (anyScoreMode(isScoresTest))
+              + "from=join_s fromIndex=" + fromColl + " to=join_s}match_s:d";
+      final QueryRequest  qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
+      final QueryResponse  rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
+      final SolrDocumentList hits = rsp.getResults();
+      assertTrue("Expected no hits", hits.getNumFound() == 0);
+    }
   }
 
-  //@Ignore ("SOLR-8026, SOLR-7775") 
   private void assertScore(boolean isScoresTest, SolrDocument doc) {
-    //if (isScoresTest) {
-    //  assertThat(doc.getFirstValue("score").toString(), not("1.0"));
-    //} else {
-    //  assertEquals("1.0", doc.getFirstValue("score").toString());
-    //}
+    if (isScoresTest) {
+      assertThat("score join doesn't return 1.0",doc.getFirstValue("score").toString(), not("1.0"));
+    } else {
+      assertEquals("Solr join has constant score", "1.0", doc.getFirstValue("score").toString());
+    }
   }
 
-  private String anyScoreMode(boolean isScoresTest, String[] scoreModes) {
+  private String anyScoreMode(boolean isScoresTest) {
     return isScoresTest ? "score=" + (scoreModes[random().nextInt(scoreModes.length)]) + " " : "";
   }
 
-  private void checkAbsentFromIndex(String fromColl, String toColl, boolean isScoresTest, String[] scoreModes) throws SolrServerException, IOException {
+  private void checkAbsentFromIndex(String fromColl, String toColl, boolean isScoresTest) throws SolrServerException, IOException {
     final String wrongName = fromColl + "WrongName";
-    final String joinQ = "{!join " + (anyScoreMode(isScoresTest, scoreModes))
+    final String joinQ = "{!join " + (anyScoreMode(isScoresTest))
         + "from=join_s fromIndex=" + wrongName + " to=join_s}match_s:c";
     final QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
     try {
