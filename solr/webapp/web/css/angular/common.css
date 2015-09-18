@@ -747,3 +747,16 @@ pre.syntax .tex .formula
 #exception .show-exception a:hover {
   color: #333;
 }
+
+.other-ui-link {
+  margin: 0px;
+  position: absolute;
+  right: 0px;
+  top: -20px;
+}
+
+.other-ui-link span {
+  background-image: url( ../../img/ico/information-white.png );
+  right: 0px;
+  padding-left: 16px;
+}
