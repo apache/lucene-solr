@@ -159,7 +159,7 @@ public final class GeoUtils {
   }
 
   /**
-   * Computes whether a rectangle is wholly within another rectangle (shared boundaries allowed)
+   * Computes whether the first (a) rectangle is wholly within another (b) rectangle (shared boundaries allowed)
    */
   public static boolean rectWithin(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                    final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
@@ -290,28 +290,29 @@ public final class GeoUtils {
 
   private static boolean rectAnyCornersOutsideCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                                      final double centerLon, final double centerLat, final double radiusMeters) {
-    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radiusMeters);
+    return SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radiusMeters
+      || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radiusMeters
+      || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radiusMeters
+      || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radiusMeters;
   }
 
   private static boolean rectAnyCornersInCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                                 final double centerLon, final double centerLat, final double radiusMeters) {
-    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radiusMeters
+    return SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radiusMeters
         || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 <= radiusMeters
         || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 <= radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radiusMeters);
+        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radiusMeters;
   }
 
   public static boolean rectWithinCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                          final double centerLon, final double centerLat, final double radiusMeters) {
-    return !(rectAnyCornersOutsideCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters));
+    return rectAnyCornersOutsideCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters) == false;
   }
 
   /**
    * Computes whether a rectangle crosses a circle
    */
+  // nocommit if the rect fully contains the circle, what will this return?  and if the circle fully contains the rect, then what?
   public static boolean rectCrossesCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                           final double centerLon, final double centerLat, final double radiusMeters) {
     return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters)
