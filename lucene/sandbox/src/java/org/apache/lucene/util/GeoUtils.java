@@ -19,6 +19,8 @@ package org.apache.lucene.util;
 
 import java.util.ArrayList;
 
+import org.apache.lucene.search.GeoBoundingBox;
+
 /**
  * Basic reusable geo-spatial utility methods
  *
@@ -324,6 +326,40 @@ public final class GeoUtils {
     double[] closestPt = {0, 0};
     GeoDistanceUtils.closestPointOnBBox(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, closestPt);
     return SloppyMath.haversin(centerLat, centerLon, closestPt[1], closestPt[0])*1000.0 <= radiusMeters;
+  }
+
+  /**
+   * Compute Bounding Box for a circle using WGS-84 parameters
+   */
+  public static GeoBoundingBox circleToBBox(final double centerLon, final double centerLat, final double radiusMeters) {
+    final double radLat = StrictMath.toRadians(centerLat);
+    final double radLon = StrictMath.toRadians(centerLon);
+    double radDistance = (radiusMeters + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
+    double minLat = radLat - radDistance;
+    double maxLat = radLat + radDistance;
+    double minLon;
+    double maxLon;
+
+    if (minLat > GeoProjectionUtils.MIN_LAT_RADIANS && maxLat < GeoProjectionUtils.MAX_LAT_RADIANS) {
+      double deltaLon = StrictMath.asin(StrictMath.sin(radDistance) / StrictMath.cos(radLat));
+      minLon = radLon - deltaLon;
+      if (minLon < GeoProjectionUtils.MIN_LON_RADIANS) {
+        minLon += 2d * StrictMath.PI;
+      }
+      maxLon = radLon + deltaLon;
+      if (maxLon > GeoProjectionUtils.MAX_LON_RADIANS) {
+        maxLon -= 2d * StrictMath.PI;
+      }
+    } else {
+      // a pole is within the distance
+      minLat = StrictMath.max(minLat, GeoProjectionUtils.MIN_LAT_RADIANS);
+      maxLat = StrictMath.min(maxLat, GeoProjectionUtils.MAX_LAT_RADIANS);
+      minLon = GeoProjectionUtils.MIN_LON_RADIANS;
+      maxLon = GeoProjectionUtils.MAX_LON_RADIANS;
+    }
+
+    return new GeoBoundingBox(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
+        StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
   }
 
   /**

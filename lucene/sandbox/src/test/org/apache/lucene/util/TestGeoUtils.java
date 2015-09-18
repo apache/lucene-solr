@@ -209,7 +209,6 @@ public class TestGeoUtils extends LuceneTestCase {
     assertEquals(50.0, result[1], 0.0);
 
     GeoDistanceUtils.closestPointOnBBox(-20, -20, 0, 0, 70, 70, result);
-    // nocommit this fails but should pass?
     assertEquals(0.0, result[0], 0.0);
     assertEquals(0.0, result[1], 0.0);
   }
@@ -400,8 +399,6 @@ public class TestGeoUtils extends LuceneTestCase {
 
     int numDocs = atLeast(1000);
     
-    // nocommit commit up front to small or full range
-
     boolean useSmallRanges = random().nextBoolean();
     if (VERBOSE) {
       System.out.println("TEST: " + numDocs + " docs useSmallRanges=" + useSmallRanges);
@@ -410,7 +407,6 @@ public class TestGeoUtils extends LuceneTestCase {
     double[] docLons = new double[numDocs];
     double[] docLats = new double[numDocs];
     for(int docID=0;docID<numDocs;docID++) {
-      // nocommit use full range:
       docLons[docID] = randomLon(useSmallRanges);
       docLats[docID] = randomLat(useSmallRanges);
       if (VERBOSE) {
@@ -426,13 +422,11 @@ public class TestGeoUtils extends LuceneTestCase {
 
       Cell.nextCellID = 0;
 
-      // nocommit use small too
       double centerLon = randomLon(useSmallRanges);
       double centerLat = randomLat(useSmallRanges);
 
       // So the circle covers at most 50% of the earth's surface:
 
-      // nocommit if smallbbox then use small radius here:
       double radiusMeters;
       if (useSmallRanges) {
         // Approx 3 degrees lon at the equator:
@@ -448,7 +442,7 @@ public class TestGeoUtils extends LuceneTestCase {
         log.println("\nTEST: iter=" + iter + " radiusMeters=" + radiusMeters + " centerLon=" + centerLon + " centerLat=" + centerLat);
       }
 
-      GeoBoundingBox bbox = GeoPointDistanceQuery.computeBBox(centerLon, centerLat, radiusMeters);
+      GeoBoundingBox bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
       
       Set<Integer> hits = new HashSet<>();
 
@@ -508,57 +502,6 @@ public class TestGeoUtils extends LuceneTestCase {
         System.out.print(sw.toString());
         fail(failCount + " incorrect hits (see above)");
       }
-    }
-  }
-
-
-  /**
-   * Compute Bounding Box for a circle using WGS-84 parameters
-   */
-  // nocommit should this be in GeoUtils?
-  static BBox computeBBox(final double centerLon, final double centerLat, final double radius) {
-    final double radLat = StrictMath.toRadians(centerLat);
-    final double radLon = StrictMath.toRadians(centerLon);
-    double radDistance = (radius + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
-    double minLat = radLat - radDistance;
-    double maxLat = radLat + radDistance;
-    double minLon;
-    double maxLon;
-
-    if (minLat > GeoProjectionUtils.MIN_LAT_RADIANS && maxLat < GeoProjectionUtils.MAX_LAT_RADIANS) {
-      double deltaLon = StrictMath.asin(StrictMath.sin(radDistance) / StrictMath.cos(radLat));
-      minLon = radLon - deltaLon;
-      if (minLon < GeoProjectionUtils.MIN_LON_RADIANS) {
-        minLon += 2d * StrictMath.PI;
-      }
-      maxLon = radLon + deltaLon;
-      if (maxLon > GeoProjectionUtils.MAX_LON_RADIANS) {
-        maxLon -= 2d * StrictMath.PI;
-      }
-    } else {
-      // a pole is within the distance
-      minLat = StrictMath.max(minLat, GeoProjectionUtils.MIN_LAT_RADIANS);
-      maxLat = StrictMath.min(maxLat, GeoProjectionUtils.MAX_LAT_RADIANS);
-      minLon = GeoProjectionUtils.MIN_LON_RADIANS;
-      maxLon = GeoProjectionUtils.MAX_LON_RADIANS;
-    }
-
-    return new BBox(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
-        StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
-  }
-
-  // nocommit cutover to GeoBBOx:
-  static class BBox {
-    final double minLon;
-    final double minLat;
-    final double maxLon;
-    final double maxLat;
-
-    BBox(final double minLon, final double maxLon, final double minLat, final double maxLat) {
-      this.minLon = minLon;
-      this.minLat = minLat;
-      this.maxLon = maxLon;
-      this.maxLat = maxLat;
     }
   }
 }
