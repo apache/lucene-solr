@@ -1154,6 +1154,8 @@ Other Changes
 
 * SOLR-7662: Refactored response writing to consolidate the logic in  one place (Noble Paul)
 
+* SOLR-7110: Added option to optimize JavaBinCodec to minimize string Object creation (Noble Paul)
+
 ==================  5.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
