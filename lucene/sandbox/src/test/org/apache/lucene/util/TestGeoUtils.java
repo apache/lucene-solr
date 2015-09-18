@@ -443,7 +443,6 @@ public class TestGeoUtils extends LuceneTestCase {
 
       StringWriter sw = new StringWriter();
       PrintWriter log = new PrintWriter(sw, true);
-      GeoUtils.log = log;
 
       if (VERBOSE) {
         log.println("\nTEST: iter=" + iter + " radiusMeters=" + radiusMeters + " centerLon=" + centerLon + " centerLat=" + centerLat);
