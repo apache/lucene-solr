@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.CreateMode;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,15 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   final private Logger log = LoggerFactory.getLogger(TestAuthorizationFramework.class);
 
   static final int TIMEOUT = 10000;
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
+    try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
+        TIMEOUT, TIMEOUT)) {
+      zkStateReader.getZkClient().create(ZkStateReader.SOLR_SECURITY_CONF_PATH,
+          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(Charsets.UTF_8),
+          CreateMode.PERSISTENT, true);
+    }
+  }
 
 
   @Test
@@ -48,12 +58,6 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     MockAuthorizationPlugin.denyUsers.add("user1");
     MockAuthorizationPlugin.denyUsers.add("user1");
     waitForThingsToLevelOut(10);
-    try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
-        TIMEOUT, TIMEOUT)) {
-      zkStateReader.getZkClient().setData(ZkStateReader.SOLR_SECURITY_CONF_PATH,
-          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(Charsets.UTF_8),
-          true);
-    }
     String baseUrl = jettys.get(0).getBaseUrl().toString();
     verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
     log.info("Starting test");
