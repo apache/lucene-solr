@@ -48,6 +48,20 @@ public class GeoRect {
 
   @Override
   public String toString() {
-    return "GeoRect(lon=" + minLon + " TO " + maxLon + ", lat=" + minLat + " TO " + maxLat + ")";
+    StringBuilder b = new StringBuilder();
+    b.append("GeoRect(lon=");
+    b.append(minLon);
+    b.append(" TO ");
+    b.append(maxLon);
+    if (maxLon < minLon) {
+      b.append(" (crosses dateline!)");
+    }
+    b.append(" lat=");
+    b.append(minLat);
+    b.append(" TO ");
+    b.append(maxLat);
+    b.append(")");
+
+    return b.toString();
   }
 }

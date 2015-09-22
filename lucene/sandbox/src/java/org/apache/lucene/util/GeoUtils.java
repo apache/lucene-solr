@@ -75,8 +75,8 @@ public final class GeoUtils {
   }
 
   public static double compare(final double v1, final double v2) {
-    final double compare = v1-v2;
-    return Math.abs(compare) <= TOLERANCE ? 0 : compare;
+    final double delta = v1-v2;
+    return Math.abs(delta) <= TOLERANCE ? 0 : delta;
   }
 
   /**
@@ -107,6 +107,7 @@ public final class GeoUtils {
     return (off <= 180 ? off : 360-off) - 90;
   }
 
+  // nocommit need javadoc about the dateline here?
   public static boolean bboxContains(final double lon, final double lat, final double minLon,
                                      final double minLat, final double maxLon, final double maxLat) {
     return (compare(lon, minLon) >= 0 && compare(lon, maxLon) <= 0
