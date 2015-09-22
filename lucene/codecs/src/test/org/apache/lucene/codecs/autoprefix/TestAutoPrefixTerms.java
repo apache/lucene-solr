@@ -60,6 +60,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automata;
@@ -547,7 +548,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     public void finish(int expectedNumHits, int maxPrefixCount) {
 
       if (maxPrefixCount != -1) {
-        // Auto-terms were used in this test
+        // Auto-prefix terms were used in this test
         long allowedMaxTerms;
 
         if (bounds.length == 1) {
@@ -572,6 +573,25 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
           }
 
           allowedMaxTerms = maxPrefixCount * (long) ((minTerm.length-commonPrefix) + (maxTerm.length-commonPrefix));
+          if (commonPrefix == 0) {
+            int min;
+            if (minTerm.length == 0) {
+              min = 0;
+            } else {
+              min = minTerm.bytes[minTerm.offset] & 0xff;
+            }
+            int max;
+            if (maxTerm.length == 0) {
+              max = 0;
+            } else {
+              max = maxTerm.bytes[maxTerm.offset] & 0xff;
+            }
+            if (max > min) {
+              // When maxPrefixCount is small (< 16), each byte of the term can require more than one "level" of auto-prefixing:
+              // NOTE: this is still only approximate ... it's tricky to get a closed form max bound that's "tight"
+              allowedMaxTerms += MathUtil.log(max-min, maxPrefixCount);
+            }
+          }
         }
 
         assertTrue("totTermCount=" + totTermCount + " is > allowedMaxTerms=" + allowedMaxTerms, totTermCount <= allowedMaxTerms);
@@ -587,7 +607,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
         }
 
         if (maxPrefixCount != -1) {
-          // Auto-terms were used in this test
+          // Auto-prefix terms were used in this test
 
           int sumLeftoverSuffix = 0;
           for(BytesRef bound : bounds) {
