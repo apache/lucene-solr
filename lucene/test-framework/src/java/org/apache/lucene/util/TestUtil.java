@@ -1282,7 +1282,7 @@ public final class TestUtil {
     } else {
       try {
         return br.utf8ToString() + " " + br.toString();
-      } catch (IllegalArgumentException t) {
+      } catch (AssertionError | IllegalArgumentException t) {
         // If BytesRef isn't actually UTF8, or it's eg a
         // prefix of UTF8 that ends mid-unicode-char, we
         // fallback to hex:
