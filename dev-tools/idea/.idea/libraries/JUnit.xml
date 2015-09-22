@@ -2,7 +2,7 @@
   <library name="JUnit">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lucene/test-framework/lib/junit-4.10.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lucene/test-framework/lib/randomizedtesting-runner-2.1.13.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lucene/test-framework/lib/randomizedtesting-runner-2.1.17.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

@@ -152,6 +152,8 @@ Bug Fixes
 
 Other
 
+* LUCENE-6812: Upgrade RandomizedTesting to 2.1.17. (Dawid Weiss)
+
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
   (Uwe Schindler, Dawid Weiss)
 
