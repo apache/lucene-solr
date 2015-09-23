@@ -57,27 +57,18 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     int worldHeight = (int) Math.round(world.getHeight());
     int deltaTop = nextIntInclusive(worldHeight);
     int deltaBottom = nextIntInclusive(worldHeight - deltaTop);
-
-    double rectMinX = world.getMinX() + deltaLeft;
-    double rectMaxX = world.getMaxX() - deltaRight;
-    if (ctx.isGeo()) {
-      int shift = 0;
-      if ((deltaLeft != 0 || deltaRight != 0)) {
-        //if geo & doesn't world-wrap, we shift randomly to potentially cross dateline
-        shift = nextIntInclusive(360);
-      }
-      rectMinX = DistanceUtils.normLonDEG(rectMinX + shift);
-      rectMaxX = DistanceUtils.normLonDEG(rectMaxX + shift);
-      if (rectMinX == 180 && rectMaxX == 180) {
-        // Work-around for https://github.com/spatial4j/spatial4j/issues/85
-        rectMinX = -180;
-        rectMaxX = -180;
-      }
+    if (ctx.isGeo() && (deltaLeft != 0 || deltaRight != 0)) {
+      //if geo & doesn't world-wrap, we shift randomly to potentially cross dateline
+      int shift = nextIntInclusive(360);
+      return ctx.makeRectangle(
+          DistanceUtils.normLonDEG(world.getMinX() + deltaLeft + shift),
+          DistanceUtils.normLonDEG(world.getMaxX() - deltaRight + shift),
+          world.getMinY() + deltaBottom, world.getMaxY() - deltaTop);
+    } else {
+      return ctx.makeRectangle(
+          world.getMinX() + deltaLeft, world.getMaxX() - deltaRight,
+          world.getMinY() + deltaBottom, world.getMaxY() - deltaTop);
     }
-    return ctx.makeRectangle(
-        rectMinX,
-        rectMaxX,
-        world.getMinY() + deltaBottom, world.getMaxY() - deltaTop);
   }
 
   /** next int, inclusive, rounds to multiple of 10 if given evenly divisible. */

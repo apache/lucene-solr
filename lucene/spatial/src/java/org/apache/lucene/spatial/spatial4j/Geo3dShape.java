@@ -62,6 +62,11 @@ public class Geo3dShape implements Shape {
   }
 
   @Override
+  public SpatialContext getContext() {
+    return ctx;
+  }
+
+  @Override
   public SpatialRelation relate(Shape other) {
     if (other instanceof Rectangle)
       return relate((Rectangle)other);
