@@ -210,6 +210,9 @@ Bug Fixes
 * SOLR-8058: Fix the exclusion filter so that collections that start with js, css, img, tpl
   can be accessed. (Upayavira, Steve Rowe, Anshum Gupta)
 
+* SOLR-8069: Ensure that only the valid ZooKeeper registered leader can put a replica into Leader 
+  Initiated Recovery. (Mark Miller, Jessica Cheng, Anshum Gupta)
+
 Optimizations
 ----------------------
 

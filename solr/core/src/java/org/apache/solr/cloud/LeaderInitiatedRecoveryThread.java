@@ -13,6 +13,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
   protected String shardId;
   protected ZkCoreNodeProps nodeProps;
   protected int maxTries;
-  protected String leaderCoreNodeName;
+  private CoreDescriptor leaderCd;
   
   public LeaderInitiatedRecoveryThread(ZkController zkController, 
                                        CoreContainer cc, 
@@ -62,7 +63,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
                                        String shardId, 
                                        ZkCoreNodeProps nodeProps,
                                        int maxTries,
-                                       String leaderCoreNodeName)
+                                       CoreDescriptor leaderCd)
   {
     super("LeaderInitiatedRecoveryThread-"+nodeProps.getCoreName());
     this.zkController = zkController;
@@ -71,8 +72,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
     this.shardId = shardId;    
     this.nodeProps = nodeProps;
     this.maxTries = maxTries;
-    this.leaderCoreNodeName = leaderCoreNodeName;
-    
+    this.leaderCd = leaderCd;
     setDaemon(true);
   }
   
@@ -171,7 +171,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
   protected void updateLIRState(String replicaCoreNodeName) {
     zkController.updateLeaderInitiatedRecoveryState(collection,
         shardId,
-        replicaCoreNodeName, Replica.State.DOWN, leaderCoreNodeName, true);
+        replicaCoreNodeName, Replica.State.DOWN, leaderCd, true);
   }
 
   protected void sendRecoveryCommandWithRetry() throws Exception {    
@@ -257,6 +257,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
           break;
         }
 
+        String leaderCoreNodeName = leaderCd.getCloudDescriptor().getCoreNodeName();
         // stop trying if I'm no longer the leader
         if (leaderCoreNodeName != null && collection != null) {
           String leaderCoreNodeNameFromZk = null;
@@ -270,6 +271,13 @@ public class LeaderInitiatedRecoveryThread extends Thread {
             log.warn("Stop trying to send recovery command to downed replica core=" + coreNeedingRecovery +
                 ",coreNodeName=" + replicaCoreNodeName + " on " + replicaNodeName + " because " +
                 leaderCoreNodeName + " is no longer the leader! New leader is " + leaderCoreNodeNameFromZk);
+            continueTrying = false;
+            break;
+          }
+          if (!leaderCd.getCloudDescriptor().isLeader()) {
+            log.warn("Stop trying to send recovery command to downed replica core=" + coreNeedingRecovery +
+                ",coreNodeName=" + replicaCoreNodeName + " on " + replicaNodeName + " because " +
+                leaderCoreNodeName + " is no longer the leader!");
             continueTrying = false;
             break;
           }
@@ -297,9 +305,9 @@ public class LeaderInitiatedRecoveryThread extends Thread {
                   " on node "+replicaNodeName+" ack'd the leader initiated recovery state, "
                       + "no need to keep trying to send recovery command");
             } else {
-              String leaderCoreNodeName = zkStateReader.getLeaderRetry(collection, shardId, 5000).getName();
+              String lcnn = zkStateReader.getLeaderRetry(collection, shardId, 5000).getName();
               List<ZkCoreNodeProps> replicaProps = 
-                  zkStateReader.getReplicaProps(collection, shardId, leaderCoreNodeName);
+                  zkStateReader.getReplicaProps(collection, shardId, lcnn);
               if (replicaProps != null && replicaProps.size() > 0) {
                 for (ZkCoreNodeProps prop : replicaProps) {
                   final Replica replica = (Replica) prop.getNodeProps();
