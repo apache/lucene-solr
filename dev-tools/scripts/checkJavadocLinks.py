@@ -17,7 +17,7 @@ import traceback
 import os
 import sys
 import re
-from html.parser import HTMLParser, HTMLParseError
+from html.parser import HTMLParser
 import urllib.parse as urlparse
 
 reHyperlink = re.compile(r'<a(\s+.*?)>', re.I)
@@ -109,7 +109,8 @@ def parse(baseURL, html):
   try:
     parser.feed(html)
     parser.close()
-  except HTMLParseError:
+  except:
+    # TODO: Python's html.parser is now always lenient, which is no good for us: we want correct HTML in our javadocs
     parser.printFile()
     print('  WARNING: failed to parse %s:' % baseURL)
     traceback.print_exc(file=sys.stdout)
