@@ -212,6 +212,8 @@ Bug Fixes
 
 * SOLR-8069: Ensure that only the valid ZooKeeper registered leader can put a replica into Leader 
   Initiated Recovery. (Mark Miller, Jessica Cheng, Anshum Gupta)
+  
+* SOLR-8077: Replication can still cause index corruption. (Mark Miller)
 
 Optimizations
 ----------------------
