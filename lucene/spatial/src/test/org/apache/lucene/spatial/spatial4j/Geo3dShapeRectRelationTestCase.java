@@ -22,10 +22,12 @@ import java.util.List;
 import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.spatial4j.core.TestLog;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.RectIntersectionTestHelper;
 import org.apache.lucene.geo3d.LatLonBounds;
 import org.apache.lucene.geo3d.GeoBBox;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
@@ -44,7 +46,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
   protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
 
   @Rule
-  public final LogRule testLog = LogRule.instance;
+  public final TestLog testLog = TestLog.instance;
 
   protected static Random random() {
     return RandomizedContext.current().getRandom();
@@ -91,15 +93,26 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       super(ctx);
     }
 
-    @Override
-    protected int getMaxLaps() {
-      //sometimes, getWithinMinimum needs some more attempts then normal; 20k is suggested max.
-      return 200_000;//200k
+    //20 times each -- should be plenty
+
+    protected int getContainsMinimum(int laps) {
+      return 20;
     }
 
-    @Override
-    protected int getDefaultMinimumPredicateFrequency(int maxLaps) {
-      return 20;//20 times each -- should be plenty in 200k
+    protected int getIntersectsMinimum(int laps) {
+      return 20;
+    }
+
+    protected int getWithinMinimum(int laps) {
+      return 20;
+    }
+
+    protected int getDisjointMinimum(int laps) {
+      return 20;
+    }
+
+    protected int getBoundingMinimum(int laps) {
+      return 20;
     }
   }
 

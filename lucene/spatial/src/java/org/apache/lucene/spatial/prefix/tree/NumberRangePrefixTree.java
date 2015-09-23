@@ -266,6 +266,11 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       lastLevelInCommon = level - 1;
     }
 
+    @Override
+    public SpatialContext getContext() {
+      return DUMMY_CTX;
+    }
+
     public UnitNRShape getMinUnit() { return minLV; }
 
     public UnitNRShape getMaxUnit() { return maxLV; }
@@ -951,6 +956,11 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       term.length = myLastLen;
       nrCell.term.length = otherLastLen;
       return answer;
+    }
+
+    @Override
+    public SpatialContext getContext() {
+      return DUMMY_CTX;
     }
 
     @Override

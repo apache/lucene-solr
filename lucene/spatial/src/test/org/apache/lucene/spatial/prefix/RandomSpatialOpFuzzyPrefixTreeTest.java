@@ -447,7 +447,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     final boolean biasContainsThenWithin;
 
     public ShapePair(Shape shape1, Shape shape2, boolean containsThenWithin) {
-      super(Arrays.asList(shape1, shape2), ctx);
+      super(Arrays.asList(shape1, shape2), RandomSpatialOpFuzzyPrefixTreeTest.this.ctx);
       this.shape1 = shape1;
       this.shape2 = shape2;
       this.shape1_2D = toNonGeo(shape1);

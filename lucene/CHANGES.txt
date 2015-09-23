@@ -150,6 +150,10 @@ Bug Fixes
   handling a tragic exception but another is still committing (Mike
   McCandless)
 
+* LUCENE-6810: Upgrade to Spatial4j 0.5 -- fixes some edge-case bugs in the
+  spatial module. See https://github.com/locationtech/spatial4j/blob/master/CHANGES.md
+  (David Smiley)
+
 Other
 
 * LUCENE-6812: Upgrade RandomizedTesting to 2.1.17. (Dawid Weiss)
