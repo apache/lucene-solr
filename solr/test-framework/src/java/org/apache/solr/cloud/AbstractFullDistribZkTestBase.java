@@ -1125,7 +1125,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       boolean active = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
       if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
-          failMessage = shard + " is not consistent.  Got " + lastNum + " from " + lastJetty.url + "lastClient"
+          failMessage = shard + " is not consistent.  Got " + lastNum + " from " + lastJetty.url + " (previous client)"
               + " and got " + num + " from " + cjetty.url;
 
           if (!expectFailure || verbose) {
