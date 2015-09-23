@@ -282,6 +282,9 @@ Other Changes
 
 * SOLR-8066: SolrCore.checkStale method doesn't restore interrupt status. (shalin)
 
+* SOLR-8068: Throw a SolrException if the core container has initialization errors or is
+  shutting down (Ishan Chattopadhyaya, Noble Paul, Anshum Gupta)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

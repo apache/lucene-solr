@@ -182,6 +182,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if (!(request instanceof HttpServletRequest)) return;
 
+    if (cores == null || cores.isShutDown()) {
+      log.error("Error processing the request. CoreContainer is either not initialized or shutting down.");
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+          "Error processing the request. CoreContainer is either not initialized or shutting down.");
+    }
+
     AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();
     if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
       return;
