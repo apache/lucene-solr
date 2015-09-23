@@ -938,8 +938,11 @@ public class IndexFetcher {
     boolean success = false;
     try {
       if (slowFileExists(indexDir, fname)) {
-        LOG.info("Skipping move file - it already exists:" + fname);
-        return true;
+        LOG.warn("Cannot complete replication attempt because file already exists:" + fname);
+        
+        // we fail - we downloaded the files we need, if we can't move one in, we can't
+        // count on the correct index
+        return false;
       }
     } catch (IOException e) {
       SolrException.log(LOG, "could not check if a file exists", e);
