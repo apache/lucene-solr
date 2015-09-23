@@ -1,5 +1,7 @@
 package org.apache.solr.cloud;
 
+import java.util.Properties;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,8 +25,10 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
@@ -57,13 +61,29 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     assertNotNull(notLeader);
     Replica replica = cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, notLeader.coreNodeName);
     ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(replica);
+    
+    MockCoreDescriptor cd = new MockCoreDescriptor() {
+      public CloudDescriptor getCloudDescriptor() {
+        return new CloudDescriptor(shardToLeaderJetty.get(SHARD1).info.getStr(ZkStateReader.CORE_NAME_PROP), new Properties(), this) {
+          @Override
+          public String getCoreNodeName() {
+            return shardToLeaderJetty.get(SHARD1).info.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+          }
+          @Override
+          public boolean isLeader() {
+            return true;
+          }
+        };
+      }
+    };
 
     /*
      1. Test that publishDownState throws exception when zkController.isReplicaInRecoveryHandling == false
       */
     try {
+      
       LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-          DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, leaderCoreNodeName);
+          DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd);
       assertFalse(zkController.isReplicaInRecoveryHandling(replicaCoreNodeProps.getCoreUrl()));
       thread.run();
       fail("publishDownState should not have succeeded because replica url is not marked in leader initiated recovery in ZkController");
@@ -76,7 +96,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
      2. Test that a non-live replica cannot be put into LIR or down state
       */
     LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, leaderCoreNodeName);
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd);
     // kill the replica
     int children = cloudClient.getZkStateReader().getZkClient().getChildren("/live_nodes", null, true).size();
     ChaosMonkey.stop(notLeader.jetty);
@@ -107,7 +127,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     waitForRecoveriesToFinish(true);
 
     thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, leaderCoreNodeName) {
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", new KeeperException.ConnectionLossException());
@@ -122,7 +142,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
      4. Test that if ZK connection loss or session expired then thread should not attempt to publish down state even if forcePublish=true
       */
     thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, leaderCoreNodeName) {
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", new KeeperException.SessionExpiredException());
@@ -137,7 +157,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
      5. Test that any exception other then ZK connection loss or session expired should publish down state only if forcePublish=true
       */
     thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, leaderCoreNodeName) {
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "bogus exception");
@@ -171,11 +191,12 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     /*
     6. Test that non-leader cannot set LIR nodes
      */
+    
     filter = (SolrDispatchFilter) notLeader.jetty.getDispatchFilter().getFilter();
     zkController = filter.getCores().getZkController();
 
     thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, leaderCoreNodeName) {
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, filter.getCores().getCores().iterator().next().getCoreDescriptor()) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
         try {
@@ -197,7 +218,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     filter = (SolrDispatchFilter) leaderRunner.jetty.getDispatchFilter().getFilter();
     zkController = filter.getCores().getZkController();
     thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, leaderCoreNodeName);
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, filter.getCores().getCores().iterator().next().getCoreDescriptor());
     thread.publishDownState(replicaCoreNodeProps.getCoreName(), replica.getName(), replica.getNodeName(), replicaCoreNodeProps.getCoreUrl(), false);
     timeOut = new TimeOut(30, TimeUnit.SECONDS);
     while (!timeOut.hasTimedOut()) {

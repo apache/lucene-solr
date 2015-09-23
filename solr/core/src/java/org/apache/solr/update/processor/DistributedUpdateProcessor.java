@@ -886,7 +886,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 collection,
                 shardId,
                 stdNode.getNodeProps(),
-                leaderCoreNodeName,
+                req.getCore().getCoreDescriptor(),
                 false /* forcePublishState */
             );
           } catch (Exception exc) {

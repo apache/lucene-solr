@@ -43,7 +43,7 @@ public class CloudDescriptor {
   volatile Slice.State shardState = Slice.State.ACTIVE;
   volatile String shardParent = null;
 
-  volatile boolean isLeader = false;
+  private volatile boolean isLeader = false;
   volatile Replica.State lastPublished = Replica.State.ACTIVE;
 
   public static final String NUM_SHARDS = "numShards";

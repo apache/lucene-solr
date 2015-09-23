@@ -468,7 +468,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               }
               
               zkController.ensureReplicaInLeaderInitiatedRecovery(cc,
-                  collection, shardId, coreNodeProps, coreNodeName,
+                  collection, shardId, coreNodeProps, core.getCoreDescriptor(),
                   false /* forcePublishState */);
             }              
           }

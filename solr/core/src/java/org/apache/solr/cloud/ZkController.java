@@ -1205,7 +1205,7 @@ public final class ZkController {
           if (state == Replica.State.ACTIVE) {
             // trying to become active, so leader-initiated state must be recovering
             if (lirState == Replica.State.RECOVERING) {
-              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.ACTIVE, null, true);
+              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.ACTIVE, cd, true);
             } else if (lirState == Replica.State.DOWN) {
               throw new SolrException(ErrorCode.INVALID_STATE,
                   "Cannot publish state of core '" + cd.getName() + "' as active without recovering first!");
@@ -1213,7 +1213,7 @@ public final class ZkController {
           } else if (state == Replica.State.RECOVERING) {
             // if it is currently DOWN, then trying to enter into recovering state is good
             if (lirState == Replica.State.DOWN) {
-              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.RECOVERING, null, true);
+              updateLeaderInitiatedRecoveryState(collection, shardId, coreNodeName, Replica.State.RECOVERING, cd, true);
             }
           }
         }
@@ -1988,7 +1988,7 @@ public final class ZkController {
   public boolean ensureReplicaInLeaderInitiatedRecovery(
       final CoreContainer container,
       final String collection, final String shardId, final ZkCoreNodeProps replicaCoreProps,
-      String leaderCoreNodeName, boolean forcePublishState)
+      CoreDescriptor leaderCd, boolean forcePublishState)
       throws KeeperException, InterruptedException {
     final String replicaUrl = replicaCoreProps.getCoreUrl();
 
@@ -2027,7 +2027,7 @@ public final class ZkController {
                 shardId,
                 replicaCoreProps,
                 120,
-                leaderCoreNodeName); // core node name of current leader
+                leaderCd);
         ExecutorService executor = container.getUpdateShardHandler().getUpdateExecutor();
         try {
           MDC.put("DistributedUpdateProcessor.replicaUrlToRecover", replicaCoreProps.getCoreUrl());
@@ -2122,14 +2122,19 @@ public final class ZkController {
   }
 
   public void updateLeaderInitiatedRecoveryState(String collection, String shardId, String coreNodeName,
-      Replica.State state, String leaderCoreNodeName, boolean retryOnConnLoss) {
+      Replica.State state, CoreDescriptor leaderCd, boolean retryOnConnLoss) {
     if (collection == null || shardId == null || coreNodeName == null) {
       log.warn("Cannot set leader-initiated recovery state znode to "
           + state.toString() + " using: collection=" + collection
           + "; shardId=" + shardId + "; coreNodeName=" + coreNodeName);
       return; // if we don't have complete data about a core in cloud mode, do nothing
     }
+    
+    assert leaderCd != null;
+    assert leaderCd.getCloudDescriptor() != null;
 
+    String leaderCoreNodeName = leaderCd.getCloudDescriptor().getCoreNodeName();
+    
     String znodePath = getLeaderInitiatedRecoveryZnodePath(collection, shardId, coreNodeName);
 
     if (state == Replica.State.ACTIVE) {
@@ -2165,7 +2170,7 @@ public final class ZkController {
 
     try {
       if (state == Replica.State.DOWN) {
-        markShardAsDownIfLeader(collection, shardId, leaderCoreNodeName, znodePath, znodeData, retryOnConnLoss);
+        markShardAsDownIfLeader(collection, shardId, leaderCd, znodePath, znodeData, retryOnConnLoss);
       } else {
         // must retry on conn loss otherwise future election attempts may assume wrong LIR state
         if (zkClient.exists(znodePath, true)) {
@@ -2191,18 +2196,36 @@ public final class ZkController {
    * in ZK. This ensures that a long running network partition caused by GC etc
    * doesn't let us mark a node as down *after* we've already lost our session
    */
-  private void markShardAsDownIfLeader(String collection, String shardId, String leaderCoreNodeName,
+  private void markShardAsDownIfLeader(String collection, String shardId, CoreDescriptor leaderCd,
                                        String znodePath, byte[] znodeData,
                                        boolean retryOnConnLoss) throws KeeperException, InterruptedException {
-    String leaderSeqPath = getLeaderSeqPath(collection, leaderCoreNodeName);
-    if (leaderSeqPath == null) {
-      throw new NotLeaderException(ErrorCode.SERVER_ERROR,
-          "Failed to update data to 'down' for znode: " + znodePath +
-              " because the zookeeper leader sequence for leader: " + leaderCoreNodeName + " is null");
+    
+
+    if (!leaderCd.getCloudDescriptor().isLeader()) {
+      log.info("No longer leader, aborting attempt to mark shard down as part of LIR");
+      throw new NotLeaderException(ErrorCode.SERVER_ERROR, "Locally, we do not think we are the leader.");
     }
+    
+    ContextKey key = new ContextKey(collection, leaderCd.getCloudDescriptor().getCoreNodeName());
+    ElectionContext context = electionContexts.get(key);
+    
+    // we make sure we locally think we are the leader before and after getting the context - then
+    // we only try zk if we still think we are the leader and have our leader context
+    if (context == null || !leaderCd.getCloudDescriptor().isLeader()) {
+      log.info("No longer leader, aborting attempt to mark shard down as part of LIR");
+      throw new NotLeaderException(ErrorCode.SERVER_ERROR, "Locally, we do not think we are the leader.");
+    }
+    
+    // we think we are the leader - get the expected shard leader version
+    // we use this version and multi to ensure *only* the current zk registered leader
+    // for a shard can put a replica into LIR
+    
+    Integer leaderZkNodeParentVersion = ((ShardLeaderElectionContextBase)context).leaderZkNodeParentVersion;
+    
+    // TODO: should we do this optimistically to avoid races?
     if (zkClient.exists(znodePath, retryOnConnLoss)) {
       List<Op> ops = new ArrayList<>(2);
-      ops.add(Op.check(leaderSeqPath, -1)); // version doesn't matter, the seq path is unique
+      ops.add(Op.check(new org.apache.hadoop.fs.Path(((ShardLeaderElectionContextBase)context).leaderPath).getParent().toString(), leaderZkNodeParentVersion));
       ops.add(Op.setData(znodePath, znodeData, -1));
       zkClient.multi(ops, retryOnConnLoss);
     } else {
@@ -2212,8 +2235,10 @@ public final class ZkController {
       } catch (KeeperException.NodeExistsException nee) {
         // if it exists, that's great!
       }
+      
+      // we only create the entry if the context we are using is registered as the current leader in ZK
       List<Op> ops = new ArrayList<>(2);
-      ops.add(Op.check(leaderSeqPath, -1)); // version doesn't matter, the seq path is unique
+      ops.add(Op.check(new org.apache.hadoop.fs.Path(((ShardLeaderElectionContextBase)context).leaderPath).getParent().toString(), leaderZkNodeParentVersion));
       ops.add(Op.create(znodePath, znodeData, zkClient.getZkACLProvider().getACLsToAdd(znodePath),
           CreateMode.PERSISTENT));
       zkClient.multi(ops, retryOnConnLoss);
