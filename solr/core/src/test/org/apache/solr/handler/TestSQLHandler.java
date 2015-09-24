@@ -28,7 +28,14 @@ import com.facebook.presto.sql.tree.Statement;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.After;
@@ -89,6 +96,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     testBasicSelect();
     testBasicGrouping();
     testBasicGroupingFacets();
+    testAggregatesWithoutGrouping();
     testSQLException();
     testTimeSeriesGrouping();
     testTimeSeriesGroupingFacet();
@@ -807,6 +815,138 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       delete();
     }
   }
+
+
+  private void testAggregatesWithoutGrouping() throws Exception {
+
+    CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+    del("*:*");
+
+    commit();
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    Map params = new HashMap();
+    params.put(CommonParams.QT, "/sql");
+    params.put("sql", "select count(*), sum(a_i), min(a_i), max(a_i), avg(a_i), sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1");
+
+    SolrStream solrStream = new SolrStream(jetty.url, params);
+
+
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assert(tuples.size() == 1);
+
+    //Test Long and Double Sums
+
+    Tuple tuple = tuples.get(0);
+
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
+
+    assertTrue(sumi.longValue() == 70);
+    assertTrue(sumf.doubleValue() == 55.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 7.0D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 10);
+
+
+    // Test where clause hits
+
+    params = new HashMap();
+    params.put(CommonParams.QT, "/sql");
+    params.put("sql", "select count(*), sum(a_i), min(a_i), max(a_i), avg(a_i), sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1 where id = 2");
+
+    solrStream = new SolrStream(jetty.url, params);
+
+    tuples = getTuples(solrStream);
+
+    assert(tuples.size() == 1);
+
+    tuple = tuples.get(0);
+
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(sumi.longValue() == 2);
+    assertTrue(sumf.doubleValue() == 2.0D);
+    assertTrue(mini == 2);
+    assertTrue(minf == 2);
+    assertTrue(maxi == 2);
+    assertTrue(maxf == 2);
+    assertTrue(avgi.doubleValue() == 2.0D);
+    assertTrue(avgf.doubleValue() == 2.0);
+    assertTrue(count.doubleValue() == 1);
+
+
+    // Test zero hits
+
+    params = new HashMap();
+    params.put(CommonParams.QT, "/sql");
+    params.put("sql", "select count(*), sum(a_i), min(a_i), max(a_i), avg(a_i), sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
+
+    solrStream = new SolrStream(jetty.url, params);
+
+    tuples = getTuples(solrStream);
+
+    assert(tuples.size() == 1);
+
+    tuple = tuples.get(0);
+
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(sumi.longValue() == 0);
+    assertTrue(sumf.doubleValue() == 0.0D);
+    assertTrue(mini == null);
+    assertTrue(minf == null);
+    assertTrue(maxi == null);
+    assertTrue(maxf == null);
+    assertTrue(Double.isNaN(avgi));
+    assertTrue(Double.isNaN(avgf));
+    assertTrue(count.doubleValue() == 0);
+
+    del("*:*");
+    commit();
+  }
+
 
 
 

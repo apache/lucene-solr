@@ -575,6 +575,73 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     assert(t.getException().contains("undefined field:"));
   }
 
+
+  private void testStatsStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    String zkHost = zkServer.getZkAddress();
+
+    Map paramsA = mapParams("q", "*:*");
+
+    Metric[] metrics = {new SumMetric("a_i"),
+                        new SumMetric("a_f"),
+                        new MinMetric("a_i"),
+                        new MinMetric("a_f"),
+                        new MaxMetric("a_i"),
+                        new MaxMetric("a_f"),
+                        new MeanMetric("a_i"),
+                        new MeanMetric("a_f"),
+                        new CountMetric()};
+
+    StatsStream statsStream = new StatsStream(zkHost,
+                                              "collection1",
+                                              paramsA,
+                                              metrics);
+
+    List<Tuple> tuples = getTuples(statsStream);
+
+    assert(tuples.size() == 1);
+
+    //Test Long and Double Sums
+
+    Tuple tuple = tuples.get(0);
+
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
+
+    assertTrue(sumi.longValue() == 70);
+    assertTrue(sumf.doubleValue() == 55.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 7.0D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 10);
+
+    del("*:*");
+    commit();
+  }
+
   private void testFacetStream() throws Exception {
 
     indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
@@ -1701,6 +1768,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     testZeroReducerStream();
     testFacetStream();
     testSubFacetStream();
+    testStatsStream();
     //testExceptionStream();
     testParallelEOF();
     testParallelUniqueStream();

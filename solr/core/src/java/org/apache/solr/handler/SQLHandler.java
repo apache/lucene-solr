@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import com.facebook.presto.sql.ExpressionFormatter;
@@ -39,15 +38,16 @@ import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,7 +56,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -291,6 +290,12 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static TupleStream doSelect(SQLVisitor sqlVisitor) throws IOException {
     List<String> fields = sqlVisitor.fields;
+    Set<String> fieldSet = new HashSet();
+    Metric[] metrics = getMetrics(fields, fieldSet);
+    if(metrics.length > 0) {
+      return doAggregates(sqlVisitor, metrics);
+    }
+
     StringBuilder flbuf = new StringBuilder();
     boolean comma = false;
 
@@ -394,6 +399,28 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     return true;
+  }
+
+  private static TupleStream doAggregates(SQLVisitor sqlVisitor, Metric[] metrics) throws IOException {
+
+    if(metrics.length != sqlVisitor.fields.size()) {
+      throw new IOException("Only aggregate functions are allowed when group by is not specified.");
+    }
+
+    TableSpec tableSpec = new TableSpec(sqlVisitor.table, defaultZkhost);
+
+    String zkHost = tableSpec.zkHost;
+    String collection = tableSpec.collection;
+    Map<String, String> params = new HashMap();
+
+    params.put(CommonParams.Q, sqlVisitor.query);
+
+    TupleStream tupleStream = new StatsStream(zkHost,
+                                              collection,
+                                              params,
+                                              metrics);
+
+    return tupleStream;
   }
 
   private static String bucketSort(Bucket[] buckets, String dir) {

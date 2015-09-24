@@ -71,6 +71,11 @@ public class Tuple implements Cloneable {
 
   public Long getLong(Object key) {
     Object o = this.fields.get(key);
+
+    if(o == null) {
+      return null;
+    }
+
     if(o instanceof Long) {
       return (Long)o;
     } else {
@@ -81,6 +86,11 @@ public class Tuple implements Cloneable {
 
   public Double getDouble(Object key) {
     Object o = this.fields.get(key);
+
+    if(o == null) {
+      return null;
+    }
+
     if(o instanceof Double) {
       return (Double)o;
     } else {

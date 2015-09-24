@@ -190,7 +190,12 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public long getLong(String columnLabel) throws SQLException {
-    return tuple.getLong(columnLabel);
+    Long l =  tuple.getLong(columnLabel);
+    if(l == null) {
+      return 0;
+    } else {
+      return l.longValue();
+    }
   }
 
   @Override
@@ -200,7 +205,12 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public double getDouble(String columnLabel) throws SQLException {
-    return tuple.getDouble(columnLabel);
+    Double d = tuple.getDouble(columnLabel);
+    if(d == null) {
+      return 0.0D;
+    } else {
+      return d.doubleValue();
+    }
   }
 
   @Override
