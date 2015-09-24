@@ -139,7 +139,7 @@ public class Dictionary {
   // when set, some words have exceptional stems, and the last entry is a pointer to stemExceptions
   boolean hasStemExceptions;
   
-  private final Path tempDir = OfflineSorter.defaultTempDir(); // TODO: make this configurable?
+  private final Path tempDir = OfflineSorter.getDefaultTempDir(); // TODO: make this configurable?
   
   boolean ignoreCase;
   boolean complexPrefixes;

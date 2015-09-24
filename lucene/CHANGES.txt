@@ -154,6 +154,18 @@ Bug Fixes
   spatial module. See https://github.com/locationtech/spatial4j/blob/master/CHANGES.md
   (David Smiley)
 
+* LUCENE-6813: OfflineSorter no longer removes its output Path up
+  front, and instead opens it for write with the
+  StandardCopyOption.REPLACE_EXISTING to overwrite any prior file, so
+  that callers can safely use Files.createTempFile for the output.
+  This change also fixes OfflineSorter's default temp directory when
+  running tests to use mock filesystems so e.g. we detect file handle
+  leaks (Dawid Weiss, Robert Muir, Mike McCandless)
+
+* LUCENE-6813: RangeTreeWriter was failing to close all file handles
+  it opened, leading to intermittent failures on Windows (Dawid Weiss,
+  Robert Muir, Mike McCandless)
+
 Other
 
 * LUCENE-6812: Upgrade RandomizedTesting to 2.1.17. (Dawid Weiss)

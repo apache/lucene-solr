@@ -81,7 +81,6 @@ class RangeTreeWriter {
   private GrowingHeapSliceWriter heapWriter;
 
   private Path tempInput;
-  private Path tempDir;
   private final int maxValuesInLeafNode;
   private final int maxValuesSortInHeap;
 
@@ -121,11 +120,8 @@ class RangeTreeWriter {
   /** If the current segment has too many points then we switchover to temp files / offline sort. */
   private void switchToOffline() throws IOException {
 
-    // OfflineSorter isn't thread safe, but our own private tempDir works around this:
-    tempDir = Files.createTempDirectory(OfflineSorter.defaultTempDir(), RangeTreeWriter.class.getSimpleName());
-
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    tempInput = tempDir.resolve("in");
+    tempInput = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "in", "");
     writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     for(int i=0;i<valueCount;i++) {
       scratchBytesOutput.reset(scratchBytes);
@@ -251,7 +247,7 @@ class RangeTreeWriter {
     } else {
 
       // Offline sort:
-      assert tempDir != null;
+      assert tempInput != null;
 
       final ByteArrayDataInput reader = new ByteArrayDataInput();
       Comparator<BytesRef> cmp = new Comparator<BytesRef>() {
@@ -284,10 +280,10 @@ class RangeTreeWriter {
         }
       };
 
-      Path sorted = tempDir.resolve("sorted");
+      Path sorted = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "sorted", "");
       boolean success = false;
       try {
-        OfflineSorter sorter = new OfflineSorter(cmp, OfflineSorter.BufferSize.automatic(), tempDir, OfflineSorter.MAX_TEMPFILES);
+        OfflineSorter sorter = new OfflineSorter(cmp);
         sorter.sort(tempInput, sorted);
         SliceWriter writer = convertToFixedWidth(sorted);
         success = true;
@@ -387,12 +383,6 @@ class RangeTreeWriter {
     }
     out.writeLong(globalMaxValue);
 
-    if (tempDir != null) {
-      // If we had to go offline, we should have removed all temp files we wrote:
-      assert directoryIsEmpty(tempDir);
-      IOUtils.rm(tempDir);
-    }
-
     return indexFP;
   }
 
@@ -464,12 +454,15 @@ class RangeTreeWriter {
       // Cutover to heap:
       SliceWriter writer = new HeapSliceWriter((int) count);
       SliceReader reader = source.writer.getReader(source.start);
-      for(int i=0;i<count;i++) {
-        boolean hasNext = reader.next();
-        assert hasNext;
-        writer.append(reader.value(), reader.ord(), reader.docID());
+      try {
+        for(int i=0;i<count;i++) {
+          boolean hasNext = reader.next();
+          assert hasNext;
+          writer.append(reader.value(), reader.ord(), reader.docID());
+        }
+      } finally {
+        IOUtils.close(reader, writer);
       }
-      writer.close();
       source = new PathSlice(writer, 0, count);
     }
 
@@ -587,7 +580,7 @@ class RangeTreeWriter {
     if (count < maxValuesSortInHeap) {
       return new HeapSliceWriter((int) count);
     } else {
-      return new OfflineSliceWriter(tempDir, count);
+      return new OfflineSliceWriter(count);
     }
   }
 }

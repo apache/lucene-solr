@@ -55,8 +55,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// TODO: can test framework assert we don't leak temp files?
-
 public class TestBKDTree extends LuceneTestCase {
 
   private static boolean smallBBox;

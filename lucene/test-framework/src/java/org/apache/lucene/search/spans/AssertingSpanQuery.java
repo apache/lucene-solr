@@ -61,7 +61,7 @@ public class AssertingSpanQuery extends SpanQuery {
 
   @Override
   public Query clone() {
-    return new AssertingSpanQuery((SpanQuery) in);
+    return new AssertingSpanQuery(in);
   }
 
   @Override

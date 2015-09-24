@@ -57,8 +57,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// TODO: can test framework assert we don't leak temp files?
-
 public class TestRangeTree extends LuceneTestCase {
 
   // Controls what range of values we randomly generate, so we sometimes test narrow ranges:
