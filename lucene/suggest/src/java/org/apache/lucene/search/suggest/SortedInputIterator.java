@@ -169,7 +169,7 @@ public class SortedInputIterator implements InputIterator {
   
   private ByteSequencesReader sort() throws IOException {
     String prefix = getClass().getSimpleName();
-    Path directory = OfflineSorter.defaultTempDir();
+    Path directory = OfflineSorter.getDefaultTempDir();
     tempInput = Files.createTempFile(directory, prefix, ".input");
     tempSorted = Files.createTempFile(directory, prefix, ".sorted");
     

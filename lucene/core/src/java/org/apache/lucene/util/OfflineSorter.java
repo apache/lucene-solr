@@ -48,6 +48,9 @@ import java.util.Locale;
  * @lucene.internal
  */
 public final class OfflineSorter {
+
+  private static Path DEFAULT_TEMP_DIR;
+
   /** Convenience constant for megabytes */
   public final static long MB = 1024 * 1024;
   /** Convenience constant for gigabytes */
@@ -179,21 +182,21 @@ public final class OfflineSorter {
   /**
    * Defaults constructor.
    * 
-   * @see #defaultTempDir()
+   * @see #getDefaultTempDir()
    * @see BufferSize#automatic()
    */
   public OfflineSorter() throws IOException {
-    this(DEFAULT_COMPARATOR, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
+    this(DEFAULT_COMPARATOR, BufferSize.automatic(), getDefaultTempDir(), MAX_TEMPFILES);
   }
   
   /**
    * Defaults constructor with a custom comparator.
    * 
-   * @see #defaultTempDir()
+   * @see #getDefaultTempDir()
    * @see BufferSize#automatic()
    */
   public OfflineSorter(Comparator<BytesRef> comparator) throws IOException {
-    this(comparator, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
+    this(comparator, BufferSize.automatic(), getDefaultTempDir(), MAX_TEMPFILES);
   }
 
   /**
@@ -222,7 +225,9 @@ public final class OfflineSorter {
     sortInfo = new SortInfo();
     sortInfo.totalTime = System.currentTimeMillis();
 
-    Files.deleteIfExists(output);
+    // NOTE: don't remove output here: its existence (often created by the caller
+    // up above using Files.createTempFile) prevents another concurrent caller
+    // of this API (from a different thread) from incorrectly re-using this file name
 
     ArrayList<Path> merges = new ArrayList<>();
     boolean success3 = false;
@@ -257,22 +262,16 @@ public final class OfflineSorter {
         }
         success = true;
       } finally {
-        if (success)
+        if (success) {
           IOUtils.close(is);
-        else
+        } else {
           IOUtils.closeWhileHandlingException(is);
+        }
       }
 
       // One partition, try to rename or copy if unsuccessful.
       if (merges.size() == 1) {     
-        Path single = merges.get(0);
-        // If simple rename doesn't work this means the output is
-        // on a different volume or something. Copy the input then.
-        try {
-          Files.move(single, output, StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException | UnsupportedOperationException e) {
-          Files.copy(single, output);
-        }
+        Files.move(merges.get(0), output, StandardCopyOption.REPLACE_EXISTING);
       } else { 
         // otherwise merge the partitions with a priority queue.
         mergePartitions(merges, output);
@@ -291,21 +290,31 @@ public final class OfflineSorter {
     return sortInfo;
   }
 
+  /** Used by test framework */
+  static void setDefaultTempDir(Path tempDir) {
+    DEFAULT_TEMP_DIR = tempDir;
+  }
+
   /**
    * Returns the default temporary directory. By default, java.io.tmpdir. If not accessible
    * or not available, an IOException is thrown
    */
-  public static Path defaultTempDir() throws IOException {
-    String tempDirPath = System.getProperty("java.io.tmpdir");
-    if (tempDirPath == null) 
-      throw new IOException("Java has no temporary folder property (java.io.tmpdir)?");
-
-    Path tempDirectory = Paths.get(tempDirPath);
-    if (!Files.isWritable(tempDirectory)) {
-      throw new IOException("Java's temporary folder not present or writeable?: " 
-          + tempDirectory.toAbsolutePath());
+  public synchronized static Path getDefaultTempDir() throws IOException {
+    if (DEFAULT_TEMP_DIR == null) {
+      // Lazy init
+      String tempDirPath = System.getProperty("java.io.tmpdir");
+      if (tempDirPath == null)  {
+        throw new IOException("Java has no temporary folder property (java.io.tmpdir)?");
+      }
+      Path tempDirectory = Paths.get(tempDirPath);
+      if (Files.isWritable(tempDirectory) == false) {
+        throw new IOException("Java's temporary folder not present or writeable?: " 
+                              + tempDirectory.toAbsolutePath());
+      }
+      DEFAULT_TEMP_DIR = tempDirectory;
     }
-    return tempDirectory;
+
+    return DEFAULT_TEMP_DIR;
   }
 
   /** Sort a single partition in-memory. */

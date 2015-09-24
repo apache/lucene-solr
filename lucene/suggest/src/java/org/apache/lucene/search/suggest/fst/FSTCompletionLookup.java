@@ -160,9 +160,9 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
     Path tempInput = Files.createTempFile(
-        OfflineSorter.defaultTempDir(), FSTCompletionLookup.class.getSimpleName(), ".input");
+        OfflineSorter.getDefaultTempDir(), FSTCompletionLookup.class.getSimpleName(), ".input");
     Path tempSorted = Files.createTempFile(
-        OfflineSorter.defaultTempDir(), FSTCompletionLookup.class.getSimpleName(), ".sorted");
+        OfflineSorter.getDefaultTempDir(), FSTCompletionLookup.class.getSimpleName(), ".sorted");
 
     OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     OfflineSorter.ByteSequencesReader reader = null;

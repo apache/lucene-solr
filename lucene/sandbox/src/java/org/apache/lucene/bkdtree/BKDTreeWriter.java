@@ -92,7 +92,6 @@ class BKDTreeWriter {
   private GrowingHeapLatLonWriter heapWriter;
 
   private Path tempInput;
-  private Path tempDir;
   private final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
 
@@ -143,11 +142,8 @@ class BKDTreeWriter {
   /** If the current segment has too many points then we switchover to temp files / offline sort. */
   private void switchToOffline() throws IOException {
 
-    // OfflineSorter isn't thread safe, but our own private tempDir works around this:
-    tempDir = Files.createTempDirectory(OfflineSorter.defaultTempDir(), BKDTreeWriter.class.getSimpleName());
-
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    tempInput = tempDir.resolve("in");
+    tempInput = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "in", "");
     writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     for(int i=0;i<pointCount;i++) {
       scratchBytesOutput.reset(scratchBytes);
@@ -293,7 +289,7 @@ class BKDTreeWriter {
     } else {
 
       // Offline sort:
-      assert tempDir != null;
+      assert tempInput != null;
 
       final ByteArrayDataInput reader = new ByteArrayDataInput();
       Comparator<BytesRef> cmp = new Comparator<BytesRef>() {
@@ -333,10 +329,11 @@ class BKDTreeWriter {
         }
       };
 
-      Path sorted = tempDir.resolve("sorted");
+      Path sorted = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "sorted", "");
       boolean success = false;
+      
       try {
-        OfflineSorter latSorter = new OfflineSorter(cmp, OfflineSorter.BufferSize.automatic(), tempDir, OfflineSorter.MAX_TEMPFILES);
+        OfflineSorter latSorter = new OfflineSorter(cmp);
         latSorter.sort(tempInput, sorted);
         LatLonWriter writer = convertToFixedWidth(sorted);
         success = true;
@@ -443,26 +440,7 @@ class BKDTreeWriter {
       out.writeVLong(leafBlockFPs[i]);
     }
 
-    if (tempDir != null) {
-      // If we had to go offline, we should have removed all temp files we wrote:
-      assert directoryIsEmpty(tempDir);
-      IOUtils.rm(tempDir);
-    }
-
     return indexFP;
-  }
-
-  // Called only from assert
-  private boolean directoryIsEmpty(Path in) {
-    try (DirectoryStream<Path> dir = Files.newDirectoryStream(in)) {
-      for (Path path : dir) {
-        assert false: "dir=" + in + " still has file=" + path;
-        return false;
-      }
-    } catch (IOException ioe) {
-      // Just ignore: we are only called from assert
-    }
-    return true;
   }
 
   /** Sliced reference to points in an OfflineSorter.ByteSequencesWriter file. */
@@ -835,7 +813,7 @@ class BKDTreeWriter {
     if (count < maxPointsSortInHeap) {
       return new HeapLatLonWriter((int) count);
     } else {
-      return new OfflineLatLonWriter(tempDir, count);
+      return new OfflineLatLonWriter(count);
     }
   }
 

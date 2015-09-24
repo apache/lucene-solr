@@ -113,6 +113,9 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     assert tempDirBase == null;
     fileSystem = initializeFileSystem();
     javaTempDir = initializeJavaTempDir();
+
+    // So all code using OfflineSorter (suggesters, BKD tree, NumericRangeTree) see MockFS goodness, e.g. catching leaked file handles:
+    OfflineSorter.setDefaultTempDir(javaTempDir);
   }
   
   // os/config-independent limit for too many open files

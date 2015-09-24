@@ -44,7 +44,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
    */
   public ExternalRefSorter(OfflineSorter sort) throws IOException {
     this.sort = sort;
-    this.input = Files.createTempFile(OfflineSorter.defaultTempDir(), "RefSorter-", ".raw");
+    this.input = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "RefSorter-", ".raw");
     this.writer = new OfflineSorter.ByteSequencesWriter(input);
   }
   
@@ -59,7 +59,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
     if (sorted == null) {
       closeWriter();
       
-      sorted = Files.createTempFile(OfflineSorter.defaultTempDir(), "RefSorter-", ".sorted");
+      sorted = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "RefSorter-", ".sorted");
       boolean success = false;
       try {
         sort.sort(input, sorted);

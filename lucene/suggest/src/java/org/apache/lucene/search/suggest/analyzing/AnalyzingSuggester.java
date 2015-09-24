@@ -396,7 +396,7 @@ public class AnalyzingSuggester extends Lookup {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
     String prefix = getClass().getSimpleName();
-    Path directory = OfflineSorter.defaultTempDir();
+    Path directory = OfflineSorter.getDefaultTempDir();
     Path tempInput = Files.createTempFile(directory, prefix, ".input");
     Path tempSorted = Files.createTempFile(directory, prefix, ".sorted");
 
