@@ -386,19 +386,6 @@ class RangeTreeWriter {
     return indexFP;
   }
 
-  // Called only from assert
-  private boolean directoryIsEmpty(Path in) {
-    try (DirectoryStream<Path> dir = Files.newDirectoryStream(in)) {
-      for (Path path : dir) {
-        assert false: "dir=" + in + " still has file=" + path;
-        return false;
-      }
-    } catch (IOException ioe) {
-      // Just ignore: we are only called from assert
-    }
-    return true;
-  }
-
   /** Sliced reference to points in an OfflineSorter.ByteSequencesWriter file. */
   private static final class PathSlice {
     final SliceWriter writer;
