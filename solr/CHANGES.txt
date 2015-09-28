@@ -8,6 +8,9 @@ caching, replication, and a web administration interface.
 
 See http://lucene.apache.org/solr for more information.
 
+==================  5.3.2 ==================
+(No Changes)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
