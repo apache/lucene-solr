@@ -287,6 +287,8 @@ Other Changes
 * SOLR-8068: Throw a SolrException if the core container has initialization errors or is
   shutting down (Ishan Chattopadhyaya, Noble Paul, Anshum Gupta)
 
+* SOLR-8083: Convert the ZookeeperInfoServlet to a handler at /admin/zookeeper (noble)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
