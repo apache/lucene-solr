@@ -169,6 +169,7 @@ public interface CommonParams {
   public static final String CONFIGSETS_HANDLER_PATH = "/admin/configs";
   public static final String AUTHZ_PATH = "/admin/authorization";
   public static final String AUTHC_PATH = "/admin/authentication";
+  public static final String ZK_PATH = "/admin/zookeeper";
 
   /** valid values for: <code>echoParams</code> */
   public enum EchoParamStyle {
