@@ -652,7 +652,6 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           if (cfg instanceof NamedList) {
             addSpellChecker(core, hasDefault, (NamedList) cfg);
           } else if (cfg instanceof Map) {
-            System.out.println("##mapspellchecker");//todo nocommit
             addSpellChecker(core, hasDefault, new NamedList((Map) cfg));
           } else if (cfg instanceof List) {
             for (Object o : (List) cfg) {
