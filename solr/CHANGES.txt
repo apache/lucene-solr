@@ -217,6 +217,9 @@ Bug Fixes
   
 * SOLR-8077: Replication can still cause index corruption. (Mark Miller)
 
+* SOLR-8104: Config API does not work for spellchecker (noble)
+
+
 Optimizations
 ----------------------
 

@@ -387,6 +387,28 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertNotNull("no object /config/initParams : "+ TestBlobHandler.getAsString(map) , l);
     assertEquals( 1, l.size());
     assertEquals( "val", ((Map)l.get(0)).get("key") );
+
+
+    payload = "{\n" +
+        "    'add-searchcomponent': {\n" +
+        "        'name': 'myspellcheck',\n" +
+        "        'class': 'solr.SpellCheckComponent',\n" +
+        "        'queryAnalyzerFieldType': 'text_general',\n" +
+        "        'spellchecker': {\n" +
+        "            'name': 'default',\n" +
+        "            'field': '_text_',\n" +
+        "            'class': 'solr.DirectSolrSpellChecker'\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    map = testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config?wt=json",
+        cloudSolrClient,
+        Arrays.asList("config", "searchComponent","myspellcheck", "spellchecker", "class"),
+        "solr.DirectSolrSpellChecker",
+        10);
   }
 
   public static Map testForResponseElement(RestTestHarness harness,
