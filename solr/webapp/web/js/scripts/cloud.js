@@ -91,7 +91,7 @@ var init_debug = function( cloud_element )
         $.ajax
         (
           {
-            url : app.config.solr_path + '/zookeeper?wt=json&dump=true',
+            url : app.config.solr_path + '/admin/zookeeper?wt=json&dump=true',
             dataType : 'text',
             context : debug_element,
             beforeSend : function( xhr, settings )
@@ -455,7 +455,7 @@ var prepare_graph = function( graph_element, callback )
   $.ajax
   (
     {
-      url : app.config.solr_path + '/zookeeper?wt=json&path=%2Flive_nodes',
+      url : app.config.solr_path + '/admin/zookeeper?wt=json&path=%2Flive_nodes',
       dataType : 'json',
       success : function( response, text_status, xhr )
       {
@@ -467,7 +467,7 @@ var prepare_graph = function( graph_element, callback )
 
         var start = $( '#cloudGraphPagingStart' ).val();
         var rows = $( '#cloudGraphPagingRows' ).val();
-        var clusterStateUrl = app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&view=graph';
+        var clusterStateUrl = app.config.solr_path + '/admin/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&view=graph';
         if (start && rows)
           clusterStateUrl += ('&start='+start+'&rows='+rows);
         
@@ -591,7 +591,7 @@ var init_tree = function( tree_element )
   $.ajax
   (
     {
-      url : app.config.solr_path + '/zookeeper?wt=json',
+      url : app.config.solr_path + '/admin/zookeeper?wt=json',
       dataType : 'json',
       context : tree_element,
       beforeSend : function( xhr, settings )
@@ -859,7 +859,7 @@ sammy.get
         $.ajax
         (
           {
-            url : app.config.solr_path + '/zookeeper?wt=json',
+            url : app.config.solr_path + '/admin/zookeeper?wt=json',
             dataType : 'json',
             context : cloud_element,
             success : function( response, text_status, xhr )

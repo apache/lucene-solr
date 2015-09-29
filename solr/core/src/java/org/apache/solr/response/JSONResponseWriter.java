@@ -42,7 +42,7 @@ import org.apache.solr.search.SolrReturnFields;
  */
 
 public class JSONResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_JSON_UTF8 = "application/json; charset=UTF-8";
+  public static String CONTENT_TYPE_JSON_UTF8 = "application/json; charset=UTF-8";
 
   private String contentType = CONTENT_TYPE_JSON_UTF8;
 

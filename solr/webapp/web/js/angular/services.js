@@ -60,7 +60,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Zookeeper',
   ['$resource', function($resource) {
-    return $resource('/solr/zookeeper', {wt:'json', _:Date.now()}, {
+    return $resource('/solr/admin/zookeeper', {wt:'json', _:Date.now()}, {
       "simple": {},
       "dump": {params: {dump: "true"}},
       "liveNodes": {params: {path: '/live_nodes'}},
