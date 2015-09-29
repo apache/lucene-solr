@@ -88,7 +88,6 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     }
   }
 
-  @Ignore
   @Test
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());

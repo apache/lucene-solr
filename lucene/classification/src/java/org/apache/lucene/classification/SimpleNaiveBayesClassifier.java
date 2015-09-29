@@ -150,8 +150,10 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     int docsWithClassSize = countDocsWithClass();
     while ((next = termsEnum.next()) != null) {
       if (next.length > 0) {
+        // We are passing the term to IndexSearcher so we need to make sure it will not change over time
+        next = BytesRef.deepCopyOf(next);
         double clVal = calculateLogPrior(next, docsWithClassSize) + calculateLogLikelihood(tokenizedDoc, next, docsWithClassSize);
-        dataList.add(new ClassificationResult<>(BytesRef.deepCopyOf(next), clVal));
+        dataList.add(new ClassificationResult<>(next, clVal));
       }
     }
 
