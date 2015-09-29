@@ -103,8 +103,9 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       return 20;
     }
 
+    // producing "within" cases in Geo3D based on our random shapes doesn't happen often. It'd be nice to increase this.
     protected int getWithinMinimum(int laps) {
-      return 20;
+      return 2;
     }
 
     protected int getDisjointMinimum(int laps) {
