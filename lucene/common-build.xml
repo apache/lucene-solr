@@ -2361,9 +2361,9 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.8"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.0"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
-    <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.AntTask" classpathref="forbidden-apis.classpath"/>
+    <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>
   </target>  
 
@@ -2392,12 +2392,14 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- applies to both source and test code -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
     <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
-      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
-      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
-      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
-        <include name="base.txt"/>
-        <include name="lucene.txt" if="forbidden-isLucene"/>
-      </signaturesFileSet>
+      <signatures>
+        <bundled name="jdk-unsafe-${javac.target}"/>
+        <bundled name="jdk-deprecated-${javac.target}"/>
+        <fileset dir="${common.dir}/tools/forbiddenApis">
+          <include name="base.txt"/>
+          <include name="lucene.txt" if="forbidden-isLucene"/>
+        </fileset>
+      </signatures>
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-base-excludes}"/>
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}" erroronmissingdir="false"/>
     </forbidden-apis>

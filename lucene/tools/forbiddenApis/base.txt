@@ -37,37 +37,3 @@ java.lang.Character#codePointAt(char[],int) @ Implicit end offset is error-prone
 java.io.File#delete() @ use Files.delete for real exception, IOUtils.deleteFilesIgnoringExceptions if you dont care
 
 java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instead so that it can be reproduced
-
-# START: forbidden-apis patch
-# TODO: remove this once forbidden-apis was updated to next version with following commit:
-# https://github.com/policeman-tools/forbidden-apis/commit/c34a02afcd7856478e9adfd32be2fc5bf82ca268
-
-@defaultMessage Uses default time zone
-java.time.LocalDateTime#now()
-java.time.LocalDate#now()
-java.time.LocalTime#now()
-java.time.OffsetDateTime#now()
-java.time.OffsetTime#now()
-java.time.Year#now()
-java.time.YearMonth#now()
-java.time.MonthDay#now()
-java.time.chrono.Chronology#dateNow()
-java.time.chrono.HijrahChronology#dateNow()
-java.time.chrono.JapaneseChronology#dateNow()
-java.time.chrono.MinguoChronology#dateNow()
-java.time.chrono.ThaiBuddhistChronology#dateNow()
-java.time.chrono.IsoChronology#dateNow()
-java.time.chrono.HijrahDate#now()
-java.time.chrono.JapaneseDate#now()
-java.time.chrono.MinguoDate#now()
-java.time.chrono.ThaiBuddhistDate#now()
-
-@defaultMessage Uses default locale
-java.time.format.DateTimeFormatterBuilder#toFormatter(java.time.format.ResolverStyle,java.time.chrono.Chronology)
-java.time.format.DateTimeFormatter#ofLocalizedDate(java.time.format.FormatStyle)
-java.time.format.DateTimeFormatter#ofLocalizedDateTime(java.time.format.FormatStyle,java.time.format.FormatStyle)
-java.time.format.DateTimeFormatter#ofLocalizedDateTime(java.time.format.FormatStyle)
-java.time.format.DateTimeFormatter#ofLocalizedTime(java.time.format.FormatStyle)
-java.time.format.DateTimeFormatter#ofPattern(java.lang.String)
-
-# END: forbidden-apis patch
