@@ -30,10 +30,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -122,17 +120,6 @@ public class PointVectorStrategy extends SpatialStrategy {
   @Override
   public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     return new DistanceValueSource(this, queryPoint, multiplier);
-  }
-
-  @Override
-  public Filter makeFilter(SpatialArgs args) {
-    //unwrap the CSQ from makeQuery
-    ConstantScoreQuery csq = makeQuery(args);
-    Query sub = csq.getQuery();
-    if (sub instanceof Filter)
-      return (Filter) sub;
-    else
-      return new QueryWrapperFilter(sub);
   }
 
   @Override

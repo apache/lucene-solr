@@ -31,12 +31,12 @@ import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.util.Bits;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -185,7 +185,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
       // coincides with a grid line due due to edge overlap issue for some grid implementations (geo & quad).
       return false;
     }
-    Filter filter = null; //FYI testing filtering of underlying PrefixTreeFacetCounter is done in another test
+    Bits filter = null; //FYI testing filtering of underlying PrefixTreeFacetCounter is done in another test
     //Calculate facets
     final int maxCells = 10_000;
     final HeatmapFacetCounter.Heatmap heatmap = HeatmapFacetCounter.calcFacets(
@@ -232,7 +232,7 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
   private int countMatchingDocsAtLevel(Point pt, int facetLevel) throws IOException {
     // we use IntersectsPrefixTreeFilter directly so that we can specify the level to go to exactly.
     RecursivePrefixTreeStrategy strategy = (RecursivePrefixTreeStrategy) this.strategy;
-    Filter filter = new IntersectsPrefixTreeFilter(
+    Query filter = new IntersectsPrefixTreeQuery(
         pt, strategy.getFieldName(), grid, facetLevel, grid.getMaxLevels());
     final TotalHitCountCollector collector = new TotalHitCountCollector();
     indexSearcher.search(filter, collector);

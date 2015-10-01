@@ -93,6 +93,10 @@ API Changes
 * LUCENE-6489: The various span payload queries have been moved to the queries
   submodule, and PayloadSpanUtil is now in sandbox. (Alan Woodward)
 
+* LUCENE-6650: The spatial module no longer uses Filter in any way.  All
+  spatial Filters are now subclass Query.  The spatial heatmap/facet API
+  now accepts a Bits parameter to filter counts. (David Smiley, Adrien Grand)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

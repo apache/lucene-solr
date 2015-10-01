@@ -35,10 +35,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.spatial.prefix.AbstractVisitingPrefixTreeFilter;
+import org.apache.lucene.spatial.prefix.AbstractVisitingPrefixTreeQuery;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
@@ -50,13 +49,13 @@ import org.apache.lucene.util.DocIdSetBuilder;
  */
 public class IntersectsRPTVerifyQuery extends Query {
 
-  private final IntersectsDifferentiatingFilter intersectsDiffFilter;
+  private final IntersectsDifferentiatingQuery intersectsDiffQuery;
   private final ValueSource predicateValueSource; // we call FunctionValues.boolVal(doc)
 
   public IntersectsRPTVerifyQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel,
                                   int prefixGridScanLevel, ValueSource predicateValueSource) {
     this.predicateValueSource = predicateValueSource;
-    this.intersectsDiffFilter = new IntersectsDifferentiatingFilter(queryShape, fieldName, grid, detailLevel,
+    this.intersectsDiffQuery = new IntersectsDifferentiatingQuery(queryShape, fieldName, grid, detailLevel,
         prefixGridScanLevel);
   }
 
@@ -72,7 +71,7 @@ public class IntersectsRPTVerifyQuery extends Query {
 
     IntersectsRPTVerifyQuery that = (IntersectsRPTVerifyQuery) o;
 
-    if (!intersectsDiffFilter.equals(that.intersectsDiffFilter)) return false;
+    if (!intersectsDiffQuery.equals(that.intersectsDiffQuery)) return false;
     return predicateValueSource.equals(that.predicateValueSource);
 
   }
@@ -80,7 +79,7 @@ public class IntersectsRPTVerifyQuery extends Query {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + intersectsDiffFilter.hashCode();
+    result = 31 * result + intersectsDiffQuery.hashCode();
     result = 31 * result + predicateValueSource.hashCode();
     return result;
   }
@@ -93,8 +92,8 @@ public class IntersectsRPTVerifyQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         // Compute approx & exact
-        final IntersectsDifferentiatingFilter.IntersectsDifferentiatingVisitor result =
-            intersectsDiffFilter.compute(context, null);
+        final IntersectsDifferentiatingQuery.IntersectsDifferentiatingVisitor result =
+            intersectsDiffQuery.compute(context);
         if (result.approxDocIdSet == null) {
           return null;
         }
@@ -138,24 +137,26 @@ public class IntersectsRPTVerifyQuery extends Query {
     };
   }
 
-  //This is a "Filter" but we don't use it as-such; the caller calls the constructor and then compute() and examines
+  //This may be a "Query" but we don't use it as-such; the caller calls the constructor and then compute() and examines
   // the results which consists of two parts -- the approximated results, and a subset of exact matches. The
   // difference needs to be verified.
-  // TODO refactor AVPTF to not be a Query/Filter?
-  private static class IntersectsDifferentiatingFilter extends AbstractVisitingPrefixTreeFilter {
+  // TODO refactor AVPTQ to not be a Query?
+  private static class IntersectsDifferentiatingQuery extends AbstractVisitingPrefixTreeQuery {
 
-    public IntersectsDifferentiatingFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid,
-                                           int detailLevel, int prefixGridScanLevel) {
+    public IntersectsDifferentiatingQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid,
+                                          int detailLevel, int prefixGridScanLevel) {
       super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel);
     }
 
-    IntersectsDifferentiatingFilter.IntersectsDifferentiatingVisitor compute(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      final IntersectsDifferentiatingFilter.IntersectsDifferentiatingVisitor result = new IntersectsDifferentiatingFilter.IntersectsDifferentiatingVisitor(context, acceptDocs);
+    IntersectsDifferentiatingQuery.IntersectsDifferentiatingVisitor compute(LeafReaderContext context)
+        throws IOException {
+      final IntersectsDifferentiatingQuery.IntersectsDifferentiatingVisitor result =
+          new IntersectsDifferentiatingQuery.IntersectsDifferentiatingVisitor(context);
       result.getDocIdSet();//computes
       return result;
     }
 
-    // TODO consider if IntersectsPrefixTreeFilter should simply do this and provide both sets
+    // TODO consider if IntersectsPrefixTreeQuery should simply do this and provide both sets
 
     class IntersectsDifferentiatingVisitor extends VisitorTemplate {
       DocIdSetBuilder approxBuilder = new DocIdSetBuilder(maxDoc);
@@ -165,8 +166,8 @@ public class IntersectsRPTVerifyQuery extends Query {
       DocIdSet exactDocIdSet;
       DocIdSet approxDocIdSet;
 
-      public IntersectsDifferentiatingVisitor(LeafReaderContext context, Bits acceptDocs) throws IOException {
-        super(context, acceptDocs);
+      public IntersectsDifferentiatingVisitor(LeafReaderContext context) throws IOException {
+        super(context);
       }
 
       @Override
@@ -188,7 +189,7 @@ public class IntersectsRPTVerifyQuery extends Query {
           }
           approxDocIdSet = approxBuilder.build();
         }
-        return null;//unused in this weird re-use of AVPTF
+        return null;//unused in this weird re-use of AVPTQ
       }
 
       @Override
@@ -218,7 +219,7 @@ public class IntersectsRPTVerifyQuery extends Query {
     }
 
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(LeafReaderContext context) throws IOException {
       throw new IllegalStateException();
     }
 

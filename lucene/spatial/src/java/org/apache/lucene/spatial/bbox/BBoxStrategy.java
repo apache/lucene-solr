@@ -17,21 +17,22 @@ package org.apache.lucene.spatial.bbox;
  * limitations under the License.
  */
 
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -40,10 +41,6 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
 
 
 /**
@@ -206,25 +203,21 @@ public class BBoxStrategy extends SpatialStrategy {
   }
 
   //---------------------------------
-  // Query / Filter Building
+  // Query Building
   //---------------------------------
 
-  @Override
-  public Filter makeFilter(SpatialArgs args) {
-    return new QueryWrapperFilter(makeSpatialQuery(args));
-  }
-
-  @Override
-  public ConstantScoreQuery makeQuery(SpatialArgs args) {
-    return new ConstantScoreQuery(makeSpatialQuery(args));
-  }
-
-//  Utility on SpatialStrategy?
+  //  Utility on SpatialStrategy?
 //  public Query makeQueryWithValueSource(SpatialArgs args, ValueSource valueSource) {
-//    return new FilteredQuery(new FunctionQuery(valueSource), makeFilter(args));
+//    return new CustomScoreQuery(makeQuery(args), new FunctionQuery(valueSource));
+  //or...
+//  return new BooleanQuery.Builder()
+//      .add(new FunctionQuery(valueSource), BooleanClause.Occur.MUST)//matches everything and provides score
+//      .add(filterQuery, BooleanClause.Occur.FILTER)//filters (score isn't used)
+//  .build();
 //  }
 
-  private Query makeSpatialQuery(SpatialArgs args) {
+  @Override
+  public Query makeQuery(SpatialArgs args) {
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle))
       throw new UnsupportedOperationException("Can only query by Rectangle, not " + shape);
@@ -245,7 +238,7 @@ public class BBoxStrategy extends SpatialStrategy {
     else { //no Overlaps support yet
         throw new UnsupportedSpatialOperation(op);
     }
-    return spatial;
+    return new ConstantScoreQuery(spatial);
   }
 
   /**

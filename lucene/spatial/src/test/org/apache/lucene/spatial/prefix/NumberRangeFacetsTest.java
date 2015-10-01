@@ -25,10 +25,11 @@ import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeStrategy.Facets;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -36,6 +37,8 @@ import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -110,8 +113,8 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
         detailLevel = -1 * detailLevel;
       }
 
-      //Randomly pick a filter
-      Filter filter = null;
+      //Randomly pick a filter/acceptDocs
+      Bits topAcceptDocs = null;
       List<Integer> acceptFieldIds = new ArrayList<>();
       if (usually()) {
         //get all possible IDs into a list, random shuffle it, then randomly choose how many of the first we use to
@@ -129,21 +132,22 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
           for (Integer acceptDocId : acceptFieldIds) {
             terms.add(new Term("id", acceptDocId.toString()));
           }
-          filter = new QueryWrapperFilter(new TermsQuery(terms));
+
+          topAcceptDocs = searchForDocBits(new TermsQuery(terms));
         }
       }
 
       //Lets do it!
       NumberRangePrefixTree.NRShape facetRange = tree.toRangeShape(tree.toShape(leftCal), tree.toShape(rightCal));
       Facets facets = ((NumberRangePrefixTreeStrategy) strategy)
-          .calcFacets(indexSearcher.getTopReaderContext(), filter, facetRange, detailLevel);
+          .calcFacets(indexSearcher.getTopReaderContext(), topAcceptDocs, facetRange, detailLevel);
 
       //System.out.println("Q: " + queryIdx + " " + facets);
 
       //Verify results. We do it by looping over indexed shapes and reducing the facet counts.
       Shape facetShapeRounded = facetRange.roundToLevel(detailLevel);
       for (int indexedShapeId = 0; indexedShapeId < indexedShapes.size(); indexedShapeId++) {
-        if (filter != null && !acceptFieldIds.contains(indexedShapeId)) {
+        if (topAcceptDocs != null && !acceptFieldIds.contains(indexedShapeId)) {
           continue;// this doc was filtered out via acceptDocs
         }
         Shape indexedShape = indexedShapes.get(indexedShapeId);
@@ -205,6 +209,29 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
       }
 
     }
+  }
+
+  private Bits searchForDocBits(Query query) throws IOException {
+    FixedBitSet bitSet = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
+    indexSearcher.search(query,
+        new SimpleCollector() {
+          int leafDocBase;
+          @Override
+          public void collect(int doc) throws IOException {
+            bitSet.set(leafDocBase + doc);
+          }
+
+          @Override
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
+            leafDocBase = context.docBase;
+          }
+
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
+        });
+    return bitSet;
   }
 
   private void preQueryHavoc() {

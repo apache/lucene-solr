@@ -17,11 +17,12 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -32,9 +33,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
@@ -47,8 +48,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
 
 /**
  * This class serves as example code to show how to use the Lucene spatial
@@ -151,8 +150,8 @@ public class SpatialExample extends LuceneTestCase {
       //note: SpatialArgs can be parsed from a string
       SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,
           ctx.makeCircle(-80.0, 33.0, DistanceUtils.dist2Degrees(200, DistanceUtils.EARTH_MEAN_RADIUS_KM)));
-      Filter filter = strategy.makeFilter(args);
-      TopDocs docs = indexSearcher.search(filter, 10, idSort);
+      Query query = strategy.makeQuery(args);
+      TopDocs docs = indexSearcher.search(query, 10, idSort);
       assertDocMatchedIds(indexSearcher, docs, 2);
       //Now, lets get the distance for the 1st doc via computing from stored point value:
       // (this computation is usually not redundant)

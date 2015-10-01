@@ -27,15 +27,17 @@ import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 
 /**
  * Computes spatial facets in two dimensions as a grid of numbers.  The data is often visualized as a so-called
  * "heatmap", hence the name.
+ *
+ * @lucene.experimental
  */
 public class HeatmapFacetCounter {
   //TODO where should this code live? It could go to PrefixTreeFacetCounter, or maybe here in its own class is fine.
@@ -78,19 +80,16 @@ public class HeatmapFacetCounter {
    * uses when approximating what level to go to when indexing a shape given a distErrPct.
    *
    * @param context the IndexReader's context
-   * @param filter a Filter to limit counted docs. For optimal performance, it's
-   *               {@link org.apache.lucene.search.DocIdSet#bits()} should be non-null. If no filter is provided, live
-   *               docs are counted.
-   * @param inputShape the shape to gather grid squares for; typically a {@link com.spatial4j.core.shape.Rectangle}.
+   * @param topAcceptDocs a Bits to limit counted docs.  If null, live docs are counted.
+   * @param inputShape the shape to gather grid squares for; typically a {@link Rectangle}.
    *                   The <em>actual</em> heatmap area will usually be larger since the cells on the edge that overlap
    *                   are returned. We always return a rectangle of integers even if the inputShape isn't a rectangle
    *                   -- the non-intersecting cells will all be 0.
    *                   If null is given, the entire world is assumed.
    * @param facetLevel the target depth (detail) of cells.
    * @param maxCells the maximum number of cells to return. If the cells exceed this count, an
-   *                 IllegalArgumentException is thrown.
    */
-  public static Heatmap calcFacets(PrefixTreeStrategy strategy, IndexReaderContext context, Filter filter,
+  public static Heatmap calcFacets(PrefixTreeStrategy strategy, IndexReaderContext context, Bits topAcceptDocs,
                                    Shape inputShape, final int facetLevel, int maxCells) throws IOException {
     if (maxCells > (MAX_ROWS_OR_COLUMNS * MAX_ROWS_OR_COLUMNS)) {
       throw new IllegalArgumentException("maxCells (" + maxCells + ") should be <= " + MAX_ROWS_OR_COLUMNS);
@@ -153,7 +152,7 @@ public class HeatmapFacetCounter {
     Map<Rectangle,Integer> ancestors = new HashMap<>();
 
     //Now lets count some facets!
-    PrefixTreeFacetCounter.compute(strategy, context, filter, inputShape, facetLevel,
+    PrefixTreeFacetCounter.compute(strategy, context, topAcceptDocs, inputShape, facetLevel,
         new PrefixTreeFacetCounter.FacetVisitor() {
       @Override
       public void visit(Cell cell, int count) {

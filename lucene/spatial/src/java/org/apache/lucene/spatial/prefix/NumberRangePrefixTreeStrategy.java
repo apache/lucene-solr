@@ -28,9 +28,9 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
+import org.apache.lucene.util.Bits;
 
 import static org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 
@@ -72,13 +72,13 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
   /** Calculates facets between {@code start} and {@code end} to a detail level one greater than that provided by the
    * arguments. For example providing March to October of 2014 would return facets to the day level of those months.
    * This is just a convenience method.
-   * @see #calcFacets(IndexReaderContext, Filter, Shape, int)
+   * @see #calcFacets(IndexReaderContext, Bits, Shape, int)
    */
-  public Facets calcFacets(IndexReaderContext context, Filter filter, UnitNRShape start, UnitNRShape end)
+  public Facets calcFacets(IndexReaderContext context, Bits topAcceptDocs, UnitNRShape start, UnitNRShape end)
       throws IOException {
     Shape facetRange = getGrid().toRangeShape(start, end);
     int detailLevel = Math.max(start.getLevel(), end.getLevel()) + 1;
-    return calcFacets(context, filter, facetRange, detailLevel);
+    return calcFacets(context, topAcceptDocs, facetRange, detailLevel);
   }
 
   /**
@@ -88,10 +88,10 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
    * {@link org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape#getLevel()}.
    * Facet computation is implemented by navigating the underlying indexed terms efficiently.
    */
-  public Facets calcFacets(IndexReaderContext context, Filter filter, Shape facetRange, final int level)
+  public Facets calcFacets(IndexReaderContext context, Bits topAcceptDocs, Shape facetRange, final int level)
       throws IOException {
     final Facets facets = new Facets(level);
-    PrefixTreeFacetCounter.compute(this, context, filter, facetRange, level,
+    PrefixTreeFacetCounter.compute(this, context, topAcceptDocs, facetRange, level,
         new PrefixTreeFacetCounter.FacetVisitor() {
           Facets.FacetParentVal parentFacet;
           UnitNRShape parentShape;

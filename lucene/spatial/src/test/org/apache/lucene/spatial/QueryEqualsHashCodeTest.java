@@ -80,12 +80,6 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     testEqualsHashcode(args1, args2, new ObjGenerator() {
       @Override
       public Object gen(SpatialArgs args) {
-        return strategy.makeFilter(args);
-      }
-    });
-    testEqualsHashcode(args1, args2, new ObjGenerator() {
-      @Override
-      public Object gen(SpatialArgs args) {
         return strategy.makeDistanceValueSource(args.getShape().getCenter());
       }
     });

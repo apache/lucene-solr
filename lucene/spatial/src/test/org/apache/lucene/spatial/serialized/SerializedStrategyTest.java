@@ -17,15 +17,13 @@ package org.apache.lucene.spatial.serialized;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import com.spatial4j.core.context.SpatialContext;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialMatchConcern;
-import org.apache.lucene.spatial.SpatialTestQuery;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class SerializedStrategyTest extends StrategyTestCase {
 
@@ -40,12 +38,6 @@ public class SerializedStrategyTest extends StrategyTestCase {
   @Override
   protected boolean needsDocValues() {
     return (strategy instanceof SerializedDVStrategy);
-  }
-
-  //called by StrategyTestCase; we can't let it call our makeQuery which will UOE ex.
-  @Override
-  protected Query makeQuery(SpatialTestQuery q) {
-    return strategy.makeFilter(q.args);
   }
 
   @Test
