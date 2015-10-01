@@ -294,6 +294,8 @@ Other Changes
 
 * SOLR-8083: Convert the ZookeeperInfoServlet to a handler at /admin/zookeeper (noble)
 
+* SOLR-8025: remove unnecessary ResponseBuilder.getQueryCommand() calls (Christine Poerschke)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
