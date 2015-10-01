@@ -219,6 +219,8 @@ Bug Fixes
 
 * SOLR-8104: Config API does not work for spellchecker (noble)
 
+* SOLR-8095: Allow disabling HDFS Locality Metrics and disable by default as it may have performance
+  implications on rapidly changing indexes. (Mike Drob via Mark Miller)
 
 Optimizations
 ----------------------

@@ -187,6 +187,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     props.put(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr");
     props.put(HdfsDirectoryFactory.BLOCKCACHE_ENABLED, "false");
     props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
+    props.put(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED, "true");
     factory.init(new NamedList<>(props));
     
     Iterator<SolrInfoMBean> it = factory.offerMBeans().iterator();
