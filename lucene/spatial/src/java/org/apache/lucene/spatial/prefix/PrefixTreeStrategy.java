@@ -29,12 +29,12 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
+import org.apache.lucene.util.Bits;
 
 /**
  * An abstract SpatialStrategy based on {@link SpatialPrefixTree}. The two
@@ -75,7 +75,7 @@ import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
  * configuration item is {@link #setDistErrPct(double)} which balances
  * shape precision against scalability.  See those javadocs.
  *
- * @lucene.internal
+ * @lucene.experimental
  */
 public abstract class PrefixTreeStrategy extends SpatialStrategy {
   protected final SpatialPrefixTree grid;
@@ -200,10 +200,10 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
    * Computes spatial facets in two dimensions as a grid of numbers.  The data is often visualized as a so-called
    * "heatmap".
    *
-   * @see org.apache.lucene.spatial.prefix.HeatmapFacetCounter#calcFacets(PrefixTreeStrategy, org.apache.lucene.index.IndexReaderContext, org.apache.lucene.search.Filter, com.spatial4j.core.shape.Shape, int, int)
+   * @see HeatmapFacetCounter#calcFacets(PrefixTreeStrategy, IndexReaderContext, Bits, Shape, int, int)
    */
-  public HeatmapFacetCounter.Heatmap calcFacets(IndexReaderContext context, Filter filter,
+  public HeatmapFacetCounter.Heatmap calcFacets(IndexReaderContext context, Bits topAcceptDocs,
                                    Shape inputShape, final int facetLevel, int maxCells) throws IOException {
-    return HeatmapFacetCounter.calcFacets(this, context, filter, inputShape, facetLevel, maxCells);
+    return HeatmapFacetCounter.calcFacets(this, context, topAcceptDocs, inputShape, facetLevel, maxCells);
   }
 }

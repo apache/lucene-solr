@@ -17,22 +17,20 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.queries.CustomScoreQuery;
-import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.spatial.SpatialStrategy;
-import org.apache.lucene.spatial.query.SpatialArgs;
-import org.apache.lucene.spatial.query.SpatialOperation;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
+import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.SpatialStrategy;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
 
 /**
  * Reads spatial data from the body field docs from an internally created {@link LineDocSource}.
@@ -101,19 +99,16 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
     if (!Double.isNaN(distErrPct))
       args.setDistErrPct(distErrPct);
 
+    Query filterQuery = strategy.makeQuery(args);
     if (score) {
+      //wrap with distance computing query
       ValueSource valueSource = strategy.makeDistanceValueSource(shape.getCenter());
-      return new CustomScoreQuery(strategy.makeQuery(args), new FunctionQuery(valueSource));
+      return new BooleanQuery.Builder()
+          .add(new FunctionQuery(valueSource), BooleanClause.Occur.MUST)//matches everything and provides score
+          .add(filterQuery, BooleanClause.Occur.FILTER)//filters (score isn't used)
+          .build();
     } else {
-      //strategy.makeQuery() could potentially score (isn't well defined) so instead we call
-      // makeFilter() and wrap
-
-      Filter filter = strategy.makeFilter(args);
-      if (filter instanceof QueryWrapperFilter) {
-        return ((QueryWrapperFilter)filter).getQuery();
-      } else {
-        return new ConstantScoreQuery(filter);
-      }
+      return filterQuery; // assume constant scoring
     }
   }
 

@@ -28,7 +28,6 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -36,27 +35,26 @@ import org.apache.lucene.util.BytesRef;
  * visitor design patterns for subclasses to guide the traversal and collect
  * matching documents.
  * <p>
- * Subclasses implement {@link #getDocIdSet(org.apache.lucene.index.LeafReaderContext,
- * org.apache.lucene.util.Bits)} by instantiating a custom {@link
- * VisitorTemplate} subclass (i.e. an anonymous inner class) and implement the
- * required methods.
+ * Subclasses implement {@link #getDocIdSet(org.apache.lucene.index.LeafReaderContext)}
+ * by instantiating a custom {@link VisitorTemplate} subclass (i.e. an anonymous inner class)
+ * and implement the required methods.
  *
  * @lucene.internal
  */
-public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTreeFilter {
+public abstract class AbstractVisitingPrefixTreeQuery extends AbstractPrefixTreeQuery {
 
-  //Historical note: this code resulted from a refactoring of RecursivePrefixTreeFilter,
+  //Historical note: this code resulted from a refactoring of RecursivePrefixTreeQuery,
   // which in turn came out of SOLR-2155
 
-  //This class perhaps could have been implemented in terms of FilteredTermsEnum & MultiTermQuery
-  //  & MultiTermQueryWrapperFilter.  Maybe so for simple Intersects predicate but not for when we want to collect terms
+  //This class perhaps could have been implemented in terms of FilteredTermsEnum & MultiTermQuery.
+  //  Maybe so for simple Intersects predicate but not for when we want to collect terms
   //  differently depending on cell state like IsWithin and for fuzzy/accurate collection planned improvements.  At
   //  least it would just make things more complicated.
 
   protected final int prefixGridScanLevel;//at least one less than grid.getMaxLevels()
 
-  public AbstractVisitingPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid,
-                                          int detailLevel, int prefixGridScanLevel) {
+  public AbstractVisitingPrefixTreeQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid,
+                                         int detailLevel, int prefixGridScanLevel) {
     super(queryShape, fieldName, grid, detailLevel);
     this.prefixGridScanLevel = Math.max(0, Math.min(prefixGridScanLevel, grid.getMaxLevels() - 1));
     assert detailLevel <= grid.getMaxLevels();
@@ -66,8 +64,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
    * An abstract class designed to make it easy to implement predicates or
    * other operations on a {@link SpatialPrefixTree} indexed field. An instance
    * of this class is not designed to be re-used across LeafReaderContext
-   * instances so simply create a new one for each call to, say a {@link
-   * org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.LeafReaderContext, org.apache.lucene.util.Bits)}.
+   * instances so simply create a new one per-leaf.
    * The {@link #getDocIdSet()} method here starts the work. It first checks
    * that there are indexed terms; if not it quickly returns null. Then it calls
    * {@link #start()} so a subclass can set up a return value, like an
@@ -112,8 +109,8 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     private BytesRef thisTerm;//the result of termsEnum.term()
     private Cell indexedCell;//Cell wrapper of thisTerm. Always updated when thisTerm is.
 
-    public VisitorTemplate(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      super(context, acceptDocs);
+    public VisitorTemplate(LeafReaderContext context) throws IOException {
+      super(context);
     }
 
     public DocIdSet getDocIdSet() throws IOException {

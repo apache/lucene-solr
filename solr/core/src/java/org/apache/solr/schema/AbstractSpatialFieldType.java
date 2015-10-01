@@ -43,8 +43,8 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -331,17 +331,13 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     T strategy = getStrategy(field.getName());
 
     SolrParams localParams = parser.getLocalParams();
+    //See SOLR-2883 needScore
     String scoreParam = (localParams == null ? null : localParams.get(SCORE_PARAM));
 
     //We get the valueSource for the score then the filter and combine them.
-
     ValueSource valueSource = getValueSourceFromSpatialArgs(parser, field, spatialArgs, scoreParam, strategy);
     if (valueSource == null) {
-      //FYI Solr FieldType doesn't have a getFilter(). We'll always grab
-      // getQuery() but it's possible a strategy has a more efficient getFilter
-      // that could be wrapped -- no way to know.
-      //See SOLR-2883 needScore
-      return strategy.makeQuery(spatialArgs); //ConstantScoreQuery
+      return strategy.makeQuery(spatialArgs); //assumed constant scoring
     }
 
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
@@ -349,8 +345,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     if (localParams != null && !localParams.getBool(FILTER_PARAM, true))
       return functionQuery;
 
-    Filter filter = strategy.makeFilter(spatialArgs);
-    return new FilteredQuery(functionQuery, filter);
+    Query filterQuery = strategy.makeQuery(spatialArgs);
+    return new BooleanQuery.Builder()
+        .add(functionQuery, BooleanClause.Occur.MUST)//matches everything and provides score
+        .add(filterQuery, BooleanClause.Occur.FILTER)//filters (score isn't used)
+        .build();
   }
 
   @Override

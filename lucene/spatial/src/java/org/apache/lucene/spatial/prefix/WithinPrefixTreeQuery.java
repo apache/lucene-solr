@@ -49,7 +49,7 @@ import org.apache.lucene.util.FixedBitSet;
  *
  * @lucene.experimental
  */
-public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
+public class WithinPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
   //TODO LUCENE-4869: implement faster algorithm based on filtering out false-positives of a
   //  minimal query buffer by looking in a DocValues cache holding a representative
   //  point of each disjoint component of a document's shape(s).
@@ -60,14 +60,14 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
   private final Shape bufferedQueryShape;//if null then the whole world
 
   /**
-   * See {@link AbstractVisitingPrefixTreeFilter#AbstractVisitingPrefixTreeFilter(com.spatial4j.core.shape.Shape, String, org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree, int, int)}.
+   * See {@link AbstractVisitingPrefixTreeQuery#AbstractVisitingPrefixTreeQuery(com.spatial4j.core.shape.Shape, String, org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree, int, int)}.
    * {@code queryBuffer} is the (minimum) distance beyond the query shape edge
    * where non-matching documents are looked for so they can be excluded. If
    * -1 is used then the whole world is examined (a good default for correctness).
    */
-  public WithinPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid,
-                                int detailLevel, int prefixGridScanLevel,
-                                double queryBuffer) {
+  public WithinPrefixTreeQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid,
+                               int detailLevel, int prefixGridScanLevel,
+                               double queryBuffer) {
     super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel);
     this.bufferedQueryShape = queryBuffer == -1 ? null : bufferShape(queryShape, queryBuffer);
   }
@@ -76,7 +76,7 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
   public boolean equals(Object o) {
     if (!super.equals(o)) return false;//checks getClass == o.getClass & instanceof
 
-    WithinPrefixTreeFilter that = (WithinPrefixTreeFilter) o;
+    WithinPrefixTreeQuery that = (WithinPrefixTreeQuery) o;
 
     if (bufferedQueryShape != null ? !bufferedQueryShape.equals(that.bufferedQueryShape) : that.bufferedQueryShape != null)
       return false;
@@ -93,7 +93,7 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
   
   @Override
   public String toString(String field) {
-    return "WithinPrefixTreeFilter(" +
+    return getClass().getSimpleName() + "(" +
              "fieldName=" + fieldName + "," +
              "queryShape=" + queryShape + "," +
              "detailLevel=" + detailLevel + "," +
@@ -147,8 +147,8 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
 
 
   @Override
-  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    return new VisitorTemplate(context, acceptDocs) {
+  protected DocIdSet getDocIdSet(LeafReaderContext context) throws IOException {
+    return new VisitorTemplate(context) {
       private FixedBitSet inside;
       private FixedBitSet outside;
 

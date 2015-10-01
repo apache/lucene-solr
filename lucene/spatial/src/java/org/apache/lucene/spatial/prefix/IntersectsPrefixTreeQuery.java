@@ -26,25 +26,24 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
- * A Filter matching documents that have an {@link SpatialRelation#INTERSECTS}
+ * A Query matching documents that have an {@link SpatialRelation#INTERSECTS}
  * (i.e. not DISTINCT) relationship with a provided query shape.
  *
  * @lucene.internal
  */
-public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
+public class IntersectsPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
 
-  public IntersectsPrefixTreeFilter(Shape queryShape, String fieldName,
-                                    SpatialPrefixTree grid, int detailLevel,
-                                    int prefixGridScanLevel) {
+  public IntersectsPrefixTreeQuery(Shape queryShape, String fieldName,
+                                   SpatialPrefixTree grid, int detailLevel,
+                                   int prefixGridScanLevel) {
     super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel);
   }
 
   @Override
-  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+  protected DocIdSet getDocIdSet(LeafReaderContext context) throws IOException {
     /* Possible optimizations (in IN ADDITION TO THOSE LISTED IN VISITORTEMPLATE):
 
     * If docFreq is 1 (or < than some small threshold), then check to see if we've already
@@ -54,7 +53,7 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
     * Point query shape optimization when the only indexed data is a point (no leaves).  Result is a term query.
 
      */
-    return new VisitorTemplate(context, acceptDocs) {
+    return new VisitorTemplate(context) {
       private FixedBitSet results;
 
       @Override
@@ -86,7 +85,7 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
 
   @Override
   public String toString(String field) {
-    return "IntersectsPrefixTreeFilter(" +
+    return getClass().getSimpleName() + "(" +
         "fieldName=" + fieldName + "," +
         "queryShape=" + queryShape + "," +
         "detailLevel=" + detailLevel + "," +

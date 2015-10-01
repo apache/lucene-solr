@@ -153,7 +153,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     doTest(SpatialOperation.Contains);
   }
 
-  /** See LUCENE-5062, {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  /** See LUCENE-5062, {@link ContainsPrefixTreeQuery#multiOverlappingIndexedShapes}. */
   @Test
   public void testContainsPairOverlap() throws IOException {
     setupQuadGrid(3, randomBoolean());

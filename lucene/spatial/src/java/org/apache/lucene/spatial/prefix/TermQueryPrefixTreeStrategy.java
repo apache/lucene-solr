@@ -23,8 +23,7 @@ import java.util.List;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.queries.TermsQuery;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -69,7 +68,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args) {
+  public Query makeQuery(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
     if (op != SpatialOperation.Intersects)
       throw new UnsupportedSpatialOperation(op);
@@ -107,7 +106,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
     }
     //unfortunately TermsQuery will needlessly sort & dedupe
     //TODO an automatonQuery might be faster?
-    return new QueryWrapperFilter(new TermsQuery(getFieldName(), terms));
+    return new TermsQuery(getFieldName(), terms);
   }
 
 }

@@ -23,7 +23,7 @@ import java.util.List;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.LegacyCell;
@@ -33,7 +33,7 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 
 /**
- * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeFilter}.
+ * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeQuery}.
  * This strategy has support for searching non-point shapes (note: not tested).
  * Even a query shape with distErrPct=0 (fully precise to the grid) should have
  * good performance for typical data, unless there is a lot of indexed data
@@ -83,7 +83,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     return multiOverlappingIndexedShapes;
   }
 
-  /** See {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  /** See {@link ContainsPrefixTreeQuery#multiOverlappingIndexedShapes}. */
   public void setMultiOverlappingIndexedShapes(boolean multiOverlappingIndexedShapes) {
     this.multiOverlappingIndexedShapes = multiOverlappingIndexedShapes;
   }
@@ -171,21 +171,21 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   @Override
-  public Filter makeFilter(SpatialArgs args) {
+  public Query makeQuery(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
 
     Shape shape = args.getShape();
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
     if (op == SpatialOperation.Intersects) {
-      return new IntersectsPrefixTreeFilter(
+      return new IntersectsPrefixTreeQuery(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel);
     } else if (op == SpatialOperation.IsWithin) {
-      return new WithinPrefixTreeFilter(
+      return new WithinPrefixTreeQuery(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
           -1);//-1 flag is slower but ensures correct results
     } else if (op == SpatialOperation.Contains) {
-      return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel,
+      return new ContainsPrefixTreeQuery(shape, getFieldName(), grid, detailLevel,
           multiOverlappingIndexedShapes);
     }
     throw new UnsupportedSpatialOperation(op);

@@ -17,14 +17,17 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -35,11 +38,6 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Based off of Solr 3's SpatialFilterTest.
@@ -167,12 +165,7 @@ public class PortedSolr3Test extends StrategyTestCase {
 
     SpatialArgs args = new SpatialArgs(op,shape);
     //args.setDistPrecision(0.025);
-    Query query;
-    if (random().nextBoolean()) {
-      query = strategy.makeQuery(args);
-    } else {
-      query = new FilteredQuery(new MatchAllDocsQuery(),strategy.makeFilter(args));
-    }
+    Query query = strategy.makeQuery(args);
     SearchResults results = executeQuery(query, 100);
     assertEquals(""+shape,assertNumFound,results.numFound);
     if (assertIds != null) {

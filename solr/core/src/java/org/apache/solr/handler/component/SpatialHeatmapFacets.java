@@ -39,6 +39,7 @@ import org.apache.lucene.spatial.prefix.HeatmapFacetCounter;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
@@ -50,6 +51,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.RptWithGeometrySpatialField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType;
+import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.DistanceUnits;
@@ -73,7 +75,7 @@ public class SpatialHeatmapFacets {
   public static final double DEFAULT_DIST_ERR_PCT = 0.15;
 
   /** Called by {@link org.apache.solr.request.SimpleFacets} to compute heatmap facets. */
-  public static NamedList<Object> getHeatmapForField(String fieldKey, String fieldName, ResponseBuilder rb, SolrParams params, DocSet docSet) throws IOException {
+  public static NamedList<Object> getHeatmapForField(String fieldKey, String fieldName, final ResponseBuilder rb, SolrParams params, final DocSet docSet) throws IOException {
     //get the strategy from the field type
     final SchemaField schemaField = rb.req.getSchema().getField(fieldName);
     final FieldType type = schemaField.getType();
@@ -133,13 +135,32 @@ public class SpatialHeatmapFacets {
       gridLevel = strategy.getGrid().getLevelForDistance(distErr);
     }
 
+    // Turn docSet into Bits
+    Bits topAcceptDocs;
+    if (docSet instanceof BitDocSet) {
+      BitDocSet set = (BitDocSet) docSet;
+      topAcceptDocs = set.getBits();
+    } else {
+      topAcceptDocs = new Bits() {
+        @Override
+        public boolean get(int index) {
+          return docSet.exists(index);
+        }
+
+        @Override
+        public int length() {
+          return rb.req.getSearcher().maxDoc();
+        }
+      };
+    }
+
     //Compute!
     final HeatmapFacetCounter.Heatmap heatmap;
     try {
       heatmap = HeatmapFacetCounter.calcFacets(
           strategy,
           rb.req.getSearcher().getTopReaderContext(),
-          docSet.getTopFilter(),
+          topAcceptDocs,
           boundsShape,
           gridLevel,
           params.getFieldInt(fieldKey, FacetParams.FACET_HEATMAP_MAX_CELLS, 100_000) // will throw if exceeded

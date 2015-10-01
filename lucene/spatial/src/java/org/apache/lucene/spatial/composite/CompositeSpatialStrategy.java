@@ -25,9 +25,7 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -142,12 +140,6 @@ public class CompositeSpatialStrategy extends SpatialStrategy {
       final Query indexQuery = indexStrategy.makeQuery(indexArgs);
       return new CompositeVerifyQuery(indexQuery, predicateValueSource);
     }
-  }
-
-  @Override
-  public Filter makeFilter(SpatialArgs args) {
-    //note: Filters are being deprecated in LUCENE-6301
-    return new QueryWrapperFilter(makeQuery(args));
   }
 
 }

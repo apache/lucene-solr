@@ -41,7 +41,7 @@ import org.apache.lucene.util.SentinelIntSet;
  *
  * @lucene.experimental
  */
-public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
+public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
 
   /**
    * If the spatial data for a document is comprised of multiple overlapping or adjacent parts,
@@ -52,7 +52,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
    */
   protected final boolean multiOverlappingIndexedShapes;
 
-  public ContainsPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel, boolean multiOverlappingIndexedShapes) {
+  public ContainsPrefixTreeQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel, boolean multiOverlappingIndexedShapes) {
     super(queryShape, fieldName, grid, detailLevel);
     this.multiOverlappingIndexedShapes = multiOverlappingIndexedShapes;
   }
@@ -61,7 +61,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
   public boolean equals(Object o) {
     if (!super.equals(o))
       return false;
-    return multiOverlappingIndexedShapes == ((ContainsPrefixTreeFilter)o).multiOverlappingIndexedShapes;
+    return multiOverlappingIndexedShapes == ((ContainsPrefixTreeQuery)o).multiOverlappingIndexedShapes;
   }
 
   @Override
@@ -71,7 +71,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
 
   @Override
   public String toString(String field) {
-    return "ContainsPrefixTreeFilter(" +
+    return getClass().getSimpleName() + "(" +
         "fieldName=" + fieldName + "," +
         "queryShape=" + queryShape + "," +
         "detailLevel=" + detailLevel + "," +
@@ -80,14 +80,14 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    return new ContainsVisitor(context, acceptDocs).visit(grid.getWorldCell(), acceptDocs);
+  protected DocIdSet getDocIdSet(LeafReaderContext context) throws IOException {
+    return new ContainsVisitor(context).visit(grid.getWorldCell(), null);
   }
 
   private class ContainsVisitor extends BaseTermsEnumTraverser {
 
-    public ContainsVisitor(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      super(context, acceptDocs);
+    public ContainsVisitor(LeafReaderContext context) throws IOException {
+      super(context);
       if (termsEnum != null) {
         nextTerm();//advance to first
       }
@@ -239,6 +239,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
 
   /** A hash based mutable set of docIds. If this were Solr code then we might
    * use a combination of HashDocSet and SortedIntDocSet instead. */
+  // TODO use DocIdSetBuilder?
   private static class SmallDocSet extends DocIdSet implements Bits {
 
     private final SentinelIntSet intSet;

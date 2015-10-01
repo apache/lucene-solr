@@ -25,11 +25,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.SparseFixedBitSet;
 
 /**
  * Computes facets on cells for {@link org.apache.lucene.spatial.prefix.PrefixTreeStrategy}.
@@ -67,41 +65,34 @@ public class PrefixTreeFacetCounter {
   /**
    * Computes facets using a callback/visitor style design, allowing flexibility for the caller to determine what to do
    * with each underlying count.
-   *
    * @param strategy the prefix tree strategy (contains the field reference, grid, max levels)
    * @param context the IndexReader's context
-   * @param filter a Filter to limit counted docs. For optimal performance, it's
-   *               {@link org.apache.lucene.search.DocIdSet#bits()} should be non-null. If no filter is provided, live
-   *               docs are counted.
+   * @param topAcceptDocs a Bits to limit counted docs. If null, live docs are counted.
    * @param queryShape the shape to limit the range of facet counts to
    * @param facetLevel the maximum depth (detail) of faceted cells
    * @param facetVisitor the visitor/callback to receive the counts
    */
-  public static void compute(PrefixTreeStrategy strategy, IndexReaderContext context, Filter filter,
+  public static void compute(PrefixTreeStrategy strategy, IndexReaderContext context, final Bits topAcceptDocs,
                              Shape queryShape, int facetLevel, FacetVisitor facetVisitor)
       throws IOException {
     //We collect per-leaf
     for (final LeafReaderContext leafCtx : context.leaves()) {
       //determine leaf acceptDocs Bits
       Bits leafAcceptDocs;
-      if (filter == null) {
+      if (topAcceptDocs == null) {
         leafAcceptDocs = leafCtx.reader().getLiveDocs();//filter deleted
       } else {
-        final DocIdSet docIdSet = filter.getDocIdSet(leafCtx, leafCtx.reader().getLiveDocs());
-        if (docIdSet == null) {
-          continue;//no docs in filter
-        }
-        leafAcceptDocs = docIdSet.bits();
-        if (leafAcceptDocs == null) {
-          final DocIdSetIterator iterator = docIdSet.iterator();
-          if (iterator == null) {
-            continue;//no docs in filter
+        leafAcceptDocs = new Bits() {
+          @Override
+          public boolean get(int index) {
+            return topAcceptDocs.get(leafCtx.docBase + index);
           }
-          //build bits from iterator (abnormal, hopefully, not expecting many docs)
-          SparseFixedBitSet bitSet = new SparseFixedBitSet(leafCtx.reader().maxDoc());
-          bitSet.or(iterator);
-          leafAcceptDocs = bitSet;
-        }
+
+          @Override
+          public int length() {
+            return leafCtx.reader().maxDoc();
+          }
+        };
       }
 
       compute(strategy, leafCtx, leafAcceptDocs, queryShape, facetLevel, facetVisitor);
@@ -122,21 +113,20 @@ public class PrefixTreeFacetCounter {
     // another scanLevel would be much faster and it tends to be a risky knob (can help a little, can hurt a ton).
     // TODO use RPT's configured scan level?  Do we know better here?  Hard to say.
     final int scanLevel = tree.getMaxLevels();
-
     //AbstractVisitingPrefixTreeFilter is a Lucene Filter.  We don't need a filter; we use it for its great prefix-tree
     // traversal code.  TODO consider refactoring if/when it makes sense (more use cases than this)
-    new AbstractVisitingPrefixTreeFilter(queryShape, strategy.getFieldName(), tree, facetLevel, scanLevel) {
+    new AbstractVisitingPrefixTreeQuery(queryShape, strategy.getFieldName(), tree, facetLevel, scanLevel) {
       
       @Override
       public String toString(String field) {
-        return "anonPrefixTreeFilter";
+        return "anonPrefixTreeQuery";//un-used
       }
 
       @Override
-      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
+      public DocIdSet getDocIdSet(LeafReaderContext contexts) throws IOException {
         assert facetLevel == super.detailLevel;//same thing, FYI. (constant)
 
-        return new VisitorTemplate(context, acceptDocs) {
+        return new VisitorTemplate(context) {
 
           @Override
           protected void start() throws IOException {
@@ -185,7 +175,7 @@ public class PrefixTreeFacetCounter {
             int count = 0;
             postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
             while (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              if (acceptDocs != null && acceptDocs.get(postingsEnum.docID()) == false) {
+              if (acceptDocs.get(postingsEnum.docID()) == false) {
                 continue;
               }
               count++;
@@ -207,6 +197,6 @@ public class PrefixTreeFacetCounter {
 
         }.getDocIdSet();
       }
-    }.getDocIdSet(context, acceptDocs);
+    }.getDocIdSet(context);
   }
 }
