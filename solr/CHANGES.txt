@@ -203,7 +203,8 @@ Bug Fixes
   related to leader initiated recovery is performed by a dedicated LIR thread in the background.
   (Ramkumar Aiyengar, shalin)
 
-* SOLR-7746: Ping requests stopped working with distrib=true in Solr 5.2.1.  (Michael Sun)
+* SOLR-7746: Ping requests stopped working with distrib=true in Solr 5.2.1.
+  (Alexey Serba, Michael Sun via Gregory Chanan)
 
 * SOLR-6547: ClassCastException in SolrResponseBase.getQTime on update response from CloudSolrClient
   when parallelUpdates is enabled (default) and multiple docs are sent as a single update.
