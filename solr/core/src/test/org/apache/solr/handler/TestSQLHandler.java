@@ -92,6 +92,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
   @Test
   public void doTest() throws Exception {
+    waitForRecoveriesToFinish(false);
     testPredicate();
     testBasicSelect();
     testBasicGrouping();

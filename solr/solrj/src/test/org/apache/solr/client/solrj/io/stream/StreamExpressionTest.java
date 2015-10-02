@@ -114,7 +114,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
-    waitForThingsToLevelOut(30);
+    waitForRecoveriesToFinish(false);
 
     del("*:*");
     commit();

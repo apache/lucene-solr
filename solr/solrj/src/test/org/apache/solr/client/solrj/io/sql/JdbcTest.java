@@ -104,6 +104,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   @Test
   public void doTest() throws Exception {
 
+    waitForRecoveriesToFinish(false);
+
     indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
     indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
     indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
