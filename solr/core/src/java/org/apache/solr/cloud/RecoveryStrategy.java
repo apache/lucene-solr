@@ -54,8 +54,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSync;
@@ -340,6 +338,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           return;
         }
         
+        log.info("Begin buffering updates. core=" + coreName);
+        ulog.bufferUpdates();
+        replayed = false;
+        
         log.info("Publishing state of core " + core.getName() + " as recovering, leader is " + leaderUrl + " and I am "
             + ourUrl);
         zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
@@ -390,7 +392,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
                 new ModifiableSolrParams());
             // force open a new searcher
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-            log.info("PeerSync Recovery was successful - registering as Active.");
+            log.info("PeerSync stage of recovery was successful.");
 
             // solrcloud_debug
             if (log.isDebugEnabled()) {
@@ -410,11 +412,12 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
                 log.debug("Error in solrcloud_debug block", e);
               }
             }
-
-            // sync success - register as active and return
-            zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+            log.info("Replaying updates buffered during PeerSync.");
+            replay(core);
+            replayed = true;
+            
+            // sync success
             successfulRecovery = true;
-            close = true;
             return;
           }
 
@@ -427,10 +430,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
         
         log.info("Starting Replication Recovery.");
-        
-        log.info("Begin buffering updates.");
-        ulog.bufferUpdates();
-        replayed = false;
 
         try {
 
@@ -449,31 +448,40 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             break;
           }
 
-          log.info("Replication Recovery was successful - registering as Active.");
-          // if there are pending recovery requests, don't advert as active
-          zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
-          close = true;
+          log.info("Replication Recovery was successful.");
           successfulRecovery = true;
-          recoveryListener.recovered();
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           log.warn("Recovery was interrupted", e);
           close = true;
         } catch (Exception e) {
           SolrException.log(log, "Error while trying to recover", e);
-        } finally {
-          if (!replayed) {
-            try {
-              ulog.dropBufferedUpdates();
-            } catch (Exception e) {
-              SolrException.log(log, "", e);
-            }
-          }
-
         }
 
       } catch (Exception e) {
-        SolrException.log(log, "Error while trying to recover.", e);
+        SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
+      } finally {
+        if (!replayed) {
+          try {
+            ulog.dropBufferedUpdates();
+          } catch (Exception e) {
+            SolrException.log(log, "", e);
+          }
+        }
+        if (successfulRecovery) {
+          log.info("Registering as Active after recovery.");
+          try {
+            zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+          } catch (Exception e) {
+            log.error("Could not publish as ACTIVE after succesful recovery", e);
+            successfulRecovery = false;
+          }
+          
+          if (successfulRecovery) {
+            close = true;
+            recoveryListener.recovered();
+          }
+        }
       }
 
       if (!successfulRecovery) {
