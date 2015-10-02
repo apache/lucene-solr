@@ -41,7 +41,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public static Logger log = LoggerFactory.getLogger(DefaultSolrCoreState.class);
   
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
-  
+
   private final Object recoveryLock = new Object();
   
   private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 10000);
@@ -58,6 +58,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private volatile boolean recoveryRunning;
   private RecoveryStrategy recoveryStrat;
   private volatile boolean lastReplicationSuccess = true;
+
+  // will we attempt recovery as if we just started up (i.e. use starting versions rather than recent versions for peersync
+  // so we aren't looking at update versions that have started buffering since we came up.
+  private volatile boolean recoveringAfterStartup = true;
 
   private RefCounted<IndexWriter> refCntWriter;
   
@@ -272,10 +276,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           if (closed) return;
         }
         
-        // if true, we are recovering after startup and shouldn't have (or be receiving) additional updates (except for
-        // local tlog recovery)
-        boolean recoveringAfterStartup = recoveryStrat == null;
-        
         recoveryThrottle.minimumWaitBetweenActions();
         recoveryThrottle.markAttemptingAction();
         
@@ -310,11 +310,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
   }
 
+  /** called from recoveryStrat on a successful recovery */
   @Override
   public void recovered() {
+    recoveringAfterStartup = false;  // once we have successfully recovered, we no longer need to act as if we are recovering after startup
     recoveryRunning = false;
   }
 
+  /** called from recoveryStrat on a failed recovery */
   @Override
   public void failed() {
     recoveryRunning = false;
