@@ -228,6 +228,9 @@ Bug Fixes
 * SOLR-8094: HdfsUpdateLog should not replay buffered documents as a replacement to dropping them.
   (Mark Miller)
 
+* SOLR-8075: Leader Initiated Recovery should not stop a leader that participated in an election with all
+  of it's replicas from becoming a valid leader. (Mark Miller)
+
 Optimizations
 ----------------------
 
