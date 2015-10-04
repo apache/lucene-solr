@@ -37,7 +37,7 @@
     <str name="hostContext">${hostContext:solr}</str>
     <int name="zkClientTimeout">${solr.zkclienttimeout:30000}</int>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
-    <int name="leaderVoteWait">0</int>
+    <int name="leaderVoteWait">10000</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:45000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:340000}</int>
   </solrcloud>
