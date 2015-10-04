@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
@@ -68,13 +66,26 @@ public class HdfsUpdateLog extends UpdateLog {
   // allows for it
   @Override
   public boolean dropBufferedUpdates() {
-    Future<RecoveryInfo> future = applyBufferedUpdates();
-    if (future != null) {
-      try {
-        future.get();
-      } catch (InterruptedException | ExecutionException e) {
-        throw new RuntimeException(e);
+    versionInfo.blockUpdates();
+    try {
+      if (state != State.BUFFERING) return false;
+      
+      if (log.isInfoEnabled()) {
+        log.info("Dropping buffered updates " + this);
       }
+      
+      // since we blocked updates, this synchronization shouldn't strictly be
+      // necessary.
+      synchronized (this) {
+        if (tlog != null) {
+          // tlog.rollback(recoveryInfo.positionOfStart);
+        }
+      }
+      
+      state = State.ACTIVE;
+      operationFlags &= ~FLAG_GAP;
+    } finally {
+      versionInfo.unblockUpdates();
     }
     return true;
   }
