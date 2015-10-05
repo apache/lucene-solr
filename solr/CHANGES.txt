@@ -163,6 +163,8 @@ New Features
 
 * SOLR-8053: Basic auth support in SolrJ (noble)
 
+* SOLR-7995: Add a LIST command to ConfigSets API (Gregory Chanan)
+
 Bug Fixes
 ----------------------
 

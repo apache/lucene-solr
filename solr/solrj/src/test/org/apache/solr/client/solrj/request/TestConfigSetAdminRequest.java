@@ -18,6 +18,8 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,7 +31,6 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
   @Test
   public void testNoAction() {
     ConfigSetAdminRequest request = new MyConfigSetAdminRequest();
-    request.setConfigSetName("name");
     verifyException(request, "action");
   }
 
@@ -59,12 +60,17 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     }
   }
 
-  private static class MyConfigSetAdminRequest extends ConfigSetAdminRequest<MyConfigSetAdminRequest> {
+  private static class MyConfigSetAdminRequest extends ConfigSetAdminRequest<MyConfigSetAdminRequest, ConfigSetAdminResponse> {
       public MyConfigSetAdminRequest() {}
 
       @Override
       public MyConfigSetAdminRequest getThis() {
         return this;
+      }
+
+      @Override
+      public ConfigSetAdminResponse createResponse(SolrClient client) {
+        return new ConfigSetAdminResponse();
       }
     };
 }

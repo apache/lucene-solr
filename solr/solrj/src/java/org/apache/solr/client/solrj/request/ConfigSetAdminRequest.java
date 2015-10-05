@@ -38,10 +38,11 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  *
  * @since solr 5.4
  */
-public abstract class ConfigSetAdminRequest <Q extends ConfigSetAdminRequest<Q>> extends SolrRequest<ConfigSetAdminResponse> {
+public abstract class ConfigSetAdminRequest
+      <Q extends ConfigSetAdminRequest<Q,R>, R extends ConfigSetAdminResponse>
+      extends SolrRequest<R> {
 
   protected ConfigSetAction action = null;
-  protected String configSetName = null;
 
   protected ConfigSetAdminRequest setAction(ConfigSetAction action) {
     this.action = action;
@@ -63,12 +64,8 @@ public abstract class ConfigSetAdminRequest <Q extends ConfigSetAdminRequest<Q>>
     if (action == null) {
       throw new RuntimeException( "no action specified!" );
     }
-    if (configSetName == null) {
-      throw new RuntimeException( "no ConfigSet specified!" );
-    }
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(ConfigSetParams.ACTION, action.toString());
-    params.set(NAME, configSetName);
     return params;
   }
 
@@ -78,21 +75,40 @@ public abstract class ConfigSetAdminRequest <Q extends ConfigSetAdminRequest<Q>>
   }
 
   @Override
-  protected ConfigSetAdminResponse createResponse(SolrClient client) {
-    return new ConfigSetAdminResponse();
-  }
+  protected abstract R createResponse(SolrClient client);
 
-  public final Q setConfigSetName(String configSetName) {
-    this.configSetName = configSetName;
-    return getThis();
-  }
+  protected abstract static class ConfigSetSpecificAdminRequest
+       <T extends ConfigSetAdminRequest<T,ConfigSetAdminResponse>>
+       extends ConfigSetAdminRequest<T,ConfigSetAdminResponse> {
+    protected String configSetName = null;
 
-  public final String getConfigSetName() {
-    return configSetName;
+    public final T setConfigSetName(String configSetName) {
+      this.configSetName = configSetName;
+      return getThis();
+    }
+
+    public final String getConfigSetName() {
+      return configSetName;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      if (configSetName == null) {
+        throw new RuntimeException( "no ConfigSet specified!" );
+      }
+      params.set(NAME, configSetName);
+      return params;
+    }
+
+    @Override
+    protected ConfigSetAdminResponse createResponse(SolrClient client) {
+      return new ConfigSetAdminResponse();
+    }
   }
 
   // CREATE request
-  public static class Create extends ConfigSetAdminRequest<Create> {
+  public static class Create extends ConfigSetSpecificAdminRequest<Create> {
     protected static String PROPERTY_PREFIX = "configSetProp";
     protected String baseConfigSetName;
     protected Properties properties;
@@ -142,7 +158,7 @@ public abstract class ConfigSetAdminRequest <Q extends ConfigSetAdminRequest<Q>>
   }
 
   // DELETE request
-  public static class Delete extends ConfigSetAdminRequest<Delete> {
+  public static class Delete extends ConfigSetSpecificAdminRequest<Delete> {
     public Delete() {
       action = ConfigSetAction.DELETE;
     }
@@ -150,6 +166,23 @@ public abstract class ConfigSetAdminRequest <Q extends ConfigSetAdminRequest<Q>>
     @Override
     protected Delete getThis() {
       return this;
+    }
+  }
+
+  // LIST request
+  public static class List extends ConfigSetAdminRequest<List, ConfigSetAdminResponse.List> {
+    public List() {
+      action = ConfigSetAction.LIST;
+    }
+
+    @Override
+    protected List getThis() {
+      return this;
+    }
+
+    @Override
+    protected ConfigSetAdminResponse.List createResponse(SolrClient client) {
+      return new ConfigSetAdminResponse.List();
     }
   }
 }

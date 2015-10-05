@@ -30,4 +30,9 @@ public class ConfigSetAdminResponse extends SolrResponseBase
      return (NamedList<String>) getResponse().get( "exceptions" );
   }
 
+  public static class List extends ConfigSetAdminResponse {
+    public java.util.List<String> getConfigSets() {
+      return (java.util.List<String>) getResponse().get("configSets");
+    }
+  }
 }
