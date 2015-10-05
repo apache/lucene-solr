@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * The BoostingQuery class can be used to effectively demote results that match a given query. 
@@ -156,6 +157,6 @@ public class BoostingQuery extends Query {
 
     @Override
     public String toString(String field) {
-      return match.toString(field) + "/" + context.toString(field);
+      return match.toString(field) + "/" + context.toString(field)  + ToStringUtils.boost(getBoost());
     }
   }

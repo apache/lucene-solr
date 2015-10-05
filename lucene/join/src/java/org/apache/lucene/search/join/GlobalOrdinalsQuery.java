@@ -37,6 +37,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.ToStringUtils;
 
 final class GlobalOrdinalsQuery extends Query {
 
@@ -95,7 +96,7 @@ final class GlobalOrdinalsQuery extends Query {
   public String toString(String field) {
     return "GlobalOrdinalsQuery{" +
         "joinField=" + joinField +
-        '}';
+        '}' + ToStringUtils.boost(getBoost());
   }
 
   final class W extends ConstantScoreWeight {

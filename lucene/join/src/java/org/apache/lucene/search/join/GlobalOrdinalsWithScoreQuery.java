@@ -32,6 +32,7 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Set;
@@ -103,7 +104,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
           "min=" + min +
           "max=" + max +
           "fromQuery=" + fromQuery +
-        '}';
+        '}' + ToStringUtils.boost(getBoost());
   }
 
   final class W extends Weight {

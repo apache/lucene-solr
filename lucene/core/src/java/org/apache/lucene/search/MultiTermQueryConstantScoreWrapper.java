@@ -32,6 +32,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * This class also provides the functionality behind
@@ -87,7 +88,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   @Override
   public String toString(String field) {
     // query.toString should be ok for the filter, too, if the query boost is 1.0f
-    return query.toString(field);
+    return query.toString(field) + ToStringUtils.boost(getBoost());
   }
 
   @Override

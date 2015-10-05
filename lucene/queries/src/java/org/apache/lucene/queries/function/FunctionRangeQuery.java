@@ -29,6 +29,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A Query wrapping a {@link ValueSource} that matches docs in which the values in the value source match a configured
@@ -73,7 +74,7 @@ public class FunctionRangeQuery extends Query {
     return "frange(" + valueSource + "):"
         + (includeLower ? '[' : '{')
         + (lowerVal == null ? "*" : lowerVal) + " TO " + (upperVal == null ? "*" : upperVal)
-        + (includeUpper ? ']' : '}');
+        + (includeUpper ? ']' : '}') + ToStringUtils.boost(getBoost());
   }
 
   @Override

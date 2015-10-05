@@ -23,6 +23,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -86,7 +87,7 @@ public class DocValuesNumbersQuery extends Query {
     if (numbers.size() > 0) {
       sb.setLength(sb.length() - 2);
     }
-    return sb.append(']').toString();
+    return sb.append(']').append(ToStringUtils.boost(getBoost())).toString();
   }
 
   @Override

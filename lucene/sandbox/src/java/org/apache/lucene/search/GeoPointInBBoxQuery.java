@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
  * {@link org.apache.lucene.search.NumericRangeQuery} and is implemented using a
@@ -92,6 +93,7 @@ public class GeoPointInBBoxQuery extends Query {
         .append(',')
         .append(maxLat)
         .append("]")
+        .append(ToStringUtils.boost(getBoost()))
         .toString();
   }
 

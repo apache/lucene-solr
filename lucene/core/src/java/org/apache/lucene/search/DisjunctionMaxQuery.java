@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that generates the union of documents produced by its subqueries, and that scores each document with the maximum
@@ -260,6 +261,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
       buffer.append("~");
       buffer.append(tieBreakerMultiplier);
     }
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

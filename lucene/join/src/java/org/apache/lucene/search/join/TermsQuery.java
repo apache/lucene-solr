@@ -25,6 +25,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -65,7 +66,7 @@ class TermsQuery extends MultiTermQuery {
   public String toString(String string) {
     return "TermsQuery{" +
         "field=" + field +
-        '}';
+        '}' + ToStringUtils.boost(getBoost());
   }
 
   @Override

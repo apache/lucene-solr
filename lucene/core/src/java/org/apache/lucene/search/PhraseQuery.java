@@ -39,6 +39,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -527,6 +528,7 @@ public class PhraseQuery extends Query {
       buffer.append("~");
       buffer.append(slop);
     }
+    buffer.append(ToStringUtils.boost(getBoost()));
 
     return buffer.toString();
   }

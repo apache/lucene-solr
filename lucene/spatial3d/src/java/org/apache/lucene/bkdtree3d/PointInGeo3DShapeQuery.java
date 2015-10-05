@@ -34,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
@@ -217,6 +218,7 @@ public class PointInGeo3DShapeQuery extends Query {
     sb.append(planetModel);
     sb.append(" Shape: ");
     sb.append(shape);
+    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 }

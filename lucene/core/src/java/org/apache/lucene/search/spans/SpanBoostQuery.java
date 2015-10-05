@@ -57,13 +57,12 @@ public final class SpanBoostQuery extends SpanQuery {
       )));
 
   private final SpanQuery query;
-  private final float boost;
 
   /** Sole constructor: wrap {@code query} in such a way that the produced
    *  scores will be boosted by {@code boost}. */
   public SpanBoostQuery(SpanQuery query, float boost) {
     this.query = Objects.requireNonNull(query);
-    this.boost = boost;
+    setBoost(boost);
   }
 
   /**
@@ -73,11 +72,10 @@ public final class SpanBoostQuery extends SpanQuery {
     return query;
   }
 
-  /**
-   * Return the applied boost.
-   */
+  @Override
   public float getBoost() {
-    return boost;
+    // overridden to remove the deprecation warning
+    return super.getBoost();
   }
 
   @Override
@@ -86,39 +84,34 @@ public final class SpanBoostQuery extends SpanQuery {
       return false;
     }
     SpanBoostQuery that = (SpanBoostQuery) obj;
-    return query.equals(that.query)
-        && Float.floatToIntBits(boost) == Float.floatToIntBits(that.boost);
+    return query.equals(that.query);
   }
 
   @Override
   public int hashCode() {
     int h = super.hashCode();
     h = 31 * h + query.hashCode();
-    h = 31 * h + Float.floatToIntBits(boost);
     return h;
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    if (super.getBoost() != 1f) {
-      return super.rewrite(reader);
-    }
-
-    if (boost == 1f) {
-      return query;
-    }
-
     final SpanQuery rewritten = (SpanQuery) query.rewrite(reader);
+
+    if (getBoost() == 1f) {
+      return rewritten;
+    }
+
+    if (rewritten.getClass() == SpanBoostQuery.class) {
+      SpanBoostQuery in = (SpanBoostQuery) rewritten;
+      return new SpanBoostQuery(in.query, getBoost() * in.getBoost());
+    }
+
     if (query != rewritten) {
-      return new SpanBoostQuery(rewritten, boost);
+      return new SpanBoostQuery(rewritten, getBoost());
     }
 
-    if (query.getClass() == SpanBoostQuery.class) {
-      SpanBoostQuery in = (SpanBoostQuery) query;
-      return new SpanBoostQuery(in.query, boost * in.boost);
-    }
-
-    return super.rewrite(reader);
+    return this;
   }
 
   @Override
@@ -133,7 +126,7 @@ public final class SpanBoostQuery extends SpanQuery {
       builder.append(")");
     }
     builder.append("^");
-    builder.append(boost);
+    builder.append(getBoost());
     return builder.toString();
   }
 
@@ -150,7 +143,7 @@ public final class SpanBoostQuery extends SpanQuery {
     }
     Map<Term, TermContext> terms = new TreeMap<>();
     weight.extractTermContexts(terms);
-    weight.normalize(1f, boost);
+    weight.normalize(1f, getBoost());
     return new SpanWeight(this, searcher, terms) {
       
       @Override
@@ -170,7 +163,7 @@ public final class SpanBoostQuery extends SpanQuery {
 
       @Override
       public void normalize(float norm, float boost) {
-        weight.normalize(norm, SpanBoostQuery.this.boost * boost);
+        weight.normalize(norm, SpanBoostQuery.this.getBoost() * boost);
       }
       
       @Override

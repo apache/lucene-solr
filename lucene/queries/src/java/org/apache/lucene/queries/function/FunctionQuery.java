@@ -29,6 +29,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ToStringUtils;
 
 
 /**
@@ -171,7 +172,7 @@ public class FunctionQuery extends Query {
   @Override
   public String toString(String field)
   {
-    return func.toString();
+    return func.toString() + ToStringUtils.boost(getBoost());
   }
 
 

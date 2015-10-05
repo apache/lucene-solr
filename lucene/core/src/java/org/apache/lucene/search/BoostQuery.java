@@ -41,6 +41,7 @@ public final class BoostQuery extends Query {
    *  need parenthesis to have a better toString(). */
   private static final Set<Class<? extends Query>> NO_PARENS_REQUIRED_QUERIES = Collections.unmodifiableSet(
       new HashSet<>(Arrays.asList(
+          MatchAllDocsQuery.class,
           TermQuery.class,
           PhraseQuery.class,
           MultiPhraseQuery.class,

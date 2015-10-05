@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * This is a {@link PhraseQuery} which is optimized for n-gram phrase query.
@@ -109,6 +110,6 @@ public class NGramPhraseQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return phraseQuery.toString(field);
+    return phraseQuery.toString(field) + ToStringUtils.boost(getBoost());
   }
 }

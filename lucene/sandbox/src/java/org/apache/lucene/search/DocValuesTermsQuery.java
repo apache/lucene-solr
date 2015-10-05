@@ -32,6 +32,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A {@link Query} that only accepts documents whose
@@ -146,7 +147,7 @@ public class DocValuesTermsQuery extends Query {
     if (terms.length > 0) {
       sb.setLength(sb.length() - 2);
     }
-    return sb.append(']').toString();
+    return sb.append(']').append(ToStringUtils.boost(getBoost())).toString();
   }
 
   @Override
