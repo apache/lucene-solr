@@ -18,14 +18,18 @@ package org.apache.solr.handler.admin;
  */
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
@@ -169,6 +173,19 @@ public class ConfigSetsHandler extends RequestHandlerBase {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
         return req.getParams().required().getAll(null, NAME);
+      }
+    },
+    LIST_OP(LIST) {
+      @Override
+      Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
+        NamedList<Object> results = new NamedList<>();
+        SolrZkClient zk = h.coreContainer.getZkController().getZkStateReader().getZkClient();
+        ZkConfigManager zkConfigManager = new ZkConfigManager(zk);
+        List<String> configSetsList = zkConfigManager.listConfigs();
+        results.add("configSets", configSetsList);
+        SolrResponse response = new OverseerSolrResponse(results);
+        rsp.getValues().addAll(response.getResponse());
+        return null;
       }
     };
 

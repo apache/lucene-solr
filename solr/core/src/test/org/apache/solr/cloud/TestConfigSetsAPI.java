@@ -22,9 +22,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -33,6 +36,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.List;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -289,6 +293,39 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       ConfigSetAdminResponse response = delete.process(solrClient);
       assertNotNull(response.getResponse());
       assertFalse(configManager.configExists(configSet));
+    } finally {
+      zkClient.close();
+    }
+
+    solrClient.close();
+  }
+
+  @Test
+  public void testList() throws Exception {
+    final SolrClient solrClient =
+        new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+
+    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
+        AbstractZkTestCase.TIMEOUT, 45000, null);
+    try {
+      // test empty
+      List list = new List();
+      ConfigSetAdminResponse.List response = list.process(solrClient);
+      Collection<String> actualConfigSets = response.getConfigSets();
+      assertEquals(0, actualConfigSets.size());
+
+      // test multiple
+      final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+      Set<String> configSets = new HashSet<String>();
+      for (int i = 0; i < 5; ++i) {
+        String configSet = "configSet" + i;
+        solrCluster.uploadConfigDir(configDir, configSet);
+        configSets.add(configSet);
+      }
+      response = list.process(solrClient);
+      actualConfigSets = response.getConfigSets();
+      assertEquals(configSets.size(), actualConfigSets.size());
+      assertTrue(configSets.containsAll(actualConfigSets));
     } finally {
       zkClient.close();
     }

@@ -28,7 +28,8 @@ public interface ConfigSetParams
 
   public enum ConfigSetAction {
     CREATE,
-    DELETE;
+    DELETE,
+    LIST;
 
     public static ConfigSetAction get(String p) {
       if (p != null) {
