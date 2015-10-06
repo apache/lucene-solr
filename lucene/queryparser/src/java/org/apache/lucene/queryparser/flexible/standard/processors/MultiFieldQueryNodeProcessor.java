@@ -17,6 +17,7 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -91,32 +92,25 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
           if (fields.length == 1) {
             return fieldNode;
-
           } else {
-            LinkedList<QueryNode> children = new LinkedList<>();
-            children.add(fieldNode);
+            List<QueryNode> children = new ArrayList<>(fields.length);
 
+            children.add(fieldNode);
             for (int i = 1; i < fields.length; i++) {
               try {
                 fieldNode = (FieldableNode) fieldNode.cloneTree();
                 fieldNode.setField(fields[i]);
 
                 children.add(fieldNode);
-
               } catch (CloneNotSupportedException e) {
-                // should never happen
+                throw new RuntimeException(e);
               }
-
             }
 
             return new GroupQueryNode(new OrQueryNode(children));
-
           }
-
         }
-
       }
-
     }
 
     return node;
@@ -126,9 +120,6 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
   @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
-
     return children;
-
   }
-
 }
