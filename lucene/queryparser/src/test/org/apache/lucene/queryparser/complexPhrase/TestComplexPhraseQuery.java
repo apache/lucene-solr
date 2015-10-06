@@ -139,6 +139,19 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     checkMatches("name:\"john smith\"~2 AND role:designer AND id:3", "3");
   }
 
+  public void testToStringContainsSlop() throws Exception {
+    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
+    int slop = random().nextInt(31) + 1;
+
+    String qString = "name:\"j* smyth~\"~" + slop;
+    Query query = qp.parse(qString);
+    assertTrue("Slop is not shown in toString()", query.toString().endsWith("~" + slop));
+
+    String string = "\"j* smyth~\"";
+    Query q = qp.parse(string);
+    assertEquals("Don't show implicit slop of zero", q.toString(), string);
+  }
+
   public void testHashcodeEquals() throws Exception {
     ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
     qp.setInOrder(true);

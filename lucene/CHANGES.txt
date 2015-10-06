@@ -127,6 +127,9 @@ Optimizations
 
 Bug Fixes
 
+* LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 
+  slop in toString(). (Ahmet Arslan via Dawid Weiss)
+
 * LUCENE-6730: Hyper-parameter c is ignored in term frequency NormalizationH1.
   (Ahmet Arslan via Robert Muir)
 
