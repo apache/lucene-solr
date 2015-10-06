@@ -233,6 +233,9 @@ Bug Fixes
 * SOLR-8075: Leader Initiated Recovery should not stop a leader that participated in an election with all
   of it's replicas from becoming a valid leader. (Mark Miller)
 
+* SOLR-8072: Rebalance leaders feature does not set CloudDescriptor#isLeader to false when bumping leaders.
+  (Mark Miller)
+
 Optimizations
 ----------------------
 

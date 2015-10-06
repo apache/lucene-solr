@@ -256,6 +256,18 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
   
   @Override
+  public void cancelElection() throws InterruptedException, KeeperException {
+    String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
+    try (SolrCore core = cc.getCore(coreName)) {
+      if (core != null) {
+        core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
+      }
+    }
+    
+    super.cancelElection();
+  }
+  
+  @Override
   public ElectionContext copy() {
     return new ShardLeaderElectionContext(leaderElector, shardId, collection, id, leaderProps, zkController, cc);
   }
