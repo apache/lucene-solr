@@ -61,7 +61,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
@@ -184,7 +183,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
     
     boolean blockCacheEnabled = getConfig(BLOCKCACHE_ENABLED, true);
-    boolean blockCacheGlobal = getConfig(BLOCKCACHE_GLOBAL, false); // default to false for back compat
+    boolean blockCacheGlobal = getConfig(BLOCKCACHE_GLOBAL, true);
     boolean blockCacheReadEnabled = getConfig(BLOCKCACHE_READ_ENABLED, true);
     
     final HdfsDirectory hdfsDir;

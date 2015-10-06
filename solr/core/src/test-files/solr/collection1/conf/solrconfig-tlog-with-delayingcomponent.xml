@@ -28,7 +28,7 @@
     <int name="solr.hdfs.blockcache.blocksperbank">${solr.hdfs.blockcache.blocksperbank:1024}</int>
     <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
     <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
-    <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:false}</str>
+    <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</str>
   </directoryFactory>
 
   <dataDir>${solr.data.dir:}</dataDir>

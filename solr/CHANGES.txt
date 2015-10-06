@@ -81,7 +81,6 @@ Optimizations
   speedups were up to 2.5x for production of filters, and up to 10x for query evaluation with
   embedded term range queres that resulted in filter cache hits.  (yonik)
 
-
 Other Changes
 ----------------------
 
@@ -107,6 +106,7 @@ Other Changes
 * SOLR-7441: Improve overall robustness of the Streaming stack: Streaming API,
              Streaming Expressions, Parallel SQL (Joel Bernstein)
 
+* SOLR-8132: HDFSDirectoryFactory now defaults to using the global block cache. (Mark Miller)
 
 ==================  5.4.0 ==================
 
