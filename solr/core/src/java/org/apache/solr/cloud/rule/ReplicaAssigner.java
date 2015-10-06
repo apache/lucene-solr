@@ -292,7 +292,7 @@ public class ReplicaAssigner {
     for (Rule rule : rules) {
       for (Map.Entry<String, Map<String, Object>> e : nodeVsTags.entrySet()) {
         if (e.getValue().get(rule.tag.name) == null) {
-          errors.add(formatString("The value for tag {0} is not available for node {}"));
+          errors.add(formatString("The value for tag {0} is not available for node {1}", rule.tag.name, e.getKey()));
         }
       }
     }
