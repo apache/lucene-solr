@@ -403,7 +403,10 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     @Override
     public String toString(String field) {
-      return "\"" + phrasedQueryStringContents + "\"";
+      if (slopFactor == 0)
+        return "\"" + phrasedQueryStringContents + "\"";
+      else
+        return "\"" + phrasedQueryStringContents + "\"" + "~" + slopFactor;
     }
 
     @Override
