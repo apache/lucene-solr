@@ -60,7 +60,13 @@ public class MappedMultiFields extends FilterFields {
 
     @Override
     public TermsEnum iterator() throws IOException {
-      return new MappedMultiTermsEnum(field, mergeState, (MultiTermsEnum) in.iterator());
+      TermsEnum iterator = in.iterator();
+      if (iterator == TermsEnum.EMPTY) {
+        // LUCENE-6826
+        return TermsEnum.EMPTY;
+      } else {
+        return new MappedMultiTermsEnum(field, mergeState, (MultiTermsEnum) iterator);
+      }
     }
 
     @Override
