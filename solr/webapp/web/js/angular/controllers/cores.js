@@ -23,20 +23,28 @@ solrAdminApp.controller('CoreAdminController',
       $scope.refresh = function() {
         Cores.get(function(data) {
           var coreCount = 0;
-          for (_obj in data.status) coreCount++;
+          var cores = data.status;
+          for (_obj in cores) coreCount++;
           $scope.hasCores = coreCount >0;
           if (!$scope.selectedCore && coreCount==0) {
             $scope.showAddCore();
             return;
           } else if (!$scope.selectedCore) {
-            for (firstCore in data.status) break;
+            for (firstCore in cores) break;
             $scope.selectedCore = firstCore;
             $location.path("/~cores/" + $scope.selectedCore).replace();
           }
-          $scope.core = data.status[$scope.selectedCore];
+          $scope.core = cores[$scope.selectedCore];
           $scope.corelist = [];
-          for (var core in data.status) {
-             $scope.corelist.push(data.status[core]);
+          $scope.otherCorelist = [];
+          for (var core in cores) {
+             $scope.corelist.push(cores[core]);
+            if (cores[core] != $scope.core) {
+              $scope.otherCorelist.push(cores[core]);
+            }
+          }
+          if ($scope.otherCorelist.length>0) {
+            $scope.swapOther = $scope.otherCorelist[0].name;
           }
         });
       };
