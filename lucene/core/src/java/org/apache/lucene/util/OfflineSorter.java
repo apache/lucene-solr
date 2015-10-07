@@ -49,6 +49,8 @@ import java.util.Locale;
  */
 public final class OfflineSorter {
 
+  // nocommit cutover to Directory API
+
   private static Path DEFAULT_TEMP_DIR;
 
   /** Convenience constant for megabytes */
