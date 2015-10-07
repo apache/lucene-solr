@@ -36,15 +36,15 @@ solrAdminApp.controller('CoreAdminController',
           }
           $scope.core = cores[$scope.selectedCore];
           $scope.corelist = [];
-          $scope.otherCorelist = [];
+          $scope.swapCorelist = [];
           for (var core in cores) {
              $scope.corelist.push(cores[core]);
             if (cores[core] != $scope.core) {
-              $scope.otherCorelist.push(cores[core]);
+              $scope.swapCorelist.push(cores[core]);
             }
           }
-          if ($scope.otherCorelist.length>0) {
-            $scope.swapOther = $scope.otherCorelist[0].name;
+          if ($scope.swapCorelist.length>0) {
+            $scope.swapOther = $scope.swapCorelist[0].name;
           }
         });
       };
