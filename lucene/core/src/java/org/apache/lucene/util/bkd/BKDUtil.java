@@ -68,4 +68,14 @@ final class BKDUtil {
 
     return true;
   }
+
+  // nocommit only used temporarily for debugging test cases that encode ints:
+  static int bytesToInt(byte[] src, int index) {
+    int x = 0;
+    for(int i=0;i<4;i++) {
+      x |= (src[4*index+i] & 0xff) << (24-i*8);
+    }
+    // Re-flip the sign bit to restore the original value:
+    return x ^ 0x80000000;
+  }
 }

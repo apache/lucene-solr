@@ -34,7 +34,7 @@ final class HeapPointWriter implements PointWriter {
   final List<byte[]> blocks = new ArrayList<>();
 
   public HeapPointWriter(int initSize, int maxSize, int packedBytesLength) {
-    System.out.println("HeapWriter.init initSize=" + initSize + " maxSize=" + maxSize + " packedBytesLength=" + packedBytesLength);
+    System.out.println("HeapPointWriter.init initSize=" + initSize + " maxSize=" + maxSize + " packedBytesLength=" + packedBytesLength);
     docIDs = new int[initSize];
     ords = new long[initSize];
     this.maxSize = maxSize;
@@ -109,6 +109,6 @@ final class HeapPointWriter implements PointWriter {
 
   @Override
   public String toString() {
-    return "HeapWriter(count=" + nextWrite + " alloc=" + ords.length + ")";
+    return "HeapPointWriter(count=" + nextWrite + " alloc=" + ords.length + ")";
   }
 }

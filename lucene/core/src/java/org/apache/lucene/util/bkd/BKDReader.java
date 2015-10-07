@@ -20,6 +20,7 @@ package org.apache.lucene.util.bkd;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -67,6 +68,7 @@ public final class BKDReader implements Accountable {
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
   public BKDReader(IndexInput in, int maxDoc) throws IOException {
 
+    CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_START);
     numDims = in.readVInt();
     maxPointsInLeafNode = in.readVInt();
     bytesPerDim = in.readVInt();
@@ -161,7 +163,7 @@ public final class BKDReader implements Accountable {
                         byte[] cellMinPacked, byte[] cellMaxPacked)
     throws IOException {
 
-    //System.out.println("\nR: intersect nodeID=" + nodeID + " cellMin=" + bytesToInt(cellMinPacked, 0) + " cellMax=" + bytesToInt(cellMaxPacked, 0));
+    //System.out.println("\nR: intersect nodeID=" + nodeID + " cellMin=" + BKDUtil.bytesToInt(cellMinPacked, 0) + " cellMax=" + BKDUtil.bytesToInt(cellMaxPacked, 0));
 
     // Optimization: only check the visitor when the current cell does not fully contain the bbox.  E.g. if the
     // query is a small area around London, UK, most of the high nodes in the BKD tree as we recurse will fully
@@ -244,16 +246,6 @@ public final class BKDReader implements Accountable {
                   splitPackedValue, cellMaxPacked);
       }
     }
-  }
-
-  // nocommit removeme
-  static int bytesToInt(byte[] src, int index) {
-    int x = 0;
-    for(int i=0;i<4;i++) {
-      x |= (src[4*index+i] & 0xff) << (24-i*8);
-    }
-    // Re-flip the sign bit to restore the original value:
-    return x ^ 0x80000000;
   }
 
   @Override
