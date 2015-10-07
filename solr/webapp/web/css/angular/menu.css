@@ -255,6 +255,7 @@ limitations under the License.
 
 #menu #threads.global p a { background-image: url( ../../img/ico/ui-accordion.png ); }
 
+#menu #collections.global p a { background-image: url( ../../img/ico/documents-stack.png ); }
 #menu #cores.global p a { background-image: url( ../../img/ico/databases.png ); }
 
 #menu #cloud.global p a { background-image: url( ../../img/ico/network-cloud.png ); }

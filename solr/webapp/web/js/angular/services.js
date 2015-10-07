@@ -32,6 +32,8 @@ solrAdminServices.factory('System',
     "rename": {params:{action: "RENAME"}},
     "createAlias": {params:{action: "CREATEALIAS"}},
     "deleteAlias": {params:{action: "DELETEALIAS"}},
+    "deleteReplica": {params:{action: "DELETEREPLICA"}},
+    "addReplica": {params:{action: "ADDREPLICA"}},
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}},
     "optimize": {params:{}}
     });
