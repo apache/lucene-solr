@@ -20,10 +20,12 @@ package org.apache.lucene.util.bkd;
 import java.io.Closeable;
 import java.io.IOException;
 
-/** Abstracts away whether OfflineSorter or simple arrays in heap are used. */
-interface Writer extends Closeable {
+/** Appends many points, and then at the end provides a {@link PointReader} to iterate
+ *  those points.  This abstracts away whether we write to disk, or use simple arrays
+ *  in heap. */
+interface PointWriter extends Closeable {
   void append(byte[] packedValue, long ord, int docID) throws IOException;
-  Reader getReader(long startDoc) throws IOException;
+  PointReader getReader(long startDoc) throws IOException;
   void destroy() throws IOException;
 }
 

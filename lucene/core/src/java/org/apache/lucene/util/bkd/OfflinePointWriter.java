@@ -28,7 +28,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class OfflineWriter implements Writer {
+final class OfflinePointWriter implements PointWriter {
 
   final Path tempFile;
   final OutputStreamDataOutput out;
@@ -38,7 +38,7 @@ final class OfflineWriter implements Writer {
   private long countWritten;
   private boolean closed;
 
-  public OfflineWriter(long count, int packedBytesLength) throws IOException {
+  public OfflinePointWriter(long count, int packedBytesLength) throws IOException {
     tempFile = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "size" + count + ".", "");
     // nocommit cutover to Directory API
     out = new OutputStreamDataOutput(new BufferedOutputStream(Files.newOutputStream(tempFile)));
@@ -57,9 +57,9 @@ final class OfflineWriter implements Writer {
   }
 
   @Override
-  public Reader getReader(long start) throws IOException {
+  public PointReader getReader(long start) throws IOException {
     assert closed;
-    return new OfflineReader(tempFile, packedBytesLength, start, count-start);
+    return new OfflinePointReader(tempFile, packedBytesLength, start, count-start);
   }
 
   @Override

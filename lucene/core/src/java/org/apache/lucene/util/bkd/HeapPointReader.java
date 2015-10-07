@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.apache.lucene.util.PagedBytes;
 
-final class HeapReader implements Reader {
+final class HeapPointReader implements PointReader {
   private int curRead;
   final List<byte[]> blocks;
   final int valuesPerBlock;
@@ -31,7 +31,7 @@ final class HeapReader implements Reader {
   final int end;
   final byte[] scratch;
 
-  HeapReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, long[] ords, int[] docIDs, int start, int end) {
+  HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, long[] ords, int[] docIDs, int start, int end) {
     this.blocks = blocks;
     this.valuesPerBlock = valuesPerBlock;
     this.ords = ords;

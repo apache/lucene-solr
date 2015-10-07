@@ -20,8 +20,9 @@ package org.apache.lucene.util.bkd;
 import java.io.Closeable;
 import java.io.IOException;
 
-/** Abstracts away whether OfflineSorter or simple arrays in heap are used. */
-interface Reader extends Closeable {
+/** Iterates through all points written with a {@link PointWriter}, and abstracts away
+ *  whether points a read from disk or simple arrays in heap. */
+interface PointReader extends Closeable {
   boolean next() throws IOException;
   // nocommit maybe caller should pass in reused buffer?  reduces GC on recursion...?
   byte[] packedValue();

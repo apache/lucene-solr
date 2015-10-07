@@ -101,7 +101,7 @@ public final class BKDWriter {
   // nocommit grep for lat / lon and fix!
 
   private OfflineSorter.ByteSequencesWriter writer;
-  private HeapWriter heapWriter;
+  private HeapPointWriter heapPointWriter;
 
   private Path tempInput;
   private final int maxPointsInLeafNode;
@@ -136,7 +136,7 @@ public final class BKDWriter {
     maxPointsSortInHeap = Math.max(maxPointsInLeafNode, (int) (0.25 * (maxMBSortInHeap * 1024 * 1024) / bytesPerDoc));
 
     // We write first maxPointsSortInHeap in heap, then cutover to offline for additional points:
-    heapWriter = new HeapWriter(16, maxPointsSortInHeap, packedBytesLength);
+    heapPointWriter = new HeapPointWriter(16, maxPointsSortInHeap, packedBytesLength);
   }
 
   public static void verifyParams(int numDims, int maxPointsInLeafNode, float maxMBSortInHeap) {
@@ -163,7 +163,7 @@ public final class BKDWriter {
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
     tempInput = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "in", "");
     writer = new OfflineSorter.ByteSequencesWriter(tempInput);
-    Reader reader = heapWriter.getReader(0);
+    PointReader reader = heapPointWriter.getReader(0);
     for(int i=0;i<pointCount;i++) {
       boolean hasNext = reader.next();
       assert hasNext;
@@ -172,13 +172,13 @@ public final class BKDWriter {
 
       scratchBytesOutput.reset(scratchBytes);
       scratchBytesOutput.writeBytes(packedValue, 0, packedValue.length);
-      scratchBytesOutput.writeVInt(heapWriter.docIDs[i]);
+      scratchBytesOutput.writeVInt(heapPointWriter.docIDs[i]);
       scratchBytesOutput.writeVLong(i);
       // TODO: can/should OfflineSorter optimize the fixed-width case?
       writer.write(scratchBytes, 0, scratchBytes.length);
     }
 
-    heapWriter = null;
+    heapPointWriter = null;
   }
 
   public void add(byte[] packedValue, int docID) throws IOException {
@@ -197,7 +197,7 @@ public final class BKDWriter {
       writer.write(scratchBytes, 0, scratchBytes.length);
     } else {
       // Not too many points added yet, continue using heap:
-      heapWriter.append(packedValue, pointCount, docID);
+      heapPointWriter.append(packedValue, pointCount, docID);
     }
 
     pointCount++;
@@ -208,19 +208,19 @@ public final class BKDWriter {
 
   /** Changes incoming {@link ByteSequencesWriter} file to to fixed-width-per-entry file, because we need to be able to slice
    *  as we recurse in {@link #build}. */
-  private Writer convertToFixedWidth(Path in) throws IOException {
+  private PointWriter convertToFixedWidth(Path in) throws IOException {
     BytesRefBuilder scratch = new BytesRefBuilder();
     scratch.grow(bytesPerDoc);
     BytesRef bytes = scratch.get();
     ByteArrayDataInput dataReader = new ByteArrayDataInput();
 
     OfflineSorter.ByteSequencesReader reader = null;
-    Writer sortedWriter = null;
+    PointWriter sortedPointWriter = null;
     boolean success = false;
     byte[] packedValue = new byte[packedBytesLength];
     try {
       reader = new OfflineSorter.ByteSequencesReader(in);
-      sortedWriter = getWriter(pointCount);
+      sortedPointWriter = getPointWriter(pointCount);
       for (long i=0;i<pointCount;i++) {
         boolean result = reader.read(scratch);
         assert result;
@@ -229,23 +229,23 @@ public final class BKDWriter {
         int docID = dataReader.readVInt();
         long ord = dataReader.readVLong();
         assert docID >= 0: "docID=" + docID;
-        sortedWriter.append(packedValue, ord, docID);
+        sortedPointWriter.append(packedValue, ord, docID);
       }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(sortedWriter, reader);
+        IOUtils.close(sortedPointWriter, reader);
       } else {
-        IOUtils.closeWhileHandlingException(sortedWriter, reader);
+        IOUtils.closeWhileHandlingException(sortedPointWriter, reader);
         try {
-          sortedWriter.destroy();
+          sortedPointWriter.destroy();
         } catch (Throwable t) {
           // Suppress to keep throwing original exc
         }
       }
     }
 
-    return sortedWriter;
+    return sortedPointWriter;
   }
 
   private int compare(byte[] a, byte[] b, int dim) {
@@ -262,7 +262,7 @@ public final class BKDWriter {
   }
 
   /** If dim=-1 we sort by docID, else by that dim. */
-  private void sortHeapWriter(final HeapWriter writer, int start, int length, int dim) {
+  private void sortHeapPointWriter(final HeapPointWriter writer, int start, int length, int dim) {
 
     assert pointCount < Integer.MAX_VALUE;
 
@@ -293,7 +293,7 @@ public final class BKDWriter {
         if (dim != -1) {
           writer.readPackedValue(i, scratch1);
           writer.readPackedValue(j, scratch2);
-          int cmp = Util.compare(bytesPerDim, scratch1, dim, scratch2, dim);
+          int cmp = BKDUtil.compare(bytesPerDim, scratch1, dim, scratch2, dim);
           if (cmp != 0) {
             return cmp;
           }
@@ -310,15 +310,15 @@ public final class BKDWriter {
     }.sort(start, start+length);
   }
 
-  private Writer sort(int dim) throws IOException {
+  private PointWriter sort(int dim) throws IOException {
 
-    if (heapWriter != null) {
+    if (heapPointWriter != null) {
 
-      sortHeapWriter(heapWriter, 0, (int) pointCount, dim);
+      sortHeapPointWriter(heapPointWriter, 0, (int) pointCount, dim);
 
       // nocommit shrink wrap?
-      heapWriter.close();
-      return heapWriter;
+      heapPointWriter.close();
+      return heapPointWriter;
     } else {
 
       // Offline sort:
@@ -340,7 +340,7 @@ public final class BKDWriter {
           final int docIDB = reader.readVInt();
           final long ordB = reader.readVLong();
 
-          int cmp = Util.compare(bytesPerDim, scratch1, dim, scratch2, dim);
+          int cmp = BKDUtil.compare(bytesPerDim, scratch1, dim, scratch2, dim);
 
           if (cmp != 0) {
             return cmp;
@@ -362,7 +362,7 @@ public final class BKDWriter {
       try {
         OfflineSorter sorter = new OfflineSorter(cmp);
         sorter.sort(tempInput, sorted);
-        Writer writer = convertToFixedWidth(sorted);
+        PointWriter writer = convertToFixedWidth(sorted);
         success = true;
         return writer;
       } finally {
@@ -416,20 +416,20 @@ public final class BKDWriter {
     assert pointCount / numLeaves <= maxPointsInLeafNode: "pointCount=" + pointCount + " numLeaves=" + numLeaves + " maxPointsInLeafNode=" + maxPointsInLeafNode;
 
     // Sort all docs once by each dimension:
-    PathSlice[] sortedWriters = new PathSlice[numDims];
+    PathSlice[] sortedPointWriters = new PathSlice[numDims];
 
     boolean success = false;
     try {
       for(int dim=0;dim<numDims;dim++) {
-        sortedWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
+        sortedPointWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
       }
-      heapWriter = null;
+      heapPointWriter = null;
 
       byte[] minPacked = new byte[packedBytesLength];
       byte[] maxPacked = new byte[packedBytesLength];
       Arrays.fill(maxPacked, (byte) 0xff);
 
-      build(1, numLeaves, sortedWriters,
+      build(1, numLeaves, sortedPointWriters,
             ordBitSet, out,
             minPacked, maxPacked,
             splitPackedValues,
@@ -438,13 +438,13 @@ public final class BKDWriter {
     } finally {
       if (success) {
         for(int dim=0;dim<numDims;dim++) {
-          sortedWriters[dim].writer.destroy();
+          sortedPointWriters[dim].writer.destroy();
         }
         IOUtils.rm(tempInput);
       } else {
         for(int dim=0;dim<numDims;dim++) {
           try {
-            sortedWriters[dim].writer.destroy();
+            sortedPointWriters[dim].writer.destroy();
           } catch (Throwable t) {
             // Suppress to keep throwing original exc
           }
@@ -477,11 +477,11 @@ public final class BKDWriter {
 
   /** Sliced reference to points in an OfflineSorter.ByteSequencesWriter file. */
   private static final class PathSlice {
-    final Writer writer;
+    final PointWriter writer;
     final long start;
     final long count;
 
-    public PathSlice(Writer writer, long start, long count) {
+    public PathSlice(PointWriter writer, long start, long count) {
       this.writer = writer;
       this.start = start;
       this.count = count;
@@ -502,7 +502,7 @@ public final class BKDWriter {
     assert ordBitSet.cardinality() == 0: "cardinality=" + ordBitSet.cardinality();
 
     // Read the split value: just open a reader, seek'd to the next value after leftCount, then read its value:
-    Reader reader = source.writer.getReader(source.start + source.count - rightCount);
+    PointReader reader = source.writer.getReader(source.start + source.count - rightCount);
     boolean success = false;
     try {
       boolean result = reader.next();
@@ -537,15 +537,30 @@ public final class BKDWriter {
   /** Called only in assert */
   private boolean valueInBounds(byte[] packedValue, byte[] minPackedValue, byte[] maxPackedValue) {
     for(int dim=0;dim<numDims;dim++) {
-      if (Util.compare(bytesPerDim, packedValue, dim, minPackedValue, dim) < 0) {
+      if (BKDUtil.compare(bytesPerDim, packedValue, dim, minPackedValue, dim) < 0) {
         return false;
       }
-      if (Util.compare(bytesPerDim, packedValue, dim, maxPackedValue, dim) > 0) {
+      if (BKDUtil.compare(bytesPerDim, packedValue, dim, maxPackedValue, dim) > 0) {
         return false;
       }
     }
 
     return true;
+  }
+
+  // TODO: make this protected when we want to subclass to play with different splitting criteria
+  private int split(byte[] minPackedValue, byte[] maxPackedValue) {
+    // Find which dim has the largest span so we can split on it:
+    int splitDim = -1;
+    for(int dim=0;dim<numDims;dim++) {
+      BKDUtil.subtract(bytesPerDim, dim, maxPackedValue, minPackedValue, scratchDiff);
+      if (splitDim == -1 || BKDUtil.compare(bytesPerDim, scratchDiff, 0, scratchMax, 0) > 0) {
+        System.arraycopy(scratchDiff, 0, scratchMax, 0, bytesPerDim);
+        splitDim = dim;
+      }
+    }
+
+    return splitDim;
   }
 
   /** The array (sized numDims) of PathSlice describe the cell we have currently recursed to. */
@@ -557,16 +572,10 @@ public final class BKDWriter {
                      byte[] splitPackedValues,
                      long[] leafBlockFPs) throws IOException {
 
-    // Find which dim has the largest span so we can split on it:
-    int splitDim = -1;
-    for(int dim=0;dim<numDims;dim++) {
-      Util.subtract(bytesPerDim, dim, maxPackedValue, minPackedValue, scratchDiff);
-      if (splitDim == -1 || Util.compare(bytesPerDim, scratchDiff, 0, scratchMax, 0) > 0) {
-        System.arraycopy(scratchDiff, 0, scratchMax, 0, bytesPerDim);
-        splitDim = dim;
-      }
+    int splitDim = split(minPackedValue, maxPackedValue);
 
-      assert slices[dim].count == slices[0].count;
+    for(PathSlice slice : slices) {
+      assert slice.count == slices[0].count;
     }
 
     PathSlice source = slices[splitDim];
@@ -579,11 +588,11 @@ public final class BKDWriter {
       if (DEBUG) System.out.println("  leaf");
 
       // We ensured that maxPointsSortInHeap was >= maxPointsInLeafNode, so we better be in heap at this point:
-      assert source.writer instanceof HeapWriter;
-      HeapWriter heapSource = (HeapWriter) source.writer;
+      assert source.writer instanceof HeapPointWriter;
+      HeapPointWriter heapSource = (HeapPointWriter) source.writer;
 
       // Sort by docID in the leaf so we can delta-vInt encode:
-      sortHeapWriter(heapSource, Math.toIntExact(source.start), Math.toIntExact(source.count), -1);
+      sortHeapPointWriter(heapSource, Math.toIntExact(source.start), Math.toIntExact(source.count), -1);
 
       int lastDocID = 0;
 
@@ -649,19 +658,19 @@ public final class BKDWriter {
           continue;
         }
 
-        Writer leftWriter = null;
-        Writer rightWriter = null;
-        Reader reader = null;
+        PointWriter leftPointWriter = null;
+        PointWriter rightPointWriter = null;
+        PointReader reader = null;
 
         boolean success = false;
 
         int nextRightCount = 0;
 
         try {
-          leftWriter = getWriter(leftCount);
-          rightWriter = getWriter(source.count - leftCount);
+          leftPointWriter = getPointWriter(leftCount);
+          rightPointWriter = getPointWriter(source.count - leftCount);
 
-          //if (DEBUG) System.out.println("  partition:\n    splitValueEnc=" + splitValue + "\n    " + nextSource + "\n      --> leftSorted=" + leftWriter + "\n      --> rightSorted=" + rightWriter + ")");
+          //if (DEBUG) System.out.println("  partition:\n    splitValueEnc=" + splitValue + "\n    " + nextSource + "\n      --> leftSorted=" + leftPointWriter + "\n      --> rightSorted=" + rightPointWriter + ")");
           reader = slices[dim].writer.getReader(slices[dim].start);
 
           // Partition this source according to how the splitDim split the values:
@@ -672,24 +681,24 @@ public final class BKDWriter {
             long ord = reader.ord();
             int docID = reader.docID();
             if (ordBitSet.get(ord)) {
-              rightWriter.append(packedValue, ord, docID);
+              rightPointWriter.append(packedValue, ord, docID);
               nextRightCount++;
             } else {
-              leftWriter.append(packedValue, ord, docID);
+              leftPointWriter.append(packedValue, ord, docID);
             }
           }
           success = true;
         } finally {
           if (success) {
-            IOUtils.close(reader, leftWriter, rightWriter);
+            IOUtils.close(reader, leftPointWriter, rightPointWriter);
           } else {
-            IOUtils.closeWhileHandlingException(reader, leftWriter, rightWriter);
+            IOUtils.closeWhileHandlingException(reader, leftPointWriter, rightPointWriter);
             // nocommit we must also destroy all prior writers here (so temp files are removed)
           }
         }
 
-        leftSlices[dim] = new PathSlice(leftWriter, 0, leftCount);
-        rightSlices[dim] = new PathSlice(rightWriter, 0, rightCount);
+        leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
+        rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);
 
         assert rightCount == nextRightCount: "rightCount=" + rightCount + " nextRightCount=" + nextRightCount;
       }
@@ -744,15 +753,15 @@ public final class BKDWriter {
     }
   }
 
-  Writer getWriter(long count) throws IOException {
-    System.out.println("W: getWriter count=" + count);
+  PointWriter getPointWriter(long count) throws IOException {
+    System.out.println("W: getPointWriter count=" + count);
     if (count <= maxPointsSortInHeap) {
       System.out.println("  heap");
       int size = Math.toIntExact(count);
-      return new HeapWriter(size, size, packedBytesLength);
+      return new HeapPointWriter(size, size, packedBytesLength);
     } else {
       System.out.println("  offline");
-      return new OfflineWriter(count, packedBytesLength);
+      return new OfflinePointWriter(count, packedBytesLength);
     }
   }
 

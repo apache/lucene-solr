@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class HeapWriter implements Writer {
+final class HeapPointWriter implements PointWriter {
   int[] docIDs;
   long[] ords;
   private int nextWrite;
@@ -33,7 +33,7 @@ final class HeapWriter implements Writer {
   final int packedBytesLength;
   final List<byte[]> blocks = new ArrayList<>();
 
-  public HeapWriter(int initSize, int maxSize, int packedBytesLength) {
+  public HeapPointWriter(int initSize, int maxSize, int packedBytesLength) {
     System.out.println("HeapWriter.init initSize=" + initSize + " maxSize=" + maxSize + " packedBytesLength=" + packedBytesLength);
     docIDs = new int[initSize];
     ords = new long[initSize];
@@ -94,8 +94,8 @@ final class HeapWriter implements Writer {
   }
 
   @Override
-  public Reader getReader(long start) {
-    return new HeapReader(blocks, valuesPerBlock, packedBytesLength, ords, docIDs, (int) start, nextWrite);
+  public PointReader getReader(long start) {
+    return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, docIDs, (int) start, nextWrite);
   }
 
   @Override

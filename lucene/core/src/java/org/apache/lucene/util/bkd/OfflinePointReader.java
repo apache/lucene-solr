@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class OfflineReader implements Reader {
+final class OfflinePointReader implements PointReader {
   final InputStreamDataInput in;
   long countLeft;
   private final byte[] packedValue;
@@ -34,7 +34,7 @@ final class OfflineReader implements Reader {
   private int docID;
   final int bytesPerDoc;
 
-  OfflineReader(Path tempFile, int packedBytesLength, long start, long length) throws IOException {
+  OfflinePointReader(Path tempFile, int packedBytesLength, long start, long length) throws IOException {
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
     long seekFP = start * bytesPerDoc;
     // nocommit cutover to Directory API

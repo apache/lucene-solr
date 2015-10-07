@@ -18,9 +18,9 @@ package org.apache.lucene.util.bkd;
  */
 
 /** Utility methods to handle N-dimensional packed byte[] as if they were numbers! */
-final class Util {
+final class BKDUtil {
 
-  private Util() {
+  private BKDUtil() {
     // No instance
   }
 

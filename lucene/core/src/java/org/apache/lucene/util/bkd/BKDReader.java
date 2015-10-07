@@ -142,7 +142,8 @@ public final class BKDReader implements Accountable {
       
       // How many points are stored in this leaf cell:
       int count = state.in.readVInt();
-      // nocommit can we maybe get this back, if it's a perf win?  Note that we can also grow "up above" when addAll is first entered...
+
+      // TODO: especially for the 1D case, this was a decent speedup, because caller could know it should budget for around XXX docs:
       //state.docs.grow(count);
       int docID = 0;
       for(int i=0;i<count;i++) {
@@ -165,9 +166,9 @@ public final class BKDReader implements Accountable {
     // Optimization: only check the visitor when the current cell does not fully contain the bbox.  E.g. if the
     // query is a small area around London, UK, most of the high nodes in the BKD tree as we recurse will fully
     // contain the query, so we quickly recurse down until the nodes cross the query:
-    boolean cellContainsQuery = Util.contains(bytesPerDim,
-                                              cellMinPacked, cellMaxPacked,
-                                              state.minPacked, state.maxPacked);
+    boolean cellContainsQuery = BKDUtil.contains(bytesPerDim,
+                                                 cellMinPacked, cellMaxPacked,
+                                                 state.minPacked, state.maxPacked);
 
     //System.out.println("R: cellContainsQuery=" + cellContainsQuery);
 
@@ -225,7 +226,7 @@ public final class BKDReader implements Accountable {
 
       byte[] splitPackedValue = new byte[packedBytesLength];
 
-      if (Util.compare(bytesPerDim, state.minPacked, splitDim, splitValue, 0) <= 0) {
+      if (BKDUtil.compare(bytesPerDim, state.minPacked, splitDim, splitValue, 0) <= 0) {
         // The query bbox overlaps our left cell, so we must recurse:
         System.arraycopy(state.maxPacked, 0, splitPackedValue, 0, packedBytesLength);
         System.arraycopy(splitValue, 0, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
@@ -234,7 +235,7 @@ public final class BKDReader implements Accountable {
                   cellMinPacked, splitPackedValue);
       }
 
-      if (Util.compare(bytesPerDim, state.maxPacked, splitDim, splitValue, 0) >= 0) {
+      if (BKDUtil.compare(bytesPerDim, state.maxPacked, splitDim, splitValue, 0) >= 0) {
         // The query bbox overlaps our left cell, so we must recurse:
         System.arraycopy(state.minPacked, 0, splitPackedValue, 0, packedBytesLength);
         System.arraycopy(splitValue, 0, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
