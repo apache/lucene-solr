@@ -51,6 +51,14 @@ solrAdminApp.config([
         templateUrl: 'partials/cores.html',
         controller: 'CoreAdminController'
       }).
+      when('/~collections', {
+        templateUrl: 'partials/collections.html',
+        controller: 'CollectionsController'
+      }).
+      when('/~collections/:collection', {
+        templateUrl: 'partials/collections.html',
+        controller: 'CollectionsController'
+      }).
       when('/~threads', {
         templateUrl: 'partials/threads.html',
         controller: 'ThreadsController'

@@ -27,6 +27,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/analysis.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cloud.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cores.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/collections.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/dashboard.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/dataimport.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/files.css?_=${version}">
@@ -60,6 +61,7 @@ limitations under the License.
   <script src="js/angular/controllers/index.js"></script>
   <script src="js/angular/controllers/logging.js"></script>
   <script src="js/angular/controllers/cloud.js"></script>
+  <script src="js/angular/controllers/collections.js"></script>
   <script src="js/angular/controllers/cores.js"></script>
   <script src="js/angular/controllers/threads.js"></script>
   <script src="js/angular/controllers/java-properties.js"></script>
@@ -151,7 +153,8 @@ limitations under the License.
               </ul>
             </li>
 
-            <li id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
+            <li ng-show="isCloudEnabled" id="collections" class="global" ng-class="{active:page=='collections'}"><p><a href="#/~collections">Collections</a></p></li>
+            <li ng-hide="isCloudEnabled" id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
 
             <li id="java-properties" class="global" ng-class="{active:page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></li>
 
