@@ -173,6 +173,10 @@ Bug Fixes
   it opened, leading to intermittent failures on Windows (Dawid Weiss,
   Robert Muir, Mike McCandless)
 
+* LUCENE-6826: Fix ClassCastException when merging a field that has no
+  terms because they were filtered out by e.g. a FilterCodecReader
+  (Trejkaz via Mike McCandless)
+
 Other
 
 * LUCENE-6827: Use explicit capacity ArrayList instead of a LinkedList 
