@@ -214,6 +214,12 @@ public class TestMultiTermsEnum extends LuceneTestCase {
           }
 
           @Override
+          public void remove()
+          {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
           public String next()
           {
             return fieldInfoIterator.next().name;
