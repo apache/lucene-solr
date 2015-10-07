@@ -36,7 +36,7 @@ limitations under the License.
             <dd class="value">{{selectedCollection.replicationFactor}}</dd>
 
           <dt>Auto-add replicas:</dt>
-            <dd class="ico value" ng-class="selectedCollection.autoAddReplicas ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
+            <dd class="ico value" ng-class="selectedCollection.autoAddReplicas=='true' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
 
           <dt>Router name:</dt>
             <dd class="value">{{selectedCollection.router.name}}</dd>
