@@ -33,6 +33,7 @@ solrAdminApp.controller('SchemaBrowserController',
                     var search = $location.search();
                     leftbar = {};
                     $scope.isField = $scope.isDynamicField = $scope.isType = false;
+                    $scope.showing = true;
                     if (search.field) {
                         $scope.selectedType = "Field";
                         $scope.is.field = true;
@@ -59,6 +60,8 @@ solrAdminApp.controller('SchemaBrowserController',
                         leftbar.fields = filterFields("fields", data, $scope.name);
                         leftbar.dynamicFields = filterFields("dynamic_fields", data, $scope.name);
                         $scope.fieldOrType = "type=" + $scope.name;
+                    } else {
+                        $scope.showing = false;
                     }
                     $scope.leftbar = leftbar;
                     $scope.core = $routeParams.core;
