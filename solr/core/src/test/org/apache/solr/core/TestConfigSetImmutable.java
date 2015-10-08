@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.RestTestBase;
 import org.junit.After;
 import org.junit.Before;
@@ -48,9 +50,8 @@ public class TestConfigSetImmutable extends RestTestBase {
     FileUtils.write(new File(tmpConfDir, "configsetprops.json"), new StringBuilder("{\"immutable\":\"true\"}"));
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-schemaless.xml", "schema-rest.xml",
         "/solr", true, null);
   }
 
@@ -94,5 +95,25 @@ public class TestConfigSetImmutable extends RestTestBase {
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNotNull(map.get("errors"));
     assertTrue(map.get("errors").toString().contains("immutable"));
+  }
+
+  @Test
+  public void testAddSchemaFieldsImmutable() throws Exception {
+    final String error = "error";
+
+    // check writing an existing field is okay
+    String updateXMLSafe = "<add><doc><field name=\"id\">\"testdoc\"</field></doc></add>";
+    String response = restTestHarness.update(updateXMLSafe);
+    XMLResponseParser parser = new XMLResponseParser();
+    NamedList<Object> listResponse = parser.processResponse(new StringReader(response));
+    assertNull(listResponse.get(error));
+
+    // check writing a new field is not okay
+    String updateXMLNotSafe = "<add><doc><field name=\"id\">\"testdoc\"</field>" +
+        "<field name=\"newField67\">\"foobar\"</field></doc></add>";
+    response = restTestHarness.update(updateXMLNotSafe);
+    listResponse = parser.processResponse(new StringReader(response));
+    assertNotNull(listResponse.get(error));
+    assertTrue(listResponse.get(error).toString().contains("immutable"));
   }
 }
