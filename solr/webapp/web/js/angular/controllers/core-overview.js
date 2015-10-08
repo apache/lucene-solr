@@ -103,14 +103,13 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
 
   $scope.refreshPing = function() {
     Ping.status({core: $routeParams.core}, function(data) {
-      $scope.healthcheckStatus = data.status == "enabled";
-    }).$promise.catch(function(error) {
-      if (error.status == 404) {
+      if (data.error) {
         $scope.healthcheckStatus = false;
+        if (data.error.code == 503) {
+          $scope.healthcheckMessage = 'Ping request handler is not configured with a healthcheck file.';
+        }
       } else {
-        $scope.healthcheckStatus = false;
-        delete $rootScope.exception;
-        $scope.healthcheckMessage = 'Ping request handler is not configured with a healthcheck file.';
+        $scope.healthcheckStatus = data.status == "enabled";
       }
     });
   };
