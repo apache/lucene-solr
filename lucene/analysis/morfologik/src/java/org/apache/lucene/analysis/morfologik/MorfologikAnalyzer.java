@@ -20,6 +20,9 @@ package org.apache.lucene.analysis.morfologik;
 
 import java.io.Reader;
 
+import morfologik.stemming.Dictionary;
+import morfologik.stemming.polish.PolishStemmer;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
@@ -30,27 +33,23 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
  */
 public class MorfologikAnalyzer extends Analyzer {
-  private final String dictionary;
+  private final Dictionary dictionary;
 
   /**
-   * Builds an analyzer with an explicit dictionary resource.
+   * Builds an analyzer with an explicit {@link Dictionary} resource.
    * 
-   * @param dictionaryResource A constant specifying which dictionary to choose. The
-   * dictionary resource must be named <code>morfologik/dictionaries/{dictionaryResource}.dict</code>
-   * and have an associated <code>.info</code> metadata file. See the Morfologik project
-   * for details.
-   * 
-   * @see <a href="http://morfologik.blogspot.com/">http://morfologik.blogspot.com/</a>
+   * @param dictionary A prebuilt automaton with inflected and base word forms.
+   * @see <a href="https://github.com/morfologik/">https://github.com/morfologik/</a>
    */
-  public MorfologikAnalyzer(final String dictionaryResource) {
-    this.dictionary = dictionaryResource;
+  public MorfologikAnalyzer(final Dictionary dictionary) {
+    this.dictionary = dictionary;
   }
   
   /**
    * Builds an analyzer with the default Morfologik's Polish dictionary.
    */
   public MorfologikAnalyzer() {
-    this(MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
+    this(new PolishStemmer().getDictionary());
   }
 
   /**

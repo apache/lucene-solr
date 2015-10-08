@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.morfologik;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,51 +33,59 @@ import org.apache.lucene.analysis.util.ResourceLoader;
  * Test for {@link MorfologikFilterFactory}.
  */
 public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
-  final ResourceLoader loader = new ClasspathResourceLoader(getClass());
+  private static class ForbidResourcesLoader implements ResourceLoader {
+    @Override
+    public InputStream openResource(String resource) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> T newInstance(String cname, Class<T> expectedType) {
+      throw new UnsupportedOperationException();
+    }
+  }
 
   public void testDefaultDictionary() throws Exception {
     StringReader reader = new StringReader("rowery bilety");
     MorfologikFilterFactory factory = new MorfologikFilterFactory(Collections.<String,String>emptyMap());
-    factory.inform(loader);
+    factory.inform(new ForbidResourcesLoader());
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] {"rower", "bilet"});
   }
-  
-  public void testResourceDictionary() throws Exception {
-    StringReader reader = new StringReader("rowery bilety");
+
+  public void testExplicitDictionary() throws Exception {
+    final ResourceLoader loader = new ClasspathResourceLoader(TestMorfologikFilterFactory.class);
+
+    StringReader reader = new StringReader("inflected1 inflected2");
     Map<String,String> params = new HashMap<>();
-    params.put(MorfologikFilterFactory.DICTIONARY_RESOURCE_ATTRIBUTE, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
+    params.put(MorfologikFilterFactory.DICTIONARY_ATTRIBUTE, "custom-dictionary.dict");
     MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
     factory.inform(loader);
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] {"rower", "bilet"});
+    assertTokenStreamContents(stream, new String[] {"lemma1", "lemma2"});
   }
-  
-  public void testResourceLoaderDictionary1() throws Exception {
-    StringReader reader = new StringReader("rowery bilety");
-    Map<String,String> params = new HashMap<>();
-    params.put(MorfologikFilterFactory.DICTIONARY_FSA_FILE_ATTRIBUTE, "/morfologik/dictionaries/pl.dict");
-    MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
-    factory.inform(loader);
-    TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] {"rower", "bilet"});
+
+  public void testMissingDictionary() throws Exception {
+    final ResourceLoader loader = new ClasspathResourceLoader(TestMorfologikFilterFactory.class);
+
+    try {
+      Map<String,String> params = new HashMap<>();
+      params.put(MorfologikFilterFactory.DICTIONARY_ATTRIBUTE, "missing-dictionary-resource.dict");
+      MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
+      factory.inform(loader);
+      fail();
+    } catch (IOException e) {
+      assertTrue(e.getMessage().contains("Resource not found"));
+    }
   }
-  
-  public void testResourceLoaderDictionary2() throws Exception {
-    StringReader reader = new StringReader("rowery bilety");
-    Map<String,String> params = new HashMap<>();
-    params.put(MorfologikFilterFactory.DICTIONARY_FSA_FILE_ATTRIBUTE, "/morfologik/dictionaries/pl.dict");
-    params.put(MorfologikFilterFactory.DICTIONARY_FEATURES_FILE_ATTRIBUTE, "/morfologik/dictionaries/pl.info");
-    MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
-    factory.inform(loader);
-    TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] {"rower", "bilet"});
-  }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     try {
@@ -85,42 +95,6 @@ public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
       fail();
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
-  }
-  
-  public void testIncompatibleArgs1() throws Exception {
-    try {
-      HashMap<String,String> params = new HashMap<String,String>();
-      params.put(MorfologikFilterFactory.DICTIONARY_RESOURCE_ATTRIBUTE, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
-      params.put(MorfologikFilterFactory.DICTIONARY_FSA_FILE_ATTRIBUTE, "/morfologik/dictionaries/pl.dict");
-      new MorfologikFilterFactory(params);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("at the same time"));
-    }
-  }
-  
-  public void testIncompatibleArgs2() throws Exception {
-    try {
-      HashMap<String,String> params = new HashMap<String,String>();
-      params.put(MorfologikFilterFactory.DICTIONARY_RESOURCE_ATTRIBUTE, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
-      params.put(MorfologikFilterFactory.DICTIONARY_FSA_FILE_ATTRIBUTE, "/morfologik/dictionaries/pl.dict");
-      params.put(MorfologikFilterFactory.DICTIONARY_FEATURES_FILE_ATTRIBUTE, "/morfologik/dictionaries/pl.info");
-      new MorfologikFilterFactory(params);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("at the same time"));
-    }
-  }
-  
-  public void testMissingArgs1() throws Exception {
-    try {
-      HashMap<String,String> params = new HashMap<String,String>();
-      params.put(MorfologikFilterFactory.DICTIONARY_FEATURES_FILE_ATTRIBUTE, "/morfologik/dictionaries/pl.info");
-      new MorfologikFilterFactory(params);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Missing"));
     }
   }
 }

@@ -18,9 +18,8 @@
  -->
 
 <project name="analyzers-morfologik" default="default">
-
   <description>
-    Analyzer for indexing Polish
+    Analyzer for dictionary stemming, built-in Polish dictionary
   </description>
 
   <import file="../analysis-module-build.xml"/>
@@ -29,6 +28,12 @@
     <pathelement path="${analyzers-common.jar}"/>
     <fileset dir="lib"/>
     <path refid="base.classpath"/>
+  </path>
+  
+  
+  <path id="test.classpath">
+    <path refid="test.base.classpath" />
+    <pathelement path="src/test-files" />
   </path>
 
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
