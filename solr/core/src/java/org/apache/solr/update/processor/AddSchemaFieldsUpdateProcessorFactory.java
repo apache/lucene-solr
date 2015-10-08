@@ -47,6 +47,7 @@ import java.util.Set;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
 
 
 /**
@@ -290,6 +291,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           // nothing to do - no fields will be added - exit from the retry loop
           log.debug("No fields to add to the schema.");
           break;
+        } else if ( isImmutableConfigSet(core) ) {
+          final String message = "This ConfigSet is immutable.";
+          throw new SolrException(BAD_REQUEST, message);
         }
         if (log.isDebugEnabled()) {
           StringBuilder builder = new StringBuilder();
@@ -398,6 +402,12 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           (solrResourceLoader, schema, exc, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
       }
       return selector;
+    }
+
+    private boolean isImmutableConfigSet(SolrCore core) {
+      NamedList args = core.getConfigSetProperties();
+      Object immutable = args != null ? args.get(IMMUTABLE_CONFIGSET_ARG) : null;
+      return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
     }
   }
 }

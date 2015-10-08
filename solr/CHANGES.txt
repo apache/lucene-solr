@@ -242,6 +242,8 @@ Bug Fixes
 
 * SOLR-7666: Many small fixes to Angular UI (Upayavira, Alexandre Rafalovitch)
 
+* SOLR-7967: AddSchemaFieldsUpdateProcessorFactory does not check if the ConfigSet is immutable (Gregory Chanan)
+
 Optimizations
 ----------------------
 
