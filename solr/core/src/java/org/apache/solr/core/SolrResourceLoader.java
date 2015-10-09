@@ -140,8 +140,16 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
     
     this.classLoader = createClassLoader(null, parent);
-    addToClassLoader("./lib/", null, true);
-    reloadLuceneSPI();
+    /* 
+     * Skip the lib subdirectory when we are loading from the solr home.
+     * Otherwise load it, so core lib directories still get loaded.
+     * The default sharedLib will pick this up later, and if the user has
+     * changed sharedLib, then we don't want to load that location anyway.
+     */
+    if (! this.instanceDir.equals(SolrResourceLoader.locateSolrHome())) {
+      addToClassLoader("./lib/", null, true);
+      reloadLuceneSPI();
+    }
     this.coreProperties = coreProperties;
   }
 

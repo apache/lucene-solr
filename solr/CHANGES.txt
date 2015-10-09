@@ -145,6 +145,11 @@ Bug Fixes
 
 * SOLR-7967: AddSchemaFieldsUpdateProcessorFactory does not check if the ConfigSet is immutable (Gregory Chanan)
 
+* SOLR-6188: Skip the automatic loading of resources in the "lib" subdirectory
+  by SolrResourceLoader, but only if we are loading resources from the solr
+  home directory.  Fixes the inability to use ICU analysis components with a
+  "solr." prefix on the classname. (Shawn Heisey)
+
 Optimizations
 ----------------------
 
