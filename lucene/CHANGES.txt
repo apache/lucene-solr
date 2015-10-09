@@ -238,6 +238,8 @@ Other
   reflection on Java's runtime classes is very restricted.
   (Robert Muir, Uwe Schindler)
 
+* LUCENE-6467: Simplify Query.equals. (Paul Elschot via Adrien Grand)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
