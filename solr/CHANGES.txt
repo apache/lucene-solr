@@ -322,6 +322,8 @@ Other Changes
 
 * SOLR-8025: remove unnecessary ResponseBuilder.getQueryCommand() calls (Christine Poerschke)
 
+* SOLR-8150: Fix build failure due to too much output from QueryResponseTest (janhoy)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

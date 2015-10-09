@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.response;
 import junit.framework.Assert;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.DateUtil;
@@ -38,6 +39,7 @@ import java.util.List;
  * 
  * @since solr 1.3
  */
+@Limit(bytes=20000)
 public class QueryResponseTest extends LuceneTestCase {
   @Test
   public void testDateFacets() throws Exception   {
