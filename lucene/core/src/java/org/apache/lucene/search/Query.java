@@ -113,15 +113,11 @@ public abstract class Query implements Cloneable {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
     if (obj == null)
       return false;
     if (getClass() != obj.getClass())
       return false;
     Query other = (Query) obj;
-    if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost))
-      return false;
-    return true;
+    return Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost)
   }
 }
