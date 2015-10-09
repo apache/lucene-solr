@@ -22,6 +22,7 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
 import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
+import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -73,6 +74,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(ExportQParserPlugin.NAME, ExportQParserPlugin.class);
     map.put(MLTQParserPlugin.NAME, MLTQParserPlugin.class);
     map.put(HashQParserPlugin.NAME, HashQParserPlugin.class);
+    map.put(GraphQParserPlugin.NAME, GraphQParserPlugin.class);
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
