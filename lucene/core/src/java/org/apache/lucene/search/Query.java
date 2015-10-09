@@ -118,6 +118,6 @@ public abstract class Query implements Cloneable {
     if (getClass() != obj.getClass())
       return false;
     Query other = (Query) obj;
-    return Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost)
+    return Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
   }
 }
