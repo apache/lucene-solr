@@ -177,6 +177,10 @@ Bug Fixes
   terms because they were filtered out by e.g. a FilterCodecReader
   (Trejkaz via Mike McCandless)
 
+* LUCENE-6823: LocalReplicator should use System.nanoTime as its clock
+  source for checking for expiration (Ishan Chattopadhyaya via Mike
+  McCandless)
+
 Other
 
 * LUCENE-6827: Use explicit capacity ArrayList instead of a LinkedList 
