@@ -71,11 +71,6 @@ New Features
 
 * SOLR-8038: Add the StatsStream to the Streaming API and wire it into the SQLHandler (Joel Bernstein)
 
-* SOLR-6188: Skip the automatic loading of resources in the "lib" subdirectory
-  by SolrResourceLoader, but only if we are loading resources from the solr
-  home directory.  Fixes the inability to use ICU analysis components with a
-  "solr." prefix on the classname. (Shawn Heisey)
-
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
@@ -248,6 +243,11 @@ Bug Fixes
 * SOLR-7666: Many small fixes to Angular UI (Upayavira, Alexandre Rafalovitch)
 
 * SOLR-7967: AddSchemaFieldsUpdateProcessorFactory does not check if the ConfigSet is immutable (Gregory Chanan)
+
+* SOLR-6188: Skip the automatic loading of resources in the "lib" subdirectory
+  by SolrResourceLoader, but only if we are loading resources from the solr
+  home directory.  Fixes the inability to use ICU analysis components with a
+  "solr." prefix on the classname. (Shawn Heisey)
 
 Optimizations
 ----------------------
