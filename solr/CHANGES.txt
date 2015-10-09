@@ -71,6 +71,8 @@ New Features
 
 * SOLR-8038: Add the StatsStream to the Streaming API and wire it into the SQLHandler (Joel Bernstein)
 
+* SOLR-8086: Add support for SELECT DISTINCT queries to the SQL interface (Joel Bernstein) 
+
 * SOLR-7543: Basic graph traversal query
   Example: {!graph from="node_id" to="edge_id"}id:doc_1
   (Kevin Watters, yonik)

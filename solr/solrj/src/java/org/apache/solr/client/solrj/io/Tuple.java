@@ -63,6 +63,10 @@ public class Tuple implements Cloneable {
     this.fields.put(key, value);
   }
 
+  public void remove(Object key) {
+    this.fields.remove(key);
+  }
+
   public String getString(Object key) {
     return this.fields.get(key).toString();
   }
