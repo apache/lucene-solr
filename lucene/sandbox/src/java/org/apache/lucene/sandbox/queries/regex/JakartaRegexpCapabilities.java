@@ -25,7 +25,6 @@ import org.apache.regexp.RE;
 import org.apache.regexp.REProgram;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 
@@ -39,34 +38,20 @@ import java.security.PrivilegedAction;
  */
 @Deprecated
 public class JakartaRegexpCapabilities implements RegexCapabilities {
-  private static Field prefixField;
-  private static Method getPrefixMethod;
 
-  static {
-    initClass();
-  }
-  
-  @SuppressForbidden(reason = "TODO: Remove this class completely and also the hack around setAccessible!")
-  private static void initClass() {
-    AccessController.doPrivileged(new PrivilegedAction<Void>() {
-      @Override
-      @SuppressForbidden(reason = "This methods needs to access to prefix private field in REProgram. This class will be removed in Lucene 6")
-      public Void run() {
-        try {
-          getPrefixMethod = REProgram.class.getMethod("getPrefix");
-        } catch (Exception e) {
-          getPrefixMethod = null;
-        }
-        try {
-          prefixField = REProgram.class.getDeclaredField("prefix");
-          prefixField.setAccessible(true);
-        } catch (Exception e) {
-          prefixField = null;
-        }
-        return null; // Void
+  private static Field prefixField = AccessController.doPrivileged(new PrivilegedAction<Field>() {
+    @Override
+    @SuppressForbidden(reason = "This method needs to access to the 'prefix' private field in Jakarta's REProgram. This class will be removed in Lucene 6.")
+    public Field run() {
+      try {
+        final Field f = REProgram.class.getDeclaredField("prefix");
+        f.setAccessible(true);
+        return f;
+      } catch (Exception e) {
+        return null;
       }
-    });
-  }
+    }
+  });
   
   // Define the flags that are possible. Redefine them here
   // to avoid exposing the RE class to the caller.
@@ -169,9 +154,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     public String prefix() {
       try {
         final char[] prefix;
-        if (getPrefixMethod != null) {
-          prefix = (char[]) getPrefixMethod.invoke(regexp.getProgram());
-        } else if (prefixField != null) {
+        if (prefixField != null) {
           prefix = (char[]) prefixField.get(regexp.getProgram());
         } else {
           return null;
