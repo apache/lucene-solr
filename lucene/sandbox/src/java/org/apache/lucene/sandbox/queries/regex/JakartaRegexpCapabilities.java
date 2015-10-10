@@ -41,7 +41,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
 
   private static Field prefixField = AccessController.doPrivileged(new PrivilegedAction<Field>() {
     @Override
-    @SuppressForbidden(reason = "This method needs to access to the 'prefix' private field in Jakarta's REProgram. This class will be removed in Lucene 6.")
+    @SuppressForbidden(reason = "This class needs to access to the 'prefix' private field in Jakarta's REProgram. This class will be removed in Lucene 6.")
     public Field run() {
       try {
         final Field f = REProgram.class.getDeclaredField("prefix");
