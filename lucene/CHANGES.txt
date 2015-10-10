@@ -97,6 +97,8 @@ API Changes
   spatial Filters are now subclass Query.  The spatial heatmap/facet API
   now accepts a Bits parameter to filter counts. (David Smiley, Adrien Grand)
 
+* LUCENE-6803: Deprecate sandbox Regexp Query. (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

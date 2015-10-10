@@ -23,9 +23,4 @@
 
   <import file="../module-build.xml"/>
 
-  <path id="classpath">
-    <fileset dir="lib"/>
-    <path refid="base.classpath"/>
-  </path>
-
 </project>

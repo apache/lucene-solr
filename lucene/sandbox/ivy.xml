@@ -18,11 +18,4 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.lucene" module="sandbox"/>
-  <configurations defaultconfmapping="compile->master">
-    <conf name="compile" transitive="false"/>
-  </configurations>
-  <dependencies>
-    <dependency org="jakarta-regexp" name="jakarta-regexp" rev="${/jakarta-regexp/jakarta-regexp}" conf="compile"/>
-    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-  </dependencies>
 </ivy-module>
