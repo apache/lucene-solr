@@ -522,20 +522,4 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         );
   }
 
-  private void waitForWarming() throws InterruptedException {
-    RefCounted<SolrIndexSearcher> registeredSearcher = h.getCore().getRegisteredSearcher();
-    RefCounted<SolrIndexSearcher> newestSearcher = h.getCore().getNewestSearcher(false);;
-    while (registeredSearcher == null || registeredSearcher.get() != newestSearcher.get()) {
-      if (registeredSearcher != null) {
-        registeredSearcher.decref();
-      }
-      newestSearcher.decref();
-      Thread.sleep(50);
-      registeredSearcher = h.getCore().getRegisteredSearcher();
-      newestSearcher = h.getCore().getNewestSearcher(false);
-    }
-    registeredSearcher.decref();
-    newestSearcher.decref();
-  }
-  
 }

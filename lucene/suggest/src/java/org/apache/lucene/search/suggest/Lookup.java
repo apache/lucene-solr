@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -250,6 +251,22 @@ public abstract class Lookup implements Accountable {
    * @return a list of possible completions, with their relative weight (e.g. popularity)
    */
   public abstract List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) throws IOException;
+
+  /**
+   * Look up a key and return possible completion for this key.
+   * This needs to be overridden by all implementing classes as the default implementation just returns null
+   *
+   * @param key the lookup key
+   * @param contextFilerQuery A query for further filtering the result of the key lookup
+   * @param num maximum number of results to return
+   * @param allTermsRequired true is all terms are required
+   * @param doHighlight set to true if key should be highlighted
+   * @return a list of suggestions/completions. The default implementation returns null, meaning each @Lookup implementation should override this and provide their own implementation
+   * @throws IOException when IO exception occurs
+   */
+  public List<LookupResult> lookup(CharSequence key, BooleanQuery contextFilerQuery, int num, boolean allTermsRequired, boolean doHighlight) throws IOException{
+    return null;
+  }
 
   /**
    * Persist the constructed lookup data to a directory. Optional operation.

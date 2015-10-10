@@ -98,6 +98,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.TestHarness;
@@ -2117,4 +2118,20 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return result;
   }
 
+  protected void waitForWarming() throws InterruptedException {
+    RefCounted<SolrIndexSearcher> registeredSearcher = h.getCore().getRegisteredSearcher();
+    RefCounted<SolrIndexSearcher> newestSearcher = h.getCore().getNewestSearcher(false);
+    ;
+    while (registeredSearcher == null || registeredSearcher.get() != newestSearcher.get()) {
+      if (registeredSearcher != null) {
+        registeredSearcher.decref();
+      }
+      newestSearcher.decref();
+      Thread.sleep(50);
+      registeredSearcher = h.getCore().getRegisteredSearcher();
+      newestSearcher = h.getCore().getNewestSearcher(false);
+    }
+    registeredSearcher.decref();
+    newestSearcher.decref();
+  }
 }

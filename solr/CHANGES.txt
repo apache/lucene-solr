@@ -176,6 +176,8 @@ New Features
 
 * SOLR-7858: Add links between original and new Admin UIs (Upayavira)
 
+* SOLR-7888: Analyzing suggesters can now filter suggestions by a context field (Arcadius Ahouansou, janhoy)
+
 Bug Fixes
 ----------------------
 
