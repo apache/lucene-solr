@@ -30,8 +30,9 @@ import org.apache.lucene.util.StringHelper;
  * <p>
  * Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
+ * @deprecated Use core's regex query.
  */
-
+@Deprecated
 public class RegexTermsEnum extends FilteredTermsEnum {
 
   private RegexCapabilities.RegexMatcher regexImpl;

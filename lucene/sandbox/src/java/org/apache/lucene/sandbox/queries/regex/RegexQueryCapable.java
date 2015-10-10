@@ -20,7 +20,9 @@ package org.apache.lucene.sandbox.queries.regex;
 
 /**
  * Defines methods for regular expression supporting Querys to use.
+ * @deprecated Use core's regex query.
  */
+@Deprecated
 public interface RegexQueryCapable {
   
   /**

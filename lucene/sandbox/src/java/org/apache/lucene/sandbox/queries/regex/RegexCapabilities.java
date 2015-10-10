@@ -22,7 +22,9 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Defines basic operations needed by {@link RegexQuery} for a regular
  * expression implementation.
+ * @deprecated Use core's regex query.
  */
+@Deprecated
 public interface RegexCapabilities {
   /**
    * Called by the constructor of {@link RegexTermsEnum} allowing
@@ -44,7 +46,9 @@ public interface RegexCapabilities {
    * prefix.
    * <p>
    * NOTE: implementations cannot seek.
+   * @deprecated Use core's regex query.
    */
+  @Deprecated
   public interface RegexMatcher {
     /**
      *

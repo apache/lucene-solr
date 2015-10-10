@@ -30,7 +30,9 @@ import org.apache.lucene.util.CharsRefBuilder;
  * {@link RegexCapabilities.RegexMatcher#prefix()} that queries using this implementation 
  * will enumerate and attempt to {@link RegexCapabilities.RegexMatcher#match(BytesRef)} each 
  * term for the specified field in the index.
+ * @deprecated Use core's regex query.
  */
+@Deprecated
 public class JavaUtilRegexCapabilities implements RegexCapabilities {
 
   private int flags = 0;

@@ -35,7 +35,9 @@ import java.io.IOException;
  * in {@link RegexpQuery} instead, as it has better performance.
  * 
  * @see RegexTermsEnum
+ * @deprecated Use core's regex query.
  */
+@Deprecated
 public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
 
   private RegexCapabilities regexImpl = new JavaUtilRegexCapabilities();
