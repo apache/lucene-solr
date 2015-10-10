@@ -99,6 +99,7 @@ public class ImplicitPlugins {
   public static PluginInfo getReqHandlerInfo(String name, Class clz, Map defaults) {
     if (defaults == null) defaults = Collections.emptyMap();
     Map m = makeMap(NAME, name, "class", clz.getName());
-    return new PluginInfo(SolrRequestHandler.TYPE, m, new NamedList<>(singletonMap(DEFAULTS, new NamedList(defaults))), null);
+    // be explicit with generics, because Java 9 fails to compile otherwise (type inference: Map.Entry[] vs. singletonMap):
+    return new PluginInfo(SolrRequestHandler.TYPE, m, new NamedList<>(Collections.<String,Object>singletonMap(DEFAULTS, new NamedList<>(defaults))), null);
   }
 }
