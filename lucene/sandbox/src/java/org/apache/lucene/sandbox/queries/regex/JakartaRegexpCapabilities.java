@@ -50,6 +50,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
   private static void initClass() {
     AccessController.doPrivileged(new PrivilegedAction<Void>() {
       @Override
+      @SuppressForbidden(reason = "This methods needs to access to prefix private field in REProgram. This class will be removed in Lucene 6")
       public Void run() {
         try {
           getPrefixMethod = REProgram.class.getMethod("getPrefix");
