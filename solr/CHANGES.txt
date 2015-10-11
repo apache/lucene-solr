@@ -258,6 +258,9 @@ Bug Fixes
   home directory.  Fixes the inability to use ICU analysis components with a
   "solr." prefix on the classname. (Shawn Heisey)
 
+* SOLR-8130: Solr's hdfs safe mode detection does not catch all cases of being in safe mode.
+  (Mark Miller, Mike Drob)
+  
 Optimizations
 ----------------------
 
