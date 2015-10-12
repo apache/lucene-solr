@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -25,8 +26,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** LUCENE-5574 */
 @SuppressFileSystems("WindowsFS") // the bug doesn't happen on windows.
@@ -66,9 +67,7 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
     w.close();
 
     // Blow away index and make a new writer:
-    for(String fileName : dir.listAll()) {
-      dir.deleteFile(fileName);
-    }
+    dir.deleteFiles(Arrays.asList(dir.listAll()));
 
     w = new RandomIndexWriter(random(), dir);
     w.addDocument(doc);

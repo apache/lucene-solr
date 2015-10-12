@@ -237,9 +237,7 @@ public class TestDoc extends LuceneTestCase {
       Collection<String> filesToDelete = si.files();
       codec.compoundFormat().write(dir, si, context);
       si.setUseCompoundFile(true);
-      for (final String fileToDelete : filesToDelete) {
-        si1.info.dir.deleteFile(fileToDelete);
-      }
+      si1.info.dir.deleteFiles(filesToDelete);
     }
 
     return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);

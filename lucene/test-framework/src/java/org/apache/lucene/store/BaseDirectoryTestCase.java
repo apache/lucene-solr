@@ -161,7 +161,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     int count = dir.listAll().length;
     dir.createOutput("foo.txt", IOContext.DEFAULT).close();
     assertEquals(count+1, dir.listAll().length);
-    dir.deleteFile("foo.txt");
+    dir.deleteFiles(Collections.singleton("foo.txt"));
     assertEquals(count, dir.listAll().length);
     dir.close();
   }
@@ -747,9 +747,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
     in2.close();
       
-    dir.deleteFile("test");
-    dir.deleteFile("test2");
-      
+    dir.deleteFiles(Arrays.asList(new String[] {"test", "test2"}));
     dir.close();
   }
   

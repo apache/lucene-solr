@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
@@ -79,7 +80,7 @@ public class TestDirectory extends LuceneTestCase {
       }
 
       // delete with a different dir
-      dirs[(i+1)%dirs.length].deleteFile(fname);
+      dirs[(i+1)%dirs.length].deleteFiles(Collections.singleton(fname));
 
       for (int j=0; j<dirs.length; j++) {
         FSDirectory d2 = dirs[j];

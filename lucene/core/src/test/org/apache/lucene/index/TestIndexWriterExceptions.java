@@ -915,7 +915,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
           isCommit = true;
         }
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName())) {
+        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFiles".equals(trace[i].getMethodName())) {
           isDelete = true;
         }
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
@@ -964,7 +964,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       } catch (RuntimeException re) {
         // Expected
       }
-      assertTrue(failure.failOnCommit && failure.failOnDeleteFile);
+      assertTrue("failOnCommit=" + failure.failOnCommit + " failOnDeleteFile=" + failure.failOnDeleteFile, failure.failOnCommit && failure.failOnDeleteFile);
       w.rollback();
       String files[] = dir.listAll();
       assertTrue(files.length == fileCount || (files.length == fileCount+1 && Arrays.asList(files).contains(IndexWriter.WRITE_LOCK_NAME)));
@@ -1209,7 +1209,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       in.close();
       out.close();
-      dir.deleteFile(fileNameIn);
+      dir.deleteFiles(Collections.singleton(fileNameIn));
 
       IndexReader reader = null;
       try {
@@ -1263,7 +1263,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertTrue(si.info.getUseCompoundFile());
       List<String> victims = new ArrayList<String>(si.info.files());
       Collections.shuffle(victims, random());
-      dir.deleteFile(victims.get(0));
+      dir.deleteFiles(Collections.singleton(victims.get(0)));
       corrupted = true;
       break;
     }

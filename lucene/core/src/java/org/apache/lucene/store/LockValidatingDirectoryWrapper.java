@@ -33,9 +33,9 @@ public final class LockValidatingDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public void deleteFile(String name) throws IOException {
+  public void deleteFiles(Collection<String> names) throws IOException {
     writeLock.ensureValid();
-    in.deleteFile(name);
+    in.deleteFiles(names);
   }
 
   @Override

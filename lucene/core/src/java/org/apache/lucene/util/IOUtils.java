@@ -190,13 +190,11 @@ public final class IOUtils {
    * <p>
    * Note that the files should not be null.
    */
-  public static void deleteFilesIgnoringExceptions(Directory dir, String... files) {
-    for (String name : files) {
-      try {
-        dir.deleteFile(name);
-      } catch (Throwable ignored) {
-        // ignore
-      }
+  public static void deleteFilesIgnoringExceptions(Directory dir, String... names) {
+    try {
+      dir.deleteFiles(Arrays.asList(names));
+    } catch (Throwable ignored) {
+      // ignore
     }
   }
   

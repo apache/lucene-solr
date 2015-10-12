@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,8 +40,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -713,7 +714,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
     // Blow away the index:
     for(String fileName : dir.listAll()) {
-      dir.deleteFile(fileName);
+      dir.deleteFiles(Collections.singleton(fileName));
     }
 
     w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
@@ -762,9 +763,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(dir);
 
     // Blow away the index:
-    for(String fileName : dir.listAll()) {
-      dir.deleteFile(fileName);
-    }
+    dir.deleteFiles(Arrays.asList(dir.listAll()));
 
     w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
     doc = new Document();

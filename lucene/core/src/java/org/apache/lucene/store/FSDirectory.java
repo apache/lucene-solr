@@ -17,18 +17,25 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
@@ -114,6 +121,9 @@ import org.apache.lucene.util.IOUtils;
 public abstract class FSDirectory extends BaseDirectory {
 
   protected final Path directory; // The underlying filesystem directory
+
+  /** Files we want to delete, but hit exception (on Windows) last time we tried. */
+  private final Set<String> pendingDeletes = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
 
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * The directory is created at the named location if it does not yet exist.
@@ -211,17 +221,18 @@ public abstract class FSDirectory extends BaseDirectory {
 
   /** Removes an existing file in the directory. */
   @Override
-  public void deleteFile(String name) throws IOException {
+  public void deleteFiles(Collection<String> names) throws IOException {
     ensureOpen();
-    Files.delete(directory.resolve(name));
+    pendingDeletes.addAll(names);
+    deletePendingFiles();
   }
 
   /** Creates an IndexOutput for the file with the given name. */
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-
     ensureCanWrite(name);
+    deletePendingFiles();
     return new FSIndexOutput(name);
   }
 
@@ -249,8 +260,9 @@ public abstract class FSDirectory extends BaseDirectory {
 
   /** Closes the store to future operations. */
   @Override
-  public synchronized void close() {
+  public synchronized void close() throws IOException {
     isOpen = false;
+    deletePendingFiles();
   }
 
   /** @return the underlying filesystem directory */
@@ -263,6 +275,63 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public String toString() {
     return this.getClass().getSimpleName() + "@" + directory + " lockFactory=" + lockFactory;
+  }
+
+  protected void fsync(String name) throws IOException {
+    deletePendingFiles();
+    IOUtils.fsync(directory.resolve(name), false);
+  }
+
+  /** Returns true if the file was successfully removed. */
+  private boolean deleteFile(String name) throws IOException {  
+    try {
+      Files.delete(directory.resolve(name));
+      pendingDeletes.remove(name);
+      return true;
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      // We were asked to delete a non-existent file
+      throw e;
+    } catch (IOException ioe) {
+      // On windows, a file delete can fail because there's still an open
+      // file handle against it.  We record this in pendingDeletes and
+      // try again later.
+
+      // TODO: this is hacky/lenient (we don't know which IOException this is), and
+      // it should only happen on filesystems that can do this, so really we should
+      // move this logic to WindowsDirectory or something
+
+      // nocommit can/should we do if (Constants.WINDOWS) here, else throw the exc?
+      // but what about a Linux box with a CIFS mount?
+      pendingDeletes.add(name);
+      return false;
+    }
+  }
+
+  // TODO: public?
+  // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
+  private void deletePendingFiles() throws IOException {
+
+    // Clone the set because it will change as we iterate:
+    List<String> toDelete = new ArrayList<>(pendingDeletes);
+    
+    // First pass: delete any segments_N files.  We do these first to be certain stale commit points are removed
+    // before we remove any files they reference.  If any delete of segments_N fails, we leave all other files
+    // undeleted so index is never in a corrupt state:
+    for (String fileName : toDelete) {
+      if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+        if (deleteFile(fileName) == false) {
+          return;
+        }
+      }
+    }
+
+    // Only delete other files if we were able to remove the segments_N files; this way we never
+    // leave a corrupt commit in the index even in the presense of virus checkers:
+    for(String fileName : toDelete) {
+      if (fileName.startsWith(IndexFileNames.SEGMENTS) == false) {
+        deleteFile(fileName);
+      }
+    }
   }
 
   final class FSIndexOutput extends OutputStreamIndexOutput {
@@ -286,9 +355,5 @@ public abstract class FSDirectory extends BaseDirectory {
         }
       }, CHUNK_SIZE);
     }
-  }
-
-  protected void fsync(String name) throws IOException {
-    IOUtils.fsync(directory.resolve(name), false);
   }
 }

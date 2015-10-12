@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -42,15 +43,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     w.commit();
     w.close();
 
-    for(String fileName : d.listAll()) {
-      try {
-        d.deleteFile(fileName);
-        // may succeed, e.g. if the file is completely read into RAM.
-      } catch (IOException ioe) {
-        // ignore: this means codec (correctly) is holding
-        // the file open
-      }
-    }
+    d.deleteFiles(Arrays.asList(d.listAll()));
 
     for(LeafReaderContext cxt : r.leaves()) {
       TestUtil.checkReader(cxt.reader());

@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -840,7 +841,7 @@ public class TestPackedInts extends LuceneTestCase {
           assertEquals(mutable.get(i), reader.get(i));
         }
         in.close();
-        directory.deleteFile("packed-ints.bin");
+        directory.deleteFiles(Collections.singleton("packed-ints.bin"));
       }
       directory.close();
     }

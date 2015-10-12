@@ -3561,8 +3561,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
 
-    deleter.deletePendingFiles();
-
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "after commitMerge: " + segString());
     }
@@ -4608,14 +4606,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public synchronized void deleteUnusedFiles() throws IOException {
     ensureOpen(false);
-    deleter.deletePendingFiles();
     deleter.revisitPolicy();
   }
 
-  private synchronized void deletePendingFiles() throws IOException {
-    deleter.deletePendingFiles();
-  }
-  
   /**
    * NOTE: this method creates a compound file for all files returned by
    * info.files(). While, generally, this may include separate norms and

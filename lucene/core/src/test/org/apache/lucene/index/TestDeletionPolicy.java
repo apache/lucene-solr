@@ -17,6 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,14 +39,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -299,7 +300,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         break;
       }
       
-      dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+      dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
       gen--;
     }
 
@@ -381,7 +382,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       while(gen > 0) {
         IndexReader reader = DirectoryReader.open(dir);
         reader.close();
-        dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+        dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
         gen--;
 
         if (gen > 0) {
@@ -612,7 +613,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           }
         }
         if (i < N) {
-          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+          dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
         }
         gen--;
       }
@@ -730,7 +731,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           }
         }
         if (i < N) {
-          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+          dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
         }
         gen--;
       }

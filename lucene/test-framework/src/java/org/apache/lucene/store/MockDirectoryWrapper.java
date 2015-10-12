@@ -302,7 +302,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
       if (damage == 0) {
         action = "deleted";
-        deleteFile(name, true);
+        deleteFiles(Collections.singleton(name), true);
       } else if (damage == 1) {
         action = "zeroed";
         // Zero out file entirely
@@ -336,21 +336,21 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         ii.close();
 
         // Delete original and copy bytes back:
-        deleteFile(name, true);
+        deleteFiles(Collections.singleton(name), true);
         
         final IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
         ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
         out.copyBytes(ii, ii.length());
         out.close();
         ii.close();
-        deleteFile(tempFileName, true);
+        deleteFiles(Collections.singleton(tempFileName), true);
       } else if (damage == 3) {
         // The file survived intact:
         action = "didn't change";
       } else {
         action = "fully truncated";
         // Totally truncate the file to zero bytes
-        deleteFile(name, true);
+        deleteFiles(Collections.singleton(name), true);
         IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
         out.close();
       }
@@ -466,9 +466,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   @Override
-  public synchronized void deleteFile(String name) throws IOException {
+  public synchronized void deleteFiles(Collection<String> names) throws IOException {
     maybeYield();
-    deleteFile(name, false);
+    deleteFiles(names, false);
   }
 
   // sets the cause of the incoming ioe to be the stack
@@ -492,7 +492,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
 
-  private synchronized void deleteFile(String name, boolean forced) throws IOException {
+  private synchronized void deleteFiles(Collection<String> names, boolean forced) throws IOException {
     maybeYield();
 
     maybeThrowDeterministicException();
@@ -500,6 +500,18 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (crashed && !forced)
       throw new IOException("cannot delete after crash");
 
+    for(String name : names) {
+      if (unSyncedFiles.contains(name)) {
+        unSyncedFiles.remove(name);
+      }
+      triedToDelete.remove(name);
+    }
+
+    in.deleteFiles(names);
+
+    // nocommit how to get virus checker back!!!  must move down to MockFS?
+
+    /*
     if (unSyncedFiles.contains(name))
       unSyncedFiles.remove(name);
     if (!forced && (noDeleteOpenFile || assertNoDeleteOpenFile)) {
@@ -524,9 +536,10 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     triedToDelete.remove(name);
     in.deleteFile(name);
+    */
   }
 
-  /** Returns true if {@link #deleteFile} was called with this
+  /** Returns true if {@link #deleteFiles} was called with this
    *  fileName, but the virus checker prevented the deletion. */
   public boolean didTryToDelete(String fileName) {
     return triedToDelete.contains(fileName);

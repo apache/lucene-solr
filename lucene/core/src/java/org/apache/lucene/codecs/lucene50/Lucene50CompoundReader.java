@@ -17,6 +17,13 @@ package org.apache.lucene.codecs.lucene50;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
@@ -28,13 +35,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * Class for accessing a compound stream.
@@ -147,7 +147,7 @@ final class Lucene50CompoundReader extends Directory {
   /** Not implemented
    * @throws UnsupportedOperationException always: not supported by CFS */
   @Override
-  public void deleteFile(String name) {
+  public void deleteFiles(Collection<String> name) {
     throw new UnsupportedOperationException();
   }
   

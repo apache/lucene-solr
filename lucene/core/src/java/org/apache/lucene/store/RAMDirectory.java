@@ -17,8 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -154,14 +154,17 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
    * @throws IOException if the file does not exist
    */
   @Override
-  public void deleteFile(String name) throws IOException {
+  public void deleteFiles(Collection<String> names) throws IOException {
     ensureOpen();
-    RAMFile file = fileMap.remove(name);
-    if (file != null) {
-      file.directory = null;
-      sizeInBytes.addAndGet(-file.sizeInBytes);
-    } else {
-      throw new FileNotFoundException(name);
+    for(String name : names) {
+      RAMFile file = fileMap.remove(name);
+      if (file != null) {
+        file.directory = null;
+        sizeInBytes.addAndGet(-file.sizeInBytes);
+      } else {
+        // nocommit but should we keep trying to delete the rest, and throw this only at the end?
+        throw new FileNotFoundException(name);
+      }
     }
   }
 
