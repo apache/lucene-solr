@@ -111,7 +111,10 @@ Other Changes
 * SOLR-7554: Add checks in Streams for incoming stream order (Dennis Gove, Joel Bernstein)
 
 * SOLR-7441: Improve overall robustness of the Streaming stack: Streaming API,
-             Streaming Expressions, Parallel SQL (Joel Bernstein)
+  Streaming Expressions, Parallel SQL (Joel Bernstein)
+
+* SOLR-8153: Support upper case and mixed case column identifiers in the SQL interface
+  (Joel Bernstein)
 
 * SOLR-8132: HDFSDirectoryFactory now defaults to using the global block cache. (Mark Miller)
 
