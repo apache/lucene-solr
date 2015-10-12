@@ -336,6 +336,9 @@ Other Changes
 
 * SOLR-8150: Fix build failure due to too much output from QueryResponseTest (janhoy)
 
+* SOLR-8151: OverseerCollectionMessageHandler was logging info data as WARN
+  (Alan Woodward)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
