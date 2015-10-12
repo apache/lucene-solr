@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.util.BitSet;
 
@@ -118,7 +119,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
         if (parentBits != null) {
           throw new IllegalStateException("This comparator can only be used on a single segment");
         }
-        IndexSearcher searcher = new IndexSearcher(context.reader());
+        IndexSearcher searcher = new IndexSearcher(ReaderUtil.getTopLevelContext(context));
         searcher.setQueryCache(null);
         final Weight weight = searcher.createNormalizedWeight(parentsFilter, false);
         final DocIdSetIterator parents = weight.scorer(context);

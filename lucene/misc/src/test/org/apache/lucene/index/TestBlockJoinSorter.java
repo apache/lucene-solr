@@ -41,7 +41,6 @@ import org.junit.Ignore;
 
 public class TestBlockJoinSorter extends LuceneTestCase {
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-6836")
   public void test() throws IOException {
     final int numParents = atLeast(200);
     IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -65,14 +64,17 @@ public class TestBlockJoinSorter extends LuceneTestCase {
       writer.addDocuments(documents);
     }
     writer.forceMerge(1);
-    final DirectoryReader indexReader = writer.getReader();
+    IndexReader indexReader = writer.getReader();
     writer.close();
 
-    final LeafReader reader = getOnlySegmentReader(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader);
+    indexReader = searcher.getIndexReader(); // newSearcher may have wrapped it
+    assertEquals(1, indexReader.leaves().size());
+    final LeafReader reader = indexReader.leaves().get(0).reader();
     final Query parentsFilter = new TermQuery(new Term("parent", "true"));
-    IndexSearcher searcher = newSearcher(reader);
+
     final Weight weight = searcher.createNormalizedWeight(parentsFilter, false);
-    final DocIdSetIterator parents = weight.scorer(reader.getContext());
+    final DocIdSetIterator parents = weight.scorer(indexReader.leaves().get(0));
     final BitSet parentBits = BitSet.of(parents, reader.maxDoc());
     final NumericDocValues parentValues = reader.getNumericDocValues("parent_val");
     final NumericDocValues childValues = reader.getNumericDocValues("child_val");
