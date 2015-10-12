@@ -31,10 +31,12 @@ situations where some documents do not have values for fields wrapped in other
 ValueSources.  Users who want to preserve the previous behavior may need to wrap 
 their ValueSources in a "DefFunction" along with a ConstValueSource of "0.0".
 
-## Removal of FilteredQuery (LUCENE-6583)
+## Removal of Filter and FilteredQuery (LUCENE-6301,LUCENE-6583)
 
-FilteredQuery has been removed. Instead, you can construct a BooleanQuery with
-one MUST clause for the query, and one FILTER clause for the filter.
+Filter and FilteredQuery have been removed. Regular queries can be used instead
+of filters as they have been optimized for the filtering case. And you can
+construct a BooleanQuery with one MUST clause for the query, and one FILTER
+clause for the filter in order to have similar behaviour to FilteredQuery.
 
 ## PhraseQuery and BooleanQuery made immutable (LUCENE-6531 LUCENE-6570)
 

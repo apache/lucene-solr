@@ -36,10 +36,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -147,9 +145,8 @@ public class TestSortRandom extends LuceneTestCase {
         sort = new Sort(sf, SortField.FIELD_DOC);
       }
       final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
-      final RandomFilter f = new RandomFilter(random.nextLong(), random.nextFloat(), docValues);
-      hits = s.search(new ConstantScoreQuery(f),
-                      hitCount, sort, random.nextBoolean(), random.nextBoolean());
+      final RandomQuery f = new RandomQuery(random.nextLong(), random.nextFloat(), docValues);
+      hits = s.search(f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
@@ -218,35 +215,40 @@ public class TestSortRandom extends LuceneTestCase {
     dir.close();
   }
   
-  private static class RandomFilter extends Filter {
+  private static class RandomQuery extends Query {
     private final long seed;
     private float density;
     private final List<BytesRef> docValues;
     public final List<BytesRef> matchValues = Collections.synchronizedList(new ArrayList<BytesRef>());
 
     // density should be 0.0 ... 1.0
-    public RandomFilter(long seed, float density, List<BytesRef> docValues) {
+    public RandomQuery(long seed, float density, List<BytesRef> docValues) {
       this.seed = seed;
       this.density = density;
       this.docValues = docValues;
     }
 
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      Random random = new Random(context.docBase ^ seed);
-      final int maxDoc = context.reader().maxDoc();
-      final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
-      assertNotNull(idSource);
-      final FixedBitSet bits = new FixedBitSet(maxDoc);
-      for(int docID=0;docID<maxDoc;docID++) {
-        if (random.nextFloat() <= density && (acceptDocs == null || acceptDocs.get(docID))) {
-          bits.set(docID);
-          //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
-          matchValues.add(docValues.get((int) idSource.get(docID)));
-        }
-      }
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new ConstantScoreWeight(this) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          Random random = new Random(context.docBase ^ seed);
+          final int maxDoc = context.reader().maxDoc();
+          final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
+          assertNotNull(idSource);
+          final FixedBitSet bits = new FixedBitSet(maxDoc);
+          for(int docID=0;docID<maxDoc;docID++) {
+            if (random.nextFloat() <= density) {
+              bits.set(docID);
+              //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+              matchValues.add(docValues.get((int) idSource.get(docID)));
+            }
+          }
 
-      return new BitDocIdSet(bits);
+          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+        }
+      };
     }
 
     @Override
@@ -259,7 +261,7 @@ public class TestSortRandom extends LuceneTestCase {
       if (super.equals(obj) == false) {
         return false;
       }
-      RandomFilter other = (RandomFilter) obj;
+      RandomQuery other = (RandomQuery) obj;
       return seed == other.seed && docValues == other.docValues;
     }
 

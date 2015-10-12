@@ -31,7 +31,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.QueryBitSetProducer;
@@ -460,7 +459,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   private BitSetProducer createParentFilter(String type) {
     BooleanQuery.Builder parentQuery = new BooleanQuery.Builder();
     parentQuery.add(new TermQuery(new Term("type_s", type)), Occur.MUST);
-    return new QueryBitSetProducer(new QueryWrapperFilter(parentQuery.build()));
+    return new QueryBitSetProducer(parentQuery.build());
   }
   
   private String nextId() {

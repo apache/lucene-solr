@@ -99,6 +99,11 @@ API Changes
 
 * LUCENE-6803: Deprecate sandbox Regexp Query. (Uwe Schindler)
 
+* LUCENE-6301: org.apache.lucene.search.Filter is now deprecated. You should use
+  Query objects instead of Filters, and the BooleanClause.Occur.FILTER clause in
+  order to let Lucene know that a Query should be used for filtering but not
+  scoring.
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.solr.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,18 +19,18 @@ package org.apache.lucene.search;
 
 import java.util.Objects;
 
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.Bits;
 
 /**
  * This implementation supplies a filtered DocIdSet, that excludes all
  * docids which are not in a Bits instance. This is especially useful in
- * {@link org.apache.lucene.search.Filter} to apply the {@code acceptDocs}
+ * {@link org.apache.solr.search.Filter} to apply the {@code acceptDocs}
  * passed to {@code getDocIdSet()} before returning the final DocIdSet.
  *
  * @see DocIdSet
- * @see org.apache.lucene.search.Filter
+ * @see org.apache.solr.search.Filter
  */
-
 public final class BitsFilteredDocIdSet extends FilteredDocIdSet {
 
   private final Bits acceptDocs;

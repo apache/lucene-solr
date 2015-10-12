@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.solr.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FilteredDocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;

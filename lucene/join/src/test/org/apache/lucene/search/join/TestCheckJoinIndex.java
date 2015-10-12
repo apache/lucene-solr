@@ -30,7 +30,6 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -88,7 +87,7 @@ public class TestCheckJoinIndex extends LuceneTestCase {
 
     final IndexReader reader = w.getReader();
     w.close();
-    BitSetProducer parentsFilter = new QueryBitSetProducer(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
+    BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
     try {
       CheckJoinIndex.check(reader, parentsFilter);
       fail("Invalid index");
@@ -128,7 +127,7 @@ public class TestCheckJoinIndex extends LuceneTestCase {
     final IndexReader reader = w.getReader();
     w.close();
 
-    BitSetProducer parentsFilter = new QueryBitSetProducer(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
+    BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
     try {
       CheckJoinIndex.check(reader, parentsFilter);
       fail("Invalid index");

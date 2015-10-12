@@ -23,14 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
@@ -39,7 +36,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.vectorhighlight.FieldQuery.QueryPhraseMap;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 public class FieldQueryTest extends AbstractTestCase {
@@ -936,30 +932,6 @@ public class FieldQueryTest extends AbstractTestCase {
     make1d1fIndex( "a" );
     assertNotNull(reader);
     new FieldQuery(q, reader, true, true );
-  }
-  
-  public void testFlattenFilteredQuery() throws Exception {
-    initBoost();
-    Filter filter = new Filter() {
-      @Override
-      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
-          throws IOException {
-        return null;
-      }
-      @Override
-      public String toString(String field) {
-        return "filterToBeFlattened";
-      }
-    };
-    Query query = new BooleanQuery.Builder()
-        .add(pqF( "A" ), Occur.MUST)
-        .add(filter, Occur.FILTER)
-        .build();
-    query = new BoostQuery(query, boost);
-    FieldQuery fq = new FieldQuery( query, true, true );
-    Set<Query> flatQueries = new HashSet<>();
-    fq.flatten( query, reader, flatQueries, 1f );
-    assertCollectionQueries( flatQueries, tq( boost, "A" ) );
   }
   
   public void testFlattenConstantScoreQuery() throws Exception {

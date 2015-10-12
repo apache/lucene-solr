@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,7 +40,7 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
   DirectoryReader ir;
   IndexSearcher is;
   RandomIndexWriter iw;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -60,7 +61,7 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
     ir = iw.getReader();
     is = newSearcher(ir);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     iw.close();
@@ -80,14 +81,14 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
     assertEquals(hits3.totalHits, hits4.totalHits);
     CheckHits.checkEqual(f1, hits3.scoreDocs, hits4.scoreDocs);
   }
-  
+
   /** test null iterator */
   public void testEmpty() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     Query cached = new CachingWrapperQuery(expected.build(), MAYBE_CACHE_POLICY);
     assertQueryEquals(expected.build(), cached);
   }
-  
+
   /** test iterator returns NO_MORE_DOCS */
   public void testEmpty2() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
@@ -96,7 +97,7 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
     Query cached = new CachingWrapperQuery(expected.build(), MAYBE_CACHE_POLICY);
     assertQueryEquals(expected.build(), cached);
   }
-  
+
   /** test iterator returns single document */
   public void testSingle() throws Exception {
     for (int i = 0; i < 10; i++) {
@@ -106,7 +107,7 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
       assertQueryEquals(expected, cached);
     }
   }
-  
+
   /** test sparse filters (match single documents) */
   public void testSparse() throws Exception {
     for (int i = 0; i < 10; i++) {
@@ -118,13 +119,41 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
       assertQueryEquals(expected, cached);
     }
   }
-  
+
   /** test dense filters (match entire index) */
   public void testDense() throws Exception {
-    Query query = new MatchAllDocsQuery();
-    Filter expected = new QueryWrapperFilter(query);
+    Query expected = new MatchAllDocsQuery();
     Query cached = new CachingWrapperQuery(expected, MAYBE_CACHE_POLICY);
     assertQueryEquals(expected, cached);
+  }
+
+  private static class MockQuery extends Query {
+
+    private final AtomicBoolean wasCalled = new AtomicBoolean();
+
+    public boolean wasCalled() {
+      return wasCalled.get();
+    }
+
+    public void clear() {
+      wasCalled.set(false);
+    }
+
+    @Override
+    public String toString(String field) {
+      return "Mock";
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new ConstantScoreWeight(this) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          wasCalled.set(true);
+          return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
+        }
+      };
+    }
   }
 
   public void testCachingWorks() throws Exception {
@@ -135,7 +164,7 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     IndexSearcher searcher = newSearcher(reader);
     LeafReaderContext context = (LeafReaderContext) reader.getContext();
-    MockFilter filter = new MockFilter();
+    MockQuery filter = new MockQuery();
     CachingWrapperQuery cacher = new CachingWrapperQuery(filter, QueryCachingPolicy.ALWAYS_CACHE);
 
     // first time, nested filter is called
@@ -257,7 +286,7 @@ public class TestCachingWrapperQuery extends LuceneTestCase {
 
     reader = refreshReader(reader);
     searcher = newSearcher(reader, false);
-        
+
     docs = searcher.search(new ConstantScoreQuery(query), 1);
     assertEquals("[query + filter] Should find 2 hits...", 2, docs.totalHits);
     assertTrue(query.missCount > missCount);

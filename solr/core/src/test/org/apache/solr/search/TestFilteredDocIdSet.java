@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.solr.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,15 +26,21 @@ import junit.framework.Assert;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestDocIdSet extends LuceneTestCase {
+public class TestFilteredDocIdSet extends LuceneTestCase {
   public void testFilteredDocIdSet() throws Exception {
     final int maxdoc=10;
     final DocIdSet innerSet = new DocIdSet() {

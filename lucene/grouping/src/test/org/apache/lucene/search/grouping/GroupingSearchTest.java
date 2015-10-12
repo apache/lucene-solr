@@ -28,10 +28,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.search.CachingWrapperQuery;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -159,7 +157,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     assertEquals(1, group.scoreDocs.length);
     assertEquals(6, group.scoreDocs[0].doc);
 
-    Filter lastDocInBlock = new QueryWrapperFilter(new TermQuery(new Term("groupend", "x")));
+    Query lastDocInBlock = new TermQuery(new Term("groupend", "x"));
     groupingSearch = new GroupingSearch(lastDocInBlock);
     groups = groupingSearch.search(indexSearcher, new TermQuery(new Term("content", "random")), 0, 10);
 

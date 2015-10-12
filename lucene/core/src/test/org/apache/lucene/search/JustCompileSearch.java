@@ -24,7 +24,6 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -125,34 +124,6 @@ final class JustCompileSearch {
     @Override
     public FieldComparator<?> newComparator(String fieldname, int numHits,
         int sortPos, boolean reversed) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
-  static final class JustCompileFilter extends Filter {
-    // Filter is just an abstract class with no abstract methods. However it is
-    // still added here in case someone will add abstract methods in the future.
-    
-    @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-      return null;
-    }
-
-    @Override
-    public String toString(String field) {
-      return "JustCompileFilter";
-    }
-  }
-
-  static final class JustCompileFilteredDocIdSet extends FilteredDocIdSet {
-
-    public JustCompileFilteredDocIdSet(DocIdSet innerSet) {
-      super(innerSet);
-    }
-
-    @Override
-    protected boolean match(int docid) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

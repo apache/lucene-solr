@@ -17,93 +17,28 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.DocIdSet.EMPTY;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.BlockJoinComparatorSource;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SparseFixedBitSet;
 
 public class TestBlockJoinSorter extends LuceneTestCase {
-
-  private static class BitSetCachingWrapperFilter extends Filter {
-
-    private final Filter filter;
-    private final Map<Object,BitDocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,BitDocIdSet>());
-
-    public BitSetCachingWrapperFilter(Filter filter) {
-      this.filter = filter;
-    }
-
-    @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, final Bits acceptDocs) throws IOException {
-      final LeafReader reader = context.reader();
-      final Object key = reader.getCoreCacheKey();
-
-      BitDocIdSet docIdSet = cache.get(key);
-      if (docIdSet == null) {
-        final DocIdSet uncached = filter.getDocIdSet(context, null);
-        final DocIdSetIterator it = uncached == null ? null : uncached.iterator();
-        if (it != null) {
-          docIdSet = new BitDocIdSet(BitSet.of(it, context.reader().maxDoc()));
-        }
-        if (docIdSet == null) {
-          docIdSet = new BitDocIdSet(new SparseFixedBitSet(context.reader().maxDoc()));
-        }
-        cache.put(key, docIdSet);
-      }
-
-      return docIdSet == EMPTY ? null : BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      return filter.equals(((BitSetCachingWrapperFilter) obj).filter);
-    }
-
-    @Override
-    public int hashCode() {
-      return 31 * super.hashCode() + filter.hashCode();
-    }
-
-    @Override
-    public String toString(String field) {
-      return getClass().getName() + "(" + filter.toString(field) + ")";
-    }
-  }
 
   public void test() throws IOException {
     final int numParents = atLeast(200);
@@ -132,8 +67,11 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     writer.close();
 
     final LeafReader reader = getOnlySegmentReader(indexReader);
-    final Filter parentsFilter = new BitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("parent", "true"))));
-    final FixedBitSet parentBits = (FixedBitSet) parentsFilter.getDocIdSet(reader.getContext(), null).bits();
+    final Query parentsFilter = new TermQuery(new Term("parent", "true"));
+    IndexSearcher searcher = newSearcher(reader);
+    final Weight weight = searcher.createNormalizedWeight(parentsFilter, false);
+    final DocIdSetIterator parents = weight.scorer(reader.getContext());
+    final BitSet parentBits = BitSet.of(parents, reader.maxDoc());
     final NumericDocValues parentValues = reader.getNumericDocValues("parent_val");
     final NumericDocValues childValues = reader.getNumericDocValues("child_val");
 

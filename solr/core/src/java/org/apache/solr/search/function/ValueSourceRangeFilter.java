@@ -22,8 +22,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.util.Bits;
+import org.apache.solr.search.BitsFilteredDocIdSet;
 import org.apache.solr.search.SolrFilter;
 
 import java.io.IOException;
