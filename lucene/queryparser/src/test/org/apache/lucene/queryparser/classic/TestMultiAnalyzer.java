@@ -77,7 +77,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     assertEquals("\"(multi multi2) foo\"~10", qp.parse("\"multi foo\"~10").toString());
 
     // phrase with non-default boost:
-    assertEquals("\"(multi multi2) foo\"^2.0", qp.parse("\"multi foo\"^2").toString());
+    assertEquals("(\"(multi multi2) foo\")^2.0", qp.parse("\"multi foo\"^2").toString());
 
     // phrase after changing default slop
     qp.setPhraseSlop(99);

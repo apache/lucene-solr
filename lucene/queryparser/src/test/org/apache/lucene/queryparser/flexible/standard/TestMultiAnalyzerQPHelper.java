@@ -89,7 +89,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
         .toString());
 
     // phrase with non-default boost:
-    assertEquals("\"(multi multi2) foo\"^2.0", qp.parse("\"multi foo\"^2", "")
+    assertEquals("(\"(multi multi2) foo\")^2.0", qp.parse("\"multi foo\"^2", "")
         .toString());
 
     // phrase after changing default slop

@@ -82,7 +82,7 @@ public class TestBlendedTermQuery extends LuceneTestCase {
     assertEquals("Blended(foo:bar)", new BlendedTermQuery.Builder().add(t1).build().toString());
     Term t2 = new Term("foo", "baz");
     assertEquals("Blended(foo:bar foo:baz)", new BlendedTermQuery.Builder().add(t1).add(t2).build().toString());
-    assertEquals("Blended(foo:bar^4.0 foo:baz^3.0)", new BlendedTermQuery.Builder().add(t1, 4).add(t2, 3).build().toString());
+    assertEquals("Blended((foo:bar)^4.0 (foo:baz)^3.0)", new BlendedTermQuery.Builder().add(t1, 4).add(t2, 3).build().toString());
   }
 
   public void testBlendedScores() throws IOException {

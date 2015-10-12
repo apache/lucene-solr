@@ -40,11 +40,11 @@ public class TestSpanBoostQuery extends LuceneTestCase {
   }
 
   public void testToString() {
-    assertEquals("foo:bar^2.0", new SpanBoostQuery(new SpanTermQuery(new Term("foo", "bar")), 2).toString());
+    assertEquals("(foo:bar)^2.0", new SpanBoostQuery(new SpanTermQuery(new Term("foo", "bar")), 2).toString());
     SpanOrQuery bq = new SpanOrQuery(
         new SpanTermQuery(new Term("foo", "bar")),
         new SpanTermQuery(new Term("foo", "baz")));
-    assertEquals("spanOr([foo:bar, foo:baz])^2.0", new SpanBoostQuery(bq, 2).toString());
+    assertEquals("(spanOr([foo:bar, foo:baz]))^2.0", new SpanBoostQuery(bq, 2).toString());
   }
 
 }
