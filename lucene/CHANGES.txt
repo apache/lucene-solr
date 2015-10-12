@@ -276,6 +276,9 @@ Changes in Runtime Behavior
 * LUCENE-6784: IndexSearcher's query caching is enabled by default. Run
   indexSearcher.setQueryCache(null) to disable. (Adrien Grand)
 
+* LUCENE-6305: BooleanQuery.equals and hashcode do not depend on the order of
+  clauses anymore. (Adrien Grand)
+
 ======================= Lucene 5.3.1 =======================
 
 Bug Fixes
