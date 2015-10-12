@@ -37,9 +37,11 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Ignore;
 
 public class TestBlockJoinSorter extends LuceneTestCase {
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-6836")
   public void test() throws IOException {
     final int numParents = atLeast(200);
     IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
