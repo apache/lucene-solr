@@ -75,6 +75,11 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
    * File name for the automaton.
    */
   private static final String FILENAME = "iwfsta.bin";
+
+  /**
+   * Clone of CONTEXTS_FIELD_NAME in AnalyzingInfixSuggester
+   */
+  public static final String CONTEXTS_FIELD_NAME = "contexts";
   
   
   @Override
@@ -110,7 +115,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
     
     boolean highlight = params.get(HIGHLIGHT) != null
     ? Boolean.getBoolean(params.get(HIGHLIGHT).toString())
-    : AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT; 
+    : AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT;
 
     try {
       return new AnalyzingInfixSuggester(FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
