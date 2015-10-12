@@ -37,10 +37,7 @@ public abstract class Terms {
   }
 
   /** Returns an iterator that will step through all
-   *  terms. This method will not return null.  If you have
-   *  a previous TermsEnum, for example from a different
-   *  field, you can pass it for possible reuse if the
-   *  implementation can do so. */
+   *  terms. This method will not return null. */
   public abstract TermsEnum iterator() throws IOException;
 
   /** Returns a TermsEnum that iterates over all terms and
