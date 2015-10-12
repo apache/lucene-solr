@@ -39,31 +39,29 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RandomAccessWeight;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.InfoStream;
@@ -646,29 +644,45 @@ public class TestDrillSideways extends FacetTestCase {
         }
       }
 
-      Filter filter;
+      Query filter;
       if (random().nextInt(7) == 6) {
         if (VERBOSE) {
           System.out.println("  only-even filter");
         }
-        filter = new Filter() {
-            @Override
-            public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-              int maxDoc = context.reader().maxDoc();
-              final FixedBitSet bits = new FixedBitSet(maxDoc);
-              for(int docID=0;docID < maxDoc;docID++) {
-                // Keeps only the even ids:
-                if ((acceptDocs == null || acceptDocs.get(docID)) && (Integer.parseInt(context.reader().document(docID).get("id")) & 1) == 0) {
-                  bits.set(docID);
-                }
+        filter = new Query() {
+
+          @Override
+          public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+            return new RandomAccessWeight(this) {
+              @Override
+              protected Bits getMatchingDocs(final LeafReaderContext context) throws IOException {
+                return new Bits() {
+
+                  @Override
+                  public boolean get(int docID) {
+                    try {
+                      return (Integer.parseInt(context.reader().document(docID).get("id")) & 1) == 0;
+                    } catch (NumberFormatException | IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  }
+
+                  @Override
+                  public int length() {
+                    return context.reader().maxDoc();
+                  }
+                  
+                };
               }
-              return new BitDocIdSet(bits);
-            }
-            @Override
-            public String toString(String field) {
-              return "drillSidewaysTestFilter";
-            }
-          };
+            };
+          }
+
+          @Override
+          public String toString(String field) {
+            return "drillSidewaysTestFilter";
+          }
+
+        };
       } else {
         filter = null;
       }
@@ -758,7 +772,10 @@ public class TestDrillSideways extends FacetTestCase {
       // Make sure drill down doesn't change score:
       Query q = ddq;
       if (filter != null) {
-        q = new FilteredQuery(q, filter);
+        q = new BooleanQuery.Builder()
+            .add(q, Occur.MUST)
+            .add(filter, Occur.FILTER)
+            .build();
       }
       TopDocs ddqHits = s.search(q, numDocs);
       assertEquals(expected.hits.size(), ddqHits.totalHits);
@@ -862,7 +879,7 @@ public class TestDrillSideways extends FacetTestCase {
 
   private TestFacetResult slowDrillSidewaysSearch(IndexSearcher s, List<Doc> docs,
                                                         String contentToken, String[][] drillDowns,
-                                                        String[][] dimValues, Filter onlyEven) throws Exception {
+                                                        String[][] dimValues, Query onlyEven) throws Exception {
     int numDims = dimValues.length;
 
     List<Doc> hits = new ArrayList<>();

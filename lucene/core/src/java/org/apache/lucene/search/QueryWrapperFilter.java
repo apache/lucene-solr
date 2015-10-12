@@ -31,7 +31,10 @@ import org.apache.lucene.util.Bits;
  * formatted date field to implement date filtering.  One could re-use a single
  * CachingWrapperFilter(QueryWrapperFilter) that matches, e.g., only documents modified 
  * within the last week.  This would only need to be reconstructed once per day.
+ * @deprecated You can use {@link Query} objects directly for filtering by using
+ * {@link BooleanClause.Occur#FILTER} clauses in a {@link BooleanQuery}.
  */
+@Deprecated
 public class QueryWrapperFilter extends Filter {
   private final Query query;
 

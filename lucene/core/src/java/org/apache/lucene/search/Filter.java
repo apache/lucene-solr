@@ -26,7 +26,13 @@ import org.apache.lucene.util.Bits;
 /**
  *  Convenient base class for building queries that only perform matching, but
  *  no scoring. The scorer produced by such queries always returns 0 as score.
+ *
+ *  @deprecated Use {@link Query} objects instead: when queries are wrapped in a
+ *  {@link ConstantScoreQuery} or in a {@link BooleanClause.Occur#FILTER} clause,
+ *  they automatically disable the score computation so the {@link Filter} class
+ *  does not provide benefits compared to queries anymore.
  */
+@Deprecated
 public abstract class Filter extends Query {
 
   /**

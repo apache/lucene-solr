@@ -24,9 +24,8 @@ import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BitDocIdSet;
@@ -96,7 +95,7 @@ class BlockJoinParentQParser extends QParser {
   }
 
   private BitSetProducer createParentFilter(Query parentQ) {
-    return new QueryBitSetProducer(new QueryWrapperFilter(parentQ));
+    return new QueryBitSetProducer(parentQ);
   }
 
   // We need this wrapper since BitDocIdSetFilter does not extend Filter

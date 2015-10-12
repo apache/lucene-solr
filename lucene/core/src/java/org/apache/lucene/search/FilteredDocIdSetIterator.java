@@ -22,8 +22,7 @@ import java.io.IOException;
 /**
  * Abstract decorator class of a DocIdSetIterator
  * implementation that provides on-demand filter/validation
- * mechanism on an underlying DocIdSetIterator.  See {@link
- * FilteredDocIdSet}.
+ * mechanism on an underlying DocIdSetIterator.
  */
 public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
   protected DocIdSetIterator _innerIter;

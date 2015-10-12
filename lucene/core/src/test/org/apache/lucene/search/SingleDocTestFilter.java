@@ -24,6 +24,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 
+@Deprecated
 public class SingleDocTestFilter extends Filter {
   private int doc;
 

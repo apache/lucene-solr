@@ -70,7 +70,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PhraseQuery.Builder;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -587,8 +586,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testToParentBlockJoinQuery() throws Exception {
     BitSetProducer parentFilter = new QueryBitSetProducer(
-        new QueryWrapperFilter(
-          new TermQuery(new Term(FIELD_NAME, "parent"))));
+        new TermQuery(new Term(FIELD_NAME, "parent")));
     
     query = new ToParentBlockJoinQuery(new TermQuery(new Term(FIELD_NAME, "child")),
         parentFilter, ScoreMode.None);
@@ -613,8 +611,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testToChildBlockJoinQuery() throws Exception {
     BitSetProducer parentFilter = new QueryBitSetProducer(
-        new QueryWrapperFilter(
-          new TermQuery(new Term(FIELD_NAME, "parent"))));
+        new TermQuery(new Term(FIELD_NAME, "parent")));
     
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new ToChildBlockJoinQuery(new TermQuery(
@@ -912,8 +909,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         numHighlights = 0;
         if (random().nextBoolean()) {
           BooleanQuery.Builder bq = new BooleanQuery.Builder();
-          bq.add(new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(
-              new Term(FIELD_NAME, "kennedy")))), Occur.MUST);
+          bq.add(new ConstantScoreQuery(new TermQuery(
+              new Term(FIELD_NAME, "kennedy"))), Occur.MUST);
           bq.add(new ConstantScoreQuery(new TermQuery(new Term(FIELD_NAME, "kennedy"))), Occur.MUST);
           doSearching(bq.build());
         } else {

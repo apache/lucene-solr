@@ -29,8 +29,10 @@ import org.apache.lucene.util.Bits;
  *
  * @see DocIdSet
  * @see org.apache.lucene.search.Filter
+ * @deprecated This class is not useful internally anymore and will be removed
+ * in 6.0
  */
-
+@Deprecated
 public final class BitsFilteredDocIdSet extends FilteredDocIdSet {
 
   private final Bits acceptDocs;

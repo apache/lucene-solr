@@ -14,6 +14,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -143,31 +144,35 @@ public class TestScorerPerf extends LuceneTestCase {
     }
   }
 
-  private static class BitSetFilter extends Filter {
+  private static class BitSetQuery extends Query {
+
     private final FixedBitSet docs;
 
-    BitSetFilter(FixedBitSet docs) {
+    BitSetQuery(FixedBitSet docs) {
       this.docs = docs;
     }
 
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      assertNull("acceptDocs should be null, as we have an index without deletions", acceptDocs);
-      assertEquals(context.reader().maxDoc(), docs.length());
-      return new BitDocIdSet(docs);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new ConstantScoreWeight(this) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          return new ConstantScoreScorer(this, score(), new BitSetIterator(docs, docs.approximateCardinality()));
+        }
+      };
     }
-
+    
     @Override
     public String toString(String field) {
       return "randomBitSetFilter";
     }
-  
+    
     @Override
     public boolean equals(Object obj) {
       if (super.equals(obj) == false) {
         return false;
       }
-      return docs == ((BitSetFilter) obj).docs;
+      return docs == ((BitSetQuery) obj).docs;
     }
 
     @Override
@@ -178,7 +183,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
   FixedBitSet addClause(BooleanQuery.Builder bq, FixedBitSet result) {
     final FixedBitSet rnd = sets[random().nextInt(sets.length)];
-    Query q = new BitSetFilter(rnd);
+    Query q = new BitSetQuery(rnd);
     bq.add(q, BooleanClause.Occur.MUST);
     if (validate) {
       if (result==null) result = rnd.clone();

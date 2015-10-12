@@ -22,6 +22,7 @@ import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 
+@Deprecated
 public class MockFilter extends Filter {
   private boolean wasCalled;
 

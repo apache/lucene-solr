@@ -27,7 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestFilterCachingPolicy extends LuceneTestCase {
+public class TestQueryCachingPolicy extends LuceneTestCase {
 
   public void testLargeSegmentDetection() throws IOException {
     Directory dir = newDirectory();
@@ -40,12 +40,12 @@ public class TestFilterCachingPolicy extends LuceneTestCase {
     for (float minSizeRatio : new float[] {Float.MIN_VALUE, 0.01f, 0.1f, 0.9f}) {
       final QueryCachingPolicy policy = new QueryCachingPolicy.CacheOnLargeSegments(0, minSizeRatio);
       for (LeafReaderContext ctx : reader.leaves()) {
-        final Filter filter = new QueryWrapperFilter(new TermQuery(new Term("field", "value")));
-        final boolean shouldCache = policy.shouldCache(filter, ctx);
+        final Query query = new TermQuery(new Term("field", "value"));
+        final boolean shouldCache = policy.shouldCache(query, ctx);
         final float sizeRatio = (float) ctx.reader().maxDoc() / reader.maxDoc();
         assertEquals(sizeRatio >= minSizeRatio, shouldCache);
-        assertTrue(new QueryCachingPolicy.CacheOnLargeSegments(numDocs, Float.MIN_VALUE).shouldCache(filter, ctx));
-        assertFalse(new QueryCachingPolicy.CacheOnLargeSegments(numDocs + 1, Float.MIN_VALUE).shouldCache(filter, ctx));
+        assertTrue(new QueryCachingPolicy.CacheOnLargeSegments(numDocs, Float.MIN_VALUE).shouldCache(query, ctx));
+        assertFalse(new QueryCachingPolicy.CacheOnLargeSegments(numDocs + 1, Float.MIN_VALUE).shouldCache(query, ctx));
       }
     }
     reader.close();

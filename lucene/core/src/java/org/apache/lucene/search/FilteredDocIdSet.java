@@ -40,8 +40,10 @@ import org.apache.lucene.util.RamUsageEstimator;
  * this may be a better way to filter than ChainedFilter.
  *
  * @see DocIdSet
+ * @deprecated This class is not useful internally anymore and will be removed
+ * in 6.0
  */
-
+@Deprecated
 public abstract class FilteredDocIdSet extends DocIdSet {
   private final DocIdSet _innerSet;
   

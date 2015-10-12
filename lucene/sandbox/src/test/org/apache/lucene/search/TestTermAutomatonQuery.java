@@ -44,8 +44,10 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -583,9 +585,15 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  use random filter");
         }
-        RandomFilter filter = new RandomFilter(random().nextLong(), random().nextFloat());
-        q1 = new FilteredQuery(q1, filter);
-        q2 = new FilteredQuery(q2, filter);
+        RandomQuery filter = new RandomQuery(random().nextLong(), random().nextFloat());
+        q1 = new BooleanQuery.Builder()
+            .add(q1, Occur.MUST)
+            .add(filter, Occur.FILTER)
+            .build();
+        q2 = new BooleanQuery.Builder()
+            .add(q2, Occur.MUST)
+            .add(filter, Occur.FILTER)
+            .build();
       }
 
       TopDocs hits1 = s.search(q1, numDocs);
@@ -623,29 +631,33 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     return result;
   }
 
-  private static class RandomFilter extends Filter {
+  private static class RandomQuery extends Query {
     private final long seed;
     private float density;
 
     // density should be 0.0 ... 1.0
-    public RandomFilter(long seed, float density) {
+    public RandomQuery(long seed, float density) {
       this.seed = seed;
       this.density = density;
     }
 
     @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      int maxDoc = context.reader().maxDoc();
-      FixedBitSet bits = new FixedBitSet(maxDoc);
-      Random random = new Random(seed ^ context.docBase);
-      for(int docID=0;docID<maxDoc;docID++) {
-        if (random.nextFloat() <= density && (acceptDocs == null || acceptDocs.get(docID))) {
-          bits.set(docID);
-          //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return new ConstantScoreWeight(this) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          int maxDoc = context.reader().maxDoc();
+          FixedBitSet bits = new FixedBitSet(maxDoc);
+          Random random = new Random(seed ^ context.docBase);
+          for(int docID=0;docID<maxDoc;docID++) {
+            if (random.nextFloat() <= density) {
+              bits.set(docID);
+              //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+            }
+          }
+          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
         }
-      }
-
-      return new BitDocIdSet(bits);
+      };
     }
 
     @Override
@@ -658,7 +670,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       if (super.equals(obj) == false) {
         return false;
       }
-      RandomFilter other = (RandomFilter) obj;
+      RandomQuery other = (RandomQuery) obj;
       return seed == other.seed && density == other.density;
     }
 

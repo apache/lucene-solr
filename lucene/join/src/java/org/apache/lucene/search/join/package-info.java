@@ -29,7 +29,7 @@
  * 
  * <p>When you index in this way, the documents in your index are divided
  *   into parent documents (the last document of each block) and child
- *   documents (all others).  You provide a {@link org.apache.lucene.search.Filter} that identifies the
+ *   documents (all others).  You provide a {@link org.apache.lucene.search.join.BitSetProducer} that identifies the
  *   parent documents, as Lucene does not currently record any information
  *   about doc blocks.</p>
  * 
