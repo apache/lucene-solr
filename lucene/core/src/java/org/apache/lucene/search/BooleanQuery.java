@@ -20,9 +20,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
@@ -111,7 +115,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     /**
-     * Add a clause to the {@link BooleanQuery}.
+     * Add a new clause to this {@link Builder}. Note that the order in which
+     * clauses are added does not have any impact on matching documents or query
+     * performance.
+     * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(BooleanClause clause) {
       add(clause.getQuery(), clause.getOccur());
@@ -119,7 +126,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     /**
-     * Add a clause to the {@link BooleanQuery}.
+     * Add a new clause to this {@link Builder}. Note that the order in which
+     * clauses are added does not have any impact on matching documents or query
+     * performance.
      * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(Query query, Occur occur) {
@@ -141,7 +150,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   private final boolean mutable;
   private final boolean disableCoord;
   private int minimumNumberShouldMatch;
-  private List<BooleanClause> clauses;
+  private List<BooleanClause> clauses;                    // used for toString() and getClauses()
+  private final Map<Occur, Collection<Query>> clauseSets; // used for equals/hashcode
 
   private BooleanQuery(boolean disableCoord, int minimumNumberShouldMatch,
       BooleanClause[] clauses) {
@@ -149,6 +159,16 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     this.minimumNumberShouldMatch = minimumNumberShouldMatch;
     this.clauses = Collections.unmodifiableList(Arrays.asList(clauses));
     this.mutable = false;
+    clauseSets = new EnumMap<>(Occur.class);
+    // duplicates matter for SHOULD and MUST
+    clauseSets.put(Occur.SHOULD, new Multiset<Query>());
+    clauseSets.put(Occur.MUST, new Multiset<Query>());
+    // but not for FILTER and MUST_NOT
+    clauseSets.put(Occur.FILTER, new HashSet<Query>());
+    clauseSets.put(Occur.MUST_NOT, new HashSet<Query>());
+    for (BooleanClause clause : clauses) {
+      clauseSets.get(clause.getOccur()).add(clause.getQuery());
+    }
   }
 
   /**
@@ -282,20 +302,68 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     return buffer.toString();
   }
 
+  /**
+   * Compares the specified object with this boolean query for equality.
+   * Returns true if and only if the provided object<ul>
+   * <li>is also a {@link BooleanQuery},</li>
+   * <li>has the same value of {@link #isCoordDisabled()}</li>
+   * <li>has the same value of {@link #getMinimumNumberShouldMatch()}</li>
+   * <li>has the same {@link Occur#SHOULD} clauses, regardless of the order</li>
+   * <li>has the same {@link Occur#MUST} clauses, regardless of the order</li>
+   * <li>has the same set of {@link Occur#FILTER} clauses, regardless of the
+   * order and regardless of duplicates</li>
+   * <li>has the same set of {@link Occur#MUST_NOT} clauses, regardless of
+   * the order and regardless of duplicates</li></ul>
+   */
   @Override
   public boolean equals(Object o) {
     if (super.equals(o) == false) {
       return false;
     }
     BooleanQuery that = (BooleanQuery)o;
-    return this.getMinimumNumberShouldMatch() == that.getMinimumNumberShouldMatch()
-        && this.disableCoord == that.disableCoord
-        && clauses.equals(that.clauses);
+    if (this.getMinimumNumberShouldMatch() != that.getMinimumNumberShouldMatch()) {
+      return false;
+    }
+    if (this.disableCoord != that.disableCoord) {
+      return false;
+    }
+    if (this.mutable != that.mutable) {
+      return false;
+    }
+    if (this.mutable) {
+      // depends on order
+      return clauses.equals(that.clauses);
+    } else {
+      // does not depend on order
+      return clauseSets.equals(that.clauseSets);
+    }
   }
+
+  private int computeHashCode() {
+    int hashCode =Objects.hash(disableCoord, minimumNumberShouldMatch, clauseSets);
+    if (hashCode == 0) {
+      hashCode = 1;
+    }
+    return hashCode;
+  }
+
+  // cached hash code is only ok for immutable queries
+  private int hashCode;
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(disableCoord, minimumNumberShouldMatch, clauses);
+    if (mutable) {
+      assert clauseSets == null;
+      return 31 * super.hashCode() + Objects.hash(disableCoord, minimumNumberShouldMatch, clauses);
+    }
+
+    if (hashCode == 0) {
+      // no need for synchronization, in the worst case we would just compute the hash several times
+      hashCode = computeHashCode();
+      assert hashCode != 0;
+    }
+    assert hashCode == computeHashCode();
+    return 31 * super.hashCode() + hashCode;
   }
 
   // Backward compatibility for pre-5.3 BooleanQuery APIs
@@ -340,6 +408,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     this.disableCoord = disableCoord;
     this.minimumNumberShouldMatch = 0;
     this.mutable = true;
+    this.clauseSets = null;
   }
 
   private void ensureMutable(String method) {
