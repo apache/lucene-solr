@@ -266,6 +266,9 @@ Bug Fixes
 
 * SOLR-8128: Set v.locale specified locale for all LocaleConfig extending VelocityResponseWriter tools.
   (Erik Hatcher)
+
+* SOLR-8152: Overseer Task Processor/Queue can miss responses, leading to timeouts.
+  (Gregory Chanan)
   
 Optimizations
 ----------------------
