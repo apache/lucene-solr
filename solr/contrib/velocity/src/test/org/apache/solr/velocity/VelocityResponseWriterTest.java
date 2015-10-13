@@ -121,7 +121,9 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCustomTools() throws Exception {
+    // custom_tool.vm responds with $!mytool.star("foo"), but $mytool is not defined (only in velocityWithCustomTools)
     assertEquals("", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"custom_tool")));
+
     assertEquals("** LATERALUS **", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
             SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.star(\"LATERALUS\")")));
 
@@ -151,6 +153,16 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
 
     // Test that $resource.get(key,baseName,locale) works with specified locale
     assertEquals("Colour", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"resource_get")));
+
+    // Test that $number tool uses the specified locale
+    assertEquals("2,112", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t","$number.format(2112)", VelocityResponseWriter.LOCALE, "en_US")));
+    assertEquals("2.112", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t","$number.format(2112)", VelocityResponseWriter.LOCALE, "de_DE")));
+
+    // Test that custom tool extending LocaleConfig gets the right locale
+    assertEquals("de_DE", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t","$mytool.locale", VelocityResponseWriter.LOCALE, "de_DE")));
   }
 
   @Test

@@ -263,6 +263,9 @@ Bug Fixes
 
 * SOLR-8130: Solr's hdfs safe mode detection does not catch all cases of being in safe mode.
   (Mark Miller, Mike Drob)
+
+* SOLR-8128: Set v.locale specified locale for all LocaleConfig extending VelocityResponseWriter tools.
+  (Erik Hatcher)
   
 Optimizations
 ----------------------
