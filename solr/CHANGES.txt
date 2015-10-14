@@ -348,6 +348,9 @@ Other Changes
 * SOLR-8151: OverseerCollectionMessageHandler was logging info data as WARN
   (Alan Woodward)
 
+* SOLR-8116: SearchGroupsResultTransformer tweaks (String literals, list/map initialCapacity)
+  (Christine Poerschke)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
