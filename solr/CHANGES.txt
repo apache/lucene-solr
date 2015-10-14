@@ -269,6 +269,8 @@ Bug Fixes
 
 * SOLR-8152: Overseer Task Processor/Queue can miss responses, leading to timeouts.
   (Gregory Chanan)
+
+* SOLR-8107: bin/solr -f should use exec to start the JVM (Martijn Koster via Timothy Potter)
   
 Optimizations
 ----------------------
