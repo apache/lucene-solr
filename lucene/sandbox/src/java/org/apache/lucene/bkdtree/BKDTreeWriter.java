@@ -18,14 +18,13 @@ package org.apache.lucene.bkdtree;
  */
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -33,8 +32,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.LongBitSet;
-import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO
@@ -88,22 +87,27 @@ class BKDTreeWriter {
   private final byte[] scratchBytes = new byte[BYTES_PER_DOC];
   private final ByteArrayDataOutput scratchBytesOutput = new ByteArrayDataOutput(scratchBytes);
 
-  private OfflineSorter.ByteSequencesWriter writer;
+  private final Directory tempDir;
+  private final String tempFileNamePrefix;
+
+  private OfflineSorter.ByteSequencesWriter offlineWriter;
   private GrowingHeapLatLonWriter heapWriter;
 
-  private Path tempInput;
+  private IndexOutput tempInput;
   private final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
 
   private long pointCount;
 
-  public BKDTreeWriter() throws IOException {
-    this(DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_POINTS_SORT_IN_HEAP);
+  public BKDTreeWriter(Directory tempDir, String tempFileNamePrefix) throws IOException {
+    this(tempDir, tempFileNamePrefix, DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_POINTS_SORT_IN_HEAP);
   }
 
   // TODO: instead of maxPointsSortInHeap, change to maxMBHeap ... the mapping is non-obvious:
-  public BKDTreeWriter(int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
+  public BKDTreeWriter(Directory tempDir, String tempFileNamePrefix, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
     verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
 
@@ -143,8 +147,8 @@ class BKDTreeWriter {
   private void switchToOffline() throws IOException {
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    tempInput = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "in", "");
-    writer = new OfflineSorter.ByteSequencesWriter(tempInput);
+    tempInput = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
+    offlineWriter = new OfflineSorter.ByteSequencesWriter(tempInput);
     for(int i=0;i<pointCount;i++) {
       scratchBytesOutput.reset(scratchBytes);
       scratchBytesOutput.writeInt(heapWriter.latEncs[i]);
@@ -152,7 +156,7 @@ class BKDTreeWriter {
       scratchBytesOutput.writeVInt(heapWriter.docIDs[i]);
       scratchBytesOutput.writeVLong(i);
       // TODO: can/should OfflineSorter optimize the fixed-width case?
-      writer.write(scratchBytes, 0, scratchBytes.length);
+      offlineWriter.write(scratchBytes, 0, scratchBytes.length);
     }
 
     heapWriter = null;
@@ -165,7 +169,7 @@ class BKDTreeWriter {
     assert lonEnc < Integer.MAX_VALUE;
 
     if (pointCount >= maxPointsSortInHeap) {
-      if (writer == null) {
+      if (offlineWriter == null) {
         switchToOffline();
       }
       scratchBytesOutput.reset(scratchBytes);
@@ -173,7 +177,7 @@ class BKDTreeWriter {
       scratchBytesOutput.writeInt(lonEnc);
       scratchBytesOutput.writeVInt(docID);
       scratchBytesOutput.writeVLong(pointCount);
-      writer.write(scratchBytes, 0, scratchBytes.length);
+      offlineWriter.write(scratchBytes, 0, scratchBytes.length);
     } else {
       // Not too many points added yet, continue using heap:
       heapWriter.append(latEnc, lonEnc, pointCount, docID);
@@ -184,7 +188,7 @@ class BKDTreeWriter {
 
   /** Changes incoming {@link ByteSequencesWriter} file to to fixed-width-per-entry file, because we need to be able to slice
    *  as we recurse in {@link #build}. */
-  private LatLonWriter convertToFixedWidth(Path in) throws IOException {
+  private LatLonWriter convertToFixedWidth(String in) throws IOException {
     BytesRefBuilder scratch = new BytesRefBuilder();
     scratch.grow(BYTES_PER_DOC);
     BytesRef bytes = scratch.get();
@@ -194,7 +198,7 @@ class BKDTreeWriter {
     LatLonWriter sortedWriter = null;
     boolean success = false;
     try {
-      reader = new OfflineSorter.ByteSequencesReader(in);
+      reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(in, IOContext.READONCE));
       sortedWriter = getWriter(pointCount);
       for (long i=0;i<pointCount;i++) {
         boolean result = reader.read(scratch);
@@ -230,10 +234,10 @@ class BKDTreeWriter {
 
   private LatLonWriter sort(boolean lon) throws IOException {
     if (heapWriter != null) {
+      // All buffered points are still in heap
 
       assert pointCount < Integer.MAX_VALUE;
 
-      // All buffered points are still in heap
       new InPlaceMergeSorter() {
         @Override
         protected void swap(int i, int j) {
@@ -329,20 +333,19 @@ class BKDTreeWriter {
         }
       };
 
-      Path sorted = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "sorted", "");
-      boolean success = false;
       
+      boolean success = false;
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, cmp);
+      String sortedFileName = sorter.sort(tempInput.getName());
       try {
-        OfflineSorter latSorter = new OfflineSorter(cmp);
-        latSorter.sort(tempInput, sorted);
-        LatLonWriter writer = convertToFixedWidth(sorted);
+        LatLonWriter writer = convertToFixedWidth(sortedFileName);
         success = true;
         return writer;
       } finally {
         if (success) {
-          IOUtils.rm(sorted);
+          tempDir.deleteFile(sortedFileName);
         } else {
-          IOUtils.deleteFilesIgnoringExceptions(sorted);
+          IOUtils.deleteFilesIgnoringExceptions(tempDir, sortedFileName);
         }
       }
     }
@@ -352,8 +355,9 @@ class BKDTreeWriter {
   public long finish(IndexOutput out) throws IOException {
     //System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapWriter);
 
-    if (writer != null) {
-      writer.close();
+    if (offlineWriter != null) {
+      // This also closes the temp file output:
+      offlineWriter.close();
     }
 
     LongBitSet bitSet = new LongBitSet(pointCount);
@@ -410,7 +414,9 @@ class BKDTreeWriter {
       if (success) {
         latSortedWriter.destroy();
         lonSortedWriter.destroy();
-        IOUtils.rm(tempInput);
+        if (tempInput != null) {
+          tempDir.deleteFile(tempInput.getName());
+        }
       } else {
         try {
           latSortedWriter.destroy();
@@ -422,7 +428,9 @@ class BKDTreeWriter {
         } catch (Throwable t) {
           // Suppress to keep throwing original exc
         }
-        IOUtils.deleteFilesIgnoringExceptions(tempInput);
+        if (tempInput != null) {
+          IOUtils.deleteFilesIgnoringExceptions(tempDir, tempInput.getName());
+        }
       }
     }
 
@@ -813,7 +821,7 @@ class BKDTreeWriter {
     if (count < maxPointsSortInHeap) {
       return new HeapLatLonWriter((int) count);
     } else {
-      return new OfflineLatLonWriter(count);
+      return new OfflineLatLonWriter(tempDir, tempFileNamePrefix, count);
     }
   }
 

@@ -43,12 +43,12 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
   
   private final Store store;
   
-  public ReusedBufferedIndexOutput(String resourceDescription) {
-    this(resourceDescription, BUFFER_SIZE);
+  public ReusedBufferedIndexOutput(String resourceDescription, String name) {
+    this(resourceDescription, name, BUFFER_SIZE);
   }
   
-  public ReusedBufferedIndexOutput(String resourceDescription, int bufferSize) {
-    super(resourceDescription);
+  public ReusedBufferedIndexOutput(String resourceDescription, String name, int bufferSize) {
+    super(resourceDescription, name);
     checkBufferSize(bufferSize);
     this.bufferSize = bufferSize;
     store = BufferStore.instance(bufferSize);

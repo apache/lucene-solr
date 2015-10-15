@@ -107,7 +107,12 @@ public class HdfsDirectory extends BaseDirectory {
   
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
-    return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name));
+    return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name), name);
+  }
+
+  @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    throw new UnsupportedOperationException();
   }
   
   private String[] getNormalNames(List<String> files) {

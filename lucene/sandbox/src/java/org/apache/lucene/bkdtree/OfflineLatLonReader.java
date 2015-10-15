@@ -17,34 +17,23 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 
 final class OfflineLatLonReader implements LatLonReader {
-  final InputStreamDataInput in;
+  final IndexInput in;
   long countLeft;
   private int latEnc;
   private int lonEnc;
   private long ord;
   private int docID;
 
-  OfflineLatLonReader(Path tempFile, long start, long count) throws IOException {
-    InputStream fis = Files.newInputStream(tempFile);
-    long seekFP = start * BKDTreeWriter.BYTES_PER_DOC;
-    long skipped = 0;
-    while (skipped < seekFP) {
-      long inc = fis.skip(seekFP - skipped);
-      skipped += inc;
-      if (inc == 0) {
-        throw new RuntimeException("skip returned 0");
-      }
-    }
-    in = new InputStreamDataInput(new BufferedInputStream(fis));
+  OfflineLatLonReader(Directory tempDir, String tempFileName, long start, long count) throws IOException {
+    in = tempDir.openInput(tempFileName, IOContext.READONCE);
+    in.seek(start * BKDTreeWriter.BYTES_PER_DOC);
     this.countLeft = count;
   }
 

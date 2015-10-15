@@ -34,8 +34,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CannedBinaryTokenStream.BinaryToken;
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
+import org.apache.lucene.analysis.CannedBinaryTokenStream.BinaryToken;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -48,9 +48,11 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
@@ -58,7 +60,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class AnalyzingSuggesterTest extends LuceneTestCase {
-  
+
   /** this is basically the WFST test ported to KeywordAnalyzer. so it acts the same */
   public void testKeyword() throws Exception {
     Iterable<Input> keys = shuffle(
@@ -71,8 +73,10 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         new Input("barbara", 1)
     );
 
+    Directory tempDir = getDirectory();
+
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", analyzer);
     suggester.build(new InputArrayIterator(keys));
     
     // top N of 2, but only foo is available
@@ -106,7 +110,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals("barbara", results.get(2).key.toString());
     assertEquals(6, results.get(2).value, 0.01F);
     
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
   
   public void testKeywordWithPayloads() throws Exception {
@@ -119,7 +123,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       new Input("barbara", 6, new BytesRef("for all the fish")));
     
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", analyzer);
     suggester.build(new InputArrayIterator(keys));
     for (int i = 0; i < 2; i++) {
       // top N of 2, but only foo is available
@@ -160,7 +165,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       assertEquals(6, results.get(2).value, 0.01F);
       assertEquals(new BytesRef("for all the fish"), results.get(2).payload);
     }
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
   
   public void testRandomRealisticKeys() throws IOException {
@@ -180,7 +185,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     }
     Analyzer indexAnalyzer = new MockAnalyzer(random());
     Analyzer queryAnalyzer = new MockAnalyzer(random());
-    AnalyzingSuggester analyzingSuggester = new AnalyzingSuggester(indexAnalyzer, queryAnalyzer,
+    Directory tempDir = getDirectory();
+
+    AnalyzingSuggester analyzingSuggester = new AnalyzingSuggester(tempDir, "suggest", indexAnalyzer, queryAnalyzer,
         AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, random().nextBoolean());
     boolean doPayloads = random().nextBoolean();
     if (doPayloads) {
@@ -205,7 +212,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       }
     }
     
-    IOUtils.close(lineFile, indexAnalyzer, queryAnalyzer);
+    IOUtils.close(lineFile, indexAnalyzer, queryAnalyzer, tempDir);
   }
   
   // TODO: more tests
@@ -217,8 +224,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         new Input("the ghost of christmas past", 50),
     };
     
+    Directory tempDir = getDirectory();
     Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-    AnalyzingSuggester suggester = new AnalyzingSuggester(standard, standard, 
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", standard, standard, 
         AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, false);
 
     suggester.build(new InputArrayIterator(keys));
@@ -240,17 +248,18 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
     
-    standard.close();
+    IOUtils.close(standard, tempDir);
   }
 
   public void testEmpty() throws Exception {
     Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-    AnalyzingSuggester suggester = new AnalyzingSuggester(standard);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", standard);
     suggester.build(new InputArrayIterator(new Input[0]));
 
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
-    standard.close();
+    IOUtils.close(standard, tempDir);
   }
 
   public void testNoSeps() throws Exception {
@@ -262,7 +271,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, options, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, options, 256, -1, true);
     suggester.build(new InputArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
@@ -275,7 +285,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     // complete to "abcd", which has higher weight so should
     // appear first:
     assertEquals("abcd", r.get(0).key.toString());
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testGraphDups() throws Exception {
@@ -330,7 +340,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         new Input("wi fi network is fast", 10),
     };
     //AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer, AnalyzingSuggester.EXACT_FIRST, 256, -1);
-    AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", analyzer);
     suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup("wifi network", false, 10);
     if (VERBOSE) {
@@ -341,7 +352,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(50, results.get(0).value);
     assertEquals("wi fi network is fast", results.get(1).key);
     assertEquals(10, results.get(1).value);
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
 
   public void testInputPathRequired() throws Exception {
@@ -396,11 +407,12 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         new Input("ab xc", 50),
         new Input("ba xd", 50),
     };
-    AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", analyzer);
     suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup("ab x", false, 1);
     assertTrue(results.size() == 1);
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
 
   private static Token token(String term, int posInc, int posLength) {
@@ -471,7 +483,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     Analyzer a = getUnusualAnalyzer();
     int options = AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP;
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, options, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, options, 256, -1, true);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
           new Input("x y z", 3),
@@ -505,13 +518,14 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       }
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testNonExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
@@ -543,7 +557,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       }
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
   
   // Holds surface form separately:
@@ -764,7 +778,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     }
 
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a,
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a,
                                                           preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, true);
     if (doPayloads) {
       suggester.build(new InputArrayIterator(shuffle(payloadKeys)));
@@ -882,12 +897,13 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       }
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 2, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 2, -1, true);
     suggester.build(new InputArrayIterator(shuffle(new Input("a", 40),
         new Input("a ", 50), new Input(" a", 60))));
 
@@ -897,12 +913,13 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(60, results.get(0).value);
     assertEquals("a ", results.get(1).key);
     assertEquals(50, results.get(1).value);
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testQueueExhaustion() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1, true);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a", 2),
@@ -912,14 +929,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }));
 
     suggester.lookup("a", false, 4);
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testExactFirstMissingResult() throws Exception {
 
     Analyzer a = new MockAnalyzer(random());
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1, true);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a", 5),
@@ -959,7 +977,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(4, results.get(1).value);
     assertEquals("a b", results.get(2).key);
     assertEquals(3, results.get(2).value);
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testDupSurfaceFormsMissingResults() throws Exception {
@@ -986,7 +1004,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       }
     };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 256, -1, true);
 
     suggester.build(new InputArrayIterator(shuffle(
           new Input("hambone", 6),
@@ -1018,7 +1037,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(0).value);
     assertEquals("nellie", results.get(1).key);
     assertEquals(5, results.get(1).value);
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testDupSurfaceFormsMissingResults2() throws Exception {
@@ -1055,7 +1074,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       }
     };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 256, -1, true);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a", 6),
@@ -1088,7 +1108,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(0).value);
     assertEquals("b", results.get(1).key);
     assertEquals(5, results.get(1).value);
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void test0ByteKeys() throws Exception {
@@ -1128,19 +1148,21 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 256, -1, true);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a a", 50),
           new Input("a b", 50),
         }));
     
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testDupSurfaceFormsMissingResults3() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("a a", 7),
           new Input("a a", 7),
@@ -1149,19 +1171,20 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           new Input("a b", 5),
         }));
     assertEquals("[a a/7, a c/6, a b/5]", suggester.lookup("a", false, 3).toString());
-    a.close();
+    IOUtils.close(tempDir, a);
   }
 
   public void testEndingSpace() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("i love lucy", 7),
           new Input("isla de muerta", 8),
         }));
     assertEquals("[isla de muerta/8, i love lucy/7]", suggester.lookup("i", false, 3).toString());
     assertEquals("[i love lucy/7]", suggester.lookup("i ", false, 3).toString());
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testTooManyExpansions() throws Exception {
@@ -1188,15 +1211,17 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
       };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, 1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 256, 1, true);
     suggester.build(new InputArrayIterator(new Input[] {new Input("a", 1)}));
     assertEquals("[a/1]", suggester.lookup("a", false, 1).toString());
-    a.close();
+    IOUtils.close(a, tempDir);
   }
   
   public void testIllegalLookupArgument() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1, true);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a, a, 0, 256, -1, true);
     suggester.build(new InputArrayIterator(new Input[] {
         new Input("а где Люси?", 7),
     }));
@@ -1212,7 +1237,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     } catch (IllegalArgumentException e) {
       // expected
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   static final Iterable<Input> shuffle(Input...values) {
@@ -1227,7 +1252,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   // TODO: we need BaseSuggesterTestCase?
   public void testTooLongSuggestion() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    AnalyzingSuggester suggester = new AnalyzingSuggester(a);
+    Directory tempDir = getDirectory();
+    AnalyzingSuggester suggester = new AnalyzingSuggester(tempDir, "suggest", a);
     String bigString = TestUtil.randomSimpleString(random(), 30000, 30000);
     try {
       suggester.build(new InputArrayIterator(new Input[] {
@@ -1238,6 +1264,14 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    a.close();
+    IOUtils.close(a, tempDir);
+  }
+
+  private Directory getDirectory() {     
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 }

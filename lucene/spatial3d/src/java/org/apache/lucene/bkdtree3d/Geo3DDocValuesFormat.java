@@ -22,7 +22,6 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat;
 import org.apache.lucene.geo3d.PlanetModel;
-import org.apache.lucene.geo3d.Vector;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -106,7 +105,7 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(final SegmentWriteState state) throws IOException {
-    return new Geo3DDocValuesConsumer(planetModel, delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
+    return new Geo3DDocValuesConsumer(state.directory, state.segmentInfo.name, planetModel, delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
   }
 
   @Override

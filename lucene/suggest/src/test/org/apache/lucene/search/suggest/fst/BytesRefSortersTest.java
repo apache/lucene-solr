@@ -18,8 +18,11 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import org.apache.lucene.search.suggest.InMemorySorter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OfflineSorter;
 import org.junit.Test;
@@ -27,9 +30,13 @@ import org.junit.Test;
 public class BytesRefSortersTest extends LuceneTestCase {
   @Test
   public void testExternalRefSorter() throws Exception {
-    ExternalRefSorter s = new ExternalRefSorter(new OfflineSorter());
+    Directory tempDir = newDirectory();
+    if (tempDir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
+    }
+    ExternalRefSorter s = new ExternalRefSorter(new OfflineSorter(tempDir, "temp"));
     check(s);
-    s.close();
+    IOUtils.close(s, tempDir);
   }
 
   @Test

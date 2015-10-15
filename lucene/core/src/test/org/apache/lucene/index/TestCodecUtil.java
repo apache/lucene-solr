@@ -283,7 +283,7 @@ public class TestCodecUtil extends LuceneTestCase {
     final IndexOutput output = new RAMOutputStream(file, false);
     AtomicLong fakeChecksum = new AtomicLong();
     // wrap the index input where we control the checksum for mocking
-    IndexOutput fakeOutput = new IndexOutput("fake") {
+    IndexOutput fakeOutput = new IndexOutput("fake", "fake") {
       @Override
       public void close() throws IOException {
         output.close();

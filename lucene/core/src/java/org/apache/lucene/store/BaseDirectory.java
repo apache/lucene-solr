@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 /**
  * Base implementation for a concrete {@link Directory} that uses a {@link LockFactory} for locking.
@@ -30,6 +31,22 @@ public abstract class BaseDirectory extends Directory {
   /** Holds the LockFactory instance (implements locking for
    * this Directory instance). */
   protected final LockFactory lockFactory;
+
+  /** Subclasses can use this to generate temp file name candidates */
+  protected static final Random tempFileRandom;
+
+  static {
+    String prop = System.getProperty("tests.seed");
+    int seed;
+    if (prop != null) {
+      // So if there is a test failure that relied on temp file names,
+      //we remain reproducible based on the test seed:
+      seed = prop.hashCode();
+    } else {
+      seed = (int) System.currentTimeMillis();
+    }
+    tempFileRandom = new Random(seed);
+  }
 
   /** Sole constructor. */
   protected BaseDirectory(LockFactory lockFactory) {

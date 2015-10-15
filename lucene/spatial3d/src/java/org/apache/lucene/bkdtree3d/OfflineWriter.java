@@ -17,29 +17,26 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.ByteArrayDataOutput;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OfflineSorter;
-
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+
+import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 
 final class OfflineWriter implements Writer {
 
-  final Path tempFile;
+  final Directory tempDir;
+  final IndexOutput out;
   final byte[] scratchBytes = new byte[BKD3DTreeWriter.BYTES_PER_DOC];
   final ByteArrayDataOutput scratchBytesOutput = new ByteArrayDataOutput(scratchBytes);      
-  final OutputStreamDataOutput out;
   final long count;
   private long countWritten;
   private boolean closed;
 
-  public OfflineWriter(long count) throws IOException {
-    tempFile = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "size" + count + ".", "");
-    out = new OutputStreamDataOutput(new BufferedOutputStream(Files.newOutputStream(tempFile)));
+  public OfflineWriter(Directory tempDir, String tempFileNamePrefix, long count) throws IOException {
+    this.tempDir = tempDir;
+    out = tempDir.createTempOutput(tempFileNamePrefix, "bkd3d", IOContext.DEFAULT);
     this.count = count;
   }
     
@@ -56,7 +53,7 @@ final class OfflineWriter implements Writer {
   @Override
   public Reader getReader(long start) throws IOException {
     assert closed;
-    return new OfflineReader(tempFile, start, count-start);
+    return new OfflineReader(tempDir, out.getName(), start, count-start);
   }
 
   @Override
@@ -70,11 +67,11 @@ final class OfflineWriter implements Writer {
 
   @Override
   public void destroy() throws IOException {
-    IOUtils.rm(tempFile);
+    tempDir.deleteFile(out.getName());
   }
 
   @Override
   public String toString() {
-    return "OfflineWriter(count=" + count + " tempFile=" + tempFile + ")";
+    return "OfflineWriter(count=" + count + " tempFileName=" + out.getName() + ")";
   }
 }

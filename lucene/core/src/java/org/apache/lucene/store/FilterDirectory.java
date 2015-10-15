@@ -74,6 +74,11 @@ public class FilterDirectory extends Directory {
   }
 
   @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    return in.createTempOutput(prefix, suffix, context);
+  }
+
+  @Override
   public void sync(Collection<String> names) throws IOException {
     in.sync(names);
   }

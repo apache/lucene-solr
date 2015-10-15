@@ -32,8 +32,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,10 +57,10 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -2615,7 +2615,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, -1L, -1L, -1L);
 
       info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
-      trackingDir.getCreatedFiles().clear();
+      trackingDir.clearCreatedFiles();
                                          
       setDiagnostics(info, SOURCE_ADDINDEXES_READERS);
 

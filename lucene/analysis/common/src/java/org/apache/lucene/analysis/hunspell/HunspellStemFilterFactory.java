@@ -19,6 +19,8 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -48,6 +52,7 @@ import org.apache.lucene.util.IOUtils;
 public class HunspellStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private static final String PARAM_DICTIONARY    = "dictionary";
   private static final String PARAM_AFFIX         = "affix";
+  // NOTE: this one is currently unused?:
   private static final String PARAM_RECURSION_CAP = "recursionCap";
   private static final String PARAM_IGNORE_CASE   = "ignoreCase";
   private static final String PARAM_LONGEST_ONLY  = "longestOnly";
@@ -91,7 +96,12 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
       }
       affix = loader.openResource(affixFile);
 
-      this.dictionary = new Dictionary(affix, dictionaries, ignoreCase);
+      Path tempPath = Files.createTempDirectory(Dictionary.getDefaultTempDir(), "Hunspell");
+      try (Directory tempDir = FSDirectory.open(tempPath)) {
+        this.dictionary = new Dictionary(tempDir, "hunspell", affix, dictionaries, ignoreCase);
+      } finally {
+        IOUtils.rm(tempPath); 
+      }
     } catch (ParseException e) {
       throw new IOException("Unable to load hunspell data! [dictionary=" + dictionaries + ",affix=" + affixFile + "]", e);
     } finally {

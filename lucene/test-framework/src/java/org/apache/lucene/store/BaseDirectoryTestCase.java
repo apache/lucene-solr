@@ -23,9 +23,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.CRC32;
@@ -1165,5 +1168,26 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     in.close(); // close again
     dir.close();
   }
-}
 
+  public void testCreateTempOutput() throws Throwable {
+    Directory dir = getDirectory(createTempDir());
+    List<String> names = new ArrayList<>();
+    int iters = atLeast(50);
+    for(int iter=0;iter<iters;iter++) {
+      IndexOutput out = dir.createTempOutput("foo", "bar", newIOContext(random()));
+      names.add(out.getName());
+      out.writeVInt(iter);
+      out.close();
+    }
+    for(int iter=0;iter<iters;iter++) {
+      IndexInput in = dir.openInput(names.get(iter), newIOContext(random()));
+      assertEquals(iter, in.readVInt());
+      in.close();
+    }
+    Set<String> files = new HashSet<String>(Arrays.asList(dir.listAll()));
+    // In case ExtraFS struck:
+    files.remove("extra0");
+    assertEquals(new HashSet<String>(names), files);
+    dir.close();
+  }
+}

@@ -22,12 +22,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.apache.lucene.analysis.hunspell.Dictionary;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.Ignore;
 
 /**
@@ -186,8 +187,12 @@ public class TestAllDictionaries2 extends LuceneTestCase {
         Path affEntry = tmp.resolve(tests[i+2]);
       
         try (InputStream dictionary = Files.newInputStream(dicEntry);
-             InputStream affix = Files.newInputStream(affEntry)) {
-          Dictionary dic = new Dictionary(affix, dictionary);
+             InputStream affix = Files.newInputStream(affEntry);
+             Directory tempDir = newDirectory()) {
+          if (tempDir instanceof MockDirectoryWrapper) {
+            ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
+          }
+          Dictionary dic = new Dictionary(tempDir, "dictionary", affix, dictionary);
           System.out.println(tests[i] + "\t" + RamUsageTester.humanSizeOf(dic) + "\t(" +
                              "words=" + RamUsageTester.humanSizeOf(dic.words) + ", " +
                              "flags=" + RamUsageTester.humanSizeOf(dic.flagLookup) + ", " +
@@ -219,8 +224,12 @@ public class TestAllDictionaries2 extends LuceneTestCase {
           Path affEntry = tmp.resolve(tests[i+2]);
         
           try (InputStream dictionary = Files.newInputStream(dicEntry);
-              InputStream affix = Files.newInputStream(affEntry)) {
-            new Dictionary(affix, dictionary);
+               InputStream affix = Files.newInputStream(affEntry);
+               Directory tempDir = newDirectory()) {
+            if (tempDir instanceof MockDirectoryWrapper) {
+              ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
+            }
+            new Dictionary(tempDir, "dictionary", affix, dictionary);
           } 
         }
       }

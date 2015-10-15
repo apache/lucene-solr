@@ -59,6 +59,13 @@ API Changes
 * LUCENE-6706: PayloadTermQuery and PayloadNearQuery have been removed.
   Instead, use PayloadScoreQuery to wrap any SpanQuery. (Alan Woodward)
 
+* LUCENE-6829: OfflineSorter, and the classes that use it (suggesters,
+  hunspell) now do all temporary file IO via Directory instead of
+  directly through java's temp dir.  Directory.createTempOutput
+  creates a uniquely named IndexOutput, and the new
+  IndexOutput.getName returns its name (Dawid Weiss, Robert Muir, Mike
+  McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.

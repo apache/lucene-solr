@@ -29,12 +29,12 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * Class for accessing a compound stream.
@@ -170,6 +170,11 @@ final class Lucene50CompoundReader extends Directory {
   
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
     throw new UnsupportedOperationException();
   }
   

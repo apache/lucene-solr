@@ -32,6 +32,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
@@ -78,11 +79,14 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
   /** Number of entries the lookup was built with */
   private long count = 0;
 
+  private final Directory tempDir;
+  private final String tempFileNamePrefix;
+
   /**
-   * Calls {@link #WFSTCompletionLookup(boolean) WFSTCompletionLookup(true)}
+   * Calls {@link #WFSTCompletionLookup(Directory,String,boolean) WFSTCompletionLookup(null,null,true)}
    */
-  public WFSTCompletionLookup() {
-    this(true);
+  public WFSTCompletionLookup(Directory tempDir, String tempFileNamePrefix) {
+    this(tempDir, tempFileNamePrefix, true);
   }
   
   /**
@@ -93,8 +97,10 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
    *        of score. This has no performance impact, but could result
    *        in low-quality suggestions.
    */
-  public WFSTCompletionLookup(boolean exactFirst) {
+  public WFSTCompletionLookup(Directory tempDir, String tempFileNamePrefix, boolean exactFirst) {
     this.exactFirst = exactFirst;
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
   }
   
   @Override
@@ -107,7 +113,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     }
     count = 0;
     BytesRef scratch = new BytesRef();
-    InputIterator iter = new WFSTInputIterator(iterator);
+    InputIterator iter = new WFSTInputIterator(tempDir, tempFileNamePrefix, iterator);
     IntsRefBuilder scratchInts = new IntsRefBuilder();
     BytesRefBuilder previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
@@ -264,8 +270,8 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
   
   private final class WFSTInputIterator extends SortedInputIterator {
 
-    WFSTInputIterator(InputIterator source) throws IOException {
-      super(source);
+    WFSTInputIterator(Directory tempDir, String tempFileNamePrefix, InputIterator source) throws IOException {
+      super(tempDir, tempFileNamePrefix, source);
       assert source.hasPayloads() == false;
     }
 

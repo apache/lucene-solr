@@ -18,10 +18,10 @@ package org.apache.lucene.store;
  */
 
 import java.io.EOFException;
-import java.io.IOException;
-import java.io.FileInputStream;
 import java.io.FileDescriptor;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -149,7 +149,7 @@ public class NativeUnixDirectory extends FSDirectory {
       return delegate.createOutput(name, context);
     } else {
       ensureCanWrite(name);
-      return new NativeUnixIndexOutput(getDirectory().resolve(name), mergeBufferSize);
+      return new NativeUnixIndexOutput(getDirectory().resolve(name), name, mergeBufferSize);
     }
   }
 
@@ -167,8 +167,8 @@ public class NativeUnixDirectory extends FSDirectory {
     private long fileLength;
     private boolean isOpen;
 
-    public NativeUnixIndexOutput(Path path, int bufferSize) throws IOException {
-      super("NativeUnixIndexOutput(path=\"" + path.toString() + "\")");
+    public NativeUnixIndexOutput(Path path, String name, int bufferSize) throws IOException {
+      super("NativeUnixIndexOutput(path=\"" + path.toString() + "\")", name);
       //this.path = path;
       final FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), false);
       fos = new FileOutputStream(fd);

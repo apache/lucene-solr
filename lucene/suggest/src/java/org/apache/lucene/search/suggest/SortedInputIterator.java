@@ -18,14 +18,15 @@ package org.apache.lucene.search.suggest;
  */
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -41,12 +42,14 @@ import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 public class SortedInputIterator implements InputIterator {
   
   private final InputIterator source;
-  private Path tempInput;
-  private Path tempSorted;
+  private IndexOutput tempInput;
+  private String tempSortedFileName;
   private final ByteSequencesReader reader;
   private final Comparator<BytesRef> comparator;
   private final boolean hasPayloads;
   private final boolean hasContexts;
+  private final Directory tempDir;
+  private final String tempFileNamePrefix;
   private boolean done = false;
   
   private long weight;
@@ -58,19 +61,21 @@ public class SortedInputIterator implements InputIterator {
    * Creates a new sorted wrapper, using {@link
    * BytesRef#getUTF8SortedAsUnicodeComparator} for
    * sorting. */
-  public SortedInputIterator(InputIterator source) throws IOException {
-    this(source, BytesRef.getUTF8SortedAsUnicodeComparator());
+  public SortedInputIterator(Directory tempDir, String tempFileNamePrefix, InputIterator source) throws IOException {
+    this(tempDir, tempFileNamePrefix, source, BytesRef.getUTF8SortedAsUnicodeComparator());
   }
 
   /**
    * Creates a new sorted wrapper, sorting by BytesRef
    * (ascending) then cost (ascending).
    */
-  public SortedInputIterator(InputIterator source, Comparator<BytesRef> comparator) throws IOException {
+  public SortedInputIterator(Directory tempDir, String tempFileNamePrefix, InputIterator source, Comparator<BytesRef> comparator) throws IOException {
     this.hasPayloads = source.hasPayloads();
     this.hasContexts = source.hasContexts();
     this.source = source;
     this.comparator = comparator;
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
     this.reader = sort();
   }
   
@@ -83,7 +88,7 @@ public class SortedInputIterator implements InputIterator {
     try {
       ByteArrayDataInput input = new ByteArrayDataInput();
       if (reader.read(scratch)) {
-      final BytesRef bytes = scratch.get();
+        final BytesRef bytes = scratch.get();
         weight = decode(bytes, input);
         if (hasPayloads) {
           payload = decodePayload(bytes, input);
@@ -168,10 +173,9 @@ public class SortedInputIterator implements InputIterator {
   };
   
   private ByteSequencesReader sort() throws IOException {
-    String prefix = getClass().getSimpleName();
-    Path directory = OfflineSorter.getDefaultTempDir();
-    tempInput = Files.createTempFile(directory, prefix, ".input");
-    tempSorted = Files.createTempFile(directory, prefix, ".sorted");
+
+    OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, tieBreakByCostComparator);
+    tempInput = tempDir.createTempOutput(tempFileNamePrefix, "input", IOContext.DEFAULT);
     
     final OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     boolean success = false;
@@ -184,8 +188,8 @@ public class SortedInputIterator implements InputIterator {
         encode(writer, output, buffer, spare, source.payload(), source.contexts(), source.weight());
       }
       writer.close();
-      new OfflineSorter(tieBreakByCostComparator).sort(tempInput, tempSorted);
-      ByteSequencesReader reader = new OfflineSorter.ByteSequencesReader(tempSorted);
+      tempSortedFileName = sorter.sort(tempInput.getName());
+      ByteSequencesReader reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(tempSortedFileName, IOContext.READONCE));
       success = true;
       return reader;
       
@@ -203,16 +207,12 @@ public class SortedInputIterator implements InputIterator {
   }
   
   private void close() throws IOException {
-    boolean success = false;
     try {
       IOUtils.close(reader);
-      success = true;
     } finally {
-      if (success) {
-        IOUtils.deleteFilesIfExist(tempInput, tempSorted);
-      } else {
-        IOUtils.deleteFilesIgnoringExceptions(tempInput, tempSorted);
-      }
+      IOUtils.deleteFilesIgnoringExceptions(tempDir,
+                                            tempInput == null ? null : tempInput.getName(),
+                                            tempSortedFileName);
     }
   }
   
