@@ -88,6 +88,9 @@ New Features
   fast, very accurate query to find all indexed points within an
   earth-surface shape (Karl Wright, Mike McCandless)
 
+* LUCENE-6838: Added IndexSearcher#getQueryCache and #getQueryCachingPolicy.
+  (Adrien Grand)
+
 API Changes
 
 * LUCENE-6590: Query.setBoost(), Query.getBoost() and Query.clone() are gone.
