@@ -53,7 +53,9 @@ public final class SpanOrQuery extends SpanQuery {
     }
   }
 
-  /** Adds a clause to this query */
+  /** Adds a clause to this query
+   *  @deprecated All clauses should be provided at {@link #SpanOrQuery(SpanQuery...) construction-time}. */
+  @Deprecated
   public final void addClause(SpanQuery clause) {
     if (field == null) {
       field = clause.getField();

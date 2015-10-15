@@ -30,6 +30,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.TopTermsRewrite;
 
+import java.io.IOException;
+import java.util.Objects;
+import java.util.List;
+import java.util.ArrayList;
+
 /**
  * Wraps any {@link MultiTermQuery} as a {@link SpanQuery}, 
  * so it can be nested within other SpanQuery classes.
@@ -156,15 +161,14 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
    * @see #setRewriteMethod
    */
   public final static SpanRewriteMethod SCORING_SPAN_QUERY_REWRITE = new SpanRewriteMethod() {
-    private final ScoringRewrite<SpanOrQuery> delegate = new ScoringRewrite<SpanOrQuery>() {
+    private final ScoringRewrite<List<SpanQuery>> delegate = new ScoringRewrite<List<SpanQuery>>() {
       @Override
-      protected SpanOrQuery getTopLevelBuilder() {
-        return new SpanOrQuery();
+      protected List<SpanQuery> getTopLevelBuilder() {
+        return new ArrayList<SpanQuery>();
       }
 
-      @Override
-      protected Query build(SpanOrQuery builder) {
-        return builder;
+      protected Query build(List<SpanQuery> builder) {
+        return new SpanOrQuery(builder.toArray(new SpanQuery[builder.size()]));
       }
 
       @Override
@@ -173,9 +177,9 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
       }
     
       @Override
-      protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost, TermContext states) {
+      protected void addClause(List<SpanQuery> topLevel, Term term, int docCount, float boost, TermContext states) {
         final SpanTermQuery q = new SpanTermQuery(term, states);
-        topLevel.addClause(q);
+        topLevel.add(q);
       }
     };
     
@@ -197,33 +201,33 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
    * @see #setRewriteMethod
    */
   public static final class TopTermsSpanBooleanQueryRewrite extends SpanRewriteMethod  {
-    private final TopTermsRewrite<SpanOrQuery> delegate;
+    private final TopTermsRewrite<List<SpanQuery>> delegate;
   
     /** 
      * Create a TopTermsSpanBooleanQueryRewrite for 
      * at most <code>size</code> terms.
      */
     public TopTermsSpanBooleanQueryRewrite(int size) {
-      delegate = new TopTermsRewrite<SpanOrQuery>(size) {
+      delegate = new TopTermsRewrite<List<SpanQuery>>(size) {
         @Override
         protected int getMaxSize() {
           return Integer.MAX_VALUE;
         }
     
         @Override
-        protected SpanOrQuery getTopLevelBuilder() {
-          return new SpanOrQuery();
+        protected List<SpanQuery> getTopLevelBuilder() {
+          return new ArrayList<SpanQuery>();
         }
 
         @Override
-        protected Query build(SpanOrQuery builder) {
-          return builder;
+        protected Query build(List<SpanQuery> builder) {
+          return new SpanOrQuery(builder.toArray(new SpanQuery[builder.size()]));
         }
 
         @Override
-        protected void addClause(SpanOrQuery topLevel, Term term, int docFreq, float boost, TermContext states) {
+        protected void addClause(List<SpanQuery> topLevel, Term term, int docFreq, float boost, TermContext states) {
           final SpanTermQuery q = new SpanTermQuery(term, states);
-          topLevel.addClause(q);
+          topLevel.add(q);
         }
       };
     }
