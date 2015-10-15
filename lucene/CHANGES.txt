@@ -111,6 +111,9 @@ API Changes
   order to let Lucene know that a Query should be used for filtering but not
   scoring.
 
+* LUCENE-6939: SpanOrQuery.addClause is now deprecated, clauses should all be
+  provided at construction time. (Paul Elschot via Adrien Grand)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the
