@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.store.AlreadyClosedException;
@@ -87,15 +88,16 @@ public class LocalReplicator implements Replicator {
     ReplicationSession(SessionToken session, RefCountedRevision revision) {
       this.session = session;
       this.revision = revision;
-      lastAccessTime = System.currentTimeMillis();
+      lastAccessTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     }
     
     boolean isExpired(long expirationThreshold) {
-      return lastAccessTime < (System.currentTimeMillis() - expirationThreshold);
+      return lastAccessTime < (TimeUnit.MILLISECONDS.convert(System.nanoTime(), 
+          TimeUnit.NANOSECONDS) - expirationThreshold);
     }
     
     void markAccessed() {
-      lastAccessTime = System.currentTimeMillis();
+      lastAccessTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     }
   }
   

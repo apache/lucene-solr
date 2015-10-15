@@ -500,8 +500,6 @@
  *           Weight object is an internal representation of the Query that allows the Query 
  *           to be reused by the IndexSearcher.</li>
  *       <li>The IndexSearcher that initiated the call.</li>     
- *       <li>A {@link org.apache.lucene.search.Filter Filter} for limiting the result set.
- *           Note, the Filter may be null.</li>                   
  *       <li>A {@link org.apache.lucene.search.Sort Sort} object for specifying how to sort
  *           the results if the standard score-based sort method is not desired.</li>                   
  *   </ol>       
@@ -509,8 +507,7 @@
  *    we call one of the search methods of the IndexSearcher, passing in the
  *    {@link org.apache.lucene.search.Weight Weight} object created by
  *    {@link org.apache.lucene.search.IndexSearcher#createNormalizedWeight(org.apache.lucene.search.Query,boolean)
- *     IndexSearcher.createNormalizedWeight(Query,boolean)}, 
- *    {@link org.apache.lucene.search.Filter Filter} and the number of results we want.
+ *     IndexSearcher.createNormalizedWeight(Query,boolean)} and the number of results we want.
  *    This method returns a {@link org.apache.lucene.search.TopDocs TopDocs} object,
  *    which is an internal collection of search results. The IndexSearcher creates
  *    a {@link org.apache.lucene.search.TopScoreDocCollector TopScoreDocCollector} and

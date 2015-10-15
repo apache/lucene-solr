@@ -26,18 +26,22 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestInputIterator extends LuceneTestCase {
-  
+
   public void testEmpty() throws Exception {
     InputArrayIterator iterator = new InputArrayIterator(new Input[0]);
-    InputIterator wrapper = new SortedInputIterator(iterator, BytesRef.getUTF8SortedAsUnicodeComparator());
-    assertNull(wrapper.next());
-    wrapper = new UnsortedInputIterator(iterator);
-    assertNull(wrapper.next());
+    try (Directory dir = getDirectory()) {
+      InputIterator wrapper = new SortedInputIterator(dir, "sorted", iterator, BytesRef.getUTF8SortedAsUnicodeComparator());
+      assertNull(wrapper.next());
+      wrapper = new UnsortedInputIterator(iterator);
+      assertNull(wrapper.next());
+    }
   }
   
   public void testTerms() throws Exception {
@@ -77,45 +81,51 @@ public class TestInputIterator extends LuceneTestCase {
     }
     
     // test the sorted iterator wrapper with payloads
-    InputIterator wrapper = new SortedInputIterator(new InputArrayIterator(unsorted), comparator);
-    Iterator<Map.Entry<BytesRef, SimpleEntry<Long, BytesRef>>> expected = sorted.entrySet().iterator();
-    while (expected.hasNext()) {
-      Map.Entry<BytesRef,SimpleEntry<Long, BytesRef>> entry = expected.next();
+    try (Directory tempDir = getDirectory()) {
+      InputIterator wrapper = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsorted), comparator);
+      Iterator<Map.Entry<BytesRef, SimpleEntry<Long, BytesRef>>> expected = sorted.entrySet().iterator();
+      while (expected.hasNext()) {
+        Map.Entry<BytesRef,SimpleEntry<Long, BytesRef>> entry = expected.next();
       
-      assertEquals(entry.getKey(), wrapper.next());
-      assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
-      assertEquals(entry.getValue().getValue(), wrapper.payload());
+        assertEquals(entry.getKey(), wrapper.next());
+        assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
+        assertEquals(entry.getValue().getValue(), wrapper.payload());
+      }
+      assertNull(wrapper.next());
     }
-    assertNull(wrapper.next());
     
     // test the sorted iterator wrapper with contexts
-    wrapper = new SortedInputIterator(new InputArrayIterator(unsortedWithContexts), comparator);
-    Iterator<Map.Entry<BytesRef, SimpleEntry<Long, Set<BytesRef>>>> actualEntries = sortedWithContext.entrySet().iterator();
-    while (actualEntries.hasNext()) {
-      Map.Entry<BytesRef, SimpleEntry<Long, Set<BytesRef>>> entry = actualEntries.next();
-      assertEquals(entry.getKey(), wrapper.next());
-      assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
-      Set<BytesRef> actualCtxs = entry.getValue().getValue();
-      assertEquals(actualCtxs, wrapper.contexts());
+    try (Directory tempDir = getDirectory()) {
+      InputIterator wrapper = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsortedWithContexts), comparator);
+      Iterator<Map.Entry<BytesRef, SimpleEntry<Long, Set<BytesRef>>>> actualEntries = sortedWithContext.entrySet().iterator();
+      while (actualEntries.hasNext()) {
+        Map.Entry<BytesRef, SimpleEntry<Long, Set<BytesRef>>> entry = actualEntries.next();
+        assertEquals(entry.getKey(), wrapper.next());
+        assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
+        Set<BytesRef> actualCtxs = entry.getValue().getValue();
+        assertEquals(actualCtxs, wrapper.contexts());
+      }
+      assertNull(wrapper.next());
     }
-    assertNull(wrapper.next());
-    
+
     // test the sorted iterator wrapper with contexts and payload
-    wrapper = new SortedInputIterator(new InputArrayIterator(unsortedWithPayloadAndContext), comparator);
-    Iterator<Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>>> expectedPayloadContextEntries = sortedWithPayloadAndContext.entrySet().iterator();
-    while (expectedPayloadContextEntries.hasNext()) {
-      Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> entry = expectedPayloadContextEntries.next();
-      assertEquals(entry.getKey(), wrapper.next());
-      assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
-      Set<BytesRef> actualCtxs = entry.getValue().getValue().getValue();
-      assertEquals(actualCtxs, wrapper.contexts());
-      BytesRef actualPayload = entry.getValue().getValue().getKey();
-      assertEquals(actualPayload, wrapper.payload());
+    try (Directory tempDir = getDirectory()) {
+      InputIterator wrapper = new SortedInputIterator(tempDir, "sorter", new InputArrayIterator(unsortedWithPayloadAndContext), comparator);
+      Iterator<Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>>> expectedPayloadContextEntries = sortedWithPayloadAndContext.entrySet().iterator();
+      while (expectedPayloadContextEntries.hasNext()) {
+        Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> entry = expectedPayloadContextEntries.next();
+        assertEquals(entry.getKey(), wrapper.next());
+        assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
+        Set<BytesRef> actualCtxs = entry.getValue().getValue().getValue();
+        assertEquals(actualCtxs, wrapper.contexts());
+        BytesRef actualPayload = entry.getValue().getValue().getKey();
+        assertEquals(actualPayload, wrapper.payload());
+      }
+      assertNull(wrapper.next());
     }
-    assertNull(wrapper.next());
-    
+
     // test the unsorted iterator wrapper with payloads
-    wrapper = new UnsortedInputIterator(new InputArrayIterator(unsorted));
+    InputIterator wrapper = new UnsortedInputIterator(new InputArrayIterator(unsorted));
     TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> actual = new TreeMap<>();
     BytesRef key;
     while ((key = wrapper.next()) != null) {
@@ -126,19 +136,21 @@ public class TestInputIterator extends LuceneTestCase {
     assertEquals(sorted, actual);
 
     // test the sorted iterator wrapper without payloads
-    InputIterator wrapperWithoutPayload = new SortedInputIterator(new InputArrayIterator(unsortedWithoutPayload), comparator);
-    Iterator<Map.Entry<BytesRef, Long>> expectedWithoutPayload = sortedWithoutPayload.entrySet().iterator();
-    while (expectedWithoutPayload.hasNext()) {
-      Map.Entry<BytesRef, Long> entry = expectedWithoutPayload.next();
+    try (Directory tempDir = getDirectory()) {
+      InputIterator wrapperWithoutPayload = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsortedWithoutPayload), comparator);
+      Iterator<Map.Entry<BytesRef, Long>> expectedWithoutPayload = sortedWithoutPayload.entrySet().iterator();
+      while (expectedWithoutPayload.hasNext()) {
+        Map.Entry<BytesRef, Long> entry = expectedWithoutPayload.next();
       
-      assertEquals(entry.getKey(), wrapperWithoutPayload.next());
-      assertEquals(entry.getValue().longValue(), wrapperWithoutPayload.weight());
-      assertNull(wrapperWithoutPayload.payload());
+        assertEquals(entry.getKey(), wrapperWithoutPayload.next());
+        assertEquals(entry.getValue().longValue(), wrapperWithoutPayload.weight());
+        assertNull(wrapperWithoutPayload.payload());
+      }
+      assertNull(wrapperWithoutPayload.next());
     }
-    assertNull(wrapperWithoutPayload.next());
     
     // test the unsorted iterator wrapper without payloads
-    wrapperWithoutPayload = new UnsortedInputIterator(new InputArrayIterator(unsortedWithoutPayload));
+    InputIterator wrapperWithoutPayload = new UnsortedInputIterator(new InputArrayIterator(unsortedWithoutPayload));
     TreeMap<BytesRef, Long> actualWithoutPayload = new TreeMap<>();
     while ((key = wrapperWithoutPayload.next()) != null) {
       long value = wrapperWithoutPayload.weight();
@@ -156,5 +168,13 @@ public class TestInputIterator extends LuceneTestCase {
   private static int asIntInternal(BytesRef b, int pos) {
     return ((b.bytes[pos++] & 0xFF) << 24) | ((b.bytes[pos++] & 0xFF) << 16)
         | ((b.bytes[pos++] & 0xFF) << 8) | (b.bytes[pos] & 0xFF);
+  }
+
+  private Directory getDirectory() {     
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 }

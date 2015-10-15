@@ -20,8 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortingMergePolicy;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 
 /**
@@ -38,7 +38,7 @@ import org.apache.lucene.util.BitSet;
 // TODO: can/should we clean this thing up (e.g. return a proper sort value)
 // and move to the join/ module?
 public class BlockJoinComparatorSource extends FieldComparatorSource {
-  final Filter parentsFilter;
+  final Query parentsFilter;
   final Sort parentSort;
   final Sort childSort;
 
@@ -49,7 +49,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
    * @param parentsFilter Filter identifying parent documents
    * @param parentSort Sort for parent documents
    */
-  public BlockJoinComparatorSource(Filter parentsFilter, Sort parentSort) {
+  public BlockJoinComparatorSource(Query parentsFilter, Sort parentSort) {
     this(parentsFilter, parentSort, new Sort(SortField.FIELD_DOC));
   }
 
@@ -61,7 +61,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
    * @param parentSort Sort for parent documents
    * @param childSort Sort for child documents in the same block
    */
-  public BlockJoinComparatorSource(Filter parentsFilter, Sort parentSort, Sort childSort) {
+  public BlockJoinComparatorSource(Query parentsFilter, Sort parentSort, Sort childSort) {
     this.parentsFilter = parentsFilter;
     this.parentSort = parentSort;
     this.childSort = childSort;
@@ -119,14 +119,14 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
         if (parentBits != null) {
           throw new IllegalStateException("This comparator can only be used on a single segment");
         }
-        final DocIdSet parents = parentsFilter.getDocIdSet(context, null);
+        IndexSearcher searcher = new IndexSearcher(ReaderUtil.getTopLevelContext(context));
+        searcher.setQueryCache(null);
+        final Weight weight = searcher.createNormalizedWeight(parentsFilter, false);
+        final DocIdSetIterator parents = weight.scorer(context);
         if (parents == null) {
           throw new IllegalStateException("LeafReader " + context.reader() + " contains no parents!");
         }
-        if (parents instanceof BitDocIdSet == false) {
-          throw new IllegalStateException("parentFilter must return BitSet; got " + parents);
-        }
-        parentBits = (BitSet) parents.bits();
+        parentBits = BitSet.of(parents, context.reader().maxDoc());
         parentLeafComparators = new LeafFieldComparator[parentComparators.length];
         for (int i = 0; i < parentComparators.length; i++) {
           parentLeafComparators[i] = parentComparators[i].getLeafComparator(context);

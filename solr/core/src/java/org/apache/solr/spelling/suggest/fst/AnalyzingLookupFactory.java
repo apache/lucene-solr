@@ -120,8 +120,7 @@ public class AnalyzingLookupFactory extends LookupFactory {
     ? Boolean.valueOf(params.get(PRESERVE_POSITION_INCREMENTS).toString())
     : false;
 
-    
-    return new AnalyzingSuggester(indexAnalyzer, queryAnalyzer, flags, maxSurfaceFormsPerAnalyzedForm,
+    return new AnalyzingSuggester(getTempDir(), "suggester", indexAnalyzer, queryAnalyzer, flags, maxSurfaceFormsPerAnalyzedForm,
         maxGraphExpansions, preservePositionIncrements);
   }
 

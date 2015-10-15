@@ -59,6 +59,13 @@ API Changes
 * LUCENE-6706: PayloadTermQuery and PayloadNearQuery have been removed.
   Instead, use PayloadScoreQuery to wrap any SpanQuery. (Alan Woodward)
 
+* LUCENE-6829: OfflineSorter, and the classes that use it (suggesters,
+  hunspell) now do all temporary file IO via Directory instead of
+  directly through java's temp dir.  Directory.createTempOutput
+  creates a uniquely named IndexOutput, and the new
+  IndexOutput.getName returns its name (Dawid Weiss, Robert Muir, Mike
+  McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
@@ -96,6 +103,13 @@ API Changes
 * LUCENE-6650: The spatial module no longer uses Filter in any way.  All
   spatial Filters are now subclass Query.  The spatial heatmap/facet API
   now accepts a Bits parameter to filter counts. (David Smiley, Adrien Grand)
+
+* LUCENE-6803: Deprecate sandbox Regexp Query. (Uwe Schindler)
+
+* LUCENE-6301: org.apache.lucene.search.Filter is now deprecated. You should use
+  Query objects instead of Filters, and the BooleanClause.Occur.FILTER clause in
+  order to let Lucene know that a Query should be used for filtering but not
+  scoring.
 
 Optimizations
 
@@ -173,6 +187,14 @@ Bug Fixes
   it opened, leading to intermittent failures on Windows (Dawid Weiss,
   Robert Muir, Mike McCandless)
 
+* LUCENE-6826: Fix ClassCastException when merging a field that has no
+  terms because they were filtered out by e.g. a FilterCodecReader
+  (Trejkaz via Mike McCandless)
+
+* LUCENE-6823: LocalReplicator should use System.nanoTime as its clock
+  source for checking for expiration (Ishan Chattopadhyaya via Mike
+  McCandless)
+
 Other
 
 * LUCENE-6827: Use explicit capacity ArrayList instead of a LinkedList 
@@ -203,8 +225,12 @@ Other
 * LUCENE-6761: MatchAllDocsQuery's Scorers do not expose approximations
   anymore. (Adrien Grand)
 
-* LUCENE-6775: Improved MorfologikFilterFactory to allow loading of
-  custom dictionaries from ResourceLoader.  (Uwe Schindler)
+* LUCENE-6775, LUCENE-6833: Improved MorfologikFilterFactory to allow 
+  loading of custom dictionaries from ResourceLoader. Upgraded 
+  Morfologik to version 2.0.1. The 'dictionary' attribute has been
+  reverted back and now points at the dictionary resource to be 
+  loaded instead of the default Polish dictionary.
+  (Uwe Schindler, Dawid Weiss)
 
 * LUCENE-6797: Make GeoCircle an interface and use a factory to create
   it, to eventually handle degenerate cases (Karl Wright via Mike
@@ -225,6 +251,8 @@ Other
   makes Lucene and Solr ready for Java 9 Jigsaw's module system, where
   reflection on Java's runtime classes is very restricted.
   (Robert Muir, Uwe Schindler)
+
+* LUCENE-6467: Simplify Query.equals. (Paul Elschot via Adrien Grand)
 
 Build
 
@@ -254,6 +282,9 @@ Changes in Runtime Behavior
 
 * LUCENE-6784: IndexSearcher's query caching is enabled by default. Run
   indexSearcher.setQueryCache(null) to disable. (Adrien Grand)
+
+* LUCENE-6305: BooleanQuery.equals and hashcode do not depend on the order of
+  clauses anymore. (Adrien Grand)
 
 ======================= Lucene 5.3.1 =======================
 

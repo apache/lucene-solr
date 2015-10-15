@@ -22,7 +22,7 @@ limitations under the License.
 
       <div id="field">
 
-        <div class="field-options">
+        <div class="field-options" ng-show="showing">
 
           <div class="block head">
             <h2>
@@ -61,7 +61,6 @@ limitations under the License.
             <thead>
 
               <tr>
-
                 <td>Flags:</td>
                 <th ng-repeat="key in display.columns">{{key.name}}</th>
 

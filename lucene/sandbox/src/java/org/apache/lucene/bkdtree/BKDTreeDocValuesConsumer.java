@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -39,9 +40,13 @@ class BKDTreeDocValuesConsumer extends DocValuesConsumer implements Closeable {
   final IndexOutput out;
   final Map<Integer,Long> fieldIndexFPs = new HashMap<>();
   final SegmentWriteState state;
+  final Directory tempDir;
+  final String tempFileNamePrefix;
 
-  public BKDTreeDocValuesConsumer(DocValuesConsumer delegate, SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
+  public BKDTreeDocValuesConsumer(Directory tempDir, String tempFileNamePrefix, DocValuesConsumer delegate, SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
     BKDTreeWriter.verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
     this.delegate = delegate;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
@@ -91,7 +96,7 @@ class BKDTreeDocValuesConsumer extends DocValuesConsumer implements Closeable {
   @Override
   public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
     delegate.addSortedNumericField(field, docToValueCount, values);
-    BKDTreeWriter writer = new BKDTreeWriter(maxPointsInLeafNode, maxPointsSortInHeap);
+    BKDTreeWriter writer = new BKDTreeWriter(tempDir, tempFileNamePrefix, maxPointsInLeafNode, maxPointsSortInHeap);
     Iterator<Number> valueIt = values.iterator();
     Iterator<Number> valueCountIt = docToValueCount.iterator();
     for (int docID=0;docID<state.segmentInfo.maxDoc();docID++) {

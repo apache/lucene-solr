@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.BitSetProducer;
@@ -38,6 +37,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.solr.search.SyntaxError;
 
 /**

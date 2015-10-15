@@ -39,7 +39,6 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
@@ -53,6 +52,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.handler.loader.XMLLoader;
+import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
@@ -562,8 +562,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   protected ToParentBlockJoinQuery join(final String childTerm) {
     return new ToParentBlockJoinQuery(
-        new TermQuery(new Term(child, childTerm)), new QueryBitSetProducer(new QueryWrapperFilter(
-            new TermRangeQuery(parent, null, null, false, false))), ScoreMode.None);
+        new TermQuery(new Term(child, childTerm)), new QueryBitSetProducer(
+            new TermRangeQuery(parent, null, null, false, false)), ScoreMode.None);
   }
   
   private Collection<? extends Callable<Void>> callables(List<Document> blocks) {

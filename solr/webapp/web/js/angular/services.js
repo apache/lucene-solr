@@ -32,6 +32,8 @@ solrAdminServices.factory('System',
     "rename": {params:{action: "RENAME"}},
     "createAlias": {params:{action: "CREATEALIAS"}},
     "deleteAlias": {params:{action: "DELETEALIAS"}},
+    "deleteReplica": {params:{action: "DELETEREPLICA"}},
+    "addReplica": {params:{action: "ADDREPLICA"}},
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}},
     "optimize": {params:{}}
     });
@@ -134,7 +136,7 @@ solrAdminServices.factory('System',
 .factory('Luke',
   ['$resource', function($resource) {
     return $resource('/solr/:core/admin/luke', {core: '@core', wt:'json', _:Date.now()}, {
-      "index":  {params: {numTerms: 0}},
+      "index":  {params: {numTerms: 0, show: 'index'}},
       "schema": {params: {show:'schema'}},
       "field": {},
       "fields": {params: {show:'schema'}, interceptor: {
@@ -176,8 +178,8 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource('/solr/:core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
-     "status": {params:{action:"status"}}
-    });
+     "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
+    }});
   }])
 .factory('Mbeans',
   ['$resource', function($resource) {

@@ -99,7 +99,7 @@ class StatementImpl implements Statement {
       Collections.shuffle(shuffler, new Random());
 
       params.put(CommonParams.QT, "/sql");
-      params.put("sql", sql);
+      params.put("stmt", sql);
       params.putAll(properties);
 
       Replica rep = shuffler.get(0);

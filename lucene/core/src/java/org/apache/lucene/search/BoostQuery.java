@@ -18,9 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,23 +32,6 @@ import org.apache.lucene.index.Term;
  * give more importance to the scores returned by this query.
  */
 public final class BoostQuery extends Query {
-
-  /** By default we enclose the wrapped query within parenthesis, but this is
-   *  not required for all queries, so we use a whitelist of queries that don't
-   *  need parenthesis to have a better toString(). */
-  private static final Set<Class<? extends Query>> NO_PARENS_REQUIRED_QUERIES = Collections.unmodifiableSet(
-      new HashSet<>(Arrays.asList(
-          TermQuery.class,
-          PhraseQuery.class,
-          MultiPhraseQuery.class,
-          ConstantScoreQuery.class,
-          TermRangeQuery.class,
-          NumericRangeQuery.class,
-          PrefixQuery.class,
-          FuzzyQuery.class,
-          WildcardQuery.class,
-          RegexpQuery.class
-      )));
 
   private final Query query;
   private final float boost;
@@ -122,15 +102,10 @@ public final class BoostQuery extends Query {
 
   @Override
   public String toString(String field) {
-    boolean needsParens = NO_PARENS_REQUIRED_QUERIES.contains(query.getClass()) == false;
     StringBuilder builder = new StringBuilder();
-    if (needsParens) {
-      builder.append("(");
-    }
+    builder.append("(");
     builder.append(query.toString(field));
-    if (needsParens) {
-      builder.append(")");
-    }
+    builder.append(")");
     builder.append("^");
     builder.append(boost);
     return builder.toString();

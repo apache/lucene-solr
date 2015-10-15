@@ -66,4 +66,21 @@ public interface SuggesterParams {
    * This parameter does not need any suggest dictionary names to be specified
    */
   public static final String SUGGEST_RELOAD_ALL = SUGGEST_PREFIX + "reloadAll";
+
+  /**
+   * contextFilterQuery to use for filtering the result of the suggestion
+   */
+  public static final String SUGGEST_CONTEXT_FILTER_QUERY = SUGGEST_PREFIX + "cfq";
+
+  /**
+   * Whether keyword should be highlighted in result or not
+   */
+  public static final String SUGGEST_HIGHLIGHT = SUGGEST_PREFIX + "highlight";
+
+
+  /**
+   * Whether all terms are required or not
+   */
+  public static final String SUGGEST_ALL_TERMS_REQUIRED = SUGGEST_PREFIX + "allTermsRequired";
+
 }

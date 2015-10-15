@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor 
+  license agreements. See the NOTICE file distributed with this work for additional 
+  information regarding copyright ownership. The ASF licenses this file to 
+  You under the Apache License, Version 2.0 (the "License"); you may not use 
+  this file except in compliance with the License. You may obtain a copy of 
+  the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required 
+  by applicable law or agreed to in writing, software distributed under the 
+  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
+  OF ANY KIND, either express or implied. See the License for the specific 
+  language governing permissions and limitations under the License. -->
+
+<!-- This is a stripped down schema that includes the node_id and edge_id 
+  fields to test graph queries -->
+
+<schema name="graphexample" version="1.5">
+  <!-- field names should consist of alphanumeric or underscore characters 
+    only and not start with a digit. This is not currently strictly enforced, 
+    but other field names will not have first class support from all components 
+    and back compatibility is not guaranteed. Names with both leading and trailing 
+    underscores (e.g. _version_) are reserved. -->
+  <!-- unique id for all records in the index. -->
+  <field name="id" type="string" indexed="true" stored="true"
+    required="true" multiValued="false" />
+
+  <!-- If you remove this field, you must _also_ disable the update log in 
+    solrconfig.xml or Solr won't start. _version_ and update log are required 
+    for SolrCloud -->
+  <field name="_version_" type="long" indexed="true" stored="true" />
+
+  <!-- points to the root document of a block of nested documents. Required 
+    for nested document support, may be removed otherwise (not used in graph 
+    query test) -->
+  <field name="_root_" type="string" indexed="true" stored="false" />
+
+  <!-- the field that contains the "node_id" for graph traversal -->
+  <field name="node_id" type="string" indexed="true" stored="true"
+    multiValued="false" omitNorms="true" termVectors="true" />
+  <!-- multi-valued field that contains the edge id's for graph traversal -->
+  <field name="edge_id" type="string" indexed="true" stored="true"
+    multiValued="true" omitNorms="true" omitPositions="true" termVectors="true" />
+
+  <!-- typical title/text fields -->
+  <field name="title" type="text_general" indexed="true" stored="true"
+    multiValued="true" omitNorms="true" omitPositions="true" termVectors="true" />
+  <field name="text" type="text_general" indexed="true" stored="true"
+    multiValued="true" omitNorms="true" omitPositions="true" termVectors="true" />
+
+  <!-- catch all field for indexing unknown fields. -->
+  <dynamicField name="*" type="string" indexed="true"
+    stored="true" multiValued="true" />
+  <!-- call out the explicit doc id. -->
+  <uniqueKey>id</uniqueKey>
+  <!-- Field types -->
+  <fieldType name="string" class="solr.StrField"
+    sortMissingLast="true" />
+  <fieldType name="long" class="solr.TrieLongField"
+    precisionStep="0" positionIncrementGap="0" />
+  <fieldType name="text_general" class="solr.TextField"
+    positionIncrementGap="100">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory" />
+      <filter class="solr.LowerCaseFilterFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory" />
+      <filter class="solr.LowerCaseFilterFactory" />
+    </analyzer>
+  </fieldType>
+
+</schema>

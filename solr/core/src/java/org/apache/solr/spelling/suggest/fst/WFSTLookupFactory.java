@@ -17,8 +17,6 @@ package org.apache.solr.spelling.suggest.fst;
  * limitations under the License.
  */
 
-import java.io.File;
-
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.*;
 import org.apache.solr.common.util.NamedList;
@@ -48,7 +46,7 @@ public class WFSTLookupFactory extends LookupFactory {
     ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
     : true;
 
-    return new WFSTCompletionLookup(exactMatchFirst);
+    return new WFSTCompletionLookup(getTempDir(), "suggester", exactMatchFirst);
   }
 
   @Override

@@ -186,7 +186,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
     }
   }
-  
+
   /** Dispatch shard request in <code>STAGE_EXECUTE_QUERY</code> stage */
   @Override
   public int distributedProcess(ResponseBuilder rb) {
@@ -238,11 +238,21 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
         query = params.get(CommonParams.Q);
       }
     }
-    
+
     if (query != null) {
       int count = params.getInt(SUGGEST_COUNT, 1);
-      SuggesterOptions options = new SuggesterOptions(new CharsRef(query), count);
-      Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults = 
+      boolean highlight = params.getBool(SUGGEST_HIGHLIGHT, false);
+      boolean allTermsRequired = params.getBool(SUGGEST_ALL_TERMS_REQUIRED, true);
+      String contextFilter = params.get(SUGGEST_CONTEXT_FILTER_QUERY);
+      if (contextFilter != null) {
+        contextFilter = contextFilter.trim();
+        if (contextFilter.length() == 0) {
+          contextFilter = null;
+        }
+      }
+
+      SuggesterOptions options = new SuggesterOptions(new CharsRef(query), count, contextFilter, allTermsRequired, highlight);
+      Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults =
           new HashMap<>();
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
@@ -251,7 +261,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
     }
   }
-  
+
   /** 
    * Used in Distributed Search, merges the suggestion results from every shard
    * */

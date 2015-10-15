@@ -103,8 +103,6 @@ public final class BKDWriter {
   final byte[] scratch1;
   final byte[] scratch2;
 
-  // nocommit grep for lat / lon and fix!
-
   private OfflineSorter.ByteSequencesWriter offlinePointWriter;
   private HeapPointWriter heapPointWriter;
 
@@ -162,6 +160,8 @@ public final class BKDWriter {
       throw new IllegalArgumentException("maxMBSortInHeap must be >= 0.0 (got: " + maxMBSortInHeap + ")");
     }
   }
+
+  // nocommit use our own trackingdir to track created temp files for deletion on exc?
 
   /** If the current segment has too many points then we switchover to temp files / offline sort. */
   private void switchToOffline() throws IOException {

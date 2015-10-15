@@ -33,6 +33,8 @@ public class DocumentDictionaryFactory extends DictionaryFactory {
   
   public static final String PAYLOAD_FIELD = "payloadField";
 
+  public static final String CONTEXT_FIELD = "contextField";
+
   @Override
   public Dictionary create(SolrCore core, SolrIndexSearcher searcher) {
     if(params == null) {
@@ -42,12 +44,13 @@ public class DocumentDictionaryFactory extends DictionaryFactory {
     String field = (String) params.get(FIELD);
     String weightField = (String) params.get(WEIGHT_FIELD);
     String payloadField = (String) params.get(PAYLOAD_FIELD);
-    
+    String contextField = (String) params.get(CONTEXT_FIELD);
+
     if (field == null) {
       throw new IllegalArgumentException(FIELD + " is a mandatory parameter");
     }
 
-    return new DocumentDictionary(searcher.getIndexReader(), field, weightField, payloadField);
+    return new DocumentDictionary(searcher.getIndexReader(), field, weightField, payloadField, contextField);
   }
   
 }

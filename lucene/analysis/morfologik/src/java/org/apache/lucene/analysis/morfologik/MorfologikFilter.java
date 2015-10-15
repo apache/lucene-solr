@@ -18,17 +18,16 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 import morfologik.stemming.Dictionary;
 import morfologik.stemming.DictionaryLookup;
 import morfologik.stemming.IStemmer;
 import morfologik.stemming.WordData;
+import morfologik.stemming.polish.PolishStemmer;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -70,20 +69,9 @@ public class MorfologikFilter extends TokenFilter {
    * Creates a filter with the default (Polish) dictionary.
    */
   public MorfologikFilter(final TokenStream in) {
-    this(in, DictionaryHolder.DEFAULT_DICT);
+    this(in, new PolishStemmer().getDictionary());
   }
 
-  /**
-   * Creates a filter with a given dictionary resource.
-   *
-   * @param in input token stream.
-   * @param dictResource Dictionary resource name in classpath.
-   */
-  public MorfologikFilter(final TokenStream in, final String dictResource) {
-    this(in, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE.equals(dictResource) ?
-        DictionaryHolder.DEFAULT_DICT : loadDictionaryResource(dictResource));
-  }
-  
   /**
    * Creates a filter with a given dictionary.
    *
@@ -179,24 +167,5 @@ public class MorfologikFilter extends TokenFilter {
     lemmaList = Collections.emptyList();
     tagsList.clear();
     super.reset();
-  }
-  
-  /** This method was added, because Morfologik uses context classloader and fails to load from our classloader (bug with absolute path). */
-  static Dictionary loadDictionaryResource(String resource) {
-    Objects.requireNonNull(resource, "Morfologik language code may not be null");
-    final String dictPath = "/morfologik/dictionaries/" + resource + ".dict";
-    final String metaPath = Dictionary.getExpectedFeaturesName(dictPath);
-
-    try (final InputStream dictIn = Objects.requireNonNull(Dictionary.class.getResourceAsStream(dictPath), "Unable to find Morfologik dictionary: " + dictPath);
-        final InputStream metaIn = Objects.requireNonNull(Dictionary.class.getResourceAsStream(metaPath), "Unable to find Morfologik metadata: " + metaPath)) {
-      return Dictionary.readAndClose(dictIn, metaIn);
-    } catch (IOException ioe) {
-      throw new RuntimeException("IOException while loading Morfologik dictionary and metadata.", ioe);
-    }
-  }
-
-  /** This holder is for the default Polish dictionary */
-  static final class DictionaryHolder {
-    static final Dictionary DEFAULT_DICT = loadDictionaryResource(MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
   }
 }

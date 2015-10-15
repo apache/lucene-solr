@@ -20,13 +20,10 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BitDocIdSet;
@@ -34,6 +31,8 @@ import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.BitsFilteredDocIdSet;
+import org.apache.solr.search.Filter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrCache;
@@ -96,7 +95,7 @@ class BlockJoinParentQParser extends QParser {
   }
 
   private BitSetProducer createParentFilter(Query parentQ) {
-    return new QueryBitSetProducer(new QueryWrapperFilter(parentQ));
+    return new QueryBitSetProducer(parentQ);
   }
 
   // We need this wrapper since BitDocIdSetFilter does not extend Filter

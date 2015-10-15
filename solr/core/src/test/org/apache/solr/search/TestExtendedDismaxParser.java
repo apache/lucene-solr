@@ -517,13 +517,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//str[@name='parsedquery_toString'][.='+id:42']");
     
     assertQ(req("defType","edismax", "debugQuery","true", "rows","0", "uf","*^5.0", "q","id:42"),
-        "//str[@name='parsedquery_toString'][.='+id:42^5.0']");
+        "//str[@name='parsedquery_toString'][.='+(id:42)^5.0']");
     
     assertQ(req("defType","edismax", "debugQuery","true", "rows","0", "uf","*^2.0 id^5.0 -xyz", "q","name:foo"),
-        "//str[@name='parsedquery_toString'][.='+name:foo^2.0']");
+        "//str[@name='parsedquery_toString'][.='+(name:foo)^2.0']");
     
     assertQ(req("defType","edismax", "debugQuery","true", "rows","0", "uf","i*^5.0", "q","id:42"),
-        "//str[@name='parsedquery_toString'][.='+id:42^5.0']");
+        "//str[@name='parsedquery_toString'][.='+(id:42)^5.0']");
     
     
     assertQ(req("defType","edismax", "uf","-*", "q","cannons"),
@@ -754,19 +754,19 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "ps", "3",
             "defType", "edismax",
             "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc vvvv\"~1^10.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc vvvv\"~2^20.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc vvvv\"~3^30.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~2^22.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc\"~2^22.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"cccc vvvv\"~2^22.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~3^33.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc\"~3^33.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"cccc vvvv\"~3^33.0')]",        
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc\"~2^222.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc vvvv\"~2^222.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx cccc\"~3^333.0')]",
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"xxxx cccc vvvv\"~3^333.0')]"
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc vvvv\"~1)^10.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc vvvv\"~2)^20.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc vvvv\"~3)^30.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx\"~2)^22.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"xxxx cccc\"~2)^22.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"cccc vvvv\"~2)^22.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx\"~3)^33.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"xxxx cccc\"~3)^33.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"cccc vvvv\"~3)^33.0')]",        
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc\"~2)^222.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"xxxx cccc vvvv\"~2)^222.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc\"~3)^333.0')]",
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"xxxx cccc vvvv\"~3)^333.0')]"
      );
 
     assertQ(
@@ -806,7 +806,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "ps2", "4",
             "defType", "edismax",
             "debugQuery", "true"),
-        "//str[@name='parsedquery'][contains(.,'phrase_sw:\"zzzz xxxx\"~2^22.0')]"
+        "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx\"~2)^22.0')]"
      );
 
     assertQ("phrase field queries spanning multiple fields should be within their own dismax queries",

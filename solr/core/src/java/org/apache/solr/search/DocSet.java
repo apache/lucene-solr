@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import java.io.Closeable;
 
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Accountable;
 import org.apache.solr.common.SolrException;
 

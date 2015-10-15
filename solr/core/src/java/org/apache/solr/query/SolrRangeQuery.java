@@ -37,14 +37,12 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -53,7 +51,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetBuilder;
 import org.apache.solr.search.DocSetProducer;
 import org.apache.solr.search.ExtendedQueryBase;
-import org.apache.solr.search.SolrConstantScoreQuery;
+import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /** @lucene.experimental */

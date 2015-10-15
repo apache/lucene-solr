@@ -17,50 +17,47 @@ package org.apache.lucene.rangetree;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.ByteArrayDataOutput;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OfflineSorter;
-
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+
+import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 
 final class OfflineSliceWriter implements SliceWriter {
 
-  final Path tempFile;
+  final Directory tempDir;
   final byte[] scratchBytes = new byte[RangeTreeWriter.BYTES_PER_DOC];
   final ByteArrayDataOutput scratchBytesOutput = new ByteArrayDataOutput(scratchBytes);      
-  final OutputStreamDataOutput out;
+  final IndexOutput tempFile;
   final long count;
   private boolean closed;
   private long countWritten;
 
-  public OfflineSliceWriter(long count) throws IOException {
-    tempFile = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "size" + count + ".", "");
-    out = new OutputStreamDataOutput(new BufferedOutputStream(Files.newOutputStream(tempFile)));
+  public OfflineSliceWriter(Directory tempDir, String tempFileNamePrefix, long count) throws IOException {
+    this.tempDir = tempDir;
+    tempFile = tempDir.createTempOutput(tempFileNamePrefix, "rangetree", IOContext.DEFAULT);
     this.count = count;
   }
     
   @Override
   public void append(long value, long ord, int docID) throws IOException {
-    out.writeLong(value);
-    out.writeLong(ord);
-    out.writeInt(docID);
+    tempFile.writeLong(value);
+    tempFile.writeLong(ord);
+    tempFile.writeInt(docID);
     countWritten++;
   }
 
   @Override
   public SliceReader getReader(long start) throws IOException {
     assert closed;
-    return new OfflineSliceReader(tempFile, start, count-start);
+    return new OfflineSliceReader(tempDir, tempFile.getName(), start, count-start);
   }
 
   @Override
   public void close() throws IOException {
     closed = true;
-    out.close();
+    tempFile.close();
     if (count != countWritten) {
       throw new IllegalStateException("wrote " + countWritten + " values, but expected " + count);
     }
@@ -68,12 +65,12 @@ final class OfflineSliceWriter implements SliceWriter {
 
   @Override
   public void destroy() throws IOException {
-    IOUtils.rm(tempFile);
+    tempDir.deleteFile(tempFile.getName());
   }
 
   @Override
   public String toString() {
-    return "OfflineSliceWriter(count=" + count + " tempFile=" + tempFile + ")";
+    return "OfflineSliceWriter(count=" + count + " tempFileName=" + tempFile.getName() + ")";
   }
 }
 

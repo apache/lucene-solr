@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
-Carrot2 3.10.3
+Carrot2 3.10.4
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -71,6 +71,13 @@ New Features
 
 * SOLR-8038: Add the StatsStream to the Streaming API and wire it into the SQLHandler (Joel Bernstein)
 
+* SOLR-8086: Add support for SELECT DISTINCT queries to the SQL interface (Joel Bernstein) 
+
+* SOLR-7543: Basic graph traversal query
+  Example: {!graph from="node_id" to="edge_id"}id:doc_1
+  (Kevin Watters, yonik)
+
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
@@ -104,7 +111,10 @@ Other Changes
 * SOLR-7554: Add checks in Streams for incoming stream order (Dennis Gove, Joel Bernstein)
 
 * SOLR-7441: Improve overall robustness of the Streaming stack: Streaming API,
-             Streaming Expressions, Parallel SQL (Joel Bernstein)
+  Streaming Expressions, Parallel SQL (Joel Bernstein)
+
+* SOLR-8153: Support upper case and mixed case column identifiers in the SQL interface
+  (Joel Bernstein)
 
 * SOLR-8132: HDFSDirectoryFactory now defaults to using the global block cache. (Mark Miller)
 
@@ -115,7 +125,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
-Carrot2 3.10.3
+Carrot2 3.10.4
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -164,6 +174,12 @@ New Features
 * SOLR-8053: Basic auth support in SolrJ (noble)
 
 * SOLR-7995: Add a LIST command to ConfigSets API (Gregory Chanan)
+
+* SOLR-4388: In Angular UI, add a Collections UI when in cloud mode (Upayavira)
+
+* SOLR-7858: Add links between original and new Admin UIs (Upayavira)
+
+* SOLR-7888: Analyzing suggesters can now filter suggestions by a context field (Arcadius Ahouansou, janhoy)
 
 Bug Fixes
 ----------------------
@@ -236,6 +252,26 @@ Bug Fixes
 * SOLR-8072: Rebalance leaders feature does not set CloudDescriptor#isLeader to false when bumping leaders.
   (Mark Miller)
 
+* SOLR-7666: Many small fixes to Angular UI (Upayavira, Alexandre Rafalovitch)
+
+* SOLR-7967: AddSchemaFieldsUpdateProcessorFactory does not check if the ConfigSet is immutable (Gregory Chanan)
+
+* SOLR-6188: Skip the automatic loading of resources in the "lib" subdirectory
+  by SolrResourceLoader, but only if we are loading resources from the solr
+  home directory.  Fixes the inability to use ICU analysis components with a
+  "solr." prefix on the classname. (Shawn Heisey)
+
+* SOLR-8130: Solr's hdfs safe mode detection does not catch all cases of being in safe mode.
+  (Mark Miller, Mike Drob)
+
+* SOLR-8128: Set v.locale specified locale for all LocaleConfig extending VelocityResponseWriter tools.
+  (Erik Hatcher)
+
+* SOLR-8152: Overseer Task Processor/Queue can miss responses, leading to timeouts.
+  (Gregory Chanan)
+
+* SOLR-8107: bin/solr -f should use exec to start the JVM (Martijn Koster via Timothy Potter)
+  
 Optimizations
 ----------------------
 
@@ -263,9 +299,8 @@ Other Changes
 
 * SOLR-7969: Unavailable clustering engines should not fail the core. (Dawid Weiss)
 
-* SOLR-7790, SOLR-7792, SOLR-7791: Update Carrot2 clustering component to 
-  version 3.10.3. Upgrade HPPC library to version 0.7.1, morfologik-stemming 
-  to version 1.10.0. (Dawid Weiss)
+* SOLR-7790, SOLR-7791: Update Carrot2 clustering component to 
+  version 3.10.4. Upgrade HPPC library to version 0.7.1. (Dawid Weiss)
 
 * SOLR-7831: Start Scripts: Allow a configurable stack size [-Xss] (Steve Davids via Mark Miller)
 
@@ -309,6 +344,14 @@ Other Changes
 * SOLR-8083: Convert the ZookeeperInfoServlet to a handler at /admin/zookeeper (noble)
 
 * SOLR-8025: remove unnecessary ResponseBuilder.getQueryCommand() calls (Christine Poerschke)
+
+* SOLR-8150: Fix build failure due to too much output from QueryResponseTest (janhoy)
+
+* SOLR-8151: OverseerCollectionMessageHandler was logging info data as WARN
+  (Alan Woodward)
+
+* SOLR-8116: SearchGroupsResultTransformer tweaks (String literals, list/map initialCapacity)
+  (Christine Poerschke)
 
 ==================  5.3.1 ==================
 

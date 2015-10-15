@@ -18,13 +18,15 @@ package org.apache.lucene.search.suggest;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -58,11 +60,26 @@ public class PersistenceTest extends LuceneTestCase {
     runTest(FSTCompletionLookup.class, false);
   }
 
-  private void runTest(Class<? extends Lookup> lookupClass,
-      boolean supportsExactWeights) throws Exception {
+  private Directory getDirectory() {     
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
+  }
+
+  private void runTest(Class<? extends Lookup> lookupClass, boolean supportsExactWeights) throws Exception {
 
     // Add all input keys.
-    Lookup lookup = lookupClass.newInstance();
+    Lookup lookup;
+    Directory tempDir = getDirectory();
+    if (lookupClass == TSTLookup.class) {
+      lookup = new TSTLookup(tempDir, "suggest");
+    } else if (lookupClass == FSTCompletionLookup.class) {
+      lookup = new FSTCompletionLookup(tempDir, "suggest");
+    } else {
+      lookup = lookupClass.newInstance();
+    }
     Input[] keys = new Input[this.keys.length];
     for (int i = 0; i < keys.length; i++)
       keys[i] = new Input(this.keys[i], i);
@@ -92,5 +109,6 @@ public class PersistenceTest extends LuceneTestCase {
         previous = lookupResult.value;
       }
     }
+    tempDir.close();
   }
 }

@@ -17,11 +17,7 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +35,9 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
@@ -63,6 +62,8 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.fst.Util.TopResults;
+
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 /**
  * Suggester that first analyzes the surface form, adds the
@@ -150,14 +151,14 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
   private final boolean preserveSep;
 
   /** Include this flag in the options parameter to {@link
-   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)} to always
+   *  #AnalyzingSuggester(Directory,String,Analyzer,Analyzer,int,int,int,boolean)} to always
    *  return the exact match first, regardless of score.  This
    *  has no performance impact but could result in
    *  low-quality suggestions. */
   public static final int EXACT_FIRST = 1;
 
   /** Include this flag in the options parameter to {@link
-   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)} to preserve
+   *  #AnalyzingSuggester(Directory,String,Analyzer,Analyzer,int,int,int,boolean)} to preserve
    *  token separators when matching. */
   public static final int PRESERVE_SEP = 2;
 
@@ -179,6 +180,9 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
    *  SynonymFilter). */
   private final int maxGraphExpansions;
 
+  private final Directory tempDir;
+  private final String tempFileNamePrefix;
+
   /** Highest number of analyzed paths we saw for any single
    *  input surface form.  For analyzers that never create
    *  graphs this will always be 1. */
@@ -195,21 +199,21 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
   private long count = 0;
 
   /**
-   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)
+   * Calls {@link #AnalyzingSuggester(Directory,String,Analyzer,Analyzer,int,int,int,boolean)
    * AnalyzingSuggester(analyzer, analyzer, EXACT_FIRST |
    * PRESERVE_SEP, 256, -1, true)}
    */
-  public AnalyzingSuggester(Analyzer analyzer) {
-    this(analyzer, analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, true);
+  public AnalyzingSuggester(Directory tempDir, String tempFileNamePrefix, Analyzer analyzer) {
+    this(tempDir, tempFileNamePrefix, analyzer, analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, true);
   }
 
   /**
-   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)
+   * Calls {@link #AnalyzingSuggester(Directory,String,Analyzer,Analyzer,int,int,int,boolean)
    * AnalyzingSuggester(indexAnalyzer, queryAnalyzer, EXACT_FIRST |
    * PRESERVE_SEP, 256, -1, true)}
    */
-  public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
-    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, true);
+  public AnalyzingSuggester(Directory tempDir, String tempFileNamePrefix, Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
+    this(tempDir, tempFileNamePrefix, indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, true);
   }
 
   /**
@@ -230,7 +234,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
    * @param preservePositionIncrements Whether position holes
    *   should appear in the automata
    */
-  public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer, int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions,
+  public AnalyzingSuggester(Directory tempDir, String tempFileNamePrefix, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions,
       boolean preservePositionIncrements) {
     this.indexAnalyzer = indexAnalyzer;
     this.queryAnalyzer = queryAnalyzer;
@@ -254,6 +258,8 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
     }
     this.maxGraphExpansions = maxGraphExpansions;
     this.preservePositionIncrements = preservePositionIncrements;
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
   }
 
   /** Returns byte size of the underlying FST. */
@@ -396,12 +402,12 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
     if (iterator.hasContexts()) {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
-    String prefix = getClass().getSimpleName();
-    Path directory = OfflineSorter.getDefaultTempDir();
-    Path tempInput = Files.createTempFile(directory, prefix, ".input");
-    Path tempSorted = Files.createTempFile(directory, prefix, ".sorted");
 
     hasPayloads = iterator.hasPayloads();
+
+    OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, new AnalyzingComparator(hasPayloads));
+
+    IndexOutput tempInput = tempDir.createTempOutput(tempFileNamePrefix, "input", IOContext.DEFAULT);
 
     OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
     OfflineSorter.ByteSequencesReader reader = null;
@@ -409,7 +415,8 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
 
     TokenStreamToAutomaton ts2a = getTokenStreamToAutomaton();
 
-    boolean success = false;
+    String tempSortedFileName = null;
+
     count = 0;
     byte buffer[] = new byte[8];
     try {
@@ -477,12 +484,12 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
       writer.close();
 
       // Sort all input/output pairs (required by FST.Builder):
-      new OfflineSorter(new AnalyzingComparator(hasPayloads)).sort(tempInput, tempSorted);
+      tempSortedFileName = sorter.sort(tempInput.getName());
 
       // Free disk space:
-      Files.delete(tempInput);
+      tempDir.deleteFile(tempInput.getName());
 
-      reader = new OfflineSorter.ByteSequencesReader(tempSorted);
+      reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(tempSortedFileName, IOContext.READONCE));
      
       PairOutputs<Long,BytesRef> outputs = new PairOutputs<>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton());
       Builder<Pair<Long,BytesRef>> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
@@ -570,16 +577,9 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
       fst = builder.finish();
 
       //Util.dotToFile(fst, "/tmp/suggest.dot");
-      
-      success = true;
     } finally {
       IOUtils.closeWhileHandlingException(reader, writer);
-      
-      if (success) {
-        IOUtils.deleteFilesIfExist(tempInput, tempSorted);
-      } else {
-        IOUtils.deleteFilesIgnoringExceptions(tempInput, tempSorted);
-      }
+      IOUtils.deleteFilesIgnoringExceptions(tempDir, tempInput.getName(), tempSortedFileName);
     }
   }
 

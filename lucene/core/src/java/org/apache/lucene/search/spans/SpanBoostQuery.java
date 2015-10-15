@@ -18,9 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -40,21 +37,6 @@ import org.apache.lucene.search.Scorer;
  * Counterpart of {@link BoostQuery} for spans.
  */
 public final class SpanBoostQuery extends SpanQuery {
-
-  /** By default we enclose the wrapped query within parenthesis, but this is
-   *  not required for all queries, so we use a whitelist of queries that don't
-   *  need parenthesis to have a better toString(). */
-  private static final Set<Class<? extends SpanQuery>> NO_PARENS_REQUIRED_QUERIES = Collections.unmodifiableSet(
-      new HashSet<>(Arrays.asList(
-          SpanTermQuery.class,
-          SpanNearQuery.class,
-          SpanOrQuery.class,
-          SpanFirstQuery.class,
-          SpanContainingQuery.class,
-          SpanContainQuery.class,
-          SpanNotQuery.class,
-          SpanWithinQuery.class
-      )));
 
   private final SpanQuery query;
   private final float boost;
@@ -119,16 +101,10 @@ public final class SpanBoostQuery extends SpanQuery {
 
   @Override
   public String toString(String field) {
-    boolean needsParens = NO_PARENS_REQUIRED_QUERIES.contains(query.getClass()) == false;
     StringBuilder builder = new StringBuilder();
-    if (needsParens) {
-      builder.append("(");
-    }
+    builder.append("(");
     builder.append(query.toString(field));
-    if (needsParens) {
-      builder.append(")");
-    }
-    builder.append("^");
+    builder.append(")^");
     builder.append(boost);
     return builder.toString();
   }

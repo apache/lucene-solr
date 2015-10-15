@@ -141,22 +141,22 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
       
       //Check for simple
       Query q = mfqp.parse("one");
-      assertEquals("b:one^5.0 t:one^10.0", q.toString());
+      assertEquals("(b:one)^5.0 (t:one)^10.0", q.toString());
       
       //Check for AND
       q = mfqp.parse("one AND two");
-      assertEquals("+(b:one^5.0 t:one^10.0) +(b:two^5.0 t:two^10.0)", q.toString());
+      assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0)", q.toString());
       
       //Check for OR
       q = mfqp.parse("one OR two");
-      assertEquals("(b:one^5.0 t:one^10.0) (b:two^5.0 t:two^10.0)", q.toString());
+      assertEquals("((b:one)^5.0 (t:one)^10.0) ((b:two)^5.0 (t:two)^10.0)", q.toString());
       
       //Check for AND and a field
       q = mfqp.parse("one AND two AND foo:test");
-      assertEquals("+(b:one^5.0 t:one^10.0) +(b:two^5.0 t:two^10.0) +foo:test", q.toString());
+      assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0) +foo:test", q.toString());
       
       q = mfqp.parse("one^3 AND two^4");
-      assertEquals("+(b:one^5.0 t:one^10.0)^3.0 +(b:two^5.0 t:two^10.0)^4.0", q.toString());
+      assertEquals("+((b:one)^5.0 (t:one)^10.0)^3.0 +((b:two)^5.0 (t:two)^10.0)^4.0", q.toString());
   }
 
   public void testStaticMethod1() throws ParseException {

@@ -17,6 +17,16 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.lucene53.Lucene53Codec;
@@ -50,6 +60,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -57,16 +68,6 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueCenter;
 import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueMax;
@@ -87,7 +88,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = getDirectory();
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -108,7 +109,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
   }
 
   public void testPlanetModelChanged() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = getDirectory();
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -137,10 +138,10 @@ public class TestGeo3DPointField extends LuceneTestCase {
   }
 
   public void testBKDBasic() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = getDirectory();
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
 
-    BKD3DTreeWriter w = new BKD3DTreeWriter();
+    BKD3DTreeWriter w = new BKD3DTreeWriter(dir, "bkd3d");
 
     w.add(0, 0, 0, 0);
     w.add(1, 1, 1, 1);
@@ -245,7 +246,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
   public void testBKDRandom() throws Exception {
     List<Point> points = new ArrayList<>();
     int numPoints = atLeast(10000);
-    Directory dir = newDirectory();
+    Directory dir = getDirectory();
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048); 
 
@@ -254,7 +255,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     PlanetModel planetModel = getPlanetModel();
     final double planetMax = planetModel.getMaximumMagnitude();
     
-    BKD3DTreeWriter w = new BKD3DTreeWriter(maxPointsInLeaf, maxPointsSortInHeap);
+    BKD3DTreeWriter w = new BKD3DTreeWriter(dir, "bkd3d", maxPointsInLeaf, maxPointsSortInHeap);
     for(int docID=0;docID<numPoints;docID++) {
       Point point;
       if (docID > 0 && random().nextInt(30) == 17) {
@@ -924,7 +925,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     if (lats.length > 100000) {
       dir = newFSDirectory(createTempDir("TestBKDTree"));
     } else {
-      dir = newDirectory();
+      dir = getDirectory();
     }
     Set<Integer> deleted = new HashSet<>();
     // RandomIndexWriter is too slow here:
@@ -1058,5 +1059,13 @@ public class TestGeo3DPointField extends LuceneTestCase {
       thread.join();
     }
     IOUtils.close(r, dir);
+  }
+
+  private static Directory getDirectory() {     
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 }

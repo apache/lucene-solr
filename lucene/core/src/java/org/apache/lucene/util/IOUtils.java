@@ -190,7 +190,7 @@ public final class IOUtils {
    * <p>
    * Note that the files should not be null.
    */
-  public static void deleteFilesIgnoringExceptions(Directory dir, String... files) {
+  public static void deleteFilesIgnoringExceptions(Directory dir, Collection<String> files) {
     for (String name : files) {
       try {
         dir.deleteFile(name);
@@ -198,6 +198,42 @@ public final class IOUtils {
         // ignore
       }
     }
+  }
+
+  public static void deleteFilesIgnoringExceptions(Directory dir, String... files) {
+    deleteFilesIgnoringExceptions(dir, Arrays.asList(files));
+  }
+  
+  /**
+   * Deletes all given file names.  Some of the
+   * file names may be null; they are
+   * ignored.  After everything is deleted, the method either
+   * throws the first exception it hit while deleting, or
+   * completes normally if there were no exceptions.
+   * 
+   * @param dir Directory to delete files from
+   * @param files file names to delete
+   */
+  public static void deleteFiles(Directory dir, Collection<String> files) throws IOException {
+    Throwable th = null;
+    for (String name : files) {
+      if (name != null) {
+        try {
+          dir.deleteFile(name);
+        } catch (Throwable t) {
+          addSuppressed(th, t);
+          if (th == null) {
+            th = t;
+          }
+        }
+      }
+    }
+
+    reThrow(th);
+  }
+
+  public static void deleteFiles(Directory dir, String... files) throws IOException {
+    deleteFiles(dir, Arrays.asList(files));
   }
   
   /**

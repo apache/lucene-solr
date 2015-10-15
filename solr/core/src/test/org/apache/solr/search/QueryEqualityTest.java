@@ -412,6 +412,42 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!child of=foo_s:parent}dude");
   }
 
+  public void testGraphQuery() throws Exception {
+    SolrQueryRequest req = req("from", "node_s",
+        "to","edge_s",
+        "traversalFilter","foo",
+        "returnOnlyLeaf","true",
+        "returnRoot","false",
+        "maxDepth","2",
+        "useAutn","false"
+        );
+    // make sure all param subsitution works for all args to graph query.
+    assertQueryEquals("graph", req, 
+        "{!graph from=node_s to=edge_s}*:*",
+        "{!graph from=$from to=$to}*:*");
+    
+    assertQueryEquals("graph", req,
+        "{!graph from=node_s to=edge_s traversalFilter=foo}*:*",
+        "{!graph from=$from to=$to traversalFilter=$traversalFilter}*:*");
+    
+    assertQueryEquals("graph", req,
+        "{!graph from=node_s to=edge_s traversalFilter=foo returnOnlyLeaf=true}*:*",
+        "{!graph from=$from to=$to traversalFilter=$traversalFilter returnOnlyLeaf=$returnOnlyLeaf}*:*");
+    
+    assertQueryEquals("graph", req,
+        "{!graph from=node_s to=edge_s traversalFilter=foo returnOnlyLeaf=true returnRoot=false}*:*",
+        "{!graph from=$from to=$to traversalFilter=$traversalFilter returnOnlyLeaf=$returnOnlyLeaf returnRoot=$returnRoot}*:*");
+    
+    assertQueryEquals("graph", req,
+        "{!graph from=node_s to=edge_s traversalFilter=foo returnOnlyLeaf=true returnRoot=false maxDepth=2}*:*",
+        "{!graph from=$from to=$to traversalFilter=$traversalFilter returnOnlyLeaf=$returnOnlyLeaf returnRoot=$returnRoot maxDepth=$maxDepth}*:*");
+    
+    assertQueryEquals("graph", req,
+        "{!graph from=node_s to=edge_s traversalFilter=foo returnOnlyLeaf=true returnRoot=false maxDepth=2 useAutn=false}*:*",
+        "{!graph from=$from to=$to traversalFilter=$traversalFilter returnOnlyLeaf=$returnOnlyLeaf returnRoot=$returnRoot maxDepth=$maxDepth useAutn=$useAutn}*:*");
+    
+  }
+
   public void testQuerySurround() throws Exception {
     assertQueryEquals("surround", "{!surround}and(apache,solr)", 
                       "and(apache,solr)", "apache AND solr");

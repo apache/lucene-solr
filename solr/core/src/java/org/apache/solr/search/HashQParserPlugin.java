@@ -18,49 +18,34 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.Future;
-import com.google.common.primitives.Longs;
 
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
-
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieField;
-import org.apache.solr.core.SolrCore;
-
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.util.BytesRef;
-
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.StrField;
+
+import com.google.common.primitives.Longs;
 
 /**
 * syntax fq={!hash workers=11 worker=4 keys=field1,field2}

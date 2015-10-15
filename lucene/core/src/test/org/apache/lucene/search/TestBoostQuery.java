@@ -43,7 +43,7 @@ public class TestBoostQuery extends LuceneTestCase {
   }
 
   public void testToString() {
-    assertEquals("foo:bar^2.0", new BoostQuery(new TermQuery(new Term("foo", "bar")), 2).toString());
+    assertEquals("(foo:bar)^2.0", new BoostQuery(new TermQuery(new Term("foo", "bar")), 2).toString());
     BooleanQuery bq = new BooleanQuery.Builder()
         .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
         .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)

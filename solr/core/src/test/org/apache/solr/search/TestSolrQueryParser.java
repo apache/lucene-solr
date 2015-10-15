@@ -155,14 +155,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("fq","id:1", "fl","id,score", "q", subqq+"^3", "qq","text:x^2"
         , "debug","query"
     )
-        ,"/debug/parsedquery_toString=='(text:x^2.0)^3.0'"
+        ,"/debug/parsedquery_toString=='((text:x)^2.0)^3.0'"
     );
 
     // boost should multiply
     assertJQ(req("fq","id:1", "fl","id,score", "q", "  {!v=$qq}^3", "qq","text:x^2"
         , "debug","query"
     )
-        ,"/debug/parsedquery_toString=='(text:x^2.0)^3.0'"
+        ,"/debug/parsedquery_toString=='((text:x)^2.0)^3.0'"
     );
 
   }

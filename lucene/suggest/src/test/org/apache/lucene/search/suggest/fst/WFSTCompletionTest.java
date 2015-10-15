@@ -19,9 +19,11 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.util.*;
 
-import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -37,7 +39,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
     };
     
     Random random = new Random(random().nextLong());
-    WFSTCompletionLookup suggester = new WFSTCompletionLookup();
+    Directory tempDir = getDirectory();
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst");
     suggester.build(new InputArrayIterator(keys));
     
     // top N of 2, but only foo is available
@@ -75,11 +78,13 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals(10, results.get(1).value, 0.01F);
     assertEquals("barbara", results.get(2).key.toString());
     assertEquals(6, results.get(2).value, 0.01F);
+    tempDir.close();
   }
 
   public void testExactFirst() throws Exception {
 
-    WFSTCompletionLookup suggester = new WFSTCompletionLookup(true);
+    Directory tempDir = getDirectory();
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", true);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 20),
@@ -99,11 +104,13 @@ public class WFSTCompletionTest extends LuceneTestCase {
         assertEquals(20, results.get(1).value);
       }
     }
+    tempDir.close();
   }
 
   public void testNonExactFirst() throws Exception {
 
-    WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
+    Directory tempDir = getDirectory();
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 20),
@@ -123,6 +130,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
         assertEquals(2, results.get(1).value);
       }
     }
+    tempDir.close();
   }
   
   public void testRandom() throws Exception {
@@ -153,7 +161,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
       keys[i] = new Input(s, weight);
     }
 
-    WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
+    Directory tempDir = getDirectory();
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
     suggester.build(new InputArrayIterator(keys));
 
     assertEquals(numWords, suggester.getCount());
@@ -196,6 +205,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
         assertEquals(matches.get(hit).value, r.get(hit).value, 0f);
       }
     }
+    tempDir.close();
   }
 
   public void test0ByteKeys() throws Exception {
@@ -204,20 +214,32 @@ public class WFSTCompletionTest extends LuceneTestCase {
     BytesRef key2 = new BytesRef(3);
     key1.length = 3;
 
-    WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
+    Directory tempDir = getDirectory();
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input(key1, 50),
           new Input(key2, 50),
         }));
+    tempDir.close();
   }
 
   public void testEmpty() throws Exception {
-    WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
+    Directory tempDir = getDirectory();
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
 
     suggester.build(new InputArrayIterator(new Input[0]));
     assertEquals(0, suggester.getCount());
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
+    tempDir.close();
+  }
+
+  private Directory getDirectory() {     
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 }

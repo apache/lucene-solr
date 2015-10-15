@@ -99,7 +99,7 @@ public class BKDTreeDocValuesFormat extends DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(final SegmentWriteState state) throws IOException {
-    return new BKDTreeDocValuesConsumer(delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
+    return new BKDTreeDocValuesConsumer(state.directory, state.segmentInfo.name, delegate.fieldsConsumer(state), state, maxPointsInLeafNode, maxPointsSortInHeap);
   }
 
   @Override

@@ -206,7 +206,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   @Override
   @SuppressWarnings("unchecked")
   public SolrResponse processMessage(ZkNodeProps message, String operation) {
-    log.warn("OverseerCollectionMessageHandler.processMessage : "+ operation + " , "+ message.toString());
+    log.info("OverseerCollectionMessageHandler.processMessage : "+ operation + " , "+ message.toString());
 
     NamedList results = new NamedList();
     try {

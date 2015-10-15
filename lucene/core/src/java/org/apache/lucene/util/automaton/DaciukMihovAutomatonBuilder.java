@@ -33,7 +33,15 @@ import org.apache.lucene.util.UnicodeUtil;
  * @see #build(Collection)
  * @see Automata#makeStringUnion(Collection)
  */
-final class DaciukMihovAutomatonBuilder {
+public final class DaciukMihovAutomatonBuilder {
+  
+  /**
+   * The default constructor is private.  Use static methods directly.
+   */
+  private DaciukMihovAutomatonBuilder() {
+    super();
+  }
+
   /**
    * DFSA state with <code>char</code> labels on transitions.
    */

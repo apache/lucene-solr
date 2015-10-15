@@ -17,8 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-
 
 /**
  * A memory-resident {@link Directory} implementation.  Locking
@@ -111,10 +111,7 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     // and do not synchronize or anything stronger. it's great for testing!
     // NOTE: fileMap.keySet().toArray(new String[0]) is broken in non Sun JDKs,
     // and the code below is resilient to map changes during the array population.
-    Set<String> fileNames = fileMap.keySet();
-    List<String> names = new ArrayList<>(fileNames.size());
-    for (String name : fileNames) names.add(name);
-    return names.toArray(new String[names.size()]);
+    return fileMap.keySet().toArray(new String[fileMap.size()]);
   }
 
   public final boolean fileNameExists(String name) {
@@ -150,9 +147,6 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     return Accountables.namedAccountables("file", fileMap);
   }
   
-  /** Removes an existing file in the directory.
-   * @throws IOException if the file does not exist
-   */
   @Override
   public void deleteFile(String name) throws IOException {
     ensureOpen();
@@ -165,7 +159,6 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     }
   }
 
-  /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
@@ -177,6 +170,22 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     }
     fileMap.put(name, file);
     return new RAMOutputStream(name, file, true);
+  }
+
+  @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    ensureOpen();
+
+    // Make the file first...
+    RAMFile file = newRAMFile();
+
+    // ... then try to find a unique name for it:
+    while (true) {
+      String name = prefix + tempFileRandom.nextInt(Integer.MAX_VALUE) + "." + suffix;
+      if (fileMap.putIfAbsent(name, file) == null) {
+        return new RAMOutputStream(name, file, true);
+      }
+    }
   }
 
   /**

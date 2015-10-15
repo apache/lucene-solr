@@ -18,7 +18,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.Bits;

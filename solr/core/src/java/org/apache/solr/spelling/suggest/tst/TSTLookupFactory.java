@@ -31,7 +31,7 @@ public class TSTLookupFactory extends LookupFactory {
 
   @Override
   public Lookup create(NamedList params, SolrCore core) {
-    return new TSTLookup();
+    return new TSTLookup(getTempDir(), "suggester");
   }
 
   @Override

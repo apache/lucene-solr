@@ -57,7 +57,7 @@ public class RAMOutputStream extends IndexOutput implements Accountable {
 
   /** Creates this, with specified name. */
   public RAMOutputStream(String name, RAMFile f, boolean checksum) {
-    super("RAMOutputStream(name=\"" + name + "\")");
+    super("RAMOutputStream(name=\"" + name + "\")", name);
     file = f;
 
     // make sure that we switch to the

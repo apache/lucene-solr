@@ -39,7 +39,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
 
   /** Construct an empty output buffer. */
   public MockIndexOutputWrapper(MockDirectoryWrapper dir, IndexOutput delegate, String name) {
-    super("MockIndexOutputWrapper(" + delegate + ")");
+    super("MockIndexOutputWrapper(" + delegate + ")", delegate.getName());
     this.dir = dir;
     this.name = name;
     this.delegate = delegate;
