@@ -270,6 +270,17 @@ public class IndexSearcher {
   }
 
   /**
+   * Return the query cache of this {@link IndexSearcher}. This will be either
+   * the {@link #getDefaultQueryCache() default query cache} or the query cache
+   * that was last set through {@link #setQueryCache(QueryCache)}. A return
+   * value of {@code null} indicates that caching is disabled.
+   * @lucene.experimental
+   */
+  public QueryCache getQueryCache() {
+    return queryCache;
+  }
+
+  /**
    * Set the {@link QueryCachingPolicy} to use for query caching.
    * This method should be called <b>before</b> starting using this
    * {@link IndexSearcher}.
@@ -278,6 +289,16 @@ public class IndexSearcher {
    */
   public void setQueryCachingPolicy(QueryCachingPolicy queryCachingPolicy) {
     this.queryCachingPolicy = Objects.requireNonNull(queryCachingPolicy);
+  }
+
+  /**
+   * Return the query cache of this {@link IndexSearcher}. This will be either
+   * the {@link #getDefaultQueryCachingPolicy() default policy} or the policy
+   * that was last set through {@link #setQueryCachingPolicy(QueryCachingPolicy)}.
+   * @lucene.experimental
+   */
+  public QueryCachingPolicy getQueryCachingPolicy() {
+    return queryCachingPolicy;
   }
 
   /**

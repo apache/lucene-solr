@@ -30,6 +30,8 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -188,4 +190,46 @@ public class TestIndexSearcher extends LuceneTestCase {
     dir.close();
   }
 
+  public void testGetQueryCache() throws IOException {
+    IndexSearcher searcher = new IndexSearcher(new MultiReader());
+    assertEquals(IndexSearcher.getDefaultQueryCache(), searcher.getQueryCache());
+    QueryCache dummyCache = new QueryCache() {
+      @Override
+      public Weight doCache(Weight weight, QueryCachingPolicy policy) {
+        return weight;
+      }
+    };
+    searcher.setQueryCache(dummyCache);
+    assertEquals(dummyCache, searcher.getQueryCache());
+
+    IndexSearcher.setDefaultQueryCache(dummyCache);
+    searcher = new IndexSearcher(new MultiReader());
+    assertEquals(dummyCache, searcher.getQueryCache());
+
+    searcher.setQueryCache(null);
+    assertNull(searcher.getQueryCache());
+
+    IndexSearcher.setDefaultQueryCache(null);
+    searcher = new IndexSearcher(new MultiReader());
+    assertNull(searcher.getQueryCache());
+  }
+
+  public void testGetQueryCachingPolicy() throws IOException {
+    IndexSearcher searcher = new IndexSearcher(new MultiReader());
+    assertEquals(IndexSearcher.getDefaultQueryCachingPolicy(), searcher.getQueryCachingPolicy());
+    QueryCachingPolicy dummyPolicy = new QueryCachingPolicy() {
+      @Override
+      public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+        return false;
+      }
+      @Override
+      public void onUse(Query query) {}
+    };
+    searcher.setQueryCachingPolicy(dummyPolicy);
+    assertEquals(dummyPolicy, searcher.getQueryCachingPolicy());
+
+    IndexSearcher.setDefaultQueryCachingPolicy(dummyPolicy);
+    searcher = new IndexSearcher(new MultiReader());
+    assertEquals(dummyPolicy, searcher.getQueryCachingPolicy());
+  }
 }
