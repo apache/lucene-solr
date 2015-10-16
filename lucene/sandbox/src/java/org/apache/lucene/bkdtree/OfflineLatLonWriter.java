@@ -41,7 +41,7 @@ final class OfflineLatLonWriter implements LatLonWriter {
     out = new OutputStreamDataOutput(new BufferedOutputStream(Files.newOutputStream(tempFile)));
     this.count = count;
   }
-    
+
   @Override
   public void append(int latEnc, int lonEnc, long ord, int docID) throws IOException {
     out.writeInt(latEnc);

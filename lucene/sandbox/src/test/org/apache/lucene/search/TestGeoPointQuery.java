@@ -67,7 +67,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return new GeoPointInPolygonQuery(field, lats, lons);
+    return new GeoPointInPolygonQuery(field, lons, lats);
   }
 
   @BeforeClass
@@ -241,8 +241,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     assertFalse(GeoUtils.rectCrossesPoly(-5, 0,  0.000001, 5, px, py, xMin, yMin, xMax, yMax));
     assertTrue(GeoUtils.rectWithinPoly(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
   }
-
-  // nocommit carry over testAllLat/LonEqual, or just merge BKD/GeoPoint tests
 
   public void testBBoxCrossDateline() throws Exception {
     TopDocs td = bboxQuery(179.0, -45.0, -179.0, -44.0, 20);

@@ -52,7 +52,8 @@ public class TestBKDTree extends BaseGeoPointTestCase {
 
   @Override
   protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
-    return new BKDDistanceQuery(field, centerLat, centerLon, radiusMeters);
+    // return new BKDDistanceQuery(field, centerLat, centerLon, radiusMeters);
+    return null;
   }
 
   @Override

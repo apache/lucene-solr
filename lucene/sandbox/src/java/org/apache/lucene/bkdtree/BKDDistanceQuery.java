@@ -133,26 +133,14 @@ public class BKDDistanceQuery extends Query {
                                            public BKDTreeReader.Relation compare(double cellLatMin, double cellLatMax, double cellLonMin, double cellLonMax) {
                                              //System.out.println("compare lat=" + cellLatMin + " TO " + cellLatMax + "; lon=" + cellLonMin + " TO " + cellLonMax);
                                              if (GeoUtils.rectWithinCircle(cellLonMin, cellLatMin, cellLonMax, cellLatMax, centerLon, centerLat, radiusMeters)) {
-                                               // nocommit hacky workaround:
-                                               if (cellLonMax - cellLonMin < 100 && cellLatMax - cellLatMin < 50) {
-                                                 //System.out.println("  CELL_INSIDE_SHAPE");
-                                                 return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
-                                               } else {
-                                                 //System.out.println("  HACK: SHAPE_CROSSES_CELL");
-                                                 return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
-                                               }
+                                               //System.out.println("  CELL_INSIDE_SHAPE");
+                                               return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
                                              } else if (GeoUtils.rectCrossesCircle(cellLonMin, cellLatMin, cellLonMax, cellLatMax, centerLon, centerLat, radiusMeters)) {
                                                //System.out.println("  SHAPE_CROSSES_CELL");
                                                return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
                                              } else {
-                                               // nocommit hacky workaround:
-                                               if (cellLonMax - cellLonMin < 100 && cellLatMax - cellLatMin < 50) {
-                                                 //System.out.println("  SHAPE_OUTSIDE_CELL");
-                                                 return BKDTreeReader.Relation.SHAPE_OUTSIDE_CELL;
-                                               } else {
-                                                 //System.out.println("  HACK: SHAPE_CROSSES_CELL");
-                                                 return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
-                                               }
+                                               //System.out.println("  SHAPE_OUTSIDE_CELL");
+                                               return BKDTreeReader.Relation.SHAPE_OUTSIDE_CELL;
                                              }
                                            }
                                          }, treeDV.delegate);
@@ -164,10 +152,13 @@ public class BKDDistanceQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    // nocommit re-enable, using docsWithField?
+
+    // TODO: this is not correct: it should not accept docs that didn't index this field ... can we use docsWithField instead?
+    /*
     if (false && radiusMeters >= GeoProjectionUtils.SEMIMINOR_AXIS) {
       return new MatchAllDocsQuery();
     }
+    */
 
     if (maxLon < minLon) {
       //System.out.println("BKD crosses dateline");
@@ -230,7 +221,6 @@ public class BKDDistanceQuery extends Query {
 
   @Override
   public String toString(String field) {
-    // nocommit get crossesDateLine into this
     final StringBuilder sb = new StringBuilder();
     sb.append(getClass().getSimpleName());
     sb.append(':');
@@ -239,16 +229,21 @@ public class BKDDistanceQuery extends Query {
       sb.append(this.field);
       sb.append(':');
     }
-    return sb.append( " Center: [")
-        .append(centerLon)
-        .append(',')
-        .append(centerLat)
-        .append(']')
-        .append(" Distance: ")
-        .append(radiusMeters)
-        .append(" meters")
-        .append("]")
-        .toString();
+    sb.append( " Center: [")
+      .append(centerLon)
+      .append(',')
+      .append(centerLat)
+      .append(']')
+      .append(" Distance: ")
+      .append(radiusMeters)
+      .append(" meters");
+    if (maxLon < minLon) {
+      sb.append("; crosses dateline");
+    }
+
+    sb.append("]");
+
+    return sb.toString();
   }
 
   public double getCenterLon() {

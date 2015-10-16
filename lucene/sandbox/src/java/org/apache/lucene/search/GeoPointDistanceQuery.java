@@ -21,26 +21,22 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
 
-// nocommit fix javadocs below: lineCrossesSphere is not used anymore?
-
 /** Implements a simple point distance query on a GeoPoint field. This is based on
  * {@link org.apache.lucene.search.GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
  * like {@code GeoPointInBBoxQueryImpl} candidate terms are queried using the numeric ranges based on
  * the morton codes of the min and max lat/lon pairs that intersect the boundary of the point-radius
- * circle (see org.apache.lucene.util.GeoUtils#lineCrossesSphere). Terms
+ * circle. Terms
  * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
  * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversin}.
  * All morton value comparisons are subject to the same precision tolerance defined in
  * {@value org.apache.lucene.util.GeoUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
  * haversine formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
  *
- *
- * Note: This query currently uses haversine which is a sloppy distance calculation (see above reference). For large
+ * <p>Note: This query currently uses haversine which is a sloppy distance calculation (see above reference). For large
  * queries one can expect upwards of 400m error. Vincenty shrinks this to ~40m error but pays a penalty for computing
  * using the spheroid
  *
- *    @lucene.experimental
- */
+ * @lucene.experimental */
 public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   protected final double centerLon;
   protected final double centerLat;

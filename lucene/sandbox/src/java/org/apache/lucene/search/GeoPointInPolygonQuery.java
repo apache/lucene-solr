@@ -26,8 +26,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
 
-// nocommit javadoc wtf this query does about the dateline!
-
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
  * {@code GeoPointInBBoxQueryImpl} and is implemented using a
  * three phase approach. First, like {@code GeoPointInBBoxQueryImpl}
@@ -38,14 +36,14 @@ import org.apache.lucene.util.GeoUtils;
  * term is passed to the final point in polygon check. All value comparisons are subject
  * to the same precision tolerance defined in {@value org.apache.lucene.util.GeoUtils#TOLERANCE}
  *
- * NOTES:
+ * <p>NOTES:
  *    1.  The polygon coordinates need to be in either clockwise or counter-clockwise order.
  *    2.  The polygon must not be self-crossing, otherwise the query may result in unexpected behavior
  *    3.  All latitude/longitude values must be in decimal degrees.
  *    4.  Complex computational geometry (e.g., dateline wrapping, polygon with holes) is not supported
  *    5.  For more advanced GeoSpatial indexing and query operations see spatial module
  *
- *    @lucene.experimental
+ * @lucene.experimental
  */
 public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   // polygon position arrays - this avoids the use of any objects or

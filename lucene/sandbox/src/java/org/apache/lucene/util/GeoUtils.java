@@ -107,7 +107,11 @@ public final class GeoUtils {
     return (off <= 180 ? off : 360-off) - 90;
   }
 
-  // nocommit need javadoc about the dateline here?
+  /**
+   * Determine if a bbox (defined by minLon, minLat, maxLon, maxLat) contains the provided point (defined by lon, lat)
+   * NOTE: this is a basic method that does not handle dateline or pole crossing. Unwrapping must be done before
+   * calling this method.
+   */
   public static boolean bboxContains(final double lon, final double lat, final double minLon,
                                      final double minLat, final double maxLon, final double maxLat) {
     return (compare(lon, minLon) >= 0 && compare(lon, maxLon) <= 0
@@ -311,9 +315,10 @@ public final class GeoUtils {
   }
 
   /**
-   * Computes whether a rectangle crosses a circle
+   * Determine if a bbox (defined by minLon, minLat, maxLon, maxLat) contains the provided point (defined by lon, lat)
+   * NOTE: this is basic method that does not handle dateline or pole crossing. Unwrapping must be done before
+   * calling this method.
    */
-  // nocommit if the rect fully contains the circle, what will this return?  and if the circle fully contains the rect, then what?
   public static boolean rectCrossesCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                           final double centerLon, final double centerLat, final double radiusMeters) {
     return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters)
