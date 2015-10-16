@@ -271,6 +271,9 @@ Bug Fixes
   (Gregory Chanan)
 
 * SOLR-8107: bin/solr -f should use exec to start the JVM (Martijn Koster via Timothy Potter)
+
+* SOLR-8050: Partial update on document with multivalued date field fails to parse date and can
+  also fail to remove dates in some cases. (Burkhard Buelte, Luc Vanlerberghe, shalin)
   
 Optimizations
 ----------------------
