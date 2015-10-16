@@ -566,6 +566,11 @@ public class TrieField extends PrimitiveFieldType {
   @Override
   public String storedToIndexed(IndexableField f) {
     final BytesRefBuilder bytes = new BytesRefBuilder();
+    storedToIndexed(f, bytes);
+    return bytes.get().utf8ToString();
+  }
+
+  private void storedToIndexed(IndexableField f, final BytesRefBuilder bytes) {
     final Number val = f.numericValue();
     if (val != null) {
       switch (type) {
@@ -620,7 +625,6 @@ public class TrieField extends PrimitiveFieldType {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
       }
     }
-    return bytes.get().utf8ToString();
   }
   
   @Override
@@ -712,7 +716,7 @@ public class TrieField extends PrimitiveFieldType {
       
       if (sf.multiValued()) {
         BytesRefBuilder bytes = new BytesRefBuilder();
-        readableToIndexed(value.toString(), bytes);
+        storedToIndexed(field, bytes);
         fields.add(new SortedSetDocValuesField(sf.getName(), bytes.get()));
       } else {
         final long bits;
