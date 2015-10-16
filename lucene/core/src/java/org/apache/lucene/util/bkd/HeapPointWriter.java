@@ -43,6 +43,18 @@ final class HeapPointWriter implements PointWriter {
     valuesPerBlock = Math.max(1, 4096/packedBytesLength);
   }
 
+  public void copyFrom(HeapPointWriter other) {
+    if (docIDs.length < other.nextWrite) {
+      throw new IllegalStateException("docIDs.length=" + docIDs.length + " other.nextWrite=" + other.nextWrite);
+    }
+    System.arraycopy(other.docIDs, 0, docIDs, 0, other.nextWrite);
+    System.arraycopy(other.ords, 0, ords, 0, other.nextWrite);
+    for(byte[] block : other.blocks) {
+      blocks.add(block.clone());
+    }
+    nextWrite = other.nextWrite;
+  }
+
   void readPackedValue(int index, byte[] bytes) {
     assert bytes.length == packedBytesLength;
     int block = index / valuesPerBlock;

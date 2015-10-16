@@ -23,31 +23,25 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
 final class OfflinePointReader implements PointReader {
-  final InputStreamDataInput in;
+  final IndexInput in;
   long countLeft;
   private final byte[] packedValue;
   private long ord;
   private int docID;
   final int bytesPerDoc;
 
-  OfflinePointReader(Path tempFile, int packedBytesLength, long start, long length) throws IOException {
+  OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length) throws IOException {
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
+    in = tempDir.openInput(tempFileName, IOContext.READONCE);
     long seekFP = start * bytesPerDoc;
-    // nocommit cutover to Directory API
-    InputStream fis = Files.newInputStream(tempFile);
-    long skipped = 0;
-    while (skipped < seekFP) {
-      long inc = fis.skip(seekFP - skipped);
-      skipped += inc;
-      if (inc == 0) {
-        throw new RuntimeException("skip returned 0");
-      }
-    }
-    in = new InputStreamDataInput(new BufferedInputStream(fis));
+    in.seek(seekFP);
     this.countLeft = length;
     packedValue = new byte[packedBytesLength];
   }

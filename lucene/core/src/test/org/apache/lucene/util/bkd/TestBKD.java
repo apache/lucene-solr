@@ -124,7 +124,7 @@ public class TestBKD extends LuceneTestCase {
 
   public void testBasicInts1D() throws Exception {
     try (Directory dir = newDirectory()) {
-      BKDWriter w = new BKDWriter(1, 4, 2, 1.0f);
+      BKDWriter w = new BKDWriter(dir, "tmp", 1, 4, 2, 1.0f);
       byte[] scratch = new byte[4];
       for(int docID=0;docID<100;docID++) {
         intToBytes(docID, scratch, 0);
@@ -192,7 +192,7 @@ public class TestBKD extends LuceneTestCase {
       int numDims = TestUtil.nextInt(random(), 1, 5);
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
       float maxMB = (float) 0.1 + (3*random().nextFloat());
-      BKDWriter w = new BKDWriter(numDims, 4, maxPointsInLeafNode, maxMB);
+      BKDWriter w = new BKDWriter(dir, "tmp", numDims, 4, maxPointsInLeafNode, maxMB);
 
       int numDocs = atLeast(1000);
       if (VERBOSE) {
@@ -202,9 +202,11 @@ public class TestBKD extends LuceneTestCase {
       byte[] scratch = new byte[4*numDims];
       for(int docID=0;docID<numDocs;docID++) {
         int[] values = new int[numDims];
+        System.out.println("  docID=" + docID);
         for(int dim=0;dim<numDims;dim++) {
           values[dim] = random().nextInt();
           intToBytes(values[dim], scratch, dim);
+          System.out.println("    " + dim + " -> " + values[dim]);
         }
         docs[docID] = values;
         w.add(scratch, docID);
@@ -301,4 +303,6 @@ public class TestBKD extends LuceneTestCase {
       }
     }
   }
+
+  // nocommit multivalued test
 }

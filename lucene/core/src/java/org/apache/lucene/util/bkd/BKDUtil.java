@@ -1,5 +1,7 @@
 package org.apache.lucene.util.bkd;
 
+import org.apache.lucene.util.BytesRef;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,20 +26,27 @@ final class BKDUtil {
     // No instance
   }
 
-  /** result = a - b */
+  /** result = a - b, where a >= b */
   public static void subtract(int bytesPerDim, int dim, byte[] a, byte[] b, byte[] result) {
+    System.out.println("subtract a=" + bytesToInt(a, dim) + " b=" + bytesToInt(b, dim));
     int start = dim * bytesPerDim;
     int end = start + bytesPerDim;
-    int carry = 0;
+    System.out.println("  a=" + new BytesRef(a, start, bytesPerDim));
+    System.out.println("  b=" + new BytesRef(b, start, bytesPerDim));
+    int borrow = 0;
     for(int i=end-1;i>=start;i--) {
-      int diff = (a[i]&0xff) - (b[i]&0xff) - carry;
+      int diff = (a[i]&0xff) - (b[i]&0xff) - borrow;
       if (diff < 0) {
-        diff += 255;
-        carry = 1;
+        diff += 256;
+        borrow = 1;
+      } else {
+        borrow = 0;
       }
       result[i-start] = (byte) diff;
     }
-    assert carry == 0;
+    if (borrow != 0) {
+      throw new IllegalArgumentException("a < b?");
+    }
   }
   
   /** Returns positive int if a > b, negative int if a < b and 0 if a == b */

@@ -23,6 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
@@ -30,18 +33,17 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 final class OfflinePointWriter implements PointWriter {
 
-  final Path tempFile;
-  final OutputStreamDataOutput out;
+  final Directory tempDir;
+  final IndexOutput out;
   final long count;
   final int packedBytesLength;
   final int bytesPerDoc;
   private long countWritten;
   private boolean closed;
 
-  public OfflinePointWriter(long count, int packedBytesLength) throws IOException {
-    tempFile = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "size" + count + ".", "");
-    // nocommit cutover to Directory API
-    out = new OutputStreamDataOutput(new BufferedOutputStream(Files.newOutputStream(tempFile)));
+  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, long count, int packedBytesLength) throws IOException {
+    this.tempDir = tempDir;
+    out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
     this.packedBytesLength = packedBytesLength;
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
     this.count = count;
@@ -59,7 +61,7 @@ final class OfflinePointWriter implements PointWriter {
   @Override
   public PointReader getReader(long start) throws IOException {
     assert closed;
-    return new OfflinePointReader(tempFile, packedBytesLength, start, count-start);
+    return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, count-start);
   }
 
   @Override
@@ -73,12 +75,12 @@ final class OfflinePointWriter implements PointWriter {
 
   @Override
   public void destroy() throws IOException {
-    IOUtils.rm(tempFile);
+    tempDir.deleteFile(out.getName());
   }
 
   @Override
   public String toString() {
-    return "OfflinePointWriter(count=" + count + " tempFile=" + tempFile + ")";
+    return "OfflinePointWriter(count=" + count + " tempFileName=" + out.getName() + ")";
   }
 }
 
