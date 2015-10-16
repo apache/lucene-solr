@@ -48,7 +48,7 @@
   <target name="regenerate" depends="run-antlr"/>
 
   <target name="resolve-antlr" xmlns:ivy="antlib:org.apache.ivy.ant">
-    <ivy:cachepath organisation="org.antlr" module="antlr4" revision="4.5"
+    <ivy:cachepath organisation="org.antlr" module="antlr4" revision="4.5.1-1"
                   inline="true" conf="default" type="jar" pathid="antlr.classpath"/>
   </target>
 
