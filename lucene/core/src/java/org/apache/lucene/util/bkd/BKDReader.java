@@ -21,12 +21,8 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // nocommit rename generic stuff (Util, Reader, Writer) w/ BKD prefix even though they are package private
@@ -42,7 +38,6 @@ public final class BKDReader implements Accountable {
   final private byte[] splitPackedValues; 
   final private long[] leafBlockFPs;
   final private int leafNodeOffset;
-  final int maxDoc;
   final int numDims;
   final int bytesPerDim;
   final IndexInput in;
@@ -54,26 +49,28 @@ public final class BKDReader implements Accountable {
   /** We recurse the BKD tree, using a provided instance of this to guide the recursion.
    *
    * @lucene.experimental */
-  interface IntersectVisitor {
-    /** Called for all docs in a leaf cell that's fully contained by the query */
+  public interface IntersectVisitor {
+    /** Called for all docs in a leaf cell that's fully contained by the query.  The
+     *  consumer should blindly accept the docID. */
     void visit(int docID);
 
-    /** Called for all docs in a leaf cell that crosses the query */
+    /** Called for all docs in a leaf cell that crosses the query.  The consumer
+     *  should scrutinize the packedValue to decide whether to accept it. */
     void visit(int docID, byte[] packedValue);
 
-    /** Called for non-leaf cells to test how the cell relates to the query */
+    /** Called for non-leaf cells to test how the cell relates to the query, to
+     *  determine how to further recurse down the treer. */
     Relation compare(byte[] minPacked, byte[] maxPacked);
   }
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
-  public BKDReader(IndexInput in, int maxDoc) throws IOException {
+  public BKDReader(IndexInput in) throws IOException {
 
     CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_START);
     numDims = in.readVInt();
     maxPointsInLeafNode = in.readVInt();
     bytesPerDim = in.readVInt();
     packedBytesLength = numDims * bytesPerDim;
-    System.out.println("R: packed=" + bytesPerDim);
 
     // Read index:
     int numLeaves = in.readVInt();
@@ -88,7 +85,6 @@ public final class BKDReader implements Accountable {
       leafBlockFPs[i] = in.readVLong();
     }
 
-    this.maxDoc = maxDoc;
     this.in = in;
   }
 
@@ -103,7 +99,7 @@ public final class BKDReader implements Accountable {
     final byte[] maxPacked;
     final IntersectVisitor visitor;
 
-    public IntersectState(IndexInput in, int packedBytesLength, int maxDoc,
+    public IntersectState(IndexInput in, int packedBytesLength,
                           int maxPointsInLeafNode, byte[] minPacked, byte[] maxPacked,
                           IntersectVisitor visitor) {
       this.in = in;
@@ -123,7 +119,7 @@ public final class BKDReader implements Accountable {
   }
 
   public void intersect(byte[] minPacked, byte[] maxPacked, IntersectVisitor visitor) throws IOException {
-    IntersectState state = new IntersectState(in.clone(), packedBytesLength, maxDoc,
+    IntersectState state = new IntersectState(in.clone(), packedBytesLength,
                                               maxPointsInLeafNode, minPacked, maxPacked,
                                               visitor);
     byte[] rootMinPacked = new byte[packedBytesLength];
@@ -134,10 +130,10 @@ public final class BKDReader implements Accountable {
 
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
   private void addAll(IntersectState state, int nodeID) throws IOException {
-    System.out.println("R: addAll nodeID=" + nodeID);
+    //System.out.println("R: addAll nodeID=" + nodeID);
 
     if (nodeID >= leafNodeOffset) {
-      System.out.println("R:   leaf");
+      //System.out.println("R:   leaf");
 
       // Leaf node
       state.in.seek(leafBlockFPs[nodeID-leafNodeOffset]);

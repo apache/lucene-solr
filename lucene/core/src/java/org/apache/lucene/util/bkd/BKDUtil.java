@@ -1,7 +1,5 @@
 package org.apache.lucene.util.bkd;
 
-import org.apache.lucene.util.BytesRef;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +17,9 @@ import org.apache.lucene.util.BytesRef;
  * limitations under the License.
  */
 
+import java.math.BigInteger;
+import java.util.Arrays;
+
 /** Utility methods to handle N-dimensional packed byte[] as if they were numbers! */
 final class BKDUtil {
 
@@ -28,11 +29,8 @@ final class BKDUtil {
 
   /** result = a - b, where a >= b */
   public static void subtract(int bytesPerDim, int dim, byte[] a, byte[] b, byte[] result) {
-    System.out.println("subtract a=" + bytesToInt(a, dim) + " b=" + bytesToInt(b, dim));
     int start = dim * bytesPerDim;
     int end = start + bytesPerDim;
-    System.out.println("  a=" + new BytesRef(a, start, bytesPerDim));
-    System.out.println("  b=" + new BytesRef(b, start, bytesPerDim));
     int borrow = 0;
     for(int i=end-1;i>=start;i--) {
       int diff = (a[i]&0xff) - (b[i]&0xff) - borrow;
@@ -78,7 +76,14 @@ final class BKDUtil {
     return true;
   }
 
-  // nocommit only used temporarily for debugging test cases that encode ints:
+  static void intToBytes(int x, byte[] dest, int index) {
+    // Flip the sign bit, so negative ints sort before positive ints correctly:
+    x ^= 0x80000000;
+    for(int i=0;i<4;i++) {
+      dest[4*index+i] = (byte) (x >> 24-i*8);
+    }
+  }
+
   static int bytesToInt(byte[] src, int index) {
     int x = 0;
     for(int i=0;i<4;i++) {
@@ -86,5 +91,41 @@ final class BKDUtil {
     }
     // Re-flip the sign bit to restore the original value:
     return x ^ 0x80000000;
+  }
+
+  static void sortableBigIntBytes(byte[] bytes) {
+    bytes[0] ^= 0x80;
+    for(int i=1;i<bytes.length;i++)  {
+      bytes[i] ^= 0;
+    }
+  }
+
+  static void bigIntToBytes(BigInteger bigInt, byte[] result, int dim, int numBytesPerDim) {
+    byte[] bigIntBytes = bigInt.toByteArray();
+    byte[] fullBigIntBytes;
+
+    if (bigIntBytes.length < numBytesPerDim) {
+      fullBigIntBytes = new byte[numBytesPerDim];
+      System.arraycopy(bigIntBytes, 0, fullBigIntBytes, numBytesPerDim-bigIntBytes.length, bigIntBytes.length);
+      if ((bigIntBytes[0] & 0x80) != 0) {
+        // sign extend
+        Arrays.fill(fullBigIntBytes, 0, numBytesPerDim-bigIntBytes.length, (byte) 0xff);
+      }
+    } else {
+      assert bigIntBytes.length == numBytesPerDim;
+      fullBigIntBytes = bigIntBytes;
+    }
+    sortableBigIntBytes(fullBigIntBytes);
+
+    System.arraycopy(fullBigIntBytes, 0, result, dim * numBytesPerDim, numBytesPerDim);
+
+    assert bytesToBigInt(result, dim, numBytesPerDim).equals(bigInt): "bigInt=" + bigInt + " converted=" + bytesToBigInt(result, dim, numBytesPerDim);
+  }
+
+  static BigInteger bytesToBigInt(byte[] bytes, int dim, int numBytesPerDim) {
+    byte[] bigIntBytes = new byte[numBytesPerDim];
+    System.arraycopy(bytes, dim*numBytesPerDim, bigIntBytes, 0, numBytesPerDim);
+    sortableBigIntBytes(bigIntBytes);
+    return new BigInteger(bigIntBytes);
   }
 }

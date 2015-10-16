@@ -17,10 +17,8 @@ package org.apache.lucene.util.bkd;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -30,7 +28,7 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -72,7 +70,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental */
 
-public final class BKDWriter {
+public final class BKDWriter implements Closeable {
 
   static final String CODEC_NAME = "BKD";
   static final int VERSION_START = 0;
@@ -81,7 +79,7 @@ public final class BKDWriter {
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
 
-  static final boolean DEBUG = true;
+  static final boolean DEBUG = false;
 
   public static final int DEFAULT_MAX_POINTS_IN_LEAF_NODE = 1024;
 
@@ -99,7 +97,7 @@ public final class BKDWriter {
   /** numDims * bytesPerDim */
   final int packedBytesLength;
 
-  final Directory tempDir;
+  final TrackingDirectoryWrapper tempDir;
   final String tempFileNamePrefix;
 
   final byte[] scratchMax;
@@ -123,7 +121,9 @@ public final class BKDWriter {
 
   public BKDWriter(Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, int maxPointsInLeafNode, float maxMBSortInHeap) throws IOException {
     verifyParams(numDims, maxPointsInLeafNode, maxMBSortInHeap);
-    this.tempDir = tempDir;
+    // We use tracking dir to deal with removing files on exception, so each place that
+    // creates temp files doesn't need crazy try/finally/sucess logic:
+    this.tempDir = new TrackingDirectoryWrapper(tempDir);
     this.tempFileNamePrefix = tempFileNamePrefix;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.numDims = numDims;
@@ -147,8 +147,6 @@ public final class BKDWriter {
 
     // We write first maxPointsSortInHeap in heap, then cutover to offline for additional points:
     heapPointWriter = new HeapPointWriter(16, maxPointsSortInHeap, packedBytesLength);
-
-    // nocommit use TrackingDirWrapper here to do file deletion cleanup in one place...
   }
 
   public static void verifyParams(int numDims, int maxPointsInLeafNode, float maxMBSortInHeap) {
@@ -168,11 +166,8 @@ public final class BKDWriter {
     }
   }
 
-  // nocommit use our own trackingdir to track created temp files for deletion on exc?
-
   /** If the current segment has too many points then we switchover to temp files / offline sort. */
   private void switchToOffline() throws IOException {
-    System.out.println("W: switchToOffline");
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
     tempInput = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
@@ -228,14 +223,10 @@ public final class BKDWriter {
     BytesRef bytes = scratch.get();
     ByteArrayDataInput dataReader = new ByteArrayDataInput();
 
-    OfflineSorter.ByteSequencesReader reader = null;
-    PointWriter sortedPointWriter = null;
-    boolean success = false;
     byte[] packedValue = new byte[packedBytesLength];
-    // nocommit try-w-resources?
-    try {
-      reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(in, IOContext.READONCE));
-      sortedPointWriter = getPointWriter(pointCount);
+    try (
+      OfflineSorter.ByteSequencesReader reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(in, IOContext.READONCE));
+      PointWriter sortedPointWriter = getPointWriter(pointCount);) {
       for (long i=0;i<pointCount;i++) {
         boolean result = reader.read(scratch);
         assert result;
@@ -246,34 +237,8 @@ public final class BKDWriter {
         assert docID >= 0: "docID=" + docID;
         sortedPointWriter.append(packedValue, ord, docID);
       }
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(sortedPointWriter, reader);
-      } else {
-        IOUtils.closeWhileHandlingException(sortedPointWriter, reader);
-        try {
-          sortedPointWriter.destroy();
-        } catch (Throwable t) {
-          // Suppress to keep throwing original exc
-        }
-      }
+      return sortedPointWriter;
     }
-
-    return sortedPointWriter;
-  }
-
-  private int compare(byte[] a, byte[] b, int dim) {
-    int start = dim * bytesPerDim;
-    int end = start + bytesPerDim;
-    for(int i=start;i<end;i++) {
-      int diff = (a[i]&0xff) - (b[i]&0xff);
-      if (diff != 0) {
-        return diff;
-      }
-    }
-
-    return 0;
   }
 
   /** If dim=-1 we sort by docID, else by that dim. */
@@ -328,7 +293,6 @@ public final class BKDWriter {
   private PointWriter sort(int dim) throws IOException {
 
     if (heapPointWriter != null) {
-      System.out.println("sort in heap dim=" + dim);
 
       HeapPointWriter sorted;
 
@@ -343,12 +307,6 @@ public final class BKDWriter {
 
       sortHeapPointWriter(sorted, 0, (int) pointCount, dim);
 
-      // nocommit shrink wrap?
-      byte[] tmp = new byte[packedBytesLength];
-      for(int i=0;i<pointCount;i++) {
-        sorted.readPackedValue(i, tmp);
-        System.out.println("  docID=" + sorted.docIDs[i] + " value=" + BKDUtil.bytesToInt(tmp, dim));
-      }
       sorted.close();
       return sorted;
     } else {
@@ -388,22 +346,13 @@ public final class BKDWriter {
         }
       };
 
-      boolean success = false;
-
       OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, cmp);
       String sortedFileName = sorter.sort(tempInput.getName());
 
-      // nocommit try-w-resources
-      try {
-        PointWriter writer = convertToFixedWidth(sortedFileName);
-        success = true;
+      try (PointWriter writer = convertToFixedWidth(sortedFileName)) {
+        // nocommit can we avoid the double-write here? i.e. have offline sorter write fixed width to begin with?
+        tempDir.deleteFile(sortedFileName);
         return writer;
-      } finally {
-        if (success) {
-          tempDir.deleteFile(sortedFileName);
-        } else {
-          IOUtils.deleteFilesIgnoringExceptions(tempDir, sortedFileName);
-        }
       }
     }
   }
@@ -411,6 +360,8 @@ public final class BKDWriter {
   /** Writes the BKD tree to the provided {@link IndexOutput} and returns the file offset where index was written. */
   public long finish(IndexOutput out) throws IOException {
     //System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapWriter);
+
+    // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recruse...)
 
     if (offlinePointWriter != null) {
       offlinePointWriter.close();
@@ -451,29 +402,42 @@ public final class BKDWriter {
     // Sort all docs once by each dimension:
     PathSlice[] sortedPointWriters = new PathSlice[numDims];
 
-    for(int dim=0;dim<numDims;dim++) {
-      sortedPointWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
-    }
-
-    // nocommit make sure this happens on exc, use TrackingDirWrapper
-    if (tempInput != null) {
-      tempDir.deleteFile(tempInput.getName());
-    }
-    heapPointWriter = null;
-
     byte[] minPacked = new byte[packedBytesLength];
     byte[] maxPacked = new byte[packedBytesLength];
     Arrays.fill(maxPacked, (byte) 0xff);
 
-    build(1, numLeaves, sortedPointWriters,
-          ordBitSet, out,
-          minPacked, maxPacked,
-          splitPackedValues,
-          leafBlockFPs);
+    boolean success = false;
+    try {
+      for(int dim=0;dim<numDims;dim++) {
+        sortedPointWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
+      }
 
-    // nocommit make sure this happens on exc:
-    for(PathSlice slice : sortedPointWriters) {
-      slice.writer.destroy();
+      if (tempInput != null) {
+        tempDir.deleteFile(tempInput.getName());
+        tempInput = null;
+      } else {
+        assert heapPointWriter != null;
+        heapPointWriter = null;
+      }
+
+      build(1, numLeaves, sortedPointWriters,
+            ordBitSet, out,
+            minPacked, maxPacked,
+            splitPackedValues,
+            leafBlockFPs);
+
+      for(PathSlice slice : sortedPointWriters) {
+        slice.writer.destroy();
+      }
+
+      // If no exception, we should have cleaned everything up:
+      assert tempDir.getCreatedFiles().isEmpty();
+
+      success = true;
+    } finally {
+      if (success == false) {
+        IOUtils.deleteFilesIgnoringExceptions(tempDir, tempDir.getCreatedFiles());
+      }
     }
 
     //System.out.println("Total nodes: " + innerNodeCount);
@@ -495,6 +459,18 @@ public final class BKDWriter {
     }
 
     return indexFP;
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (tempInput != null) {
+      // NOTE: this should only happen on exception, e.g. caller calls close w/o calling finish:
+      try {
+        tempInput.close();
+      } finally {
+        tempDir.deleteFile(tempInput.getName());
+      }
+    }
   }
 
   /** Sliced reference to points in an OfflineSorter.ByteSequencesWriter file. */
@@ -531,14 +507,12 @@ public final class BKDWriter {
       System.arraycopy(reader.packedValue(), splitDim*bytesPerDim, scratchMax, 0, bytesPerDim);
 
       ordBitSet.set(reader.ord());
-      System.out.println("  docID=" + reader.ord());
 
       // Start at 1 because we already did the first value above (so we could keep the split value):
       for(int i=1;i<rightCount;i++) {
         result = reader.next();
         assert result;
         ordBitSet.set(reader.ord());
-        System.out.println("  docID=" + reader.ord());
       }
     }
 
@@ -550,9 +524,7 @@ public final class BKDWriter {
 
   /** Called only in assert */
   private boolean valueInBounds(byte[] packedValue, byte[] minPackedValue, byte[] maxPackedValue) {
-    System.out.println("  check");
     for(int dim=0;dim<numDims;dim++) {
-      System.out.println("    dim=" + dim + " value=" + BKDUtil.bytesToInt(packedValue, dim) + " vs min=" + BKDUtil.bytesToInt(minPackedValue, dim) + " max=" + BKDUtil.bytesToInt(maxPackedValue, dim));
       if (BKDUtil.compare(bytesPerDim, packedValue, dim, minPackedValue, dim) < 0) {
         return false;
       }
@@ -592,9 +564,11 @@ public final class BKDWriter {
       assert slice.count == slices[0].count;
     }
 
-    if (DEBUG) System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + "\n  count=" + slices[0].count);
-    for(int dim=0;dim<numDims;dim++) {
-      System.out.println("  " + dim + ": source=" + slices[dim] + " min=" + BKDUtil.bytesToInt(minPackedValue, dim) + " max=" + BKDUtil.bytesToInt(maxPackedValue, dim));
+    if (DEBUG) {
+      System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + "\n  count=" + slices[0].count);
+      for(int dim=0;dim<numDims;dim++) {
+        System.out.println("  " + dim + ": source=" + slices[dim] + " min=" + BKDUtil.bytesToInt(minPackedValue, dim) + " max=" + BKDUtil.bytesToInt(maxPackedValue, dim));
+      }
     }
 
     if (nodeID >= leafNodeOffset) {
@@ -621,7 +595,6 @@ public final class BKDWriter {
       // loading the values:
       for (int i=0;i<source.count;i++) {
         int docID = heapSource.docIDs[Math.toIntExact(source.start + i)];
-        System.out.println("    docID=" + docID);
         out.writeVInt(docID - lastDocID);
         lastDocID = docID;
       }
@@ -646,7 +619,7 @@ public final class BKDWriter {
 
       PathSlice source = slices[splitDim];
 
-      System.out.println("  splitDim=" + splitDim + " source=" + source + " right docs:");
+      //System.out.println("  splitDim=" + splitDim + " source=" + source + " right docs:");
 
       assert nodeID < splitPackedValues.length: "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
 
@@ -655,7 +628,7 @@ public final class BKDWriter {
       long leftCount = source.count - rightCount;
 
       byte[] splitValue = markRightTree(rightCount, splitDim, source, ordBitSet);
-      System.out.println("  split value=" + BKDUtil.bytesToInt(splitValue, 0));
+      //System.out.println("  split value=" + BKDUtil.bytesToInt(splitValue, 0));
       int address = nodeID * (1+bytesPerDim);
       splitPackedValues[address] = (byte) splitDim;
       System.arraycopy(splitValue, 0, splitPackedValues, address + 1, bytesPerDim);
@@ -682,24 +655,16 @@ public final class BKDWriter {
           continue;
         }
 
-        System.out.println("  partition dim=" + dim);
+        //System.out.println("  partition dim=" + dim);
 
-        PointWriter leftPointWriter = null;
-        PointWriter rightPointWriter = null;
-        PointReader reader = null;
-
-        boolean success = false;
-
-        int nextRightCount = 0;
-
-        try {
-          leftPointWriter = getPointWriter(leftCount);
-          rightPointWriter = getPointWriter(source.count - leftCount);
+        try (PointWriter leftPointWriter = getPointWriter(leftCount);
+             PointWriter rightPointWriter = getPointWriter(source.count - leftCount);
+             PointReader reader = slices[dim].writer.getReader(slices[dim].start);) {
 
           //if (DEBUG) System.out.println("  partition:\n    splitValueEnc=" + splitValue + "\n    " + nextSource + "\n      --> leftSorted=" + leftPointWriter + "\n      --> rightSorted=" + rightPointWriter + ")");
-          reader = slices[dim].writer.getReader(slices[dim].start);
 
           // Partition this source according to how the splitDim split the values:
+          int nextRightCount = 0;
           for (int i=0;i<source.count;i++) {
             boolean result = reader.next();
             assert result;
@@ -713,23 +678,15 @@ public final class BKDWriter {
               leftPointWriter.append(packedValue, ord, docID);
             }
           }
-          success = true;
-        } finally {
-          if (success) {
-            IOUtils.close(reader, leftPointWriter, rightPointWriter);
-          } else {
-            IOUtils.closeWhileHandlingException(reader, leftPointWriter, rightPointWriter);
-            // nocommit we must also destroy all prior writers here (so temp files are removed)
-          }
+
+          leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
+          rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);
+
+          assert rightCount == nextRightCount: "rightCount=" + rightCount + " nextRightCount=" + nextRightCount;
         }
-
-        leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
-        rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);
-
-        assert rightCount == nextRightCount: "rightCount=" + rightCount + " nextRightCount=" + nextRightCount;
       }
 
-      System.out.println("pointCount=" + pointCount);
+      //System.out.println("pointCount=" + pointCount);
       ordBitSet.clear(0, pointCount);
 
       // Recurse on left tree:
@@ -739,7 +696,6 @@ public final class BKDWriter {
             splitPackedValues, leafBlockFPs);
       for(int dim=0;dim<numDims;dim++) {
         if (dim != splitDim) {
-          // nocommit need try/finally monster around this?
           leftSlices[dim].writer.destroy();
         }
       }
@@ -751,23 +707,17 @@ public final class BKDWriter {
             splitPackedValues, leafBlockFPs);
       for(int dim=0;dim<numDims;dim++) {
         if (dim != splitDim) {
-          // nocommit need try/finally monster around this?
           rightSlices[dim].writer.destroy();
         }
       }
-      
-      // nocommit make sure we destroy on exception
     }
   }
 
   PointWriter getPointWriter(long count) throws IOException {
-    System.out.println("W: getPointWriter count=" + count);
     if (count <= maxPointsSortInHeap) {
-      System.out.println("  heap");
       int size = Math.toIntExact(count);
       return new HeapPointWriter(size, size, packedBytesLength);
     } else {
-      System.out.println("  offline");
       return new OfflinePointWriter(tempDir, tempFileNamePrefix, count, packedBytesLength);
     }
   }
