@@ -11,7 +11,7 @@ import org.antlr.v4.runtime.misc.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 class JavascriptLexer extends Lexer {
-  static { RuntimeMetaData.checkVersion("4.5", RuntimeMetaData.VERSION); }
+  static { RuntimeMetaData.checkVersion("4.5.1", RuntimeMetaData.VERSION); }
 
   protected static final DFA[] _decisionToDFA;
   protected static final PredictionContextCache _sharedContextCache =

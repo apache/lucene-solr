@@ -211,8 +211,8 @@ Other
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
   (Uwe Schindler, Dawid Weiss)
 
-* LUCENE-6417: Upgrade ANTLR used in expressions module to version 4.5.
-  (Jack Conradson, Uwe Schindler)
+* LUCENE-6417, LUCENE-6830: Upgrade ANTLR used in expressions module
+  to version 4.5.1-1.  (Jack Conradson, Uwe Schindler)
 
 * LUCENE-6729: Upgrade ASM used in expressions module to version 5.0.4.
   (Uwe Schindler)
