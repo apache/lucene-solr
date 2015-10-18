@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.TrieDateField;
@@ -12,8 +13,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -945,6 +944,72 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '1']");
   }
 
+  public void testAtomicUpdatesOnDateFields() throws Exception {
+    String[] dateFieldNames = {"simple_tdt1", "simple_tdts", "simple_tdtdv1", "simple_tdtdvs"};
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "6");
+    // Even adding a single value here for the multiValue field causes the update later on to fail
+    doc.setField("simple_tdt1", "1986-01-01T00:00:00Z"); // single-valued
+    doc.setField("simple_tdts", new String[] {"1986-01-01T00:00:00Z"});
+    doc.setField("simple_tdtdv", "1986-01-01T00:00:00Z");
+    doc.setField("simple_tdtdvs", new String[] {"1986-01-01T00:00:00Z"});
+    // An independent field that we want to update later on
+    doc.setField("other_i", "42");
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "id:6"), "boolean(//result/doc/date[@name='simple_tdt1'])");
+
+
+    for (String dateFieldName : dateFieldNames) {
+      // none (this can fail with Invalid Date String exception)
+      doc = new SolrInputDocument();
+      doc.setField("id", "6");
+      doc.setField("other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
+      assertU(adoc(doc));
+
+      if (dateFieldName.endsWith("s"))  {
+        // add
+        doc = new SolrInputDocument();
+        doc.setField("id", "6");
+        doc.setField("other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
+        doc.setField(dateFieldName, ImmutableMap.of("add", "1987-01-01T00:00:00Z"));
+        assertU(adoc(doc));
+
+        // remove
+        doc = new SolrInputDocument();
+        doc.setField("id", "6");
+        doc.setField("other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
+        doc.setField(dateFieldName, ImmutableMap.of("remove", "1987-01-01T00:00:00Z"));
+        assertU(adoc(doc));
+      } else {
+        // set
+        doc = new SolrInputDocument();
+        doc.setField("id", "6");
+        doc.setField("other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
+        doc.setField(dateFieldName, ImmutableMap.of("set", "1987-01-01T00:00:00Z"));
+        assertU(adoc(doc));
+
+        // unset
+        doc = new SolrInputDocument();
+        doc.setField("id", "6");
+        doc.setField("other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
+        doc.setField(dateFieldName, map("set", null));
+        assertU(adoc(doc));
+      }
+
+      assertU(commit());
+      if (dateFieldName.endsWith("s"))  {
+        assertQ(req("q", "id:6"), "//result/doc[count(arr[@name='" + dateFieldName + "'])=1]");
+        assertQ(req("q", "id:6"), "//result/doc/arr[@name='" + dateFieldName + "'][count(date)=1]");
+      } else {
+        assertQ(req("q", "id:6"), "//result/doc[count(date[@name='" + dateFieldName + "'])=0]");
+      }
+    }
+
+  }
+  
   @Test
   public void testInvalidOperation() {
     SolrInputDocument doc;

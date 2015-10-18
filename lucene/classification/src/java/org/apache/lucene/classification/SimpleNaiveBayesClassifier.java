@@ -222,7 +222,6 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
           result.add(charTermAttribute.toString());
         }
         tokenStream.end();
-        tokenStream.close();
       }
     }
     return result.toArray(new String[result.size()]);

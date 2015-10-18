@@ -88,6 +88,9 @@ New Features
   fast, very accurate query to find all indexed points within an
   earth-surface shape (Karl Wright, Mike McCandless)
 
+* LUCENE-6838: Added IndexSearcher#getQueryCache and #getQueryCachingPolicy.
+  (Adrien Grand)
+
 API Changes
 
 * LUCENE-6590: Query.setBoost(), Query.getBoost() and Query.clone() are gone.
@@ -110,6 +113,9 @@ API Changes
   Query objects instead of Filters, and the BooleanClause.Occur.FILTER clause in
   order to let Lucene know that a Query should be used for filtering but not
   scoring.
+
+* LUCENE-6939: SpanOrQuery.addClause is now deprecated, clauses should all be
+  provided at construction time. (Paul Elschot via Adrien Grand)
 
 Optimizations
 
@@ -205,8 +211,8 @@ Other
 * LUCENE-6174: Improve "ant eclipse" to select right JRE for building.
   (Uwe Schindler, Dawid Weiss)
 
-* LUCENE-6417: Upgrade ANTLR used in expressions module to version 4.5.
-  (Jack Conradson, Uwe Schindler)
+* LUCENE-6417, LUCENE-6830: Upgrade ANTLR used in expressions module
+  to version 4.5.1-1.  (Jack Conradson, Uwe Schindler)
 
 * LUCENE-6729: Upgrade ASM used in expressions module to version 5.0.4.
   (Uwe Schindler)

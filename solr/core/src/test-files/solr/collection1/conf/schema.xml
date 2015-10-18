@@ -83,7 +83,7 @@
       -->
     <fieldType name="date" class="solr.TrieDateField" precisionStep="0"/>
     <fieldType name="tdate" class="solr.TrieDateField" precisionStep="6"/>
-    <fieldType name="tdatedv" class="solr.TrieDateField" precisionStep="6" docValues="true" multiValued="true"/>
+    <fieldType name="tdatedv" class="solr.TrieDateField" precisionStep="6" docValues="true"/>
 
     <fieldType name="dateRange" class="solr.DateRangeField" />
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
@@ -608,7 +608,11 @@
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
    <dynamicField name="*_tdt1" type="tdate"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_tdtdv" type="tdatedv"  indexed="true"  stored="true"/>
+   <dynamicField name="*_tdtdv1" type="tdatedv"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_drf" type="dateRange"  indexed="true"  stored="true"/>
+
+   <dynamicField name="*_tdts" type="tdate"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_tdtdvs" type="tdatedv"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>

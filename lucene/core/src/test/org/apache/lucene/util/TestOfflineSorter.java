@@ -62,6 +62,14 @@ public class TestOfflineSorter extends LuceneTestCase {
     return dir;
   }
 
+  private static Directory newFSDirectoryNoVirusScanner() {
+    Directory dir = newFSDirectory(createTempDir());
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
+  }
+
   public void testEmpty() throws Exception {
     try (Directory dir = newDirectoryNoVirusScanner()) {
         checkSort(dir, new OfflineSorter(dir, "foo"), new byte [][] {});
@@ -97,7 +105,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   @Nightly
   public void testLargerRandom() throws Exception {
     // Sort 100MB worth of data with 15mb buffer.
-    try (Directory dir = newDirectoryNoVirusScanner()) {
+    try (Directory dir = newFSDirectoryNoVirusScanner()) {
       checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(16), OfflineSorter.MAX_TEMPFILES), 
                 generateRandom((int)OfflineSorter.MB * 100));
     }

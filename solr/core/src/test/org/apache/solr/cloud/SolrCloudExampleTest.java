@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * this test is useful for catching regressions in indexing the example docs in collections that
  * use data-driven schema and managed schema features provided by configsets/data_driven_schema_configs.
  */
+@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8135")
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
   protected static final transient Logger log = LoggerFactory.getLogger(SolrCloudExampleTest.class);

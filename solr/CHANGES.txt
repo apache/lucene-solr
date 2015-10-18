@@ -118,6 +118,9 @@ Other Changes
 
 * SOLR-8132: HDFSDirectoryFactory now defaults to using the global block cache. (Mark Miller)
 
+* SOLR-8114: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -271,6 +274,14 @@ Bug Fixes
   (Gregory Chanan)
 
 * SOLR-8107: bin/solr -f should use exec to start the JVM (Martijn Koster via Timothy Potter)
+
+* SOLR-8050: Partial update on document with multivalued date field fails to parse date and can
+  also fail to remove dates in some cases. (Burkhard Buelte, Luc Vanlerberghe, shalin)
+
+* SOLR-8167: Authorization framework does not work with POST params (noble)
+
+* SOLR-8162: JmxMonitoredMap#clear triggers a query on all the MBeans thus generating lots of warnings.
+  (Marius Dumitru Florea, shalin)
   
 Optimizations
 ----------------------

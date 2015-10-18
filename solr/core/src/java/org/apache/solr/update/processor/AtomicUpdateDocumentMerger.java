@@ -124,11 +124,13 @@ public class AtomicUpdateDocumentMerger {
   }
   
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
-    toDoc.setField(sif.getName(), fieldVal, sif.getBoost());
+    SchemaField sf = schema.getField(sif.getName());
+    toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal), sif.getBoost());
   }
 
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
-    toDoc.addField(sif.getName(), fieldVal, sif.getBoost());
+    SchemaField sf = schema.getField(sif.getName());
+    toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal), sif.getBoost());
   }
 
   protected void doInc(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -159,18 +161,19 @@ public class AtomicUpdateDocumentMerger {
       toDoc.setField(sif.getName(),  result, sif.getBoost());
     }
   }
-  
+
   protected void doRemove(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
-    if(existingField == null) return;
+    if (existingField == null) return;
     SchemaField sf = schema.getField(name);
 
     if (sf != null) {
       final Collection<Object> original = existingField.getValues();
       if (fieldVal instanceof Collection) {
-        for (Object object : (Collection)fieldVal){
-          original.remove(sf.getType().toNativeType(object));
+        for (Object object : (Collection) fieldVal) {
+          Object o = sf.getType().toNativeType(object);
+          original.remove(o);
         }
       } else {
         original.remove(sf.getType().toNativeType(fieldVal));

@@ -87,6 +87,7 @@ final class Multiset<T> extends AbstractCollection<T> {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean remove(Object o) {
     final Integer count = map.get(o);
     if (count == null) {

@@ -141,7 +141,8 @@ public class JmxMonitoredMap<K, V> extends
       
       Set<ObjectName> objectNames = null;
       try {
-        objectNames = server.queryNames(null, exp);
+        ObjectName instance = new ObjectName(jmxRootName + ":*");
+        objectNames = server.queryNames(instance, exp);
       } catch (Exception e) {
         LOG.warn("Exception querying for mbeans", e);
       }
