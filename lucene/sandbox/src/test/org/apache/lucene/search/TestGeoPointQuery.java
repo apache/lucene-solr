@@ -45,10 +45,8 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
 
-  // error threshold for point-distance queries (in meters)
-  // @todo haversine is sloppy, would be good to have a better heuristic for
-  // determining the possible haversine error
-  private static final int DISTANCE_ERR = 1000;
+  // error threshold for point-distance queries (in percent) NOTE: Guideline from USGS
+  private static final double DISTANCE_PCT_ERR = 0.005;
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
@@ -199,7 +197,16 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     double delta = StrictMath.abs(ptDistance - radius);
 
     // if its within the distance error then it can be wrong
-    return delta < DISTANCE_ERR;
+    return delta < (ptDistance*DISTANCE_PCT_ERR);
+  }
+
+  // nocommit fixme!
+  @AwaitsFix(bugUrl = "Fix Tolerance on GeoPolygonSearch tests")
+  public void testExplicitFailure() throws Exception {
+    TopDocs td = polygonQuery(new double[]{-116.6911, -116.6911, -116.39189, -116.39189, -116.6911},
+        new double[]{-20.357460000000003, -19.424280000000003, -19.424280000000003, -20.357460000000003, -20.357460000000003},
+        20);
+    assertEquals("Explicit Failure", 2, td.totalHits);
   }
 
   public void testRectCrossesCircle() throws Exception {
@@ -275,6 +282,14 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     TopDocs td = bboxQuery(-96.4538113027811, 32.7559529921407, -96.7706036567688, 32.7756745755423, 20);
     // 3 single valued docs + 2 multi-valued docs
     assertEquals("testMultiValuedQuery failed", 5, td.totalHits);
+  }
+
+  public void testTooBigRadius() throws Exception {
+    try {
+      geoDistanceQuery(0.0, 85.0, 4000000, 20);
+    } catch (IllegalArgumentException e) {
+      e.getMessage().contains("exceeds maxRadius");
+    }
   }
 
   /**

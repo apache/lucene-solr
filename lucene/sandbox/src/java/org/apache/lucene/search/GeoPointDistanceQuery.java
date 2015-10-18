@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.util.SloppyMath;
 
 /** Implements a simple point distance query on a GeoPoint field. This is based on
  * {@link org.apache.lucene.search.GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
@@ -50,6 +51,14 @@ public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   private GeoPointDistanceQuery(final String field, GeoRect bbox, final double centerLon,
                                 final double centerLat, final double radiusMeters) {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+    {
+      // check longitudinal overlap (limits radius)
+      final double maxRadius = SloppyMath.haversin(centerLat, centerLon, centerLat, (180.0 + centerLon) % 360)*1000.0;
+      if (radiusMeters > maxRadius) {
+        throw new IllegalArgumentException("radiusMeters " + radiusMeters + " exceeds maxRadius [" + maxRadius
+            + "] at location [" + centerLon + " " + centerLat + "]");
+      }
+    }
 
     if (GeoUtils.isValidLon(centerLon) == false) {
       throw new IllegalArgumentException("invalid centerLon " + centerLon);

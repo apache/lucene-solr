@@ -29,13 +29,13 @@ public class GeoRect {
       throw new IllegalArgumentException("invalid minLon " + minLon);
     }
     if (GeoUtils.isValidLon(maxLon) == false) {
-      throw new IllegalArgumentException("invalid maxLon " + minLon);
+      throw new IllegalArgumentException("invalid maxLon " + maxLon);
     }
     if (GeoUtils.isValidLat(minLat) == false) {
       throw new IllegalArgumentException("invalid minLat " + minLat);
     }
     if (GeoUtils.isValidLat(maxLat) == false) {
-      throw new IllegalArgumentException("invalid maxLat " + minLat);
+      throw new IllegalArgumentException("invalid maxLat " + maxLat);
     }
     this.minLon = minLon;
     this.maxLon = maxLon;

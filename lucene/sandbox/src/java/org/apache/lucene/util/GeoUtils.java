@@ -25,9 +25,9 @@ import java.util.ArrayList;
  * @lucene.experimental
  */
 public final class GeoUtils {
-  public static final short BITS = 32;
-  private static final double LON_SCALE = ((0x1L<<BITS)-1)/360.0D;
-  private static final double LAT_SCALE = ((0x1L<<BITS)-1)/180.0D;
+  public static final short BITS = 31;
+  private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
+  private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
   public static final double TOLERANCE = 1E-6;
 
   /** Minimum longitude value. */
@@ -59,19 +59,19 @@ public final class GeoUtils {
   }
 
   private static long scaleLon(final double val) {
-    return (long) ((val-GeoProjectionUtils.MIN_LON) * LON_SCALE);
+    return (long) ((val-MIN_LON_INCL) * LON_SCALE);
   }
 
   private static long scaleLat(final double val) {
-    return (long) ((val-GeoProjectionUtils.MIN_LAT) * LAT_SCALE);
+    return (long) ((val-MIN_LAT_INCL) * LAT_SCALE);
   }
 
   private static double unscaleLon(final long val) {
-    return (val / LON_SCALE) + GeoProjectionUtils.MIN_LON;
+    return (val / LON_SCALE) + MIN_LON_INCL;
   }
 
   private static double unscaleLat(final long val) {
-    return (val / LAT_SCALE) + GeoProjectionUtils.MIN_LAT;
+    return (val / LAT_SCALE) + MIN_LAT_INCL;
   }
 
   public static double compare(final double v1, final double v2) {
@@ -338,7 +338,7 @@ public final class GeoUtils {
   public static GeoRect circleToBBox(final double centerLon, final double centerLat, final double radiusMeters) {
     final double radLat = StrictMath.toRadians(centerLat);
     final double radLon = StrictMath.toRadians(centerLon);
-    double radDistance = (radiusMeters + 12000) / GeoProjectionUtils.SEMIMAJOR_AXIS;
+    double radDistance = radiusMeters / GeoProjectionUtils.SEMIMAJOR_AXIS;
     double minLat = radLat - radDistance;
     double maxLat = radLat + radDistance;
     double minLon;

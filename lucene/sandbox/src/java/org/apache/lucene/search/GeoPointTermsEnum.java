@@ -53,13 +53,13 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   GeoPointTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
                     final double maxLon, final double maxLat) {
     super(tenum);
-    DETAIL_LEVEL = (short)(((GeoUtils.BITS<<1)-computeMaxShift())/2);
     final long rectMinHash = GeoUtils.mortonHash(minLon, minLat);
     final long rectMaxHash = GeoUtils.mortonHash(maxLon, maxLat);
     this.minLon = GeoUtils.mortonUnhashLon(rectMinHash);
     this.minLat = GeoUtils.mortonUnhashLat(rectMinHash);
     this.maxLon = GeoUtils.mortonUnhashLon(rectMaxHash);
     this.maxLat = GeoUtils.mortonUnhashLat(rectMaxHash);
+    DETAIL_LEVEL = (short)(((GeoUtils.BITS<<1)-computeMaxShift())/2);
 
     computeRange(0L, (short) (((GeoUtils.BITS) << 1) - 1));
     Collections.sort(rangeBounds);

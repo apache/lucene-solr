@@ -672,7 +672,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                 verifyHits = new VerifyHits() {
                     @Override
                     protected Boolean shouldMatch(double pointLat, double pointLon) {
-                      return polyRectContainsPoint(bbox, pointLat, pointLon);
+                      return GeoUtils.pointInPolygon(lons, lats, pointLat, pointLon);
+//                      return polyRectContainsPoint(bbox, pointLat, pointLon);
                     }
 
                     @Override
