@@ -279,6 +279,8 @@ Bug Fixes
 
 * SOLR-8167: Authorization framework does not work with POST params (noble)
 
+* SOLR-8162: JmxMonitoredMap#clear triggers a query on all the MBeans thus generating lots of warnings.
+  (Marius Dumitru Florea, shalin)
   
 Optimizations
 ----------------------
