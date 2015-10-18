@@ -118,6 +118,8 @@ Other Changes
 
 * SOLR-8132: HDFSDirectoryFactory now defaults to using the global block cache. (Mark Miller)
 
+* SOLR-8114: in Grouping.java rename groupSort to withinGroupSort (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

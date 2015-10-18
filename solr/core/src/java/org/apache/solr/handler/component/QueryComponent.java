@@ -461,7 +461,7 @@ public class QueryComponent extends SearchComponent
         Grouping grouping =
             new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, groupingSpec.isMain());
         grouping.setSort(groupingSpec.getGroupSort())
-            .setGroupSort(groupingSpec.getSortWithinGroup())
+            .setWithinGroupSort(groupingSpec.getSortWithinGroup())
             .setDefaultFormat(groupingSpec.getResponseFormat())
             .setLimitDefault(limitDefault)
             .setDefaultTotalCount(defaultTotalCount)
