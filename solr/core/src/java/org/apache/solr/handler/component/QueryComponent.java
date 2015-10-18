@@ -460,7 +460,7 @@ public class QueryComponent extends SearchComponent
         int limitDefault = cmd.getLen(); // this is normally from "rows"
         Grouping grouping =
             new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, groupingSpec.isMain());
-        grouping.setSort(groupingSpec.getGroupSort())
+        grouping.setGroupSort(groupingSpec.getGroupSort())
             .setWithinGroupSort(groupingSpec.getSortWithinGroup())
             .setDefaultFormat(groupingSpec.getResponseFormat())
             .setLimitDefault(limitDefault)

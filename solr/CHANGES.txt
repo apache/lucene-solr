@@ -118,7 +118,8 @@ Other Changes
 
 * SOLR-8132: HDFSDirectoryFactory now defaults to using the global block cache. (Mark Miller)
 
-* SOLR-8114: in Grouping.java rename groupSort to withinGroupSort (Christine Poerschke)
+* SOLR-8114: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
+  (Christine Poerschke)
 
 ==================  5.4.0 ==================
 
