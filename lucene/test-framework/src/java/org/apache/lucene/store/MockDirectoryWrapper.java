@@ -440,7 +440,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (randomState.nextDouble() < randomIOExceptionRate) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception" + (message == null ? "" : " (" + message + ")"));
-        new Throwable().printStackTrace(System.out);
       }
       throw new IOException("a random IOException" + (message == null ? "" : " (" + message + ")"));
     }
@@ -567,9 +566,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
     
-    if (crashed) {
-      throw new IOException("cannot createOutput after crash");
-    }
     unSyncedFiles.add(name);
     createdFiles.add(name);
     
@@ -607,6 +603,39 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
   
+  @Override
+  public synchronized IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    maybeThrowDeterministicException();
+    maybeThrowIOExceptionOnOpen("temp: prefix=" + prefix + " suffix=" + suffix);
+    maybeYield();
+    if (failOnCreateOutput) {
+      maybeThrowDeterministicException();
+    }
+    if (crashed) {
+      throw new IOException("cannot createTempOutput after crash");
+    }
+    init();
+    
+    IndexOutput delegateOutput = in.createTempOutput(prefix, suffix, LuceneTestCase.newIOContext(randomState, context));
+    String name = delegateOutput.getName();
+    unSyncedFiles.add(name);
+    createdFiles.add(name);
+    final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
+    addFileHandle(io, name, Handle.Output);
+    openFilesForWrite.add(name);
+    
+    // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
+    if (throttling == Throttling.ALWAYS || 
+        (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
+      }
+      return throttledOutput.newFromDelegate(io);
+    } else {
+      return io;
+    }
+  }
+
   private static enum Handle {
     Input, Output, Slice
   }

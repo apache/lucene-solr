@@ -43,7 +43,7 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
  * @lucene.experimental
  * @lucene.internal
  */
-public final class OfflineSorter {
+public class OfflineSorter {
 
   /** Convenience constant for megabytes */
   public final static long MB = 1024 * 1024;
@@ -237,7 +237,7 @@ public final class OfflineSorter {
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
 
     boolean success = false;
-    try (ByteSequencesReader is = new ByteSequencesReader(dir.openInput(inputFileName, IOContext.READONCE))) {
+    try (ByteSequencesReader is = getReader(dir.openInput(inputFileName, IOContext.READONCE))) {
 
       int lineCount;
       while ((lineCount = readPartition(is)) > 0) {
@@ -284,8 +284,9 @@ public final class OfflineSorter {
   protected String sortPartition(TrackingDirectoryWrapper trackingDir) throws IOException {
     BytesRefArray data = this.buffer;
 
-    try (IndexOutput tempFile = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT)) {
-      ByteSequencesWriter out = new ByteSequencesWriter(tempFile);
+    try (IndexOutput tempFile = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT);
+         ByteSequencesWriter out = getWriter(tempFile);) {
+      
       BytesRef spare;
 
       long start = System.currentTimeMillis();
@@ -320,16 +321,18 @@ public final class OfflineSorter {
 
     String newSegmentName = null;
 
-    try (IndexOutput out = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT)) {
-      newSegmentName = out.getName();
-      ByteSequencesWriter writer = new ByteSequencesWriter(out);
+    try (IndexOutput out = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT);
+         ByteSequencesWriter writer = getWriter(out);) {
 
+      newSegmentName = out.getName();
+      
       // Open streams and read the top for each file
       for (int i = 0; i < segments.size(); i++) {
-        streams[i] = new ByteSequencesReader(dir.openInput(segments.get(i), IOContext.READONCE));
-        byte[] line = streams[i].read();
-        assert line != null;
-        queue.insertWithOverflow(new FileAndTop(i, line));
+        streams[i] = getReader(dir.openInput(segments.get(i), IOContext.READONCE));
+        BytesRefBuilder bytes = new BytesRefBuilder();
+        boolean result = streams[i].read(bytes);
+        assert result;
+        queue.insertWithOverflow(new FileAndTop(i, bytes));
       }
   
       // Unix utility sort() uses ordered array of files to pick the next line from, updating
@@ -363,13 +366,12 @@ public final class OfflineSorter {
   /** Read in a single partition of data */
   int readPartition(ByteSequencesReader reader) throws IOException {
     long start = System.currentTimeMillis();
-    final BytesRef scratch = new BytesRef();
-    while ((scratch.bytes = reader.read()) != null) {
-      scratch.length = scratch.bytes.length; 
-      buffer.append(scratch);
+    final BytesRefBuilder scratch = new BytesRefBuilder();
+    while (reader.read(scratch)) {
+      buffer.append(scratch.get());
       // Account for the created objects.
       // (buffer slots do not account to buffer size.) 
-      if (ramBufferSize.bytes < bufferBytesUsed.get()) {
+      if (bufferBytesUsed.get() > ramBufferSize.bytes) {
         break;
       }
     }
@@ -381,11 +383,20 @@ public final class OfflineSorter {
     final int fd;
     final BytesRefBuilder current;
 
-    FileAndTop(int fd, byte[] firstLine) {
+    FileAndTop(int fd, BytesRefBuilder firstLine) {
       this.fd = fd;
-      this.current = new BytesRefBuilder();
-      this.current.copyBytes(firstLine, 0, firstLine.length);
+      this.current = firstLine;
     }
+  }
+
+  /** Subclasses can override to change how byte sequences are written to disk. */
+  protected ByteSequencesWriter getWriter(IndexOutput out) throws IOException {
+    return new ByteSequencesWriter(out);
+  }
+
+  /** Subclasses can override to change how byte sequences are read from disk. */
+  protected ByteSequencesReader getReader(IndexInput in) throws IOException {
+    return new ByteSequencesReader(in);
   }
 
   /**
@@ -393,7 +404,7 @@ public final class OfflineSorter {
    * Complementary to {@link ByteSequencesReader}.
    */
   public static class ByteSequencesWriter implements Closeable {
-    private final IndexOutput out;
+    protected final IndexOutput out;
 
     /** Constructs a ByteSequencesWriter to the provided DataOutput */
     public ByteSequencesWriter(IndexOutput out) {
@@ -448,7 +459,7 @@ public final class OfflineSorter {
    * Complementary to {@link ByteSequencesWriter}.
    */
   public static class ByteSequencesReader implements Closeable {
-    private final IndexInput in;
+    protected final IndexInput in;
 
     /** Constructs a ByteSequencesReader from the provided IndexInput */
     public ByteSequencesReader(IndexInput in) {
@@ -475,29 +486,6 @@ public final class OfflineSorter {
       ref.setLength(length);
       in.readBytes(ref.bytes(), 0, length);
       return true;
-    }
-
-    /**
-     * Reads the next entry and returns it if successful.
-     * 
-     * @see #read(BytesRefBuilder)
-     * 
-     * @return Returns <code>null</code> if EOF occurred before the next entry
-     * could be read.
-     * @throws EOFException if the file ends before the full sequence is read.
-     */
-    public byte[] read() throws IOException {
-      short length;
-      try {
-        length = in.readShort();
-      } catch (EOFException e) {
-        return null;
-      }
-
-      assert length >= 0 : "Sanity: sequence length < 0: " + length;
-      byte[] result = new byte[length];
-      in.readBytes(result, 0, length);
-      return result;
     }
 
     /**

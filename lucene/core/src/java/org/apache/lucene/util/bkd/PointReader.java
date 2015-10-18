@@ -20,13 +20,21 @@ package org.apache.lucene.util.bkd;
 import java.io.Closeable;
 import java.io.IOException;
 
-/** Iterates through all points written with a {@link PointWriter}, and abstracts away
- *  whether points a read from disk or simple arrays in heap. */
+/** One pass iterator through all points previously written with a
+ *  {@link PointWriter}, abstracting away whether points a read
+ *  from (offline) disk or simple arrays in heap. */
 interface PointReader extends Closeable {
+
+  /** Returns false once iteration is done, else true. */
   boolean next() throws IOException;
-  // nocommit maybe caller should pass in reused buffer?  reduces GC on recursion...?
+
+  /** Returns the packed byte[] value */
   byte[] packedValue();
+
+  /** Point ordinal */
   long ord();
+
+  /** DocID for this point */
   int docID();
 }
 

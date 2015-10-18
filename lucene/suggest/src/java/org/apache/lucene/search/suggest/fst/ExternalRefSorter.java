@@ -24,6 +24,7 @@ import java.util.Comparator;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
@@ -105,7 +106,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
    */
   class ByteSequenceIterator implements BytesRefIterator {
     private final OfflineSorter.ByteSequencesReader reader;
-    private BytesRef scratch = new BytesRef();
+    private BytesRefBuilder scratch = new BytesRefBuilder();
     
     public ByteSequenceIterator(OfflineSorter.ByteSequencesReader reader) {
       this.reader = reader;
@@ -118,17 +119,15 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
       }
       boolean success = false;
       try {
-        byte[] next = reader.read();
-        if (next != null) {
-          scratch.bytes = next;
-          scratch.length = next.length;
-          scratch.offset = 0;
-        } else {
+        if (reader.read(scratch) == false) {
           IOUtils.close(reader);
           scratch = null;
         }
         success = true;
-        return scratch;
+        if (scratch == null) {
+          return null;
+        }
+        return scratch.get();
       } finally {
         if (!success) {
           IOUtils.closeWhileHandlingException(reader);

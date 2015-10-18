@@ -25,10 +25,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
-// nocommit rename generic stuff (Util, Reader, Writer) w/ BKD prefix even though they are package private
-
-// nocommit the try/finally/delete-stuff is frustrating
-
 /** Handles intersection of an multi-dimensional shape in byte[] space with a block KD-tree previously written with {@link BKDWriter}.
  *
  * @lucene.experimental */
@@ -196,7 +192,8 @@ public final class BKDReader implements Accountable {
       // How many points are stored in this leaf cell:
       int count = state.in.readVInt();
 
-      // nocommit can we get this back?
+      // TODO: we could maybe pollute the IntersectVisitor API with a "grow" method if this maybe helps perf
+      // enough (it did before, esp. for the 1D case):
       //state.docs.grow(count);
       int docID = 0;
       for(int i=0;i<count;i++) {
@@ -218,10 +215,11 @@ public final class BKDReader implements Accountable {
       int splitDim = splitPackedValues[address] & 0xff;
       assert splitDim < numDims;
 
-      // nocommit can we alloc & reuse this up front?
+      // TODO: can we alloc & reuse this up front?
       byte[] splitValue = new byte[bytesPerDim];
       System.arraycopy(splitPackedValues, address+1, splitValue, 0, bytesPerDim);
 
+      // TODO: can we alloc & reuse this up front?
       byte[] splitPackedValue = new byte[packedBytesLength];
 
       if (BKDUtil.compare(bytesPerDim, state.minPacked, splitDim, splitValue, 0) <= 0) {

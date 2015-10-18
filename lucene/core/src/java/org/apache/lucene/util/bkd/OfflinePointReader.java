@@ -17,20 +17,17 @@ package org.apache.lucene.util.bkd;
  * limitations under the License.
  */
 
-import java.io.BufferedInputStream;
+import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class OfflinePointReader implements PointReader {
-  final IndexInput in;
+final class OfflinePointReader extends OfflineSorter.ByteSequencesReader implements PointReader {
   long countLeft;
   private final byte[] packedValue;
   private long ord;
@@ -38,8 +35,12 @@ final class OfflinePointReader implements PointReader {
   final int bytesPerDoc;
 
   OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length) throws IOException {
+    this(tempDir.openInput(tempFileName, IOContext.READONCE), packedBytesLength, start, length);
+  }
+
+  OfflinePointReader(IndexInput in, int packedBytesLength, long start, long length) throws IOException {
+    super(in);
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
-    in = tempDir.openInput(tempFileName, IOContext.READONCE);
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     this.countLeft = length;
@@ -48,13 +49,32 @@ final class OfflinePointReader implements PointReader {
 
   @Override
   public boolean next() throws IOException {
-    if (countLeft == 0) {
+    if (countLeft >= 0) {
+      if (countLeft == 0) {
+        return false;
+      }
+      countLeft--;
+    }
+    try {
+      in.readBytes(packedValue, 0, packedValue.length);
+    } catch (EOFException eofe) {
+      assert countLeft == -1;
       return false;
     }
-    countLeft--;
-    in.readBytes(packedValue, 0, packedValue.length);
     ord = in.readLong();
     docID = in.readInt();
+    return true;
+  }
+
+  @Override
+  public boolean read(BytesRefBuilder ref) throws IOException {
+    ref.grow(bytesPerDoc);
+    try {
+      in.readBytes(ref.bytes(), 0, bytesPerDoc);
+    } catch (EOFException eofe) {
+      return false;
+    }
+    ref.setLength(bytesPerDoc);
     return true;
   }
 

@@ -17,36 +17,32 @@ package org.apache.lucene.util.bkd;
  * limitations under the License.
  */
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import org.apache.lucene.store.ByteArrayDataOutput;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class OfflinePointWriter implements PointWriter {
+final class OfflinePointWriter extends OfflineSorter.ByteSequencesWriter implements PointWriter {
 
   final Directory tempDir;
-  final IndexOutput out;
-  final long count;
   final int packedBytesLength;
   final int bytesPerDoc;
-  private long countWritten;
+  private long count;
   private boolean closed;
 
-  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, long count, int packedBytesLength) throws IOException {
+  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength) throws IOException {
+    this(tempDir, tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT), packedBytesLength);
+  }
+
+  public OfflinePointWriter(Directory tempDir, IndexOutput out, int packedBytesLength) {
+    super(out);
     this.tempDir = tempDir;
-    out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
     this.packedBytesLength = packedBytesLength;
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
-    this.count = count;
   }
     
   @Override
@@ -55,7 +51,16 @@ final class OfflinePointWriter implements PointWriter {
     out.writeBytes(packedValue, 0, packedValue.length);
     out.writeLong(ord);
     out.writeInt(docID);
-    countWritten++;
+    count++;
+  }
+
+  @Override
+  public void write(byte[] bytes, int off, int len) throws IOException {
+    if (len != bytesPerDoc) {
+      throw new IllegalArgumentException("len=" + len + " bytesPerDoc=" + bytesPerDoc);
+    }
+    out.writeBytes(bytes, off, len);
+    count++;
   }
 
   @Override
@@ -66,11 +71,8 @@ final class OfflinePointWriter implements PointWriter {
 
   @Override
   public void close() throws IOException {
+    super.close();
     closed = true;
-    out.close();
-    if (count != countWritten) {
-      throw new IllegalStateException("wrote " + countWritten + " values, but expected " + count);
-    }
   }
 
   @Override

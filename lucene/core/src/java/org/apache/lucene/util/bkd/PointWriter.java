@@ -25,7 +25,7 @@ import java.io.IOException;
  *  in heap. */
 interface PointWriter extends Closeable {
   void append(byte[] packedValue, long ord, int docID) throws IOException;
-  PointReader getReader(long startDoc) throws IOException;
+  PointReader getReader(long startPoint) throws IOException;
   void destroy() throws IOException;
 }
 

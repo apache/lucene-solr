@@ -17,8 +17,10 @@ package org.apache.lucene.util.bkd;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
@@ -28,6 +30,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -46,8 +49,8 @@ public class TestBKD extends LuceneTestCase {
 
       long indexFP;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-          indexFP = w.finish(out);
-        }
+        indexFP = w.finish(out);
+      }
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
@@ -348,21 +351,76 @@ public class TestBKD extends LuceneTestCase {
     }
   }
 
-  // nocommit testAccountableHasDelegate?
+  /** Make sure we close open files, delete temp files, etc., on exception */
+  public void testWithExceptions() throws Exception {
+    int numDocs = atLeast(10000);
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int numDims = TestUtil.nextInt(random(), 1, 5);
 
-  // nocommit test on exception
+    byte[][][] docValues = new byte[numDocs][][];
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDims][];
+      for(int dim=0;dim<numDims;dim++) {
+        values[dim] = new byte[numBytesPerDim];
+        random().nextBytes(values[dim]);
+      }
+      docValues[docID] = values;
+    }
+
+    double maxMBHeap = 0.05;
+    // Keep retrying until we 1) we allow a big enough heap, and 2) we hit a random IOExc from MDW:
+    boolean done = false;
+    while (done == false) {
+      try (MockDirectoryWrapper dir = newMockFSDirectory(createTempDir())) {
+        try {
+          dir.setRandomIOExceptionRate(0.05);
+          dir.setRandomIOExceptionRateOnOpen(0.05);
+          if (dir instanceof MockDirectoryWrapper) {
+            dir.setEnableVirusScanner(false);
+          }
+          verify(dir, docValues, null, numDims, numBytesPerDim, 50, maxMBHeap);
+        } catch (IllegalArgumentException iae) {
+          // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
+          assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
+          System.out.println("  more heap");
+          maxMBHeap *= 1.25;
+        } catch (IOException ioe) {
+          if (ioe.getMessage().contains("a random IOException")) {
+            // BKDWriter should fully clean up after itself:
+            done = true;
+          } else {
+            throw ioe;
+          }
+        }
+
+        String[] files = dir.listAll();
+        assertTrue("files=" + Arrays.toString(files), files.length == 0 || Arrays.equals(files, new String[] {"extra0"}));
+      }
+    }
+  }
 
   public void testRandomBinaryTiny() throws Exception {
     doTestRandomBinary(10);
   }
 
-  public void testRandomBinarydMediumTiny() throws Exception {
+  public void testRandomBinarydMedium() throws Exception {
     doTestRandomBinary(10000);
   }
 
   @Nightly
   public void testRandomBinaryBig() throws Exception {
     doTestRandomBinary(200000);
+  }
+
+  public void testTooLittleHeap() throws Exception { 
+    try (Directory dir = getDirectory(0)) {
+      new BKDWriter(dir, "bkd", 1, 16, 1000000, 0.001);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+      assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
+    }
   }
 
   private void doTestRandomBinary(int count) throws Exception {
@@ -462,12 +520,28 @@ public class TestBKD extends LuceneTestCase {
 
   /** docIDs can be null, for the single valued case, else it maps value to docID */
   private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim) throws Exception {
-    int numValues = docValues.length;
-
     try (Directory dir = getDirectory(docValues.length)) {
-      int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
-      float maxMB = (float) 0.1 + (3*random().nextFloat());
-      BKDWriter w = new BKDWriter(dir, "tmp", numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
+      while (true) {
+        int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
+        double maxMB = (float) 0.1 + (3*random().nextDouble());
+        try {
+          verify(dir, docValues, docIDs, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
+          return;
+        } catch (IllegalArgumentException iae) {
+          // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry
+          assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
+        }
+      }
+    }
+  }
+
+  private void verify(Directory dir, byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim, int maxPointsInLeafNode, double maxMB) throws Exception {
+    int numValues = docValues.length;
+    if (VERBOSE) {
+      System.out.println("TEST: numValues=" + numValues + " numDims=" + numDims + " numBytesPerDim=" + numBytesPerDim + " maxPointsInLeafNode=" + maxPointsInLeafNode + " maxMB=" + maxMB);
+    }
+    long indexFP;
+    try (BKDWriter w = new BKDWriter(dir, "tmp", numDims, numBytesPerDim, maxPointsInLeafNode, maxMB)) {
 
       byte[] scratch = new byte[numBytesPerDim*numDims];
       for(int ord=0;ord<numValues;ord++) {
@@ -489,38 +563,44 @@ public class TestBKD extends LuceneTestCase {
         w.add(scratch, docID);
       }
 
-      long indexFP;
+      boolean success = false;
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
         indexFP = w.finish(out);
+        success = true;
+      } finally {
+        if (success == false) {
+          IOUtils.deleteFilesIgnoringExceptions(dir, "bkd");
+        }
       }
+    }
 
-      try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
-        in.seek(indexFP);
-        BKDReader r = new BKDReader(in);
+    try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
+      in.seek(indexFP);
+      BKDReader r = new BKDReader(in);
 
-        int iters = atLeast(100);
-        for(int iter=0;iter<iters;iter++) {
-          if (VERBOSE) {
-            System.out.println("\nTEST: iter=" + iter);
+      int iters = atLeast(100);
+      for(int iter=0;iter<iters;iter++) {
+        if (VERBOSE) {
+          System.out.println("\nTEST: iter=" + iter);
+        }
+
+        // Random N dims rect query:
+        byte[][] queryMin = new byte[numDims][];
+        byte[][] queryMax = new byte[numDims][];    
+        for(int dim=0;dim<numDims;dim++) {    
+          queryMin[dim] = new byte[numBytesPerDim];
+          random().nextBytes(queryMin[dim]);
+          queryMax[dim] = new byte[numBytesPerDim];
+          random().nextBytes(queryMax[dim]);
+          if (BKDUtil.compare(numBytesPerDim, queryMin[dim], 0, queryMax[dim], 0) > 0) {
+            byte[] x = queryMin[dim];
+            queryMin[dim] = queryMax[dim];
+            queryMax[dim] = x;
           }
+        }
 
-          // Random N dims rect query:
-          byte[][] queryMin = new byte[numDims][];
-          byte[][] queryMax = new byte[numDims][];    
-          for(int dim=0;dim<numDims;dim++) {    
-            queryMin[dim] = new byte[numBytesPerDim];
-            random().nextBytes(queryMin[dim]);
-            queryMax[dim] = new byte[numBytesPerDim];
-            random().nextBytes(queryMax[dim]);
-            if (BKDUtil.compare(numBytesPerDim, queryMin[dim], 0, queryMax[dim], 0) > 0) {
-              byte[] x = queryMin[dim];
-              queryMin[dim] = queryMax[dim];
-              queryMax[dim] = x;
-            }
-          }
-
-          final BitSet hits = new BitSet();
-          r.intersect(new BKDReader.IntersectVisitor() {
+        final BitSet hits = new BitSet();
+        r.intersect(new BKDReader.IntersectVisitor() {
             @Override
             public void visit(int docID) {
               hits.set(docID);
@@ -567,36 +647,37 @@ public class TestBKD extends LuceneTestCase {
             }
           });
 
-          BitSet expected = new BitSet();
-          for(int ord=0;ord<numValues;ord++) {
-            boolean matches = true;
-            for(int dim=0;dim<numDims;dim++) {
-              byte[] x = docValues[ord][dim];
-              if (BKDUtil.compare(numBytesPerDim, x, 0, queryMin[dim], 0) < 0 ||
-                  BKDUtil.compare(numBytesPerDim, x, 0, queryMax[dim], 0) > 0) {
-                matches = false;
-                break;
-              }
-            }
-
-            if (matches) {
-              int docID;
-              if (docIDs == null) {
-                docID = ord;
-              } else {
-                docID = docIDs[ord];
-              }
-              expected.set(docID);
+        BitSet expected = new BitSet();
+        for(int ord=0;ord<numValues;ord++) {
+          boolean matches = true;
+          for(int dim=0;dim<numDims;dim++) {
+            byte[] x = docValues[ord][dim];
+            if (BKDUtil.compare(numBytesPerDim, x, 0, queryMin[dim], 0) < 0 ||
+                BKDUtil.compare(numBytesPerDim, x, 0, queryMax[dim], 0) > 0) {
+              matches = false;
+              break;
             }
           }
 
-          int limit = Math.max(expected.length(), hits.length());
-          for(int docID=0;docID<limit;docID++) {
-            assertEquals("docID=" + docID, expected.get(docID), hits.get(docID));
+          if (matches) {
+            int docID;
+            if (docIDs == null) {
+              docID = ord;
+            } else {
+              docID = docIDs[ord];
+            }
+            expected.set(docID);
           }
+        }
+
+        int limit = Math.max(expected.length(), hits.length());
+        for(int docID=0;docID<limit;docID++) {
+          assertEquals("docID=" + docID, expected.get(docID), hits.get(docID));
         }
       }
     }
+
+    dir.deleteFile("bkd");
   }
 
   private BigInteger randomBigInt(int numBytes) {
