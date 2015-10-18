@@ -214,7 +214,6 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         }
       }
       tokenStream.end();
-      tokenStream.close();
     }
 
     double score = 1 - Math.exp(-1 * Math.abs(threshold - output.doubleValue()) / threshold);
