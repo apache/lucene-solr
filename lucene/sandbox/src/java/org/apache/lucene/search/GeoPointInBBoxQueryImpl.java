@@ -66,8 +66,8 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
       final short shiftFactor;
 
       // compute diagonal radius
-      double midLon = (maxLon - minLon) * 0.5;
-      double midLat = (maxLat - minLat) * 0.5;
+      double midLon = (minLon + maxLon) * 0.5;
+      double midLat = (minLat + maxLat) * 0.5;
 
       if (SloppyMath.haversin(minLat, minLon, midLat, midLon)*1000 > 1000000) {
         shiftFactor = 5;

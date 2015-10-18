@@ -232,7 +232,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
     int iters = atLeast(100);
     for (int iter=0;iter<iters;iter++) {
-      GeoRect rect = randomRect(small, true);
+      // Don't allow dateline crossing when testing small:
+      GeoRect rect = randomRect(small, small == false);
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " bbox=" + rect);
@@ -598,8 +599,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
               VerifyHits verifyHits;
 
               if (random().nextBoolean()) {
-                // BBox 
-                final GeoRect bbox = randomRect(small, true);
+                // BBox: don't allow dateline crossing when testing small:
+                final GeoRect bbox = randomRect(small, small == false);
 
                 query = newBBoxQuery(FIELD_NAME, bbox);
 
