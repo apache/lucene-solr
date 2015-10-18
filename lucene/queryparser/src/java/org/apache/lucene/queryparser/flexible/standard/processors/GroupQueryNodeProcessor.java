@@ -51,6 +51,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.BooleanModifierNode
  * @see org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler
  * @deprecated use {@link BooleanQuery2ModifierNodeProcessor} instead
  */
+@Deprecated
 public class GroupQueryNodeProcessor implements QueryNodeProcessor {
 
   private ArrayList<QueryNode> queryNodeList;
