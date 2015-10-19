@@ -91,6 +91,9 @@ New Features
 * LUCENE-6838: Added IndexSearcher#getQueryCache and #getQueryCachingPolicy.
   (Adrien Grand)
 
+* LUCENE-6844: PayloadScoreQuery can include or exclude underlying span scores
+  from its score calculations (Bill Bell, Alan Woodward)
+
 API Changes
 
 * LUCENE-6590: Query.setBoost(), Query.getBoost() and Query.clone() are gone.
