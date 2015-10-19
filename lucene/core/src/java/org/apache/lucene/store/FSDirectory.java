@@ -307,7 +307,13 @@ public abstract class FSDirectory extends BaseDirectory {
     }
   }
 
-  // TODO: public?
+  /** Tries to delete any pending deleted files, and returns true if
+   *  there are still files that could not be deleted. */
+  public boolean checkPendingDeletions() throws IOException {
+    deletePendingFiles();
+    return pendingDeletes.isEmpty() == false;
+  }
+
   // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
   private void deletePendingFiles() throws IOException {
 

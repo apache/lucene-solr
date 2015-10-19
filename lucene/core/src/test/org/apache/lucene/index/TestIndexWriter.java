@@ -65,6 +65,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -2810,5 +2811,26 @@ public class TestIndexWriter extends LuceneTestCase {
     assertFalse(r2.getIndexCommit().getSegmentsFileName().equals(r.getIndexCommit().getSegmentsFileName()));
     IOUtils.close(r, r2, w, dir);
   }
+
+  // nocommit turn test on once we have VirusCheckingFS
+  /*
+  public void testWithPendingDeletions() throws Exception {
+    try (FSDirectory dir = FSDirectory.open(createTempDir())) {
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      IndexWriter w = new IndexWriter(dir, iwc);
+      w.commit();
+      IndexInput in = dir.openInput("segments_0", IOContext.DEFAULT);
+      w.addDocument(new Document());
+      w.close();
+      assertTrue(dir.checkPendingDeletions());
+      iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      try {
+        w = new IndexWriter(dir, iwc);
+      } catch (IllegalArgumentException iae) {
+        assertEquals("Directory still has pending deleted files", iae.getMessage());
+      }
+    }
+  }
+  */
 }
 

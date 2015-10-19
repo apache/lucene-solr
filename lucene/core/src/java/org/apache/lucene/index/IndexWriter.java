@@ -51,16 +51,17 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -752,6 +753,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
+    if (d instanceof FSDirectory && ((FSDirectory) d).checkPendingDeletions()) {
+      throw new IllegalArgumentException("Directory still has pending deleted files");
+    }
+
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     infoStream = config.getInfoStream();
