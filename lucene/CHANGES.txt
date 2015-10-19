@@ -94,6 +94,10 @@ New Features
 * LUCENE-6844: PayloadScoreQuery can include or exclude underlying span scores
   from its score calculations (Bill Bell, Alan Woodward)
 
+* LUCENE-6778: Add GeoPointDistanceRangeQuery, to search for points
+  within a "ring" (beyond a minimum distance and below a maximum
+  distance) (Nick Knize via Mike McCandless)
+
 API Changes
 
 * LUCENE-6590: Query.setBoost(), Query.getBoost() and Query.clone() are gone.

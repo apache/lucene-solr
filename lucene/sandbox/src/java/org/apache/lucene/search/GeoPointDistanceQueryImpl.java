@@ -100,4 +100,8 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     result = 31 * result + query.hashCode();
     return result;
   }
+
+  public double getRadius() {
+    return query.getRadius();
+  }
 }
