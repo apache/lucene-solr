@@ -49,15 +49,6 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
       return q;
     }
 
-    final double radius;
-    if (q instanceof BooleanQuery) {
-      final List<BooleanClause> clauses = ((BooleanQuery)q).clauses();
-      assert clauses.size() > 0;
-      radius = ((GeoPointDistanceQueryImpl)(clauses.get(0).getQuery())).getRadius();
-    } else {
-      radius = ((GeoPointDistanceQueryImpl)q).getRadius();
-    }
-
     // add an exclusion query
     BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
