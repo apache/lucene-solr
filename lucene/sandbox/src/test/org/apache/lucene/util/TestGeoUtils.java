@@ -392,6 +392,7 @@ public class TestGeoUtils extends LuceneTestCase {
   }
 
   /** Tests consistency of GeoUtils.rectWithinCircle, .rectCrossesCircle, .rectWithin and SloppyMath.haversine distance check */
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6846")
   public void testGeoRelations() throws Exception {
 
     int numDocs = atLeast(1000);
