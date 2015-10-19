@@ -23,26 +23,33 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class OfflinePointWriter extends OfflineSorter.ByteSequencesWriter implements PointWriter {
+/** Writes points to disk in a fixed-with format. */
+final class OfflinePointWriter implements PointWriter {
 
   final Directory tempDir;
+  final IndexOutput out;
   final int packedBytesLength;
   final int bytesPerDoc;
   private long count;
   private boolean closed;
 
   public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength) throws IOException {
-    this(tempDir, tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT), packedBytesLength);
-  }
-
-  public OfflinePointWriter(Directory tempDir, IndexOutput out, int packedBytesLength) {
-    super(out);
+    this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
+  }
+
+  /** Initializes on an already written/closed file, just so consumers can use {@link #getReader} to read the file. */
+  public OfflinePointWriter(Directory tempDir, IndexOutput out, int packedBytesLength, long count) {
+    this.out = out;
+    this.tempDir = tempDir;
+    this.packedBytesLength = packedBytesLength;
+    bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
+    this.count = count;
+    closed = true;
   }
     
   @Override
@@ -55,15 +62,6 @@ final class OfflinePointWriter extends OfflineSorter.ByteSequencesWriter impleme
   }
 
   @Override
-  public void write(byte[] bytes, int off, int len) throws IOException {
-    if (len != bytesPerDoc) {
-      throw new IllegalArgumentException("len=" + len + " bytesPerDoc=" + bytesPerDoc);
-    }
-    out.writeBytes(bytes, off, len);
-    count++;
-  }
-
-  @Override
   public PointReader getReader(long start) throws IOException {
     assert closed;
     return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, count-start);
@@ -71,7 +69,7 @@ final class OfflinePointWriter extends OfflineSorter.ByteSequencesWriter impleme
 
   @Override
   public void close() throws IOException {
-    super.close();
+    out.close();
     closed = true;
   }
 

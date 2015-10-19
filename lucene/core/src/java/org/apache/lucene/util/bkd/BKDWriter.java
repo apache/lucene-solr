@@ -18,6 +18,7 @@ package org.apache.lucene.util.bkd;
  */
 
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -31,6 +32,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.LongBitSet;
@@ -77,8 +79,6 @@ public final class BKDWriter implements Closeable {
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
-
-  static final boolean DEBUG = false;
 
   public static final int DEFAULT_MAX_POINTS_IN_LEAF_NODE = 1024;
 
@@ -174,8 +174,7 @@ public final class BKDWriter implements Closeable {
   private void switchToOffline() throws IOException {
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    tempInput = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
-    offlinePointWriter = new OfflinePointWriter(tempDir, tempInput, packedBytesLength);
+    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength);
     PointReader reader = heapPointWriter.getReader(0);
     for(int i=0;i<pointCount;i++) {
       boolean hasNext = reader.next();
@@ -184,6 +183,7 @@ public final class BKDWriter implements Closeable {
     }
 
     heapPointWriter = null;
+    tempInput = offlinePointWriter.out;
   }
 
   public void add(byte[] packedValue, int docID) throws IOException {
@@ -316,23 +316,49 @@ public final class BKDWriter implements Closeable {
       };
 
       // TODO: this is sort of sneaky way to get the final OfflinePointWriter from OfflineSorter:
-      OfflinePointWriter[] lastWriter = new OfflinePointWriter[1];
+      IndexOutput[] lastWriter = new IndexOutput[1];
 
       OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, cmp) {
+
+          /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
           protected ByteSequencesWriter getWriter(IndexOutput out) {
-            lastWriter[0] = new OfflinePointWriter(tempDir, out, packedBytesLength);
-            return lastWriter[0];
+            lastWriter[0] = out;
+            return new ByteSequencesWriter(out) {
+              @Override
+              public void write(byte[] bytes, int off, int len) throws IOException {
+                if (len != bytesPerDoc) {
+                  throw new IllegalArgumentException("len=" + len + " bytesPerDoc=" + bytesPerDoc);
+                }
+                out.writeBytes(bytes, off, len);
+              }
+            };
           }
+
+          /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
           protected ByteSequencesReader getReader(IndexInput in) throws IOException {
-            return new OfflinePointReader(in, packedBytesLength, 0, -1);
+            return new ByteSequencesReader(in) {
+              @Override
+              public boolean read(BytesRefBuilder ref) throws IOException {
+                ref.grow(bytesPerDoc);
+                try {
+                  in.readBytes(ref.bytes(), 0, bytesPerDoc);
+                } catch (EOFException eofe) {
+                  return false;
+                }
+                ref.setLength(bytesPerDoc);
+                return true;
+              }
+            };
           }
         };
+
       sorter.sort(tempInput.getName());
+
       assert lastWriter[0] != null;
 
-      return lastWriter[0];
+      return new OfflinePointWriter(tempDir, lastWriter[0], packedBytesLength, pointCount);
     }
   }
 
@@ -492,9 +518,9 @@ public final class BKDWriter implements Closeable {
         assert result;
         ordBitSet.set(reader.ord());
       }
-    }
 
-    assert rightCount == ordBitSet.cardinality(): "rightCount=" + rightCount + " cardinality=" + ordBitSet.cardinality();
+      assert rightCount == ordBitSet.cardinality(): "rightCount=" + rightCount + " cardinality=" + ordBitSet.cardinality();
+    }
 
     return scratch1;
   }
@@ -558,13 +584,6 @@ public final class BKDWriter implements Closeable {
       assert slice.count == slices[0].count;
     }
 
-    if (DEBUG) {
-      System.out.println("\nBUILD: nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset + "\n  count=" + slices[0].count);
-      for(int dim=0;dim<numDims;dim++) {
-        System.out.println("  " + dim + ": source=" + slices[dim] + " min=" + BKDUtil.bytesToInt(minPackedValue, dim) + " max=" + BKDUtil.bytesToInt(maxPackedValue, dim));
-      }
-    }
-
     if (numDims == 1 && slices[0].writer instanceof OfflinePointWriter && slices[0].count <= maxPointsSortInHeap) {
       // Special case for 1D, to cutover to heap once we recurse deeply enough:
       slices[0] = switchToHeap(slices[0]);
@@ -572,7 +591,6 @@ public final class BKDWriter implements Closeable {
 
     if (nodeID >= leafNodeOffset) {
       // Leaf node: write block
-      if (DEBUG) System.out.println("  leaf");
 
       PathSlice source = slices[0];
 
@@ -658,8 +676,6 @@ public final class BKDWriter implements Closeable {
         try (PointWriter leftPointWriter = getPointWriter(leftCount);
              PointWriter rightPointWriter = getPointWriter(source.count - leftCount);
              PointReader reader = slices[dim].writer.getReader(slices[dim].start);) {
-
-          //if (DEBUG) System.out.println("  partition:\n    splitValueEnc=" + splitValue + "\n    " + nextSource + "\n      --> leftSorted=" + leftPointWriter + "\n      --> rightSorted=" + rightPointWriter + ")");
 
           // Partition this source according to how the splitDim split the values:
           int nextRightCount = 0;

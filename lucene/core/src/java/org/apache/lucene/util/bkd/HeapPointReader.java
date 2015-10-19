@@ -83,4 +83,3 @@ final class HeapPointReader implements PointReader {
   public void close() {
   }
 }
-

@@ -1,5 +1,3 @@
-package org.apache.lucene.util.bkd;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,20 +15,9 @@ package org.apache.lucene.util.bkd;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
+/**
+ * Block KD-tree, implementing the generic spatial data structure described in
+ * <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a>.
+ */
 
-/** Appends many points, and then at the end provides a {@link PointReader} to iterate
- *  those points.  This abstracts away whether we write to disk, or use simple arrays
- *  in heap. */
-interface PointWriter extends Closeable {
-  /** Add a new point */
-  void append(byte[] packedValue, long ord, int docID) throws IOException;
-
-  /** Returns a {@link PointReader} iterator to step through all previously added points */
-  PointReader getReader(long startPoint) throws IOException;
-
-  /** Removes any temp files behind this writer */
-  void destroy() throws IOException;
-}
-
+package org.apache.lucene.util.bkd;

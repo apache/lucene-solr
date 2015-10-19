@@ -24,11 +24,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class OfflinePointReader extends OfflineSorter.ByteSequencesReader implements PointReader {
+/** Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}. */
+final class OfflinePointReader implements PointReader {
   long countLeft;
+  private final IndexInput in;
   private final byte[] packedValue;
   private long ord;
   private int docID;
@@ -38,8 +39,8 @@ final class OfflinePointReader extends OfflineSorter.ByteSequencesReader impleme
     this(tempDir.openInput(tempFileName, IOContext.READONCE), packedBytesLength, start, length);
   }
 
-  OfflinePointReader(IndexInput in, int packedBytesLength, long start, long length) throws IOException {
-    super(in);
+  private OfflinePointReader(IndexInput in, int packedBytesLength, long start, long length) throws IOException {
+    this.in = in;
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
@@ -63,18 +64,6 @@ final class OfflinePointReader extends OfflineSorter.ByteSequencesReader impleme
     }
     ord = in.readLong();
     docID = in.readInt();
-    return true;
-  }
-
-  @Override
-  public boolean read(BytesRefBuilder ref) throws IOException {
-    ref.grow(bytesPerDoc);
-    try {
-      in.readBytes(ref.bytes(), 0, bytesPerDoc);
-    } catch (EOFException eofe) {
-      return false;
-    }
-    ref.setLength(bytesPerDoc);
     return true;
   }
 

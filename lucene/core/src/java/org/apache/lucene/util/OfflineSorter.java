@@ -415,7 +415,7 @@ public class OfflineSorter {
      * Writes a BytesRef.
      * @see #write(byte[], int, int)
      */
-    public void write(BytesRef ref) throws IOException {
+    public final void write(BytesRef ref) throws IOException {
       assert ref != null;
       write(ref.bytes, ref.offset, ref.length);
     }
@@ -424,7 +424,7 @@ public class OfflineSorter {
      * Writes a byte array.
      * @see #write(byte[], int, int)
      */
-    public void write(byte[] bytes) throws IOException {
+    public final void write(byte[] bytes) throws IOException {
       write(bytes, 0, bytes.length);
     }
 
