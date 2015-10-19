@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.Accountable;
@@ -111,7 +110,13 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     // and do not synchronize or anything stronger. it's great for testing!
     // NOTE: fileMap.keySet().toArray(new String[0]) is broken in non Sun JDKs,
     // and the code below is resilient to map changes during the array population.
-    return fileMap.keySet().toArray(new String[fileMap.size()]);
+    // NOTE: don't replace this with return names.toArray(new String[names.size()]);
+    // or some files could be null at the end of the array if files are being deleted
+    // concurrently
+    Set<String> fileNames = fileMap.keySet();
+    List<String> names = new ArrayList<>(fileNames.size());
+    for (String name : fileNames) names.add(name);
+    return names.toArray(new String[names.size()]);
   }
 
   public final boolean fileNameExists(String name) {
