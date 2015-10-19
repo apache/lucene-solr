@@ -157,16 +157,11 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     }
 
     if (rect.minLon < rect.maxLon) {
-      return pointLat >= rect.minLat &&
-        pointLat < rect.maxLat &&
-        pointLon >= rect.minLon &&
-        pointLon < rect.maxLon;
+      return GeoUtils.bboxContains(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
     } else {
       // Rect crosses dateline:
-      return pointLat >= rect.minLat &&
-        pointLat < rect.maxLat &&
-        (pointLon >= rect.minLon ||
-         pointLon < rect.maxLon);
+      return GeoUtils.bboxContains(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
+          || GeoUtils.bboxContains(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
     }
   }
 
@@ -198,15 +193,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
     // if its within the distance error then it can be wrong
     return delta < (ptDistance*DISTANCE_PCT_ERR);
-  }
-
-  // nocommit fixme!
-  @AwaitsFix(bugUrl = "Fix Tolerance on GeoPolygonSearch tests")
-  public void testExplicitFailure() throws Exception {
-    TopDocs td = polygonQuery(new double[]{-116.6911, -116.6911, -116.39189, -116.39189, -116.6911},
-        new double[]{-20.357460000000003, -19.424280000000003, -19.424280000000003, -20.357460000000003, -20.357460000000003},
-        20);
-    assertEquals("Explicit Failure", 2, td.totalHits);
   }
 
   public void testRectCrossesCircle() throws Exception {

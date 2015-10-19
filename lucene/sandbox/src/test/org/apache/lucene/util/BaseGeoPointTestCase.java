@@ -69,9 +69,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   // A particularly tricky adversary for BKD tree:
   public void testSamePointManyTimes() throws Exception {
     int numPoints = atLeast(1000);
-    // TODO: GeoUtils are buggy/slow if we use small=false
-    // boolean small = random().nextBoolean();
-    boolean small = true;
+    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
+    boolean small = random().nextBoolean();
 
     // Every doc has 2 points:
     double theLat = randomLat(small);
@@ -86,9 +85,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
+  @Nightly
   public void testAllLatEqual() throws Exception {
     int numPoints = atLeast(10000);
-    // TODO: GeoUtils are buggy/slow if we use small=false
+    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
     // boolean small = random().nextBoolean();
     boolean small = true;
     double lat = randomLat(small);
@@ -135,9 +135,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
+  @Nightly
   public void testAllLonEqual() throws Exception {
     int numPoints = atLeast(10000);
-    // TODO: GeoUtils are buggy/slow if we use small=false
+    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
     // boolean small = random().nextBoolean();
     boolean small = true;
     double theLon = randomLon(small);
@@ -199,7 +200,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    // TODO: GeoUtils APIs are still slow/buggy with large distances
+    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
     // boolean small = random().nextBoolean();
     boolean small = true;
 
@@ -230,7 +231,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
-    int iters = atLeast(100);
+    int iters = atLeast(75);
     for (int iter=0;iter<iters;iter++) {
       // Don't allow dateline crossing when testing small:
       GeoRect rect = randomRect(small, small == false);
@@ -331,9 +332,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
 
-    // TODO: GeoUtils APIs are still slow/buggy with large distances
-    //boolean small = random().nextBoolean();
-    boolean small = true;
+    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
+    boolean small = random().nextBoolean();
 
     boolean haveRealDoc = false;
 
@@ -519,7 +519,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   protected void verify(boolean small, double[] lats, double[] lons) throws Exception {
-    assert small;
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
@@ -568,7 +567,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     int numThreads = TestUtil.nextInt(random(), 2, 5);
 
     List<Thread> threads = new ArrayList<>();
-    final int iters = atLeast(100);
+    final int iters = atLeast(75);
 
     final CountDownLatch startingGun = new CountDownLatch(1);
     final AtomicBoolean failed = new AtomicBoolean();
@@ -634,7 +633,14 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                   System.out.println("  radiusMeters = " + new DecimalFormat("#,###.00").format(radiusMeters));
                 }
 
-                query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
+                try {
+                  query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
+                } catch (IllegalArgumentException e) {
+                  if (e.getMessage().contains("exceeds maxRadius")) {
+                    continue;
+                  }
+                  throw e;
+                }
 
                 verifyHits = new VerifyHits() {
                     @Override
@@ -673,8 +679,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                 verifyHits = new VerifyHits() {
                     @Override
                     protected Boolean shouldMatch(double pointLat, double pointLon) {
-                      return GeoUtils.pointInPolygon(lons, lats, pointLat, pointLon);
-//                      return polyRectContainsPoint(bbox, pointLat, pointLon);
+                      return polyRectContainsPoint(bbox, pointLat, pointLon);
                     }
 
                     @Override
