@@ -35,6 +35,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -54,10 +55,14 @@ import org.junit.Test;
 public class TestPayloadScoreQuery extends LuceneTestCase {
 
   private static void checkQuery(SpanQuery query, PayloadFunction function, int[] expectedDocs, float[] expectedScores) throws IOException {
+    checkQuery(query, function, true, expectedDocs, expectedScores);
+  }
+
+  private static void checkQuery(SpanQuery query, PayloadFunction function, boolean includeSpanScore, int[] expectedDocs, float[] expectedScores) throws IOException {
 
     assertTrue("Expected docs and scores arrays must be the same length!", expectedDocs.length == expectedScores.length);
 
-    PayloadScoreQuery psq = new PayloadScoreQuery(query, function);
+    PayloadScoreQuery psq = new PayloadScoreQuery(query, function, includeSpanScore);
     TopDocs hits = searcher.search(psq, expectedDocs.length);
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
@@ -70,6 +75,8 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
 
     if (hits.scoreDocs.length > expectedDocs.length)
       fail("Unexpected hit in document " + hits.scoreDocs[expectedDocs.length]);
+
+    QueryUtils.check(random(), psq, searcher);
   }
 
   @Test
@@ -132,9 +139,19 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
         }, 0, true)
     }, 1, true);
 
-    checkQuery(q, new MaxPayloadFunction(), new int[]{ 122, 222 }, new float[]{ 4.0f, 4.0f });
-    checkQuery(q, new MinPayloadFunction(), new int[]{ 222, 122 }, new float[]{ 4.0f, 2.0f });
-    checkQuery(q, new AveragePayloadFunction(), new int[] { 222, 122 }, new float[]{ 4.0f, 3.666666f });
+    // check includeSpanScore makes a difference here
+    searcher.setSimilarity(new MultiplyingSimilarity());
+    try {
+      checkQuery(q, new MaxPayloadFunction(), new int[]{ 122, 222 }, new float[]{ 41.802513122558594f, 34.13160705566406f });
+      checkQuery(q, new MinPayloadFunction(), new int[]{ 222, 122 }, new float[]{ 34.13160705566406f, 20.901256561279297f });
+      checkQuery(q, new AveragePayloadFunction(), new int[] { 122, 222 }, new float[]{ 38.3189697265625f, 34.13160705566406f });
+      checkQuery(q, new MaxPayloadFunction(), false, new int[]{122, 222}, new float[]{4.0f, 4.0f});
+      checkQuery(q, new MinPayloadFunction(), false, new int[]{222, 122}, new float[]{4.0f, 2.0f});
+      checkQuery(q, new AveragePayloadFunction(), false, new int[]{222, 122}, new float[]{4.0f, 3.666666f});
+    }
+    finally {
+      searcher.setSimilarity(similarity);
+    }
 
   }
 
@@ -234,7 +251,17 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     directory = null;
   }
 
-  static class BoostingSimilarity extends DefaultSimilarity {
+  static class MultiplyingSimilarity extends DefaultSimilarity {
+
+    @Override
+    public float scorePayload(int docId, int start, int end, BytesRef payload) {
+      //we know it is size 4 here, so ignore the offset/length
+      return payload.bytes[payload.offset];
+    }
+
+  }
+
+  static class BoostingSimilarity extends MultiplyingSimilarity {
 
     @Override
     public float queryNorm(float sumOfSquaredWeights) {
@@ -244,12 +271,6 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     @Override
     public float coord(int overlap, int maxOverlap) {
       return 1.0f;
-    }
-
-    @Override
-    public float scorePayload(int docId, int start, int end, BytesRef payload) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload.bytes[payload.offset];
     }
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

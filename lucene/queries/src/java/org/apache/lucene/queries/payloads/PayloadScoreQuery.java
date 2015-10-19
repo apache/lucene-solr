@@ -51,15 +51,27 @@ public class PayloadScoreQuery extends SpanQuery {
 
   private final SpanQuery wrappedQuery;
   private final PayloadFunction function;
+  private final boolean includeSpanScore;
 
   /**
    * Creates a new PayloadScoreQuery
    * @param wrappedQuery the query to wrap
    * @param function a PayloadFunction to use to modify the scores
+   * @param includeSpanScore include both span score and payload score in the scoring algorithm
    */
-  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function) {
+  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, boolean includeSpanScore) {
     this.wrappedQuery = wrappedQuery;
     this.function = function;
+    this.includeSpanScore = includeSpanScore;
+  }
+
+  /**
+   * Creates a new PayloadScoreQuery that includes the underlying span scores
+   * @param wrappedQuery the query to wrap
+   * @param function a PayloadFunction to use to modify the scores
+   */
+  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function) {
+    this(wrappedQuery, function, true);
   }
 
   @Override
@@ -149,12 +161,16 @@ public class PayloadScoreQuery extends SpanQuery {
       if (scorer == null || scorer.advance(doc) != doc)
         return Explanation.noMatch("No match");
 
-      SpanWeight innerWeight = ((PayloadSpanWeight)scorer.getWeight()).innerWeight;
-      Explanation innerExpl = innerWeight.explain(context, doc);
       scorer.freq();  // force freq calculation
       Explanation payloadExpl = scorer.getPayloadExplanation();
 
-      return Explanation.match(scorer.scoreCurrentDoc(), "PayloadSpanQuery, product of:", innerExpl, payloadExpl);
+      if (includeSpanScore) {
+        SpanWeight innerWeight = ((PayloadSpanWeight) scorer.getWeight()).innerWeight;
+        Explanation innerExpl = innerWeight.explain(context, doc);
+        return Explanation.match(scorer.scoreCurrentDoc(), "PayloadSpanQuery, product of:", innerExpl, payloadExpl);
+      }
+
+      return scorer.getPayloadExplanation();
     }
   }
 
@@ -203,7 +219,9 @@ public class PayloadScoreQuery extends SpanQuery {
 
     @Override
     protected float scoreCurrentDoc() throws IOException {
-      return getSpanScore() * getPayloadScore();
+      if (includeSpanScore)
+        return getSpanScore() * getPayloadScore();
+      return getPayloadScore();
     }
 
     @Override

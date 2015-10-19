@@ -51,7 +51,7 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
 
   /** macro for payloadscorequery */
   private SpanQuery pt(String s, PayloadFunction fn) {
-    return new PayloadScoreQuery(new SpanTermQuery(new Term(FIELD,s)), fn);
+    return new PayloadScoreQuery(new SpanTermQuery(new Term(FIELD,s)), fn, random().nextBoolean());
   }
   
   /* simple PayloadTermQueries */
@@ -82,8 +82,6 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
     }
   }
 
-  // TODO: test the payloadnear query too!
-
   /*
     protected static final String[] docFields = {
     "w1 w2 w3 w4 w5",
@@ -95,7 +93,7 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
 
   public void testAllFunctions(SpanQuery query, int[] expected) throws Exception {
     for (PayloadFunction fn : functions) {
-      qtest(new PayloadScoreQuery(query, fn), expected);
+      qtest(new PayloadScoreQuery(query, fn, random().nextBoolean()), expected);
     }
   }
 
