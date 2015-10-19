@@ -22,12 +22,11 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
 
 import org.apache.lucene.util.IOUtils;
-
 
 /**
  * Expert: A Directory instance that switches files between
@@ -166,6 +165,11 @@ public class FileSwitchDirectory extends Directory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     return getDirectory(name).createOutput(name, context);
+  }
+
+  @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    return getDirectory("."+suffix).createTempOutput(prefix, suffix, context);
   }
 
   @Override

@@ -53,7 +53,7 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   /** Adds a clause to this query */
-  public final void addClause(SpanQuery clause) {
+  private final void addClause(SpanQuery clause) {
     if (field == null) {
       field = clause.getField();
     } else if (clause.getField() != null && !clause.getField().equals(field)) {

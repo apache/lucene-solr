@@ -17,7 +17,11 @@ package org.apache.solr.spelling.suggest;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.nio.file.Paths;
+
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
@@ -41,4 +45,23 @@ public abstract class LookupFactory {
    * <b>NOTE:</b> not all {@link Lookup} implementations store in-memory data structures
    * */
   public abstract String storeFileName();
+
+  /** Non-null if this sugggester created a temp dir, needed only during build */
+  private static FSDirectory tmpBuildDir;
+
+  protected static synchronized FSDirectory getTempDir() {
+    if (tmpBuildDir == null) {
+      // Lazy init
+      String tempDirPath = System.getProperty("java.io.tmpdir");
+      if (tempDirPath == null)  {
+        throw new RuntimeException("Java has no temporary folder property (java.io.tmpdir)?");
+      }
+      try {
+        tmpBuildDir = FSDirectory.open(Paths.get(tempDirPath));
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
+    }
+    return tmpBuildDir;
+  }
 }

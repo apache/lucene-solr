@@ -134,7 +134,7 @@ public class FuzzyLookupFactory extends LookupFactory {
     ? Boolean.valueOf(params.get(UNICODE_AWARE).toString())
     : FuzzySuggester.DEFAULT_UNICODE_AWARE;
     
-    return new FuzzySuggester(indexAnalyzer, queryAnalyzer, options, maxSurfaceFormsPerAnalyzedForm,
+    return new FuzzySuggester(getTempDir(), "suggester", indexAnalyzer, queryAnalyzer, options, maxSurfaceFormsPerAnalyzedForm,
         maxGraphExpansions, preservePositionIncrements, maxEdits, transpositions, nonFuzzyPrefix,
         minFuzzyLength, unicodeAware);
   }

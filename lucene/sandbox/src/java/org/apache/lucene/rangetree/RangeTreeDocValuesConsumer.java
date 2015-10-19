@@ -91,7 +91,7 @@ class RangeTreeDocValuesConsumer extends DocValuesConsumer implements Closeable 
   @Override
   public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
     delegate.addSortedNumericField(field, docToValueCount, values);
-    RangeTreeWriter writer = new RangeTreeWriter(maxPointsInLeafNode, maxPointsSortInHeap);
+    RangeTreeWriter writer = new RangeTreeWriter(state.directory, state.segmentInfo.name, maxPointsInLeafNode, maxPointsSortInHeap);
     Iterator<Number> valueIt = values.iterator();
     Iterator<Number> valueCountIt = docToValueCount.iterator();
     //System.out.println("\nSNF: field=" + field.name);
@@ -127,7 +127,7 @@ class RangeTreeDocValuesConsumer extends DocValuesConsumer implements Closeable 
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
     delegate.addSortedSetField(field, values, docToOrdCount, ords);
-    RangeTreeWriter writer = new RangeTreeWriter(maxPointsInLeafNode, maxPointsSortInHeap);
+    RangeTreeWriter writer = new RangeTreeWriter(state.directory, state.segmentInfo.name, maxPointsInLeafNode, maxPointsSortInHeap);
     Iterator<Number> docToOrdCountIt = docToOrdCount.iterator();
     Iterator<Number> ordsIt = ords.iterator();
     //System.out.println("\nSSF: field=" + field.name);

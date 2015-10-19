@@ -19,10 +19,10 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Comparator;
 
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
@@ -34,48 +34,49 @@ import org.apache.lucene.util.OfflineSorter;
  * @lucene.internal
  */
 public class ExternalRefSorter implements BytesRefSorter, Closeable {
-  private final OfflineSorter sort;
+  private final OfflineSorter sorter;
   private OfflineSorter.ByteSequencesWriter writer;
-  private Path input;
-  private Path sorted;
+  private IndexOutput input;
+  private String sortedFileName;
   
   /**
    * Will buffer all sequences to a temporary file and then sort (all on-disk).
    */
-  public ExternalRefSorter(OfflineSorter sort) throws IOException {
-    this.sort = sort;
-    this.input = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "RefSorter-", ".raw");
-    this.writer = new OfflineSorter.ByteSequencesWriter(input);
+  public ExternalRefSorter(OfflineSorter sorter) throws IOException {
+    this.sorter = sorter;
+    this.input = sorter.getDirectory().createTempOutput(sorter.getTempFileNamePrefix(), "RefSorterRaw", IOContext.DEFAULT);
+    this.writer = new OfflineSorter.ByteSequencesWriter(this.input);
   }
   
   @Override
   public void add(BytesRef utf8) throws IOException {
-    if (writer == null) throw new IllegalStateException();
+    if (writer == null) {
+      throw new IllegalStateException();
+    }
     writer.write(utf8);
   }
   
   @Override
   public BytesRefIterator iterator() throws IOException {
-    if (sorted == null) {
+    if (sortedFileName == null) {
       closeWriter();
       
-      sorted = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "RefSorter-", ".sorted");
       boolean success = false;
       try {
-        sort.sort(input, sorted);
+        sortedFileName = sorter.sort(input.getName());
         success = true;
       } finally {
         if (success) {
-          Files.delete(input);
+          sorter.getDirectory().deleteFile(input.getName());
         } else {
-          IOUtils.deleteFilesIgnoringExceptions(input);
+          IOUtils.deleteFilesIgnoringExceptions(sorter.getDirectory(), input.getName());
         }
       }
       
       input = null;
     }
     
-    return new ByteSequenceIterator(new OfflineSorter.ByteSequencesReader(sorted));
+    return new ByteSequenceIterator(new OfflineSorter.ByteSequencesReader(sorter.getDirectory().openInput(sortedFileName, IOContext.READONCE)));
   }
   
   private void closeWriter() throws IOException {
@@ -90,16 +91,12 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
    */
   @Override
   public void close() throws IOException {
-    boolean success = false;
     try {
       closeWriter();
-      success = true;
     } finally {
-      if (success) {
-        IOUtils.deleteFilesIfExist(input, sorted);
-      } else {
-        IOUtils.deleteFilesIgnoringExceptions(input, sorted);
-      }
+      IOUtils.deleteFilesIgnoringExceptions(sorter.getDirectory(),
+                                            input == null ? null : input.getName(),
+                                            sortedFileName);
     }
   }
   
@@ -142,6 +139,6 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
 
   @Override
   public Comparator<BytesRef> getComparator() {
-    return sort.getComparator();
+    return sorter.getComparator();
   }
 }

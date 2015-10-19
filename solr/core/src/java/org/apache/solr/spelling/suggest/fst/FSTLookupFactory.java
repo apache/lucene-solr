@@ -60,7 +60,7 @@ public class FSTLookupFactory extends LookupFactory {
     ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
     : true;
 
-    return new FSTCompletionLookup(buckets, exactMatchFirst);
+    return new FSTCompletionLookup(getTempDir(), "suggester", buckets, exactMatchFirst);
   }
 
   @Override

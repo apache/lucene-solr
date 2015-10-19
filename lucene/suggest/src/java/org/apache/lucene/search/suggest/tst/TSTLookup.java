@@ -27,11 +27,10 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * Suggest implementation based on a 
@@ -45,12 +44,26 @@ public class TSTLookup extends Lookup {
 
   /** Number of entries the lookup was built with */
   private long count = 0;
+
+  private final Directory tempDir;
+  private final String tempFileNamePrefix;
   
   /** 
    * Creates a new TSTLookup with an empty Ternary Search Tree.
    * @see #build(InputIterator)
    */
-  public TSTLookup() {}
+  public TSTLookup() {
+    this(null, null);
+  }
+
+  /** 
+   * Creates a new TSTLookup, for building.
+   * @see #build(InputIterator)
+   */
+  public TSTLookup(Directory tempDir, String tempFileNamePrefix) {
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
+  }
 
   @Override
   public void build(InputIterator iterator) throws IOException {
@@ -63,7 +76,7 @@ public class TSTLookup extends Lookup {
     root = new TernaryTreeNode();
 
     // make sure it's sorted and the comparator uses UTF16 sort order
-    iterator = new SortedInputIterator(iterator, BytesRef.getUTF8SortedAsUTF16Comparator());
+    iterator = new SortedInputIterator(tempDir, tempFileNamePrefix, iterator, BytesRef.getUTF8SortedAsUTF16Comparator());
     count = 0;
     ArrayList<String> tokens = new ArrayList<>();
     ArrayList<Number> vals = new ArrayList<>();

@@ -18,8 +18,9 @@ package org.apache.solr.velocity;
  */
 
 import org.apache.solr.core.SolrCore;
+import org.apache.velocity.tools.generic.LocaleConfig;
 
-public class MockTool {
+public class MockTool extends LocaleConfig {
   private final SolrCore core;
 
   public MockTool(SolrCore core) {

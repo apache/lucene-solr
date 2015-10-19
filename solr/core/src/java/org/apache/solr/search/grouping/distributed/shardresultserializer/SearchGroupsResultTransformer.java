@@ -38,6 +38,9 @@ import java.util.*;
  */
 public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, SearchGroupsFieldCommandResult>> {
 
+  private static final String TOP_GROUPS = "topGroups";
+  private static final String GROUP_COUNT = "groupCount";
+
   private final SolrIndexSearcher searcher;
 
   public SearchGroupsResultTransformer(SolrIndexSearcher searcher) {
@@ -49,19 +52,19 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
    */
   @Override
   public NamedList transform(List<Command> data) throws IOException {
-    NamedList<NamedList> result = new NamedList<>();
+    final NamedList<NamedList> result = new NamedList<>(data.size());
     for (Command command : data) {
-      final NamedList<Object> commandResult = new NamedList<>();
+      final NamedList<Object> commandResult = new NamedList<>(2);
       if (SearchGroupsFieldCommand.class.isInstance(command)) {
         SearchGroupsFieldCommand fieldCommand = (SearchGroupsFieldCommand) command;
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
         if (searchGroups != null) {
-          commandResult.add("topGroups", serializeSearchGroup(searchGroups, fieldCommand.getGroupSort()));
+          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand.getGroupSort()));
         }
         final Integer groupedCount = fieldCommandResult.getGroupCount();
         if (groupedCount != null) {
-          commandResult.add("groupCount", groupedCount);
+          commandResult.add(GROUP_COUNT, groupedCount);
         }
       } else {
         continue;
@@ -77,12 +80,12 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
    */
   @Override
   public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
-    final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>();
+    final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
       NamedList topGroupsAndGroupCount = command.getValue();
       @SuppressWarnings("unchecked")
-      NamedList<List<Comparable>> rawSearchGroups = (NamedList<List<Comparable>>) topGroupsAndGroupCount.get("topGroups");
+      final NamedList<List<Comparable>> rawSearchGroups = (NamedList<List<Comparable>>) topGroupsAndGroupCount.get(TOP_GROUPS);
       if (rawSearchGroups != null) {
         for (Map.Entry<String, List<Comparable>> rawSearchGroup : rawSearchGroups){
           SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
@@ -101,14 +104,14 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         }
       }
 
-      Integer groupCount = (Integer) topGroupsAndGroupCount.get("groupCount");
+      final Integer groupCount = (Integer) topGroupsAndGroupCount.get(GROUP_COUNT);
       result.put(command.getKey(), new SearchGroupsFieldCommandResult(groupCount, searchGroups));
     }
     return result;
   }
 
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, Sort groupSort) {
-    NamedList<Object[]> result = new NamedList<>();
+    final NamedList<Object[]> result = new NamedList<>(data.size());
 
     for (SearchGroup<BytesRef> searchGroup : data) {
       Object[] convertedSortValues = new Object[searchGroup.sortValues.length];

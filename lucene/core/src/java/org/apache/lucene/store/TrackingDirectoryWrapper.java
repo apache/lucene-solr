@@ -49,6 +49,14 @@ public final class TrackingDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException {
+    IndexOutput tempOutput = in.createTempOutput(prefix, suffix, context);
+    createdFileNames.add(tempOutput.getName());
+    return tempOutput;
+  }
+
+  @Override
   public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
     in.copyFrom(from, src, dest, context);
     createdFileNames.add(dest);
@@ -63,10 +71,12 @@ public final class TrackingDirectoryWrapper extends FilterDirectory {
     }
   }
 
-  // maybe clone before returning.... all callers are
-  // cloning anyway....
+  /** NOTE: returns a copy of the created files. */
   public Set<String> getCreatedFiles() {
-    return createdFileNames;
+    return new HashSet<>(createdFileNames);
   }
 
+  public void clearCreatedFiles() {
+    createdFileNames.clear();
+  }
 }

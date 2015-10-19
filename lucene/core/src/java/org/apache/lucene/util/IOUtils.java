@@ -38,8 +38,10 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -190,12 +192,42 @@ public final class IOUtils {
    * <p>
    * Note that the files should not be null.
    */
-  public static void deleteFilesIgnoringExceptions(Directory dir, String... names) {
+  public static void deleteFilesIgnoringExceptions(Directory dir, Collection<String> files) {
     try {
-      dir.deleteFiles(Arrays.asList(names));
+      dir.deleteFiles(files);
     } catch (Throwable ignored) {
       // ignore
     }
+  }
+
+  public static void deleteFilesIgnoringExceptions(Directory dir, String... files) {
+    deleteFilesIgnoringExceptions(dir, Arrays.asList(files));
+  }
+  
+  /**
+   * Deletes all given file names.  Some of the
+   * file names may be null; they are
+   * ignored.  After everything is deleted, the method either
+   * throws the first exception it hit while deleting, or
+   * completes normally if there were no exceptions.
+   * 
+   * @param dir Directory to delete files from
+   * @param names file names to delete
+   */
+  public static void deleteFiles(Directory dir, Collection<String> names) throws IOException {
+    Set<String> nonNullNames = new HashSet<>();
+    for(String name : names) {
+      if (name != null) {
+        nonNullNames.add(name);
+      }
+    }
+    if (names.isEmpty() == false) {
+      dir.deleteFiles(names);
+    }
+  }
+
+  public static void deleteFiles(Directory dir, String... files) throws IOException {
+    deleteFiles(dir, Arrays.asList(files));
   }
   
   /**

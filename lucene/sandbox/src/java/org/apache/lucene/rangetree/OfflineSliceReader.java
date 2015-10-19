@@ -17,33 +17,22 @@ package org.apache.lucene.rangetree;
  * limitations under the License.
  */
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 
 final class OfflineSliceReader implements SliceReader {
-  final InputStreamDataInput in;
-  long countLeft;
+  final IndexInput in;
+  private long countLeft;
   private long value;
   private long ord;
   private int docID;
 
-  OfflineSliceReader(Path tempFile, long start, long count) throws IOException {
-    InputStream fis = Files.newInputStream(tempFile);
-    long seekFP = start * RangeTreeWriter.BYTES_PER_DOC;
-    long skipped = 0;
-    while (skipped < seekFP) {
-      long inc = fis.skip(seekFP - skipped);
-      skipped += inc;
-      if (inc == 0) {
-        throw new RuntimeException("skip returned 0");
-      }
-    }
-    in = new InputStreamDataInput(new BufferedInputStream(fis));
+  OfflineSliceReader(Directory tempDir, String tempFileName, long start, long count) throws IOException {
+    in = tempDir.openInput(tempFileName, IOContext.READONCE);
+    in.seek(start * RangeTreeWriter.BYTES_PER_DOC);
     this.countLeft = count;
   }
 

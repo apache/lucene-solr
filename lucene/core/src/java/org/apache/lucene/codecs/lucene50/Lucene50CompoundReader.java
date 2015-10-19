@@ -172,6 +172,11 @@ final class Lucene50CompoundReader extends Directory {
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    throw new UnsupportedOperationException();
+  }
   
   @Override
   public void sync(Collection<String> names) {

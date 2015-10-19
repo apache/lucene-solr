@@ -43,8 +43,11 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -62,7 +65,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
     keys.add(new Input("foo bar boo far", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, true, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, true, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
                                                   0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, FuzzySuggester.DEFAULT_UNICODE_AWARE);
     suggester.build(new InputArrayIterator(keys));
     int numIters = atLeast(10);
@@ -73,7 +77,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       assertEquals("foo bar boo far", results.get(0).key.toString());
       assertEquals(12, results.get(0).value, 0.01F);  
     }
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
   
   public void testNonLatinRandomEdits() throws IOException {
@@ -84,7 +88,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
     keys.add(new Input("фуу бар буу фар", 12));
     MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, true, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy",analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, true, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
         0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, true);
     suggester.build(new InputArrayIterator(keys));
     int numIters = atLeast(10);
@@ -95,7 +100,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       assertEquals("фуу бар буу фар", results.get(0).key.toString());
       assertEquals(12, results.get(0).value, 0.01F);
     }
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
 
   /** this is basically the WFST test ported to KeywordAnalyzer. so it acts the same */
@@ -108,7 +113,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     };
     
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    FuzzySuggester suggester = new FuzzySuggester(analyzer);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy",analyzer);
     suggester.build(new InputArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("bariar", random()), false, 2);
@@ -171,7 +177,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("barbara", results.get(2).key.toString());
     assertEquals(6, results.get(2).value, 0.01F);
     
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
   
   /**
@@ -183,7 +189,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     };
     
     Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-    FuzzySuggester suggester = new FuzzySuggester(standard, standard, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, false, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", standard, standard, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, false, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
         FuzzySuggester.DEFAULT_NON_FUZZY_PREFIX, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, FuzzySuggester.DEFAULT_UNICODE_AWARE);
     suggester.build(new InputArrayIterator(keys));
     
@@ -204,7 +211,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
     
-    standard.close();
+    IOUtils.close(standard, tempDir);
   }
 
   public void testNoSeps() throws Exception {
@@ -216,7 +223,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, true, 1, true, 1, 3, false);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy",a, a, options, 256, -1, true, 1, true, 1, 3, false);
     suggester.build(new InputArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
@@ -229,7 +237,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     // complete to "abcd", which has higher weight so should
     // appear first:
     assertEquals("abcd", r.get(0).key.toString());
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testGraphDups() throws Exception {
@@ -283,7 +291,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         new Input("wifi network is slow", 50),
         new Input("wi fi network is fast", 10),
     };
-    FuzzySuggester suggester = new FuzzySuggester(analyzer);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", analyzer);
     suggester.build(new InputArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup("wifi network", false, 10);
@@ -295,17 +304,18 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(50, results.get(0).value);
     assertEquals("wi fi network is fast", results.get(1).key);
     assertEquals(10, results.get(1).value);
-    analyzer.close();
+    IOUtils.close(tempDir, analyzer);
   }
 
   public void testEmpty() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    FuzzySuggester suggester = new FuzzySuggester(analyzer);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", analyzer);
     suggester.build(new InputArrayIterator(new Input[0]));
 
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
 
   public void testInputPathRequired() throws Exception {
@@ -360,11 +370,12 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         new Input("ab xc", 50),
         new Input("ba xd", 50),
     };
-    FuzzySuggester suggester = new FuzzySuggester(analyzer);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", analyzer);
     suggester.build(new InputArrayIterator(keys));
     List<LookupResult> results = suggester.lookup("ab x", false, 1);
     assertTrue(results.size() == 1);
-    analyzer.close();
+    IOUtils.close(analyzer, tempDir);
   }
 
   private static Token token(String term, int posInc, int posLength) {
@@ -430,7 +441,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, true, 1, true, 1, 3, false);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, true, 1, true, 1, 3, false);
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
           new Input("x y z", 3),
@@ -464,13 +476,14 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         }
       }
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testNonExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true, 1, true, 1, 3, false);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, true, 1, true, 1, 3, false);
 
     suggester.build(new InputArrayIterator(new Input[] {
           new Input("x y", 1),
@@ -502,7 +515,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         }
       }
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
   
   // Holds surface form separately:
@@ -697,7 +710,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
 
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
-    FuzzySuggester suggester = new FuzzySuggester(a, a,
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy",a, a,
                                                   preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, true, 1, false, 1, 3, unicodeAware);
     suggester.build(new InputArrayIterator(keys));
 
@@ -836,12 +850,13 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         assertEquals(matches.get(hit).value, r.get(hit).value, 0f);
       }
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, true, 1, true, 1, 3, false);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", a, a, 0, 2, -1, true, 1, true, 1, 3, false);
 
     List<Input> keys = Arrays.asList(new Input[] {
         new Input("a", 40),
@@ -858,12 +873,13 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(60, results.get(0).value);
     assertEquals("a ", results.get(1).key);
     assertEquals(50, results.get(1).value);
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   public void testEditSeps() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, true, 2, true, 1, 3, false);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggester = new FuzzySuggester(tempDir, "fuzzy", a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, true, 2, true, 1, 3, false);
 
     List<Input> keys = Arrays.asList(new Input[] {
         new Input("foo bar", 40),
@@ -879,7 +895,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("[foo bar baz/50]", suggester.lookup("foobarbaz", false, 5).toString());
     assertEquals("[barbaz/60, barbazfoo/10]", suggester.lookup("bar baz", false, 5).toString());
     assertEquals("[barbazfoo/10]", suggester.lookup("bar baz foo", false, 5).toString());
-    a.close();
+    IOUtils.close(a, tempDir);
   }
   
   @SuppressWarnings("fallthrough")
@@ -978,7 +994,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     boolean transpositions = random().nextBoolean();
     // TODO: test graph analyzers
     // TODO: test exactFirst / preserveSep permutations
-    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, true, maxEdits, transpositions, prefixLen, prefixLen, false);
+    Directory tempDir = getDirectory();
+    FuzzySuggester suggest = new FuzzySuggester(tempDir, "fuzzy", a, a, 0, 256, -1, true, maxEdits, transpositions, prefixLen, prefixLen, false);
 
     if (VERBOSE) {
       System.out.println("TEST: maxEdits=" + maxEdits + " prefixLen=" + prefixLen + " transpositions=" + transpositions + " num=" + NUM);
@@ -1022,7 +1039,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       }
       assertEquals(expected.size(), actual.size());
     }
-    a.close();
+    IOUtils.close(a, tempDir);
   }
 
   private List<LookupResult> slowFuzzyMatch(int prefixLen, int maxEdits, boolean allowTransposition, List<Input> answers, String frag) {
@@ -1193,5 +1210,13 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       cp = ref.ints[ref.length++] = Character.codePointAt(s, i);
     }
     return ref;
+  }
+
+  private Directory getDirectory() {     
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 }

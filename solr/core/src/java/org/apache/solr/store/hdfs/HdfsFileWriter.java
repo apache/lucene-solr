@@ -37,8 +37,8 @@ public class HdfsFileWriter extends OutputStreamIndexOutput {
   public static final String HDFS_SYNC_BLOCK = "solr.hdfs.sync.block";
   public static final int BUFFER_SIZE = 16384;
   
-  public HdfsFileWriter(FileSystem fileSystem, Path path) throws IOException {
-    super("fileSystem=" + fileSystem + " path=" + path, getOutputStream(fileSystem, path), BUFFER_SIZE);
+  public HdfsFileWriter(FileSystem fileSystem, Path path, String name) throws IOException {
+    super("fileSystem=" + fileSystem + " path=" + path, name, getOutputStream(fileSystem, path), BUFFER_SIZE);
   }
   
   private static final OutputStream getOutputStream(FileSystem fileSystem, Path path) throws IOException {

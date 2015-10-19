@@ -140,6 +140,9 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       
       @Override
       public IndexOutput createOutput(String name, IOContext context) { throw new UnsupportedOperationException(); }
+
+      @Override
+      public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) { throw new UnsupportedOperationException(); }
       
       @Override
       public void sync(Collection<String> names) { throw new UnsupportedOperationException(); }

@@ -1,6 +1,5 @@
 // ANTLR GENERATED CODE: DO NOT EDIT
 package org.apache.lucene.expressions.js;
-import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**

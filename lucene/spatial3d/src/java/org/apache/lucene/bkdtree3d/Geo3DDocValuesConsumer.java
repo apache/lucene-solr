@@ -17,21 +17,22 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.geo3d.PlanetModel;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
   final DocValuesConsumer delegate;
@@ -40,9 +41,14 @@ class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
   final IndexOutput out;
   final Map<Integer,Long> fieldIndexFPs = new HashMap<>();
   final SegmentWriteState state;
+  final Directory tempDir;
+  final String tempFileNamePrefix;
 
-  public Geo3DDocValuesConsumer(PlanetModel planetModel, DocValuesConsumer delegate, SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
+  public Geo3DDocValuesConsumer(Directory tempDir, String tempFileNamePrefix, PlanetModel planetModel, DocValuesConsumer delegate,
+                                SegmentWriteState state, int maxPointsInLeafNode, int maxPointsSortInHeap) throws IOException {
     BKD3DTreeWriter.verifyParams(maxPointsInLeafNode, maxPointsSortInHeap);
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
     this.delegate = delegate;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
@@ -106,7 +112,7 @@ class Geo3DDocValuesConsumer extends DocValuesConsumer implements Closeable {
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     delegate.addBinaryField(field, values);
-    BKD3DTreeWriter writer = new BKD3DTreeWriter(maxPointsInLeafNode, maxPointsSortInHeap);
+    BKD3DTreeWriter writer = new BKD3DTreeWriter(tempDir, tempFileNamePrefix, maxPointsInLeafNode, maxPointsSortInHeap);
     Iterator<BytesRef> valuesIt = values.iterator();
     for (int docID=0;docID<state.segmentInfo.maxDoc();docID++) {
       assert valuesIt.hasNext();

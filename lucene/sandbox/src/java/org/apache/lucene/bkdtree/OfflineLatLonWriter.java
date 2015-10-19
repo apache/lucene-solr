@@ -17,29 +17,26 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.ByteArrayDataOutput;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OfflineSorter;
-
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+
+import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 
 final class OfflineLatLonWriter implements LatLonWriter {
 
-  final Path tempFile;
+  final Directory tempDir;
   final byte[] scratchBytes = new byte[BKDTreeWriter.BYTES_PER_DOC];
   final ByteArrayDataOutput scratchBytesOutput = new ByteArrayDataOutput(scratchBytes);      
-  final OutputStreamDataOutput out;
+  final IndexOutput out;
   final long count;
   private long countWritten;
   private boolean closed;
 
-  public OfflineLatLonWriter(long count) throws IOException {
-    tempFile = Files.createTempFile(OfflineSorter.getDefaultTempDir(), "size" + count + ".", "");
-    out = new OutputStreamDataOutput(new BufferedOutputStream(Files.newOutputStream(tempFile)));
+  public OfflineLatLonWriter(Directory tempDir, String tempFileNamePrefix, long count) throws IOException {
+    this.tempDir = tempDir;
+    out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
     this.count = count;
   }
     
@@ -55,7 +52,7 @@ final class OfflineLatLonWriter implements LatLonWriter {
   @Override
   public LatLonReader getReader(long start) throws IOException {
     assert closed;
-    return new OfflineLatLonReader(tempFile, start, count-start);
+    return new OfflineLatLonReader(tempDir, out.getName(), start, count-start);
   }
 
   @Override
@@ -69,12 +66,12 @@ final class OfflineLatLonWriter implements LatLonWriter {
 
   @Override
   public void destroy() throws IOException {
-    IOUtils.rm(tempFile);
+    tempDir.deleteFile(out.getName());
   }
 
   @Override
   public String toString() {
-    return "OfflineLatLonWriter(count=" + count + " tempFile=" + tempFile + ")";
+    return "OfflineLatLonWriter(count=" + count + " tempFileName=" + out.getName() + ")";
   }
 }
 

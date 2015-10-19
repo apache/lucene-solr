@@ -37,7 +37,7 @@ public class CachedIndexOutput extends ReusedBufferedIndexOutput {
   
   public CachedIndexOutput(BlockDirectory directory, IndexOutput dest,
       int blockSize, String name, Cache cache, int bufferSize) {
-    super("dest=" + dest + " name=" + name, bufferSize);
+    super("dest=" + dest + " name=" + name, name, bufferSize);
     this.directory = directory;
     this.dest = dest;
     this.blockSize = blockSize;

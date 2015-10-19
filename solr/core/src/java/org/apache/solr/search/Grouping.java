@@ -90,8 +90,8 @@ public class Grouping {
   private final boolean cacheSecondPassSearch;
   private final int maxDocsPercentageToCache;
 
-  private Sort sort;
   private Sort groupSort;
+  private Sort withinGroupSort;
   private int limitDefault;
   private int docsPerGroupDefault;
   private int groupOffsetDefault;
@@ -158,14 +158,14 @@ public class Grouping {
     }
 
     Grouping.CommandField gc = new CommandField();
-    gc.groupSort = groupSort;
+    gc.withinGroupSort = withinGroupSort;
     gc.groupBy = field;
     gc.key = field;
     gc.numGroups = limitDefault;
     gc.docsPerGroup = docsPerGroupDefault;
     gc.groupOffset = groupOffsetDefault;
     gc.offset = cmd.getOffset();
-    gc.sort = sort;
+    gc.groupSort = groupSort;
     gc.format = defaultFormat;
     gc.totalCount = defaultTotalCount;
 
@@ -201,13 +201,13 @@ public class Grouping {
       commandFunc.groupBy = new QueryValueSource(q, 0.0f);
       gc = commandFunc;
     }
-    gc.groupSort = groupSort;
+    gc.withinGroupSort = withinGroupSort;
     gc.key = groupByStr;
     gc.numGroups = limitDefault;
     gc.docsPerGroup = docsPerGroupDefault;
     gc.groupOffset = groupOffsetDefault;
     gc.offset = cmd.getOffset();
-    gc.sort = sort;
+    gc.groupSort = groupSort;
     gc.format = defaultFormat;
     gc.totalCount = defaultTotalCount;
 
@@ -228,7 +228,7 @@ public class Grouping {
     Query gq = parser.getQuery();
     Grouping.CommandQuery gc = new CommandQuery();
     gc.query = gq;
-    gc.groupSort = groupSort;
+    gc.withinGroupSort = withinGroupSort;
     gc.key = groupByStr;
     gc.numGroups = limitDefault;
     gc.docsPerGroup = docsPerGroupDefault;
@@ -251,13 +251,13 @@ public class Grouping {
     commands.add(gc);
   }
 
-  public Grouping setSort(Sort sort) {
-    this.sort = sort;
+  public Grouping setGroupSort(Sort groupSort) {
+    this.groupSort = groupSort;
     return this;
   }
 
-  public Grouping setGroupSort(Sort groupSort) {
-    this.groupSort = groupSort;
+  public Grouping setWithinGroupSort(Sort withinGroupSort) {
+    this.withinGroupSort = withinGroupSort;
     return this;
   }
 
@@ -309,12 +309,12 @@ public class Grouping {
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
     boolean cacheScores = false;
-    // NOTE: Change this when groupSort can be specified per group
+    // NOTE: Change this when withinGroupSort can be specified per group
     if (!needScores && !commands.isEmpty()) {
-      if (commands.get(0).groupSort == null) {
+      if (commands.get(0).withinGroupSort == null) {
         cacheScores = true;
       } else {
-        for (SortField field : commands.get(0).groupSort.getSort()) {
+        for (SortField field : commands.get(0).withinGroupSort.getSort()) {
           if (field.getType() == SortField.Type.SCORE) {
             cacheScores = true;
             break;
@@ -525,8 +525,8 @@ public class Grouping {
   public abstract class Command<GROUP_VALUE_TYPE> {
 
     public String key;       // the name to use for this group in the response
-    public Sort groupSort;   // the sort of the documents *within* a single group.
-    public Sort sort;        // the sort between groups
+    public Sort withinGroupSort;   // the sort of the documents *within* a single group.
+    public Sort groupSort;        // the sort between groups
     public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
     public int groupOffset;  // the offset within each group (for paging within each group)
     public int numGroups;    // how many groups - defaults to the "rows" parameter
@@ -730,8 +730,8 @@ public class Grouping {
         return fallBackCollector;
       }
 
-      sort = sort == null ? Sort.RELEVANCE : sort;
-      firstPass = new TermFirstPassGroupingCollector(groupBy, sort, actualGroupsToFind);
+      groupSort = groupSort == null ? Sort.RELEVANCE : groupSort;
+      firstPass = new TermFirstPassGroupingCollector(groupBy, groupSort, actualGroupsToFind);
       return firstPass;
     }
 
@@ -760,7 +760,7 @@ public class Grouping {
       int groupedDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupedDocsToCollect = Math.max(groupedDocsToCollect, 1);
       secondPass = new TermSecondPassGroupingCollector(
-          groupBy, topGroups, sort, groupSort, groupedDocsToCollect, needScores, needScores, false
+          groupBy, topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false
       );
 
       if (totalCount == TotalCount.grouped) {
@@ -776,7 +776,7 @@ public class Grouping {
      */
     @Override
     public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
-      Sort sortWithinGroup = groupSort != null ? groupSort : new Sort();
+      Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : new Sort();
       return TermAllGroupHeadsCollector.create(groupBy, sortWithinGroup);
     }
 
@@ -875,7 +875,7 @@ public class Grouping {
     @Override
     protected Collector createFirstPassCollector() throws IOException {
       DocSet groupFilt = searcher.getDocSet(query);
-      topCollector = newCollector(groupSort, needScores);
+      topCollector = newCollector(withinGroupSort, needScores);
       collector = new FilterCollector(groupFilt, topCollector);
       return collector;
     }
@@ -950,8 +950,8 @@ public class Grouping {
         return fallBackCollector;
       }
 
-      sort = sort == null ? Sort.RELEVANCE : sort;
-      firstPass = new FunctionFirstPassGroupingCollector(groupBy, context, searcher.weightSort(sort), actualGroupsToFind);
+      groupSort = groupSort == null ? Sort.RELEVANCE : groupSort;
+      firstPass = new FunctionFirstPassGroupingCollector(groupBy, context, searcher.weightSort(groupSort), actualGroupsToFind);
       return firstPass;
     }
 
@@ -980,7 +980,7 @@ public class Grouping {
       int groupdDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupdDocsToCollect = Math.max(groupdDocsToCollect, 1);
       secondPass = new FunctionSecondPassGroupingCollector(
-          topGroups, sort, groupSort, groupdDocsToCollect, needScores, needScores, false, groupBy, context
+          topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false, groupBy, context
       );
 
       if (totalCount == TotalCount.grouped) {
@@ -993,7 +993,7 @@ public class Grouping {
 
     @Override
     public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
-      Sort sortWithinGroup = groupSort != null ? groupSort : new Sort();
+      Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : new Sort();
       return new FunctionAllGroupHeadsCollector(groupBy, context, sortWithinGroup);
     }
 

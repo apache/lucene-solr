@@ -22,10 +22,13 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -236,6 +239,19 @@ public abstract class FSDirectory extends BaseDirectory {
     return new FSIndexOutput(name);
   }
 
+  @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    ensureOpen();
+    while (true) {
+      String name = prefix + tempFileRandom.nextInt(Integer.MAX_VALUE) + "." + suffix;
+      try {
+        return new FSIndexOutput(name, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+      } catch (FileAlreadyExistsException faee) {
+        // Retry with next random name
+      }
+    }
+  }
+
   protected void ensureCanWrite(String name) throws IOException {
     Files.deleteIfExists(directory.resolve(name)); // delete existing, if any
   }
@@ -348,7 +364,11 @@ public abstract class FSDirectory extends BaseDirectory {
     static final int CHUNK_SIZE = 8192;
     
     public FSIndexOutput(String name) throws IOException {
-      super("FSIndexOutput(path=\"" + directory.resolve(name) + "\")", new FilterOutputStream(Files.newOutputStream(directory.resolve(name))) {
+      this(name, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+    }
+
+    FSIndexOutput(String name, OpenOption... options) throws IOException {
+      super("FSIndexOutput(path=\"" + directory.resolve(name) + "\")", name, new FilterOutputStream(Files.newOutputStream(directory.resolve(name), options)) {
         // This implementation ensures, that we never write more than CHUNK_SIZE bytes:
         @Override
         public void write(byte[] b, int offset, int length) throws IOException {

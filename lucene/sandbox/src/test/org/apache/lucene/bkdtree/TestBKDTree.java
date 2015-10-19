@@ -17,6 +17,15 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.lucene53.Lucene53Codec;
@@ -37,23 +46,15 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestBKDTree extends LuceneTestCase {
 
@@ -163,7 +164,7 @@ public class TestBKDTree extends LuceneTestCase {
     // Every doc has 2 points:
     double[] lats = new double[2*numPoints];
     double[] lons = new double[2*numPoints];
-    Directory dir = newDirectory();
+    Directory dir = getDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     // We rely on docID order:
     iwc.setMergePolicy(newLogMergePolicy());
@@ -378,7 +379,7 @@ public class TestBKDTree extends LuceneTestCase {
     if (lats.length > 100000) {
       dir = newFSDirectory(createTempDir("TestBKDTree"));
     } else {
-      dir = newDirectory();
+      dir = getDirectory();
     }
     Set<Integer> deleted = new HashSet<>();
     // RandomIndexWriter is too slow here:
@@ -608,7 +609,7 @@ public class TestBKDTree extends LuceneTestCase {
   }
 
   public void testAccountableHasDelegate() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = getDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     Codec codec = TestUtil.alwaysDocValuesFormat(getDocValuesFormat());
     iwc.setCodec(codec);
@@ -631,5 +632,13 @@ public class TestBKDTree extends LuceneTestCase {
     int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
     int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     return new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
+  }
+
+  private static Directory getDirectory() {     
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 }

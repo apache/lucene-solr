@@ -17,9 +17,9 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.Closeable;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection; // for javadocs
 
@@ -69,8 +69,12 @@ public abstract class Directory implements Closeable {
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public abstract IndexOutput createOutput(String name, IOContext context)
-       throws IOException;
+  public abstract IndexOutput createOutput(String name, IOContext context) throws IOException;
+
+  /** Creates a new, empty file for writing in the directory, with a
+   *  temporary file name derived from prefix and suffix.  Use
+   *  {@link IndexOutput#getName} to see what name was used.  */
+  public abstract IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException;
 
   /**
    * Ensure that any writes to these files are moved to
@@ -119,8 +123,7 @@ public abstract class Directory implements Closeable {
 
   /** Closes the store. */
   @Override
-  public abstract void close()
-       throws IOException;
+  public abstract void close() throws IOException;
 
   @Override
   public String toString() {

@@ -94,7 +94,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     SolrParams params = req.getParams();
     params = adjustParams(params);
     req.setParams(params);
-    String sql = params.get("sql");
+    String sql = params.get("stmt");
     int numWorkers = params.getInt("numWorkers", 1);
     String workerCollection = params.get("workerCollection", defaultWorkerCollection);
     String workerZkhost = params.get("workerZkhost",defaultZkhost);
@@ -370,8 +370,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     Set<String> sortFields = new HashSet();
 
     for(SortItem sortItem : sorts) {
-      sortFields.add(stripSingleQuotes(stripQuotes(sortItem.getSortKey().toString())));
-      adjustedSorts.add(new FieldComparator(stripSingleQuotes(stripQuotes(sortItem.getSortKey().toString())),
+
+      sortFields.add(getSortField(sortItem));
+      adjustedSorts.add(new FieldComparator(getSortField(sortItem),
                                             ascDescComp(sortItem.getOrdering().toString())));
     }
 
@@ -380,7 +381,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     for(SortItem sortItem : sorts) {
-      String sortField = stripSingleQuotes(stripQuotes(sortItem.getSortKey().toString()));
+      String sortField = getSortField(sortItem);
       if(!bucketFields.contains(sortField)) {
         throw new IOException("All sort fields must be in the field list.");
       }
@@ -555,7 +556,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         if (comma) {
           siBuf.append(",");
         }
-        siBuf.append(stripSingleQuotes(stripQuotes(sortItem.getSortKey().toString())) + " " + ascDesc(sortItem.getOrdering().toString()));
+        siBuf.append(getSortField(sortItem) + " " + ascDesc(sortItem.getOrdering().toString()));
       }
     } else {
       if(sqlVisitor.limit < 0) {
@@ -599,7 +600,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     for(int i=0; i< buckets.length; i++) {
       Bucket bucket = buckets[i];
       SortItem sortItem = sortItems.get(i);
-      if(!bucket.toString().equals(stripSingleQuotes(stripQuotes(sortItem.getSortKey().toString())))) {
+      if(!bucket.toString().equals(getSortField(sortItem))) {
         return false;
       }
 
@@ -661,7 +662,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     return buf.toString();
   }
 
-  public static String getSortDirection(List<SortItem> sorts) {
+  private static String getSortDirection(List<SortItem> sorts) {
     if(sorts != null && sorts.size() > 0) {
       for(SortItem item : sorts) {
         return ascDesc(stripSingleQuotes(stripQuotes(item.getOrdering().toString())));
@@ -692,8 +693,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       SortItem sortItem = sortItems.get(i);
       String ordering = sortItem.getOrdering().toString();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
-      String sortKey = sortItem.getSortKey().toString();
-      comps[i] = new FieldComparator(stripSingleQuotes(stripQuotes(sortKey)), comparatorOrder);
+      String sortKey = getSortField(sortItem);
+      comps[i] = new FieldComparator(sortKey, comparatorOrder);
     }
 
     if(comps.length == 1) {
@@ -709,8 +710,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       SortItem sortItem = sortItems.get(i);
       String ordering = sortItem.getOrdering().toString();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
-      String sortKey = sortItem.getSortKey().toString();
-      comps[i] = new FieldComparator(stripSingleQuotes(stripQuotes(sortKey)), comparatorOrder);
+      String sortKey = getSortField(sortItem);
+      comps[i] = new FieldComparator(sortKey, comparatorOrder);
     }
 
     return comps;
@@ -855,7 +856,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     protected Void visitComparisonExpression(ComparisonExpression node, StringBuilder buf) {
-      String field = node.getLeft().toString();
+      String field = getPredicateField(node.getLeft());
       String value = node.getRight().toString();
       value = stripSingleQuotes(value);
 
@@ -864,7 +865,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         value = '"'+value+'"';
       }
 
-      buf.append('(').append(stripQuotes(stripSingleQuotes(field)) + ":" + value).append(')');
+      buf.append('(').append(field + ":" + value).append(')');
       return null;
     }
   }
@@ -943,7 +944,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         this.groupByQuery = true;
         List<Expression> groups = node.getGroupBy();
         for(Expression group : groups) {
-          groupBy.add(stripSingleQuotes(stripQuotes(group.toString())));
+          groupBy.add(getGroupField(group));
         }
       }
 
@@ -992,13 +993,46 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     protected Void visitSingleColumn(SingleColumn node, Integer indent) {
-      fields.add(stripSingleQuotes(stripQuotes(ExpressionFormatter.formatExpression(node.getExpression()))));
+
+      Expression ex = node.getExpression();
+      String field = null;
+
+      if(ex instanceof QualifiedNameReference) {
+
+        QualifiedNameReference ref = (QualifiedNameReference)ex;
+        List<String> parts = ref.getName().getOriginalParts();
+        field = parts.get(0);
+
+      } else if(ex instanceof  FunctionCall) {
+
+        FunctionCall functionCall = (FunctionCall)ex;
+        List<String> parts = functionCall.getName().getOriginalParts();
+        List<Expression> args = functionCall.getArguments();
+        String col = null;
+
+        if(args.size() > 0 && args.get(0) instanceof QualifiedNameReference) {
+          QualifiedNameReference ref = (QualifiedNameReference) args.get(0);
+          col = ref.getName().getOriginalParts().get(0);
+          field = parts.get(0)+"("+stripSingleQuotes(col)+")";
+        } else {
+          field = stripSingleQuotes(stripQuotes(functionCall.toString()));
+        }
+
+      } else if(ex instanceof StringLiteral) {
+        StringLiteral stringLiteral = (StringLiteral)ex;
+        field = stripSingleQuotes(stringLiteral.toString());
+      }
+
+      fields.add(field);
 
       if(node.getAlias().isPresent()) {
       }
 
       return null;
     }
+
+
+
 
     protected Void visitAllColumns(AllColumns node, Integer context) {
       return null;
@@ -1040,6 +1074,98 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       return Strings.repeat("   ", indent);
     }
   }
+
+  private static String getSortField(SortItem sortItem)
+  {
+    String field;
+    Expression ex = sortItem.getSortKey();
+    if(ex instanceof QualifiedNameReference) {
+      QualifiedNameReference ref = (QualifiedNameReference)ex;
+      List<String> parts = ref.getName().getOriginalParts();
+      field = parts.get(0);
+    } else if(ex instanceof  FunctionCall) {
+      FunctionCall functionCall = (FunctionCall)ex;
+      List<String> parts = functionCall.getName().getOriginalParts();
+      List<Expression> args = functionCall.getArguments();
+      String col = null;
+
+      if(args.size() > 0 && args.get(0) instanceof QualifiedNameReference) {
+        QualifiedNameReference ref = (QualifiedNameReference) args.get(0);
+        col = ref.getName().getOriginalParts().get(0);
+        field = parts.get(0)+"("+stripSingleQuotes(col)+")";
+      } else {
+        field = stripSingleQuotes(stripQuotes(functionCall.toString()));
+      }
+
+    } else {
+      StringLiteral stringLiteral = (StringLiteral)ex;
+      field = stripSingleQuotes(stringLiteral.toString());
+    }
+
+    return field;
+  }
+
+
+  private static String getHavingField(Expression ex)
+  {
+    String field;
+    if(ex instanceof QualifiedNameReference) {
+      QualifiedNameReference ref = (QualifiedNameReference)ex;
+      List<String> parts = ref.getName().getOriginalParts();
+      field = parts.get(0);
+    } else if(ex instanceof  FunctionCall) {
+      FunctionCall functionCall = (FunctionCall)ex;
+      List<String> parts = functionCall.getName().getOriginalParts();
+      List<Expression> args = functionCall.getArguments();
+      String col = null;
+
+      if(args.size() > 0 && args.get(0) instanceof QualifiedNameReference) {
+        QualifiedNameReference ref = (QualifiedNameReference) args.get(0);
+        col = ref.getName().getOriginalParts().get(0);
+        field = parts.get(0)+"("+stripSingleQuotes(col)+")";
+      } else {
+        field = stripSingleQuotes(stripQuotes(functionCall.toString()));
+      }
+
+    } else {
+      StringLiteral stringLiteral = (StringLiteral)ex;
+      field = stripSingleQuotes(stringLiteral.toString());
+    }
+
+    return field;
+  }
+
+
+  private static String getPredicateField(Expression ex)
+  {
+    String field;
+    if(ex instanceof QualifiedNameReference) {
+      QualifiedNameReference ref = (QualifiedNameReference)ex;
+      List<String> parts = ref.getName().getOriginalParts();
+      field = parts.get(0);
+    } else {
+      StringLiteral stringLiteral = (StringLiteral)ex;
+      field = stripSingleQuotes(stringLiteral.toString());
+    }
+
+    return field;
+  }
+
+  private static String getGroupField(Expression ex)
+  {
+    String field;
+    if(ex instanceof QualifiedNameReference) {
+      QualifiedNameReference ref = (QualifiedNameReference)ex;
+      List<String> parts = ref.getName().getOriginalParts();
+      field = parts.get(0);
+    } else {
+      StringLiteral stringLiteral = (StringLiteral)ex;
+      field = stripSingleQuotes(stringLiteral.toString());
+    }
+
+    return field;
+  }
+
 
   private static class LimitStream extends TupleStream {
 
@@ -1174,7 +1300,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     protected Boolean visitComparisonExpression(ComparisonExpression node, Tuple tuple) {
-      String field = stripQuotes(node.getLeft().toString());
+      String field = getHavingField(node.getLeft());
       double d = Double.parseDouble(node.getRight().toString());
       double td = tuple.getDouble(field);
       ComparisonExpression.Type t = node.getType();
