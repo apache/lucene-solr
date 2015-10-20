@@ -653,7 +653,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
       bucket.add("val", val);
 
-      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), BytesRef.deepCopyOf(br))) : null;
+      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), br)) : null;
       fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
 
       bucketList.add(bucket);

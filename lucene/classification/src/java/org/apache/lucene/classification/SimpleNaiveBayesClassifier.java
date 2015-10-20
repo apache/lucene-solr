@@ -152,16 +152,14 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     while ((next = classesEnum.next()) != null) {
       if (next.length > 0) {
         // We are passing the term to IndexSearcher so we need to make sure it will not change over time
-        next = BytesRef.deepCopyOf(next);
-        double clVal = calculateLogPrior(next, docsWithClassSize) + calculateLogLikelihood(tokenizedText, next, docsWithClassSize);
-        assignedClasses.add(new ClassificationResult<>(next, clVal));
+        Term term = new Term(this.classFieldName, next);
+        double clVal = calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(tokenizedText, term, docsWithClassSize);
+        assignedClasses.add(new ClassificationResult<>(term.bytes(), clVal));
       }
     }
 
     // normalization; the values transforms to a 0-1 range
-    ArrayList<ClassificationResult<BytesRef>> assignedClassesNorm = normClassificationResults(assignedClasses);
-
-    return assignedClassesNorm;
+    return normClassificationResults(assignedClasses);
   }
 
   /**
@@ -208,18 +206,18 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     return result.toArray(new String[result.size()]);
   }
 
-  private double calculateLogLikelihood(String[] tokenizedText, BytesRef c, int docsWithClass) throws IOException {
+  private double calculateLogLikelihood(String[] tokenizedText, Term term, int docsWithClass) throws IOException {
     // for each word
     double result = 0d;
     for (String word : tokenizedText) {
       // search with text:word AND class:c
-      int hits = getWordFreqForClass(word,c);
+      int hits = getWordFreqForClass(word, term);
 
       // num : count the no of times the word appears in documents of class c (+1)
       double num = hits + 1; // +1 is added because of add 1 smoothing
 
       // den : for the whole dictionary, count the no of times a word appears in documents of class c (+|V|)
-      double den = getTextTermFreqForClass(c) + docsWithClass;
+      double den = getTextTermFreqForClass(term) + docsWithClass;
 
       // P(w|c) = num/den
       double wordProbability = num / den;
@@ -232,18 +230,18 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   /**
    * Returns the average number of unique terms times the number of docs belonging to the input class
-   * @param c the class
+   * @param term the term representing the class
    * @return the average number of unique terms
    * @throws IOException if a low level I/O problem happens
    */
-  private double getTextTermFreqForClass(BytesRef c) throws IOException {
+  private double getTextTermFreqForClass(Term term) throws IOException {
     double avgNumberOfUniqueTerms = 0;
     for (String textFieldName : textFieldNames) {
       Terms terms = MultiFields.getTerms(leafReader, textFieldName);
       long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
       avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
     }
-    int docsWithC = leafReader.docFreq(new Term(classFieldName, c));
+    int docsWithC = leafReader.docFreq(term);
     return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
   }
 
@@ -251,18 +249,18 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * Returns the number of documents of the input class ( from the whole index or from a subset)
    * that contains the word ( in a specific field or in all the fields if no one selected)
    * @param word the token produced by the analyzer
-   * @param c the class
+   * @param term the term representing the class
    * @return the number of documents of the input class
    * @throws IOException if a low level I/O problem happens
    */
-  private int getWordFreqForClass(String word, BytesRef c) throws IOException {
+  private int getWordFreqForClass(String word, Term term) throws IOException {
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     BooleanQuery.Builder subQuery = new BooleanQuery.Builder();
     for (String textFieldName : textFieldNames) {
       subQuery.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
     }
     booleanQuery.add(new BooleanClause(subQuery.build(), BooleanClause.Occur.MUST));
-    booleanQuery.add(new BooleanClause(new TermQuery(new Term(classFieldName, c)), BooleanClause.Occur.MUST));
+    booleanQuery.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.MUST));
     if (query != null) {
       booleanQuery.add(query, BooleanClause.Occur.MUST);
     }
@@ -271,12 +269,12 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     return totalHitCountCollector.getTotalHits();
   }
 
-  private double calculateLogPrior(BytesRef currentClass, int docsWithClassSize) throws IOException {
-    return Math.log((double) docCount(currentClass)) - Math.log(docsWithClassSize);
+  private double calculateLogPrior(Term term, int docsWithClassSize) throws IOException {
+    return Math.log((double) docCount(term)) - Math.log(docsWithClassSize);
   }
 
-  private int docCount(BytesRef countedClass) throws IOException {
-    return leafReader.docFreq(new Term(classFieldName, countedClass));
+  private int docCount(Term term) throws IOException {
+    return leafReader.docFreq(term);
   }
 
   /**

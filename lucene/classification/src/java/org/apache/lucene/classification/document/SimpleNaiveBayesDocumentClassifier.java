@@ -122,18 +122,18 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     int docsWithClassSize = countDocsWithClass();
     while ((c = classesEnum.next()) != null) {
       double classScore = 0;
+      Term term = new Term(this.classFieldName, c);
       for (String fieldName : textFieldNames) {
         List<String[]> tokensArrays = fieldName2tokensArray.get(fieldName);
         double fieldScore = 0;
         for (String[] fieldTokensArray : tokensArrays) {
-          fieldScore += calculateLogPrior(c, docsWithClassSize) + calculateLogLikelihood(fieldTokensArray, fieldName, c, docsWithClassSize) * fieldName2boost.get(fieldName);
+          fieldScore += calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(fieldTokensArray, fieldName, term, docsWithClassSize) * fieldName2boost.get(fieldName);
         }
         classScore += fieldScore;
       }
-      assignedClasses.add(new ClassificationResult<>(BytesRef.deepCopyOf(c), classScore));
+      assignedClasses.add(new ClassificationResult<>(term.bytes(), classScore));
     }
-    ArrayList<ClassificationResult<BytesRef>> assignedClassesNorm = normClassificationResults(assignedClasses);
-    return assignedClassesNorm;
+    return normClassificationResults(assignedClasses);
   }
 
   /**
@@ -211,23 +211,23 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   /**
    * @param tokenizedText the tokenized content of a field
    * @param fieldName     the input field name
-   * @param c             the class to calculate the score of
+   * @param term          the {@link Term} referring to the class to calculate the score of
    * @param docsWithClass the total number of docs that have a class
    * @return a normalized score for the class
    * @throws IOException If there is a low-level I/O error
    */
-  private double calculateLogLikelihood(String[] tokenizedText, String fieldName, BytesRef c, int docsWithClass) throws IOException {
+  private double calculateLogLikelihood(String[] tokenizedText, String fieldName, Term term, int docsWithClass) throws IOException {
     // for each word
     double result = 0d;
     for (String word : tokenizedText) {
       // search with text:word AND class:c
-      int hits = getWordFreqForClass(word, fieldName, c);
+      int hits = getWordFreqForClass(word, fieldName, term);
 
       // num : count the no of times the word appears in documents of class c (+1)
       double num = hits + 1; // +1 is added because of add 1 smoothing
 
       // den : for the whole dictionary, count the no of times a word appears in documents of class c (+|V|)
-      double den = getTextTermFreqForClass(c, fieldName) + docsWithClass;
+      double den = getTextTermFreqForClass(term, fieldName) + docsWithClass;
 
       // P(w|c) = num/den
       double wordProbability = num / den;
@@ -242,16 +242,16 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   /**
    * Returns the average number of unique terms times the number of docs belonging to the input class
    *
-   * @param c the class
+   * @param  term the class term
    * @return the average number of unique terms
    * @throws java.io.IOException If there is a low-level I/O error
    */
-  private double getTextTermFreqForClass(BytesRef c, String fieldName) throws IOException {
+  private double getTextTermFreqForClass(Term term, String fieldName) throws IOException {
     double avgNumberOfUniqueTerms;
     Terms terms = MultiFields.getTerms(leafReader, fieldName);
     long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
     avgNumberOfUniqueTerms = numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
-    int docsWithC = leafReader.docFreq(new Term(classFieldName, c));
+    int docsWithC = leafReader.docFreq(term);
     return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
   }
 
@@ -261,16 +261,16 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
    *
    * @param word      the token produced by the analyzer
    * @param fieldName the field the word is coming from
-   * @param c         the class
+   * @param term      the class term
    * @return number of documents of the input class
    * @throws java.io.IOException If there is a low-level I/O error
    */
-  private int getWordFreqForClass(String word, String fieldName, BytesRef c) throws IOException {
+  private int getWordFreqForClass(String word, String fieldName, Term term) throws IOException {
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     BooleanQuery.Builder subQuery = new BooleanQuery.Builder();
     subQuery.add(new BooleanClause(new TermQuery(new Term(fieldName, word)), BooleanClause.Occur.SHOULD));
     booleanQuery.add(new BooleanClause(subQuery.build(), BooleanClause.Occur.MUST));
-    booleanQuery.add(new BooleanClause(new TermQuery(new Term(classFieldName, c)), BooleanClause.Occur.MUST));
+    booleanQuery.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.MUST));
     if (query != null) {
       booleanQuery.add(query, BooleanClause.Occur.MUST);
     }
@@ -279,11 +279,11 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     return totalHitCountCollector.getTotalHits();
   }
 
-  private double calculateLogPrior(BytesRef currentClass, int docsWithClassSize) throws IOException {
-    return Math.log((double) docCount(currentClass)) - Math.log(docsWithClassSize);
+  private double calculateLogPrior(Term term, int docsWithClassSize) throws IOException {
+    return Math.log((double) docCount(term)) - Math.log(docsWithClassSize);
   }
 
-  private int docCount(BytesRef countedClass) throws IOException {
-    return leafReader.docFreq(new Term(classFieldName, countedClass));
+  private int docCount(Term term) throws IOException {
+    return leafReader.docFreq(term);
   }
 }

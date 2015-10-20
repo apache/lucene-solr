@@ -1194,7 +1194,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     TermQuery key = null;
 
     if (useCache) {
-      key = new TermQuery(new Term(deState.fieldName, BytesRef.deepCopyOf(deState.termsEnum.term())));
+      key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
       DocSet result = filterCache.get(key);
       if (result != null) return result;
     }
