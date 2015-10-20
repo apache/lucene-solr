@@ -45,6 +45,10 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifier implements DocumentClassifier<BytesRef> {
+
+  /**
+   * map of per field analyzers
+   */
   protected Map<String, Analyzer> field2analyzer;
 
   /**
