@@ -66,10 +66,8 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {
   protected static final Logger log = LoggerFactory.getLogger(BlobHandler.class);
 
-  private static final long MAX_SZ = 5 * 1024 * 1024;//2MB
-  private long maxSize = MAX_SZ;
-
-
+  private static final long DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+  private long maxSize = DEFAULT_MAX_SIZE;
 
   @Override
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
