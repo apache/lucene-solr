@@ -66,7 +66,7 @@ public class CdcrReplicator implements Runnable {
       // Add the param to indicate the {@link CdcrUpdateProcessor} to keep the provided version number
       req.setParam(CdcrUpdateProcessor.CDCR_UPDATE, "");
 
-      // Start the benchmakr timer
+      // Start the benchmark timer
       state.getBenchmarkTimer().start();
 
       long counter = 0;
