@@ -165,22 +165,17 @@ public final class DocSetBuilder {
   }
 
   private static int dedup(int[] arr, int length, FixedBitSet acceptDocs) {
-    if (length == 0) {
-      return 0;
-    }
-    int l = 1;
-    int previous = arr[0];
-    for (int i = 1; i < length; ++i) {
+    int pos = 0;
+    int previous = -1;
+    for (int i = 0; i < length; ++i) {
       final int value = arr[i];
-      assert value >= previous;
-      if (value != previous) {
-        if (acceptDocs == null || acceptDocs.get(value)) {
-          arr[l++] = value;
-          previous = value;
-        }
+      // assert value >= previous;
+      if (value != previous && (acceptDocs == null || acceptDocs.get(value))) {
+        arr[pos++] = value;
+        previous = value;
       }
     }
-    return l;
+    return pos;
   }
 
 
