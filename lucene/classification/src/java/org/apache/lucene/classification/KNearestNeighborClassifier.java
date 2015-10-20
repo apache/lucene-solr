@@ -48,12 +48,12 @@ import org.apache.lucene.util.BytesRef;
  */
 public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
-  private final MoreLikeThis mlt;
-  private final String[] textFieldNames;
-  private final String classFieldName;
-  private final IndexSearcher indexSearcher;
-  private final int k;
-  private final Query query;
+  protected final MoreLikeThis mlt;
+  protected final String[] textFieldNames;
+  protected final String classFieldName;
+  protected final IndexSearcher indexSearcher;
+  protected final int k;
+  protected final Query query;
 
   /**
    * Creates a {@link KNearestNeighborClassifier}.
@@ -159,7 +159,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   }
 
   //ranking of classes must be taken in consideration
-  private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
+  protected List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
     Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
     float maxScore = topDocs.getMaxScore();
