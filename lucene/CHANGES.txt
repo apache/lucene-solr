@@ -15,6 +15,8 @@ System Requirements
 
 New Features
 
+* LUCENE-6631: Lucene Document classification (Tommaso Teofili, Alessandro Benedetti)
+
 * LUCENE-6747: FingerprintFilter is a TokenFilter that outputs a single
   token which is a concatenation of the sorted and de-duplicated set of 
   input tokens. Useful for normalizing short text in clustering/linking 
