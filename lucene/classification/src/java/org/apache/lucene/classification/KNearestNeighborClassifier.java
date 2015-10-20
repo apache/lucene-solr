@@ -48,11 +48,34 @@ import org.apache.lucene.util.BytesRef;
  */
 public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
+  /**
+   * a {@link MoreLikeThis} instance used to perform MLT queries
+   */
   protected final MoreLikeThis mlt;
+
+  /**
+   * the name of the fields used as the input text
+   */
   protected final String[] textFieldNames;
+
+  /**
+   * the name of the field used as the output text
+   */
   protected final String classFieldName;
+
+  /**
+   * an {@link IndexSearcher} used to perform queries
+   */
   protected final IndexSearcher indexSearcher;
+
+  /**
+   * the no. of docs to compare in order to find the nearest neighbor to the input text
+   */
   protected final int k;
+
+  /**
+   * a {@link Query} used to filter the documents that should be used from this classifier's underlying {@link LeafReader}
+   */
   protected final Query query;
 
   /**
