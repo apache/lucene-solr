@@ -103,7 +103,6 @@ public class PhraseQuery extends Query {
      * 
      */
     public Builder add(Term term, int position) {
-      term = new Term(term.field(), BytesRef.deepCopyOf(term.bytes())); // be defensive
       if (position < 0) {
         throw new IllegalArgumentException("Positions must be >= 0, got " + position);
       }
@@ -193,7 +192,7 @@ public class PhraseQuery extends Query {
   private static Term[] toTerms(String field, BytesRef... termBytes) {
     Term[] terms = new Term[termBytes.length];
     for (int i = 0; i < terms.length; ++i) {
-      terms[i] = new Term(field, BytesRef.deepCopyOf(termBytes[i]));
+      terms[i] = new Term(field, termBytes[i]);
     }
     return terms;
   }

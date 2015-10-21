@@ -273,7 +273,7 @@ public class QueryBuilder {
       throw new AssertionError();
     }
     
-    return newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
+    return newTermQuery(new Term(field, termAtt.getBytesRef()));
   }
   
   /** 
@@ -287,7 +287,7 @@ public class QueryBuilder {
     
     stream.reset();
     while (stream.incrementToken()) {
-      Query currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
+      Query currentQuery = newTermQuery(new Term(field, termAtt.getBytesRef()));
       q.add(currentQuery, BooleanClause.Occur.SHOULD);
     }
     
@@ -322,7 +322,7 @@ public class QueryBuilder {
         add(q, currentQuery.build(), operator);
         currentQuery = newBooleanQuery(true);
       }
-      currentQuery.add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
+      currentQuery.add(newTermQuery(new Term(field, termAtt.getBytesRef())), BooleanClause.Occur.SHOULD);
     }
     add(q, currentQuery.build(), operator);
     
@@ -380,7 +380,7 @@ public class QueryBuilder {
         multiTerms.clear();
       }
       position += positionIncrement;
-      multiTerms.add(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
+      multiTerms.add(new Term(field, termAtt.getBytesRef()));
     }
     
     if (enablePositionIncrements) {

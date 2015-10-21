@@ -122,10 +122,11 @@ public class UnInvertedField extends DocTermOrds {
     final BytesRef term = te.term();
 
     if (te.docFreq() > maxTermDocFreq) {
+      Term t = new Term(field, term);  // this makes a deep copy of the term bytes
       TopTerm topTerm = new TopTerm();
-      topTerm.term = BytesRef.deepCopyOf(term);
+      topTerm.term = t.bytes();
       topTerm.termNum = termNum;
-      topTerm.termQuery = new TermQuery(new Term(field, topTerm.term));
+      topTerm.termQuery = new TermQuery(t);
 
       bigTerms.put(topTerm.termNum, topTerm);
 

@@ -133,7 +133,7 @@ public class SimpleMLTQParser extends QParser {
     BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
     bytesRefBuilder.grow(NumericUtils.BUF_SIZE_INT);
     NumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);
-    return new Term(field, bytesRefBuilder.toBytesRef());
+    return new Term(field, bytesRefBuilder);
   }
 
 

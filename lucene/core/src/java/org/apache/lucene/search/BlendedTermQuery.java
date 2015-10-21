@@ -93,7 +93,7 @@ public final class BlendedTermQuery extends Query {
       terms = ArrayUtil.grow(terms, numTerms + 1);
       boosts = ArrayUtil.grow(boosts, numTerms + 1);
       contexts = ArrayUtil.grow(contexts, numTerms + 1);
-      terms[numTerms] = new Term(term.field(), BytesRef.deepCopyOf(term.bytes()));
+      terms[numTerms] = term;
       boosts[numTerms] = boost;
       contexts[numTerms] = context;
       numTerms += 1;

@@ -745,7 +745,7 @@ public abstract class FieldType extends FieldProperties {
       // match-only
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
-      return new TermQuery(new Term(field.getName(), br.toBytesRef()));
+      return new TermQuery(new Term(field.getName(), br));
     }
   }
   
