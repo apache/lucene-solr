@@ -676,9 +676,9 @@ public class TestBKD extends LuceneTestCase {
           assertEquals("docID=" + docID, expected.get(docID), hits.get(docID));
         }
       }
+    } finally {
+      dir.deleteFile("bkd");
     }
-
-    dir.deleteFile("bkd");
   }
 
   private BigInteger randomBigInt(int numBytes) {
