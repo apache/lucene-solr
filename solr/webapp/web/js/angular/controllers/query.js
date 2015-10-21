@@ -63,7 +63,9 @@ solrAdminApp.controller('QueryController',
       if ($scope.isSpellcheck) copy(params, $scope.spellcheck);
 
       if ($scope.rawParams) {
-        for (var param in $scope.rawParams.split(/[&\n]/)) {
+        var rawParams = $scope.rawParams.split(/[&\n]/);
+        for (var i in rawParams) {
+            var param = rawParams[i];
             var parts = param.split("=");
             set(parts[0], parts[1]);
         }

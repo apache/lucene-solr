@@ -178,8 +178,8 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource('/solr/:core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
-     "status": {params:{action:"status"}}
-    });
+     "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
+    }});
   }])
 .factory('Mbeans',
   ['$resource', function($resource) {
@@ -232,7 +232,7 @@ solrAdminServices.factory('System',
            return "/solr/" + params.core + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
-    }])
+}])
 .factory('Segments',
    ['$resource', function($resource) {
        return $resource('/solr/:core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {
