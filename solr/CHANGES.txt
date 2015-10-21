@@ -77,6 +77,9 @@ New Features
   Example: {!graph from="node_id" to="edge_id"}id:doc_1
   (Kevin Watters, yonik)
 
+* SOLR-6273: Cross Data Center Replication. Active/passive replication for separate
+  SolrClouds hosted on separate data centers. (Renaud Delbru, Yonik Seeley via Erick Erickson)
+
 
 Optimizations
 ----------------------
@@ -449,9 +452,6 @@ New Features
 
 * SOLR-7724: SolrJ now supports parsing the output of the clustering component. 
   (Alessandro Benedetti via Dawid Weiss)
-
-* SOLR-6273: Cross Data Center Replication. Active/passive replication for separate
-  SolrClouds hosted on separate data centers. (Renaud Delbru, Yonik Seeley via Erick Erickson)
 
 * SOLR-7389: Expose znodeVersion property for each of the collections returned for the clusterstatus
   operation in the collections API (Marius Grama via shalin)
