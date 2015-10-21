@@ -178,6 +178,7 @@ public final class BKDWriter implements Closeable {
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
     offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength);
+    tempInput = offlinePointWriter.out;
     PointReader reader = heapPointWriter.getReader(0);
     for(int i=0;i<pointCount;i++) {
       boolean hasNext = reader.next();
@@ -186,7 +187,6 @@ public final class BKDWriter implements Closeable {
     }
 
     heapPointWriter = null;
-    tempInput = offlinePointWriter.out;
   }
 
   public void add(byte[] packedValue, int docID) throws IOException {
