@@ -37,6 +37,8 @@ New Features
   that can return false to exit from ExitableDirectoryReader wrapping at
   the point fields() is called. (yonik)
 
+* LUCENE-6825: Add low-level support for block-KD trees (Mike McCandless)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to
