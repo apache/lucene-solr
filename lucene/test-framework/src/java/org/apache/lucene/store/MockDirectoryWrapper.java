@@ -449,6 +449,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (randomState.nextDouble() < randomIOExceptionRateOnOpen) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception during open file=" + name);
+        new Throwable().printStackTrace(System.out);
       }
       if (allowRandomFileNotFoundException == false || randomState.nextBoolean()) {
         throw new IOException("a random IOException (" + name + ")");
