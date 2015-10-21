@@ -147,7 +147,7 @@ class CdcrReplicatorState {
       // Shift back to the right by 20 bits the version number - See VersionInfo#getNewClock
       return DateFormatUtil.formatExternal(new Date(logReader.getLastVersion() >> 20));
     }
-    return new String();
+    return "";
   }
 
   /**
@@ -201,7 +201,6 @@ class CdcrReplicatorState {
         }
 
         default:
-          return;
       }
     }
 

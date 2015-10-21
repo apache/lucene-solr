@@ -77,7 +77,7 @@ solrAdminApp.controller('CollectionsController',
         $scope.hideAll();
         $scope.showAdd = true;
         $scope.newCollection = {
-          name: "new_collection",
+          name: "",
           routerName: "compositeId",
           numShards: 1,
           configName: "",
@@ -207,7 +207,6 @@ solrAdminApp.controller('CollectionsController',
       };
 
       $scope.deleteReplica = function(replica) {
-        alert("DELETE");
         Collections.deleteReplica({collection: replica.collection, shard:replica.shard, replica:replica.name}, function(data) {
           replica.deleted = true;
           $timeout(function() {

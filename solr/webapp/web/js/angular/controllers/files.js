@@ -38,7 +38,10 @@ solrAdminApp.controller('FilesController',
                 }
 
                 Files.list(params, function (data) {
-                    for (var file in data.files) {
+                    var filenames = Object.keys(data.files);
+                    filenames.sort();
+                    for (var i in filenames) {
+                        var file = filenames[i];
                         var filedata = data.files[file];
                         var state = undefined;
                         var children = undefined;

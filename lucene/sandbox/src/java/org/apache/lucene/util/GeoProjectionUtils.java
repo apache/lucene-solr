@@ -24,10 +24,10 @@ package org.apache.lucene.util;
  */
 public class GeoProjectionUtils {
   // WGS84 earth-ellipsoid major (a) minor (b) radius, (f) flattening and eccentricity (e)
-  static final double SEMIMAJOR_AXIS = 6_378_137; // [m]
-  static final double FLATTENING = 1.0/298.257223563;
-  static final double SEMIMINOR_AXIS = SEMIMAJOR_AXIS * (1.0 - FLATTENING); //6_356_752.31420; // [m]
-  static final double ECCENTRICITY = StrictMath.sqrt((2.0 - FLATTENING) * FLATTENING);
+  public static final double SEMIMAJOR_AXIS = 6_378_137; // [m]
+  public static final double FLATTENING = 1.0/298.257223563;
+  public static final double SEMIMINOR_AXIS = SEMIMAJOR_AXIS * (1.0 - FLATTENING); //6_356_752.31420; // [m]
+  public static final double ECCENTRICITY = StrictMath.sqrt((2.0 - FLATTENING) * FLATTENING);
   static final double PI_OVER_2 = StrictMath.PI / 2.0D;
   static final double SEMIMAJOR_AXIS2 = SEMIMAJOR_AXIS * SEMIMAJOR_AXIS;
   static final double SEMIMINOR_AXIS2 = SEMIMINOR_AXIS * SEMIMINOR_AXIS;

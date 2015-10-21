@@ -42,6 +42,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.GeoDistanceUtils;
+import org.apache.lucene.util.GeoProjectionUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -139,6 +140,12 @@ public class TestGeoPointQuery extends LuceneTestCase {
 
   private TopDocs geoDistanceQuery(double lon, double lat, double radius, int limit) throws Exception {
     GeoPointDistanceQuery q = new GeoPointDistanceQuery(FIELD_NAME, lon, lat, radius);
+    return searcher.search(q, limit);
+  }
+
+  private TopDocs geoDistanceRangeQuery(double lon, double lat, double minRadius, double maxRadius, int limit)
+      throws Exception {
+    GeoPointDistanceRangeQuery q = new GeoPointDistanceRangeQuery(FIELD_NAME, lon, lat, minRadius, maxRadius);
     return searcher.search(q, limit);
   }
 
@@ -245,6 +252,12 @@ public class TestGeoPointQuery extends LuceneTestCase {
       return;
     }
     throw new Exception("GeoDistanceQuery should not accept invalid lat/lon as origin");
+  }
+
+  @Test
+  public void testMaxDistanceRangeQuery() throws Exception {
+    TopDocs td = geoDistanceRangeQuery(0.0, 0.0, 10000, GeoProjectionUtils.SEMIMINOR_AXIS, 20);
+    assertEquals("GeoDistanceRangeQuery failed", 24, td.totalHits);
   }
 
   public void testRandomTiny() throws Exception {
@@ -434,7 +447,6 @@ public class TestGeoPointQuery extends LuceneTestCase {
                     }
                    };
               } else if (random().nextBoolean()) {
-                
                 // generate a random bounding box
                 GeoBoundingBox bbox = randomBBox();
 
@@ -442,13 +454,22 @@ public class TestGeoPointQuery extends LuceneTestCase {
                 double centerLon = bbox.minLon + ((bbox.maxLon - bbox.minLon)/2.0);
 
                 // radius (in meters) as a function of the random generated bbox
-                final double radius = GeoDistanceUtils.vincentyDistance(centerLon, centerLat, centerLon, bbox.minLat);
-                //final double radius = SloppyMath.haversin(centerLat, centerLon, bbox.minLat, centerLon)*1000;
+                final double radius =  random().nextDouble() * (0.05 * GeoProjectionUtils.SEMIMINOR_AXIS);
+
+                // randomly test range queries
+                final boolean rangeQuery = random().nextBoolean();
+                final double radiusMax = (rangeQuery) ? radius + random().nextDouble() * (0.05 * GeoProjectionUtils.SEMIMINOR_AXIS) : 0;
+
                 if (VERBOSE) {
-                  System.out.println("\t radius = " + radius);
+                  System.out.println("\t radius = " + radius + ((rangeQuery) ? " : " + radiusMax : ""));
                 }
+
                 // query using the centroid of the bounding box
-                query = new GeoPointDistanceQuery(FIELD_NAME, centerLon, centerLat, radius);
+                if (rangeQuery) {
+                  query = new GeoPointDistanceRangeQuery(FIELD_NAME, centerLon, centerLat, radius, radiusMax);
+                } else {
+                  query = new GeoPointDistanceQuery(FIELD_NAME, centerLon, centerLat, radius);
+                }
 
                 verifyHits = new VerifyHits() {
                     @Override
@@ -456,14 +477,14 @@ public class TestGeoPointQuery extends LuceneTestCase {
                       if (Double.isNaN(pointLat) || Double.isNaN(pointLon)) {
                         return null;
                       }
-                      if (radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radius)) {
+                      if (radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radius)
+                          || (rangeQuery && radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radiusMax))) {
                         return null;
                       } else {
-                        return distanceContainsPt(centerLon, centerLat, pointLon, pointLat, radius);
+                        return distanceContainsPt(centerLon, centerLat, pointLon, pointLat, radius, (rangeQuery) ? radiusMax : 0);
                       }
                     }
                    };
-                
               } else {
                 GeoBoundingBox bbox = randomBBox();
 
@@ -570,7 +591,8 @@ public class TestGeoPointQuery extends LuceneTestCase {
     protected abstract Boolean shouldMatch(double lat, double lon);
   }
 
-  private static boolean distanceContainsPt(double lonA, double latA, double lonB, double latB, final double radius) {
+  private static boolean distanceContainsPt(double lonA, double latA, double lonB, double latB, final double radius,
+                                            final double maxRadius) {
     final long hashedPtA = GeoUtils.mortonHash(lonA, latA);
     lonA = GeoUtils.mortonUnhashLon(hashedPtA);
     latA = GeoUtils.mortonUnhashLat(hashedPtA);
@@ -578,7 +600,12 @@ public class TestGeoPointQuery extends LuceneTestCase {
     lonB = GeoUtils.mortonUnhashLon(hashedPtB);
     latB = GeoUtils.mortonUnhashLat(hashedPtB);
 
-    return (SloppyMath.haversin(latA, lonA, latB, lonB)*1000.0 <= radius);
+    if (maxRadius == 0) {
+      return (SloppyMath.haversin(latA, lonA, latB, lonB)*1000.0 <= radius);
+    }
+
+    return SloppyMath.haversin(latA, lonA, latB, lonB)*1000.0 >= radius
+        && SloppyMath.haversin(latA, lonA, latB, lonB)*1000.0 <= maxRadius;
   }
 
   private static boolean rectContainsPointEnc(GeoBoundingBox bbox, double pointLat, double pointLon) {

@@ -273,7 +273,7 @@ limitations under the License.
   padding-right: 21px;
 }
 
-#content #collections #add_advanced .open {
+#content #collections #add_advanced.open {
     background-image: url( ../../img/ico/chevron-small.png );
 }
 

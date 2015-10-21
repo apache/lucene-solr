@@ -377,7 +377,7 @@ public class TestBKDTree extends LuceneTestCase {
     iwc.setCodec(codec);
     Directory dir;
     if (lats.length > 100000) {
-      dir = newFSDirectory(createTempDir("TestBKDTree"));
+      dir = noVirusChecker(newFSDirectory(createTempDir("TestBKDTree")));
     } else {
       dir = getDirectory();
     }
@@ -634,11 +634,14 @@ public class TestBKDTree extends LuceneTestCase {
     return new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
   }
 
-  private static Directory getDirectory() {     
-    Directory dir = newDirectory();
+  private static Directory noVirusChecker(Directory dir) {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
     }
     return dir;
+  }
+
+  private static Directory getDirectory() {     
+    return noVirusChecker(newDirectory());
   }
 }

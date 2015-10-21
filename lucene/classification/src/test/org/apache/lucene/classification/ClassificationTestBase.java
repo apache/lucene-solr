@@ -57,8 +57,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   protected static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
 
   protected RandomIndexWriter indexWriter;
-  private Directory dir;
-  private FieldType ft;
+  protected Directory dir;
+  protected FieldType ft;
 
   protected String textFieldName;
   protected String categoryFieldName;

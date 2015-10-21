@@ -126,10 +126,10 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       replicasConfiguration = new HashMap<>();
       List replicas = args.getAll(CdcrParams.REPLICA_PARAM);
       for (Object replica : replicas) {
-        if (replicas != null && replica instanceof NamedList) {
+        if (replica != null && replica instanceof NamedList) {
           SolrParams params = SolrParams.toSolrParams((NamedList) replica);
           if (!replicasConfiguration.containsKey(params.get(CdcrParams.SOURCE_COLLECTION_PARAM))) {
-            replicasConfiguration.put(params.get(CdcrParams.SOURCE_COLLECTION_PARAM), new ArrayList<SolrParams>());
+            replicasConfiguration.put(params.get(CdcrParams.SOURCE_COLLECTION_PARAM), new ArrayList<>());
           }
           replicasConfiguration.get(params.get(CdcrParams.SOURCE_COLLECTION_PARAM)).add(params);
         }
@@ -591,8 +591,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     @Override
     public Long call() throws Exception {
-      HttpSolrClient server = new HttpSolrClient(baseUrl);
-      try {
+      try (HttpSolrClient server = new HttpSolrClient(baseUrl)) {
         server.setConnectionTimeout(15000);
         server.setSoTimeout(60000);
 
@@ -604,8 +603,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
         NamedList response = server.request(request);
         return (Long) response.get(CdcrParams.CHECKPOINT);
-      } finally {
-        server.close();
       }
     }
 

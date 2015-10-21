@@ -24,6 +24,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
   A Term represents a word from text.  This is the unit of search.  It is
@@ -39,16 +40,22 @@ public final class Term implements Comparable<Term> {
 
   /** Constructs a Term with the given field and bytes.
    * <p>Note that a null field or null bytes value results in undefined
-   * behavior for most Lucene APIs that accept a Term parameter. 
+   * behavior for most Lucene APIs that accept a Term parameter.
    *
-   * <p>WARNING: the provided BytesRef is not copied, but used directly.
-   * Therefore the bytes should not be modified after construction, for
-   * example, you should clone a copy by {@link BytesRef#deepCopyOf}
-   * rather than pass reused bytes from a TermsEnum.
+   * <p>The provided BytesRef is copied when it is non null.
    */
   public Term(String fld, BytesRef bytes) {
     field = fld;
-    this.bytes = bytes;
+    this.bytes = bytes == null ? null : BytesRef.deepCopyOf(bytes);
+  }
+
+  /** Constructs a Term with the given field and the bytes from a builder.
+   * <p>Note that a null field value results in undefined
+   * behavior for most Lucene APIs that accept a Term parameter.
+   */
+  public Term(String fld, BytesRefBuilder bytesBuilder) {
+    field = fld;
+    this.bytes = bytesBuilder.toBytesRef();
   }
 
   /** Constructs a Term with the given field and text.
@@ -61,7 +68,7 @@ public final class Term implements Comparable<Term> {
   /** Constructs a Term with the given field and empty text.
    * This serves two purposes: 1) reuse of a Term with the same field.
    * 2) pattern for a query.
-   * 
+   *
    * @param fld field's name
    */
   public Term(String fld) {
@@ -75,10 +82,10 @@ public final class Term implements Comparable<Term> {
   /** Returns the text of this term.  In the case of words, this is simply the
     text of the word.  In the case of dates and other types, this is an
     encoding of the object as a string.  */
-  public final String text() { 
+  public final String text() {
     return toString(bytes);
   }
-  
+
   /** Returns human-readable form of the term text. If the term is not unicode,
    * the raw bytes will be printed instead. */
   public static final String toString(BytesRef termText) {
@@ -93,7 +100,7 @@ public final class Term implements Comparable<Term> {
     }
   }
 
-  /** Returns the bytes of this term. */
+  /** Returns the bytes of this term, these should not be modified. */
   public final BytesRef bytes() { return bytes; }
 
   @Override
@@ -141,8 +148,8 @@ public final class Term implements Comparable<Term> {
     }
   }
 
-  /** 
-   * Resets the field and text of a Term. 
+  /**
+   * Resets the field and text of a Term.
    * <p>WARNING: the provided BytesRef is not copied, but used directly.
    * Therefore the bytes should not be modified after construction, for
    * example, you should clone a copy rather than pass reused bytes from

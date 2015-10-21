@@ -1,5 +1,3 @@
-package org.apache.solr.handler;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,32 +15,10 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * A state manager which implements an observer pattern to notify observers
- * of a state change.
+ * Uses already seen data (the indexed documents) to classify new documents.
+ *
+ * Currently contains a (simplistic) Naive Bayes classifier and a k-Nearest
+ * Neighbor classifier.
  */
-abstract class CdcrStateManager {
-
-  private List<CdcrStateObserver> observers = new ArrayList<>();
-
-  void register(CdcrStateObserver observer) {
-    this.observers.add(observer);
-  }
-
-  void callback() {
-    for (CdcrStateObserver observer : observers) {
-      observer.stateUpdate();
-    }
-  }
-
-  interface CdcrStateObserver {
-
-    void stateUpdate();
-
-  }
-
-}
-
+package org.apache.lucene.classification.document;

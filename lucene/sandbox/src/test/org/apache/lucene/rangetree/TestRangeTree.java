@@ -369,7 +369,7 @@ public class TestRangeTree extends LuceneTestCase {
     iwc.setCodec(codec);
     Directory dir;
     if (values.length > 100000) {
-      dir = newFSDirectory(createTempDir("TestRangeTree"));
+      dir = noVirusChecker(newFSDirectory(createTempDir("TestRangeTree")));
     } else {
       dir = getDirectory();
     }
@@ -768,11 +768,14 @@ public class TestRangeTree extends LuceneTestCase {
     return new RangeTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
   }
 
-  private static Directory getDirectory() {     
-    Directory dir = newDirectory();
+  private static Directory noVirusChecker(Directory dir) {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
     }
     return dir;
+  }
+
+  private static Directory getDirectory() {     
+    return noVirusChecker(newDirectory());
   }
 }

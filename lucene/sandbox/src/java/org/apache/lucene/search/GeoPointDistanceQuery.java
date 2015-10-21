@@ -39,7 +39,7 @@ import org.apache.lucene.util.GeoUtils;
  *
  *    @lucene.experimental
  */
-public final class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
+public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   protected final double centerLon;
   protected final double centerLat;
   protected final double radius;

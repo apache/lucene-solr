@@ -136,7 +136,7 @@ solrAdminServices.factory('System',
 .factory('Luke',
   ['$resource', function($resource) {
     return $resource('/solr/:core/admin/luke', {core: '@core', wt:'json', _:Date.now()}, {
-      "index":  {params: {numTerms: 0, show: 'index'}},
+      "index":  {params: {numTerms: 0}},
       "schema": {params: {show:'schema'}},
       "field": {},
       "fields": {params: {show:'schema'}, interceptor: {
@@ -232,7 +232,7 @@ solrAdminServices.factory('System',
            return "/solr/" + params.core + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
-    }])
+}])
 .factory('Segments',
    ['$resource', function($resource) {
        return $resource('/solr/:core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {

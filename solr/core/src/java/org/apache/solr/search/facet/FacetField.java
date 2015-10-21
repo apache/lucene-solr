@@ -653,7 +653,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
       bucket.add("val", val);
 
-      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), BytesRef.deepCopyOf(br))) : null;
+      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), br)) : null;
       fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
 
       bucketList.add(bucket);
@@ -1158,15 +1158,14 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
 
         // OK, we have a good bucket to return... first get bucket value before moving to next term
         Object bucketVal = sf.getType().toObject(sf, term);
-        BytesRef termCopy = BytesRef.deepCopyOf(term);
+        TermQuery bucketQuery = hasSubFacets ? new TermQuery(new Term(freq.field, term)) : null;
         term = termsEnum.next();
 
         SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
         bucket.add("val", bucketVal);
         addStats(bucket, 0);
         if (hasSubFacets) {
-          TermQuery filter = new TermQuery(new Term(freq.field, termCopy));
-          processSubs(bucket, filter, termSet);
+          processSubs(bucket, bucketQuery, termSet);
         }
 
         // TODO... termSet needs to stick around for streaming sub-facets?
