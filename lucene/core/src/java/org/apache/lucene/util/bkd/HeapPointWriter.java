@@ -31,6 +31,7 @@ final class HeapPointWriter implements PointWriter {
   final int maxSize;
   final int valuesPerBlock;
   final int packedBytesLength;
+  // NOTE: can't use ByteBlockPool because we need random-write access when sorting in heap
   final List<byte[]> blocks = new ArrayList<>();
 
   public HeapPointWriter(int initSize, int maxSize, int packedBytesLength) {

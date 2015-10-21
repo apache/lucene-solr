@@ -84,6 +84,9 @@ public final class BKDWriter implements Closeable {
 
   public static final float DEFAULT_MAX_MB_SORT_IN_HEAP = 16.0f;
 
+  /** Maximum number of dimensions */
+  public static final int MAX_DIMS = 15;
+
   /** How many dimensions we are indexing */
   final int numDims;
 
@@ -156,8 +159,8 @@ public final class BKDWriter implements Closeable {
   public static void verifyParams(int numDims, int maxPointsInLeafNode, double maxMBSortInHeap) {
     // We encode dim in a single byte in the splitPackedValues, but we only expose 4 bits for it now, in case we want to use
     // remaining 4 bits for another purpose later
-    if (numDims < 1 || numDims > 15) {
-      throw new IllegalArgumentException("numDims must be 1 .. 15 (got: " + numDims + ")");
+    if (numDims < 1 || numDims > MAX_DIMS) {
+      throw new IllegalArgumentException("numDims must be 1 .. " + MAX_DIMS + " (got: " + numDims + ")");
     }
     if (maxPointsInLeafNode <= 0) {
       throw new IllegalArgumentException("maxPointsInLeafNode must be > 0; got " + maxPointsInLeafNode);

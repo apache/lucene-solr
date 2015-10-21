@@ -56,7 +56,7 @@ public final class BKDReader implements Accountable {
 
     /** Called for non-leaf cells to test how the cell relates to the query, to
      *  determine how to further recurse down the treer. */
-    Relation compare(byte[] minPacked, byte[] maxPacked);
+    Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
   }
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
