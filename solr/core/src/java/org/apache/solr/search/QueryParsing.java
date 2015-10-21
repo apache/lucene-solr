@@ -425,18 +425,14 @@ public class QueryParsing {
     }
   }
 
+
+  private static int FLAG_BOOSTED=0x01;
+  private static int FLAG_IS_CLAUSE=0x02;
   /**
    * @see #toString(Query,IndexSchema)
    */
   public static void toString(Query query, IndexSchema schema, Appendable out, int flags) throws IOException {
-    boolean writeBoost = true;
-
-    float boost = 1f;
-    if (query instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) query;
-      query = bq.getQuery();
-      boost = bq.getBoost();
-    }
+    int subflag = flags & ~(FLAG_BOOSTED|FLAG_IS_CLAUSE);  // clear the boosted / is clause flags for recursion
 
     if (query instanceof TermQuery) {
       TermQuery q = (TermQuery) query;
@@ -491,7 +487,7 @@ public class QueryParsing {
       BooleanQuery q = (BooleanQuery) query;
       boolean needParens = false;
 
-      if (q.getMinimumNumberShouldMatch() != 0 || q.isCoordDisabled()) {
+      if (q.getMinimumNumberShouldMatch() != 0 || q.isCoordDisabled() || (flags & (FLAG_IS_CLAUSE | FLAG_BOOSTED)) != 0 ) {
         needParens = true;
       }
       if (needParens) {
@@ -523,7 +519,7 @@ public class QueryParsing {
           out.append('(');
         }
 
-        toString(subQuery, schema, out, flags);
+        toString(subQuery, schema, out, subflag | FLAG_IS_CLAUSE);
 
         if (wrapQuery) {
           out.append(')');
@@ -549,29 +545,24 @@ public class QueryParsing {
       out.append('*');
     } else if (query instanceof WildcardQuery) {
       out.append(query.toString());
-      writeBoost = false;
     } else if (query instanceof FuzzyQuery) {
       out.append(query.toString());
-      writeBoost = false;
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
-      writeBoost = false;
     } else if (query instanceof WrappedQuery) {
       WrappedQuery q = (WrappedQuery)query;
       out.append(q.getOptions());
-      toString(q.getWrappedQuery(), schema, out, flags);
-      writeBoost = false; // we don't use the boost on wrapped queries
-    } else {
+      toString(q.getWrappedQuery(), schema, out, subflag);
+    } else if (query instanceof BoostQuery) {
+      BoostQuery q = (BoostQuery)query;
+      toString(q.getQuery(), schema, out, subflag | FLAG_BOOSTED);
+      out.append("^");
+      out.append(Float.toString(q.getBoost()));
+    }
+    else {
       out.append(query.getClass().getSimpleName()
               + '(' + query.toString() + ')');
-      writeBoost = false;
     }
-
-    if (writeBoost && boost != 1.0f) {
-      out.append("^");
-      out.append(Float.toString(boost));
-    }
-
   }
 
   /**
