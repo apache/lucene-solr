@@ -136,7 +136,7 @@ solrAdminServices.factory('System',
 .factory('Luke',
   ['$resource', function($resource) {
     return $resource('/solr/:core/admin/luke', {core: '@core', wt:'json', _:Date.now()}, {
-      "index":  {params: {numTerms: 0, show: 'index'}},
+      "index":  {params: {numTerms: 0}},
       "schema": {params: {show:'schema'}},
       "field": {},
       "fields": {params: {show:'schema'}, interceptor: {
@@ -178,8 +178,8 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource('/solr/:core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
-     "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
-    }});
+     "status": {params:{action:"status"}}
+    });
   }])
 .factory('Mbeans',
   ['$resource', function($resource) {

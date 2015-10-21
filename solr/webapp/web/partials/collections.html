@@ -35,7 +35,7 @@ limitations under the License.
         <form>
 
           <p class="clearfix"><label for="add_name">name:</label>
-          <input type="text" name="name" id="add_name" ng-model="newCollection.name"></p>
+          <input type="text" name="name" id="add_name" ng-model="newCollection.name" placeholder="new collection"></p>
 
           <p class="clearfix"><label for="add_config">config set:</label>&nbsp;
           <select chosen ng-options="config.name as config.name for config in configs" name="config_name" id="add_config" ng-model="newCollection.configName">
