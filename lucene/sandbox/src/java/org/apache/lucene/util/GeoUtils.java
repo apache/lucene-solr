@@ -76,7 +76,7 @@ public final class GeoUtils {
 
   public static double compare(final double v1, final double v2) {
     final double delta = v1-v2;
-    return ((int)(Math.abs(delta)/TOLERANCE)*TOLERANCE) <= TOLERANCE ? 0 : delta;
+    return Math.abs(delta) <= TOLERANCE ? 0 : delta;
   }
 
   /**

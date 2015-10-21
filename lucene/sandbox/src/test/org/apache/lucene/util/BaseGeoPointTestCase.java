@@ -19,10 +19,12 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,6 +53,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected static final String FIELD_NAME = "point";
 
+  private static final double LON_SCALE = (0x1L<<GeoUtils.BITS)/360.0D;
+  private static final double LAT_SCALE = (0x1L<<GeoUtils.BITS)/180.0D;
+
   private static double originLat;
   private static double originLon;
   private static double lonRange;
@@ -67,6 +72,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   // A particularly tricky adversary for BKD tree:
+  @Nightly
   public void testSamePointManyTimes() throws Exception {
     int numPoints = atLeast(1000);
     // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
@@ -187,6 +193,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
+  @Nightly
   public void testMultiValued() throws Exception {
     int numPoints = atLeast(10000);
     // Every doc has 2 points:
@@ -201,8 +208,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
-    // boolean small = random().nextBoolean();
-    boolean small = true;
+     boolean small = random().nextBoolean();
+    //boolean small = true;
 
     for (int id=0;id<numPoints;id++) {
       Document doc = new Document();
@@ -233,7 +240,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
     int iters = atLeast(75);
     for (int iter=0;iter<iters;iter++) {
-      // Don't allow dateline crossing when testing small:
       GeoRect rect = randomRect(small, small == false);
 
       if (VERBOSE) {
@@ -393,20 +399,40 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
-  protected static double randomLat(boolean small) {
-    if (small) {
-      return GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
-    } else {
-      return -90 + 180.0 * random().nextDouble();
-    }
+  public static long scaleLon(final double val) {
+    return (long) ((val-GeoUtils.MIN_LON_INCL) * LON_SCALE);
   }
 
-  protected static double randomLon(boolean small) {
+  public static long scaleLat(final double val) {
+    return (long) ((val-GeoUtils.MIN_LAT_INCL) * LAT_SCALE);
+  }
+
+  public static double unscaleLon(final long val) {
+    return (val / LON_SCALE) + GeoUtils.MIN_LON_INCL;
+  }
+
+  public static double unscaleLat(final long val) {
+    return (val / LAT_SCALE) + GeoUtils.MIN_LAT_INCL;
+  }
+
+  public static double randomLat(boolean small) {
+    double result;
     if (small) {
-      return GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+      result = GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
     } else {
-      return -180 + 360.0 * random().nextDouble();
+      result = -90 + 180.0 * random().nextDouble();
     }
+    return unscaleLat(scaleLat(result));
+  }
+
+  public static double randomLon(boolean small) {
+    double result;
+    if (small) {
+      result = GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+    } else {
+      result = -180 + 360.0 * random().nextDouble();
+    }
+    return unscaleLon(scaleLon(result));
   }
 
   protected static GeoRect randomRect(boolean small, boolean canCrossDateLine) {
@@ -630,7 +656,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                 }
 
                 if (VERBOSE) {
-                  System.out.println("  radiusMeters = " + new DecimalFormat("#,###.00").format(radiusMeters));
+                  final DecimalFormat df = new DecimalFormat("#,###.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+                  System.out.println("  radiusMeters = " + df.format(radiusMeters));
                 }
 
                 try {

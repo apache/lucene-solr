@@ -143,11 +143,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected Boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
-    // First quantize the point like the index does:
-    long pointHash = GeoUtils.mortonHash(pointLon, pointLat);
-    pointLon = GeoUtils.mortonUnhashLon(pointHash);
-    pointLat = GeoUtils.mortonUnhashLat(pointHash);
-
     if (GeoUtils.compare(pointLon, rect.minLon) == 0.0 ||
         GeoUtils.compare(pointLon, rect.maxLon) == 0.0 ||
         GeoUtils.compare(pointLat, rect.minLat) == 0.0 ||

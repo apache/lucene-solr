@@ -67,8 +67,8 @@ public class TestGeoUtils extends LuceneTestCase {
     int randomLevel;
     for (int i = 0; i < numPoints; ++i) {
       // random point
-      double lat = randomLat(false);
-      double lon = randomLon(false);
+      double lat = BaseGeoPointTestCase.randomLat(false);
+      double lon = BaseGeoPointTestCase.randomLon(false);
 
       // compute geohash straight from lat/lon and from morton encoded value to ensure they're the same
       randomGeoHashString = GeoHashUtils.stringEncode(lon, lat, randomLevel = random().nextInt(12 - 1) + 1);
@@ -209,22 +209,6 @@ public class TestGeoUtils extends LuceneTestCase {
     GeoDistanceUtils.closestPointOnBBox(-20, -20, 0, 0, 70, 70, result);
     assertEquals(0.0, result[0], 0.0);
     assertEquals(0.0, result[1], 0.0);
-  }
-
-  public static double randomLon(boolean useSmallRanges) {
-    if (useSmallRanges) {
-      return GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
-    } else {
-      return (360d * random().nextDouble()) - 180d;
-    }
-  }
-
-  public static double randomLat(boolean useSmallRanges) {
-    if (useSmallRanges) {
-      return GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
-    } else {
-      return (180d * random().nextDouble()) - 90d;
-    }
   }
 
   private static class Cell {
@@ -392,7 +376,6 @@ public class TestGeoUtils extends LuceneTestCase {
   }
 
   /** Tests consistency of GeoUtils.rectWithinCircle, .rectCrossesCircle, .rectWithin and SloppyMath.haversine distance check */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6846")
   public void testGeoRelations() throws Exception {
 
     int numDocs = atLeast(1000);
@@ -409,8 +392,8 @@ public class TestGeoUtils extends LuceneTestCase {
     double[] docLons = new double[numDocs];
     double[] docLats = new double[numDocs];
     for(int docID=0;docID<numDocs;docID++) {
-      docLons[docID] = randomLon(useSmallRanges);
-      docLats[docID] = randomLat(useSmallRanges);
+      docLons[docID] = BaseGeoPointTestCase.randomLon(useSmallRanges);
+      docLats[docID] = BaseGeoPointTestCase.randomLat(useSmallRanges);
       if (VERBOSE) {
         System.out.println("  doc=" + docID + ": lon=" + docLons[docID] + " lat=" + docLats[docID]);
       }
@@ -424,8 +407,8 @@ public class TestGeoUtils extends LuceneTestCase {
 
       Cell.nextCellID = 0;
 
-      double centerLon = randomLon(useSmallRanges);
-      double centerLat = randomLat(useSmallRanges);
+      double centerLon = BaseGeoPointTestCase.randomLon(useSmallRanges);
+      double centerLat = BaseGeoPointTestCase.randomLat(useSmallRanges);
 
       // So the circle covers at most 50% of the earth's surface:
 
