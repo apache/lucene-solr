@@ -19,10 +19,13 @@ package org.apache.lucene.bkdtree;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
@@ -147,9 +150,7 @@ public class BKDPointInPolygonQuery extends Query {
                                            }
                                          }, treeDV.delegate);
 
-        final DocIdSetIterator disi = result.iterator();
-
-        return new ConstantScoreScorer(this, score(), disi);
+        return new ConstantScoreScorer(this, score(), result.iterator());
       }
     };
   }

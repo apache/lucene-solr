@@ -39,7 +39,7 @@ final class OfflineLatLonWriter implements LatLonWriter {
     out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
     this.count = count;
   }
-    
+
   @Override
   public void append(int latEnc, int lonEnc, long ord, int docID) throws IOException {
     out.writeInt(latEnc);

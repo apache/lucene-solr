@@ -106,4 +106,24 @@ public final class GeoPointField extends Field {
     }
     fieldsData = GeoUtils.mortonHash(lon, lat);
   }
+
+  public double getLon() {
+    return GeoUtils.mortonUnhashLon((long) fieldsData);
+  }
+
+  public double getLat() {
+    return GeoUtils.mortonUnhashLat((long) fieldsData);
+  }
+
+  @Override
+  public String toString() {
+    if (fieldsData == null) {
+      return null;
+    }
+    StringBuilder sb = new StringBuilder();
+    sb.append(GeoUtils.mortonUnhashLon((long) fieldsData));
+    sb.append(',');
+    sb.append(GeoUtils.mortonUnhashLat((long) fieldsData));
+    return sb.toString();
+  }
 }

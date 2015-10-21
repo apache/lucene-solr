@@ -25,11 +25,9 @@ import java.util.ArrayList;
  * @lucene.experimental
  */
 public final class GeoUtils {
-  private static final short MIN_LON = -180;
-  private static final short MIN_LAT = -90;
-  public static final short BITS = 32;
-  private static final double LON_SCALE = ((0x1L<<BITS)-1)/360.0D;
-  private static final double LAT_SCALE = ((0x1L<<BITS)-1)/180.0D;
+  public static final short BITS = 31;
+  private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
+  private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
   public static final double TOLERANCE = 1E-6;
 
   /** Minimum longitude value. */
@@ -61,24 +59,24 @@ public final class GeoUtils {
   }
 
   private static long scaleLon(final double val) {
-    return (long) ((val-MIN_LON) * LON_SCALE);
+    return (long) ((val-MIN_LON_INCL) * LON_SCALE);
   }
 
   private static long scaleLat(final double val) {
-    return (long) ((val-MIN_LAT) * LAT_SCALE);
+    return (long) ((val-MIN_LAT_INCL) * LAT_SCALE);
   }
 
   private static double unscaleLon(final long val) {
-    return (val / LON_SCALE) + MIN_LON;
+    return (val / LON_SCALE) + MIN_LON_INCL;
   }
 
   private static double unscaleLat(final long val) {
-    return (val / LAT_SCALE) + MIN_LAT;
+    return (val / LAT_SCALE) + MIN_LAT_INCL;
   }
 
   public static double compare(final double v1, final double v2) {
-    final double compare = v1-v2;
-    return Math.abs(compare) <= TOLERANCE ? 0 : compare;
+    final double delta = v1-v2;
+    return Math.abs(delta) <= TOLERANCE ? 0 : delta;
   }
 
   /**
@@ -109,8 +107,13 @@ public final class GeoUtils {
     return (off <= 180 ? off : 360-off) - 90;
   }
 
-  public static final boolean bboxContains(final double lon, final double lat, final double minLon,
-                                           final double minLat, final double maxLon, final double maxLat) {
+  /**
+   * Determine if a bbox (defined by minLon, minLat, maxLon, maxLat) contains the provided point (defined by lon, lat)
+   * NOTE: this is a basic method that does not handle dateline or pole crossing. Unwrapping must be done before
+   * calling this method.
+   */
+  public static boolean bboxContains(final double lon, final double lat, final double minLon,
+                                     final double minLat, final double maxLon, final double maxLat) {
     return (compare(lon, minLon) >= 0 && compare(lon, maxLon) <= 0
           && compare(lat, minLat) >= 0 && compare(lat, maxLat) <= 0);
   }
@@ -161,7 +164,7 @@ public final class GeoUtils {
   }
 
   /**
-   * Computes whether a rectangle is wholly within another rectangle (shared boundaries allowed)
+   * Computes whether the first (a) rectangle is wholly within another (b) rectangle (shared boundaries allowed)
    */
   public static boolean rectWithin(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                    final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
@@ -248,11 +251,11 @@ public final class GeoUtils {
    *
    * @param lon longitudinal center of circle (in degrees)
    * @param lat latitudinal center of circle (in degrees)
-   * @param radius distance radius of circle (in meters)
+   * @param radiusMeters distance radius of circle (in meters)
    * @return a list of lon/lat points representing the circle
    */
   @SuppressWarnings({"unchecked","rawtypes"})
-  public static ArrayList<double[]> circleToPoly(final double lon, final double lat, final double radius) {
+  public static ArrayList<double[]> circleToPoly(final double lon, final double lat, final double radiusMeters) {
     double angle;
     // a little under-sampling (to limit the number of polygonal points): using archimedes estimation of pi
     final int sides = 25;
@@ -264,7 +267,7 @@ public final class GeoUtils {
     final int sidesLen = sides-1;
     for (int i=0; i<sidesLen; ++i) {
       angle = (i*360/sides);
-      pt = GeoProjectionUtils.pointFromLonLatBearing(lon, lat, angle, radius, pt);
+      pt = GeoProjectionUtils.pointFromLonLatBearing(lon, lat, angle, radiusMeters, pt);
       lons[i] = pt[0];
       lats[i] = pt[1];
     }
@@ -291,47 +294,79 @@ public final class GeoUtils {
   }
 
   private static boolean rectAnyCornersOutsideCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                                     final double centerLon, final double centerLat, final double radius) {
-    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radius
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radius);
+                                                     final double centerLon, final double centerLat, final double radiusMeters) {
+    return SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radiusMeters
+      || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radiusMeters
+      || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radiusMeters
+      || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radiusMeters;
   }
 
   private static boolean rectAnyCornersInCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                                final double centerLon, final double centerLat, final double radius) {
-    return (SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 <= radius
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 <= radius
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radius);
+                                                final double centerLon, final double centerLat, final double radiusMeters) {
+    return SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 <= radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 <= radiusMeters
+        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radiusMeters;
   }
 
   public static boolean rectWithinCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                         final double centerLon, final double centerLat, final double radius) {
-    return !(rectAnyCornersOutsideCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius));
+                                         final double centerLon, final double centerLat, final double radiusMeters) {
+    return rectAnyCornersOutsideCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters) == false;
   }
 
   /**
-   * Computes whether a rectangle crosses a circle
+   * Determine if a bbox (defined by minLon, minLat, maxLon, maxLat) contains the provided point (defined by lon, lat)
+   * NOTE: this is basic method that does not handle dateline or pole crossing. Unwrapping must be done before
+   * calling this method.
    */
   public static boolean rectCrossesCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                          final double centerLon, final double centerLat, final double radius) {
-    return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radius)
-        || lineCrossesSphere(rMinX, rMinY, 0, rMaxX, rMinY, 0, centerLon, centerLat, 0, radius)
-        || lineCrossesSphere(rMaxX, rMinY, 0, rMaxX, rMaxY, 0, centerLon, centerLat, 0, radius)
-        || lineCrossesSphere(rMaxX, rMaxY, 0, rMinX, rMaxY, 0, centerLon, centerLat, 0, radius)
-        || lineCrossesSphere(rMinX, rMaxY, 0, rMinX, rMinY, 0, centerLon, centerLat, 0, radius);
+                                          final double centerLon, final double centerLat, final double radiusMeters) {
+    return rectAnyCornersInCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters)
+        || isClosestPointOnRectWithinRange(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters);
   }
 
-  public static boolean circleWithinRect(double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-  final double centerLon, final double centerLat, final double radius) {
-    return !(centerLon < rMinX || centerLon > rMaxX || centerLat > rMaxY || centerLat < rMinY
-        || SloppyMath.haversin(rMinY, centerLon, centerLat, centerLon) < radius
-        || SloppyMath.haversin(rMaxY, centerLon, centerLat, centerLon) < radius
-        || SloppyMath.haversin(centerLat, rMinX, centerLat, centerLon) < radius
-        || SloppyMath.haversin(centerLat, rMaxX, centerLat, centerLon) < radius);
+  private static boolean isClosestPointOnRectWithinRange(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                                         final double centerLon, final double centerLat, final double radiusMeters) {
+    double[] closestPt = {0, 0};
+    GeoDistanceUtils.closestPointOnBBox(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, closestPt);
+    return SloppyMath.haversin(centerLat, centerLon, closestPt[1], closestPt[0])*1000.0 <= radiusMeters;
   }
 
+  /**
+   * Compute Bounding Box for a circle using WGS-84 parameters
+   */
+  public static GeoRect circleToBBox(final double centerLon, final double centerLat, final double radiusMeters) {
+    final double radLat = StrictMath.toRadians(centerLat);
+    final double radLon = StrictMath.toRadians(centerLon);
+    double radDistance = radiusMeters / GeoProjectionUtils.SEMIMAJOR_AXIS;
+    double minLat = radLat - radDistance;
+    double maxLat = radLat + radDistance;
+    double minLon;
+    double maxLon;
+
+    if (minLat > GeoProjectionUtils.MIN_LAT_RADIANS && maxLat < GeoProjectionUtils.MAX_LAT_RADIANS) {
+      double deltaLon = StrictMath.asin(StrictMath.sin(radDistance) / StrictMath.cos(radLat));
+      minLon = radLon - deltaLon;
+      if (minLon < GeoProjectionUtils.MIN_LON_RADIANS) {
+        minLon += 2d * StrictMath.PI;
+      }
+      maxLon = radLon + deltaLon;
+      if (maxLon > GeoProjectionUtils.MAX_LON_RADIANS) {
+        maxLon -= 2d * StrictMath.PI;
+      }
+    } else {
+      // a pole is within the distance
+      minLat = StrictMath.max(minLat, GeoProjectionUtils.MIN_LAT_RADIANS);
+      maxLat = StrictMath.min(maxLat, GeoProjectionUtils.MAX_LAT_RADIANS);
+      minLon = GeoProjectionUtils.MIN_LON_RADIANS;
+      maxLon = GeoProjectionUtils.MAX_LON_RADIANS;
+    }
+
+    return new GeoRect(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
+        StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
+  }
+
+  /*
   /**
    * Computes whether or a 3dimensional line segment intersects or crosses a sphere
    *
@@ -344,12 +379,13 @@ public final class GeoUtils {
    * @param centerLon longitudinal location of center search point (in degrees)
    * @param centerLat latitudinal location of center search point (in degrees)
    * @param centerAlt altitude of the center point (in meters)
-   * @param radius search sphere radius (in meters)
+   * @param radiusMeters search sphere radius (in meters)
    * @return whether the provided line segment is a secant of the
-   */
+   * /
+  // NOTE: not used for 2d at the moment. used for 3d w/ altitude (we can keep or add back)
   private static boolean lineCrossesSphere(double lon1, double lat1, double alt1, double lon2,
                                            double lat2, double alt2, double centerLon, double centerLat,
-                                           double centerAlt, double radius) {
+                                           double centerAlt, double radiusMeters) {
     // convert to cartesian 3d (in meters)
     double[] ecf1 = GeoProjectionUtils.llaToECF(lon1, lat1, alt1, null);
     double[] ecf2 = GeoProjectionUtils.llaToECF(lon2, lat2, alt2, null);
@@ -364,7 +400,7 @@ public final class GeoUtils {
 
     final double a = dX*dX + dY*dY + dZ*dZ;
     final double b = 2 * (fX*dX + fY*dY + fZ*dZ);
-    final double c = (fX*fX + fY*fY + fZ*fZ) - (radius*radius);
+    final double c = (fX*fX + fY*fY + fZ*fZ) - (radiusMeters*radiusMeters);
 
     double discrim = (b*b)-(4*a*c);
     if (discrim < 0) {
@@ -382,6 +418,7 @@ public final class GeoUtils {
 
     return true;
   }
+  */
 
   public static boolean isValidLat(double lat) {
     return Double.isNaN(lat) == false && lat >= MIN_LAT_INCL && lat <= MAX_LAT_INCL;
