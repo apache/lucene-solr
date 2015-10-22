@@ -17,6 +17,11 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -25,12 +30,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 /** Removes matches which overlap with another SpanQuery or which are
  * within x tokens before or y tokens after another SpanQuery.
@@ -127,13 +126,13 @@ public final class SpanNotQuery extends SpanQuery {
 
       Spans excludeSpans = excludeWeight.getSpans(context, requiredPostings);
       if (excludeSpans == null) {
-        return includeSpans;
+        return new ScoringWrapperSpans(includeSpans, getSimScorer(context));
       }
 
       TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
       DocIdSetIterator excludeApproximation = excludeTwoPhase == null ? null : excludeTwoPhase.approximation();
 
-      return new FilterSpans(includeSpans) {
+      return new FilterSpans(includeSpans, getSimScorer(context)) {
         // last document we have checked matches() against for the exclusion, and failed
         // when using approximations, so we don't call it again, and pass thru all inclusions.
         int lastApproxDoc = -1;

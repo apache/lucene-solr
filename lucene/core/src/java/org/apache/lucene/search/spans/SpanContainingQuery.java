@@ -17,16 +17,16 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-
-/** Keep matches that contain another Spans. */
+/** Keep matches that contain another SpanScorer. */
 public final class SpanContainingQuery extends SpanContainQuery {
   /** Construct a SpanContainingQuery matching spans from <code>big</code>
    * that contain at least one spans from <code>little</code>.
@@ -71,7 +71,7 @@ public final class SpanContainingQuery extends SpanContainQuery {
       Spans big = containerContained.get(0);
       Spans little = containerContained.get(1);
 
-      return new ContainSpans(big, little, big) {
+      return new ContainSpans(this, getSimScorer(context), big, little, big) {
 
         @Override
         boolean twoPhaseCurrentDocMatches() throws IOException {

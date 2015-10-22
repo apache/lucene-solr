@@ -271,6 +271,8 @@ Other
 
 * LUCENE-6467: Simplify Query.equals. (Paul Elschot via Adrien Grand)
 
+* LUCENE-6845: SpanScorer is now merged into Spans (Alan Woodward, David Smiley)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also

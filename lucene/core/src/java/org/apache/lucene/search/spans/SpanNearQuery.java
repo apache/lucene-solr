@@ -33,7 +33,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
@@ -220,8 +219,8 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
 
       // all NearSpans require at least two subSpans
-      return (!inOrder) ? new NearSpansUnordered(SpanNearQuery.this, subSpans)
-          : new NearSpansOrdered(SpanNearQuery.this, subSpans);
+      return (!inOrder) ? new NearSpansUnordered(this, slop, subSpans, getSimScorer(context))
+          : new NearSpansOrdered(this, slop, subSpans, getSimScorer(context));
     }
 
     @Override
@@ -331,6 +330,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     final int width;
 
     GapSpans(int width) {
+      super(null, null);
       this.width = width;
     }
 

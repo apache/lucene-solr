@@ -17,6 +17,11 @@ package org.apache.lucene.search.spans;
  */
 
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -24,11 +29,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 
 /**
@@ -94,7 +94,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings);
-      return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
+      return (matchSpans == null) ? null : new FilterSpans(matchSpans, getSimScorer(context)) {
         @Override
         protected AcceptStatus accept(Spans candidate) throws IOException {
           return acceptPosition(candidate);

@@ -17,12 +17,13 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.util.PriorityQueue;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Similar to {@link NearSpansOrdered}, but for the unordered case.
@@ -30,15 +31,16 @@ import java.util.List;
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
-public class NearSpansUnordered extends NearSpans {
+public class NearSpansUnordered extends ConjunctionSpans {
 
   private List<SpansCell> subSpanCells; // in query order
+  private final int allowedSlop;
 
   private SpanPositionQueue spanPositionQueue;
 
-  public NearSpansUnordered(SpanNearQuery query, List<Spans> subSpans)
+  public NearSpansUnordered(SpanWeight weight, int allowedSlop, List<Spans> subSpans, Similarity.SimScorer simScorer)
   throws IOException {
-    super(query, subSpans);
+    super(subSpans, weight, simScorer);
 
     this.subSpanCells = new ArrayList<>(subSpans.size());
     for (Spans subSpan : subSpans) { // sub spans in query order
@@ -46,6 +48,7 @@ public class NearSpansUnordered extends NearSpans {
     }
     spanPositionQueue = new SpanPositionQueue(subSpans.size());
     singleCellToPositionQueue(); // -1 startPosition/endPosition also at doc -1
+    this.allowedSlop = allowedSlop;
   }
 
   private void singleCellToPositionQueue() {
@@ -74,6 +77,7 @@ public class NearSpansUnordered extends NearSpans {
     final Spans in;
 
     public SpansCell(Spans spans) {
+      super((SpanWeight) NearSpansUnordered.this.weight, NearSpansUnordered.this.docScorer);
       this.in = spans;
     }
 
@@ -172,7 +176,7 @@ public class NearSpansUnordered extends NearSpans {
    *              or the spans start at the same position,
    *              and spans1 ends before spans2.
    */
-  static final boolean positionsOrdered(Spans spans1, Spans spans2) {
+  static boolean positionsOrdered(Spans spans1, Spans spans2) {
     assert spans1.docID() == spans2.docID() : "doc1 " + spans1.docID() + " != doc2 " + spans2.docID();
     int start1 = spans1.startPosition();
     int start2 = spans2.startPosition();
@@ -261,10 +265,10 @@ public class NearSpansUnordered extends NearSpans {
   @Override
   public String toString() {
     if (minPositionCell() != null) {
-      return getClass().getName() + "("+query.toString()+")@"+
+      return getClass().getName() + "("+weight.getQuery().toString()+")@"+
         (docID()+":"+startPosition()+"-"+endPosition());
     } else {
-      return getClass().getName() + "("+query.toString()+")@ ?START?";
+      return getClass().getName() + "("+weight.getQuery().toString()+")@ ?START?";
     }
   }
 }

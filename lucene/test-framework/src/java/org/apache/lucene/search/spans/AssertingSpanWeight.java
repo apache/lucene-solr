@@ -17,16 +17,17 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * Wraps a SpanWeight with additional asserts
@@ -55,7 +56,12 @@ public class AssertingSpanWeight extends SpanWeight {
     Spans spans = in.getSpans(context, requiredPostings);
     if (spans == null)
       return null;
-    return new AssertingSpans(spans);
+    return new AssertingSpans(spans, in.getSimScorer(context));
+  }
+
+  @Override
+  public Similarity.SimScorer getSimScorer(LeafReaderContext context) throws IOException {
+    return in.getSimScorer(context);
   }
 
   @Override

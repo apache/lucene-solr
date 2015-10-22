@@ -19,8 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.spans.Spans;
-
 /**
  * This abstract class defines methods to iterate over a set of non-decreasing
  * doc ids. Note that this class assumes it iterates on doc Ids, and therefore

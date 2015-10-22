@@ -24,7 +24,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -132,25 +131,22 @@ public abstract class SpanWeight extends Weight {
 
   @Override
   public Scorer scorer(LeafReaderContext context) throws IOException {
-    if (field == null) {
-      return null;
-    }
-    Terms terms = context.reader().terms(field);
-    if (terms != null && terms.hasPositions() == false) {
-      throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
-    }
-    Spans spans = getSpans(context, Postings.POSITIONS);
-    Similarity.SimScorer simScorer = getSimScorer(context);
-    return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
+    return getSpans(context, Postings.POSITIONS);
   }
 
+  /**
+   * Return a SimScorer for this context
+   * @param context the LeafReaderContext
+   * @return a SimWeight
+   * @throws IOException on error
+   */
   public Similarity.SimScorer getSimScorer(LeafReaderContext context) throws IOException {
     return simWeight == null ? null : similarity.simScorer(simWeight, context);
   }
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    SpanScorer scorer = (SpanScorer) scorer(context);
+    Spans scorer = (Spans) scorer(context);
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {

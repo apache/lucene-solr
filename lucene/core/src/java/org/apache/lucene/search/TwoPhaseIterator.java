@@ -20,11 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.apache.lucene.search.spans.Spans;
-
 /**
  * Returned by {@link Scorer#asTwoPhaseIterator()}
- * and  {@link Spans#asTwoPhaseIterator()}
  * to expose an approximation of a {@link DocIdSetIterator}.
  * When the {@link #approximation()}'s
  * {@link DocIdSetIterator#nextDoc()} or {@link DocIdSetIterator#advance(int)}
@@ -100,8 +97,6 @@ public abstract class TwoPhaseIterator {
   public static TwoPhaseIterator asTwoPhaseIterator(DocIdSetIterator iter) {
     return (iter instanceof Scorer)
             ? ((Scorer) iter).asTwoPhaseIterator()
-            : (iter instanceof Spans)
-            ? ((Spans) iter).asTwoPhaseIterator()
             : null;
   }
 

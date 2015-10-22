@@ -17,6 +17,13 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -27,13 +34,6 @@ import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 
 /** Matches the union of its clauses.
@@ -166,7 +166,7 @@ public final class SpanOrQuery extends SpanQuery {
       if (subSpans.size() == 0) {
         return null;
       } else if (subSpans.size() == 1) {
-        return subSpans.get(0);
+        return new ScoringWrapperSpans(subSpans.get(0), getSimScorer(context));
       }
 
       DisiPriorityQueue<Spans> byDocQueue = new DisiPriorityQueue<>(subSpans.size());
@@ -176,7 +176,7 @@ public final class SpanOrQuery extends SpanQuery {
 
       SpanPositionQueue byPositionQueue = new SpanPositionQueue(subSpans.size()); // when empty use -1
 
-      return new Spans() {
+      return new Spans(this, getSimScorer(context)) {
         Spans topPositionSpans = null;
 
         @Override
