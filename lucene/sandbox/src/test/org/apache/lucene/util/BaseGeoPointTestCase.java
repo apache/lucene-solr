@@ -45,6 +45,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.BeforeClass;
 
 // TODO: cutover TestGeoUtils too?
@@ -562,6 +563,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       dir = newDirectory();
     }
+    noVirusChecker(dir);
 
     Set<Integer> deleted = new HashSet<>();
     // RandomIndexWriter is too slow here:
@@ -754,6 +756,13 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       thread.join();
     }
     IOUtils.close(r, dir);
+  }
+
+  protected Directory noVirusChecker(Directory dir) {
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    return dir;
   }
 }
 

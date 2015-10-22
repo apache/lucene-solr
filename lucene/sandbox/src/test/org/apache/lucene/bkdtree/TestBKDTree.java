@@ -198,14 +198,7 @@ public class TestBKDTree extends BaseGeoPointTestCase {
     return new BKDTreeDocValuesFormat(maxPointsInLeaf, maxPointsSortInHeap);
   }
 
-  private static Directory noVirusChecker(Directory dir) {
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
-  private static Directory getDirectory() {     
+  private Directory getDirectory() {     
     return noVirusChecker(newDirectory());
   }
 }
