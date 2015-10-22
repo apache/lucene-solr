@@ -172,7 +172,7 @@ public final class SpanOrQuery extends SpanQuery {
       if (subSpans.size() == 0) {
         return null;
       } else if (subSpans.size() == 1) {
-        return subSpans.get(0);
+        return new ScoringWrapperSpans(subSpans.get(0), getSimScorer(context));
       }
 
       final DisiPriorityQueue<Spans> byDocQueue = new DisiPriorityQueue<>(subSpans.size());
@@ -182,7 +182,7 @@ public final class SpanOrQuery extends SpanQuery {
 
       final SpanPositionQueue byPositionQueue = new SpanPositionQueue(subSpans.size()); // when empty use -1
 
-      return new Spans() {
+      return new Spans(this, getSimScorer(context)) {
         Spans topPositionSpans = null;
 
         @Override

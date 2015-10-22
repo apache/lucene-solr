@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A {@link Spans} implementation wrapping another spans instance,
@@ -35,7 +36,8 @@ public abstract class FilterSpans extends Spans {
   private int startPos = -1;
   
   /** Wrap the given {@link Spans}. */
-  protected FilterSpans(Spans in) {
+  protected FilterSpans(Spans in, Similarity.SimScorer docScorer) {
+    super((SpanWeight)in.getWeight(), docScorer);
     this.in = Objects.requireNonNull(in);
   }
   
@@ -181,7 +183,7 @@ public abstract class FilterSpans extends Spans {
       }
     }
   }
-  
+
   /**
    * Status returned from {@link FilterSpans#accept(Spans)} that indicates
    * whether a candidate match should be accepted, rejected, or rejected

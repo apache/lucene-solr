@@ -31,6 +31,9 @@ public class TestFilterSpans extends LuceneTestCase {
     // verify that all methods of Spans are overridden by FilterSpans,
     // except those under the 'exclude' list
     Set<Method> exclude = new HashSet<>();
+    exclude.add(FilterSpans.class.getMethod("freq"));
+    exclude.add(FilterSpans.class.getMethod("score"));
+    exclude.add(FilterSpans.class.getMethod("sloppyFreq"));
     for (Method m : FilterSpans.class.getMethods()) {
       if (m.getDeclaringClass() == Spans.class) {
         assertTrue("method " + m.getName() + " not overridden!", exclude.contains(m));

@@ -118,7 +118,7 @@ public class SpanTermQuery extends SpanQuery {
       termsEnum.seekExact(term.bytes(), state);
 
       final PostingsEnum postings = termsEnum.postings(null, requiredPostings.getRequiredPostings());
-      return new TermSpans(postings, term);
+      return new TermSpans(this, getSimScorer(context), postings, term);
     }
   }
 

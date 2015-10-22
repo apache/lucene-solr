@@ -32,7 +32,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
@@ -137,7 +136,7 @@ public class PayloadScoreQuery extends SpanQuery {
       Spans spans = getSpans(context, Postings.PAYLOADS);
       if (spans == null)
         return null;
-      return new PayloadSpanScorer(spans, this, innerWeight.getSimScorer(context));
+      return new PayloadSpans(spans, this, innerWeight.getSimScorer(context));
     }
 
     @Override
@@ -157,7 +156,7 @@ public class PayloadScoreQuery extends SpanQuery {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      PayloadSpanScorer scorer = (PayloadSpanScorer) scorer(context);
+      PayloadSpans scorer = (PayloadSpans) scorer(context);
       if (scorer == null || scorer.advance(doc) != doc)
         return Explanation.noMatch("No match");
 
@@ -174,13 +173,40 @@ public class PayloadScoreQuery extends SpanQuery {
     }
   }
 
-  private class PayloadSpanScorer extends SpanScorer implements SpanCollector {
+  private class PayloadSpans extends Spans implements SpanCollector {
 
     private int payloadsSeen;
     private float payloadScore;
+    private final Spans in;
 
-    private PayloadSpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
-      super(spans, weight, docScorer);
+    private PayloadSpans(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
+      super(weight, docScorer);
+      this.in = spans;
+    }
+
+    @Override
+    public int nextStartPosition() throws IOException {
+      return in.nextStartPosition();
+    }
+
+    @Override
+    public int startPosition() {
+      return in.startPosition();
+    }
+
+    @Override
+    public int endPosition() {
+      return in.endPosition();
+    }
+
+    @Override
+    public int width() {
+      return in.width();
+    }
+
+    @Override
+    public void collect(SpanCollector collector) throws IOException {
+      in.collect(collector);
     }
 
     @Override
@@ -191,7 +217,7 @@ public class PayloadScoreQuery extends SpanQuery {
 
     @Override
     protected void doCurrentSpans() throws IOException {
-      spans.collect(this);
+      in.collect(this);
     }
 
     @Override
@@ -199,8 +225,8 @@ public class PayloadScoreQuery extends SpanQuery {
       BytesRef payload = postings.getPayload();
       if (payload == null)
         return;
-      float payloadFactor = docScorer.computePayloadFactor(docID(), spans.startPosition(), spans.endPosition(), payload);
-      payloadScore = function.currentScore(docID(), getField(), spans.startPosition(), spans.endPosition(),
+      float payloadFactor = docScorer.computePayloadFactor(docID(), in.startPosition(), in.endPosition(), payload);
+      payloadScore = function.currentScore(docID(), getField(), in.startPosition(), in.endPosition(),
                                             payloadsSeen, payloadScore, payloadFactor);
       payloadsSeen++;
     }
@@ -227,6 +253,26 @@ public class PayloadScoreQuery extends SpanQuery {
     @Override
     public void reset() {
 
+    }
+
+    @Override
+    public int docID() {
+      return in.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return in.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return in.advance(target);
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
     }
   }
 

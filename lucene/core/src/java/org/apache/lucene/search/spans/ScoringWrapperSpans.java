@@ -18,46 +18,68 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Objects;
 
 import org.apache.lucene.search.similarities.Similarity;
 
-abstract class ContainSpans extends ConjunctionSpans {
-  Spans sourceSpans;
-  Spans bigSpans;
-  Spans littleSpans;
+/**
+ * A Spans that wraps another Spans with a different SimScorer
+ */
+public class ScoringWrapperSpans extends Spans {
 
-  ContainSpans(SpanWeight weight, Similarity.SimScorer simScorer, Spans bigSpans, Spans littleSpans, Spans sourceSpans) {
-    super(Arrays.asList(bigSpans, littleSpans), weight, simScorer);
-    this.bigSpans = Objects.requireNonNull(bigSpans);
-    this.littleSpans = Objects.requireNonNull(littleSpans);
-    this.sourceSpans = Objects.requireNonNull(sourceSpans);
+  private final Spans in;
+
+  /**
+   * Creates a new ScoringWrapperSpans
+   * @param spans the scorer to wrap
+   * @param simScorer  the SimScorer to use for scoring
+   */
+  public ScoringWrapperSpans(Spans spans, Similarity.SimScorer simScorer) {
+    super((SpanWeight) spans.getWeight(), simScorer);
+    this.in = spans;
   }
 
   @Override
-  public int startPosition() { 
-    return atFirstInCurrentDoc ? -1
-            : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
-            : sourceSpans.startPosition(); 
+  public int nextStartPosition() throws IOException {
+    return in.nextStartPosition();
   }
 
   @Override
-  public int endPosition() { 
-    return atFirstInCurrentDoc ? -1
-            : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
-            : sourceSpans.endPosition(); 
+  public int startPosition() {
+    return in.startPosition();
+  }
+
+  @Override
+  public int endPosition() {
+    return in.endPosition();
   }
 
   @Override
   public int width() {
-    return sourceSpans.width();
+    return in.width();
   }
 
   @Override
   public void collect(SpanCollector collector) throws IOException {
-    bigSpans.collect(collector);
-    littleSpans.collect(collector);
+    in.collect(collector);
   }
 
+  @Override
+  public int docID() {
+    return in.docID();
+  }
+
+  @Override
+  public int nextDoc() throws IOException {
+    return in.nextDoc();
+  }
+
+  @Override
+  public int advance(int target) throws IOException {
+    return in.advance(target);
+  }
+
+  @Override
+  public long cost() {
+    return in.cost();
+  }
 }

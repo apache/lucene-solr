@@ -20,7 +20,6 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.spans package as a
@@ -34,6 +33,10 @@ final class JustCompileSearchSpans {
   private static final String UNSUPPORTED_MSG = "unsupported: used for back-compat testing only !";
 
   static final class JustCompileSpans extends Spans {
+
+    JustCompileSpans() {
+      super(null, null);
+    }
 
     @Override
     public int docID() {
@@ -100,65 +103,4 @@ final class JustCompileSearchSpans {
     
   }
 
-  static final class JustCompilePayloadSpans extends Spans {
-
-    @Override
-    public int docID() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int startPosition() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int endPosition() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int width() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public void collect(SpanCollector collector) throws IOException {
-
-    }
-
-    @Override
-    public int nextStartPosition() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public long cost() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-  
-  static final class JustCompileSpanScorer extends SpanScorer {
-
-    protected JustCompileSpanScorer(Spans spans, SpanWeight weight,
-        Similarity.SimScorer docScorer) throws IOException {
-      super(spans, weight, docScorer);
-    }
-
-    @Override
-    protected float scoreCurrentDoc() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-  }
 }

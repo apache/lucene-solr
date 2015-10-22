@@ -38,7 +38,6 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
@@ -183,7 +182,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     }
   }
 
-  public class PayloadNearSpanScorer extends SpanScorer implements SpanCollector {
+  public class PayloadNearSpanScorer extends Spans implements SpanCollector {
 
     Spans spans;
     protected float payloadScore;
@@ -191,7 +190,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     private final List<byte[]> payloads = new ArrayList<>();
 
     protected PayloadNearSpanScorer(Spans spans, SpanWeight weight, Similarity.SimScorer docScorer) throws IOException {
-      super(spans, weight, docScorer);
+      super(weight, docScorer);
       this.spans = spans;
     }
 
@@ -218,6 +217,31 @@ public class PayloadNearQuery extends SpanNearQuery {
                 spans.startPosition(), spans.endPosition(), scratch));
         ++payloadsSeen;
       }
+    }
+
+    @Override
+    public int nextStartPosition() throws IOException {
+      return spans.nextStartPosition();
+    }
+
+    @Override
+    public int startPosition() {
+      return spans.startPosition();
+    }
+
+    @Override
+    public int endPosition() {
+      return spans.endPosition();
+    }
+
+    @Override
+    public int width() {
+      return spans.width();
+    }
+
+    @Override
+    public void collect(SpanCollector collector) throws IOException {
+      spans.collect(collector);
     }
 
     @Override
@@ -252,6 +276,26 @@ public class PayloadNearQuery extends SpanNearQuery {
     @Override
     public void reset() {
       this.payloads.clear();
+    }
+
+    @Override
+    public int docID() {
+      return spans.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return spans.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return spans.advance(target);
+    }
+
+    @Override
+    public long cost() {
+      return spans.cost();
     }
   }
 

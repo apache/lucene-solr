@@ -17,13 +17,14 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.TwoPhaseIterator;
-
 import java.io.IOException;
 
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.similarities.Similarity;
+
 /** 
- * Wraps a Spans with additional asserts 
+ * Wraps a Spans with additional asserts
  */
 class AssertingSpans extends Spans {
   final Spans in;
@@ -67,7 +68,8 @@ class AssertingSpans extends Spans {
   
   State state = State.DOC_START;
   
-  AssertingSpans(Spans in) {
+  AssertingSpans(Spans in, Similarity.SimScorer docScorer) {
+    super((SpanWeight)in.getWeight(), docScorer);
     this.in = in;
   }
   
@@ -187,7 +189,13 @@ class AssertingSpans extends Spans {
   public long cost() {
     return in.cost();
   }
-  
+
+  @Override
+  protected float scoreCurrentDoc() throws IOException {
+    assert in.docScorer != null : in.getClass() + " has no docScorer!";
+    return in.scoreCurrentDoc();
+  }
+
   @Override
   public TwoPhaseIterator asTwoPhaseIterator() {
     final TwoPhaseIterator iterator = in.asTwoPhaseIterator();
@@ -196,7 +204,7 @@ class AssertingSpans extends Spans {
     }
     return new AssertingTwoPhaseView(iterator);
   }
-  
+
   class AssertingTwoPhaseView extends TwoPhaseIterator {
     final TwoPhaseIterator in;
     int lastDoc = -1;
