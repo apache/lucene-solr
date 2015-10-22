@@ -60,6 +60,8 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     } catch (IOException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
           "Unable to call finish() on UpdateRequestProcessor", e);
+    } finally {
+      deltaKeys = null;
     }
   }
   @Override

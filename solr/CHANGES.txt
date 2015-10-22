@@ -285,6 +285,9 @@ Bug Fixes
 
 * SOLR-8162: JmxMonitoredMap#clear triggers a query on all the MBeans thus generating lots of warnings.
   (Marius Dumitru Florea, shalin)
+
+* SOLR-7843: DataImportHandler's delta imports leak memory because the delta keys are kept in memory
+  and not cleared after the process is finished. (Pablo Lozano via shalin)
   
 Optimizations
 ----------------------
