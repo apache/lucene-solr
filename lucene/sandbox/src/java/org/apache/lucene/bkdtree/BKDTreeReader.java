@@ -34,7 +34,7 @@ import java.util.Collections;
  * @lucene.experimental */
 
 final class BKDTreeReader implements Accountable {
-  final private int[] splitValues; 
+  final private int[] splitValues;
   final private int leafNodeOffset;
   final private long[] leafBlockFPs;
   final int maxDoc;
@@ -156,7 +156,7 @@ final class BKDTreeReader implements Accountable {
         return 0;
       }
       state.in.seek(fp);
-      
+
       //System.out.println("    seek to leafFP=" + fp);
       // How many points are stored in this leaf cell:
       int count = state.in.readVInt();
@@ -349,7 +349,7 @@ final class BKDTreeReader implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return splitValues.length * RamUsageEstimator.NUM_BYTES_INT + 
+    return splitValues.length * RamUsageEstimator.NUM_BYTES_INT +
       leafBlockFPs.length * RamUsageEstimator.NUM_BYTES_LONG;
   }
 

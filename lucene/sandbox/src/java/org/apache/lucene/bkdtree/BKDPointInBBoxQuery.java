@@ -51,7 +51,7 @@ public class BKDPointInBBoxQuery extends Query {
   final double minLon;
   final double maxLon;
 
-  /** Matches all points &gt;= minLon, minLat (inclusive) and &lt; maxLon, maxLat (exclusive). */ 
+  /** Matches all points &gt;= minLon, minLat (inclusive) and &lt; maxLon, maxLat (exclusive). */
   public BKDPointInBBoxQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
     this.field = field;
     if (BKDTreeWriter.validLat(minLat) == false) {

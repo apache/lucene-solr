@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,31 +17,51 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.GeoUtils;
-
-/** NOTE: package private; just used so {@link GeoPointInPolygonQuery} can communicate its bounding box to {@link GeoPointInBBoxQuery}. */
-class GeoBoundingBox {
+/** Represents a lat/lon rectangle. */
+public class GeoRect {
   public final double minLon;
   public final double maxLon;
   public final double minLat;
   public final double maxLat;
 
-  public GeoBoundingBox(double minLon, double maxLon, double minLat, double maxLat) {
+  public GeoRect(double minLon, double maxLon, double minLat, double maxLat) {
     if (GeoUtils.isValidLon(minLon) == false) {
       throw new IllegalArgumentException("invalid minLon " + minLon);
     }
     if (GeoUtils.isValidLon(maxLon) == false) {
-      throw new IllegalArgumentException("invalid maxLon " + minLon);
+      throw new IllegalArgumentException("invalid maxLon " + maxLon);
     }
     if (GeoUtils.isValidLat(minLat) == false) {
       throw new IllegalArgumentException("invalid minLat " + minLat);
     }
     if (GeoUtils.isValidLat(maxLat) == false) {
-      throw new IllegalArgumentException("invalid maxLat " + minLat);
+      throw new IllegalArgumentException("invalid maxLat " + maxLat);
     }
     this.minLon = minLon;
     this.maxLon = maxLon;
     this.minLat = minLat;
     this.maxLat = maxLat;
+    assert maxLat >= minLat;
+
+    // NOTE: cannot assert maxLon >= minLon since this rect could cross the dateline
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder b = new StringBuilder();
+    b.append("GeoRect(lon=");
+    b.append(minLon);
+    b.append(" TO ");
+    b.append(maxLon);
+    if (maxLon < minLon) {
+      b.append(" (crosses dateline!)");
+    }
+    b.append(" lat=");
+    b.append(minLat);
+    b.append(" TO ");
+    b.append(maxLat);
+    b.append(")");
+
+    return b.toString();
   }
 }

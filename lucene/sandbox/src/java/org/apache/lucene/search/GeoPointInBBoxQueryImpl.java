@@ -19,11 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.SloppyMath;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
  *
@@ -57,6 +58,23 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
     protected GeoPointInBBoxTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
                             final double maxLon, final double maxLat) {
       super(tenum, minLon, minLat, maxLon, maxLat);
+    }
+
+    @Override
+    protected short computeMaxShift() {
+      final short shiftFactor;
+
+      // compute diagonal radius
+      double midLon = (minLon + maxLon) * 0.5;
+      double midLat = (minLat + maxLat) * 0.5;
+
+      if (SloppyMath.haversin(minLat, minLon, midLat, midLon)*1000 > 1000000) {
+        shiftFactor = 5;
+      } else {
+        shiftFactor = 4;
+      }
+
+      return (short)(GeoPointField.PRECISION_STEP * shiftFactor);
     }
 
     /**

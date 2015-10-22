@@ -31,6 +31,10 @@ public class GeoProjectionUtils {
   static final double PI_OVER_2 = StrictMath.PI / 2.0D;
   static final double SEMIMAJOR_AXIS2 = SEMIMAJOR_AXIS * SEMIMAJOR_AXIS;
   static final double SEMIMINOR_AXIS2 = SEMIMINOR_AXIS * SEMIMINOR_AXIS;
+  public static final double MIN_LON_RADIANS = StrictMath.toRadians(GeoUtils.MIN_LON_INCL);
+  public static final double MIN_LAT_RADIANS = StrictMath.toRadians(GeoUtils.MIN_LAT_INCL);
+  public static final double MAX_LON_RADIANS = StrictMath.toRadians(GeoUtils.MAX_LON_INCL);
+  public static final double MAX_LAT_RADIANS = StrictMath.toRadians(GeoUtils.MAX_LAT_INCL);
 
   /**
    * Converts from geocentric earth-centered earth-fixed to geodesic lat/lon/alt
@@ -375,8 +379,8 @@ public class GeoProjectionUtils {
 
     final double lam = lambda - (1-c) * FLATTENING * sinAlpha *
         (sigma + c * sinSigma * (cos2SigmaM + c * cosSigma * (-1 + 2* cos2SigmaM*cos2SigmaM)));
-    pt[0] = lon + StrictMath.toDegrees(lam);
-    pt[1] = StrictMath.toDegrees(lat2);
+    pt[0] = GeoUtils.normalizeLon(lon + StrictMath.toDegrees(lam));
+    pt[1] = GeoUtils.normalizeLat(StrictMath.toDegrees(lat2));
 
     return pt;
   }

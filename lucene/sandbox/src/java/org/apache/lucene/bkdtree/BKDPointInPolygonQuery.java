@@ -124,7 +124,7 @@ public class BKDPointInPolygonQuery extends Query {
         }
         BKDTreeSortedNumericDocValues treeDV = (BKDTreeSortedNumericDocValues) sdv;
         BKDTreeReader tree = treeDV.getBKDTreeReader();
-        
+
         DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon,
                                          new BKDTreeReader.LatLonFilter() {
                                            @Override
@@ -200,7 +200,6 @@ public class BKDPointInPolygonQuery extends Query {
         .append(polyLats[i])
         .append("] ");
     }
-    sb.append(ToStringUtils.boost(getBoost()));
     return sb.toString();
   }
 }

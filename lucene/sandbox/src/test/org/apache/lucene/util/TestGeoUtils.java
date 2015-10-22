@@ -17,12 +17,17 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.BeforeClass;
-import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 /**
  * Tests class for methods in GeoUtils
@@ -30,6 +35,9 @@ import org.junit.Test;
  * @lucene.experimental
  */
 public class TestGeoUtils extends LuceneTestCase {
+
+  private static final double LON_SCALE = (0x1L<<GeoUtils.BITS)/360.0D;
+  private static final double LAT_SCALE = (0x1L<<GeoUtils.BITS)/180.0D;
 
   // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
   private static double originLat;
@@ -54,7 +62,6 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
 
-  @Test
   public void testGeoHash() {
     int numPoints = atLeast(100);
     String randomGeoHashString;
@@ -63,8 +70,8 @@ public class TestGeoUtils extends LuceneTestCase {
     int randomLevel;
     for (int i = 0; i < numPoints; ++i) {
       // random point
-      double lat = randomLatFullRange();
-      double lon = randomLonFullRange();
+      double lat = randomLat(false);
+      double lon = randomLon(false);
 
       // compute geohash straight from lat/lon and from morton encoded value to ensure they're the same
       randomGeoHashString = GeoHashUtils.stringEncode(lon, lat, randomLevel = random().nextInt(12 - 1) + 1);
@@ -90,7 +97,6 @@ public class TestGeoUtils extends LuceneTestCase {
    * Pass condition: lat=42.6, lng=-5.6 should be encoded as "ezs42e44yx96",
    * lat=57.64911 lng=10.40744 should be encoded as "u4pruydqqvj8"
    */
-  @Test
   public void testEncode() {
     String hash = GeoHashUtils.stringEncode(-5.6, 42.6, 12);
     assertEquals("ezs42e44yx96", hash);
@@ -103,7 +109,6 @@ public class TestGeoUtils extends LuceneTestCase {
    * Pass condition: lat=52.3738007, lng=4.8909347 should be encoded and then
    * decoded within 0.00001 of the original value
    */
-  @Test
   public void testDecodePreciseLongitudeLatitude() {
     final String geohash = GeoHashUtils.stringEncode(4.8909347, 52.3738007);
     final long hash = GeoHashUtils.mortonEncode(geohash);
@@ -116,7 +121,6 @@ public class TestGeoUtils extends LuceneTestCase {
    * Pass condition: lat=84.6, lng=10.5 should be encoded and then decoded
    * within 0.00001 of the original value
    */
-  @Test
   public void testDecodeImpreciseLongitudeLatitude() {
     final String geohash = GeoHashUtils.stringEncode(10.5, 84.6);
 
@@ -126,7 +130,6 @@ public class TestGeoUtils extends LuceneTestCase {
     assertEquals(10.5, GeoUtils.mortonUnhashLon(hash), 0.00001D);
   }
 
-  @Test
   public void testDecodeEncode() {
     final String geoHash = "u173zq37x014";
     assertEquals(geoHash, GeoHashUtils.stringEncode(4.8909347, 52.3738007));
@@ -139,7 +142,6 @@ public class TestGeoUtils extends LuceneTestCase {
     assertEquals(geoHash, GeoHashUtils.stringEncode(lon, lat));
   }
 
-  @Test
   public void testNeighbors() {
     String geohash = "gcpv";
     List<String> expectedNeighbors = new ArrayList<>();
@@ -201,19 +203,332 @@ public class TestGeoUtils extends LuceneTestCase {
     assertEquals(expectedNeighbors, neighbors);
   }
 
-  public static double randomLatFullRange() {
-    return (180d * random().nextDouble()) - 90d;
+  public void testClosestPointOnBBox() {
+    double[] result = new double[2];
+    GeoDistanceUtils.closestPointOnBBox(20, 30, 40, 50, 70, 70, result);
+    assertEquals(40.0, result[0], 0.0);
+    assertEquals(50.0, result[1], 0.0);
+
+    GeoDistanceUtils.closestPointOnBBox(-20, -20, 0, 0, 70, 70, result);
+    assertEquals(0.0, result[0], 0.0);
+    assertEquals(0.0, result[1], 0.0);
   }
 
-  public static double randomLonFullRange() {
-    return (360d * random().nextDouble()) - 180d;
+  private static class Cell {
+    static int nextCellID;
+
+    final Cell parent;
+    final int cellID;
+    final double minLon, maxLon;
+    final double minLat, maxLat;
+    final int splitCount;
+
+    public Cell(Cell parent,
+                double minLon, double minLat,
+                double maxLon, double maxLat,
+                int splitCount) {
+      assert maxLon >= minLon;
+      assert maxLat >= minLat;
+      this.parent = parent;
+      this.minLon = minLon;
+      this.minLat = minLat;
+      this.maxLon = maxLon;
+      this.maxLat = maxLat;
+      this.cellID = nextCellID++;
+      this.splitCount = splitCount;
+    }
+
+    /** Returns true if the quantized point lies within this cell, inclusive on all bounds. */
+    public boolean contains(double lon, double lat) {
+      return lon >= minLon && lon <= maxLon && lat >= minLat && lat <= maxLat;
+    }
+
+    @Override
+    public String toString() {
+      return "cell=" + cellID + (parent == null ? "" : " parentCellID=" + parent.cellID) + " lon: " + minLon + " TO " + maxLon + ", lat: " + minLat + " TO " + maxLat + ", splits: " + splitCount;
+    }
   }
 
-  public static double randomLat() {
-    return GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
+  public long scaleLon(final double val) {
+    return (long) ((val-GeoUtils.MIN_LON_INCL) * LON_SCALE);
   }
 
-  public static double randomLon() {
-    return GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+  public long scaleLat(final double val) {
+    return (long) ((val-GeoUtils.MIN_LAT_INCL) * LAT_SCALE);
+  }
+
+  public double unscaleLon(final long val) {
+    return (val / LON_SCALE) + GeoUtils.MIN_LON_INCL;
+  }
+
+  public double unscaleLat(final long val) {
+    return (val / LAT_SCALE) + GeoUtils.MIN_LAT_INCL;
+  }
+
+  public double randomLat(boolean small) {
+    double result;
+    if (small) {
+      result = GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
+    } else {
+      result = -90 + 180.0 * random().nextDouble();
+    }
+    return unscaleLat(scaleLat(result));
+  }
+
+  public double randomLon(boolean small) {
+    double result;
+    if (small) {
+      result = GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+    } else {
+      result = -180 + 360.0 * random().nextDouble();
+    }
+    return unscaleLon(scaleLon(result));
+  }
+
+  private void findMatches(Set<Integer> hits, PrintWriter log, Cell root,
+                           double centerLon, double centerLat, double radiusMeters,
+                           double[] docLons, double[] docLats) {
+
+    if (VERBOSE) {
+      log.println("  root cell: " + root);
+    }
+
+    List<Cell> queue = new ArrayList<>();
+    queue.add(root);
+
+    int recurseDepth = RandomInts.randomIntBetween(random(), 5, 15);
+
+    while (queue.size() > 0) {
+      Cell cell = queue.get(queue.size()-1);
+      queue.remove(queue.size()-1);
+      if (VERBOSE) {
+        log.println("  cycle: " + cell + " queue.size()=" + queue.size());
+      }
+
+      if (random().nextInt(10) == 7 || cell.splitCount > recurseDepth) {
+        if (VERBOSE) {
+          log.println("    leaf");
+        }
+        // Leaf cell: brute force check all docs that fall within this cell:
+        for(int docID=0;docID<docLons.length;docID++) {
+          if (cell.contains(docLons[docID], docLats[docID])) {
+            double distanceMeters = SloppyMath.haversin(centerLat, centerLon, docLats[docID], docLons[docID]) * 1000.0;
+            if (distanceMeters <= radiusMeters) {
+              if (VERBOSE) {
+                log.println("    check doc=" + docID + ": match!");
+              }
+              hits.add(docID);
+            } else {
+              if (VERBOSE) {
+                log.println("    check doc=" + docID + ": no match");
+              }
+            }
+          }
+        }
+      } else {
+
+        if (GeoUtils.rectWithinCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat, centerLon, centerLat, radiusMeters)) {
+          // Query circle fully contains this cell, just addAll:
+          if (VERBOSE) {
+            log.println("    circle fully contains cell: now addAll");
+          }
+          for(int docID=0;docID<docLons.length;docID++) {
+            if (cell.contains(docLons[docID], docLats[docID])) {
+              if (VERBOSE) {
+                log.println("    addAll doc=" + docID);
+              }
+              hits.add(docID);
+            }
+          }
+          continue;
+        } else if (GeoUtils.rectWithin(root.minLon, root.minLat, root.maxLon, root.maxLat,
+            cell.minLon, cell.minLat, cell.maxLon, cell.maxLat)) {
+          // Fall through below to "recurse"
+          if (VERBOSE) {
+            log.println("    cell fully contains circle: keep splitting");
+          }
+        } else if (GeoUtils.rectCrossesCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat,
+            centerLon, centerLat, radiusMeters)) {
+          // Fall through below to "recurse"
+          if (VERBOSE) {
+            log.println("    cell overlaps circle: keep splitting");
+          }
+        } else {
+          if (VERBOSE) {
+            log.println("    no overlap: drop this cell");
+            for(int docID=0;docID<docLons.length;docID++) {
+              if (cell.contains(docLons[docID], docLats[docID])) {
+                if (VERBOSE) {
+                  log.println("    skip doc=" + docID);
+                }
+              }
+            }
+          }
+          continue;
+        }
+
+        // Randomly split:
+        if (random().nextBoolean()) {
+
+          // Split on lon:
+          double splitValue = cell.minLon + (cell.maxLon - cell.minLon) * random().nextDouble();
+          if (VERBOSE) {
+            log.println("    now split on lon=" + splitValue);
+          }
+          Cell cell1 = new Cell(cell,
+              cell.minLon, cell.minLat,
+              splitValue, cell.maxLat,
+              cell.splitCount+1);
+          Cell cell2 = new Cell(cell,
+              splitValue, cell.minLat,
+              cell.maxLon, cell.maxLat,
+              cell.splitCount+1);
+          if (VERBOSE) {
+            log.println("    split cell1: " + cell1);
+            log.println("    split cell2: " + cell2);
+          }
+          queue.add(cell1);
+          queue.add(cell2);
+        } else {
+
+          // Split on lat:
+          double splitValue = cell.minLat + (cell.maxLat - cell.minLat) * random().nextDouble();
+          if (VERBOSE) {
+            log.println("    now split on lat=" + splitValue);
+          }
+          Cell cell1 = new Cell(cell,
+              cell.minLon, cell.minLat,
+              cell.maxLon, splitValue,
+              cell.splitCount+1);
+          Cell cell2 = new Cell(cell,
+              cell.minLon, splitValue,
+              cell.maxLon, cell.maxLat,
+              cell.splitCount+1);
+          if (VERBOSE) {
+            log.println("    split cells:\n      " + cell1 + "\n      " + cell2);
+          }
+          queue.add(cell1);
+          queue.add(cell2);
+        }
+      }
+    }
+  }
+
+  /** Tests consistency of GeoUtils.rectWithinCircle, .rectCrossesCircle, .rectWithin and SloppyMath.haversine distance check */
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6846")
+  public void testGeoRelations() throws Exception {
+
+    int numDocs = atLeast(1000);
+
+    // boolean useSmallRanges = random().nextBoolean();
+
+    // TODO: the GeoUtils APIs have bugs if you use large distances:
+    boolean useSmallRanges = true;
+
+    if (VERBOSE) {
+      System.out.println("TEST: " + numDocs + " docs useSmallRanges=" + useSmallRanges);
+    }
+
+    double[] docLons = new double[numDocs];
+    double[] docLats = new double[numDocs];
+    for(int docID=0;docID<numDocs;docID++) {
+      docLons[docID] = randomLon(useSmallRanges);
+      docLats[docID] = randomLat(useSmallRanges);
+      if (VERBOSE) {
+        System.out.println("  doc=" + docID + ": lon=" + docLons[docID] + " lat=" + docLats[docID]);
+      }
+    }
+
+    int iters = atLeast(10);
+
+    iters = atLeast(50);
+
+    for(int iter=0;iter<iters;iter++) {
+
+      Cell.nextCellID = 0;
+
+      double centerLon = randomLon(useSmallRanges);
+      double centerLat = randomLat(useSmallRanges);
+
+      // So the circle covers at most 50% of the earth's surface:
+
+      double radiusMeters;
+
+      // TODO: GeoUtils APIs are still buggy for large distances:
+      if (true || useSmallRanges) {
+        // Approx 3 degrees lon at the equator:
+        radiusMeters = random().nextDouble() * 333000;
+      } else {
+        radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * Math.PI / 2.0;
+      }
+
+      StringWriter sw = new StringWriter();
+      PrintWriter log = new PrintWriter(sw, true);
+
+      if (VERBOSE) {
+        log.println("\nTEST: iter=" + iter + " radiusMeters=" + radiusMeters + " centerLon=" + centerLon + " centerLat=" + centerLat);
+      }
+
+      GeoRect bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
+
+      Set<Integer> hits = new HashSet<>();
+
+      if (bbox.maxLon < bbox.minLon) {
+        // Crosses dateline
+        log.println("  circle crosses dateline; first right query");
+        findMatches(hits, log,
+            new Cell(null,
+                -180, bbox.minLat,
+                bbox.maxLon, bbox.maxLat,
+                0),
+            centerLon, centerLat, radiusMeters,
+            docLons, docLats);
+        log.println("  circle crosses dateline; now left query");
+        findMatches(hits, log,
+            new Cell(null,
+                bbox.minLon, bbox.minLat,
+                180, bbox.maxLat,
+                0),
+            centerLon, centerLat, radiusMeters,
+            docLons, docLats);
+      } else {
+        // Start with the root cell that fully contains the shape:
+        findMatches(hits, log,
+            new Cell(null,
+                bbox.minLon, bbox.minLat,
+                bbox.maxLon, bbox.maxLat,
+                0),
+            centerLon, centerLat, radiusMeters,
+            docLons, docLats);
+      }
+
+      if (VERBOSE) {
+        log.println("  " + hits.size() + " hits");
+      }
+
+      int failCount = 0;
+
+      // Done matching, now verify:
+      for(int docID=0;docID<numDocs;docID++) {
+        double distanceMeters = SloppyMath.haversin(centerLat, centerLon, docLats[docID], docLons[docID]) * 1000.0;
+        boolean expected = distanceMeters <= radiusMeters;
+
+        boolean actual = hits.contains(docID);
+        if (actual != expected) {
+          if (actual) {
+            log.println("doc=" + docID + " matched but should not");
+          } else {
+            log.println("doc=" + docID + " did not match but should");
+          }
+          log.println("  lon=" + docLons[docID] + " lat=" + docLats[docID] + " distanceMeters=" + distanceMeters + " vs radiusMeters=" + radiusMeters);
+          failCount++;
+        }
+      }
+
+      if (failCount != 0) {
+        System.out.print(sw.toString());
+        fail(failCount + " incorrect hits (see above)");
+      }
+    }
   }
 }

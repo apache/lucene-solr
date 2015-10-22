@@ -17,14 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
  * {@code GeoPointInBBoxQueryImpl} and is implemented using a
@@ -36,14 +36,14 @@ import java.util.Arrays;
  * term is passed to the final point in polygon check. All value comparisons are subject
  * to the same precision tolerance defined in {@value org.apache.lucene.util.GeoUtils#TOLERANCE}
  *
- * NOTES:
+ * <p>NOTES:
  *    1.  The polygon coordinates need to be in either clockwise or counter-clockwise order.
  *    2.  The polygon must not be self-crossing, otherwise the query may result in unexpected behavior
  *    3.  All latitude/longitude values must be in decimal degrees.
  *    4.  Complex computational geometry (e.g., dateline wrapping, polygon with holes) is not supported
  *    5.  For more advanced GeoSpatial indexing and query operations see spatial module
  *
- *    @lucene.experimental
+ * @lucene.experimental
  */
 public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   // polygon position arrays - this avoids the use of any objects or
@@ -60,7 +60,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   }
 
   /** Common constructor, used only internally. */
-  private GeoPointInPolygonQuery(final String field, GeoBoundingBox bbox, final double[] polyLons, final double[] polyLats) {
+  private GeoPointInPolygonQuery(final String field, GeoRect bbox, final double[] polyLons, final double[] polyLats) {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
@@ -183,7 +183,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     }
   }
 
-  private static GeoBoundingBox computeBBox(double[] polyLons, double[] polyLats) {
+  private static GeoRect computeBBox(double[] polyLons, double[] polyLats) {
     if (polyLons.length != polyLats.length) {
       throw new IllegalArgumentException("polyLons and polyLats must be equal length");
     }
@@ -206,7 +206,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
       maxLat = Math.max(polyLats[i], maxLat);
     }
 
-    return new GeoBoundingBox(minLon, maxLon, minLat, maxLat);
+    return new GeoRect(minLon, maxLon, minLat, maxLat);
   }
 
   /**
