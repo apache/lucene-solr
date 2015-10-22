@@ -507,23 +507,9 @@ public class QueryParsing {
           out.append('+');
         }
         Query subQuery = c.getQuery();
-        boolean wrapQuery = false;
-
-        // TODO: may need to put parens around other types
-        // of queries too, depending on future syntax.
-        if (subQuery instanceof BooleanQuery) {
-          wrapQuery = true;
-        }
-
-        if (wrapQuery) {
-          out.append('(');
-        }
 
         toString(subQuery, schema, out, subflag | FLAG_IS_CLAUSE);
 
-        if (wrapQuery) {
-          out.append(')');
-        }
       }
 
       if (needParens) {
