@@ -373,6 +373,8 @@ Other Changes
 * SOLR-8116: SearchGroupsResultTransformer tweaks (String literals, list/map initialCapacity)
   (Christine Poerschke)
 
+* SOLR-8074: LoadAdminUIServlet directly references admin.html (Mark Miller, Upayavira)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
