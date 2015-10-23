@@ -18,6 +18,7 @@ package org.apache.lucene.classification.utils;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
@@ -69,14 +71,15 @@ public class ConfusionMatrixGenerator {
 
       Map<String, Map<String, Long>> counts = new HashMap<>();
       IndexSearcher indexSearcher = new IndexSearcher(reader);
-      TopDocs topDocs = indexSearcher.search(new WildcardQuery(new Term(classFieldName, "*")), Integer.MAX_VALUE);
+      TopDocs topDocs = indexSearcher.search(new TermRangeQuery(classFieldName, null, null, true, true), Integer.MAX_VALUE);
       double time = 0d;
 
       for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
         StoredDocument doc = reader.document(scoreDoc.doc);
-        String correctAnswer = doc.get(classFieldName);
+        String[] correctAnswers = doc.getValues(classFieldName);
 
-        if (correctAnswer != null && correctAnswer.length() > 0) {
+        if (correctAnswers != null && correctAnswers.length > 0) {
+          Arrays.sort(correctAnswers);
           ClassificationResult<T> result;
           String text = doc.get(textFieldName);
           if (text != null) {
@@ -92,6 +95,13 @@ public class ConfusionMatrixGenerator {
                 if (assignedClass != null) {
                   String classified = assignedClass instanceof BytesRef ? ((BytesRef) assignedClass).utf8ToString() : assignedClass.toString();
 
+                  String correctAnswer;
+                  if (Arrays.binarySearch(correctAnswers, classified) >= 0) {
+                    correctAnswer = classified;
+                  } else {
+                    correctAnswer = correctAnswers[0];
+                  }
+
                   Map<String, Long> stringLongMap = counts.get(correctAnswer);
                   if (stringLongMap != null) {
                     Long aLong = stringLongMap.get(classified);
@@ -105,6 +115,7 @@ public class ConfusionMatrixGenerator {
                     stringLongMap.put(classified, 1l);
                     counts.put(correctAnswer, stringLongMap);
                   }
+
                 }
               }
             } catch (TimeoutException timeoutException) {
@@ -131,6 +142,7 @@ public class ConfusionMatrixGenerator {
     private final Map<String, Map<String, Long>> linearizedMatrix;
     private final double avgClassificationTime;
     private final int numberOfEvaluatedDocs;
+    private double accuracy = -1d;
 
     private ConfusionMatrix(Map<String, Map<String, Long>> linearizedMatrix, double avgClassificationTime, int numberOfEvaluatedDocs) {
       this.linearizedMatrix = linearizedMatrix;
@@ -140,10 +152,40 @@ public class ConfusionMatrixGenerator {
 
     /**
      * get the linearized confusion matrix as a {@link Map}
-     * @return a {@link Map} whose keys are the correct answers and whose values are the actual answers' counts
+     * @return a {@link Map} whose keys are the correct classification answers and whose values are the actual answers'
+     * counts
      */
     public Map<String, Map<String, Long>> getLinearizedMatrix() {
       return Collections.unmodifiableMap(linearizedMatrix);
+    }
+
+    /**
+     * Calculate accuracy on this confusion matrix using the formula:
+     * {@literal accuracy = correctly-classified / (correctly-classified + wrongly-classified)}
+     *
+     * @return the accuracy
+     */
+    public double getAccuracy() {
+      if (this.accuracy == -1) {
+        double cc = 0d;
+        double wc = 0d;
+        for (Map.Entry<String, Map<String, Long>> entry : linearizedMatrix.entrySet()) {
+          String correctAnswer = entry.getKey();
+          for (Map.Entry<String, Long> classifiedAnswers : entry.getValue().entrySet()) {
+            Long value = classifiedAnswers.getValue();
+            if (value != null) {
+              if (correctAnswer.equals(classifiedAnswers.getKey())) {
+                cc += value;
+              } else {
+                wc += value;
+              }
+            }
+          }
+
+        }
+        this.accuracy = cc / (cc + wc);
+      }
+      return this.accuracy;
     }
 
     @Override

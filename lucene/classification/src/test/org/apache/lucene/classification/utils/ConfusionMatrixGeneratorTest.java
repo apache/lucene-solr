@@ -84,6 +84,7 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       assertTrue(confusionMatrix.getAvgClassificationTime() > 0d);
+      assertTrue(confusionMatrix.getAccuracy() > 0d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -103,6 +104,7 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       assertTrue(confusionMatrix.getAvgClassificationTime() > 0d);
+      assertTrue(confusionMatrix.getAccuracy() > 0d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -122,6 +124,7 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       assertTrue(confusionMatrix.getAvgClassificationTime() > 0d);
+      assertTrue(confusionMatrix.getAccuracy() > 0d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -141,6 +144,7 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       assertTrue(confusionMatrix.getAvgClassificationTime() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() > 0d);
     } finally {
       if (reader != null) {
         reader.close();

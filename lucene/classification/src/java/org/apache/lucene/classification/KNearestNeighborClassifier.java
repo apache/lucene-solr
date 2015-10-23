@@ -19,6 +19,7 @@ package org.apache.lucene.classification;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -232,5 +233,15 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       returnList = temporaryList;
     }
     return returnList;
+  }
+
+  @Override
+  public String toString() {
+    return "KNearestNeighborClassifier{" +
+        ", textFieldNames=" + Arrays.toString(textFieldNames) +
+        ", classFieldName='" + classFieldName + '\'' +
+        ", k=" + k +
+        ", query=" + query +
+        '}';
   }
 }

@@ -124,12 +124,18 @@ public class DatasetSplitter {
         }
         b++;
       }
-    } catch (Exception e) {
-      throw new IOException(e);
-    } finally {
+      // commit
       testWriter.commit();
       cvWriter.commit();
       trainingWriter.commit();
+
+      // merge
+      testWriter.forceMerge(3);
+      cvWriter.forceMerge(3);
+      trainingWriter.forceMerge(3);
+    } catch (Exception e) {
+      throw new IOException(e);
+    } finally {
       // close IWs
       testWriter.close();
       cvWriter.close();

@@ -109,6 +109,8 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
       assertTrue("evaluation took more than 2m: " + evaluationTime / 1000 + "s", evaluationTime < 120000);
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue("avg classification time: " + avgClassificationTime, 5000 > avgClassificationTime);
+      double accuracy = confusionMatrix.getAccuracy();
+      assertTrue(accuracy > 0d);
     } finally {
       leafReader.close();
     }
