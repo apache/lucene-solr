@@ -56,7 +56,7 @@ public final class HttpCacheHeaderUtil {
    *
    * @see #calcEtag
    */
-  private static Map<SolrCore, EtagCacheVal> etagCoreCache = Collections.synchronizedMap(new WeakHashMap<>());
+  private static Map<SolrCore, EtagCacheVal> etagCoreCache = Collections.synchronizedMap(new WeakHashMap<SolrCore, EtagCacheVal>());
 
   /** @see #etagCoreCache */
   private static class EtagCacheVal {
