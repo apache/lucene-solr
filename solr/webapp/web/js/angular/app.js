@@ -136,7 +136,8 @@ solrAdminApp.config([
 .constant('Constants', {
   IS_ROOT_PAGE: 1,
   IS_CORE_PAGE: 2,
-  IS_COLLECTION_PAGE: 3
+  IS_COLLECTION_PAGE: 3,
+  ROOT_URL: "/index.html"
 })
 .filter('highlight', function($sce) {
   return function(input, lang) {

@@ -22,6 +22,8 @@ solrAdminApp.controller('CollectionsController',
 
       $scope.refresh = function() {
 
+          $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
+
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {

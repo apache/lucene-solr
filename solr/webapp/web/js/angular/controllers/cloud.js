@@ -241,7 +241,7 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
     $scope.initGraph();
 };
 
-solrAdminApp.directive('graph', function() {
+solrAdminApp.directive('graph', function(Constants) {
     return {
         restrict: 'EA',
         scope: {
@@ -360,11 +360,11 @@ solrAdminApp.directive('graph', function() {
                         return 0 === d.depth ? 'end' : 'start';
                     })
                     .attr('data-href', function (d) {
-                        return d.name;
+                        return d.name + Constants.ROOT_URL + "#/~cloud";
                     })
                     .text(helper_node_text)
                     .on('click', function(d,i) {
-                        location.href = d.name;
+                        location.href = d.name+Constants.ROOT_URL+"#/~cloud";
                     });
             };
 
@@ -422,7 +422,7 @@ solrAdminApp.directive('graph', function() {
                     })
                     .text(helper_node_text)
                     .on('click', function(d,i) {
-                        location.href = d.name;
+                        location.href = d.name+Constants.ROOT_URL+"#/~cloud";
                     });
             }
         }
