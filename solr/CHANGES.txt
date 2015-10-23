@@ -288,6 +288,9 @@ Bug Fixes
 
 * SOLR-7843: DataImportHandler's delta imports leak memory because the delta keys are kept in memory
   and not cleared after the process is finished. (Pablo Lozano via shalin)
+
+* SOLR-8189: eTag calculation during HTTP Cache Validation uses unsynchronized WeakHashMap causing
+  threads to be stuck in runnable state. (shalin)
   
 Optimizations
 ----------------------
