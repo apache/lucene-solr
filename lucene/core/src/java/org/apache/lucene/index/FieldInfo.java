@@ -47,14 +47,20 @@ public final class FieldInfo {
   private final Map<String,String> attributes;
 
   private long dvGen;
+
+  /** If both of these are positive it means this is a dimensionally indexed
+   *  field (see {@link DimensionalFormat}). */
+  private int dimensionCount;
+  private int dimensionNumBytes;
+
   /**
    * Sole constructor.
    *
    * @lucene.experimental
    */
   public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, 
-      boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
-      long dvGen, Map<String,String> attributes) {
+                   boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
+                   long dvGen, Map<String,String> attributes, int dimensionCount, int dimensionNumBytes) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
     this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType cannot be null (field: \"" + name + "\")");
@@ -70,6 +76,8 @@ public final class FieldInfo {
     }
     this.dvGen = dvGen;
     this.attributes = Objects.requireNonNull(attributes);
+    this.dimensionCount = dimensionCount;
+    this.dimensionNumBytes = dimensionNumBytes;
     assert checkConsistency();
   }
 
@@ -94,6 +102,22 @@ public final class FieldInfo {
         throw new IllegalStateException("non-indexed field '" + name + "' cannot omit norms");
       }
     }
+
+    if (dimensionCount < 0) {
+      throw new IllegalStateException("dimensionCount must be >= 0; got " + dimensionCount);
+    }
+
+    if (dimensionNumBytes < 0) {
+      throw new IllegalStateException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
+    }
+
+    if (dimensionCount != 0 && dimensionNumBytes == 0) {
+      throw new IllegalStateException("dimensionNumBytes must be > 0 when dimensionCount=" + dimensionCount);
+    }
+
+    if (dimensionNumBytes != 0 && dimensionCount == 0) {
+      throw new IllegalStateException("dimensionCount must be > 0 when dimensionNumBytes=" + dimensionNumBytes);
+    }
     
     if (dvGen != -1 && docValuesType == DocValuesType.NONE) {
       throw new IllegalStateException("field '" + name + "' cannot have a docvalues update generation without having docvalues");
@@ -103,7 +127,8 @@ public final class FieldInfo {
   }
 
   // should only be called by FieldInfos#addOrUpdate
-  void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
+  void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
+              int dimensionCount, int dimensionNumBytes) {
     if (indexOptions == null) {
       throw new NullPointerException("IndexOptions cannot be null (field: \"" + name + "\")");
     }
@@ -115,6 +140,12 @@ public final class FieldInfo {
         // downgrade
         this.indexOptions = this.indexOptions.compareTo(indexOptions) < 0 ? this.indexOptions : indexOptions;
       }
+    }
+
+    // nocommit but how can you disable dimension index?
+    if (this.dimensionCount == 0 && dimensionCount != 0) {
+      this.dimensionCount = dimensionCount;
+      this.dimensionNumBytes = dimensionNumBytes;
     }
 
     if (this.indexOptions != IndexOptions.NONE) { // if updated field data is not for indexing, leave the updates out
@@ -131,6 +162,30 @@ public final class FieldInfo {
       this.storePayloads = false;
     }
     assert checkConsistency();
+  }
+
+  // nocommit get this into the "global field numbers" so you can't change dimensions/numBytes on a new segment too!  test!
+  public int getDimensionCount() {
+    return dimensionCount;
+  }
+
+  public void setDimensionCount(int count) {
+    if (dimensionCount != 0 && dimensionCount != count) {
+      throw new IllegalArgumentException("cannot change dimensionCount from " + dimensionCount + " to " + count + " for field \"" + name + "\"");
+    }
+    dimensionCount = count;
+  }
+
+  public int getDimensionNumBytes() {
+    return dimensionNumBytes;
+  }
+
+  // nocommit single setter?
+  public void setDimensionNumBytes(int numBytes) {
+    if (dimensionNumBytes != 0 && dimensionNumBytes != numBytes) {
+      throw new IllegalArgumentException("cannot change dimensionNumBytes from " + dimensionNumBytes + " to " + numBytes + " for field \"" + name + "\"");
+    }
+    dimensionNumBytes = numBytes;
   }
 
   void setDocValuesType(DocValuesType type) {

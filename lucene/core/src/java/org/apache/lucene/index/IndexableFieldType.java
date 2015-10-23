@@ -95,5 +95,15 @@ public interface IndexableFieldType {
    * DocValues {@link DocValuesType}: how the field's value will be indexed
    * into docValues.
    */
-  public DocValuesType docValuesType();  
+  public DocValuesType docValuesType();
+
+  /**
+   * If this is positive, the field is indexed dimensionally.
+   */
+  public int dimensionCount();
+
+  /**
+   * The number of bytes in each dimension's values.
+   */
+  public int dimensionNumBytes();
 }

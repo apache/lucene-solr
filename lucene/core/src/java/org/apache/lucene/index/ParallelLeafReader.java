@@ -315,6 +315,24 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   @Override
+  public DimensionalValues getDimensionalValues() {
+    return new DimensionalValues() {
+      @Override
+      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
+        LeafReader reader = fieldToReader.get(fieldName);
+        if (reader == null) {
+          throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index dimensional values");
+        }
+        DimensionalValues dimValues = reader.getDimensionalValues();
+        if (dimValues == null) {
+          throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index dimensional values");
+        }
+        dimValues.intersect(fieldName, visitor);
+      }
+    };
+  }
+
+  @Override
   public void checkIntegrity() throws IOException {
     ensureOpen();
     for (LeafReader reader : completeReaderSet) {

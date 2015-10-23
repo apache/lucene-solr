@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-
 /**
  * <p>This class implements a {@link MergePolicy} that tries
  * to merge segments into levels of exponentially

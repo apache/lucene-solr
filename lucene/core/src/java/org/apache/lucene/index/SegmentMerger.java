@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DimensionalWriter;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsConsumer;
@@ -108,6 +109,17 @@ final class SegmentMerger {
       long t1 = System.nanoTime();
       mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge doc values [" + numMerged + " docs]");
     }
+
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
+    if (mergeState.mergeFieldInfos.hasDimensionalValues()) {
+      mergeDimensionalValues(segmentWriteState);
+    }
+    if (mergeState.infoStream.isEnabled("SM")) {
+      long t1 = System.nanoTime();
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge dimensional values values [" + numMerged + " docs]");
+    }
     
     if (mergeState.mergeFieldInfos.hasNorms()) {
       if (mergeState.infoStream.isEnabled("SM")) {
@@ -148,6 +160,12 @@ final class SegmentMerger {
   private void mergeDocValues(SegmentWriteState segmentWriteState) throws IOException {
     try (DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(segmentWriteState)) {
       consumer.merge(mergeState);
+    }
+  }
+
+  private void mergeDimensionalValues(SegmentWriteState segmentWriteState) throws IOException {
+    try (DimensionalWriter writer = codec.dimensionalFormat().fieldsWriter(segmentWriteState)) {
+      writer.merge(mergeState);
     }
   }
 

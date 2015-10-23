@@ -17,10 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
 
 /** {@code LeafReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -299,6 +300,10 @@ public abstract class LeafReader extends IndexReader {
    *  synchronization.
    */
   public abstract Bits getLiveDocs();
+
+  /** Returns the {@link DimensionalReader} used for numeric or
+   *  spatial searches. */
+  public abstract DimensionalValues getDimensionalValues();
 
   /**
    * Checks consistency of this reader.

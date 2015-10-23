@@ -1017,7 +1017,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     for(SegmentCommitInfo info : segmentInfos) {
       FieldInfos fis = readFieldInfos(info);
       for(FieldInfo fi : fis) {
-        map.addOrGet(fi.name, fi.number, fi.getDocValuesType());
+        map.addOrGet(fi.name, fi.number, fi.getDocValuesType(), fi.getDimensionCount(), fi.getDimensionNumBytes());
       }
     }
 
@@ -2492,7 +2492,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             FieldInfos fis = readFieldInfos(info);
             for(FieldInfo fi : fis) {
-              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType());
+              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType(), fi.getDimensionCount(), fi.getDimensionNumBytes());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
           }

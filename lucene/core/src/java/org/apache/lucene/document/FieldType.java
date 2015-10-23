@@ -55,6 +55,8 @@ public class FieldType implements IndexableFieldType  {
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
   private DocValuesType docValuesType = DocValuesType.NONE;
+  private int dimensionCount;
+  private int dimensionNumBytes;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -71,6 +73,8 @@ public class FieldType implements IndexableFieldType  {
     this.numericType = ref.numericType();
     this.numericPrecisionStep = ref.numericPrecisionStep();
     this.docValuesType = ref.docValuesType();
+    this.dimensionCount = dimensionCount;
+    this.dimensionNumBytes = dimensionNumBytes;
     // Do not copy frozen!
   }
   
@@ -342,6 +346,41 @@ public class FieldType implements IndexableFieldType  {
     return numericPrecisionStep;
   }
 
+  /**
+   * Enables dimensional indexing.
+   */
+  public void setDimensions(int dimensionCount, int dimensionNumBytes) {
+    // nocommit use BKDWriter.MAX_DIMS here:
+    if (dimensionCount < 0 || dimensionCount > 15) {
+      throw new IllegalArgumentException("dimensionCount must be >= 0 and <= 15; got " + dimensionCount);
+    }
+    if (dimensionNumBytes < 0) {
+      throw new IllegalArgumentException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
+    }
+    if (dimensionCount == 0) {
+      if (dimensionNumBytes != 0) {
+        throw new IllegalArgumentException("when dimensionCount is 0 dimensionNumBytes must 0; got " + dimensionNumBytes);
+      }
+    } else if (dimensionNumBytes == 0) {
+      if (dimensionCount != 0) {
+        throw new IllegalArgumentException("when dimensionNumBytes is 0 dimensionCount must 0; got " + dimensionCount);
+      }
+    }
+
+    this.dimensionCount = dimensionCount;
+    this.dimensionNumBytes = dimensionNumBytes;
+  }
+
+  @Override
+  public int dimensionCount() {
+    return dimensionCount;
+  }
+
+  @Override
+  public int dimensionNumBytes() {
+    return dimensionNumBytes;
+  }
+
   /** Prints a Field for human consumption. */
   @Override
   public final String toString() {
@@ -380,6 +419,12 @@ public class FieldType implements IndexableFieldType  {
         result.append(numericType);
         result.append(",numericPrecisionStep=");
         result.append(numericPrecisionStep);
+      }
+      if (dimensionCount != 0) {
+        result.append(",dimensionCount=");
+        result.append(dimensionCount);
+        result.append(",dimensionNumBytes=");
+        result.append(dimensionNumBytes);
       }
     }
     if (docValuesType != DocValuesType.NONE) {

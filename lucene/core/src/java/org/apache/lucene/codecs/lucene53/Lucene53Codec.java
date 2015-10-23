@@ -21,6 +21,9 @@ import java.util.Objects;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.DimensionalWriter;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -39,6 +42,8 @@ import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * Implements the Lucene 5.3 index format, with configurable per-field postings
@@ -155,6 +160,11 @@ public class Lucene53Codec extends Codec {
   @Override
   public final DocValuesFormat docValuesFormat() {
     return docValuesFormat;
+  }
+
+  @Override
+  public final DimensionalFormat dimensionalFormat() {
+    return DimensionalFormat.EMPTY;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");

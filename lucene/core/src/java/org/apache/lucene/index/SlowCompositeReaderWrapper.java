@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.util.Bits;
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -231,6 +231,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   public Bits getLiveDocs() {
     ensureOpen();
     return MultiFields.getLiveDocs(in);
+  }
+
+  @Override
+  public DimensionalValues getDimensionalValues() {
+    ensureOpen();
+    return MultiDimensionalValues.get(in);
   }
 
   @Override

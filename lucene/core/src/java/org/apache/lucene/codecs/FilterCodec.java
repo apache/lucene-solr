@@ -103,4 +103,9 @@ public abstract class FilterCodec extends Codec {
   public CompoundFormat compoundFormat() {
     return delegate.compoundFormat();
   }
+
+  @Override
+  public DimensionalFormat dimensionalFormat() {
+    return delegate.dimensionalFormat();
+  }
 }

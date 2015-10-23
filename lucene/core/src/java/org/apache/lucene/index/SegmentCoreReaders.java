@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -53,6 +54,7 @@ final class SegmentCoreReaders {
 
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
+  final DimensionalReader dimensionalReader;
   final Directory cfsReader;
   /** 
    * fieldinfos for this core: means gen=-1.
@@ -122,6 +124,11 @@ final class SegmentCoreReaders {
         termVectorsReaderOrig = null;
       }
 
+      if (coreFieldInfos.hasDimensionalValues()) {
+        dimensionalReader = codec.dimensionalFormat().fieldsReader(segmentReadState);
+      } else {
+        dimensionalReader = null;
+      }
       success = true;
     } finally {
       if (!success) {
