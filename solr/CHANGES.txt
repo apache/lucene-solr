@@ -291,7 +291,10 @@ Bug Fixes
 
 * SOLR-8189: eTag calculation during HTTP Cache Validation uses unsynchronized WeakHashMap causing
   threads to be stuck in runnable state. (shalin)
-  
+
+* SOLR-7993: Raw json output for fields stopped working in 5.3.0 when requested fields do not include
+  the unique key field name. (Bill Bell, Ryan McKinley via shalin)
+
 Optimizations
 ----------------------
 
