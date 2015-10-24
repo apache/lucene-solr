@@ -124,6 +124,11 @@ public class RawValueTransformerFactory extends TransformerFactory
         doc.setField(display, new WriteableStringValue(val));
       }
     }
+
+    @Override
+    public String[] getExtraRequestFields() {
+      return new String[] {this.field};
+    }
   }
   
   public static class WriteableStringValue extends WriteableValue {

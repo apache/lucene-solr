@@ -63,9 +63,9 @@ public abstract class DocTransformer {
   public abstract void transform(SolrDocument doc, int docid) throws IOException;
 
   /**
-   * When a transformer needs access to fields that are not automaticaly derived from the
+   * When a transformer needs access to fields that are not automatically derived from the
    * input fields names, this option lets us explicitly say the field names that we hope
-   * will be in the SolrDocument.  These fields will be requestd from the 
+   * will be in the SolrDocument.  These fields will be requested from the
    * {@link SolrIndexSearcher} but may or may not be returned in the final
    * {@link QueryResponseWriter}
    * 
