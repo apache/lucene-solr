@@ -755,8 +755,23 @@ pre.syntax .tex .formula
   top: -20px;
 }
 
-.other-ui-link span {
+.other-ui-link span,
+.new-ui-warning span.help {
   background-image: url( ../../img/ico/information-white.png );
   right: 0px;
   padding-left: 16px;
+}
+
+.new-ui-warning {
+  position: absolute;
+  left: 150px;
+  top: -20px;
+  align: center;
+  color: red;
+  font-weight: bold;
+}
+.new-ui-warning a.ul {
+  color: red;
+  font-weight: bold;
+  text-decoration: underline;
 }
