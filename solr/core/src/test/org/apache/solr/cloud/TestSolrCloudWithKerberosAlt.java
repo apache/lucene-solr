@@ -29,6 +29,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -44,6 +45,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,6 +88,11 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
   public static TestRule solrClassRules = RuleChain.outerRule(
       new SystemPropertiesRestoreRule()).around(
       new RevertDefaultThreadHandlerRule());
+
+  @BeforeClass
+  public static void betterNotBeJava9() {
+    assumeFalse("FIXME: SOLR-8182: This test fails under Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+  }
 
   @Override
   public void setUp() throws Exception {
