@@ -802,6 +802,40 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "x:{ buckets:[{val:a, count:3}, {val:b, count:3}] , allBuckets:{count:6} } }"
     );
 
+    // allBuckets for multi-valued field with stats.  This can sometimes take a different path of adding complete DocSets to the Acc
+    // also test limit:0
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{" +
+                " f0:{type:terms, field:${multi_ss}, allBuckets:true, limit:0} " +
+                ",f1:{type:terms, field:${multi_ss}, allBuckets:true, limit:0, offset:1} " +  // offset with 0 limit
+                ",f2:{type:terms, field:${multi_ss}, allBuckets:true, limit:0, facet:{x:'sum(${num_d})'}, sort:'x desc' } " +
+                ",f3:{type:terms, field:${multi_ss}, allBuckets:true, limit:0, missing:true, facet:{x:'sum(${num_d})', y:'avg(${num_d})'}, sort:'x desc' } " +
+                "}"
+        )
+        , "facets=={ 'count':6, " +
+            " f0:{allBuckets:{count:6}, buckets:[]}" +
+            ",f1:{allBuckets:{count:6}, buckets:[]}" +
+            ",f2:{allBuckets:{count:6, x:-15.0}, buckets:[]} " +
+            ",f3:{allBuckets:{count:6, x:-15.0, y:-2.5}, buckets:[], missing:{count:2, x:4.0, y:4.0} }} " +
+            "}"
+    );
+
+    // allBuckets with numeric field with stats.
+    // also test limit:0
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{" +
+                " f0:{type:terms, field:${num_i}, allBuckets:true, limit:0} " +
+                ",f1:{type:terms, field:${num_i}, allBuckets:true, limit:0, offset:1} " +  // offset with 0 limit
+                ",f2:{type:terms, field:${num_i}, allBuckets:true, limit:0, facet:{x:'sum(${num_d})'}, sort:'x desc' } " +
+                "}"
+        )
+        , "facets=={ 'count':6, " +
+            " f0:{allBuckets:{count:5}, buckets:[]}" +
+            ",f1:{allBuckets:{count:5}, buckets:[]}" +
+            ",f2:{allBuckets:{count:5, x:3.0}, buckets:[]} " +
+            "}"
+    );
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // test converting legacy facets

@@ -523,6 +523,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.field = getField(m);
       facet.offset = getLong(m, "offset", facet.offset);
       facet.limit = getLong(m, "limit", facet.limit);
+      if (facet.limit == 0) facet.offset = 0;  // normalize.  an offset with a limit of non-zero isn't useful.
       facet.mincount = getLong(m, "mincount", facet.mincount);
       facet.missing = getBoolean(m, "missing", facet.missing);
       facet.numBuckets = getBoolean(m, "numBuckets", facet.numBuckets);

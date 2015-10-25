@@ -271,7 +271,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       return;
     }
 
-    // create the deffered aggs up front for use by allBuckets
+    // create the deferred aggs up front for use by allBuckets
     createOtherAccs(numDocs, 1);
   }
 
@@ -450,6 +450,20 @@ class SpecialSlotAcc extends SlotAcc {
   }
 
   @Override
+  public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    // collectAcc and otherAccs will normally have setNextReader called directly on them.
+    // This, however, will be used when collect(DocSet,slot) variant is used on this Acc.
+    if (collectAcc != null) {
+      collectAcc.setNextReader(readerContext);
+    }
+    if (otherAccs != null) {
+      for (SlotAcc otherAcc : otherAccs) {
+        otherAcc.setNextReader(readerContext);
+      }
+    }
+  }
+
+  @Override
   public int compare(int slotA, int slotB) {
     throw new UnsupportedOperationException();
   }
@@ -561,7 +575,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
     // add a modest amount of over-request if this is a shard request
     int lim = freq.limit >= 0 ? (fcontext.isShard() ? (int)(freq.limit*1.1+4) : (int)freq.limit) : Integer.MAX_VALUE;
 
-    int maxsize = (int)(freq.limit > 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
+    int maxsize = (int)(freq.limit >= 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
     maxsize = Math.min(maxsize, nTerms);
 
     final int sortMul = freq.sortDirection.getMultiplier();
@@ -596,7 +610,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
           bottom.slot = i;
           bottom = queue.updateTop();
         }
-      } else {
+      } else if (lim > 0) {
         // queue not full
         Slot s = new Slot();
         s.slot = i;
