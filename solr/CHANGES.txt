@@ -295,6 +295,11 @@ Bug Fixes
 * SOLR-7993: Raw json output for fields stopped working in 5.3.0 when requested fields do not include
   the unique key field name. (Bill Bell, Ryan McKinley via shalin)
 
+* SOLR-8192: JSON Facet API allBuckets:true did not work correctly when faceting
+  on a multi-valued field with sub-facets / facet functions. (yonik)
+
+* SOLR-8206: JSON Facet API limit:0 did not always work correctly.  (yonik)
+
 Optimizations
 ----------------------
 
