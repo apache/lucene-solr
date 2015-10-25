@@ -25,7 +25,6 @@ import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
 import org.apache.lucene.index.DimensionalValues.Relation;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** Handles intersection of an multi-dimensional shape in byte[] space with a block KD-tree previously written with {@link BKDWriter}.
@@ -83,18 +82,12 @@ public class BKDReader implements Accountable {
     final int[] scratchDocIDs;
     final byte[] scratchPackedValue;
 
-    // Minimum point of the N-dim rect containing the query shape:
-    final byte[] minPacked;
-    // Maximum point of the N-dim rect containing the query shape:
-    final byte[] maxPacked;
     final IntersectVisitor visitor;
 
     public IntersectState(IndexInput in, int packedBytesLength,
-                          int maxPointsInLeafNode, byte[] minPacked, byte[] maxPacked,
+                          int maxPointsInLeafNode,
                           IntersectVisitor visitor) {
       this.in = in;
-      this.minPacked = minPacked;
-      this.maxPacked = maxPacked;
       this.visitor = visitor;
       this.scratchDocIDs = new int[maxPointsInLeafNode];
       this.scratchPackedValue = new byte[packedBytesLength];
@@ -102,16 +95,8 @@ public class BKDReader implements Accountable {
   }
 
   public void intersect(IntersectVisitor visitor) throws IOException {
-    byte[] minPacked = new byte[packedBytesLength];
-    byte[] maxPacked = new byte[packedBytesLength];
-    Arrays.fill(maxPacked, (byte) 0xff);
-    intersect(minPacked, maxPacked, visitor);
-  }
-
-  // nocommit remove this one?  caller can "optimize" a containing bbox case itself in its compare method?
-  public void intersect(byte[] minPacked, byte[] maxPacked, IntersectVisitor visitor) throws IOException {
     IntersectState state = new IntersectState(in.clone(), packedBytesLength,
-                                              maxPointsInLeafNode, minPacked, maxPacked,
+                                              maxPointsInLeafNode,
                                               visitor);
     byte[] rootMinPacked = new byte[packedBytesLength];
     byte[] rootMaxPacked = new byte[packedBytesLength];
@@ -184,27 +169,17 @@ public class BKDReader implements Accountable {
     }
     */
 
-    // Optimization: only check the visitor when the current cell does not fully contain the bbox.  E.g. if the
-    // query is a small area around London, UK, most of the high nodes in the BKD tree as we recurse will fully
-    // contain the query, so we quickly recurse down until the nodes cross the query:
-    boolean cellContainsQuery = BKDUtil.contains(bytesPerDim,
-                                                 cellMinPacked, cellMaxPacked,
-                                                 state.minPacked, state.maxPacked);
+    Relation r = state.visitor.compare(cellMinPacked, cellMaxPacked);
 
-    if (cellContainsQuery == false) {
-
-      Relation r = state.visitor.compare(cellMinPacked, cellMaxPacked);
-
-      if (r == Relation.QUERY_OUTSIDE_CELL) {
-        // This cell is fully outside of the query shape: stop recursing
-        return;
-      } else if (r == Relation.CELL_INSIDE_QUERY) {
-        // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
-        addAll(state, nodeID);
-        return;
-      } else {
-        // The cell crosses the shape boundary, so we fall through and do full filtering
-      }
+    if (r == Relation.QUERY_OUTSIDE_CELL) {
+      // This cell is fully outside of the query shape: stop recursing
+      return;
+    } else if (r == Relation.CELL_INSIDE_QUERY) {
+      // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
+      addAll(state, nodeID);
+      return;
+    } else {
+      // The cell crosses the shape boundary, or the cell fully contains the query, so we fall through and do full filtering
     }
 
     if (nodeID >= leafNodeOffset) {
@@ -229,23 +204,19 @@ public class BKDReader implements Accountable {
       // TODO: can we alloc & reuse this up front?
       byte[] splitPackedValue = new byte[packedBytesLength];
 
-      if (BKDUtil.compare(bytesPerDim, state.minPacked, splitDim, splitValue, 0) <= 0) {
-        // The query bbox overlaps our left cell, so we must recurse:
-        System.arraycopy(state.maxPacked, 0, splitPackedValue, 0, packedBytesLength);
-        System.arraycopy(splitValue, 0, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
-        intersect(state,
-                  2*nodeID,
-                  cellMinPacked, splitPackedValue);
-      }
+      // Recurse on left sub-tree:
+      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitValue, 0, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      intersect(state,
+                2*nodeID,
+                cellMinPacked, splitPackedValue);
 
-      if (BKDUtil.compare(bytesPerDim, state.maxPacked, splitDim, splitValue, 0) >= 0) {
-        // The query bbox overlaps our left cell, so we must recurse:
-        System.arraycopy(state.minPacked, 0, splitPackedValue, 0, packedBytesLength);
-        System.arraycopy(splitValue, 0, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
-        intersect(state,
-                  2*nodeID+1,
-                  splitPackedValue, cellMaxPacked);
-      }
+      // Recurse on right sub-tree:
+      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitValue, 0, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      intersect(state,
+                2*nodeID+1,
+                splitPackedValue, cellMaxPacked);
     }
   }
 

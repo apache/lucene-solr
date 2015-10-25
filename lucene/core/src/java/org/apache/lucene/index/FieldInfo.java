@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.lucene.codecs.DimensionalFormat;
+
 /**
  *  Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -142,7 +144,6 @@ public final class FieldInfo {
       }
     }
 
-    // nocommit but how can you disable dimension index?
     if (this.dimensionCount == 0 && dimensionCount != 0) {
       this.dimensionCount = dimensionCount;
       this.dimensionNumBytes = dimensionNumBytes;
@@ -164,28 +165,34 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  // nocommit get this into the "global field numbers" so you can't change dimensions/numBytes on a new segment too!  test!
+  /** Record that this field is indexed dimensionally, with the
+   *  specified number of dimensions and bytes per dimension. */
+  public void setDimensions(int count, int numBytes) {
+    if (count <= 0) {
+      throw new IllegalArgumentException("dimension count must be >= 0; got " + count + " for field=\"" + name + "\"");
+    }
+    if (numBytes <= 0) {
+      throw new IllegalArgumentException("dimension numBytes must be >= 0; got " + numBytes + " for field=\"" + name + "\"");
+    }
+    if (dimensionCount != 0 && dimensionCount != count) {
+      throw new IllegalArgumentException("cannot change dimension count from " + dimensionCount + " to " + count + " for field=\"" + name + "\"");
+    }
+    if (dimensionNumBytes != 0 && dimensionNumBytes != numBytes) {
+      throw new IllegalArgumentException("cannot change dimension numBytes from " + dimensionNumBytes + " to " + numBytes + " for field=\"" + name + "\"");
+    }
+
+    dimensionCount = count;
+    dimensionNumBytes = numBytes;
+  }
+
+  /** Return dimension count */
   public int getDimensionCount() {
     return dimensionCount;
   }
 
-  public void setDimensionCount(int count) {
-    if (dimensionCount != 0 && dimensionCount != count) {
-      throw new IllegalArgumentException("cannot change dimensionCount from " + dimensionCount + " to " + count + " for field \"" + name + "\"");
-    }
-    dimensionCount = count;
-  }
-
+  /** Return number of bytes per dimension */
   public int getDimensionNumBytes() {
     return dimensionNumBytes;
-  }
-
-  // nocommit single setter?
-  public void setDimensionNumBytes(int numBytes) {
-    if (dimensionNumBytes != 0 && dimensionNumBytes != numBytes) {
-      throw new IllegalArgumentException("cannot change dimensionNumBytes from " + dimensionNumBytes + " to " + numBytes + " for field \"" + name + "\"");
-    }
-    dimensionNumBytes = numBytes;
   }
 
   void setDocValuesType(DocValuesType type) {

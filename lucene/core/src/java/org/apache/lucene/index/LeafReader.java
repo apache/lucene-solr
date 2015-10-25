@@ -302,7 +302,7 @@ public abstract class LeafReader extends IndexReader {
   public abstract Bits getLiveDocs();
 
   /** Returns the {@link DimensionalReader} used for numeric or
-   *  spatial searches. */
+   *  spatial searches, or null if there are no dimensional fields. */
   public abstract DimensionalValues getDimensionalValues();
 
   /**

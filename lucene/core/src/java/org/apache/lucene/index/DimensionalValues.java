@@ -24,8 +24,18 @@ import java.io.IOException;
  *  @lucene.experimental */
 public abstract class DimensionalValues {
 
+  /** Defautl constructor */
+  protected DimensionalValues() {
+  }
+
   /** Used by {@link #intersect} to check how each recursive cell corresponds to the query. */
-  public enum Relation {CELL_INSIDE_QUERY, QUERY_CROSSES_CELL, QUERY_OUTSIDE_CELL};
+  public enum Relation {
+    /** Return this if the cell is fully contained by the query */
+    CELL_INSIDE_QUERY,
+    /** Return this if the cell and query do not overlap */
+    QUERY_OUTSIDE_CELL,
+    /** Return this if the cell partially overlapps the query */
+    QUERY_CROSSES_CELL};
 
   /** We recurse the BKD tree, using a provided instance of this to guide the recursion.
    *

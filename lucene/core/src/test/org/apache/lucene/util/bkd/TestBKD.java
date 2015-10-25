@@ -383,7 +383,6 @@ public class TestBKD extends LuceneTestCase {
         } catch (IllegalArgumentException iae) {
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
           assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
-          System.out.println("  more heap");
           maxMBHeap *= 1.25;
         } catch (IOException ioe) {
           if (ioe.getMessage().contains("a random IOException")) {
@@ -691,7 +690,6 @@ public class TestBKD extends LuceneTestCase {
     } else {
       dir = newDirectory();
     }
-    System.out.println("DIR: " + dir);
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
     }

@@ -33,8 +33,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-// nocommit i need checksums
-
 class SimpleTextDimensionalWriter extends DimensionalWriter {
 
   final static BytesRef NUM_DIMS      = new BytesRef("num dims ");

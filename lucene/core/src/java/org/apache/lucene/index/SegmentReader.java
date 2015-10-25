@@ -63,7 +63,7 @@ public final class SegmentReader extends CodecReader {
   // TODO: why is this public?
   public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
     this.si = si;
-    core = new SegmentCoreReaders(this, si.info.dir, si, context);
+    core = new SegmentCoreReaders(si.info.dir, si, context);
     segDocValues = new SegmentDocValues();
     
     boolean success = false;

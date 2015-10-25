@@ -254,6 +254,38 @@ public class SortingLeafReader extends FilterLeafReader {
     }
   }
 
+  private static class SortingDimensionalValues extends DimensionalValues {
+
+    private final DimensionalValues in;
+    private final Sorter.DocMap docMap;
+
+    public SortingDimensionalValues(final DimensionalValues in, Sorter.DocMap docMap) {
+      this.in = in;
+      this.docMap = docMap;
+    }
+
+    @Override
+    public void intersect(String field, IntersectVisitor visitor) throws IOException {
+      in.intersect(field,
+                   new IntersectVisitor() {
+                     @Override
+                     public void visit(int docID) throws IOException {
+                       visitor.visit(docMap.newToOld(docID));
+                     }
+
+                     @Override
+                     public void visit(int docID, byte[] packedValue) throws IOException {
+                       visitor.visit(docMap.newToOld(docID), packedValue);
+                     }
+
+                     @Override
+                     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                       return visitor.compare(minPackedValue, maxPackedValue);
+                     }
+                   });
+    }
+  }
+
   private static class SortingSortedDocValues extends SortedDocValues {
 
     private final SortedDocValues in;
@@ -795,6 +827,17 @@ public class SortingLeafReader extends FilterLeafReader {
       return null;
     } else {
       return new SortingBits(inLiveDocs, docMap);
+    }
+  }
+
+  @Override
+  public DimensionalValues getDimensionalValues() {
+    final DimensionalValues inDimensionalValues = in.getDimensionalValues();
+    if (inDimensionalValues == null) {
+      return null;
+    } else {
+      // TODO: this is untested!
+      return new SortingDimensionalValues(inDimensionalValues, docMap);
     }
   }
 

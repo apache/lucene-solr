@@ -27,8 +27,6 @@ import java.util.TreeMap;
 
 import org.apache.lucene.util.ArrayUtil;
 
-// nocommit make sure you can suddenly start indexing a dimensional field into a prior index ... need back compat tests
-
 /** 
  * Collection of {@link FieldInfo}s (accessible by number or by name).
  *  @lucene.experimental
@@ -84,7 +82,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       hasNorms |= info.hasNorms();
       hasDocValues |= info.getDocValuesType() != DocValuesType.NONE;
       hasPayloads |= info.hasPayloads();
-      hasDimensionalValues = info.getDimensionCount() != 0;
+      hasDimensionalValues |= info.getDimensionCount() != 0;
     }
     
     this.hasVectors = hasVectors;
@@ -251,10 +249,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
         FieldDimensions dims = dimensions.get(fieldName);
         if (dims != null) {
           if (dims.dimensionCount != dimensionCount) {
-            throw new IllegalArgumentException("cannot change dimension count from " + dims.dimensionCount + " to " + dimensionCount + " for field \"" + fieldName + "\"");
+            throw new IllegalArgumentException("cannot change dimension count from " + dims.dimensionCount + " to " + dimensionCount + " for field=\"" + fieldName + "\"");
           }
           if (dims.dimensionNumBytes != dimensionNumBytes) {
-            throw new IllegalArgumentException("cannot change dimension numBytes from " + dims.dimensionNumBytes + " to " + dimensionNumBytes + " for field \"" + fieldName + "\"");
+            throw new IllegalArgumentException("cannot change dimension numBytes from " + dims.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + fieldName + "\"");
           }
         } else {
           dimensions.put(fieldName, new FieldDimensions(dimensionCount, dimensionNumBytes));
@@ -304,10 +302,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
       FieldDimensions dim = dimensions.get(name);
       if (dim != null) {
         if (dim.dimensionCount != dimensionCount) {
-          throw new IllegalArgumentException("cannot change dimension count from " + dim.dimensionCount + " to " + dimensionCount + " for field \"" + name + "\"");
+          throw new IllegalArgumentException("cannot change dimension count from " + dim.dimensionCount + " to " + dimensionCount + " for field=\"" + name + "\"");
         }
         if (dim.dimensionNumBytes != dimensionNumBytes) {
-          throw new IllegalArgumentException("cannot change dimension numBytes from " + dim.dimensionNumBytes + " to " + dimensionNumBytes + " for field \"" + name + "\"");
+          throw new IllegalArgumentException("cannot change dimension numBytes from " + dim.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + name + "\"");
         }
       }
     }
@@ -337,8 +335,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
       verifyConsistent(number, name, dvType);
       docValuesType.put(name, dvType);
     }
-
-    // nocommit need a BaseTestDimensionFormat
 
     synchronized void setDimensions(int number, String name, int dimensionCount, int dimensionNumBytes) {
       verifyConsistentDimensions(number, name, dimensionCount, dimensionNumBytes);

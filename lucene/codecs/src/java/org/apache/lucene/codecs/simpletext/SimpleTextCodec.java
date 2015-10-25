@@ -50,7 +50,7 @@ public final class SimpleTextCodec extends Codec {
   public SimpleTextCodec() {
     super("SimpleText");
   }
-  
+
   @Override
   public PostingsFormat postingsFormat() {
     return postings;

@@ -48,6 +48,7 @@ public abstract class DimensionalFormat {
    *  */
   public abstract DimensionalReader fieldsReader(SegmentReadState state) throws IOException;
 
+  /** A {@code DimensionalFormat} that has nothing indexed */
   public static final DimensionalFormat EMPTY = new DimensionalFormat() {
       @Override
       public DimensionalWriter fieldsWriter(SegmentWriteState state) {

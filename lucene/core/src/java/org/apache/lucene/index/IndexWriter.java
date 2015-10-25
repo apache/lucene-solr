@@ -2492,6 +2492,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
             FieldInfos fis = readFieldInfos(info);
             for(FieldInfo fi : fis) {
+              // This will throw exceptions if any of the incoming fields have an illegal schema change:
               globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType(), fi.getDimensionCount(), fi.getDimensionNumBytes());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));

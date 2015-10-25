@@ -334,7 +334,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                       fieldInfo.getIndexOptions(),
                                       DocValuesType.NONE,
                                       fieldInfo.getDocValuesGen(),
-                                      fieldInfo.attributes());
+                                      fieldInfo.attributes(),
+                                      0, 0);
           newInfos.add(f);
 
         } else {

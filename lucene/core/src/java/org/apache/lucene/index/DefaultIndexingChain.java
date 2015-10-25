@@ -123,7 +123,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Writes all buffered dimensional values. */
   private void writeDimensionalValues(SegmentWriteState state) throws IOException {
-    int maxDoc = state.segmentInfo.maxDoc();
     DimensionalWriter dimensionalWriter = null;
     boolean success = false;
     try {
@@ -438,16 +437,14 @@ final class DefaultIndexingChain extends DocConsumer {
 
     int dimensionNumBytes = field.fieldType().dimensionNumBytes();
 
-    // nocommit check that these are valid here, and factor out the checking to one place!
-
+    // Record dimensions for this field; this setter will throw IllegalArgExc if
+    // the dimensions were already set to something different:
     if (fp.fieldInfo.getDimensionCount() == 0) {
-      // This is the first time we are seeing this field indexed with dimensional values, so we
-      // now record the dimension count and bytes per dimension so that any future attempt to (illegally) change
-      // the dimensions of this field, will throw an IllegalArgExc:
-      fp.fieldInfo.setDimensionCount(dimensionCount);
-      fp.fieldInfo.setDimensionNumBytes(dimensionNumBytes);
       fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, dimensionCount, dimensionNumBytes);
     }
+
+    fp.fieldInfo.setDimensions(dimensionCount, dimensionNumBytes);
+
     if (fp.dimensionalValuesWriter == null) {
       fp.dimensionalValuesWriter = new DimensionalValuesWriter(docWriter, fp.fieldInfo);
     }

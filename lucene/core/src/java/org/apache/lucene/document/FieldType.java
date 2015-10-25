@@ -350,9 +350,8 @@ public class FieldType implements IndexableFieldType  {
    * Enables dimensional indexing.
    */
   public void setDimensions(int dimensionCount, int dimensionNumBytes) {
-    // nocommit use BKDWriter.MAX_DIMS here:
-    if (dimensionCount < 0 || dimensionCount > 15) {
-      throw new IllegalArgumentException("dimensionCount must be >= 0 and <= 15; got " + dimensionCount);
+    if (dimensionCount < 0) {
+      throw new IllegalArgumentException("dimensionCount must be >= 0; got " + dimensionCount);
     }
     if (dimensionNumBytes < 0) {
       throw new IllegalArgumentException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);

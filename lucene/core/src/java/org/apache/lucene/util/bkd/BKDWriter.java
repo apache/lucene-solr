@@ -84,7 +84,7 @@ public class BKDWriter implements Closeable {
   public static final float DEFAULT_MAX_MB_SORT_IN_HEAP = 16.0f;
 
   /** Maximum number of dimensions */
-  public static final int MAX_DIMS = 15;
+  public static final int MAX_DIMS = 255;
 
   /** How many dimensions we are indexing */
   protected final int numDims;
@@ -625,8 +625,6 @@ public class BKDWriter implements Closeable {
 
       // Sort by docID in the leaf so we can delta-vInt encode:
       sortHeapPointWriter(heapSource, Math.toIntExact(source.start), Math.toIntExact(source.count), -1);
-
-      int lastDocID = 0;
 
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();

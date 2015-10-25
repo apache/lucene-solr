@@ -83,7 +83,7 @@ final class SegmentCoreReaders {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
+  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) it's the cfsdir, otherwise it's the segment's directory.
@@ -157,7 +157,7 @@ final class SegmentCoreReaders {
       Throwable th = null;
       try {
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
-            cfsReader, normsProducer);
+                      cfsReader, normsProducer, dimensionalReader);
       } catch (Throwable throwable) {
         th = throwable;
       } finally {

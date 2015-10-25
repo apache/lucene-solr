@@ -29,8 +29,6 @@ import org.apache.lucene.util.Accountable;
  */
 public abstract class DimensionalReader extends DimensionalValues implements Closeable, Accountable {
 
-  // nocommit maybe another class pulled for a field?  so consumers of LeafReader don't get to close, call checkIntegrity, etc.
-  
   /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected DimensionalReader() {}
 
