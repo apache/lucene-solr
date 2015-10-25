@@ -291,7 +291,10 @@ Bug Fixes
 
 * SOLR-8189: eTag calculation during HTTP Cache Validation uses unsynchronized WeakHashMap causing
   threads to be stuck in runnable state. (shalin)
-  
+
+* SOLR-7993: Raw json output for fields stopped working in 5.3.0 when requested fields do not include
+  the unique key field name. (Bill Bell, Ryan McKinley via shalin)
+
 Optimizations
 ----------------------
 
@@ -372,6 +375,8 @@ Other Changes
 
 * SOLR-8116: SearchGroupsResultTransformer tweaks (String literals, list/map initialCapacity)
   (Christine Poerschke)
+
+* SOLR-8074: LoadAdminUIServlet directly references admin.html (Mark Miller, Upayavira)
 
 ==================  5.3.1 ==================
 

@@ -32,12 +32,10 @@ import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.Classifier;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NamedThreadFactory;
 
@@ -152,11 +150,67 @@ public class ConfusionMatrixGenerator {
 
     /**
      * get the linearized confusion matrix as a {@link Map}
+     *
      * @return a {@link Map} whose keys are the correct classification answers and whose values are the actual answers'
      * counts
      */
     public Map<String, Map<String, Long>> getLinearizedMatrix() {
       return Collections.unmodifiableMap(linearizedMatrix);
+    }
+
+    /**
+     * calculate precision on the given class
+     *
+     * @param klass the class to calculate the precision for
+     * @return the precision for the given class
+     */
+    public double getPrecision(String klass) {
+      Map<String, Long> classifications = linearizedMatrix.get(klass);
+      double tp = 0;
+      double fp = 0;
+      for (Map.Entry<String, Long> entry : classifications.entrySet()) {
+        if (klass.equals(entry.getKey())) {
+          tp += entry.getValue();
+        }
+      }
+      for (Map<String, Long> values : linearizedMatrix.values()) {
+        if (values.containsKey(klass)) {
+          fp += values.get(klass);
+        }
+      }
+      return tp / (tp + fp);
+    }
+
+    /**
+     * calculate recall on the given class
+     *
+     * @param klass the class to calculate the recall for
+     * @return the recall for the given class
+     */
+    public double getRecall(String klass) {
+      Map<String, Long> classifications = linearizedMatrix.get(klass);
+      double tp = 0;
+      double fn = 0;
+      for (Map.Entry<String, Long> entry : classifications.entrySet()) {
+        if (klass.equals(entry.getKey())) {
+          tp += entry.getValue();
+        } else {
+          fn += entry.getValue();
+        }
+      }
+      return tp / (tp + fn);
+    }
+
+    /**
+     * get the F-1 measure of the given class
+     *
+     * @param klass the class to calculate the F-1 measure for
+     * @return the F-1 measure for the given class
+     */
+    public double getF1Measure(String klass) {
+      double recall = getRecall(klass);
+      double precision = getPrecision(klass);
+      return 2 * precision * recall / (precision + recall);
     }
 
     /**
@@ -199,6 +253,7 @@ public class ConfusionMatrixGenerator {
 
     /**
      * get the average classification time in milliseconds
+     *
      * @return the avg classification time
      */
     public double getAvgClassificationTime() {
@@ -207,6 +262,7 @@ public class ConfusionMatrixGenerator {
 
     /**
      * get the no. of documents evaluated while generating this confusion matrix
+     *
      * @return the no. of documents evaluated
      */
     public int getNumberOfEvaluatedDocs() {

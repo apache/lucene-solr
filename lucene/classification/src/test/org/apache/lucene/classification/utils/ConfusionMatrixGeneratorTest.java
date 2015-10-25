@@ -145,6 +145,12 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       assertTrue(confusionMatrix.getAvgClassificationTime() >= 0d);
       assertTrue(confusionMatrix.getAccuracy() > 0d);
+      assertTrue(confusionMatrix.getPrecision("true") > 0d);
+      assertTrue(confusionMatrix.getPrecision("false") > 0d);
+      assertTrue(confusionMatrix.getRecall("true") > 0d);
+      assertTrue(confusionMatrix.getRecall("false") > 0d);
+      assertTrue(confusionMatrix.getF1Measure("true") > 0d);
+      assertTrue(confusionMatrix.getF1Measure("false") > 0d);
     } finally {
       if (reader != null) {
         reader.close();

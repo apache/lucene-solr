@@ -141,7 +141,12 @@
 
   <servlet-mapping>
     <servlet-name>LoadAdminUI</servlet-name>
-    <url-pattern>/admin.html</url-pattern>
+    <url-pattern>/old.html</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>LoadAdminUI</servlet-name>
+    <url-pattern>/index.html</url-pattern>
   </servlet-mapping>
 
   <servlet-mapping>
@@ -156,7 +161,7 @@
   </mime-mapping>
 
   <welcome-file-list>
-    <welcome-file>admin.html</welcome-file>
+    <welcome-file>index.html</welcome-file>
   </welcome-file-list>
 
 </web-app>
