@@ -19,9 +19,8 @@ package org.apache.solr.response.transform;
 
 import java.util.Set;
 
-import org.apache.lucene.document.Field;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -48,7 +47,7 @@ class MarkTransformer extends BaseEditorialTransformer {
 
   @Override
   protected Set<String> getIdSet() {
-    return (Set<String>) context.req.getContext().get("BOOSTED");
+    return (Set<String>) context.req.getContext().get(QueryElevationComponent.BOOSTED);
   }
 }
 
