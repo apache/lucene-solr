@@ -238,10 +238,11 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   @Override
   public String toString() {
     return "KNearestNeighborClassifier{" +
-        ", textFieldNames=" + Arrays.toString(textFieldNames) +
+        "textFieldNames=" + Arrays.toString(textFieldNames) +
         ", classFieldName='" + classFieldName + '\'' +
         ", k=" + k +
         ", query=" + query +
+        ", similarity=" + indexSearcher.getSimilarity(true) +
         '}';
   }
 }

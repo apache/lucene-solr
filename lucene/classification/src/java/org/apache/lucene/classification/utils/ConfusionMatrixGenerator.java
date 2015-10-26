@@ -168,17 +168,19 @@ public class ConfusionMatrixGenerator {
       Map<String, Long> classifications = linearizedMatrix.get(klass);
       double tp = 0;
       double fp = 0;
-      for (Map.Entry<String, Long> entry : classifications.entrySet()) {
-        if (klass.equals(entry.getKey())) {
-          tp += entry.getValue();
+      if (classifications != null) {
+        for (Map.Entry<String, Long> entry : classifications.entrySet()) {
+          if (klass.equals(entry.getKey())) {
+            tp += entry.getValue();
+          }
+        }
+        for (Map<String, Long> values : linearizedMatrix.values()) {
+          if (values.containsKey(klass)) {
+            fp += values.get(klass);
+          }
         }
       }
-      for (Map<String, Long> values : linearizedMatrix.values()) {
-        if (values.containsKey(klass)) {
-          fp += values.get(klass);
-        }
-      }
-      return tp / (tp + fp);
+      return tp + fp > 0 ? tp / (tp + fp) : 0;
     }
 
     /**
@@ -191,14 +193,16 @@ public class ConfusionMatrixGenerator {
       Map<String, Long> classifications = linearizedMatrix.get(klass);
       double tp = 0;
       double fn = 0;
-      for (Map.Entry<String, Long> entry : classifications.entrySet()) {
-        if (klass.equals(entry.getKey())) {
-          tp += entry.getValue();
-        } else {
-          fn += entry.getValue();
+      if (classifications != null) {
+        for (Map.Entry<String, Long> entry : classifications.entrySet()) {
+          if (klass.equals(entry.getKey())) {
+            tp += entry.getValue();
+          } else {
+            fn += entry.getValue();
+          }
         }
       }
-      return tp / (tp + fn);
+      return tp + fn > 0 ? tp / (tp + fn) : 0;
     }
 
     /**
@@ -210,7 +214,7 @@ public class ConfusionMatrixGenerator {
     public double getF1Measure(String klass) {
       double recall = getRecall(klass);
       double precision = getPrecision(klass);
-      return 2 * precision * recall / (precision + recall);
+      return precision > 0 && recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
     }
 
     /**

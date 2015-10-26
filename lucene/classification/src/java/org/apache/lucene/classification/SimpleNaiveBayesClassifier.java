@@ -151,7 +151,6 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     int docsWithClassSize = countDocsWithClass();
     while ((next = classesEnum.next()) != null) {
       if (next.length > 0) {
-        // We are passing the term to IndexSearcher so we need to make sure it will not change over time
         Term term = new Term(this.classFieldName, next);
         double clVal = calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(tokenizedText, term, docsWithClassSize);
         assignedClasses.add(new ClassificationResult<>(term.bytes(), clVal));
