@@ -156,6 +156,8 @@ Optimizations
   strings larger than 64kb by an amount equal to string's utf8 size.
   (Dawid Weiss, Robert Muir, shalin)
 
+* LUCENE-6850: Optimize BooleanScorer for sparse clauses. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 

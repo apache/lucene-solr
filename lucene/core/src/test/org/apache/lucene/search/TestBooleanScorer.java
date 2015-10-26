@@ -18,17 +18,24 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.Weight.DefaultBulkScorer;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestBooleanScorer extends LuceneTestCase {
   private static final String FIELD = "category";
@@ -139,6 +146,95 @@ public class TestBooleanScorer extends LuceneTestCase {
 
     assertEquals(1, s.search(q2.build(), 10).totalHits);
     r.close();
+    dir.close();
+  }
+
+  public void testOptimizeTopLevelClauseOrNull() throws IOException {
+    // When there is a single non-null scorer, this scorer should be used
+    // directly
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Store.NO));
+    w.addDocument(doc);
+    IndexReader reader = w.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null); // so that weights are not wrapped
+    final LeafReaderContext ctx = reader.leaves().get(0);
+    Query query = new BooleanQuery.Builder()
+      .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD) // existing term
+      .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD) // missing term
+      .build();
+
+    // no scores -> term scorer
+    Weight weight = searcher.createNormalizedWeight(query, false);
+    BulkScorer scorer = ((BooleanWeight) weight).booleanScorer(ctx);
+    assertTrue(scorer instanceof DefaultBulkScorer); // term scorer
+
+    // disabled coords -> term scorer
+    query = new BooleanQuery.Builder()
+      .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD) // existing term
+      .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD) // missing term
+      .setDisableCoord(true)
+      .build();
+    weight = searcher.createNormalizedWeight(query, true);
+    scorer = ((BooleanWeight) weight).booleanScorer(ctx);
+    assertTrue(scorer instanceof DefaultBulkScorer); // term scorer
+
+    // enabled coords -> BoostedBulkScorer
+    searcher.setSimilarity(new ClassicSimilarity());
+    query = new BooleanQuery.Builder()
+      .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD) // existing term
+      .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD) // missing term
+      .build();
+    weight = searcher.createNormalizedWeight(query, true);
+    scorer = ((BooleanWeight) weight).booleanScorer(ctx);
+    assertTrue(scorer instanceof BooleanTopLevelScorers.BoostedBulkScorer);
+
+    w.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testSparseClauseOptimization() throws IOException {
+    // When some windows have only one scorer that can match, the scorer will
+    // directly call the collector in this window
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document emptyDoc = new Document();
+    final int numDocs = atLeast(10);
+    for (int d = 0; d < numDocs; ++d) {
+      for (int i = random().nextInt(5000); i >= 0; --i) {
+        w.addDocument(emptyDoc);
+      }
+      Document doc = new Document();
+      for (String value : Arrays.asList("foo", "bar", "baz")) {
+        if (random().nextBoolean()) {
+          doc.add(new StringField("field", value, Store.NO));
+        }
+      }
+    }
+    for (int i = TestUtil.nextInt(random(), 3000, 5000); i >= 0; --i) {
+      w.addDocument(emptyDoc);
+    }
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+    IndexReader reader = w.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Query query = new BooleanQuery.Builder()
+      .add(new BoostQuery(new TermQuery(new Term("field", "foo")), 3), Occur.SHOULD)
+      .add(new BoostQuery(new TermQuery(new Term("field", "bar")), 3), Occur.SHOULD)
+      .add(new BoostQuery(new TermQuery(new Term("field", "baz")), 3), Occur.SHOULD)
+      .setDisableCoord(random().nextBoolean())
+      .build();
+
+    // duel BS1 vs. BS2
+    QueryUtils.check(random(), query, searcher);
+
+    reader.close();
+    w.close();
     dir.close();
   }
 }
