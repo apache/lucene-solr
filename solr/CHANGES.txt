@@ -383,6 +383,9 @@ Other Changes
 
 * SOLR-8074: LoadAdminUIServlet directly references admin.html (Mark Miller, Upayavira)
 
+* SOLR-8195: IndexFetcher download trace now includes bytes-downloaded[-per-second]
+  (Christine Poerschke)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

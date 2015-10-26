@@ -430,15 +430,18 @@ public class IndexFetcher {
         boolean reloadCore = false;
 
         try {
-          LOG.info("Starting download to " + tmpIndexDir + " fullCopy="
-              + isFullCopyNeeded);
+          LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 
-          downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, latestGeneration);
+          long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, latestGeneration);
           if (tlogFilesToDownload != null) {
-            downloadTlogFiles(timestamp, latestGeneration);
+            bytesDownloaded += downloadTlogFiles(timestamp, latestGeneration);
           }
-          LOG.info("Total time taken for download: {} secs", getReplicationTimeElapsed());
+          final long timeTakenSeconds = getReplicationTimeElapsed();
+          final Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? new Long(bytesDownloaded/timeTakenSeconds) : null);
+          LOG.info("Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
+              isFullCopyNeeded, bytesDownloaded, timeTakenSeconds, bytesDownloadedPerSecond, tmpIndexDir);
+
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
@@ -789,11 +792,12 @@ public class IndexFetcher {
     }
   }
 
-  private void downloadTlogFiles(String timestamp, long latestGeneration) throws Exception {
+  private long downloadTlogFiles(String timestamp, long latestGeneration) throws Exception {
     UpdateLog ulog = solrCore.getUpdateHandler().getUpdateLog();
 
     LOG.info("Starting download of tlog files from master: " + tlogFilesToDownload);
     tlogFilesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
+    long bytesDownloaded = 0;
     File tmpTlogDir = new File(ulog.getLogDir(), "tlog." + getDateAsStr(new Date()));
     try {
       boolean status = tmpTlogDir.mkdirs();
@@ -806,6 +810,7 @@ public class IndexFetcher {
         localFileFetcher = new LocalFsFileFetcher(tmpTlogDir, file, saveAs, TLOG_FILE, latestGeneration);
         currentFile = file;
         localFileFetcher.fetchFile();
+        bytesDownloaded += localFileFetcher.getBytesDownloaded();
         tlogFilesDownloaded.add(new HashMap<>(file));
       }
       // this is called before copying the files to the original conf dir
@@ -817,6 +822,7 @@ public class IndexFetcher {
     } finally {
       delTree(tmpTlogDir);
     }
+    return bytesDownloaded;
   }
 
   /**
@@ -826,12 +832,15 @@ public class IndexFetcher {
    * @param tmpIndexDir              the directory to which files need to be downloadeed to
    * @param indexDir                 the indexDir to be merged to
    * @param latestGeneration         the version number
+   *
+   * @return number of bytes downloaded
    */
-  private void downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir, long latestGeneration)
+  private long downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir, long latestGeneration)
       throws Exception {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
+    long bytesDownloaded = 0;
     for (Map<String,Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       long size = (Long) file.get(SIZE);
@@ -842,12 +851,14 @@ public class IndexFetcher {
             (String) file.get(NAME), FILE, latestGeneration);
         currentFile = file;
         dirFileFetcher.fetchFile();
+        bytesDownloaded += dirFileFetcher.getBytesDownloaded();
         filesDownloaded.add(new HashMap<>(file));
       } else {
         LOG.info("Skipping download for " + file.get(NAME)
             + " because it already exists");
       }
     }
+    return bytesDownloaded;
   }
   
   private boolean filesToAlwaysDownloadIfNoChecksums(String filename,
