@@ -386,6 +386,9 @@ Other Changes
 * SOLR-8195: IndexFetcher download trace now includes bytes-downloaded[-per-second]
   (Christine Poerschke)
 
+* SOLR-4854: Add a test to assert that [elevated] DocTransfer works correctly with javabin
+  response format. (Ray, shalin)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
