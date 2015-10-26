@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.util.Bits;
+
 /** Internal document-at-a-time scorers used to deal with stupid coord() computation */
 class BooleanTopLevelScorers {
   
@@ -48,7 +50,39 @@ class BooleanTopLevelScorers {
       return Collections.singleton(new ChildScorer(in, "BOOSTED"));
     }
   }
-  
+
+  /**
+   * Used when there is more than one scorer in a query, but a segment
+   * only had one non-null scorer.
+   */
+  static class BoostedBulkScorer extends BulkScorer {
+
+    final BulkScorer in;
+    final float boost;
+
+    BoostedBulkScorer(BulkScorer scorer, float boost) {
+      this.in = scorer;
+      this.boost = boost;
+    }
+
+    @Override
+    public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+      final LeafCollector wrapped = new FilterLeafCollector(collector) {
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(new BoostedScorer(scorer, boost));
+        }
+      };
+      return in.score(wrapped, acceptDocs, min, max);
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
+  }
+
   /** 
    * Used when there are both mandatory and optional clauses, but minShouldMatch
    * dictates that some of the optional clauses must match. The query is a conjunction,
