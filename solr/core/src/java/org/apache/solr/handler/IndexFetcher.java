@@ -420,12 +420,15 @@ public class IndexFetcher {
         boolean reloadCore = false;
         
         try {
-          LOG.info("Starting download to " + tmpIndexDir + " fullCopy="
-              + isFullCopyNeeded);
+          LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
           
-          downloadIndexFiles(isFullCopyNeeded, indexDir, oldestVersion, tmpIndexDir, latestGeneration);
-          LOG.info("Total time taken for download: {} secs", getReplicationTimeElapsed());
+          final long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, oldestVersion, tmpIndexDir, latestGeneration);
+          final long timeTakenSeconds = getReplicationTimeElapsed();
+          final Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? new Long(bytesDownloaded/timeTakenSeconds) : null);
+          LOG.info("Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
+              isFullCopyNeeded, bytesDownloaded, timeTakenSeconds, bytesDownloadedPerSecond, tmpIndexDir);
+
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
@@ -784,12 +787,15 @@ public class IndexFetcher {
    * @param version                  Version of index
    * @param tmpIndexDir              the directory to which files need to be downloadeed to
    * @param latestGeneration         the version number
+   *
+   * @return number of bytes downloaded
    */
-  private void downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Version version, Directory tmpIndexDir, long latestGeneration)
+  private long downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Version version, Directory tmpIndexDir, long latestGeneration)
       throws Exception {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
+    long bytesDownloaded = 0;
     for (Map<String,Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       long size = (Long) file.get(SIZE);
@@ -800,12 +806,14 @@ public class IndexFetcher {
             (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
         dirFileFetcher.fetchFile();
+        bytesDownloaded += dirFileFetcher.getBytesDownloaded();
         filesDownloaded.add(new HashMap<>(file));
       } else {
         LOG.info("Skipping download for " + file.get(NAME)
             + " because it already exists");
       }
     }
+    return bytesDownloaded;
   }
 
   private boolean filesToAlwaysDownloadIfNoChecksums(String filename,
