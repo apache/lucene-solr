@@ -67,6 +67,7 @@ public class MiniSolrCloudCluster {
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new LinkedList<>();
   private final File testDir;
+  private final File testDirs[];
   private final CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
 
@@ -141,13 +142,22 @@ public class MiniSolrCloudCluster {
    * @throws Exception if there was an error starting the cluster
    */
   public MiniSolrCloudCluster(int numServers, File baseDir, File solrXml, final JettyConfig jettyConfig, ZkTestServer zkTestServer) throws Exception {
+    this(numServers, baseDir, null, solrXml, jettyConfig, zkTestServer);
+  }
+
+  public MiniSolrCloudCluster(File[] baseDirs, File solrXml, final JettyConfig jettyConfig, ZkTestServer zkTestServer) throws Exception {
+    this(baseDirs.length, null, baseDirs, solrXml, jettyConfig, zkTestServer);
+  }
+
+  private MiniSolrCloudCluster(int numServers, File baseDir, File[] baseDirs, File solrXml, final JettyConfig jettyConfig, ZkTestServer zkTestServer) throws Exception {
 
     this.testDir = baseDir;
+    this.testDirs = baseDirs;
     this.jettyConfig = jettyConfig;
 
     this.externalZkServer = zkTestServer != null;
     if (!externalZkServer) {
-      String zkDir = testDir.getAbsolutePath() + File.separator
+      String zkDir = (testDir != null ? testDir : testDirs[0]).getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
       zkTestServer = new ZkTestServer(zkDir);
       zkTestServer.run();
@@ -167,10 +177,14 @@ public class MiniSolrCloudCluster {
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
+      final Integer testDirsIdx = new Integer(i);
       startups.add(new Callable<JettySolrRunner>() {
         @Override
         public JettySolrRunner call() throws Exception {
-          return startJettySolrRunner(jettyConfig);
+          if (testDir != null)
+            return startJettySolrRunner(jettyConfig);
+          else
+            return startJettySolrRunner(testDirsIdx, jettyConfig.context, jettyConfig);
         }
       });
     }
@@ -283,9 +297,12 @@ public class MiniSolrCloudCluster {
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner(String hostContext, JettyConfig config) throws Exception {
+    return startJettySolrRunner(null, hostContext, config);
+  }
+  public JettySolrRunner startJettySolrRunner(Integer testDirsIdx, String hostContext, JettyConfig config) throws Exception {
     String context = getHostContextSuitableForServletContext(hostContext);
     JettyConfig newConfig = JettyConfig.builder(config).setContext(context).build();
-    JettySolrRunner jetty = new JettySolrRunner(testDir.getAbsolutePath(), newConfig);
+    JettySolrRunner jetty = new JettySolrRunner((testDirsIdx != null ? testDirs[testDirsIdx.intValue()] : testDir).getAbsolutePath(), newConfig);
     jetty.start();
     jettys.add(jetty);
     return jetty;
@@ -309,6 +326,11 @@ public class MiniSolrCloudCluster {
     JettySolrRunner jetty = jettys.get(index);
     jetty.stop();
     jettys.remove(index);
+    return jetty;
+  }
+
+  protected JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
+    jetty.start();
     return jetty;
   }
 
