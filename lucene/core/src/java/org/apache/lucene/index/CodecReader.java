@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -74,6 +75,12 @@ public abstract class CodecReader extends LeafReader implements Accountable {
    * @lucene.internal
    */
   public abstract FieldsProducer getPostingsReader();
+
+  /**
+   * Expert: retrieve underlying DimensionalReader
+   * @lucene.internal
+   */
+  public abstract DimensionalReader getDimensionalReader();
   
   @Override
   public final void document(int docID, StoredFieldVisitor visitor) throws IOException {

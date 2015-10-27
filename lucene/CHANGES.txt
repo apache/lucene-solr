@@ -39,6 +39,10 @@ New Features
 
 * LUCENE-6825: Add low-level support for block-KD trees (Mike McCandless)
 
+* LUCENE-6852: Add support for dimensionally indexed values to index,
+  document and codec APIs, including a simple text implementation.
+  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to

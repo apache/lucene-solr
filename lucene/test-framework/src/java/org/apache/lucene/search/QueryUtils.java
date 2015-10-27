@@ -23,9 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import junit.framework.Assert;
-
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -45,6 +44,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
+
+import junit.framework.Assert;
 
 /**
  * Utility class for sanity-checking queries.
@@ -253,6 +254,11 @@ public class QueryUtils {
       @Override
       public Bits getLiveDocs() {
         return liveDocs;
+      }
+
+      @Override
+      public DimensionalValues getDimensionalValues() {
+        return null;
       }
 
       @Override

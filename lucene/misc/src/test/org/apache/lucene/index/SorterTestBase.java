@@ -382,5 +382,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertEquals("incorrect term vector for doc " + i, sortedValues[i].toString(), terms.iterator().next().utf8ToString());
     }
   }
-  
+
+  // TODO: need DimensionalValues test here, once default codec supports DimensionalValues
 }

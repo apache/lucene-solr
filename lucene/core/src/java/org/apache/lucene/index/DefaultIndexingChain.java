@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.DimensionalWriter;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
@@ -91,6 +93,7 @@ final class DefaultIndexingChain extends DocConsumer {
     int maxDoc = state.segmentInfo.maxDoc();
     writeNorms(state);
     writeDocValues(state);
+    writeDimensionalValues(state);
     
     // it's possible all docs hit non-aborting exceptions...
     initStoredFieldsWriter();
@@ -116,6 +119,44 @@ final class DefaultIndexingChain extends DocConsumer {
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     docWriter.codec.fieldInfosFormat().write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
+  }
+
+  /** Writes all buffered dimensional values. */
+  private void writeDimensionalValues(SegmentWriteState state) throws IOException {
+    DimensionalWriter dimensionalWriter = null;
+    boolean success = false;
+    try {
+      for (int i=0;i<fieldHash.length;i++) {
+        PerField perField = fieldHash[i];
+        while (perField != null) {
+          if (perField.dimensionalValuesWriter != null) {
+            if (perField.fieldInfo.getDimensionCount() == 0) {
+              // BUG
+              throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no dimensional values but wrote them");
+            }
+            if (dimensionalWriter == null) {
+              // lazy init
+              DimensionalFormat fmt = state.segmentInfo.getCodec().dimensionalFormat();
+              dimensionalWriter = fmt.fieldsWriter(state);
+            }
+
+            perField.dimensionalValuesWriter.flush(state, dimensionalWriter);
+            perField.dimensionalValuesWriter = null;
+          } else if (perField.fieldInfo.getDimensionCount() != 0) {
+            // BUG
+            throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has dimensional values but did not write them");
+          }
+          perField = perField.next;
+        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(dimensionalWriter);
+      } else {
+        IOUtils.closeWhileHandlingException(dimensionalWriter);
+      }
+    }
   }
 
   /** Writes all buffered doc values (called from {@link #flush}). */
@@ -355,6 +396,9 @@ final class DefaultIndexingChain extends DocConsumer {
         if (dvType != DocValuesType.NONE) {
           indexDocValue(fp, dvType, field);
         }
+        if (fieldType.dimensionCount() != 0) {
+          indexDimensionalValue(fp, field);
+        }
       }
     } finally {
       if (abort == false) {
@@ -387,8 +431,27 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  /** Called from processDocument to index one field's doc
-   *  value */
+  /** Called from processDocument to index one field's dimensional value */
+  private void indexDimensionalValue(PerField fp, StorableField field) throws IOException {
+    int dimensionCount = field.fieldType().dimensionCount();
+
+    int dimensionNumBytes = field.fieldType().dimensionNumBytes();
+
+    // Record dimensions for this field; this setter will throw IllegalArgExc if
+    // the dimensions were already set to something different:
+    if (fp.fieldInfo.getDimensionCount() == 0) {
+      fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, dimensionCount, dimensionNumBytes);
+    }
+
+    fp.fieldInfo.setDimensions(dimensionCount, dimensionNumBytes);
+
+    if (fp.dimensionalValuesWriter == null) {
+      fp.dimensionalValuesWriter = new DimensionalValuesWriter(docWriter, fp.fieldInfo);
+    }
+    fp.dimensionalValuesWriter.addPackedValue(docState.docID, field.binaryValue());
+  }
+
+  /** Called from processDocument to index one field's doc value */
   private void indexDocValue(PerField fp, DocValuesType dvType, StorableField field) throws IOException {
 
     if (fp.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
@@ -515,6 +578,9 @@ final class DefaultIndexingChain extends DocConsumer {
     // Non-null if this field ever had doc values in this
     // segment:
     DocValuesWriter docValuesWriter;
+
+    // Non-null if this field ever had dimensional values in this segment:
+    DimensionalValuesWriter dimensionalValuesWriter;
 
     /** We use this to know when a PerField is seen for the
      *  first time in the current document. */

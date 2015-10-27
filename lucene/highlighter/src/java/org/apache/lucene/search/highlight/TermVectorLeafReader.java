@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -78,8 +79,8 @@ public class TermVectorLeafReader extends LeafReader {
       indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
     }
     FieldInfo fieldInfo = new FieldInfo(field, 0,
-        true, true, terms.hasPayloads(),
-        indexOptions, DocValuesType.NONE, -1, Collections.emptyMap());
+                                        true, true, terms.hasPayloads(),
+                                        indexOptions, DocValuesType.NONE, -1, Collections.emptyMap(), 0, 0);
     fieldInfos = new FieldInfos(new FieldInfo[]{fieldInfo});
   }
 
@@ -144,6 +145,11 @@ public class TermVectorLeafReader extends LeafReader {
 
   @Override
   public Bits getLiveDocs() {
+    return null;
+  }
+
+  @Override
+  public DimensionalValues getDimensionalValues() {
     return null;
   }
 

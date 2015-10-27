@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.Objects;
 
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -78,6 +79,16 @@ public class FilterCodecReader extends CodecReader {
   @Override
   public FieldInfos getFieldInfos() {
     return in.getFieldInfos();
+  }
+
+  @Override
+  public DimensionalReader getDimensionalReader() {
+    return in.getDimensionalReader();
+  }
+
+  @Override
+  public DimensionalValues getDimensionalValues() {
+    return in.getDimensionalValues();
   }
 
   @Override

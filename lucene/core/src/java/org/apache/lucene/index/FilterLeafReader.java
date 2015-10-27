@@ -381,6 +381,11 @@ public class FilterLeafReader extends LeafReader {
   }
 
   @Override
+  public DimensionalValues getDimensionalValues() {
+    return in.getDimensionalValues();
+  }
+
+  @Override
   public Fields getTermVectors(int docID)
           throws IOException {
     ensureOpen();

@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
+import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
+import org.apache.lucene.index.DimensionalValues.Relation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -31,12 +33,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 
-@SuppressSysoutChecks(bugUrl = "Stuff gets printed.")
 public class TestBKD extends LuceneTestCase {
 
   public void testBasicInts1D() throws Exception {
@@ -62,7 +61,7 @@ public class TestBKD extends LuceneTestCase {
         final int queryMax = 87;
 
         final BitSet hits = new BitSet();
-        r.intersect(new BKDReader.IntersectVisitor() {
+        r.intersect(new IntersectVisitor() {
             @Override
             public void visit(int docID) {
               hits.set(docID);
@@ -83,7 +82,7 @@ public class TestBKD extends LuceneTestCase {
             }
 
             @Override
-            public BKDReader.Relation compare(byte[] minPacked, byte[] maxPacked) {
+            public Relation compare(byte[] minPacked, byte[] maxPacked) {
               int min = BKDUtil.bytesToInt(minPacked, 0);
               int max = BKDUtil.bytesToInt(maxPacked, 0);
               assert max >= min;
@@ -92,11 +91,11 @@ public class TestBKD extends LuceneTestCase {
               }
 
               if (max < queryMin || min > queryMax) {
-                return BKDReader.Relation.QUERY_OUTSIDE_CELL;
+                return Relation.QUERY_OUTSIDE_CELL;
               } else if (min >= queryMin && max <= queryMax) {
-                return BKDReader.Relation.CELL_INSIDE_QUERY;
+                return Relation.CELL_INSIDE_QUERY;
               } else {
-                return BKDReader.Relation.QUERY_CROSSES_CELL;
+                return Relation.QUERY_CROSSES_CELL;
               }
             }
           });
@@ -168,7 +167,7 @@ public class TestBKD extends LuceneTestCase {
           }
 
           final BitSet hits = new BitSet();
-          r.intersect(new BKDReader.IntersectVisitor() {
+          r.intersect(new IntersectVisitor() {
             @Override
             public void visit(int docID) {
               hits.set(docID);
@@ -191,7 +190,7 @@ public class TestBKD extends LuceneTestCase {
             }
 
             @Override
-            public BKDReader.Relation compare(byte[] minPacked, byte[] maxPacked) {
+            public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numDims;dim++) {
                 int min = BKDUtil.bytesToInt(minPacked, dim);
@@ -199,16 +198,16 @@ public class TestBKD extends LuceneTestCase {
                 assert max >= min;
 
                 if (max < queryMin[dim] || min > queryMax[dim]) {
-                  return BKDReader.Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.QUERY_OUTSIDE_CELL;
                 } else if (min < queryMin[dim] || max > queryMax[dim]) {
                   crosses = true;
                 }
               }
 
               if (crosses) {
-                return BKDReader.Relation.QUERY_CROSSES_CELL;
+                return Relation.QUERY_CROSSES_CELL;
               } else {
-                return BKDReader.Relation.CELL_INSIDE_QUERY;
+                return Relation.CELL_INSIDE_QUERY;
               }
             }
           });
@@ -289,7 +288,7 @@ public class TestBKD extends LuceneTestCase {
           }
 
           final BitSet hits = new BitSet();
-          r.intersect(new BKDReader.IntersectVisitor() {
+          r.intersect(new IntersectVisitor() {
             @Override
             public void visit(int docID) {
               hits.set(docID);
@@ -312,7 +311,7 @@ public class TestBKD extends LuceneTestCase {
             }
 
             @Override
-            public BKDReader.Relation compare(byte[] minPacked, byte[] maxPacked) {
+            public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numDims;dim++) {
                 BigInteger min = BKDUtil.bytesToBigInt(minPacked, dim, numBytesPerDim);
@@ -320,16 +319,16 @@ public class TestBKD extends LuceneTestCase {
                 assert max.compareTo(min) >= 0;
 
                 if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
-                  return BKDReader.Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.QUERY_OUTSIDE_CELL;
                 } else if (min.compareTo(queryMin[dim]) < 0 || max.compareTo(queryMax[dim]) > 0) {
                   crosses = true;
                 }
               }
 
               if (crosses) {
-                return BKDReader.Relation.QUERY_CROSSES_CELL;
+                return Relation.QUERY_CROSSES_CELL;
               } else {
-                return BKDReader.Relation.CELL_INSIDE_QUERY;
+                return Relation.CELL_INSIDE_QUERY;
               }
             }
           });
@@ -384,7 +383,6 @@ public class TestBKD extends LuceneTestCase {
         } catch (IllegalArgumentException iae) {
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
           assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
-          System.out.println("  more heap");
           maxMBHeap *= 1.25;
         } catch (IOException ioe) {
           if (ioe.getMessage().contains("a random IOException")) {
@@ -405,7 +403,7 @@ public class TestBKD extends LuceneTestCase {
     doTestRandomBinary(10);
   }
 
-  public void testRandomBinarydMedium() throws Exception {
+  public void testRandomBinaryMedium() throws Exception {
     doTestRandomBinary(10000);
   }
 
@@ -601,7 +599,7 @@ public class TestBKD extends LuceneTestCase {
         }
 
         final BitSet hits = new BitSet();
-        r.intersect(new BKDReader.IntersectVisitor() {
+        r.intersect(new IntersectVisitor() {
             @Override
             public void visit(int docID) {
               hits.set(docID);
@@ -624,16 +622,12 @@ public class TestBKD extends LuceneTestCase {
             }
 
             @Override
-            public BKDReader.Relation compare(byte[] minPacked, byte[] maxPacked) {
+            public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numDims;dim++) {
-                BigInteger min = BKDUtil.bytesToBigInt(minPacked, dim, numBytesPerDim);
-                BigInteger max = BKDUtil.bytesToBigInt(maxPacked, dim, numBytesPerDim);
-                assert max.compareTo(min) >= 0;
-
                 if (BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMin[dim], 0) < 0 ||
                     BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMax[dim], 0) > 0) {
-                  return BKDReader.Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.QUERY_OUTSIDE_CELL;
                 } else if (BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMin[dim], 0) < 0 ||
                            BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMax[dim], 0) > 0) {
                   crosses = true;
@@ -641,9 +635,9 @@ public class TestBKD extends LuceneTestCase {
               }
 
               if (crosses) {
-                return BKDReader.Relation.QUERY_CROSSES_CELL;
+                return Relation.QUERY_CROSSES_CELL;
               } else {
-                return BKDReader.Relation.CELL_INSIDE_QUERY;
+                return Relation.CELL_INSIDE_QUERY;
               }
             }
           });
@@ -696,7 +690,6 @@ public class TestBKD extends LuceneTestCase {
     } else {
       dir = newDirectory();
     }
-    System.out.println("DIR: " + dir);
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
     }

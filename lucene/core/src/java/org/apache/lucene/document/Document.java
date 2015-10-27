@@ -312,7 +312,7 @@ public final class Document implements IndexDocument {
     return new FilterIterator<StorableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
-        return field.type.stored() || field.type.docValuesType() != DocValuesType.NONE;
+        return field.type.stored() || field.type.docValuesType() != DocValuesType.NONE || field.type.dimensionCount() != 0;
       }
     };
   }

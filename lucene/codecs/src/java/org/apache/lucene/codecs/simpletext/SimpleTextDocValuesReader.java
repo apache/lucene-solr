@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -499,7 +498,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
   }
 
   /** Used only in ctor: */
-  private String stripPrefix(BytesRef prefix) throws IOException {
+  private String stripPrefix(BytesRef prefix) {
     return new String(scratch.bytes(), prefix.length, scratch.length() - prefix.length, StandardCharsets.UTF_8);
   }
 

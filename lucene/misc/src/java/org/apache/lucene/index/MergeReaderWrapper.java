@@ -211,6 +211,11 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
+  public DimensionalValues getDimensionalValues() {
+    return in.getDimensionalValues();
+  }
+
+  @Override
   public int numDocs() {
     return in.numDocs();
   }

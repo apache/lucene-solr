@@ -26,7 +26,6 @@ import java.util.Comparator;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -36,8 +35,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.LongBitSet;
-import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO
@@ -71,11 +70,11 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental */
 
-public final class BKDWriter implements Closeable {
+public class BKDWriter implements Closeable {
 
-  static final String CODEC_NAME = "BKD";
-  static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  public static final String CODEC_NAME = "BKD";
+  public static final int VERSION_START = 0;
+  public static final int VERSION_CURRENT = VERSION_START;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -85,16 +84,16 @@ public final class BKDWriter implements Closeable {
   public static final float DEFAULT_MAX_MB_SORT_IN_HEAP = 16.0f;
 
   /** Maximum number of dimensions */
-  public static final int MAX_DIMS = 15;
+  public static final int MAX_DIMS = 255;
 
   /** How many dimensions we are indexing */
-  final int numDims;
+  protected final int numDims;
 
   /** How many bytes each value in each dimension takes. */
-  final int bytesPerDim;
+  protected final int bytesPerDim;
 
   /** numDims * bytesPerDim */
-  final int packedBytesLength;
+  protected final int packedBytesLength;
 
   final TrackingDirectoryWrapper tempDir;
   final String tempFileNamePrefix;
@@ -108,7 +107,7 @@ public final class BKDWriter implements Closeable {
   private HeapPointWriter heapPointWriter;
 
   private IndexOutput tempInput;
-  private final int maxPointsInLeafNode;
+  protected final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
 
   private long pointCount;
@@ -452,21 +451,43 @@ public final class BKDWriter implements Closeable {
 
     // Write index:
     long indexFP = out.getFilePointer();
+    writeIndex(out, leafBlockFPs, splitPackedValues);
+    return indexFP;
+  }
+
+  /** Subclass can change how it writes the index. */
+  protected void writeIndex(IndexOutput out, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
     CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
     out.writeVInt(numDims);
     out.writeVInt(maxPointsInLeafNode);
     out.writeVInt(bytesPerDim);
 
-    out.writeVInt(numLeaves);
+    out.writeVInt(leafBlockFPs.length);
 
     // NOTE: splitPackedValues[0] is unused, because nodeID is 1-based:
     out.writeBytes(splitPackedValues, 0, splitPackedValues.length);
 
+    long lastFP = 0;
     for (int i=0;i<leafBlockFPs.length;i++) {
-      out.writeVLong(leafBlockFPs[i]);
+      long delta = leafBlockFPs[i]-lastFP;
+      out.writeVLong(delta);
+      lastFP = leafBlockFPs[i];
     }
+  }
 
-    return indexFP;
+  protected void writeLeafBlockDocs(IndexOutput out, int[] docIDs, int start, int count) throws IOException {
+    out.writeVInt(count);
+
+    int lastDocID = 0;
+    for (int i=0;i<count;i++) {
+      int docID = docIDs[start + i];
+      out.writeVInt(docID - lastDocID);
+      lastDocID = docID;
+    }
+  }
+
+  protected void writeLeafBlockPackedValue(IndexOutput out, byte[] bytes, int offset, int length) throws IOException {
+    out.writeBytes(bytes, 0, length);
   }
 
   @Override
@@ -608,20 +629,12 @@ public final class BKDWriter implements Closeable {
       // Sort by docID in the leaf so we can delta-vInt encode:
       sortHeapPointWriter(heapSource, Math.toIntExact(source.start), Math.toIntExact(source.count), -1);
 
-      int lastDocID = 0;
-
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
 
-      out.writeVInt(Math.toIntExact(source.count));
-
       // Write docIDs first, as their own chunk, so that at intersect time we can add all docIDs w/o
       // loading the values:
-      for (int i=0;i<source.count;i++) {
-        int docID = heapSource.docIDs[Math.toIntExact(source.start + i)];
-        out.writeVInt(docID - lastDocID);
-        lastDocID = docID;
-      }
+      writeLeafBlockDocs(out, heapSource.docIDs, Math.toIntExact(source.start), Math.toIntExact(source.count));
 
       // TODO: we should delta compress / only write suffix bytes, like terms dict (the values will all be "close together" since we are at
       // a leaf cell):
@@ -633,7 +646,7 @@ public final class BKDWriter implements Closeable {
 
         // Make sure this value does in fact fall within this leaf cell:
         assert valueInBounds(scratchPackedValue, minPackedValue, maxPackedValue);
-        out.writeBytes(scratchPackedValue, 0, scratchPackedValue.length);
+        writeLeafBlockPackedValue(out, scratchPackedValue, 0, scratchPackedValue.length);
       }
 
     } else {

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -62,7 +63,7 @@ public final class SegmentReader extends CodecReader {
   // TODO: why is this public?
   public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
     this.si = si;
-    core = new SegmentCoreReaders(this, si.info.dir, si, context);
+    core = new SegmentCoreReaders(si.info.dir, si, context);
     segDocValues = new SegmentDocValues();
     
     boolean success = false;
@@ -217,6 +218,12 @@ public final class SegmentReader extends CodecReader {
   }
   
   @Override
+  public DimensionalValues getDimensionalValues() {
+    ensureOpen();
+    return core.dimensionalReader;
+  }
+
+  @Override
   public NormsProducer getNormsReader() {
     ensureOpen();
     return core.normsProducer;
@@ -232,6 +239,12 @@ public final class SegmentReader extends CodecReader {
   public FieldsProducer getPostingsReader() {
     ensureOpen();
     return core.fields;
+  }
+
+  @Override
+  public DimensionalReader getDimensionalReader() {
+    ensureOpen();
+    return core.dimensionalReader;
   }
 
   @Override

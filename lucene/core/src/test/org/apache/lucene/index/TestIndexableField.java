@@ -89,6 +89,16 @@ public class TestIndexableField extends LuceneTestCase {
       public DocValuesType docValuesType() {
         return DocValuesType.NONE;
       }
+
+      @Override
+      public int dimensionCount() {
+        return 0;
+      }
+
+      @Override
+      public int dimensionNumBytes() {
+        return 0;
+      }
     };
 
     public MyField(int counter) {

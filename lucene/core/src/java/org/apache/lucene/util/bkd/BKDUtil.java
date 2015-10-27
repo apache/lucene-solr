@@ -20,14 +20,14 @@ package org.apache.lucene.util.bkd;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-/** Utility methods to handle N-dimensional packed byte[] as if they were numbers! */
-final class BKDUtil {
+/** Utility methods to convert to/from N-dimensional packed byte[] as numbers */
+public final class BKDUtil {
 
   private BKDUtil() {
     // No instance
   }
 
-  /** result = a - b, where a >= b */
+  /** result = a - b, where a &gt;= b */
   public static void subtract(int bytesPerDim, int dim, byte[] a, byte[] b, byte[] result) {
     int start = dim * bytesPerDim;
     int end = start + bytesPerDim;
@@ -47,7 +47,7 @@ final class BKDUtil {
     }
   }
   
-  /** Returns positive int if a > b, negative int if a < b and 0 if a == b */
+  /** Returns positive int if a &gt; b, negative int if a &lt; b and 0 if a == b */
   public static int compare(int bytesPerDim, byte[] a, int aIndex, byte[] b, int bIndex) {
     for(int i=0;i<bytesPerDim;i++) {
       int cmp = (a[aIndex*bytesPerDim+i]&0xff) - (b[bIndex*bytesPerDim+i]&0xff);
@@ -76,7 +76,7 @@ final class BKDUtil {
     return true;
   }
 
-  static void intToBytes(int x, byte[] dest, int index) {
+  public static void intToBytes(int x, byte[] dest, int index) {
     // Flip the sign bit, so negative ints sort before positive ints correctly:
     x ^= 0x80000000;
     for(int i=0;i<4;i++) {
@@ -84,7 +84,7 @@ final class BKDUtil {
     }
   }
 
-  static int bytesToInt(byte[] src, int index) {
+  public static int bytesToInt(byte[] src, int index) {
     int x = 0;
     for(int i=0;i<4;i++) {
       x |= (src[4*index+i] & 0xff) << (24-i*8);
@@ -93,14 +93,14 @@ final class BKDUtil {
     return x ^ 0x80000000;
   }
 
-  static void sortableBigIntBytes(byte[] bytes) {
+  public static void sortableBigIntBytes(byte[] bytes) {
     bytes[0] ^= 0x80;
     for(int i=1;i<bytes.length;i++)  {
       bytes[i] ^= 0;
     }
   }
 
-  static void bigIntToBytes(BigInteger bigInt, byte[] result, int dim, int numBytesPerDim) {
+  public static void bigIntToBytes(BigInteger bigInt, byte[] result, int dim, int numBytesPerDim) {
     byte[] bigIntBytes = bigInt.toByteArray();
     byte[] fullBigIntBytes;
 
@@ -122,7 +122,7 @@ final class BKDUtil {
     assert bytesToBigInt(result, dim, numBytesPerDim).equals(bigInt): "bigInt=" + bigInt + " converted=" + bytesToBigInt(result, dim, numBytesPerDim);
   }
 
-  static BigInteger bytesToBigInt(byte[] bytes, int dim, int numBytesPerDim) {
+  public static BigInteger bytesToBigInt(byte[] bytes, int dim, int numBytesPerDim) {
     byte[] bigIntBytes = new byte[numBytesPerDim];
     System.arraycopy(bytes, dim*numBytesPerDim, bigIntBytes, 0, numBytesPerDim);
     sortableBigIntBytes(bigIntBytes);

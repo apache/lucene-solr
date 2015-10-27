@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -91,6 +92,16 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
+        public DimensionalValues getDimensionalValues() {
+          return reader.getDimensionalValues();
+        }
+
+        @Override
+        public DimensionalReader getDimensionalReader() {
+          return dimensionalValuesToReader(reader.getDimensionalValues());
+        }
+
+        @Override
         public Bits getLiveDocs() {
           return reader.getLiveDocs();
         }
@@ -116,6 +127,29 @@ public final class SlowCodecReaderWrapper {
         }
       };
     }
+  }
+
+  private static DimensionalReader dimensionalValuesToReader(DimensionalValues values) {
+    return new DimensionalReader() {
+      @Override
+      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
+        values.intersect(fieldName, visitor);
+      }
+
+      @Override
+      public void checkIntegrity() throws IOException {
+        // We already checkIntegrity the entire reader up front
+      }
+
+      @Override
+      public void close() {
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+    };
   }
   
   private static NormsProducer readerToNormsProducer(final LeafReader reader) {

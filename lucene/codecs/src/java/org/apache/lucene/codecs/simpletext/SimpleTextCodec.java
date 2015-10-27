@@ -19,12 +19,13 @@ package org.apache.lucene.codecs.simpletext;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 
@@ -44,11 +45,12 @@ public final class SimpleTextCodec extends Codec {
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
   private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   private final CompoundFormat compoundFormat = new SimpleTextCompoundFormat();
+  private final DimensionalFormat dimensionalFormat = new SimpleTextDimensionalFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
   }
-  
+
   @Override
   public PostingsFormat postingsFormat() {
     return postings;
@@ -92,5 +94,10 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public CompoundFormat compoundFormat() {
     return compoundFormat;
+  }
+
+  @Override
+  public DimensionalFormat dimensionalFormat() {
+    return dimensionalFormat;
   }
 }

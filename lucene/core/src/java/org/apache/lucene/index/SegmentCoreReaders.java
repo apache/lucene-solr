@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -53,6 +54,7 @@ final class SegmentCoreReaders {
 
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
+  final DimensionalReader dimensionalReader;
   final Directory cfsReader;
   /** 
    * fieldinfos for this core: means gen=-1.
@@ -81,7 +83,7 @@ final class SegmentCoreReaders {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
+  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) it's the cfsdir, otherwise it's the segment's directory.
@@ -122,6 +124,11 @@ final class SegmentCoreReaders {
         termVectorsReaderOrig = null;
       }
 
+      if (coreFieldInfos.hasDimensionalValues()) {
+        dimensionalReader = codec.dimensionalFormat().fieldsReader(segmentReadState);
+      } else {
+        dimensionalReader = null;
+      }
       success = true;
     } finally {
       if (!success) {
@@ -150,7 +157,7 @@ final class SegmentCoreReaders {
       Throwable th = null;
       try {
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
-            cfsReader, normsProducer);
+                      cfsReader, normsProducer, dimensionalReader);
       } catch (Throwable throwable) {
         th = throwable;
       } finally {
