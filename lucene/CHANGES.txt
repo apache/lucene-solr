@@ -218,6 +218,9 @@ Bug Fixes
   source for checking for expiration (Ishan Chattopadhyaya via Mike
   McCandless)
 
+* LUCENE-6856: The Weight wrapper used by LRUQueryCache now delegates to the
+  original Weight's BulkScorer when applicable. (Adrien Grand)
+
 Other
 
 * LUCENE-6827: Use explicit capacity ArrayList instead of a LinkedList 
