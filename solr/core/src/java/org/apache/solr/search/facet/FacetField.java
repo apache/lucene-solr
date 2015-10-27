@@ -90,18 +90,21 @@ public class FacetField extends FacetRequest {
   }
 
   public static enum FacetMethod {
+    DV,  // DocValues
+    UIF, // UnInvertedField
     ENUM,
     STREAM,
-    FIELDCACHE,
     SMART,
     ;
 
     public static FacetMethod fromString(String method) {
       if (method == null || method.length()==0) return null;
-      if ("enum".equals(method)) {
+      if ("dv".equals(method)) {
+        return DV;
+      } else if ("uif".equals(method)) {
+        return UIF;
+      } else if ("enum".equals(method)) {
         return ENUM;
-      } else if ("fc".equals(method) || "fieldcache".equals(method)) {
-        return FIELDCACHE;
       } else if ("smart".equals(method)) {
         return SMART;
       } else if ("stream".equals(method)) {
@@ -137,13 +140,16 @@ public class FacetField extends FacetRequest {
         return new FacetFieldProcessorNumeric(fcontext, this, sf);
       } else {
         // single valued string...
-//        return new FacetFieldProcessorDV(fcontext, this, sf);
         return new FacetFieldProcessorDV(fcontext, this, sf);
-        // what about FacetFieldProcessorFC?
       }
     }
 
-    // Multi-valued field cache (UIF)
+    // multivalued but field doesn't have docValues
+    if (method == FacetMethod.DV) {
+      return new FacetFieldProcessorDV(fcontext, this, sf);
+    }
+
+    // Top-level multi-valued field cache (UIF)
     return new FacetFieldProcessorUIF(fcontext, this, sf);
   }
 
@@ -931,9 +937,10 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
 
     setup();
     response = new SimpleOrderedMap<>();
-    response.add( "buckets", new Iterator() {
+    response.add("buckets", new Iterator() {
       boolean retrieveNext = true;
       Object val;
+
       @Override
       public boolean hasNext() {
         if (retrieveNext) {
