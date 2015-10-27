@@ -51,6 +51,10 @@ public abstract class DimensionalWriter implements Closeable {
                        }
                        for (int i=0;i<mergeState.dimensionalReaders.length;i++) {
                          DimensionalReader dimensionalReader = mergeState.dimensionalReaders[i];
+                         if (dimensionalReader == null) {
+                           // This segment has no dimensional values
+                           continue;
+                         }
                          MergeState.DocMap docMap = mergeState.docMaps[i];
                          int docBase = mergeState.docBase[i];
                          dimensionalReader.intersect(fieldInfo.name,
