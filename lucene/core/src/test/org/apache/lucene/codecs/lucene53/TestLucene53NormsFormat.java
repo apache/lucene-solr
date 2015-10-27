@@ -18,13 +18,14 @@ package org.apache.lucene.codecs.lucene53;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene54.Lucene54Codec;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
 
 /**
  * Tests Lucene53NormsFormat
  */
 public class TestLucene53NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new Lucene53Codec();
+  private final Codec codec = new Lucene54Codec();
   
   @Override
   protected Codec getCodec() {

@@ -20,7 +20,7 @@ package org.apache.lucene.bkdtree3d;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesFormat;
 import org.apache.lucene.geo3d.PlanetModel;
 import org.apache.lucene.geo3d.Vector;
 import org.apache.lucene.index.SegmentReadState;
@@ -33,7 +33,7 @@ import java.io.IOException;
  * from {@link Geo3DPointField} for fast shape intersection queries using
  * ({@link PointInGeo3DShapeQuery})
  *
- * <p>This wraps {@link Lucene50DocValuesFormat}, but saves its own BKD tree
+ * <p>This wraps {@link Lucene54DocValuesFormat}, but saves its own BKD tree
  * structures to disk for fast query-time intersection. See <a
  * href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a>
  * for details.
@@ -52,7 +52,7 @@ import java.io.IOException;
  * <p>The index is also quite compact, because docs only appear once in
  * the tree (no "prefix terms").
  *
- * <p>In addition to the files written by {@link Lucene50DocValuesFormat}, this format writes:
+ * <p>In addition to the files written by {@link Lucene54DocValuesFormat}, this format writes:
  * <ol>
  *   <li><tt>.kd3d</tt>: BKD leaf data and index</li>
  *   <li><tt>.kd3m</tt>: BKD metadata</li>
@@ -78,7 +78,7 @@ public class Geo3DDocValuesFormat extends DocValuesFormat {
   private final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
   
-  private final DocValuesFormat delegate = new Lucene50DocValuesFormat();
+  private final DocValuesFormat delegate = new Lucene54DocValuesFormat();
 
   private final PlanetModel planetModel;
 

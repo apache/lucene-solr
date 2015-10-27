@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.codecs.lucene54;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,10 +47,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests Lucene50DocValuesFormat
+ * Tests Lucene54DocValuesFormat
  */
-public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene50DocValuesFormat());
+public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
+  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene54DocValuesFormat());
 
   @Override
   protected Codec getCodec() {
@@ -125,7 +125,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
     conf.setMergeScheduler(new SerialMergeScheduler());
     // set to duel against a codec which has ordinals:
     final PostingsFormat pf = TestUtil.getPostingsFormatWithOrds(random());
-    final DocValuesFormat dv = new Lucene50DocValuesFormat();
+    final DocValuesFormat dv = new Lucene54DocValuesFormat();
     conf.setCodec(new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {

@@ -19,7 +19,7 @@ package org.apache.lucene.rangetree;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene53.Lucene53Codec;
+import org.apache.lucene.codecs.lucene54.Lucene54Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -355,7 +355,7 @@ public class TestRangeTree extends LuceneTestCase {
       iwc.setMaxBufferedDocs(values.length/100);
     }
     final DocValuesFormat dvFormat = getDocValuesFormat();
-    Codec codec = new Lucene53Codec() {
+    Codec codec = new Lucene54Codec() {
         @Override
         public DocValuesFormat getDocValuesFormatForField(String field) {
           if (field.equals("sn_value") || field.equals("ss_value")) {
