@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.codecs.lucene54;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,7 +33,7 @@ import org.apache.lucene.util.packed.DirectWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 
 /**
- * Lucene 5.0 DocValues format.
+ * Lucene 5.4 DocValues format.
  * <p>
  * Encodes the five per-document value types (Numeric,Binary,Sorted,SortedSet,SortedNumeric) with these strategies:
  * <p>
@@ -185,26 +185,26 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  * </ol>
  * @lucene.experimental
  */
-public final class Lucene50DocValuesFormat extends DocValuesFormat {
+public final class Lucene54DocValuesFormat extends DocValuesFormat {
 
   /** Sole Constructor */
-  public Lucene50DocValuesFormat() {
-    super("Lucene50");
+  public Lucene54DocValuesFormat() {
+    super("Lucene54");
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene50DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene54DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene50DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene54DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
   
-  static final String DATA_CODEC = "Lucene50DocValuesData";
+  static final String DATA_CODEC = "Lucene54DocValuesData";
   static final String DATA_EXTENSION = "dvd";
-  static final String META_CODEC = "Lucene50DocValuesMetadata";
+  static final String META_CODEC = "Lucene54DocValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_SORTEDSET_TABLE = 1;
@@ -267,4 +267,5 @@ public final class Lucene50DocValuesFormat extends DocValuesFormat {
   
   // addressing uses 16k blocks
   static final int MONOTONIC_BLOCK_SIZE = 16384;
+  static final int DIRECT_MONOTONIC_BLOCK_SHIFT = 16;
 }

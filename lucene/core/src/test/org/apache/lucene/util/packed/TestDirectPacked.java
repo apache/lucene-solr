@@ -26,6 +26,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.DirectReader;
 import org.apache.lucene.util.packed.DirectWriter;
 
@@ -45,7 +46,7 @@ public class TestDirectPacked extends LuceneTestCase {
     writer.finish();
     output.close();
     IndexInput input = dir.openInput("foo", IOContext.DEFAULT);
-    NumericDocValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsPerValue);
+    NumericDocValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsPerValue, 0);
     assertEquals(1, reader.get(0));
     assertEquals(0, reader.get(1));
     assertEquals(2, reader.get(2));
@@ -78,12 +79,21 @@ public class TestDirectPacked extends LuceneTestCase {
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
     for (int bpv = 1; bpv <= 64; bpv++) {
-      doTestBpv(dir, bpv);
+      doTestBpv(dir, bpv, 0);
     }
     dir.close();
   }
-    
-  private void doTestBpv(Directory directory, int bpv) throws Exception {
+
+  public void testRandomWithOffset() throws Exception {
+    Directory dir = newDirectory();
+    final int offset = TestUtil.nextInt(random(), 1, 100);
+    for (int bpv = 1; bpv <= 64; bpv++) {
+      doTestBpv(dir, bpv, offset);
+    }
+    dir.close();
+  }
+
+  private void doTestBpv(Directory directory, int bpv, long offset) throws Exception {
     MyRandom random = new MyRandom(random().nextLong());
     int numIters = TEST_NIGHTLY ? 100 : 10;
     for (int i = 0; i < numIters; i++) {
@@ -91,6 +101,9 @@ public class TestDirectPacked extends LuceneTestCase {
       int bitsRequired = bpv == 64 ? 64 : DirectWriter.bitsRequired(1L<<(bpv-1));
       String name = "bpv" + bpv + "_" + i;
       IndexOutput output = directory.createOutput(name, IOContext.DEFAULT);
+      for (long j = 0; j < offset; ++j) {
+        output.writeByte((byte) random().nextInt());
+      }
       DirectWriter writer = DirectWriter.getInstance(output, original.length, bitsRequired);
       for (int j = 0; j < original.length; j++) {
         writer.add(original[j]);
@@ -98,7 +111,7 @@ public class TestDirectPacked extends LuceneTestCase {
       writer.finish();
       output.close();
       IndexInput input = directory.openInput(name, IOContext.DEFAULT);
-      NumericDocValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsRequired);
+      NumericDocValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsRequired, offset);
       for (int j = 0; j < original.length; j++) {
         assertEquals("bpv=" + bpv, original[j], reader.get(j));
       }

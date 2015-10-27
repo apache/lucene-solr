@@ -20,7 +20,7 @@ package org.apache.lucene.rangetree;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesFormat;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
 import org.apache.lucene.index.SegmentReadState;
@@ -34,7 +34,7 @@ import java.io.IOException;
  * for numeric range queries using ({@link NumericRangeTreeQuery}) and arbitrary binary
  * range queries using {@link SortedSetRangeTreeQuery}.
  *
- * <p>This wraps {@link Lucene50DocValuesFormat}, but saves its own numeric tree
+ * <p>This wraps {@link Lucene54DocValuesFormat}, but saves its own numeric tree
  * structures to disk for fast query-time intersection. See <a
  * href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a>
  * for details.
@@ -53,7 +53,7 @@ import java.io.IOException;
  * <p>The index is also quite compact, because docs only appear once in
  * the tree (no "prefix terms").
  *
- * <p>In addition to the files written by {@link Lucene50DocValuesFormat}, this format writes:
+ * <p>In addition to the files written by {@link Lucene54DocValuesFormat}, this format writes:
  * <ol>
  *   <li><tt>.ndd</tt>: numeric tree leaf data and index</li>
  *   <li><tt>.ndm</tt>: numeric tree metadata</li>
@@ -78,7 +78,7 @@ public class RangeTreeDocValuesFormat extends DocValuesFormat {
   private final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
   
-  private final DocValuesFormat delegate = new Lucene50DocValuesFormat();
+  private final DocValuesFormat delegate = new Lucene54DocValuesFormat();
 
   /** Default constructor */
   public RangeTreeDocValuesFormat() {

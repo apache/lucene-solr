@@ -17,18 +17,9 @@ package org.apache.lucene.bkdtree;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene53.Lucene53Codec;
+import org.apache.lucene.codecs.lucene54.Lucene54Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -37,7 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BaseGeoPointTestCase;
@@ -79,7 +69,7 @@ public class TestBKDTree extends BaseGeoPointTestCase {
   @Override
   protected void initIndexWriterConfig(final String fieldName, IndexWriterConfig iwc) {
     final DocValuesFormat dvFormat = getDocValuesFormat();
-    Codec codec = new Lucene53Codec() {
+    Codec codec = new Lucene54Codec() {
         @Override
         public DocValuesFormat getDocValuesFormatForField(String field) {
           if (field.equals(fieldName)) {

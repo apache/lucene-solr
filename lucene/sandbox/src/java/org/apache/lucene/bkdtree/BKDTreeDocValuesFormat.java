@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.lucene50.Lucene50DocValuesFormat;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -31,7 +31,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * from {@link BKDPointField} for fast bounding-box ({@link BKDPointInBBoxQuery})
  * and polygon ({@link BKDPointInPolygonQuery}) queries.
  *
- * <p>This wraps {@link Lucene50DocValuesFormat}, but saves its own BKD tree
+ * <p>This wraps {@link Lucene54DocValuesFormat}, but saves its own BKD tree
  * structures to disk for fast query-time intersection. See <a
  * href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a>
  * for details.
@@ -50,7 +50,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * <p>The index is also quite compact, because docs only appear once in
  * the tree (no "prefix terms").
  *
- * <p>In addition to the files written by {@link Lucene50DocValuesFormat}, this format writes:
+ * <p>In addition to the files written by {@link Lucene54DocValuesFormat}, this format writes:
  * <ol>
  *   <li><tt>.kdd</tt>: BKD leaf data and index</li>
  *   <li><tt>.kdm</tt>: BKD metadata</li>
@@ -75,7 +75,7 @@ public class BKDTreeDocValuesFormat extends DocValuesFormat {
   private final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
   
-  private final DocValuesFormat delegate = new Lucene50DocValuesFormat();
+  private final DocValuesFormat delegate = new Lucene54DocValuesFormat();
 
   /** Default constructor */
   public BKDTreeDocValuesFormat() {

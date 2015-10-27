@@ -162,6 +162,10 @@ Optimizations
 
 * LUCENE-6850: Optimize BooleanScorer for sparse clauses. (Adrien Grand)
 
+* LUCENE-6840: Ordinal indexes for SORTED_SET/SORTED_NUMERIC fields and
+  addresses for BINARY fields are now stored on disk instead of in memory.
+  (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 
