@@ -56,10 +56,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    final File solrXml = getFile("solr").toPath().resolve("solr.xml").toFile();
-    final File testDir = createTempDir().toFile();
-    solrCluster = new MiniSolrCloudCluster(1, testDir,
-        solrXml, buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
   }
 
   @Override

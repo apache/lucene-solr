@@ -157,9 +157,8 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
   protected void testCollectionCreateSearchDelete() throws Exception {
     HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
     String collectionName = "testkerberoscollection";
-    
-    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, createTempDir().toFile(), solrXml, null, null);
+
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir());
     CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
     cloudSolrClient.setDefaultCollection(collectionName);
     

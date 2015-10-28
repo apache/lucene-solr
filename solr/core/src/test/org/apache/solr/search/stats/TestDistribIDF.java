@@ -52,8 +52,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
 
     super.setUp();
-    final File solrXml = getFile("solr").toPath().resolve("solr-no-core.xml").toFile();
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir());
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
