@@ -227,6 +227,9 @@ Bug Fixes
 
 Other
 
+* LUCENE-6857: Validate StandardQueryParser with NOT operator 
+  with-in parantheses. (Jigar Shah via Dawid Weiss)
+
 * LUCENE-6827: Use explicit capacity ArrayList instead of a LinkedList 
   in MultiFieldQueryNodeProcessor. (Dawid Weiss).
 
