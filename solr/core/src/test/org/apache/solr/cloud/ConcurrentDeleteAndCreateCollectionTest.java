@@ -43,8 +43,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    final File solrXml = getFile("solr").toPath().resolve("solr.xml").toFile();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, createTempDir());
   }
   
   @Override

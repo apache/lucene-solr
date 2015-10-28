@@ -131,11 +131,8 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-9893")
   @Test
   @Override
-  public void testBasics() throws Exception {
-    final String collectionName = "testSolrCloudCollectionKerberos";
-    testCollectionCreateSearchDelete(collectionName);
-    // sometimes run a second test e.g. to test collection create-delete-create scenario
-    if (random().nextBoolean()) testCollectionCreateSearchDelete(collectionName);
+  public void testCollectionCreateSearchDelete() throws Exception {
+    super.testCollectionCreateSearchDelete();
   }
 
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-9893")

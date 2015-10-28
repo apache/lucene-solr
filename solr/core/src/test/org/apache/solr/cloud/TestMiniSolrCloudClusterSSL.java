@@ -17,7 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -25,9 +28,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.List;
 
 /**
  * Tests SSL (if test framework selects it) with MiniSolrCloudCluster.
@@ -41,9 +41,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
-    String testHome = SolrTestCaseJ4.TEST_HOME();
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, createTempDir().toFile(), new File(testHome, "solr-no-core.xml"),
-      null, null, sslConfig);
+    JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig).build();
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), config);
   }
 
   @AfterClass
@@ -65,7 +64,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     assertEquals(NUM_SERVERS - 1, miniCluster.getJettySolrRunners().size());
 
     // create a new server
-    JettySolrRunner startedServer = miniCluster.startJettySolrRunner(null, null, null, sslConfig);
+    JettySolrRunner startedServer = miniCluster.startJettySolrRunner();
     assertTrue(startedServer.isRunning());
     assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
 

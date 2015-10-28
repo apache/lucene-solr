@@ -25,8 +25,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,9 +98,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           if (!hasFlag("-cloud", args) && !hasFlag("-c", args))
             return startStandaloneSolr(args);
 
-          File baseDir = createTempDir().toFile();
-          File solrHomeDir = new File(getArg("-s", args));
+          String solrHomeDir = getArg("-s", args);
           int port = Integer.parseInt(getArg("-p", args));
+          String solrxml = new String(Files.readAllBytes(Paths.get(solrHomeDir).resolve("solr.xml")), Charset.defaultCharset());
 
           JettyConfig jettyConfig =
               JettyConfig.builder().setContext("/solr").setPort(port).build();
@@ -106,7 +109,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
               System.setProperty("host", "localhost");
               System.setProperty("jetty.port", String.valueOf(port));
               solrCloudCluster =
-                  new MiniSolrCloudCluster(1, baseDir, new File(solrHomeDir, "solr.xml"), jettyConfig);
+                  new MiniSolrCloudCluster(1, createTempDir(), solrxml, jettyConfig);
             } else {
               // another member of this cluster -- not supported yet, due to how MiniSolrCloudCluster works
               throw new IllegalArgumentException("Only launching one SolrCloud node is supported by this test!");

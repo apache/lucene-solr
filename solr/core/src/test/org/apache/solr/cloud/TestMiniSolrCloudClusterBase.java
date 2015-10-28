@@ -28,12 +28,10 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -80,12 +78,9 @@ public class TestMiniSolrCloudClusterBase extends LuceneTestCase {
   }
 
   private MiniSolrCloudCluster createMiniSolrCloudCluster() throws Exception {
-
-    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
     JettyConfig.Builder jettyConfig = JettyConfig.builder();
     jettyConfig.waitForLoadingCoresToFinish(null);
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir().toFile(), solrXml, jettyConfig.build());
-    return miniCluster;
+    return new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), jettyConfig.build());
   }
 
   private void createCollection(MiniSolrCloudCluster miniCluster, String collectionName, String createNodeSet, String asyncId) throws Exception {
@@ -184,16 +179,6 @@ public class TestMiniSolrCloudClusterBase extends LuceneTestCase {
         startedServer = miniCluster.startJettySolrRunner();
         assertTrue(startedServer.isRunning());
         assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
-        Thread.sleep(15000);
-        try {
-          cloudSolrClient.query(query);
-          fail("Expected exception on query because collection should not be ready - we have turned on async core loading");
-        } catch (SolrServerException e) {
-          SolrException rc = (SolrException) e.getRootCause();
-          assertTrue(rc.code() >= 500 && rc.code() < 600);
-        } catch (SolrException e) {
-          assertTrue(e.code() >= 500 && e.code() < 600);
-        }
 
         doExtraTests(miniCluster, zkClient, zkStateReader,cloudSolrClient, collectionName);
       }
