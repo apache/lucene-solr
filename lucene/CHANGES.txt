@@ -228,6 +228,9 @@ Bug Fixes
 * LUCENE-6856: The Weight wrapper used by LRUQueryCache now delegates to the
   original Weight's BulkScorer when applicable. (Adrien Grand)
 
+* LUCENE-6858: Fix ContextSuggestField to correctly wrap token stream
+  when using CompletionAnalyzer. (Areek Zillur)
+
 Other
 
 * LUCENE-6857: Validate StandardQueryParser with NOT operator 
