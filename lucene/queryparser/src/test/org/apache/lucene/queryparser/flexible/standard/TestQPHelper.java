@@ -533,6 +533,12 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("term term1 term2", a, "term term1 term2");
   }
 
+  public void testLeadingNegation() throws Exception {
+    assertQueryEquals("-term", null, "-term");
+    assertQueryEquals("!term", null, "-term");
+    assertQueryEquals("NOT term", null, "-term");
+  }
+
   public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");

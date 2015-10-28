@@ -10,6 +10,14 @@ Bug Fixes
 * LUCENE-6658: Fix IndexUpgrader to also upgrade indexes without any
   segments.  (Trejkaz, Uwe Schindler)
 
+* LUCENE-6249: StandardQueryParser doesn't support pure negative clauses. 
+  (Dawid Weiss)
+
+Other
+
+* LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj
+  (Dawid Weiss)
+
 ======================= Lucene 4.10.4 ======================
 
 Bug fixes

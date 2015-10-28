@@ -32,6 +32,7 @@ package org.apache.lucene.queryparser.flexible.standard.parser;
 
 import java.io.StringReader;
 import java.util.Vector;
+import java.util.Arrays;
 
 import org.apache.lucene.queryparser.flexible.messages.Message;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
@@ -56,10 +57,6 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
  * Parser for the standard Lucene syntax
  */
 public class StandardSyntaxParser implements SyntaxParser {
-
-  private static final int CONJ_NONE =0;
-  private static final int CONJ_AND =2;
-  private static final int CONJ_OR =2;
 
  
    // syntax parser constructor
@@ -149,20 +146,6 @@ PARSER_END(StandardSyntaxParser)
 | <RANGE_GOOP: (~[ " ", "]", "}" ])+ >
 }
 
-// *   Query  ::= ( Clause )*
-// *   Clause ::= ["+", "-"] [<TERM> ":"] ( <TERM> | "(" Query ")" )
-
-int Conjunction() : {
-  int ret = CONJ_NONE;
-}
-{
-  [
-    <AND> { ret = CONJ_AND; }
-    | <OR>  { ret = CONJ_OR; }
-  ]
-  { return ret; }
-}
-
 ModifierQueryNode.Modifier Modifiers() : {
   ModifierQueryNode.Modifier ret = ModifierQueryNode.Modifier.MOD_NONE;
 }
@@ -220,6 +203,15 @@ QueryNode Query(CharSequence field) :
         if (clauses != null) { 
         return new BooleanQueryNode(clauses);
       } else {
+          // Handle the case of a "pure" negation query which
+          // needs to be wrapped as a boolean query, otherwise
+          // the returned result drops the negation.
+          if (first instanceof ModifierQueryNode) {
+            ModifierQueryNode m = (ModifierQueryNode) first;
+            if (m.getModifier() == ModifierQueryNode.Modifier.MOD_NOT) {
+              return new BooleanQueryNode(Arrays.<QueryNode> asList(m));
+            }
+          }
           return first;
       }
     }
