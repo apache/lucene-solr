@@ -40,7 +40,9 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * Wraps another {@link Query}'s result and caches it when scores are not
  * needed.  The purpose is to allow queries to simply care about matching and
  * scoring, and then wrap with this class to add caching.
+ * @deprecated Use a {@link QueryCache} instead, such as {@link LRUQueryCache}.
  */
+@Deprecated
 public class CachingWrapperQuery extends Query implements Accountable, Cloneable {
   private Query query; // not final because of clone
   private final QueryCachingPolicy policy;

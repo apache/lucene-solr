@@ -6,7 +6,9 @@ package org.apache.lucene.queryparser.xml.builders;
 import org.apache.lucene.queryparser.xml.*;
 import org.apache.lucene.search.CachingWrapperQuery;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.w3c.dom.Element;
 
@@ -42,7 +44,10 @@ import java.util.Map;
  * <p>
  * The CoreParser.maxNumCachedFilters property can be used to control the size of the LRU
  * Cache established during the construction of CoreParser instances.
+ * @deprecated You should plug a {@link QueryCache} into {@link IndexSearcher} instead
+ * and let it make decisions.
  */
+@Deprecated
 public class CachedFilterBuilder implements FilterBuilder {
 
   private final QueryBuilderFactory queryFactory;
