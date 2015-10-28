@@ -33,7 +33,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
   public void testCloudClientCanConnectAfterClusterComesUp() throws Exception {
 
     // Start by creating a cluster with no jetties
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir());
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
 
       CloudSolrClient client = cluster.getSolrClient();
@@ -65,7 +65,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
     Path configPath = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
 
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir());
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
       CloudSolrClient client = cluster.getSolrClient();
       try {

@@ -87,8 +87,6 @@ public class MiniSolrCloudCluster {
       "  \n" +
       "</solr>\n";
 
-  public static final JettyConfig DEFAULT_JETTY_CONFIG = JettyConfig.builder().setContext("/solr").build();
-
   private final ZkTestServer zkServer;
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new LinkedList<>();
@@ -99,18 +97,6 @@ public class MiniSolrCloudCluster {
   private final ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jetty-launcher"));
 
   private final AtomicInteger nodeIds = new AtomicInteger();
-
-  /**
-   * Create a MiniSolrCloudCluster with default configuration
-   *
-   * @param numServers number of Solr servers to start
-   * @param baseDir base directory that the mini cluster should be run from
-   *
-   * @throws Exception if there was an error starting the cluster
-   */
-  public MiniSolrCloudCluster(int numServers, Path baseDir) throws Exception {
-    this(numServers, baseDir, DEFAULT_CLOUD_SOLR_XML, DEFAULT_JETTY_CONFIG, null);
-  }
 
   /**
    * Create a MiniSolrCloudCluster with default solr.xml
