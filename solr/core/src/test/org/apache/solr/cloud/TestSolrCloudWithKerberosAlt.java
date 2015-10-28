@@ -33,6 +33,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -158,7 +159,8 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
     HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
     String collectionName = "testkerberoscollection";
 
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir());
+    MiniSolrCloudCluster miniCluster
+        = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().setContext("/solr").build());
     CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
     cloudSolrClient.setDefaultCollection(collectionName);
     
