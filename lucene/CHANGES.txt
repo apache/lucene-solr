@@ -74,6 +74,9 @@ API Changes
   IndexOutput.getName returns its name (Dawid Weiss, Robert Muir, Mike
   McCandless)
 
+* LUCENE-6855: CachingWrapperQuery is deprecated and will be removed in 6.0.
+  (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.

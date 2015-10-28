@@ -181,11 +181,6 @@ public class TestParser extends LuceneTestCase {
     dumpResults("Nested Boolean query", q, 5);
   }
 
-  public void testCachedFilterXML() throws ParserException, IOException {
-    Query q = parse("CachedQuery.xml");
-    dumpResults("Cached filter", q, 5);
-  }
-
   public void testNumericRangeQueryQueryXML() throws ParserException, IOException {
     Query q = parse("NumericRangeQueryQuery.xml");
     dumpResults("NumericRangeQuery", q, 5);

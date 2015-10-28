@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Objects;
 
-import org.apache.lucene.search.CachingWrapperQuery;
+import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -39,7 +39,7 @@ import org.apache.lucene.util.BytesRef;
  * <p><b>NOTE</b>: If this {@link FilterLeafReader} does not change the
  * content the contained reader, you could consider overriding
  * {@link #getCoreCacheKey()} so that
- * {@link CachingWrapperQuery} shares the same entries for this atomic reader
+ * {@link QueryCache} impls share the same entries for this atomic reader
  * and the wrapped one. {@link #getCombinedCoreAndDeletesKey()} could be
  * overridden as well if the {@link #getLiveDocs() live docs} are not changed
  * either.
