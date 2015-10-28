@@ -15,6 +15,9 @@ Bug Fixes
 
 Other
 
+* LUCENE-6857: Validate StandardQueryParser with NOT operator 
+  with-in parentheses. (Jigar Shah via Dawid Weiss)
+
 * LUCENE-6248: Remove unused odd constants from StandardSyntaxParser.jj
   (Dawid Weiss)
 
