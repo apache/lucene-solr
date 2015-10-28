@@ -46,31 +46,31 @@ public final class GeoUtils {
   private GeoUtils() {
   }
 
-  public static Long mortonHash(final double lon, final double lat) {
+  public static final Long mortonHash(final double lon, final double lat) {
     return BitUtil.interleave(scaleLon(lon), scaleLat(lat));
   }
 
-  public static double mortonUnhashLon(final long hash) {
+  public static final double mortonUnhashLon(final long hash) {
     return unscaleLon(BitUtil.deinterleave(hash));
   }
 
-  public static double mortonUnhashLat(final long hash) {
+  public static final double mortonUnhashLat(final long hash) {
     return unscaleLat(BitUtil.deinterleave(hash >>> 1));
   }
 
-  private static long scaleLon(final double val) {
+  private static final long scaleLon(final double val) {
     return (long) ((val-MIN_LON_INCL) * LON_SCALE);
   }
 
-  private static long scaleLat(final double val) {
+  private static final long scaleLat(final double val) {
     return (long) ((val-MIN_LAT_INCL) * LAT_SCALE);
   }
 
-  private static double unscaleLon(final long val) {
+  private static final double unscaleLon(final long val) {
     return (val / LON_SCALE) + MIN_LON_INCL;
   }
 
-  private static double unscaleLat(final long val) {
+  private static final double unscaleLat(final long val) {
     return (val / LAT_SCALE) + MIN_LAT_INCL;
   }
 
@@ -182,7 +182,7 @@ public final class GeoUtils {
    */
   public static boolean rectContains(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                      final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
-      return !(bMinX < aMinX || bMinY < aMinY || bMaxX > aMaxX || bMaxY > aMaxY);
+    return !(bMinX < aMinX || bMinY < aMinY || bMaxX > aMaxX || bMaxY > aMaxY);
   }
 
   /**
@@ -243,6 +243,44 @@ public final class GeoUtils {
         }
       } // for each poly edge
     } // for each bbox edge
+    return false;
+  }
+
+  public static boolean lineCrossesPoly(double x1, double y1, double x2, double y2, double[] shapeX, double[] shapeY, final double sMinX, final double sMinY, final double sMaxX,
+                                        final double sMaxY) {
+    final double a1 = y2 - y1;
+    final double b1 = x2 - x1;
+    final double c1 = a1*x2 + b1*y2;
+    final int polyLength = shapeX.length;
+    double a2, b2, c2, s, t, d;
+    double x00, x01, y00, y01, x10, x11, y10, y11;
+    for (int p=0; p<polyLength; ++p) {
+      a2 = shapeY[p+1]-shapeY[p];
+      b2 = shapeX[p]-shapeX[p+1];
+      // compute determinant
+      d = a1*b2 - a2*b1;
+      if (d != 0) {
+        // lines are not parallel, check intersecting points
+        c2 = a2*shapeX[p+1] + b2*shapeY[p+1];
+        s = (1/d)*(b2*c1 - b1*c2);
+        t = (1/d)*(a1*c2 - a2*c1);
+        x00 = StrictMath.min(x1, x2) - TOLERANCE;
+        x01 = StrictMath.max(x1, x2) + TOLERANCE;
+        y00 = StrictMath.min(y1, y2) - TOLERANCE;
+        y01 = StrictMath.max(y1, y2) + TOLERANCE;
+        x10 = StrictMath.min(shapeX[p], shapeX[p+1]) - TOLERANCE;
+        x11 = StrictMath.max(shapeX[p], shapeX[p+1]) + TOLERANCE;
+        y10 = StrictMath.min(shapeY[p], shapeY[p+1]) - TOLERANCE;
+        y11 = StrictMath.max(shapeY[p], shapeY[p+1]) + TOLERANCE;
+        // check whether the intersection point is touching one of the line segments
+        boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
+            || ((x10 == s && y10 == t) || (x11 == s && y11 == t));
+        // if line segments are not touching and the intersection point is within the range of either segment
+        if (!(touching || x00 > s || x01 < s || y00 > t || y01 < t || x10 > s || x11 < s || y10 > t || y11 < t)) {
+          return true;
+        }
+      }
+    } // for each poly edge
     return false;
   }
 
@@ -364,6 +402,33 @@ public final class GeoUtils {
 
     return new GeoRect(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
         StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
+  }
+
+  public static GeoRect polyToBBox(double[] polyLons, double[] polyLats) {
+    if (polyLons.length != polyLats.length) {
+      throw new IllegalArgumentException("polyLons and polyLats must be equal length");
+    }
+
+    double minLon = Double.POSITIVE_INFINITY;
+    double maxLon = Double.NEGATIVE_INFINITY;
+    double minLat = Double.POSITIVE_INFINITY;
+    double maxLat = Double.NEGATIVE_INFINITY;
+
+    for (int i=0;i<polyLats.length;i++) {
+      if (GeoUtils.isValidLon(polyLons[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
+      }
+      if (GeoUtils.isValidLat(polyLats[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
+      }
+      minLon = Math.min(polyLons[i], minLon);
+      maxLon = Math.max(polyLons[i], maxLon);
+      minLat = Math.min(polyLats[i], minLat);
+      maxLat = Math.max(polyLats[i], maxLat);
+    }
+
+    return new GeoRect(GeoUtils.unscaleLon(GeoUtils.scaleLon(minLon)), GeoUtils.unscaleLon(GeoUtils.scaleLon(maxLon)),
+        GeoUtils.unscaleLat(GeoUtils.scaleLat(minLat)), GeoUtils.unscaleLat(GeoUtils.scaleLat(maxLat)));
   }
 
   /*

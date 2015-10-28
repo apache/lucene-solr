@@ -62,6 +62,7 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
     DETAIL_LEVEL = (short)(((GeoUtils.BITS<<1)-computeMaxShift())/2);
 
     computeRange(0L, (short) (((GeoUtils.BITS) << 1) - 1));
+    assert rangeBounds.isEmpty() == false;
     Collections.sort(rangeBounds);
   }
 

@@ -56,7 +56,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
    * that fall within or on the boundary of the polygon defined by the input parameters.
    */
   public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
-    this(field, computeBBox(polyLons, polyLats), polyLons, polyLats);
+    this(field, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
   }
 
   /** Common constructor, used only internally. */
@@ -75,16 +75,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
       throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
     }
 
-    // convert polygon vertices to coordinates within tolerance
-    this.x = toleranceConversion(polyLons);
-    this.y = toleranceConversion(polyLats);
-  }
-
-  private double[] toleranceConversion(double[] vals) {
-    for (int i=0; i<vals.length; ++i) {
-      vals[i] = ((int)(vals[i]/GeoUtils.TOLERANCE))*GeoUtils.TOLERANCE;
-    }
-    return vals;
+    this.x = polyLons;
+    this.y = polyLats;
   }
 
   @Override @SuppressWarnings("unchecked")
@@ -167,7 +159,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return cellWithin(minLon, minLat, maxLon, maxLat) || cellCrosses(minLon, minLat, maxLon, maxLat);
+      return cellContains(minLon, minLat, maxLon, maxLat) || cellWithin(minLon, minLat, maxLon, maxLat)
+          || cellCrosses(minLon, minLat, maxLon, maxLat);
     }
 
     /**
@@ -181,32 +174,6 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     protected boolean postFilter(final double lon, final double lat) {
       return GeoUtils.pointInPolygon(x, y, lat, lon);
     }
-  }
-
-  private static GeoRect computeBBox(double[] polyLons, double[] polyLats) {
-    if (polyLons.length != polyLats.length) {
-      throw new IllegalArgumentException("polyLons and polyLats must be equal length");
-    }
-
-    double minLon = Double.POSITIVE_INFINITY;
-    double maxLon = Double.NEGATIVE_INFINITY;
-    double minLat = Double.POSITIVE_INFINITY;
-    double maxLat = Double.NEGATIVE_INFINITY;
-
-    for (int i=0;i<polyLats.length;i++) {
-      if (GeoUtils.isValidLon(polyLons[i]) == false) {
-        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
-      }
-      if (GeoUtils.isValidLat(polyLats[i]) == false) {
-        throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
-      }
-      minLon = Math.min(polyLons[i], minLon);
-      maxLon = Math.max(polyLons[i], maxLon);
-      minLat = Math.min(polyLats[i], minLat);
-      maxLat = Math.max(polyLats[i], maxLat);
-    }
-
-    return new GeoRect(minLon, maxLon, minLat, maxLat);
   }
 
   /**
