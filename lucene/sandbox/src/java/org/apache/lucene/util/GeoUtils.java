@@ -46,31 +46,31 @@ public final class GeoUtils {
   private GeoUtils() {
   }
 
-  public static Long mortonHash(final double lon, final double lat) {
+  public static final Long mortonHash(final double lon, final double lat) {
     return BitUtil.interleave(scaleLon(lon), scaleLat(lat));
   }
 
-  public static double mortonUnhashLon(final long hash) {
+  public static final double mortonUnhashLon(final long hash) {
     return unscaleLon(BitUtil.deinterleave(hash));
   }
 
-  public static double mortonUnhashLat(final long hash) {
+  public static final double mortonUnhashLat(final long hash) {
     return unscaleLat(BitUtil.deinterleave(hash >>> 1));
   }
 
-  private static long scaleLon(final double val) {
+  private static final long scaleLon(final double val) {
     return (long) ((val-MIN_LON_INCL) * LON_SCALE);
   }
 
-  private static long scaleLat(final double val) {
+  private static final long scaleLat(final double val) {
     return (long) ((val-MIN_LAT_INCL) * LAT_SCALE);
   }
 
-  private static double unscaleLon(final long val) {
+  private static final double unscaleLon(final long val) {
     return (val / LON_SCALE) + MIN_LON_INCL;
   }
 
-  private static double unscaleLat(final long val) {
+  private static final double unscaleLat(final long val) {
     return (val / LAT_SCALE) + MIN_LAT_INCL;
   }
 
@@ -182,7 +182,7 @@ public final class GeoUtils {
    */
   public static boolean rectContains(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                      final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
-      return !(bMinX < aMinX || bMinY < aMinY || bMaxX > aMaxX || bMaxY > aMaxY);
+    return !(bMinX < aMinX || bMinY < aMinY || bMaxX > aMaxX || bMaxY > aMaxY);
   }
 
   /**
@@ -364,6 +364,33 @@ public final class GeoUtils {
 
     return new GeoRect(StrictMath.toDegrees(minLon), StrictMath.toDegrees(maxLon),
         StrictMath.toDegrees(minLat), StrictMath.toDegrees(maxLat));
+  }
+
+  public static GeoRect polyToBBox(double[] polyLons, double[] polyLats) {
+    if (polyLons.length != polyLats.length) {
+      throw new IllegalArgumentException("polyLons and polyLats must be equal length");
+    }
+
+    double minLon = Double.POSITIVE_INFINITY;
+    double maxLon = Double.NEGATIVE_INFINITY;
+    double minLat = Double.POSITIVE_INFINITY;
+    double maxLat = Double.NEGATIVE_INFINITY;
+
+    for (int i=0;i<polyLats.length;i++) {
+      if (GeoUtils.isValidLon(polyLons[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
+      }
+      if (GeoUtils.isValidLat(polyLats[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
+      }
+      minLon = Math.min(polyLons[i], minLon);
+      maxLon = Math.max(polyLons[i], maxLon);
+      minLat = Math.min(polyLats[i], minLat);
+      maxLat = Math.max(polyLats[i], maxLat);
+    }
+
+    return new GeoRect(GeoUtils.unscaleLon(GeoUtils.scaleLon(minLon)), GeoUtils.unscaleLon(GeoUtils.scaleLon(maxLon)),
+        GeoUtils.unscaleLat(GeoUtils.scaleLat(minLat)), GeoUtils.unscaleLat(GeoUtils.scaleLat(maxLat)));
   }
 
   /*
