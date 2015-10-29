@@ -177,7 +177,7 @@ public abstract class WithNestedTests {
         b.append("\n");
         b.append(f.getTrace());
       }
-      RandomizedTest.assertFalse("Expected failures: " + expected + " but was " + 
+      Assert.assertFalse("Expected failures: " + expected + " but was " + 
           result.getFailureCount() + ", failures below: " + b.toString(), true);
     }
   }
