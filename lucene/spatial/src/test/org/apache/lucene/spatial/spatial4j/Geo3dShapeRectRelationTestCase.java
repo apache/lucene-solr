@@ -48,10 +48,6 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
   @Rule
   public final TestLog testLog = TestLog.instance;
 
-  protected static Random random() {
-    return RandomizedContext.current().getRandom();
-  }
-
   protected final PlanetModel planetModel;
 
   public Geo3dShapeRectRelationTestCase(PlanetModel planetModel) {
@@ -117,6 +113,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoCircleRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
@@ -139,6 +136,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }.testRelateWithRectangle();
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoBBoxRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
@@ -173,6 +171,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }.testRelateWithRectangle();
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoPolygonRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
@@ -216,6 +215,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }.testRelateWithRectangle();
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoPathRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
