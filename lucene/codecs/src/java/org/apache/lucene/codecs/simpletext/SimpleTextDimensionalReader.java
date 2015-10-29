@@ -173,4 +173,9 @@ class SimpleTextDimensionalReader extends DimensionalReader {
   public void close() throws IOException {
     dataIn.close();
   }
+
+  @Override
+  public String toString() {
+    return "SimpleTextDimensionalReader(segment=" + readState.segmentInfo.name + " maxDoc=" + readState.segmentInfo.maxDoc() + ")";
+  }
 }

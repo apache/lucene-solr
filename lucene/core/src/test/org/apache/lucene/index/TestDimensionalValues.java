@@ -929,7 +929,7 @@ public class TestDimensionalValues extends LuceneTestCase {
               }
               //System.out.println("visit check docID=" + docID);
               for(int dim=0;dim<numDims;dim++) {
-                //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*bytesPerDim, bytesPerDim));
+                //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
                 if (BKDUtil.compare(numBytesPerDim, packedValue, dim, queryMin[dim], 0) < 0 ||
                     BKDUtil.compare(numBytesPerDim, packedValue, dim, queryMax[dim], 0) > 0) {
                   //System.out.println("  no");
@@ -990,8 +990,23 @@ public class TestDimensionalValues extends LuceneTestCase {
         }
 
         int limit = Math.max(expected.length(), hits.length());
+        int failCount = 0;
+        int successCount = 0;
         for(int id=0;id<limit;id++) {
-          assertEquals("docID=" + id, expected.get(id), hits.get(id));
+          if (expected.get(id) != hits.get(id)) {
+            System.out.println("FAIL: id=" + id);
+            failCount++;
+          } else {
+            successCount++;
+          }
+        }
+
+        if (failCount != 0) {
+          for(int docID=0;docID<r.maxDoc();docID++) {
+            System.out.println("  docID=" + docID + " id=" + idValues.get(docID));
+          }
+
+          fail(failCount + " docs failed; " + successCount + " docs succeeded");
         }
       }
     } finally {

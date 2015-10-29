@@ -67,7 +67,8 @@ public class MismatchedLeafReader extends FilterLeafReader {
                                         oldInfo.getDocValuesType(),  // docValuesType
                                         oldInfo.getDocValuesGen(),   // dvGen
                                         oldInfo.attributes(),        // attributes
-                                        0, 0);                       // dimensional count,numBytes
+                                        oldInfo.getDimensionCount(),
+                                        oldInfo.getDimensionNumBytes());
       shuffled.set(i, newInfo);
     }
     

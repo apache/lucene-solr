@@ -40,7 +40,6 @@ class MultiDimensionalValues extends DimensionalValues {
       return leaves.get(0).reader().getDimensionalValues();
     }
 
-    boolean anyReal = false;
     List<DimensionalValues> values = new ArrayList<>();
     List<Integer> docBases = new ArrayList<>();
     for (int i = 0; i < size; i++) {
@@ -75,5 +74,21 @@ class MultiDimensionalValues extends DimensionalValues {
                           }
                         });
     }
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder b = new StringBuilder();
+    b.append("MultiDimensionalValues(");
+    for(int i=0;i<subs.size();i++) {
+      if (i > 0) {
+        b.append(", ");
+      }
+      b.append("docBase=");
+      b.append(docBases.get(i));
+      b.append(" sub=" + subs.get(i));
+    }
+    b.append(')');
+    return b.toString();
   }
 }
