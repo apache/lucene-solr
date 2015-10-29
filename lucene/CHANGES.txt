@@ -233,6 +233,10 @@ Bug Fixes
 
 Other
 
+* LUCENE-6478: Test execution can hang with java.security.debug. (Dawid Weiss)
+
+* LUCENE-6862: Upgrade of RandomizedRunner to version 2.2.0. (Dawid Weiss)
+
 * LUCENE-6857: Validate StandardQueryParser with NOT operator 
   with-in parantheses. (Jigar Shah via Dawid Weiss)
 
