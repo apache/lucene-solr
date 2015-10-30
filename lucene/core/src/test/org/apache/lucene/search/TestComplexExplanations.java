@@ -17,6 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -75,33 +79,33 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     
     t = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
     q.add(new BoostQuery(t, 30), Occur.SHOULD);
-    
-    DisjunctionMaxQuery dm = new DisjunctionMaxQuery(0.2f);
-    dm.add(snear(st("w2"),
+
+    List<Query> disjuncts = new ArrayList<>();
+    disjuncts.add(snear(st("w2"),
                  sor("w5","zz"),
                  4, true));
-    dm.add(new TermQuery(new Term(FIELD, "QQ")));
+    disjuncts.add(new TermQuery(new Term(FIELD, "QQ")));
 
     BooleanQuery.Builder xxYYZZ = new BooleanQuery.Builder();;
     xxYYZZ.add(new TermQuery(new Term(FIELD, "xx")), Occur.SHOULD);
     xxYYZZ.add(new TermQuery(new Term(FIELD, "yy")), Occur.SHOULD);
     xxYYZZ.add(new TermQuery(new Term(FIELD, "zz")), Occur.MUST_NOT);
 
-    dm.add(xxYYZZ.build());
+    disjuncts.add(xxYYZZ.build());
 
     BooleanQuery.Builder xxW1 = new BooleanQuery.Builder();;
     xxW1.add(new TermQuery(new Term(FIELD, "xx")), Occur.MUST_NOT);
     xxW1.add(new TermQuery(new Term(FIELD, "w1")), Occur.MUST_NOT);
 
-    dm.add(xxW1.build());
+    disjuncts.add(xxW1.build());
 
-    DisjunctionMaxQuery dm2 = new DisjunctionMaxQuery(0.5f);
-    dm2.add(new TermQuery(new Term(FIELD, "w1")));
-    dm2.add(new TermQuery(new Term(FIELD, "w2")));
-    dm2.add(new TermQuery(new Term(FIELD, "w3")));
-    dm.add(dm2);
+    List<Query> disjuncts2 = new ArrayList<>();
+    disjuncts2.add(new TermQuery(new Term(FIELD, "w1")));
+    disjuncts2.add(new TermQuery(new Term(FIELD, "w2")));
+    disjuncts2.add(new TermQuery(new Term(FIELD, "w3")));
+    disjuncts.add(new DisjunctionMaxQuery(disjuncts2, 0.5f));
 
-    q.add(dm, Occur.SHOULD);
+    q.add(new DisjunctionMaxQuery(disjuncts, 0.2f), Occur.SHOULD);
 
     BooleanQuery.Builder b = new BooleanQuery.Builder();;
     b.setMinimumNumberShouldMatch(2);
@@ -134,32 +138,34 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
     t = new ConstantScoreQuery(matchTheseItems(new int[] {0,2}));
     q.add(new BoostQuery(t, -20), Occur.SHOULD);
     
-    DisjunctionMaxQuery dm = new DisjunctionMaxQuery(0.2f);
-    dm.add(snear(st("w2"),
+    List<Query> disjuncts = new ArrayList<>();
+    disjuncts.add(snear(st("w2"),
                  sor("w5","zz"),
                  4, true));
-    dm.add(new TermQuery(new Term(FIELD, "QQ")));
+    disjuncts.add(new TermQuery(new Term(FIELD, "QQ")));
 
     BooleanQuery.Builder xxYYZZ = new BooleanQuery.Builder();;
     xxYYZZ.add(new TermQuery(new Term(FIELD, "xx")), Occur.SHOULD);
     xxYYZZ.add(new TermQuery(new Term(FIELD, "yy")), Occur.SHOULD);
     xxYYZZ.add(new TermQuery(new Term(FIELD, "zz")), Occur.MUST_NOT);
 
-    dm.add(xxYYZZ.build());
+    disjuncts.add(xxYYZZ.build());
 
     BooleanQuery.Builder xxW1 = new BooleanQuery.Builder();;
     xxW1.add(new TermQuery(new Term(FIELD, "xx")), Occur.MUST_NOT);
     xxW1.add(new TermQuery(new Term(FIELD, "w1")), Occur.MUST_NOT);
 
-    dm.add(xxW1.build());
+    disjuncts.add(xxW1.build());
 
-    DisjunctionMaxQuery dm2 = new DisjunctionMaxQuery(0.5f);
-    dm2.add(new TermQuery(new Term(FIELD, "w1")));
-    dm2.add(new TermQuery(new Term(FIELD, "w2")));
-    dm2.add(new TermQuery(new Term(FIELD, "w3")));
-    dm.add(dm2);
+    DisjunctionMaxQuery dm2 = new DisjunctionMaxQuery(
+        Arrays.<Query>asList(
+            new TermQuery(new Term(FIELD, "w1")),
+            new TermQuery(new Term(FIELD, "w2")),
+            new TermQuery(new Term(FIELD, "w3"))),
+        0.5f);
+    disjuncts.add(dm2);
 
-    q.add(dm, Occur.SHOULD);
+    q.add(new DisjunctionMaxQuery(disjuncts, 0.2f), Occur.SHOULD);
 
     BooleanQuery.Builder builder = new BooleanQuery.Builder();;
     builder.setMinimumNumberShouldMatch(2);
@@ -203,18 +209,16 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
   }
   
   public void testDMQ10() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-
     BooleanQuery.Builder query = new BooleanQuery.Builder();;
     query.add(new TermQuery(new Term(FIELD, "yy")), Occur.SHOULD);
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
     query.add(new BoostQuery(boostedQuery, 100), Occur.SHOULD);
 
-    q.add(query.build());
-
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
 
-    q.add(new BoostQuery(xxBoostedQuery, 0));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(query.build(), new BoostQuery(xxBoostedQuery, 0)),
+        0.5f);
     bqtest(new BoostQuery(q, 0), new int[] { 0,2,3 });
   }
   

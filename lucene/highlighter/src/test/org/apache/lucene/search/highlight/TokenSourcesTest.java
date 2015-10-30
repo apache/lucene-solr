@@ -18,8 +18,10 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -118,9 +120,11 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     assertEquals(1, indexReader.numDocs());
     final IndexSearcher indexSearcher = newSearcher(indexReader);
     try {
-      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
-      query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
-      query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(
+          Arrays.<Query>asList(
+              new SpanTermQuery(new Term(FIELD, "{fox}")),
+              new SpanTermQuery(new Term(FIELD, "fox"))),
+          1);
         // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
         // new SpanTermQuery(new Term(FIELD, "{fox}")),
         // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);
@@ -161,9 +165,11 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
-      query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
-      query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(
+          Arrays.<Query>asList(
+              new SpanTermQuery(new Term(FIELD, "{fox}")),
+              new SpanTermQuery(new Term(FIELD, "fox"))),
+          1);
       // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
       // new SpanTermQuery(new Term(FIELD, "{fox}")),
       // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);

@@ -1,5 +1,7 @@
 package org.apache.lucene.search;
 
+import java.util.Arrays;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 
@@ -82,9 +84,11 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     BooleanQuery.Builder q1 = new BooleanQuery.Builder();
     q1.add(new TermQuery(t1), Occur.SHOULD);
     q1.add(new TermQuery(t2), Occur.SHOULD);
-    DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(0.5f);
-    q2.add(new TermQuery(t1));
-    q2.add(new TermQuery(t2));
+    DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(
+        Arrays.<Query>asList(
+            new TermQuery(t1),
+            new TermQuery(t2)),
+        0.5f);
     assertSameSet(q1.build(), q2);
   }
   

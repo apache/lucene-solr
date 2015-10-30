@@ -16,6 +16,9 @@ package org.apache.lucene.queryparser.xml.builders;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
@@ -44,22 +47,22 @@ public class DisjunctionMaxQueryBuilder implements QueryBuilder {
   @Override
   public Query getQuery(Element e) throws ParserException {
     float tieBreaker = DOMUtils.getAttribute(e, "tieBreaker", 0.0f); 
-    DisjunctionMaxQuery dq = new DisjunctionMaxQuery(tieBreaker);
 
+    List<Query> disjuncts = new ArrayList<>();
     NodeList nl = e.getChildNodes();
     for (int i = 0; i < nl.getLength(); i++) {
       Node node = nl.item(i);
       if (node instanceof Element) { // all elements are disjuncts.
         Element queryElem = (Element) node;
         Query q = factory.getQuery(queryElem);
-        dq.add(q);
+        disjuncts.add(q);
       }
     }
 
-    Query q = dq;
+    Query q = new DisjunctionMaxQuery(disjuncts, tieBreaker);
     float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
     if (boost != 1f) {
-      q = new BoostQuery(dq, boost);
+      q = new BoostQuery(q, boost);
     }
     return q;
   }

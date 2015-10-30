@@ -46,17 +46,19 @@ import org.apache.lucene.util.ToStringUtils;
 public final class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /* The subqueries */
-  private ArrayList<Query> disjuncts = new ArrayList<>();
+  private final ArrayList<Query> disjuncts = new ArrayList<>();
 
   /* Multiple of the non-max disjunct scores added into our final score.  Non-zero values support tie-breaking. */
-  private float tieBreakerMultiplier = 0.0f;
+  private final float tieBreakerMultiplier;
 
   /** Creates a new empty DisjunctionMaxQuery.  Use add() to add the subqueries.
    * @param tieBreakerMultiplier the score of each non-maximum disjunct for a document is multiplied by this weight
    *        and added into the final score.  If non-zero, the value should be small, on the order of 0.1, which says that
    *        10 occurrences of word in a lower-scored field that is also in a higher scored field is just as good as a unique
    *        word in the lower scored field (i.e., one that is not in any higher scored field.
+   * @deprecated Use {@link #DisjunctionMaxQuery(Collection, float)} instead
    */
+  @Deprecated
   public DisjunctionMaxQuery(float tieBreakerMultiplier) {
     this.tieBreakerMultiplier = tieBreakerMultiplier;
   }
@@ -64,7 +66,10 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
   /**
    * Creates a new DisjunctionMaxQuery
    * @param disjuncts a {@code Collection<Query>} of all the disjuncts to add
-   * @param tieBreakerMultiplier   the weight to give to each matching non-maximum disjunct
+   * @param tieBreakerMultiplier the score of each non-maximum disjunct for a document is multiplied by this weight
+   *        and added into the final score.  If non-zero, the value should be small, on the order of 0.1, which says that
+   *        10 occurrences of word in a lower-scored field that is also in a higher scored field is just as good as a unique
+   *        word in the lower scored field (i.e., one that is not in any higher scored field.
    */
   public DisjunctionMaxQuery(Collection<Query> disjuncts, float tieBreakerMultiplier) {
     Objects.requireNonNull(disjuncts, "Collection of Querys must not be null");
@@ -74,7 +79,10 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
   /** Add a subquery to this disjunction
    * @param query the disjunct added
+   * @deprecated Use {@link #DisjunctionMaxQuery(Collection, float)} instead
+   *             and provide all clauses at construction time
    */
+  @Deprecated
   public void add(Query query) {
     disjuncts.add(Objects.requireNonNull(query, "Query must not be null"));
   }
@@ -82,7 +90,10 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
   /** Add a collection of disjuncts to this disjunction
    * via {@code Iterable<Query>}
    * @param disjuncts a collection of queries to add as disjuncts.
+   * @deprecated Use {@link #DisjunctionMaxQuery(Collection, float)} instead
+   *             and provide all clauses at construction time
    */
+  @Deprecated
   public void add(Collection<Query> disjuncts) {
     this.disjuncts.addAll(Objects.requireNonNull(disjuncts, "Query connection must not be null"));
   }
@@ -223,17 +234,19 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     if (numDisjunctions == 1) {
       return disjuncts.get(0);
     }
-    DisjunctionMaxQuery rewritten = new DisjunctionMaxQuery(tieBreakerMultiplier);
+
     boolean actuallyRewritten = false;
+    List<Query> rewrittenDisjuncts = new ArrayList<>();
     for (Query sub : disjuncts) {
       Query rewrittenSub = sub.rewrite(reader);
       actuallyRewritten |= rewrittenSub != sub;
-      rewritten.add(rewrittenSub);
+      rewrittenDisjuncts.add(rewrittenSub);
     }
 
     if (actuallyRewritten) {
-      return rewritten;
+      return new DisjunctionMaxQuery(rewrittenDisjuncts, tieBreakerMultiplier);
     }
+
     return super.rewrite(reader);
   }
 
