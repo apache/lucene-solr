@@ -21,7 +21,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -72,7 +71,7 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
     assertEquals(1, clauses.length);
     assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
     assertEquals(0.0, ((DisjunctionMaxQuery) clauses[0].getQuery()).getTieBreakerMultiplier(), 1e-15);
-    ArrayList<Query> qa = ((DisjunctionMaxQuery) clauses[0].getQuery()).getDisjuncts();
+    List<Query> qa = ((DisjunctionMaxQuery) clauses[0].getQuery()).getDisjuncts();
     assertEquals(2, qa.size());
     assertEquals("text:foo", qa.get(0).toString());
   }

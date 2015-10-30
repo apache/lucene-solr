@@ -17,6 +17,8 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import java.util.Collections;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -555,8 +557,8 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    DisjunctionMaxQuery query = new DisjunctionMaxQuery(0);
-    query.add(new WildcardQuery(new Term("body", "te*")));
+    DisjunctionMaxQuery query = new DisjunctionMaxQuery(
+        Collections.singleton(new WildcardQuery(new Term("body", "te*"))), 0);
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);

@@ -19,6 +19,7 @@ package org.apache.lucene.search.vectorhighlight;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -153,11 +154,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   }
   
   protected Query dmq( float tieBreakerMultiplier, Query... queries ){
-    DisjunctionMaxQuery query = new DisjunctionMaxQuery( tieBreakerMultiplier );
-    for( Query q : queries ){
-      query.add( q );
-    }
-    return query;
+    return new DisjunctionMaxQuery(Arrays.asList(queries), tieBreakerMultiplier);
   }
   
   protected void assertCollectionQueries( Collection<Query> actual, Query... expected ){

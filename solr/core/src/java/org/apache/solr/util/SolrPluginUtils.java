@@ -865,13 +865,8 @@ public class SolrPluginUtils {
       if (aliases.containsKey(field)) {
 
         Alias a = aliases.get(field);
-        DisjunctionMaxQuery q = new DisjunctionMaxQuery(a.tie);
 
-        /* we might not get any valid queries from delegation,
-         * in which case we should return null
-         */
-        boolean ok = false;
-
+        List<Query> disjuncts = new ArrayList<>();
         for (String f : a.fields.keySet()) {
 
           Query sub = getFieldQuery(f,queryText,quoted);
@@ -879,11 +874,12 @@ public class SolrPluginUtils {
             if (null != a.fields.get(f)) {
               sub = new BoostQuery(sub, a.fields.get(f));
             }
-            q.add(sub);
-            ok = true;
+            disjuncts.add(sub);
           }
         }
-        return ok ? q : null;
+        return disjuncts.isEmpty()
+            ? null
+            : new DisjunctionMaxQuery(disjuncts, a.tie);
 
       } else {
         try {

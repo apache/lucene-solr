@@ -250,9 +250,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, BooleanClause.Occur.MUST);
     assertEquals(0, s.search(q.build(), 10).totalHits);
 
-    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(1.0f);
-    dmq.add(new TermQuery(new Term("field", "a")));
-    dmq.add(pq);
+    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(
+        Arrays.asList(new TermQuery(new Term("field", "a")), pq),
+        1.0f);
     assertEquals(1, s.search(dmq, 10).totalHits);
 
     r.close();

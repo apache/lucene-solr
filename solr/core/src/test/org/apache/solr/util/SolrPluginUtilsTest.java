@@ -38,6 +38,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -419,16 +421,18 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
     /* Simulate stopwords through uneven disjuncts */
     q = new BooleanQuery.Builder();
-    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(0.0f);
-    dmq.add(new TermQuery(new Term("a","foo")));
+    q.add(new DisjunctionMaxQuery(Collections.singleton(new TermQuery(new Term("a","foo"))), 0.0f), Occur.SHOULD);
+    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(
+        Arrays.asList(
+            new TermQuery(new Term("a","foo")),
+            new TermQuery(new Term("b","foo"))),
+        0f);
     q.add(dmq, Occur.SHOULD);
-    dmq = new DisjunctionMaxQuery(0.0f);
-    dmq.add(new TermQuery(new Term("a","foo")));
-    dmq.add(new TermQuery(new Term("b","foo")));
-    q.add(dmq, Occur.SHOULD);
-    dmq = new DisjunctionMaxQuery(0.0f);
-    dmq.add(new TermQuery(new Term("a","bar")));
-    dmq.add(new TermQuery(new Term("b","bar")));
+    dmq = new DisjunctionMaxQuery(
+        Arrays.asList(
+            new TermQuery(new Term("a","bar")),
+            new TermQuery(new Term("b","bar"))),
+        0f);
     q.add(dmq, Occur.SHOULD);
 
     // Without relax

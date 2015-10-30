@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -861,12 +862,12 @@ public class TestLRUQueryCache extends LuceneTestCase {
       case 4:
         return new ConstantScoreQuery(buildRandomQuery(level + 1));
       case 5:
-        DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(random().nextFloat());
+        List<Query> disjuncts = new ArrayList<>();
         final int numQueries = TestUtil.nextInt(random(), 1, 3);
         for (int i = 0; i < numQueries; ++i) {
-          dmq.add(buildRandomQuery(level + 1));
+          disjuncts.add(buildRandomQuery(level + 1));
         }
-        return dmq;
+        return new DisjunctionMaxQuery(disjuncts, random().nextFloat());
       default:
         throw new AssertionError();
     }
