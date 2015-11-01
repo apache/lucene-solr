@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """ Workaround for slow updates from svn to git.
+See also jira issue INFRA-9182
 
 Situation:
 
@@ -26,11 +27,25 @@ Local svn working copy --> this workaround         --->    Local git repo
 Because of the slow remote git-svn update process the remote git repo is (far) behind
 the remote svn repo.
 
+When this script is run it will first check that the local repositories are clean.
+Then it switches the svn working copy to branch, which updates from the remote.
+Then it fetches branch from the git upstream repo, and merges the branch locally.
+Normally the local svn and git will then be at the same svn revision, and the script will exit.
 
-For a branch branchname in a local git repository following an upstream git-svn git repository,
+Otherwise the remote git repo is out of date, and the following happens.
+
+For the branch branchname in a local git repository following an upstream git-svn git repository,
 this maintains commits on a temporary git branch branchname.svn in the local git repository.
 These commits contain a message ending like this:
-  "RepoUrl patch of svn diff -r EarlierSvnRevisionNumber:LatestSvnRevisionNumber".
+  "SvnRepoUrl diff -r EarlierSvnRevisionNumber:NextSvnRevisionNumber".
+Otherwise the added commit messages look a lot like their counterparts from git svn,
+only the committer is taken from the local git settings.
+
+In case an earlier branchname.svn exists, it will first be deleted if necessary,
+and restarted at the later branch.
+Therefore branchname.svn is temporary and should only be used locally.
+
+By default, no more than 20 commits will be added to branchname.svn in a single run.
 
 The earlier revision number is taken from the git-svn-id message of git svn,
 or from the LatestSvnRevisionNumber in the commit message of branchname.svn,
@@ -38,10 +53,9 @@ whichever is later.
 
 This allows branchname.svn to be used as a local git branch instead of branchname
 to develop new features locally, usually by mering branchname.svn into a feature branch.
-Once the normal git-svn branch is up to date, it can also be merged.
 
 In more detail:
-  - update the svn working copy of the branch to the latest revision,
+  - switch the svn working copy to the branch, updating it to the latest revision,
   - in the git repo:
   - fetch the git repository from upstream.
   - merge branchname from upstream/branchname, this is the branch that can be (far) behind.
@@ -52,217 +66,461 @@ In more detail:
   - when the git repository has the same revision:
     - exit reporting that branchname is up to date.
   - when the git repository has an earlier revision:
-    - in the svn working copy, create a patch from the earlier revision into file ~/patches/branchname.svn
+  - in the git working tree:
+    - if branchname.svn is not at the earlier svn revision number:
+      - delete branchname.svn
+      - recreate branch branchname.svn from branchname.
+    - check out branchname.svn
+  - get the svn commits from the latest available git svn commit (possible generated here), this uses the remote svn repo,
+    to the latest one from the svn log (but no more than the maximum):
+  - for all these commits:
+    - from the svn working copy, create a patch for the svn commit into file ~/patches/branchname.svn,
+      this takes most the the time as it uses the remote svn repo.
     - in the git working tree:
-      - if branchname.svn is not at the earlier svn revision number, delete branchname.svn
-      - if necessary create branch branchname.svn from branchname.
-      - check out branchname.svn
       - apply the patch ~/patches/branchname.svn, ignoring whitespace differences.
-      - commit with a message with revision numbers as indicated above
+      - commit using author, date and message from the svn log, and append the message with revision numbers. 
+"""
+
+"""
+This was developed on Linux using the following program versions:
+python 2.7.6
+git 1.9.1
+svn 1.8.8
+grep (GNU grep) 2.16
+
+gitk (part of git) was used for manual testing:
+- reset branch to an earlier commit to simulate a non working update from svn to git,
+- delete branchname.svn, reset branchname.svn to earlier,
+- diff a commit generated here to a commit from git svn, diffs between corresponding commits are normally empty,
+- update, reload, sort commits by commit date, ...
 """
 
 import os
 import subprocess
-import StringIO
+
+from xml import sax
+from xml.sax.handler import ContentHandler
+
+import types
+
+class SvnInfoHandler(ContentHandler):
+  revisionAttr = "revision"
+
+  def __init__(self):
+    self.lastChangedRevision = None
+
+  def startElement(self, name, attrs):
+    if name == "commit":
+      self.lastChangeRev = int(attrs.getValue(self.revisionAttr))
+
+  def lastChangeRevision(self):
+    return self.lastChangeRev
 
 
-def svnSeq():
-  return ("svn",)
-
-def callSvn(*args):
-  subprocess.check_call(svnSeq() + args)
-
-def callSvnStdout(*args):
-  return subprocess.check_output(svnSeq() + args)
-
-def callSvnStdoutToFile(f, *args):
-  subprocess.check_call(svnSeq() + args, stdout=f)
+class SvnLogEntry:
+  pass # attributes set in SvnLogHandler: revision, author, date, msg
 
 
-def gitCommand():
-  return "git"
+class SvnLogHandler(ContentHandler): # collect list of SvnLogEntry's
+  tagLogEntry = "logentry"
+  revisionAttr = "revision"
+  tagAuthor = "author"
+  tagDate = "date"
+  tagMsg = "msg"
+  charCollectTags = (tagAuthor, tagDate, tagMsg) # also used as SvnLogEntry attributes
 
-def gitAndRepoList(gitRepo):
-  return (gitCommand(), "-C", gitRepo)
+  def __init__(self):
+    self.logEntries = []
+    self.chars = None
 
-def callGitRepo(gitRepo, *args):
-  subprocess.check_call(gitAndRepoList(gitRepo) + args)
+  def startElement(self, name, attrs):
+    if name == self.tagLogEntry:
+      self.lastLogEntry = SvnLogEntry()
+      setattr(self.lastLogEntry, self.revisionAttr, int(attrs.getValue(self.revisionAttr)))
+      for tag in self.charCollectTags:
+        setattr(self.lastLogEntry, tag, None)
+      return
 
-def callGitStdout(gitRepo, *args):
-  return subprocess.check_output(gitAndRepoList(gitRepo) + args)
+    if name in self.charCollectTags:
+      self.chars = ""
 
-def getGitCommitMessage(gitRepo, commitRef):
-  return callGitStdout(gitRepo, "log", "--format=%B", "-n", "1", commitRef)
+  def characters(self, content):
+    if self.chars is not None:
+      self.chars += content
+
+  def endElement(self, name):
+    if name in self.charCollectTags:
+      setattr(self.lastLogEntry, name, self.chars)
+      self.chars = None
+      return
+
+    if name == self.tagLogEntry:
+      self.logEntries.append(self.lastLogEntry)
+      self.lastLogEntry = None
+
+  def getLogEntries(self):
+    return self.logEntries
 
 
+class PathName:
+  def __init__(self, pathName):
+    self.pathName = pathName
 
-def lastChangedSvnRevision(svnInfo):
-  lastChangedMarker = "Last Changed Rev: "
-  after = svnInfo.split(lastChangedMarker)[1]
-  splitAfter = after.split()
-  return int(splitAfter[0])
+  def getPathName(self):
+    return self.pathName
+
+  def __str__(self):
+    return self.__class__.__name__ + "(" + self.pathName + ")"
 
 
+class SubProcess:
+  def __init__(self, verbose=True):
+    self.verbose = verbose
 
-def getGitSvnRemoteAndRevision(gitSvnCommitMessage): # from a git-svn commit
-  words = gitSvnCommitMessage.split();
-  svnIdMarker = "git-svn-id:"
-  assert words.index(svnIdMarker) >= 0
-  svnId = words[words.index(svnIdMarker) + 1]
-  splitSvnId = svnId.split("@")
-  return (splitSvnId[0], int(splitSvnId[1]))
+  def check_call(self, *args, **kwArgs):
+    assert type(*args) != types.StringType
+    if self.verbose:
+      print "check_call args:", " ".join(*args)
+    subprocess.check_call(*args, **kwArgs)
 
-def lastTempGitSvnRevision(gitCommitMessage): # from a commit generated here on the temp branch.
-  parts = gitCommitMessage.split(":")
-  lastPart = parts[-1].split()[0] # remove appended newlines
-  try:
-    return int(lastPart)
-  except: # not generated here, ignore.
-    print "Warning: svn revision range not found at end of commit message:\n", gitCommitMessage
-    return None
+  def check_call_silent(self, *args, **kwArgs): # ignore self.verbose
+    assert type(*args) != types.StringType
+    subprocess.check_call(*args, **kwArgs)
+
+  def check_output(self, *args, **kwArgs):
+    assert type(*args) != types.StringType
+    if self.verbose:
+      print "check_output args:", " ".join(*args)
+    result = subprocess.check_output(*args, **kwArgs)
+    if self.verbose:
+      print "check_output result:", result
+    return result
+
+  def check_output_silent(self, *args, **kwArgs): # ignore self.verbose
+    assert type(*args) != types.StringType
+    return subprocess.check_output(*args, **kwArgs)
+
+
+class SvnWorkingCopy(PathName, SubProcess):
+  def __init__(self, pathName):
+    PathName.__init__(self, pathName)
+    SubProcess.__init__(self, verbose=False)
+
+  svnCmd = "svn"
+
+  def ensureNoLocalModifications(self):
+    localMods = self.check_output((self.svnCmd, "status", self.pathName))
+    if localMods:
+      errorExit(self, "should not have local modifications:\n", localMods)
+
+  def update(self):
+    self.check_call((self.svnCmd, "update", self.pathName))
+
+  def switch(self, repoBranchName):
+    self.check_call((self.svnCmd, "switch", ("^/" + repoBranchName), self.pathName))
+
+  def lastChangedRevision(self):
+    infoXml = self.check_output_silent((self.svnCmd, "info", self.pathName, "--xml"))
+    infoHandler = SvnInfoHandler()
+    sax.parseString(infoXml, infoHandler)
+    return infoHandler.lastChangeRevision()
+
+  def getLogEntries(self, fromRevision, toRevision, maxNumLogEntries):
+    revRange = self.revisionsRange(fromRevision, toRevision)
+    logXml = self.check_output_silent((self.svnCmd, "log", self.pathName, "-r", revRange, "--xml", "-l", str(maxNumLogEntries)))
+    logHandler = SvnLogHandler()
+    sax.parseString(logXml, logHandler)
+    return logHandler.getLogEntries()
+
+  def revisionsRange(self, fromRevision, toRevision):
+    return str(fromRevision) + ":" + str(toRevision)
+
+  def createPatchFile(self, fromRevision, toRevision, patchFileName):
+    revRange = self.revisionsRange(fromRevision, toRevision)
+    patchFile = open(patchFileName, 'w')
+    try:
+      print "Creating patch from", self.pathName, "between revisions", revRange
+      self.check_call((self.svnCmd, "diff", "-r", revRange, self.pathName), stdout=patchFile)
+    finally:
+      patchFile.close()
+    print "Created patch file", patchFileName
+
+  def patchedFileNames(self, patchFileName): # return a sequence of the patched absolute file names
+    indexPrefix = "Index: "
+    regExp = "^" + indexPrefix # at beginning of line
+    patchedFileNamesLines = self.check_output(("grep", regExp, patchFileName))
+    indexPrefixLength = len(indexPrefix)
+    return [line[indexPrefixLength:]
+            for line in patchedFileNamesLines.split("\n")
+            if len(line) > 0]
+
+
+class GitRepository(PathName, SubProcess):
+  def __init__(self, pathName):
+    PathName.__init__(self, pathName)
+    SubProcess.__init__(self, verbose=False)
+    self.currentBranch = None
+
+  gitCmd = "git"
+
+  def _cmdForPath(self):
+    return (self.gitCmd, "-C", self.pathName)
+
+  def _statusCmd(self):
+    return (self._cmdForPath() + ("status",))
+
+  def checkOutBranch(self, branchName):
+    self.check_call(self._cmdForPath() + ("checkout", branchName))
+    self.currentBranch = branchName
+
+  def getCurrentBranch(self):
+    if self.currentBranch is None:
+      gitStatusOut = self.check_output(self._statusCmd())
+      if gitStatusOut.startswith("On branch "):
+        self.currentBranch = gitStatusOut.split[2]
+      else:
+        errorExit(self, "not on a branch:", gitStatusOut)
+    return self.currentBranch
+
+  def workingDirectoryClean(self):
+    gitStatusOut = self.check_output(self._statusCmd())
+    expSubString = "nothing to commit, working directory clean"
+    return gitStatusOut.find(expSubString) >= 0
+
+  def listBranches(self, pattern):
+    return self.check_output(self._cmdForPath() + ("branch", "--list", pattern))
+
+  def branchExists(self, branchName):
+    listOut = self.listBranches(branchName)
+    return len(listOut) > 0
+
+  def deleteBranch(self, branchName):
+    self.check_call(self._cmdForPath() + ("branch", "-D", branchName))
+    if branchName == self.currentBranch:
+      self.currentBranch = None
+
+  def createBranch(self, branchName):
+    self.check_call(self._cmdForPath() + ("branch", branchName))
+
+  def fetch(self, upStream):
+    self.check_call(self._cmdForPath() + ("fetch", upStream))
+
+  def merge(self, branch, fromBranch):
+    self.check_call(self._cmdForPath() + ("merge", branch, fromBranch))
+
+  def getCommitMessage(self, commitRef):
+    return self.check_output(self._cmdForPath() + ("log", "--format=%B", "-n", "1", commitRef))
+
+  def getSvnRemoteAndRevision(self, gitSvnCommitRef):
+    gitSvnCommitMessage = self.getCommitMessage(gitSvnCommitRef)
+    words = gitSvnCommitMessage.split();
+    svnIdMarker = "git-svn-id:"
+    assert words.index(svnIdMarker) >= 0
+    svnId = words[words.index(svnIdMarker) + 1]
+    splitSvnId = svnId.split("@")
+    svnRemote = splitSvnId[0]
+    svnRevision = int(splitSvnId[1])
+    return (svnRemote, svnRevision)
+
+  def lastTempGitSvnRevision(self, branchName): # at a commit generated here on the temp branch.
+    gitCommitMessage = self.getCommitMessage(branchName)
+    parts = gitCommitMessage.split(":")
+    lastPart = parts[-1].split()[0] # remove appended newlines
+    try:
+      return int(lastPart)
+    except: # not generated here, ignore.
+      print "Warning: svn revision range not found at end of commit message:\n", gitCommitMessage
+      return None
+
+  def applyPatch(self, patchFileName, stripDepth):
+    self.check_call((self.gitCmd, "apply",
+                                        ("-p" + str(stripDepth)),
+                                        "--whitespace=nowarn",
+                                        ("--directory=" + self.pathName),
+                                        patchFileName))
+
+  def addAllToIndex(self):
+    self.check_call(self._cmdForPath() + ("add", "-A"))
+
+  def deleteForced(self, fileName):
+    self.check_call(self._cmdForPath() + ("rm", "-f", fileName))
+
+  def commit(self, message, author, date):
+    self.check_call(self._cmdForPath()
+                          + ("commit",
+                              ("--message=" + message),
+                              ("--author=" + author),
+                              ("--date=" + date) ))
+
+  def cleanDirsForced(self):
+    self.check_call(self._cmdForPath() + ("clean", "-fd"))
+
 
 
 def errorExit(*messageParts):
-  raise Exception(" ".join(messageParts))
+  raise RuntimeError(" ".join(map(str, messageParts)))
 
-def maintainTempGitSvnBranch(branchName, tempGitBranchName, svnWorkingCopyOfBranch, gitRepo, gitUpstream, patchFileName):
-  callGitRepo(gitRepo, "checkout", branchName) # fail when git working tree is not clean
 
-  # CHECKME: add svn switch to branch here?
+def allSuccessivePairs(lst):
+  return [lst[i:i+2] for i in range(len(lst)-1)]
 
-  callSvn("update", svnWorkingCopyOfBranch)
 
-  svnInfo = callSvnStdout("info", svnWorkingCopyOfBranch)
-  # print "svnInfo:", svnInfo
-  lastSvnRevision = lastChangedSvnRevision(svnInfo)
-  print svnWorkingCopyOfBranch, "lastSvnRevision:", lastSvnRevision
+def maintainTempGitSvnBranch(branchName, tempGitBranchName,
+                              svnWorkingCopyOfBranchPath, svnRepoBranchName,
+                              gitRepoPath, gitUpstream,
+                              patchFileName,
+                              maxCommits=20, # generate at most this number of commits on tempGitBranchName, rerun to add more.
+                              testMode=False):
 
-  callGitRepo(gitRepo, "fetch", gitUpstream)
-  callGitRepo(gitRepo, "merge", branchName, gitUpstream + "/" + branchName)
-  lastGitCommitMessage = getGitCommitMessage(gitRepo, branchName)
-  print "lastGitCommitMessage:\n", lastGitCommitMessage
-  (svnRemote, lastSvnRevisionOnGitSvnBranch) = getGitSvnRemoteAndRevision(lastGitCommitMessage)
+  assert maxCommits >= 1
+
+  gitRepo = GitRepository(gitRepoPath)
+  gitRepo.checkOutBranch(branchName) # fails with git message when working directory is not clean
+
+  svnWorkingCopy = SvnWorkingCopy(svnWorkingCopyOfBranchPath)
+  svnWorkingCopy.ensureNoLocalModifications()
+  svnWorkingCopy.switch(svnRepoBranchName) # switch to repo branch, update to latest revision
+
+  lastSvnRevision = svnWorkingCopy.lastChangedRevision()
+  # print svnWorkingCopy, "lastSvnRevision:", lastSvnRevision
+
+  gitRepo.fetch(gitUpstream)
+  if testMode:
+    pass # leave branch where it is, as if the last commits from upstream did not arrive
+  else:
+    gitRepo.merge(branchName, gitUpstream + "/" + branchName)
+
+  (svnRemote, lastSvnRevisionOnGitSvnBranch) = gitRepo.getSvnRemoteAndRevision(branchName)
   print "svnRemote:", svnRemote
-  print gitRepo, branchName, "lastSvnRevisionOnGitSvnBranch:", lastSvnRevisionOnGitSvnBranch
+  #print gitRepo, branchName, "lastSvnRevisionOnGitSvnBranch:", lastSvnRevisionOnGitSvnBranch
 
   # check whether tempGitBranchName exists:
   diffBaseRevision = lastSvnRevisionOnGitSvnBranch
   svnTempRevision = None
   doCommitOnExistingTempBranch = False
-  listOut = callGitStdout(gitRepo, "branch", "--list", tempGitBranchName)
-  if listOut: # tempGitBranchName exists
-    print tempGitBranchName, "exists"
-    lastGitCommitMessage = getGitCommitMessage(gitRepo, tempGitBranchName)
-    # update lastSvnRevisionOnGitSvnBranch from there.
-    svnTempRevision = lastTempGitSvnRevision(lastGitCommitMessage)
-    if svnTempRevision is not None:
-      if svnTempRevision > lastSvnRevisionOnGitSvnBranch:
-        doCommitOnExistingTempBranch = True
-        diffBaseRevision = svnTempRevision
 
-  if doCommitOnExistingTempBranch:
-    callGitRepo(gitRepo, "checkout", tempGitBranchName) # checkout the temp branch.
-    currentGitBranch = tempGitBranchName
-  else:
-    currentGitBranch = branchName
+  if gitRepo.branchExists(tempGitBranchName):
+    print tempGitBranchName, "exists"
+    # update lastSvnRevisionOnGitSvnBranch from there.
+    svnTempRevision = gitRepo.lastTempGitSvnRevision(tempGitBranchName)
+    if svnTempRevision is None:
+      print "Warning: no svn revision found on branch:", tempGitBranchName
+    else:
+      if svnTempRevision > lastSvnRevisionOnGitSvnBranch:
+        diffBaseRevision = svnTempRevision
+        doCommitOnExistingTempBranch = True
+        gitRepo.checkOutBranch(tempGitBranchName)
 
   if lastSvnRevision == diffBaseRevision:
-    print gitRepo, currentGitBranch, "up to date with", svnWorkingCopyOfBranch
+    print gitRepo, gitRepo.getCurrentBranch(), "up to date with", svnWorkingCopy, svnRepoBranchName
     return
 
   if lastSvnRevision < diffBaseRevision: # unlikely, do nothing
-    print gitRepo, currentGitBranch, "later than", svnWorkingCopyOfBranch, ", nothing to update."
+    print gitRepo, gitRepo.getCurrentBranch(), "later than", svnWorkingCopy, ", nothing to update."
     return
 
-  print gitRepo, currentGitBranch, "earlier than", svnWorkingCopyOfBranch
+  print gitRepo, gitRepo.getCurrentBranch(), "earlier than", svnWorkingCopy
 
-  # assert that the git working tree is on branchName
-  gitStatus = callGitStdout(gitRepo, "status")
-  # print "gitStatus:\n", gitStatus
+  if not gitRepo.workingDirectoryClean():
+    errorExit(gitRepo, "on branch", gitRepo.getCurrentBranch(), "not clean")
 
-  statusParts = gitStatus.split("On branch")
-  actualBranchName = statusParts[1].split()[0]
-  if actualBranchName != currentGitBranch:
-    errorExit(gitRepo, "on unexpected branch", actualBranchName, "but expected", currentGitBranch)
+  print gitRepo,"on branch", gitRepo.getCurrentBranch(), "and clean"
 
-  expSubString = "nothing to commit, working directory clean"
-  if gitStatus.find(expSubString) < 0:
-    errorExit(gitRepo, "on branch", actualBranchName, "not clean")
+  if not doCommitOnExistingTempBranch: # restart temp branch from branch
+    assert gitRepo.getCurrentBranch() == branchName
+    if gitRepo.branchExists(tempGitBranchName): # tempGitBranchName exists, delete it first.
+      print "Branch", tempGitBranchName, "exists, deleting"
+      gitRepo.deleteBranch(tempGitBranchName)
+      if gitRepo.branchExists(tempGitBranchName):
+        errorExit("Could not delete branch", tempGitBranchName, "from", gitRepo)
 
-  print gitRepo,"on branch", actualBranchName, "and clean"
+    gitRepo.createBranch(tempGitBranchName)
+    gitRepo.checkOutBranch(tempGitBranchName)
+    print "Started branch", tempGitBranchName, "at", branchName
 
-  # create patch file from svn between the revisions:
-  revisionsRange = str(diffBaseRevision) + ":" + str(lastSvnRevision)
-  patchFile = open(patchFileName, 'w')
-  print "Creating patch from", svnWorkingCopyOfBranch, "between revisions", revisionsRange
-  callSvnStdoutToFile(patchFile,
-                      "diff", "-r", revisionsRange,
-                      svnWorkingCopyOfBranch)
-  patchFile.close()
-  print "Created patch", patchFileName
+  assert gitRepo.getCurrentBranch() == tempGitBranchName
 
-  if not doCommitOnExistingTempBranch:
-    listOut = callGitStdout(gitRepo, "branch", "--list", tempGitBranchName)
-    if listOut: # tempGitBranchName exists, delete it first.
-      print tempGitBranchName, "exists, deleting"
-      callGitRepo(gitRepo, "branch", "-D", tempGitBranchName)
-      # verify deletion:
-      listOut = callGitStdout(gitRepo, "branch", "--list", tempGitBranchName)
-      if listOut:
-        errorExit("Could not delete", tempGitBranchName, "(", listOut, ")")
+  lenSvnWorkingCopyPathName = len(svnWorkingCopy.getPathName())
+  patchStripDepth = len(svnWorkingCopy.getPathName().split(os.sep))
 
-      callGitRepo(gitRepo, "branch", tempGitBranchName) # create a new tempGitBranchName
-      callGitRepo(gitRepo, "checkout", tempGitBranchName) # checkout tempGitBranchName
+  maxNumLogEntries = maxCommits + 1
+  svnLogEntries = svnWorkingCopy.getLogEntries(diffBaseRevision, lastSvnRevision, maxNumLogEntries)
 
-  # apply the patch
-  subprocess.check_call((gitCommand(), "apply",
-                                      "-p6",  # FIXME: use depth of svnRepo from root to determine the depth to strip from patch.
-                                      "--whitespace=nowarn",
-                                      ("--directory=" + gitRepo),
-                                      patchFileName))
+  for (logEntryFrom, logEntryTo) in allSuccessivePairs(svnLogEntries):
+    print ""
 
-  # add all patch changes to the git index to be committed.
-  callGitRepo(gitRepo, "add", "-A")
+    # create patch file from svn between the revisions:
+    svnWorkingCopy.createPatchFile(logEntryFrom.revision, logEntryTo.revision, patchFileName)
+    patchedFileNames = svnWorkingCopy.patchedFileNames(patchFileName)
 
-  # Applying the patch leaves files that have been actually deleted at zero size.
-  # Therefore delete empty patched files from the git repo that do not exist in svn working copy:
-  indexPrefix = "^Index: "
-  patchedFileNames = subprocess.check_output(("grep", indexPrefix, patchFileName))
-  for indexPatchFileName in patchedFileNames.split("\n"):
-    patchFileName = indexPatchFileName[len(indexPrefix):]
-    versionControlledFileName = patchFileName[len(svnWorkingCopyOfBranch):]
-    # print "Patched versionControlledFileName:", versionControlledFileName
+    gitRepo.applyPatch(patchFileName, patchStripDepth)
+    print "Applied patch", patchFileName
 
-    fileNameInGitRepo = gitRepo + "/" + versionControlledFileName
-    if not os.path.isfile(fileNameInGitRepo): # already deleted or a directory.
-      continue
+    gitRepo.addAllToIndex() # add all patch changes to the git index to be committed.
 
-    fileSize = os.path.getsize(fileNameInGitRepo)
-    if fileSize > 0:
-      # print "Non empty file patched normally:", fileNameInGitRepo
-      continue
+    # Applying the patch leaves files that have been actually deleted at zero size.
+    # Therefore delete empty patched files from the git repo that do not exist in svn working copy:
+    for patchedFileName in patchedFileNames:
+      versionControlledFileName = patchedFileName[lenSvnWorkingCopyPathName:] # includes leading slash
+      fileNameInGitRepo = gitRepo.getPathName() + versionControlledFileName
 
-    # fileNameInGitRepo exists is empty
-    if os.path.isfile(patchFileName):
-      print "Left empty file:", fileNameInGitRepo
-      continue
+      if os.path.isdir(fileNameInGitRepo):
+        # print "Directory:", fileNameInGitRepo
+        continue
 
-    callGitRepo(gitRepo, "rm", "-f", # force, the file is not up to date
-                          fileNameInGitRepo)
-    # print "Deleted empty file", fileNameInGitRepo # not needed, git rm is verbose enough
+      if not os.path.isfile(fileNameInGitRepo):
+        print "Already deleted:", fileNameInGitRepo
+        continue
 
-  # commit
-  message = svnRemote + " patch of svn diff -r " + revisionsRange
-  callGitRepo(gitRepo,
-              "commit",
-              "-a",
-              "--message=" + message)
+      fileSize = os.path.getsize(fileNameInGitRepo)
+      if fileSize > 0:
+        # print "Non empty file patched normally:", fileNameInGitRepo
+        continue
 
-  callGitRepo(gitRepo, "clean", "-fd") # delete untracked directories and files
+      # fileNameInGitRepo exists is empty
+      if os.path.isfile(patchedFileName):
+        print "Left empty file:", fileNameInGitRepo
+        continue
 
+      gitRepo.deleteForced(fileNameInGitRepo) # force, the file is not up to date. This also stages the delete for commit.
+      # print "Deleted empty file", fileNameInGitRepo # not needed, git rm is verbose enough
+
+    # commit, put toRevision at end so it can be picked up later.
+    revisionsRange = svnWorkingCopy.revisionsRange(logEntryFrom.revision, logEntryTo.revision)
+    message = logEntryTo.msg + "\n\n" + svnRemote + " diff -r " + revisionsRange
+    gitRepo.commit(message,
+                  logEntryTo.author, # this normally matches a full earlier author entry that git will then use.
+                  logEntryTo.date)
+
+    print "Commit  author:", logEntryTo.author
+    print "Commit    date:", logEntryTo.date
+    print "Commit message:", logEntryTo.msg
+
+    gitRepo.cleanDirsForced() # delete untracked directories and files
+
+    if not gitRepo.workingDirectoryClean():
+      errorExit(gitRepo, "on branch", gitRepo.getCurrentBranch(), "not clean")
 
 
 if __name__ == "__main__":
+
+  import sys
+
+  testMode = False # when true, leave branch where it is, as if the last commits from upstream did not arrive
+  defaultMaxCommits = 20
+  maxCommits = defaultMaxCommits
+
+  argv = sys.argv[1:]
+  while argv:
+    if argv[0] == "test":
+      testMode = True
+    else:
+      try:
+        maxCommits = int(argv[0])
+        assert maxCommits >= 1
+      except:
+        errorExit("Argument(s) must be test and/or a maximum number of commits, defaults are false and " + defaultMaxCommits)
+    argv = argv[1:]
 
   repo = "lucene-solr"
   branchName = "trunk"
@@ -270,14 +528,18 @@ if __name__ == "__main__":
 
   home = os.path.expanduser("~")
 
-  svnWorkingCopyOfBranch = home + "/svnwork/" + repo + "/" + branchName
-  # CHECKME: branchName is not really needed here, svn can switch between branches.
+  svnWorkingCopyOfBranchPath = os.path.join(home, "svnwork", repo, branchName)
+  svnRepoBranchName = "lucene/dev/" + branchName # for svn switch to
 
-  gitRepo = home + "/gitrepos/" + repo
+  gitRepo = os.path.join(home, "gitrepos", repo)
   gitUpstream = "upstream"
 
-  patchFileName = home + "/patches/" + tempGitBranchName
+  patchFileName = os.path.join(home, "patches", tempGitBranchName)
 
+  maintainTempGitSvnBranch(branchName, tempGitBranchName,
+                            svnWorkingCopyOfBranchPath, svnRepoBranchName,
+                            gitRepo, gitUpstream,
+                            patchFileName,
+                            maxCommits=maxCommits,
+                            testMode=testMode)
 
-  maintainTempGitSvnBranch(branchName, tempGitBranchName, svnWorkingCopyOfBranch, gitRepo, gitUpstream, patchFileName)
-  
