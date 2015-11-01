@@ -110,6 +110,9 @@ public final class AssertingDimensionalFormat extends DimensionalFormat {
     
     @Override
     public void writeField(FieldInfo fieldInfo, DimensionalReader values) throws IOException {
+      if (fieldInfo.getDimensionCount() == 0) {
+        throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but dimensionalCount is 0");
+      }
       in.writeField(fieldInfo, values);
     }
 

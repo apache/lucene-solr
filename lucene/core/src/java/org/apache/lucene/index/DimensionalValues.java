@@ -35,7 +35,8 @@ public abstract class DimensionalValues {
     /** Return this if the cell and query do not overlap */
     QUERY_OUTSIDE_CELL,
     /** Return this if the cell partially overlapps the query */
-    QUERY_CROSSES_CELL};
+    QUERY_CROSSES_CELL
+  };
 
   /** We recurse the BKD tree, using a provided instance of this to guide the recursion.
    *
@@ -54,6 +55,8 @@ public abstract class DimensionalValues {
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
   }
 
-  /** Finds all documents and points matching the provided visitor */
+  /** Finds all documents and points matching the provided visitor.
+   *  This method does not enforce live docs, so it's up to the caller
+   *  to test whether each document is deleted, if necessary. */
   public abstract void intersect(String fieldName, IntersectVisitor visitor) throws IOException;
 }

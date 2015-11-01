@@ -24,7 +24,13 @@ import java.util.BitSet;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.lucene60.Lucene60DimensionalReader;
+import org.apache.lucene.codecs.lucene60.Lucene60DimensionalWriter;
 import org.apache.lucene.document.DimensionalField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -42,16 +48,13 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDUtil;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-// TODO: randomize the bkd settings w/ Lucene60DimensionalFormat
-
 // TODO: factor out a BaseTestDimensionFormat
 
 public class TestDimensionalValues extends LuceneTestCase {
   public void testBasic() throws Exception {
     Directory dir = getDirectory(20);
     // TODO: randomize codec once others support dimensional format
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
+    IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter w = new IndexWriter(dir, iwc);
     byte[] point = new byte[4];
@@ -84,13 +87,13 @@ public class TestDimensionalValues extends LuceneTestCase {
                          assertEquals(docID, BKDUtil.bytesToInt(packedValue, 0));
                        }
                      });
+    assertEquals(20, seen.cardinality());
     IOUtils.close(r, dir);
   }
 
   public void testMerge() throws Exception {
     Directory dir = getDirectory(20);
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
+    IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter w = new IndexWriter(dir, iwc);
     byte[] point = new byte[4];
@@ -126,6 +129,55 @@ public class TestDimensionalValues extends LuceneTestCase {
                          assertEquals(docID, BKDUtil.bytesToInt(packedValue, 0));
                        }
                      });
+    assertEquals(20, seen.cardinality());
+    IOUtils.close(r, dir);
+  }
+
+  public void testAllDimensionalDocsDeletedInSegment() throws Exception {
+    Directory dir = getDirectory(20);
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    byte[] point = new byte[4];
+    for(int i=0;i<10;i++) {
+      Document doc = new Document();
+      BKDUtil.intToBytes(i, point, 0);
+      doc.add(new DimensionalField("dim", point));
+      doc.add(new NumericDocValuesField("id", i));
+      doc.add(newStringField("x", "x", Field.Store.NO));
+      w.addDocument(doc);
+    }
+    w.addDocument(new Document());
+    w.deleteDocuments(new Term("x", "x"));
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+    w.close();
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.numDocs());
+    DimensionalValues values = MultiDimensionalValues.get(r);
+    Bits liveDocs = MultiFields.getLiveDocs(r);
+    NumericDocValues idValues = MultiDocValues.getNumericValues(r, "id");
+
+    if (values != null) {
+      BitSet seen = new BitSet();
+      values.intersect("dim",
+                       new IntersectVisitor() {
+                         @Override
+                         public Relation compare(byte[] minPacked, byte[] maxPacked) {
+                           return Relation.QUERY_CROSSES_CELL;
+                         }
+                         public void visit(int docID) {
+                           throw new IllegalStateException();
+                         }
+                         public void visit(int docID, byte[] packedValue) {
+                           if (liveDocs.get(docID)) {
+                             seen.set(docID);
+                           }
+                           assertEquals(idValues.get(docID), BKDUtil.bytesToInt(packedValue, 0));
+                         }
+                       });
+      assertEquals(0, seen.cardinality());
+    }
     IOUtils.close(r, dir);
   }
 
@@ -146,7 +198,6 @@ public class TestDimensionalValues extends LuceneTestCase {
       docValues[docID] = values;
     }
 
-    double maxMBHeap = 0.05;
     // Keep retrying until we 1) we allow a big enough heap, and 2) we hit a random IOExc from MDW:
     boolean done = false;
     while (done == false) {
@@ -157,7 +208,18 @@ public class TestDimensionalValues extends LuceneTestCase {
           if (dir instanceof MockDirectoryWrapper) {
             dir.setEnableVirusScanner(false);
           }
-          verify(dir, docValues, null, numDims, numBytesPerDim, 50, maxMBHeap);
+          verify(dir, docValues, null, numDims, numBytesPerDim, true);
+        } catch (IllegalStateException ise) {
+          if (ise.getMessage().contains("this writer hit an unrecoverable error")) {
+            Throwable cause = ise.getCause();
+            if (cause != null && cause.getMessage().contains("a random IOException")) {
+              done = true;
+            } else {
+              throw ise;
+            }
+          } else {
+            throw ise;
+          }
         } catch (AssertionError ae) {
           if (ae.getMessage().contains("does not exist; files=")) {
             // OK: likely we threw the random IOExc when IW was asserting the commit files exist
@@ -168,10 +230,9 @@ public class TestDimensionalValues extends LuceneTestCase {
         } catch (IllegalArgumentException iae) {
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
           assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
-          System.out.println("  more heap");
-          maxMBHeap *= 1.25;
         } catch (IOException ioe) {
-          if (ioe.getMessage().contains("a random IOException")) {
+          String message = ioe.getMessage();
+          if (message.contains("a random IOException") || message.contains("background merge hit exception")) {
             // BKDWriter should fully clean up after itself:
             done = true;
           } else {
@@ -266,7 +327,6 @@ public class TestDimensionalValues extends LuceneTestCase {
       int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
       int numDims = TestUtil.nextInt(random(), 1, 5);
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-      iwc.setCodec(new SimpleTextCodec());
       // We rely on docIDs not changing:
       iwc.setMergePolicy(newLogMergePolicy());
       RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -391,27 +451,23 @@ public class TestDimensionalValues extends LuceneTestCase {
     doTestRandomBinary(10000);
   }
 
-  // TODO: enable this, but not using simple text:
-  /*
   @Nightly
   public void testRandomBinaryBig() throws Exception {
+    assumeFalse("too slow with SimpleText", Codec.getDefault().getName().equals("SimpleText"));
     doTestRandomBinary(200000);
   }
-  */
 
   // Suddenly add dimensional values to an existing field:
   public void testUpgradeFieldToDimensional() throws Exception {
     Directory dir = getDirectory(1);
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
+    IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(newStringField("dim", "foo", Field.Store.NO));
     w.addDocument(doc);
     w.close();
     
-    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
+    iwc = newIndexWriterConfig();
     w = new IndexWriter(dir, iwc);
     doc.add(new DimensionalField("dim", new byte[4]));
     w.close();
@@ -423,7 +479,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalDimChangeOneDoc() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -441,7 +496,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalDimChangeTwoDocs() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -461,7 +515,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalDimChangeTwoSegments() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -482,14 +535,12 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalDimChangeTwoWriters() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4], new byte[4]));
@@ -506,7 +557,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalDimChangeViaAddIndexesDirectory() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -515,7 +565,6 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     Directory dir2 = getDirectory(1);
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4], new byte[4]));
@@ -531,7 +580,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalDimChangeViaAddIndexesCodecReader() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -540,7 +588,6 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     Directory dir2 = getDirectory(1);
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4], new byte[4]));
@@ -557,7 +604,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalDimChangeViaAddIndexesSlowCodecReader() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -566,7 +612,6 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     Directory dir2 = getDirectory(1);
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4], new byte[4]));
@@ -583,7 +628,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalTooManyDimensions() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     byte[][] values = new byte[BKDWriter.MAX_DIMS+1][];
@@ -604,7 +648,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalNumBytesChangeOneDoc() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -622,7 +665,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalNumBytesChangeTwoDocs() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -642,7 +684,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalNumBytesChangeTwoSegments() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -663,14 +704,12 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalNumBytesChangeTwoWriters() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[6]));
@@ -687,7 +726,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalNumBytesChangeViaAddIndexesDirectory() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -696,7 +734,6 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     Directory dir2 = getDirectory(1);
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[6]));
@@ -712,7 +749,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalNumBytesChangeViaAddIndexesCodecReader() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -721,7 +757,6 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     Directory dir2 = getDirectory(1);
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[6]));
@@ -738,7 +773,6 @@ public class TestDimensionalValues extends LuceneTestCase {
   public void testIllegalNumBytesChangeViaAddIndexesSlowCodecReader() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new DimensionalField("dim", new byte[4]));
@@ -747,7 +781,6 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     Directory dir2 = getDirectory(1);
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec());
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new DimensionalField("dim", new byte[6]));
@@ -781,14 +814,41 @@ public class TestDimensionalValues extends LuceneTestCase {
     verify(docValues, null, numDims, numBytesPerDim);
   }
 
+  private Codec getCodec() {
+    if (Codec.getDefault().getName().equals("Lucene60")) {
+      int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
+      double maxMBSortInHeap = 0.1 + (3*random().nextDouble());
+      if (VERBOSE) {
+        System.out.println("TEST: using Lucene60DimensionalFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
+      }
+
+      return new FilterCodec("Lucene60", Codec.getDefault()) {
+        @Override
+        public DimensionalFormat dimensionalFormat() {
+          return new DimensionalFormat() {
+            @Override
+            public DimensionalWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+              return new Lucene60DimensionalWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+            }
+
+            @Override
+            public DimensionalReader fieldsReader(SegmentReadState readState) throws IOException {
+              return new Lucene60DimensionalReader(readState);
+            }
+          };
+        }
+      };
+    } else {
+      return Codec.getDefault();
+    }
+  }
+
   /** docIDs can be null, for the single valued case, else it maps value to docID, but all values for one doc must be adjacent */
   private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim) throws Exception {
     try (Directory dir = getDirectory(docValues.length)) {
       while (true) {
-        int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
-        double maxMB = (float) 0.1 + (3*random().nextDouble());
         try {
-          verify(dir, docValues, docIDs, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
+          verify(dir, docValues, docIDs, numDims, numBytesPerDim, false);
           return;
         } catch (IllegalArgumentException iae) {
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry
@@ -798,20 +858,60 @@ public class TestDimensionalValues extends LuceneTestCase {
     }
   }
 
-  private void verify(Directory dir, byte[][][] docValues, int[] ids, int numDims, int numBytesPerDim, int maxPointsInLeafNode, double maxMB) throws Exception {
+  private void verify(Directory dir, byte[][][] docValues, int[] ids, int numDims, int numBytesPerDim, boolean expectExceptions) throws Exception {
     int numValues = docValues.length;
     if (VERBOSE) {
-      System.out.println("TEST: numValues=" + numValues + " numDims=" + numDims + " numBytesPerDim=" + numBytesPerDim + " maxPointsInLeafNode=" + maxPointsInLeafNode + " maxMB=" + maxMB);
+      System.out.println("TEST: numValues=" + numValues + " numDims=" + numDims + " numBytesPerDim=" + numBytesPerDim);
     }
-    //System.out.println("DIR: " + ((FSDirectory) dir).getDirectory());
 
-    //IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));  
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    //iwc.setUseCompoundFile(false);
-    //iwc.getMergePolicy().setNoCFSRatio(0.0);
-    iwc.setCodec(new SimpleTextCodec());
+    // RandomIndexWriter is too slow:
+    boolean useRealWriter = docValues.length > 10000;
+
+    IndexWriterConfig iwc;
+    if (useRealWriter) {
+      iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    } else {
+      iwc = newIndexWriterConfig();
+    }
+    iwc.setCodec(getCodec());
+
+    if (expectExceptions) {
+      MergeScheduler ms = iwc.getMergeScheduler();
+      if (ms instanceof ConcurrentMergeScheduler) {
+        ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+      }
+    }
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     DirectoryReader r = null;
+
+    // 20% of the time we add into a separate directory, then at some point use
+    // addIndexes to bring the indexed dimensional values to the main directory:
+    Directory saveDir;
+    RandomIndexWriter saveW;
+    int addIndexesAt;
+    if (random().nextInt(5) == 1) {
+      saveDir = dir;
+      saveW = w;
+      dir = getDirectory(numValues);
+      if (useRealWriter) {
+        iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      } else {
+        iwc = newIndexWriterConfig();
+      }
+      iwc.setCodec(getCodec());
+      if (expectExceptions) {
+        MergeScheduler ms = iwc.getMergeScheduler();
+        if (ms instanceof ConcurrentMergeScheduler) {
+          ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+        }
+      }
+      w = new RandomIndexWriter(random(), dir, iwc);
+      addIndexesAt = TestUtil.nextInt(random(), 1, numValues-1);
+    } else {
+      saveW = null;
+      saveDir = null;
+      addIndexesAt = 0;
+    }
 
     try {
 
@@ -826,7 +926,11 @@ public class TestDimensionalValues extends LuceneTestCase {
         }
         if (id != lastID) {
           if (doc != null) {
-            w.addDocument(doc);
+            if (useRealWriter) {
+              w.w.addDocument(doc);
+            } else {
+              w.addDocument(doc);
+            }
           }
           doc = new Document();
           doc.add(new NumericDocValuesField("id", id));
@@ -836,7 +940,11 @@ public class TestDimensionalValues extends LuceneTestCase {
 
         if (random().nextInt(30) == 17) {
           // randomly index some documents without this field
-          w.addDocument(new Document());
+          if (useRealWriter) {
+            w.w.addDocument(new Document());
+          } else {
+            w.addDocument(new Document());
+          }
           if (VERBOSE) {
             System.out.println("add empty doc");
           }
@@ -847,9 +955,21 @@ public class TestDimensionalValues extends LuceneTestCase {
           Document xdoc = new Document();
           xdoc.add(new DimensionalField("field", docValues[ord]));
           xdoc.add(new StringField("nukeme", "yes", Field.Store.NO));
-          w.addDocument(xdoc);
+          if (useRealWriter) {
+            w.w.addDocument(xdoc);
+          } else {
+            w.addDocument(xdoc);
+          }
           if (VERBOSE) {
             System.out.println("add doc doc-to-delete");
+          }
+
+          if (random().nextInt(5) == 1) {
+            if (useRealWriter) {
+              w.w.deleteDocuments(new Term("nukeme", "yes"));
+            } else {
+              w.deleteDocuments(new Term("nukeme", "yes"));
+            }
           }
         }
 
@@ -858,6 +978,14 @@ public class TestDimensionalValues extends LuceneTestCase {
           for(int dim=0;dim<numDims;dim++) {
             System.out.println("    dim=" + dim + " value=" + new BytesRef(docValues[ord][dim]));
           }
+        }
+
+        if (saveW != null && ord >= addIndexesAt) {
+          switchIndex(w, dir, saveW);
+          w = saveW;
+          dir = saveDir;
+          saveW = null;
+          saveDir = null;
         }
       }
       w.addDocument(doc);
@@ -873,7 +1001,9 @@ public class TestDimensionalValues extends LuceneTestCase {
       r = w.getReader();
       w.close();
 
-      //System.out.println("TEST: r=" + r);
+      if (VERBOSE) {
+        System.out.println("TEST: reader=" + r);
+      }
 
       DimensionalValues dimValues = MultiDimensionalValues.get(r);
       if (VERBOSE) {
@@ -927,7 +1057,7 @@ public class TestDimensionalValues extends LuceneTestCase {
               if (liveDocs != null && liveDocs.get(docID) == false) {
                 return;
               }
-              //System.out.println("visit check docID=" + docID);
+              //System.out.println("visit check docID=" + docID + " id=" + idValues.get(docID));
               for(int dim=0;dim<numDims;dim++) {
                 //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
                 if (BKDUtil.compare(numBytesPerDim, packedValue, dim, queryMin[dim], 0) < 0 ||
@@ -1010,8 +1140,41 @@ public class TestDimensionalValues extends LuceneTestCase {
         }
       }
     } finally {
-      IOUtils.closeWhileHandlingException(r, w);
+      IOUtils.closeWhileHandlingException(r, w, saveW, saveDir == null ? null : dir);
     }
+  }
+
+  private void switchIndex(RandomIndexWriter w, Directory dir, RandomIndexWriter saveW) throws IOException {
+    if (random().nextBoolean()) {
+      // Add via readers:
+      try (DirectoryReader r = w.getReader()) {
+        if (random().nextBoolean()) {
+          // Add via CodecReaders:
+          List<CodecReader> subs = new ArrayList<>();
+          for (LeafReaderContext context : r.leaves()) {
+            subs.add((CodecReader) context.reader());
+          }
+          if (VERBOSE) {
+            System.out.println("TEST: now use addIndexes(CodecReader[]) to switch writers");
+          }
+          saveW.addIndexes(subs.toArray(new CodecReader[subs.size()]));
+        } else {
+          if (VERBOSE) {
+            System.out.println("TEST: now use TestUtil.addIndexesSlowly(DirectoryReader[]) to switch writers");
+          }
+          TestUtil.addIndexesSlowly(saveW.w, r);
+        }
+      }
+    } else {
+      // Add via directory:
+      if (VERBOSE) {
+        System.out.println("TEST: now use addIndexes(Directory[]) to switch writers");
+      }
+      w.close();
+      saveW.addIndexes(new Directory[] {dir});
+    }
+    w.close();
+    dir.close();
   }
 
   private BigInteger randomBigInt(int numBytes) {

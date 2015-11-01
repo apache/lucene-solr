@@ -79,8 +79,10 @@ public class BKDWriter implements Closeable {
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
 
+  /** Default maximum number of point in each leaf block */
   public static final int DEFAULT_MAX_POINTS_IN_LEAF_NODE = 1024;
 
+  /** Default maximum heap to use, before spilling to (slower) disk */
   public static final float DEFAULT_MAX_MB_SORT_IN_HEAP = 16.0f;
 
   /** Maximum number of dimensions */
@@ -369,6 +371,11 @@ public class BKDWriter implements Closeable {
     //System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapWriter);
 
     // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recruse...)
+
+    // Catch user silliness:
+    if (heapPointWriter == null && tempInput == null) {
+      throw new IllegalStateException("already finished");
+    }
 
     if (offlinePointWriter != null) {
       offlinePointWriter.close();

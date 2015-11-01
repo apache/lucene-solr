@@ -381,19 +381,28 @@ public class RandomIndexWriter implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    if (w.isClosed() == false) {
-      LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    }
-    // if someone isn't using getReader() API, we want to be sure to
-    // forceMerge since presumably they might open a reader on the dir.
-    if (getReaderCalled == false && r.nextInt(8) == 2 && w.isClosed() == false) {
-      doRandomForceMerge();
-      if (w.getConfig().getCommitOnClose() == false) {
-        // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
-        w.commit();
+    boolean success = false;
+    try {
+      if (w.isClosed() == false) {
+        LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+      }
+      // if someone isn't using getReader() API, we want to be sure to
+      // forceMerge since presumably they might open a reader on the dir.
+      if (getReaderCalled == false && r.nextInt(8) == 2 && w.isClosed() == false) {
+        doRandomForceMerge();
+        if (w.getConfig().getCommitOnClose() == false) {
+          // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
+          w.commit();
+        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(w, analyzer);
+      } else {
+        IOUtils.closeWhileHandlingException(w, analyzer);
       }
     }
-    IOUtils.close(w, analyzer);
   }
 
   /**

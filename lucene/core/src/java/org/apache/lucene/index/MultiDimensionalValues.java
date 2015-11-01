@@ -51,6 +51,10 @@ class MultiDimensionalValues extends DimensionalValues {
       }
     }
 
+    if (values.isEmpty()) {
+      return null;
+    }
+
     return new MultiDimensionalValues(values, docBases);
   }
 

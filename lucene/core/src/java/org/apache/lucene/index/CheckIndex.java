@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -212,6 +213,9 @@ public class CheckIndex implements Closeable {
       
       /** Status for testing of DocValues (null if DocValues could not be tested). */
       public DocValuesStatus docValuesStatus;
+
+      /** Status for testing of DimensionalValues (null if DimensionalValues could not be tested). */
+      public DimensionalValuesStatus dimensionalValuesStatus;
     }
     
     /**
@@ -347,6 +351,24 @@ public class CheckIndex implements Closeable {
       
       /** Total number of sortedset fields */
       public long totalSortedSetFields;
+      
+      /** Exception thrown during doc values test (null on success) */
+      public Throwable error = null;
+    }
+
+    /**
+     * Status from testing DimensionalValues
+     */
+    public static final class DimensionalValuesStatus {
+
+      DimensionalValuesStatus() {
+      }
+
+      /** Total number of dimensional values points tested. */
+      public long totalValuePoints;
+
+      /** Total number of fields with dimensional values. */
+      public int totalValueFields;
       
       /** Exception thrown during doc values test (null on success) */
       public Throwable error = null;
@@ -703,6 +725,9 @@ public class CheckIndex implements Closeable {
 
           // Test Docvalues
           segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
+
+          // Test DimensionalValues
+          segInfoStat.dimensionalValuesStatus = testDimensionalValues(reader, infoStream, failFast);
 
           // Rethrow the first exception we encountered
           //  This will cause stats for failed segments to be incremented properly
@@ -1659,7 +1684,102 @@ public class CheckIndex implements Closeable {
 
     return status;
   }
-  
+
+  /**
+   * Test the dimensional values index.
+   * @lucene.experimental
+   */
+  public static Status.DimensionalValuesStatus testDimensionalValues(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    FieldInfos fieldInfos = reader.getFieldInfos();
+    Status.DimensionalValuesStatus status = new Status.DimensionalValuesStatus();
+    try {
+      if (fieldInfos.hasDimensionalValues()) {
+        DimensionalReader values = reader.getDimensionalReader();
+        if (values == null) {
+          throw new RuntimeException("there are fields with dimensional values, but reader.getDimensionalRader() is null");
+        }
+        for (FieldInfo fieldInfo : fieldInfos) {
+          if (fieldInfo.getDimensionCount() > 0) {
+            status.totalValueFields++;
+            int dimCount = fieldInfo.getDimensionCount();
+            int bytesPerDim = fieldInfo.getDimensionNumBytes();
+            byte[] lastMinPackedValue = new byte[dimCount*bytesPerDim];
+            BytesRef lastMinPacked = new BytesRef(lastMinPackedValue);
+            byte[] lastMaxPackedValue = new byte[dimCount*bytesPerDim];
+            BytesRef lastMaxPacked = new BytesRef(lastMaxPackedValue);
+            BytesRef scratch = new BytesRef();
+            lastMaxPacked.length = bytesPerDim;
+            lastMinPacked.length = bytesPerDim;
+            scratch.length = bytesPerDim;
+            values.intersect(fieldInfo.name,
+                             new DimensionalValues.IntersectVisitor() {
+                               @Override
+                               public void visit(int docID) {
+                                 throw new RuntimeException("codec called IntersectVisitor.visit without a packed value for docID=" + docID);
+                               }
+
+                               @Override
+                               public void visit(int docID, byte[] packedValue) {
+                                 checkPackedValue("packed value", packedValue, docID);
+                                 scratch.bytes = packedValue;
+
+                                 for(int dim=0;dim<dimCount;dim++) {
+                                   lastMaxPacked.offset = bytesPerDim * dim;
+                                   lastMinPacked.offset = bytesPerDim * dim;
+                                   scratch.offset = bytesPerDim * dim;
+
+                                   if (scratch.compareTo(lastMinPacked) < 0) {
+                                     // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
+                                     throw new RuntimeException("packed value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+                                   }
+                                   if (scratch.compareTo(lastMaxPacked) > 0) {
+                                     // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
+                                     throw new RuntimeException("packed value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+                                   }
+                                 }
+
+                                 status.totalValuePoints++;
+                               }
+
+                               @Override
+                               public DimensionalValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                                 checkPackedValue("min packed value", minPackedValue, -1);
+                                 System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, minPackedValue.length);
+                                 checkPackedValue("max packed value", maxPackedValue, -1);
+                                 System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, maxPackedValue.length);
+
+                                 // We always pretend the query shape is so complex that it crosses every cell, so
+                                 // that packedValue is passed for every document
+                                 return DimensionalValues.Relation.QUERY_CROSSES_CELL;
+                               }
+
+                               private void checkPackedValue(String desc, byte[] packedValue, int docID) {
+                                 if (packedValue == null) {
+                                   throw new RuntimeException(desc + " is null for docID=" + docID);
+                                 }
+
+                                 if (packedValue.length != dimCount * bytesPerDim) {
+                                   throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + (dimCount * bytesPerDim) + " for docID=" + docID);
+                                 }
+                               }
+                             });
+          }
+        }
+      }
+    } catch (Throwable e) {
+      if (failFast) {
+        IOUtils.reThrow(e);
+      }
+      msg(infoStream, "ERROR: " + e);
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+
+    return status;
+  }
+
   /**
    * Test stored fields.
    * @lucene.experimental

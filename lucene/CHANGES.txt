@@ -43,6 +43,9 @@ New Features
   document and codec APIs, including a simple text implementation.
   (Mike McCandless)
 
+* LUCENE-6861: Create Lucene60Codec, supporting dimensional values.
+  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to

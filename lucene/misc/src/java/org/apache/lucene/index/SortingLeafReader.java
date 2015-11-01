@@ -270,12 +270,12 @@ public class SortingLeafReader extends FilterLeafReader {
                    new IntersectVisitor() {
                      @Override
                      public void visit(int docID) throws IOException {
-                       visitor.visit(docMap.newToOld(docID));
+                       visitor.visit(docMap.oldToNew(docID));
                      }
 
                      @Override
                      public void visit(int docID, byte[] packedValue) throws IOException {
-                       visitor.visit(docMap.newToOld(docID), packedValue);
+                       visitor.visit(docMap.oldToNew(docID), packedValue);
                      }
 
                      @Override

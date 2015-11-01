@@ -46,7 +46,7 @@ public final class SlowCodecReaderWrapper {
    */
   public static CodecReader wrap(final LeafReader reader) throws IOException {
     if (reader instanceof CodecReader) {
-      return (CodecReader)reader;
+      return (CodecReader) reader;
     } else {
       // simulate it slowly, over the leafReader api:
       reader.checkIntegrity();
@@ -130,6 +130,9 @@ public final class SlowCodecReaderWrapper {
   }
 
   private static DimensionalReader dimensionalValuesToReader(DimensionalValues values) {
+    if (values == null) {
+      return null;
+    }
     return new DimensionalReader() {
       @Override
       public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {

@@ -82,7 +82,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       hasNorms |= info.hasNorms();
       hasDocValues |= info.getDocValuesType() != DocValuesType.NONE;
       hasPayloads |= info.hasPayloads();
-      hasDimensionalValues |= info.getDimensionCount() != 0;
+      hasDimensionalValues |= (info.getDimensionCount() != 0);
     }
     
     this.hasVectors = hasVectors;
