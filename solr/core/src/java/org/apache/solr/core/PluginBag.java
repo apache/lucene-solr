@@ -125,6 +125,11 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
+  /** make a plugin available in an alternate name. This is an internal API and not for public use
+   * @param src key in which the plugin is already registered
+   * @param target the new key in which the plugin should be aliased to. If target exists already, the alias fails
+   * @return flag if the operation is successful or not
+   */
   boolean alias(String src, String target) {
     if (src == null) return false;
     PluginHolder<T> a = registry.get(src);
