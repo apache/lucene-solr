@@ -1436,6 +1436,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void zkCheck() {
+
+    // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
+    // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
+    // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards) to test.
+    if (req.getCore().getCoreDescriptor().getCoreContainer().isShutDown()) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutting down.");
+    }
+
     if ((updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
       // for log reply or peer sync, we don't need to be connected to ZK
       return;

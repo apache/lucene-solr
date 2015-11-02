@@ -192,6 +192,12 @@ Bug Fixes
 
 * SOLR-8206: JSON Facet API limit:0 did not always work correctly.  (yonik)
 
+* SOLR-8203: Stop processing updates more quickly on node shutdown.  When a node
+  is shut down, streaming updates would continue, but new update requests would
+  be aborted.  This can cause big update reorders that can cause replicas to
+  get out of sync. (Mark Miller, yonik)
+
+
 Optimizations
 ----------------------
 
