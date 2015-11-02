@@ -312,6 +312,11 @@ Bug Fixes
   be aborted.  This can cause big update reorders that can cause replicas to
   get out of sync. (Mark Miller, yonik)
 
+* SOLR-6406: ConcurrentUpdateSolrClient hang in blockUntilFinished. If updates are still
+  flowing and shutdown is called on the executor service used by ConcurrentUpdateSolrClient,
+  a race condition can cause that client to hang in blockUntilFinished.
+  (Mark Miller, yonik)
+
 
 Optimizations
 ----------------------
