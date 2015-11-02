@@ -527,7 +527,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 int hash = compositeIdRouter.sliceHash(id, doc, null, coll);
                 for (DocRouter.Range range : ranges) {
                   if (range.includes(hash)) {
-                    if (nodes == null) nodes = new ArrayList<>();
                     DocCollection targetColl = cstate.getCollection(rule.getTargetCollectionName());
                     Collection<Slice> activeSlices = targetColl.getRouter().getSearchSlicesSingle(id, null, targetColl);
                     if (activeSlices == null || activeSlices.isEmpty()) {
@@ -535,6 +534,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                           "No active slices serving " + id + " found for target collection: " + rule.getTargetCollectionName());
                     }
                     Replica targetLeader = cstate.getLeader(rule.getTargetCollectionName(), activeSlices.iterator().next().getName());
+                    if (nodes == null) nodes = new ArrayList<>(1);
                     nodes.add(new StdNode(new ZkCoreNodeProps(targetLeader)));
                     break;
                   }
@@ -721,7 +721,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           cmdDistrib.distribAdd(cmd, Collections.singletonList(subShardLeader), params, true);
         }
       }
-      List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getHashableId(), cmd.getSolrInputDocument());
+      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getHashableId(), cmd.getSolrInputDocument());
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -756,7 +756,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
       if (addsResponse == null) {
-        addsResponse = new NamedList<String>();
+        addsResponse = new NamedList<String>(1);
         rsp.add("adds",addsResponse);
       }
       if (scratch == null) scratch = new CharsRefBuilder();
@@ -1151,7 +1151,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         cmdDistrib.distribDelete(cmd, subShardLeaders, params, true);
       }
 
-      List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getId(), null);
+      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getId(), null);
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -1183,7 +1183,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && cmd.getIndexedId() != null && idField != null) {
       if (deleteResponse == null) {
-        deleteResponse = new NamedList<String>();
+        deleteResponse = new NamedList<String>(1);
         rsp.add("deletes",deleteResponse);
       }
       if (scratch == null) scratch = new CharsRefBuilder();
@@ -1323,7 +1323,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
               .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN);
           if (replicaProps != null) {
-            List<Node> myReplicas = new ArrayList<>();
+            final List<Node> myReplicas = new ArrayList<>(replicaProps.size());
             for (ZkCoreNodeProps replicaProp : replicaProps) {
               myReplicas.add(new StdNode(replicaProp, collection, myShardId));
             }
@@ -1341,7 +1341,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if (subShardLeaders != null)  {
           cmdDistrib.distribDelete(cmd, subShardLeaders, params, true);
         }
-        List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, null, null);
+        final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, null, null);
         if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
           params = new ModifiableSolrParams(filterParams(req.getParams()));
           params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -1365,7 +1365,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (returnVersions && rsp != null) {
       if (deleteByQueryResponse == null) {
-        deleteByQueryResponse = new NamedList<String>();
+        deleteByQueryResponse = new NamedList<String>(1);
         rsp.add("deleteByQuery",deleteByQueryResponse);
       }
       deleteByQueryResponse.add(cmd.getQuery(), cmd.getVersion());
@@ -1637,12 +1637,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> getCollectionUrls(SolrQueryRequest req, String collection) {
     ClusterState clusterState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getClusterState();
-    List<Node> urls = new ArrayList<>();
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + clusterState);
     }
+    final List<Node> urls = new ArrayList<>(slices.size());
     for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
       Slice replicas = slices.get(sliceEntry.getKey());
 
@@ -1655,7 +1655,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
-    if (urls.size() == 0) {
+    if (urls.isEmpty()) {
       return null;
     }
     return urls;
