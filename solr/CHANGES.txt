@@ -307,6 +307,12 @@ Bug Fixes
 * SOLR-8126: update-<component-name> does not work if the component is only
   present in solrconfig.xml (noble)
 
+* SOLR-8203: Stop processing updates more quickly on node shutdown.  When a node
+  is shut down, streaming updates would continue, but new update requests would
+  be aborted.  This can cause big update reorders that can cause replicas to
+  get out of sync. (Mark Miller, yonik)
+
+
 Optimizations
 ----------------------
 
