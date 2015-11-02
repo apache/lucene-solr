@@ -108,6 +108,13 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
+
+  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a">
+    <lst name="defaults">
+      <str name="a">A</str>
+      <str name="b">B</str>
+    </lst>
+  </requestHandler>
 
 </config>

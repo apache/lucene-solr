@@ -304,6 +304,9 @@ Bug Fixes
 
 * SOLR-8206: JSON Facet API limit:0 did not always work correctly.  (yonik)
 
+* SOLR-8126: update-<component-name> does not work if the component is only
+  present in solrconfig.xml (noble)
+
 Optimizations
 ----------------------
 
