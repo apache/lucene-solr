@@ -156,6 +156,20 @@ solrAdminApp.config([
     }
   };
 })
+.directive('scrollableWhenSmall', function($window) {
+  return {
+    link: function(scope, element, attrs) {
+      var w = angular.element($window);
+
+      var checkFixedMenu = function() {
+        var shouldScroll = w.height() < (element.height() + $('#header').height() + 40);
+        element.toggleClass( 'scroll', shouldScroll);
+      };
+      w.bind('resize', checkFixedMenu);
+      w.bind('load', checkFixedMenu);
+    }
+  }
+})
 .filter('readableSeconds', function() {
     return function(input) {
     seconds = parseInt(input||0, 10);
@@ -680,8 +694,6 @@ var solr_admin = function( app_config )
         // load cores (indexInfo = false
         success : function( response )
         {
-          check_fixed_menu();
-          $( window ).resize( check_fixed_menu );
 
           var system_url = config.solr_path + '/admin/info/system?wt=json';
           $.ajax
@@ -762,9 +774,4 @@ var solr_admin = function( app_config )
                   '</code></pre></div>'
                 );
   };
-
-  check_fixed_menu = function check_fixed_menu()
-  {
-    $( '#wrapper' ).toggleClass( 'scroll', $( window ).height() < $( '#menu-wrapper' ).height() + $( '#header' ).height() + 40 );
-  }
 */
