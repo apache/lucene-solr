@@ -707,8 +707,11 @@ pre.syntax .tex .formula
   top: -20px;
 }
 
-.other-ui-link span {
+.other-ui-link span.help {
   background-image: url( ../../img/ico/information-white.png );
   right: 0px;
   padding-left: 16px;
+}
+.other-ui-link a.ul {
+  text-decoration: underline;
 }
