@@ -150,8 +150,8 @@ import org.apache.lucene.util.Version;
   it decides when and how to run the merges.  The default is
   {@link ConcurrentMergeScheduler}. </p>
 
-  <a name="OOME"></a><p><b>NOTE</b>: if you hit an
-  OutOfMemoryError, or disaster strikes during a checkpoint
+  <a name="OOME"></a><p><b>NOTE</b>: if you hit a
+  VirtualMachineError, or disaster strikes during a checkpoint
   then IndexWriter will close itself.  This is a
   defensive measure in case any internal state (buffered
   documents, deletions, reference counts) were corrupted.  
@@ -457,7 +457,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
       }
       success2 = true;
-    } catch (AbortingException | OutOfMemoryError tragedy) {
+    } catch (AbortingException | VirtualMachineError tragedy) {
       tragicEvent(tragedy, "getReader");
       // never reached but javac disagrees:
       return null;
@@ -1324,7 +1324,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
-    } catch (AbortingException | OutOfMemoryError tragedy) {
+    } catch (AbortingException | VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocuments");
     }
   }
@@ -1420,8 +1420,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (docWriter.deleteTerms(terms)) {
         processEvents(true, false);
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "deleteDocuments(Term..)");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "deleteDocuments(Term..)");
     }
   }
 
@@ -1449,8 +1449,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (docWriter.deleteQueries(queries)) {
         processEvents(true, false);
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "deleteDocuments(Query..)");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "deleteDocuments(Query..)");
     }
   }
 
@@ -1483,7 +1483,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
-    } catch (AbortingException | OutOfMemoryError tragedy) {
+    } catch (AbortingException | VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocument");
     }
   }
@@ -1513,8 +1513,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value))) {
         processEvents(true, false);
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "updateNumericDocValue");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "updateNumericDocValue");
     }
   }
 
@@ -1550,8 +1550,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value))) {
         processEvents(true, false);
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "updateBinaryDocValue");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "updateBinaryDocValue");
     }
   }
   
@@ -1598,8 +1598,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (docWriter.updateDocValues(dvUpdates)) {
         processEvents(true, false);
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "updateDocValues");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "updateDocValues");
     }
   }
   
@@ -2109,8 +2109,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       success = true;
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "rollbackInternal");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "rollbackInternal");
     } finally {
       if (success == false) {
         // Must not hold IW's lock while closing
@@ -2229,8 +2229,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "deleteAll");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "deleteAll");
     }
   }
 
@@ -2544,8 +2544,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       successTop = true;
 
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "addIndexes(Directory...)");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "addIndexes(Directory...)");
     } finally {
       if (successTop) {
         IOUtils.close(locks);
@@ -2684,8 +2684,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         segmentInfos.add(infoPerCommit);
         checkpoint();
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "addIndexes(CodecReader...)");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "addIndexes(CodecReader...)");
     }
     maybeMerge();
   }
@@ -2846,7 +2846,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             doAfterFlush();
           }
         }
-      } catch (AbortingException | OutOfMemoryError tragedy) {
+      } catch (AbortingException | VirtualMachineError tragedy) {
         tragicEvent(tragedy, "prepareCommit");
       }
      
@@ -3119,7 +3119,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         success = true;
         return anyChanges;
       }
-    } catch (AbortingException | OutOfMemoryError tragedy) {
+    } catch (AbortingException | VirtualMachineError tragedy) {
       tragicEvent(tragedy, "doFlush");
       // never hit
       return false;
@@ -4460,8 +4460,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         }
       }
-    } catch (OutOfMemoryError oom) {
-      tragicEvent(oom, "startCommit");
+    } catch (VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "startCommit");
     }
     testPoint("finishStartCommit");
   }
