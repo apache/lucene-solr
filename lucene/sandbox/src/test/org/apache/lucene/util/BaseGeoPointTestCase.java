@@ -201,6 +201,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lats = new double[2*numPoints];
     double[] lons = new double[2*numPoints];
     Directory dir = newDirectory();
+    noVirusChecker(dir);
     IndexWriterConfig iwc = newIndexWriterConfig();
     initIndexWriterConfig(FIELD_NAME, iwc);
 
@@ -209,7 +210,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
-     boolean small = random().nextBoolean();
+    boolean small = random().nextBoolean();
     //boolean small = true;
 
     for (int id=0;id<numPoints;id++) {
