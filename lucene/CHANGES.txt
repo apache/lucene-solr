@@ -175,6 +175,8 @@ Optimizations
   addresses for BINARY fields are now stored on disk instead of in memory.
   (Adrien Grand)
 
+* LUCENE-6878: Speed up TopDocs.merge. (Daniel Jelinski via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 
