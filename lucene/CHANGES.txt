@@ -239,6 +239,9 @@ Bug Fixes
 * LUCENE-6858: Fix ContextSuggestField to correctly wrap token stream
   when using CompletionAnalyzer. (Areek Zillur)
 
+* LUCENE-6872: IndexWriter handles any VirtualMachineError, not just OOM,
+  as tragic. (Robert Muir)
+
 Other
 
 * LUCENE-6478: Test execution can hang with java.security.debug. (Dawid Weiss)
