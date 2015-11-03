@@ -190,6 +190,8 @@ New Features
 * SOLR-8217: JSON Facet API: add "method" param to terms/field facets to give an execution
   hint for what method should be used to facet.  (yonik)
 
+* SOLR-8113: CloneFieldUpdateProcessorFactory now supports choosing a "dest" field name based on a regex
+  pattern and replacement init options. (Gus Heck, hossman)
 
 Bug Fixes
 ----------------------
