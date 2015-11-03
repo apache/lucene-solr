@@ -272,7 +272,7 @@ public class TopDocs {
       int hitUpto = 0;
       while (hitUpto < numIterOnHits) {
         assert queue.size() > 0;
-        ShardRef ref = queue.pop();
+        ShardRef ref = queue.top();
         final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
         hit.shardIndex = ref.shardIndex;
         if (hitUpto >= start) {
@@ -286,7 +286,9 @@ public class TopDocs {
 
         if (ref.hitIndex < shardHits[ref.shardIndex].scoreDocs.length) {
           // Not done with this these TopDocs yet:
-          queue.add(ref);
+          queue.updateTop();
+        } else {
+          queue.pop();
         }
       }
     }
