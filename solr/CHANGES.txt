@@ -346,6 +346,12 @@ Optimizations
 
 * SOLR-7983: Utils.toUTF8 uses larger buffer than necessary for holding UTF8 data. (shalin)
 
+* SOLR-8222: JSON Facet API optimization to faceting by count on docvalue fields (or indexed fields
+  with method=dv) when there are multiple hits expected for enoug buckets. For example, this
+  more than doubled the performance of faceting 5M documents over a field with 1M unique values.
+  (yonik)
+
+
 Other Changes
 ----------------------
 
