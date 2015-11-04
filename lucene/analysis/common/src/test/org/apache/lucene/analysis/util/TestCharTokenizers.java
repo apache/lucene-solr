@@ -182,4 +182,26 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     checkRandomData(random(), analyzer, num);
     analyzer.close();
   }
+  
+  public void testDefinitionUsingMethodReference1() throws Exception {
+    final StringReader reader = new StringReader("Tokenizer Test");
+    final Tokenizer tokenizer = CharTokenizer.fromSeparatorCharPredicate(Character::isWhitespace);
+    tokenizer.setReader(reader);
+    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer", "Test" });
+  }
+  
+  public void testDefinitionUsingMethodReference2() throws Exception {
+    final StringReader reader = new StringReader("Tokenizer(Test)");
+    final Tokenizer tokenizer = CharTokenizer.fromTokenCharPredicate(Character::isLetter, Character::toUpperCase);
+    tokenizer.setReader(reader);
+    assertTokenStreamContents(tokenizer, new String[] { "TOKENIZER", "TEST" });
+  }
+  
+  public void testDefinitionUsingLambda() throws Exception {
+    final StringReader reader = new StringReader("Tokenizer\u00A0Test Foo");
+    final Tokenizer tokenizer = CharTokenizer.fromSeparatorCharPredicate(c -> c == '\u00A0' || Character.isWhitespace(c), Character::toLowerCase);
+    tokenizer.setReader(reader);
+    assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test", "foo" });
+  }
+  
 }

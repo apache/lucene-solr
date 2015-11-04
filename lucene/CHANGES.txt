@@ -46,6 +46,9 @@ New Features
 * LUCENE-6861: Create Lucene60Codec, supporting dimensional values.
   (Mike McCandless)
 
+* LUCENE-6879: Allow to define custom CharTokenizer instances without
+  subclassing using Java 8 lambdas or method references. (Uwe Schindler)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to
