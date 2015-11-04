@@ -195,6 +195,10 @@ New Features
 
 * SOLR-8139: Create/delete fields/dynamic fields/copy fields via schema tab on Angular UI
 
+* SOLR-8166: Introduce possibility to configure ParseContext in
+  ExtractingRequestHandler/ExtractingDocumentLoader (Andriy Binetsky
+  via Uwe Schindler)
+
 Bug Fixes
 ----------------------
 

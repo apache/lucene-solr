@@ -185,7 +185,9 @@
     </lst>
   </requestHandler>
 
-  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler"/>
+  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
+    <str name="parseContext.config">parseContext.xml</str>
+  </requestHandler>
 
   <requestHandler name="/update/extract/lit-def" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
     <lst name="defaults">
