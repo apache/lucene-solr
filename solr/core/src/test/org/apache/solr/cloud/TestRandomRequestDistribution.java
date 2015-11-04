@@ -45,7 +45,7 @@ import org.junit.Test;
 
 
 @SolrTestCaseJ4.SuppressSSL
-public class gR extends AbstractFullDistribZkTestBase {
+public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase {
 
   List<String> nodeNames = new ArrayList<>(3);
 
