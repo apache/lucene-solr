@@ -51,7 +51,7 @@ limitations under the License.
               <label for="type_or_name">Analyse Fieldname / FieldType:</label>
               <select style="width:130px" chosen ng-change="changeFieldOrType()" id="type_or_name" ng-model="fieldOrType" ng-options="f.value as f.label group by f.group for f in fieldsAndTypes"></select>
 
-              <a id="tor_schema" ng-href="#/{{core}}/schema-browser?{{schemaBrowserUrl}}"><span>Schema Browser</span>&nbsp;</a>
+              <a id="tor_schema" ng-href="#/{{core}}/schema?{{schemaBrowserUrl}}"><span>Schema Browser</span>&nbsp;</a>
 
               <div class="buttons clearfix">
 

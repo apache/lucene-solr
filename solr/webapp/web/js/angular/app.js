@@ -121,9 +121,9 @@ solrAdminApp.config([
         templateUrl: 'partials/dataimport.html',
         controller: 'DataImportController'
       }).
-      when('/:core/schema-browser', {
-        templateUrl: 'partials/schema-browser.html',
-        controller: 'SchemaBrowserController'
+      when('/:core/schema', {
+        templateUrl: 'partials/schema.html',
+        controller: 'SchemaController'
       }).
       when('/:core/segments', {
         templateUrl: 'partials/segments.html',
@@ -156,6 +156,30 @@ solrAdminApp.config([
     }
   };
 })
+.directive('escapePressed', function () {
+    return function (scope, element, attrs) {
+        element.bind("keydown keypress", function (event) {
+            if(event.which === 27) {
+                scope.$apply(function (){
+                    scope.$eval(attrs.escapePressed);
+                });
+                event.preventDefault();
+            }
+        });
+    };
+})
+.directive('focusWhen', function($timeout) {
+  return {
+    link: function(scope, element, attrs) {
+      scope.$watch(attrs.focusWhen, function(value) {
+        if(value === true) {
+          $timeout(function() {
+            element[0].focus();
+          }, 100);
+        }
+      });
+    }
+  };
 .directive('scrollableWhenSmall', function($window) {
   return {
     link: function(scope, element, attrs) {

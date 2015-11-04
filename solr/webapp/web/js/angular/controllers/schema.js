@@ -17,14 +17,13 @@
 
 var cookie_schema_browser_autoload = 'schema-browser_autoload';
 
-solrAdminApp.controller('SchemaBrowserController',
-    function($scope, $routeParams, $location, $cookies, Luke, Constants) {
-        $scope.resetMenu("schema-browser", Constants.IS_COLLECTION_PAGE);
+solrAdminApp.controller('SchemaController',
+    function($scope, $routeParams, $location, $cookies, $timeout, Luke, Constants, Schema, Config) {
+        $scope.resetMenu("schema", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
             Luke.schema({core: $routeParams.core}, function (schema) {
-                Luke.index({core: $routeParams.core}, function (index) {
-
+                Luke.raw({core: $routeParams.core}, function (index) {
                     var data = mergeIndexAndSchemaData(index, schema.schema);
 
                     $scope.fieldsAndTypes = getFieldsAndTypes(data);
@@ -42,8 +41,12 @@ solrAdminApp.controller('SchemaBrowserController',
                         var field = data.fields[$scope.name];
                         leftbar.types = [field.type];
                         if (field.dynamicBase) leftbar.dynamicFields = [field.dynamicBase];
-                        if (field.copySources && field.copySources.length>0) leftbar.copyFieldSources = field.copySources.sort();
-                        if (field.copyDests && field.copyDests.length>0) leftbar.copyFieldDests = field.copyDests.sort();
+                        if (field.copySources && field.copySources.length>0) {
+                            leftbar.copyFieldSources = sortedObjectArray(field.copySources.sort());
+                        }
+                        if (field.copyDests && field.copyDests.length>0) {
+                            leftbar.copyFieldDests = sortedObjectArray(field.copyDests.sort());
+                        }
                         $scope.fieldOrType = "field=" + $scope.name;
                     } else if (search["dynamic-field"]) {
                         $scope.selectedType = "Dynamic Field";
@@ -70,14 +73,19 @@ solrAdminApp.controller('SchemaBrowserController',
                     $scope.isDefaultSearchField = ($scope.selectedType == "Field" && $scope.name == $scope.defaultSearchField);
                     $scope.isUniqueKeyField = ($scope.selectedType == "Field" && $scope.name == $scope.uniqueKeyField);
 
-                    $scope.display = getFieldProperties(index, $routeParams.core, $scope.is, $scope.name);
+                    $scope.display = getFieldProperties(data, $routeParams.core, $scope.is, $scope.name);
                     $scope.analysis = getAnalysisInfo(data, $scope.is, $scope.name);
 
                     $scope.isAutoload = $cookies[cookie_schema_browser_autoload] == "true";
                     if ($scope.isAutoload) {
                         $scope.toggleTerms();
                     }
+
+                    $scope.types = Object.keys(schema.schema.types);
                 });
+            });
+            Config.get({core: $routeParams.core}, function(data) {
+                $scope.isSchemaUpdatable = data.config.schemaFactory.class == "ManagedIndexSchemaFactory";
             });
         };
         $scope.refresh();
@@ -122,6 +130,161 @@ solrAdminApp.controller('SchemaBrowserController',
             $scope.isAutoload = !$scope.isAutoload;
             $cookies[cookie_schema_browser_autoload] = $scope.isAutoload;
             console.log("cookie: " + $cookies[cookie_schema_browser_autoload]);
+        }
+
+        $scope.hideAll = function() {
+            $scope.showAddField = false;
+            $scope.showAddDynamicField = false;
+            $scope.showAddCopyField = false;
+        }
+
+        $scope.toggleAddField = function() {
+            if ($scope.showAddField && $scope.adding == "field") {
+                $scope.hideAll();
+            } else {
+                $scope.hideAll();
+                $scope.showAddField = true;
+                $scope.adding = "field";
+
+                $scope.newField = {
+                    stored: "true",
+                    indexed: "true"
+                }
+                delete $scope.addErrors;
+            }
+        }
+
+        $scope.addField = function() {
+            delete $scope.addErrors;
+            var data = {"add-field": $scope.newField};
+            Schema.post({core: $routeParams.core}, data, function(data) {
+                if (data.errors) {
+                    $scope.addErrors = data.errors[0].errorMessages;
+                    if (typeof $scope.addErrors === "string") {
+                        $scope.addErrors = [$scope.addErrors];
+                    }
+                } else {
+                    $scope.added = true;
+                    $timeout(function() {
+                        $scope.showAddField = false;
+                        $scope.added = false;
+                        $scope.refresh();
+                    }, 1500);
+                }
+            });
+        }
+
+        $scope.toggleAddDynamicField = function() {
+            if ($scope.showAddField && $scope.adding == "dynamicField") {
+                $scope.hideAll();
+            } else {
+                $scope.hideAll();
+                $scope.showAddField = true;
+                $scope.adding = "dynamicField";
+
+                $scope.newField = {
+                    stored: "true",
+                    indexed: "true"
+                }
+                delete $scope.addErrors;
+            }
+        }
+
+        $scope.addDynamicField = function() {
+            delete $scope.addErrors;
+            var data = {"add-dynamic-field": $scope.newField};
+            Schema.post({core: $routeParams.core}, data, function(data) {
+                if (data.errors) {
+                    $scope.addErrors = data.errors[0].errorMessages;
+                    if (typeof $scope.addErrors === "string") {
+                        $scope.addErrors = [$scope.addErrors];
+                    }
+                } else {
+                    $scope.added = true;
+                    $timeout(function() {
+                        $scope.showAddField = false;
+                        $scope.added = false;
+                        $scope.refresh();
+                    }, 1500);
+                }
+            });
+        }
+
+        $scope.toggleAddCopyField = function() {
+            if ($scope.showAddCopyField) {
+                $scope.hideAll();
+            } else {
+                $scope.hideAll();
+                $scope.showAddCopyField = true;
+
+                $scope.copyField = {};
+                delete $scope.addCopyFieldErrors;
+            }
+        }
+        $scope.addCopyField = function() {
+            delete $scope.addCopyFieldErrors;
+            var data = {"add-copy-field": $scope.copyField};
+            Schema.post({core: $routeParams.core}, data, function(data) {
+                if (data.errors) {
+                    $scope.addCopyFieldErrors = data.errors[0].errorMessages;
+                    if (typeof $scope.addCopyFieldErrors === "string") {
+                        $scope.addCopyFieldErrors = [$scope.addCopyFieldErrors];
+                    }
+                } else {
+                    $scope.showAddCopyField = false;
+                    $timeout($scope.refresh, 1500);
+                }
+            });
+        }
+
+        $scope.toggleDelete = function() {
+            if ($scope.showDelete) {
+                $scope.showDelete = false;
+            } else {
+                if ($scope.is.field) {
+                    $scope.deleteData = {'delete-field': {name: $scope.name}};
+                } else if ($scope.is.dynamicField) {
+                    $scope.deleteData = {'delete-dynamic-field': {name: $scope.name}};
+                } else {
+                    alert("TYPE NOT KNOWN");
+                }
+                $scope.showDelete = true;
+            }
+        }
+
+        $scope.delete = function() {
+            Schema.post({core: $routeParams.core}, $scope.deleteData, function(data) {
+               if (data.errors) {
+                   $scope.deleteErrors = data.errors[0].errorMessages;
+                   if (typeof $scope.deleteErrors === "string") {
+                       $scope.deleteErrors = [$scope.deleteErrors];
+                   }
+               } else {
+                   $scope.deleted = true;
+                   $timeout(function() {
+                       $location.search("");
+                     }, 1500
+                   );
+               }
+            });
+        }
+        $scope.toggleDeleteCopyField = function(field) {
+            field.show = !field.show;
+            delete field.errors;
+        }
+        $scope.deleteCopyField = function(field, source, dest) {
+            data = {'delete-copy-field': {source: source, dest: dest}};
+            Schema.post({core: $routeParams.core}, data, function(data) {
+               if (data.errors) {
+                   field.errors = data.errors[0].errorMessages;
+                   if (typeof $scope.deleteErrors === "string") {
+                       field.errors = [field.errors];
+                   }
+               } else {
+                   field.deleted = true;
+                   $timeout($scope.refresh, 1500);
+               }
+            });
         }
     }
 );
@@ -303,9 +466,9 @@ var getFieldProperties = function(data, core, is, field) {
     }
 
     // identify columns in field property table:
-    for (var key in data.info.key) {
+    for (var key in data.key) {
         if (allFlags.indexOf(key)>=0) {
-            display.columns.push({key: key, name: data.info.key[key]});
+            display.columns.push({key: key, name: data.key[key]});
         }
     }
 
@@ -343,9 +506,7 @@ var getAnalysisInfo = function(data, is, name) {
     var processComponentType = function (label, key, componentTypeData) {
         if (componentTypeData) {
             var components = [];
-                console.dir(componentTypeData);
             for (var componentName in componentTypeData) {
-                console.log(componentName);
                 var componentData = componentTypeData[componentName];
                 var component = {className: componentData.className, args:[]};
                 if (componentData.args) {
@@ -419,6 +580,14 @@ var getTermInfo = function(data) {
     }
     return termInfo;
 };
+
+var sortedObjectArray = function(list) {
+    var objarr = [];
+    for (var i in list) {
+      objarr.push({"name": list[i]});
+    }
+    return objarr;
+}
 
 /*
         var get_width = function get_width()
