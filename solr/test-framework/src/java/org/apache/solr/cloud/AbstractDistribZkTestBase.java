@@ -214,6 +214,22 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     log.info("Collection has disappeared - collection: " + collection);
   }
+
+  public static void verifyReplicaStatus(ZkStateReader reader, String collection, String shard, String coreNodeName, Replica.State expectedState) throws InterruptedException {
+    int maxIterations = 100;
+    Replica.State coreState = null;
+    while(maxIterations-->0) {
+      Slice slice = reader.getClusterState().getSlice(collection, shard);
+      if(slice!=null) {
+        coreState = slice.getReplicasMap().get(coreNodeName).getState();
+        if(coreState == expectedState) {
+          return;
+        }
+      }
+      Thread.sleep(50);
+    }
+    fail("Illegal state, was: " + coreState + " expected:" + expectedState + " clusterState:" + reader.getClusterState());
+  }
   
   protected void assertAllActive(String collection,ZkStateReader zkStateReader)
       throws KeeperException, InterruptedException {

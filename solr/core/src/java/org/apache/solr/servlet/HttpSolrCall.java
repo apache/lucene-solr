@@ -765,26 +765,31 @@ public class HttpSolrCall {
     return result;
   }
 
-  private SolrCore getCoreByCollection(String corename) {
+  private SolrCore getCoreByCollection(String collection) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
 
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String, Slice> slices = clusterState.getActiveSlicesMap(corename);
+    Map<String, Slice> slices = clusterState.getActiveSlicesMap(collection);
     if (slices == null) {
       return null;
     }
+    Set<String> liveNodes = clusterState.getLiveNodes();
     // look for a core on this node
     Set<Map.Entry<String, Slice>> entries = slices.entrySet();
     SolrCore core = null;
-    done:
+
+    //Hitting the leaders is useful when it's an update request.
+    //For queries it doesn't matter and hence we don't distinguish here.
     for (Map.Entry<String, Slice> entry : entries) {
       // first see if we have the leader
-      ZkNodeProps leaderProps = clusterState.getLeader(corename, entry.getKey());
-      if (leaderProps != null) {
-        core = checkProps(leaderProps);
-      }
-      if (core != null) {
-        break done;
+      Replica leaderProps = clusterState.getLeader(collection, entry.getKey());
+      if (liveNodes.contains(leaderProps.getNodeName()) && leaderProps.getState() == Replica.State.ACTIVE) {
+        if (leaderProps != null) {
+          core = checkProps(leaderProps);
+        }
+        if (core != null) {
+          return core;
+        }
       }
 
       // check everyone then
@@ -792,13 +797,15 @@ public class HttpSolrCall {
       Set<Map.Entry<String, Replica>> shardEntries = shards.entrySet();
       for (Map.Entry<String, Replica> shardEntry : shardEntries) {
         Replica zkProps = shardEntry.getValue();
-        core = checkProps(zkProps);
-        if (core != null) {
-          break done;
+        if (liveNodes.contains(zkProps.getNodeName()) && zkProps.getState() == Replica.State.ACTIVE) {
+          core = checkProps(zkProps);
+          if (core != null) {
+            return core;
+          }
         }
       }
     }
-    return core;
+    return null;
   }
 
   private SolrCore checkProps(ZkNodeProps zkProps) {

@@ -322,6 +322,8 @@ Bug Fixes
   (Mark Miller, yonik)
 
 
+* SOLR-8215: Only active replicas should handle incoming requests against a collection (Varun Thacker)
+
 Optimizations
 ----------------------
 
