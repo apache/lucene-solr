@@ -24,7 +24,9 @@ import java.beans.PropertyDescriptor;
 import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
@@ -88,7 +90,16 @@ public class ParseContextConfig {
         final String propertyValue = xmlPropertyAttributes.getNamedItem("value").getNodeValue();
 
         final PropertyDescriptor propertyDescriptor = descriptorMap.get(propertyName);
-        propertyDescriptor.getWriteMethod().invoke(instance, getValueFromString(propertyDescriptor.getPropertyType(), propertyValue));
+        if (propertyDescriptor == null) {
+          throw new IllegalArgumentException(String.format(Locale.ENGLISH, "Unknown bean property %s in class %s",
+              propertyName, interfaceClass.getName()));
+        }
+        final Method method = propertyDescriptor.getWriteMethod();
+        if (method == null) {
+          throw new IllegalArgumentException(String.format(Locale.ENGLISH, "Cannot set bean property %s in class %s (no write method available)",
+              propertyName, interfaceClass.getName()));
+        }
+        method.invoke(instance, getValueFromString(propertyDescriptor.getPropertyType(), propertyValue));
       }
 
       entries.put(interfaceClass, instance);
@@ -97,6 +108,9 @@ public class ParseContextConfig {
 
   private Object getValueFromString(Class<?> targetType, String text) {
     final PropertyEditor editor = PropertyEditorManager.findEditor(targetType);
+    if (editor == null) {
+      throw new IllegalArgumentException("Cannot set properties of type " + targetType.getName());
+    }
     editor.setAsText(text);
     return editor.getValue();
   }
