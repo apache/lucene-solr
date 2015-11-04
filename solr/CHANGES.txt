@@ -183,7 +183,7 @@ New Features
 
 * SOLR-4388: In Angular UI, add a Collections UI when in cloud mode (Upayavira)
 
-* SOLR-7858: Add links between original and new Admin UIs (Upayavira)
+* SOLR-7858, SOLR-8199: Add links between original and new Admin UIs (Upayavira)
 
 * SOLR-7888: Analyzing suggesters can now filter suggestions by a context field (Arcadius Ahouansou, janhoy)
 
@@ -192,6 +192,8 @@ New Features
 
 * SOLR-8113: CloneFieldUpdateProcessorFactory now supports choosing a "dest" field name based on a regex
   pattern and replacement init options. (Gus Heck, hossman)
+
+* SOLR-8139: Create/delete fields/dynamic fields/copy fields via schema tab on Angular UI
 
 Bug Fixes
 ----------------------
