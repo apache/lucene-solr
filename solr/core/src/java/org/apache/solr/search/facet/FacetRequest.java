@@ -532,6 +532,8 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
       facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
 
+      facet.perSeg = (Boolean)m.get("perSeg");
+
       // facet.sort may depend on a facet stat...
       // should we be parsing / validating this here, or in the execution environment?
       Object o = m.get("facet");
