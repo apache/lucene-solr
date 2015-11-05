@@ -17,15 +17,14 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.util.Version;
-
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.Version;
 
 /**
  * An Analyzer builds TokenStreams, which analyze text.  It thus represents a
@@ -131,11 +130,10 @@ public abstract class Analyzer implements Closeable {
    * @param reader the reader the streams source reads from
    * @return TokenStream for iterating the analyzed content of <code>reader</code>
    * @throws AlreadyClosedException if the Analyzer is closed.
-   * @throws IOException if an i/o error occurs.
    * @see #tokenStream(String, String)
    */
   public final TokenStream tokenStream(final String fieldName,
-                                       final Reader reader) throws IOException {
+                                       final Reader reader) {
     TokenStreamComponents components = reuseStrategy.getReusableComponents(this, fieldName);
     final Reader r = initReader(fieldName, reader);
     if (components == null) {
@@ -165,10 +163,9 @@ public abstract class Analyzer implements Closeable {
    * @param text the String the streams source reads from
    * @return TokenStream for iterating the analyzed content of <code>reader</code>
    * @throws AlreadyClosedException if the Analyzer is closed.
-   * @throws IOException if an i/o error occurs (may rarely happen for strings).
    * @see #tokenStream(String, Reader)
    */
-  public final TokenStream tokenStream(final String fieldName, final String text) throws IOException {
+  public final TokenStream tokenStream(final String fieldName, final String text) {
     TokenStreamComponents components = reuseStrategy.getReusableComponents(this, fieldName);
     @SuppressWarnings("resource") final ReusableStringReader strReader = 
         (components == null || components.reusableStringReader == null) ?
@@ -313,10 +310,8 @@ public abstract class Analyzer implements Closeable {
      * 
      * @param reader
      *          a reader to reset the source component
-     * @throws IOException
-     *           if the component's reset method throws an {@link IOException}
      */
-    protected void setReader(final Reader reader) throws IOException {
+    protected void setReader(final Reader reader) {
       source.setReader(reader);
     }
 

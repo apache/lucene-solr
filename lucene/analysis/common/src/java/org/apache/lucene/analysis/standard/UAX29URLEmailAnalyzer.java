@@ -17,6 +17,9 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -26,9 +29,6 @@ import org.apache.lucene.analysis.standard.std40.UAX29URLEmailTokenizer40;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.Reader;
 
 /**
  * Filters {@link org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer}
@@ -101,7 +101,7 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
     tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
-      protected void setReader(final Reader reader) throws IOException {
+      protected void setReader(final Reader reader) {
         int m = UAX29URLEmailAnalyzer.this.maxTokenLength;
         if (src instanceof UAX29URLEmailTokenizer) {
           ((UAX29URLEmailTokenizer)src).setMaxTokenLength(m);

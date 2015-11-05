@@ -1,6 +1,5 @@
 package org.apache.lucene.analysis.miscellaneous;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Collections;
 import java.util.Map;
@@ -16,7 +15,6 @@ import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Rethrow;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -105,11 +103,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
 
       @Override
       protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-        try {
-          assertNotSame(specialAnalyzer.tokenStream("special", text), components.getTokenStream());
-        } catch (IOException e) {
-          Rethrow.rethrow(e);
-        }
+        assertNotSame(specialAnalyzer.tokenStream("special", text), components.getTokenStream());
         TokenFilter filter = new ASCIIFoldingFilter(components.getTokenStream());
         return new TokenStreamComponents(components.getTokenizer(), filter);
       }

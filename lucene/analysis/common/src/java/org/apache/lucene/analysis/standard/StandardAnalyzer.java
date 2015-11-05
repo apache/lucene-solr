@@ -17,6 +17,9 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
@@ -27,9 +30,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.Reader;
 
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
@@ -100,7 +100,7 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
     tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(src, tok) {
       @Override
-      protected void setReader(final Reader reader) throws IOException {
+      protected void setReader(final Reader reader) {
         int m = StandardAnalyzer.this.maxTokenLength;
         if (src instanceof StandardTokenizer) {
           ((StandardTokenizer)src).setMaxTokenLength(m);
