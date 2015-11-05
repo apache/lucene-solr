@@ -321,6 +321,9 @@ Other
 
 * LUCENE-6845: SpanScorer is now merged into Spans (Alan Woodward, David Smiley)
 
+* LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivilent behavior,
+  or consider switching to BM25Similarity which will become the new default in Lucene 6.0 (hossman)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
