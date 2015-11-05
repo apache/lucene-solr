@@ -30,8 +30,6 @@ import org.apache.solr.analytics.accumulator.ValueAccumulator;
 import org.apache.solr.analytics.util.AnalyticsParsers;
 import org.apache.solr.analytics.util.AnalyticsParsers.NumericParser;
 import org.apache.solr.analytics.util.AnalyticsParsers.Parser;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.DateValueFieldType;
 import org.apache.solr.schema.SchemaField;
@@ -57,14 +55,11 @@ public class FieldFacetAccumulator extends ValueAccumulator {
   
   public FieldFacetAccumulator(SolrIndexSearcher searcher, FacetValueAccumulator parent, SchemaField schemaField) throws IOException {  
     if( !schemaField.hasDocValues() ){
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Field '"+schemaField.getName()+"' does not have docValues");
+      throw new IOException("Field '"+schemaField.getName()+"' does not have docValues and therefore cannot be faceted over.");
     }
     this.searcher = searcher;
     this.schemaField = schemaField;
     this.name = schemaField.getName();
-    if (!schemaField.hasDocValues()) {
-      throw new IOException(name+" does not have docValues and therefore cannot be faceted over.");
-    }
     this.multiValued = schemaField.multiValued();
     this.numField = schemaField.getType().getNumericType()!=null;
     this.dateField = schemaField.getType() instanceof DateValueFieldType;

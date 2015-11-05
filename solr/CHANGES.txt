@@ -432,6 +432,9 @@ Other Changes
 * SOLR-8218: DistributedUpdateProcessor (initialCapacity) tweaks
   (Christine Poerschke)
 
+* SOLR-8147: contrib/analytics FieldFacetAccumulator now throws IOException instead of SolrException
+  (Scott Stults via Christine Poerschke)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
