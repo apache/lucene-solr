@@ -19,8 +19,6 @@ package org.apache.solr.common.params;
 
 import java.util.Locale;
 
-import org.apache.solr.common.SolrException;
-
 public interface CollectionParams 
 {
   /** What action **/
@@ -40,6 +38,7 @@ public interface CollectionParams
     DELETESHARD(true),
     CREATESHARD(true),
     DELETEREPLICA(true),
+    FORCELEADER(true),
     MIGRATE(true),
     ADDROLE(true),
     REMOVEROLE(true),

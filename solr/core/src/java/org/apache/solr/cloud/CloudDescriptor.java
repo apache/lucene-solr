@@ -66,6 +66,10 @@ public class CloudDescriptor {
     return lastPublished;
   }
 
+  public void setLastPublished(Replica.State state) {
+    lastPublished = state;
+  }
+
   public boolean isLeader() {
     return isLeader;
   }
