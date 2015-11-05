@@ -434,6 +434,29 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       return this;
     }
   }
+  
+  // FORCELEADER request
+  public static class ForceLeader extends CollectionShardAdminRequest<ForceLeader> {
+    protected String asyncId;
+
+    public ForceLeader() {
+      action = CollectionAction.FORCELEADER;
+    }
+
+    @Override
+    protected ForceLeader getThis() {
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = getCommonParams();
+      if (asyncId != null) {
+        params.set(CommonAdminParams.ASYNC, asyncId);
+      }
+      return params;
+    }
+  }
 
   // REQUESTSTATUS request
   public static class RequestStatus extends CollectionAdminRequest<RequestStatus> {
@@ -447,7 +470,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       this.requestId = requestId;
       return this;
     }
-    
+
     public String getRequestId() {
       return this.requestId;
     }
@@ -464,7 +487,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       return this;
     }
   }
-  
+
   // CREATEALIAS request
   public static class CreateAlias extends CollectionAdminRequest<CreateAlias> {
     protected String aliasName;

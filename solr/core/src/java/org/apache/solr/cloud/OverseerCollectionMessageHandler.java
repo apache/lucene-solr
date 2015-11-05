@@ -1863,7 +1863,18 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
   }
 
-  private void sendShardRequest(String nodeName, ModifiableSolrParams params, ShardHandler shardHandler, String asyncId, Map<String, String> requestMap) {
+  private void sendShardRequest(String nodeName, ModifiableSolrParams params,
+                                ShardHandler shardHandler, String asyncId,
+                                Map<String, String> requestMap) {
+    sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap, adminPath, zkStateReader);
+
+  }
+
+  public static void sendShardRequest(String nodeName, ModifiableSolrParams params,
+                                       ShardHandler shardHandler, String asyncId,
+                                       Map<String, String> requestMap,
+                                       String adminPath, ZkStateReader zkStateReader
+  ) {
     if (asyncId != null) {
       String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
       params.set(ASYNC, coreAdminAsyncId);

@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -314,6 +316,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
         case INVOKE:
           handleInvoke(req, rsp);
           break;
+        case FORCEPREPAREFORLEADERSHIP: {
+          this.handleForcePrepareForLeadership(req, rsp);
+          break;
+        }
       }
     }
     rsp.setHttpCaching(false);
@@ -895,6 +901,32 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
   }
   
+  protected void handleForcePrepareForLeadership(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws IOException {
+    final SolrParams params = req.getParams();
+
+    log.info("I have been forcefully prepare myself for leadership.");
+    ZkController zkController = coreContainer.getZkController();
+    if (zkController == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Only valid for SolrCloud");
+    }
+    
+    String cname = params.get(CoreAdminParams.CORE);
+    if (cname == null) {
+      throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
+    }
+    try (SolrCore core = coreContainer.getCore(cname)) {
+
+      // Setting the last published state for this core to be ACTIVE
+      if (core != null) {
+        core.getCoreDescriptor().getCloudDescriptor().setLastPublished(Replica.State.ACTIVE);
+        log.info("Setting the last published state for this core, {}, to {}", core.getName(), Replica.State.ACTIVE);
+      } else {
+        SolrException.log(log, "Could not find core: " + cname);
+      }
+    }
+  }
+
   protected void handleWaitForStateAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws IOException, InterruptedException, KeeperException {
     final SolrParams params = req.getParams();
@@ -1165,6 +1197,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
           info.add("schema", core.getSchemaResource());
           info.add("startTime", core.getStartTimeStamp());
           info.add("uptime", core.getUptimeMs());
+          if (coreContainer.isZooKeeperAware()) {
+            info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
+          }
           if (isIndexInfoNeeded) {
             RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
             try {

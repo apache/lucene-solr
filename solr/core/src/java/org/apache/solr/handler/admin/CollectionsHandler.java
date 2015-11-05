@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.DistributedMap;
+import org.apache.solr.cloud.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer;
@@ -48,12 +49,17 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -63,6 +69,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.CreateMode;
@@ -439,6 +447,14 @@ public class CollectionsHandler extends RequestHandlerBase {
             SHARD_ID_PROP);
       }
     },
+    FORCELEADER_OP(FORCELEADER) {
+      @Override
+      Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler) throws Exception {
+        forceLeaderElection(req, handler);
+
+        return null;
+      }
+    },
     CREATESHARD_OP(CREATESHARD) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler) throws Exception {
@@ -734,6 +750,81 @@ public class CollectionsHandler extends RequestHandlerBase {
         if (op.action == action) return op;
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "No such action" + action);
+    }
+  }
+
+  private static void forceLeaderElection(SolrQueryRequest req, CollectionsHandler handler) {
+    ClusterState clusterState = handler.coreContainer.getZkController().getClusterState();
+    String collection = req.getParams().required().get(COLLECTION_PROP);
+    String sliceId = req.getParams().required().get(SHARD_ID_PROP);
+
+    log.info("Force leader invoked, state: {}", clusterState);
+    Slice slice = clusterState.getSlice(collection, sliceId);
+    if (slice == null) {
+      if (clusterState.hasCollection(collection)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "No shard with name " + sliceId + " exists for collection " + collection);
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collection);
+      }
+    }
+
+    try {
+      // if an active replica is the leader, then all is fine already
+      Replica leader = slice.getLeader();
+      if (leader != null && leader.getState() == State.ACTIVE) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "The shard already has an active leader. Force leader is not applicable. State: " + slice);
+      }
+
+      // Clear out any LIR state
+      String lirPath = handler.coreContainer.getZkController().getLeaderInitiatedRecoveryZnodePath(collection, sliceId);
+      if (handler.coreContainer.getZkController().getZkClient().exists(lirPath, true)) {
+        StringBuilder sb = new StringBuilder();
+        handler.coreContainer.getZkController().getZkClient().printLayout(lirPath, 4, sb);
+        log.info("Cleaning out LIR data, which was: {}", sb);
+        handler.coreContainer.getZkController().getZkClient().clean(lirPath);
+      }
+
+      // Call all live replicas to prepare themselves for leadership, e.g. set last published
+      // state to active.
+      for (Replica rep : slice.getReplicas()) {
+        if (clusterState.getLiveNodes().contains(rep.getNodeName())) {
+          ShardHandler shardHandler = handler.coreContainer.getShardHandlerFactory().getShardHandler();
+
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CoreAdminParams.ACTION, CoreAdminAction.FORCEPREPAREFORLEADERSHIP.toString());
+          params.set(CoreAdminParams.CORE, rep.getStr("core"));
+          String nodeName = rep.getNodeName();
+
+          OverseerCollectionMessageHandler.sendShardRequest(nodeName, params, shardHandler, null, null,
+              CommonParams.CORES_HANDLER_PATH, handler.coreContainer.getZkController().getZkStateReader()); // synchronous request
+        }
+      }
+
+      // Wait till we have an active leader
+      boolean success = false;
+      for (int i = 0; i < 9; i++) {
+        Thread.sleep(5000);
+        clusterState = handler.coreContainer.getZkController().getClusterState();
+        slice = clusterState.getSlice(collection, sliceId);
+        if (slice.getLeader() != null && slice.getLeader().getState() == State.ACTIVE) {
+          success = true;
+          break;
+        }
+        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice);
+      }
+
+      if (success) {
+        log.info("Successfully issued FORCELEADER command for collection: {}, shard: {}", collection, sliceId);
+      } else {
+        log.info("Couldn't successfully force leader, collection: {}, shard: {}. Cluster state: {}", collection, sliceId, clusterState);
+      }
+    } catch (SolrException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Error executing FORCELEADER operation for collection: " + collection + " shard: " + sliceId, e);
     }
   }
 

@@ -199,6 +199,9 @@ New Features
   ExtractingRequestHandler/ExtractingDocumentLoader (Andriy Binetsky
   via Uwe Schindler)
 
+* SOLR-7569: A collection API called FORCELEADER when all replicas in a shard are down
+  (Ishan Chattopadhyaya, Mark Miller, shalin, noble)
+
 Bug Fixes
 ----------------------
 
