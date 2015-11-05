@@ -454,8 +454,8 @@ public class CoreContainer {
               }
               try {
                 zkSys.registerInZk(core, true);
-              } catch (Throwable t) {
-                SolrException.log(log, "Error registering SolrCore", t);
+              } catch (RuntimeException e) {
+                SolrException.log(log, "Error registering SolrCore", e);
               }
               return core;
             }
