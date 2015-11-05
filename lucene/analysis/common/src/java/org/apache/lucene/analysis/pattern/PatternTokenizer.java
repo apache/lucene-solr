@@ -137,9 +137,19 @@ public final class PatternTokenizer extends Tokenizer {
   }
 
   @Override
+  public void close() throws IOException {
+    try {
+      super.close();
+    } finally {
+      str.setLength(0);
+      str.trimToSize();
+    }
+  }
+
+  @Override
   public void reset() throws IOException {
     super.reset();
-    fillBuffer(str, input);
+    fillBuffer(input);
     matcher.reset(str);
     index = 0;
   }
@@ -147,11 +157,11 @@ public final class PatternTokenizer extends Tokenizer {
   // TODO: we should see if we can make this tokenizer work without reading
   // the entire document into RAM, perhaps with Matcher.hitEnd/requireEnd ?
   final char[] buffer = new char[8192];
-  private void fillBuffer(StringBuilder sb, Reader input) throws IOException {
+  private void fillBuffer(Reader input) throws IOException {
     int len;
-    sb.setLength(0);
+    str.setLength(0);
     while ((len = input.read(buffer)) > 0) {
-      sb.append(buffer, 0, len);
+      str.append(buffer, 0, len);
     }
   }
 }

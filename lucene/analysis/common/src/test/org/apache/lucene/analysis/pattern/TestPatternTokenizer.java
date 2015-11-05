@@ -146,4 +146,37 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
     b.close();
   }
+
+  // LUCENE-6814
+  public void testHeapFreedAfterClose() throws Exception {
+    // TODO: can we move this to BaseTSTC to catch other "hangs onto heap"ers?
+
+    // Build a 1MB string:
+    StringBuilder b = new StringBuilder();
+    for(int i=0;i<1024;i++) {
+      // 1023 spaces, then an x
+      for(int j=0;j<1023;j++) {
+        b.append(' ');
+      }
+      b.append('x');
+    }
+
+    String big = b.toString();
+
+    Pattern x = Pattern.compile("x");
+
+    List<Tokenizer> tokenizers = new ArrayList<>();
+    for(int i=0;i<512;i++) {
+      Tokenizer stream = new PatternTokenizer(x, -1);
+      tokenizers.add(stream);
+      stream.setReader(new StringReader(big));
+      stream.reset();
+      for(int j=0;j<1024;j++) {
+        assertTrue(stream.incrementToken());
+      }
+      assertFalse(stream.incrementToken());
+      stream.end();
+      stream.close();
+    }
+  }
 }
