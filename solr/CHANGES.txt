@@ -330,6 +330,9 @@ Bug Fixes
 * SOLR-7989: After a new leader is elected it should change it's state to ACTIVE even
   if the last published state is something else (Ishan Chattopadhyaya, Mark Miller via noble )
 
+* SOLR-8223: Avoid accidentally swallowing OutOfMemoryError (in LeaderInitiatedRecoveryThread.java
+  or CoreContainer.java) (Mike Drob via Christine Poerschke)
+
 Optimizations
 ----------------------
 

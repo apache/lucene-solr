@@ -211,7 +211,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
               " command to core={} coreNodeName={} on " + recoveryUrl, coreNeedingRecovery, replicaCoreNodeName);
           
           continueTrying = false; // succeeded, so stop looping
-        } catch (Throwable t) {
+        } catch (Exception t) {
           Throwable rootCause = SolrException.getRootCause(t);
           boolean wasCommError =
               (rootCause instanceof ConnectException ||
