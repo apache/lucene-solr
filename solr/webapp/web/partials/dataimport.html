@@ -32,7 +32,7 @@ limitations under the License.
           <div class="docs">
               <span ng-repeat="doc in info.docs">
                   <abbr style="display:inline" title="{{ doc.desc }}">{{ doc.name }}</abbr>: {{doc.value | number}}<!-- remove whitespace!
-                  --><span style="display:inline" ng-show="doc.speed">{{ doc.speed | number}}/s</span><!-- remove whitespace!
+                  -->&nbsp;<span style="display:inline" ng-show="doc.speed">{{ doc.speed | number}}/s</span><!-- remove whitespace!
                   --><span style="display:inline" ng-show="!$last">, </span>
               </span>
           </div>
