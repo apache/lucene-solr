@@ -17,7 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -356,8 +355,6 @@ public class TestDocument extends LuceneTestCase {
       fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
     }
   }
   

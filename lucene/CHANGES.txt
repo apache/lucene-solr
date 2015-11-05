@@ -144,6 +144,9 @@ API Changes
 * LUCENE-6870: DisjunctionMaxQuery#add is now deprecated, clauses should all be
   provided at construction time. (Adrien Grand) 
 
+* LUCENE-6884: Analyzer.tokenStream() and Tokenizer.setReader() are no longer
+  declared as throwing IOException. (Alan Woodward)
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

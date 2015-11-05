@@ -85,9 +85,13 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
         return new TokenStreamComponents(new KeywordTokenizer()) {
           private Shape shape = null;
           
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
             source.setReader(reader);
-            shape = parseShape(IOUtils.toString(reader));
+            try {
+              shape = parseShape(IOUtils.toString(reader));
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
           }
           
           public TokenStream getTokenStream() {

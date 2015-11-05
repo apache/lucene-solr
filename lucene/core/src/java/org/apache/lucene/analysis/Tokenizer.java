@@ -17,11 +17,11 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
-
-import java.io.Reader;
-import java.io.IOException;
 
 /** A Tokenizer is a TokenStream whose input is a Reader.
   <p>
@@ -83,7 +83,7 @@ public abstract class Tokenizer extends TokenStream {
   /** Expert: Set a new reader on the Tokenizer.  Typically, an
    *  analyzer (in its tokenStream method) will use
    *  this to re-use a previously created tokenizer. */
-  public final void setReader(Reader input) throws IOException {
+  public final void setReader(Reader input) {
     if (input == null) {
       throw new NullPointerException("input must not be null");
     } else if (this.input != ILLEGAL_STATE_READER) {

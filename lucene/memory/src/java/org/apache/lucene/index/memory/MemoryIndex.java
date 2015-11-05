@@ -284,13 +284,7 @@ public class MemoryIndex {
     if (analyzer == null)
       throw new IllegalArgumentException("analyzer must not be null");
     
-    TokenStream stream;
-    try {
-      stream = analyzer.tokenStream(fieldName, text);
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
-
+    TokenStream stream = analyzer.tokenStream(fieldName, text);
     addField(fieldName, stream, 1.0f, analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
   }
 

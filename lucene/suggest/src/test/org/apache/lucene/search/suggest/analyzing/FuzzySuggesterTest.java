@@ -281,7 +281,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
           }
         };
       }
@@ -360,7 +360,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
           }
         };
       }
@@ -431,7 +431,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
           }
         };
       }
