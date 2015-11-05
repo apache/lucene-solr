@@ -180,6 +180,7 @@ solrAdminApp.config([
       });
     }
   };
+})
 .directive('scrollableWhenSmall', function($window) {
   return {
     link: function(scope, element, attrs) {
