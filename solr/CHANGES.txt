@@ -325,8 +325,10 @@ Bug Fixes
   a race condition can cause that client to hang in blockUntilFinished.
   (Mark Miller, yonik)
 
-
 * SOLR-8215: Only active replicas should handle incoming requests against a collection (Varun Thacker)
+
+* SOLR-7989: After a new leader is elected it should change it's state to ACTIVE even
+  if the last published state is something else (Ishan Chattopadhyaya, Mark Miller via noble )
 
 Optimizations
 ----------------------

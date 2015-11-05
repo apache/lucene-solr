@@ -11,6 +11,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -107,6 +108,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   private static Logger log = LoggerFactory
       .getLogger(ShardLeaderElectionContextBase.class);
   protected final SolrZkClient zkClient;
+  protected ZkStateReader zkStateReader;
   protected String shardId;
   protected String collection;
   protected LeaderElector leaderElector;
@@ -119,6 +121,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         + "/leader_elect/" + shardId, ZkStateReader.getShardLeadersPath(
         collection, shardId), props, zkStateReader.getZkClient());
     this.leaderElector = leaderElector;
+    this.zkStateReader = zkStateReader;
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
@@ -213,13 +216,28 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     } 
     
     assert shardId != null;
-    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION,
-        OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId,
-        ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
-        leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
-        ZkStateReader.CORE_NAME_PROP,
-        leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
-        ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
+    
+    ZkNodeProps m;
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Replica rep = (clusterState == null) ? null : clusterState.getReplica(collection, 
+        leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP));
+    if (rep != null && rep.getState() != Replica.State.ACTIVE) {
+      m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
+          ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString(),
+          ZkStateReader.SHARD_ID_PROP, shardId,
+          ZkStateReader.COLLECTION_PROP, collection,
+          ZkStateReader.BASE_URL_PROP, leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
+          ZkStateReader.NODE_NAME_PROP, leaderProps.getProperties().get(ZkStateReader.NODE_NAME_PROP),
+          ZkStateReader.CORE_NODE_NAME_PROP, leaderProps.getProperties().get(ZkStateReader.CORE_NODE_NAME_PROP),
+          ZkStateReader.CORE_NAME_PROP, leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP));
+      Overseer.getInQueue(zkClient).offer(Utils.toJSON(m));
+    }
+
+    m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
+        ZkStateReader.SHARD_ID_PROP, shardId,
+        ZkStateReader.COLLECTION_PROP, collection,
+        ZkStateReader.BASE_URL_PROP, leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
+        ZkStateReader.CORE_NAME_PROP, leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP));
     Overseer.getInQueue(zkClient).offer(Utils.toJSON(m));
   }
 
