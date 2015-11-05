@@ -22,35 +22,25 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
 /**
- * Tests {@link DefaultSimilarityFactory} when specified on a per-fieldtype basis with various init options.
- * @see SchemaSimilarityFactory
+ * Tests {@link DefaultSimilarityFactory}
  */
-public class TestClassicSimilarityFactory extends BaseSimilarityTestCase {
+public class TestDefaultSimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-basic.xml","schema-tfidf.xml");
   }
   
-  /** Classic w/ default parameters */
+  /** default parameters */
   public void testDefaults() throws Exception {
-    ClassicSimilarity sim = getSimilarity("text", ClassicSimilarity.class);
-    assertEquals(true, sim.getDiscountOverlaps());
+    Similarity sim = getSimilarity("text");
+    assertEquals(ClassicSimilarity.class, sim.getClass());
+    assertEquals(true, ((ClassicSimilarity)sim).getDiscountOverlaps());
   }
-  /** Classic w/ explicit params */
+  /** explicit params */
   public void testParams() throws Exception {
-    ClassicSimilarity sim = getSimilarity("text_overlap", ClassicSimilarity.class);
-    assertEquals(false, sim.getDiscountOverlaps());
-  }
-  
-  /** Default w/ default parameters */
-  public void testDefaultWithDefaults() throws Exception {
-    ClassicSimilarity sim = getSimilarity("text__default", ClassicSimilarity.class);
-    assertEquals(true, sim.getDiscountOverlaps());
-  }
-  /** Default w/ explicit params */
-  public void testDefaultWithParams() throws Exception {
-    ClassicSimilarity sim = getSimilarity("text_overlap__default", ClassicSimilarity.class);
-    assertEquals(false, sim.getDiscountOverlaps());
+    Similarity sim = getSimilarity("text_overlap");
+    assertEquals(ClassicSimilarity.class, sim.getClass());
+    assertEquals(false, ((ClassicSimilarity)sim).getDiscountOverlaps());
   }
 
 }

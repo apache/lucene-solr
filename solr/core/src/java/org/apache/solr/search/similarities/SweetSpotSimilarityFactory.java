@@ -34,7 +34,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  * </p>
  * <p>
  * In addition to the <code>discountOverlaps</code> init param supported by 
- * {@link ClassicSimilarityFactory} The following sets of init params are 
+ * {@link DefaultSimilarityFactory} The following sets of init params are 
  * supported by this factory:
  * </p>
  * <ul>
@@ -106,7 +106,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  *      <code>SweetSpotSimilarity</code> for SVG diagrams showing how the 
  *      each function behaves with various settings/inputs.
  */
-public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
+public class SweetSpotSimilarityFactory extends DefaultSimilarityFactory {
   private SweetSpotSimilarity sim = null;
 
   @Override

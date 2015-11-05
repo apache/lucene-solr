@@ -35,9 +35,9 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * <b>NOTE:</b> Users should be aware that in addition to supporting 
  * <code>Similarity</code> configurations specified on individual 
  * field types, this factory also differs in behavior from 
- * {@link ClassicSimilarityFactory} because of other differences in the 
+ * {@link DefaultSimilarityFactory} because of other differences in the 
  * implementations of <code>PerFieldSimilarityWrapper</code> and 
- * {@link ClassicSimilarity} - notably in methods such as 
+ * <code>DefaultSimilarity</code> - notably in methods such as 
  * {@link Similarity#coord} and {@link Similarity#queryNorm}.  
  * </p>
  *

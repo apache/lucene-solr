@@ -16,29 +16,50 @@ package org.apache.solr.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-
+import org.apache.lucene.search.similarities.TFIDFSimilarity; // javadoc
 import org.apache.solr.common.params.SolrParams;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * @deprecated This class has been renamed to <code>ClassicSimilarityFactory</code> to reflect the renaming of the underlying Similarity returned.
- *
- * @see ClassicSimilarityFactory
+ * Factory for {@link ClassicSimilarity}
+ * <p>
+ * ClassicSimilarity is Lucene's original scoring implementation, based
+ * upon the Vector Space Model.
+ * <p>
+ * Optional settings:
+ * <ul>
+ *   <li>discountOverlaps (bool): Sets
+ *       {@link ClassicSimilarity#setDiscountOverlaps(boolean)}</li>
+ * </ul>
+ * @see TFIDFSimilarity
+ * @lucene.experimental
  */
-@Deprecated
-public class DefaultSimilarityFactory extends ClassicSimilarityFactory {
-  
-  public static final Logger log = LoggerFactory.getLogger(DefaultSimilarityFactory.class);
+public class DefaultSimilarityFactory extends SimilarityFactory {
+
+  /** Init param name for specifying the value to use in 
+   * {@link ClassicSimilarity#setDiscountOverlaps(boolean)} 
+   */
+  public static final String DISCOUNT_OVERLAPS = "discountOverlaps";
+
+  /** 
+   * Controls the value of {@link ClassicSimilarity#setDiscountOverlaps(boolean)} 
+   * on newly constructed instances of {@link ClassicSimilarity}
+   */
+  protected boolean discountOverlaps = true;
 
   @Override
   public void init(SolrParams params) {
     super.init(params);
-    log.warn("DefaultSimilarityFactory has been renamed and deprecated.  " +
-             "Please update your configuration file to refer to ClassicSimilarityFactory instead");
+    discountOverlaps = params.getBool(DISCOUNT_OVERLAPS, true);
   }
-  
+
+  @Override
+  public Similarity getSimilarity() {
+    ClassicSimilarity sim = new ClassicSimilarity();
+    sim.setDiscountOverlaps(discountOverlaps);
+    return sim;
+  }
 }
