@@ -444,7 +444,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
       if (!verifyClass(op, clz, info.clazz)) return overlay;
-      if (overlay.getNamedPlugins(info.getCleanTag()).containsKey(name)) {
+      if (pluginExists(info, overlay, name)) {
         if (isCeate) {
           op.addError(formatString(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.getTagCleanLower()));
           return overlay;
@@ -459,6 +459,12 @@ public class SolrConfigHandler extends RequestHandlerBase {
           return overlay;
         }
       }
+    }
+
+    private boolean pluginExists(SolrConfig.SolrPluginInfo info, ConfigOverlay overlay, String name) {
+      List<PluginInfo> l = req.getCore().getSolrConfig().getPluginInfos(info.clazz.getName());
+      for (PluginInfo pluginInfo : l) if(name.equals( pluginInfo.name)) return true;
+      return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
     private boolean verifyClass(CommandOperation op, String clz, Class expected) {

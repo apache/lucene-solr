@@ -146,7 +146,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     compareValues(result, "B val", asList("response", "params", "x", "b"));
 
     payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/dump', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
+        "'update-requesthandler' : { 'name' : '/dump', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
         "}";
 
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);
