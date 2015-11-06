@@ -18,32 +18,52 @@ package org.apache.lucene.codecs.lucene54;
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseBits;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseLongValues;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -115,7 +135,141 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 8121), 1, 500);
     }
   }
-  
+
+  @Slow
+  public void testSparseDocValuesVsStoredFields() throws Exception {
+    int numIterations = atLeast(2);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSparseDocValuesVsStoredFields();
+    }
+  }
+
+  private void doTestSparseDocValuesVsStoredFields() throws Exception {
+    final long[] values = new long[TestUtil.nextInt(random(), 1, 500)];
+    for (int i = 0; i < values.length; ++i) {
+      values[i] = random().nextLong();
+    }
+
+    Directory dir = newFSDirectory(createTempDir());
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    conf.setMergeScheduler(new SerialMergeScheduler());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+
+    // sparse compression is only enabled if less than 1% of docs have a value
+    final int avgGap = 100;
+
+    final int numDocs = atLeast(100);
+    for (int i = random().nextInt(avgGap * 2); i >= 0; --i) {
+      writer.addDocument(new Document());
+    }
+    final int maxNumValuesPerDoc = random().nextBoolean() ? 1 : TestUtil.nextInt(random(), 2, 5);
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = new Document();
+
+      // single-valued
+      long docValue = values[random().nextInt(values.length)];
+      doc.add(new NumericDocValuesField("numeric", docValue));
+      doc.add(new SortedDocValuesField("sorted", new BytesRef(Long.toString(docValue))));
+      doc.add(new BinaryDocValuesField("binary", new BytesRef(Long.toString(docValue))));
+      doc.add(new StoredField("value", docValue));
+
+      // multi-valued
+      final int numValues = TestUtil.nextInt(random(), 1, maxNumValuesPerDoc);
+      for (int j = 0; j < numValues; ++j) {
+        docValue = values[random().nextInt(values.length)];
+        doc.add(new SortedNumericDocValuesField("sorted_numeric", docValue));
+        doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef(Long.toString(docValue))));
+        doc.add(new StoredField("values", docValue));
+      }
+
+      writer.addDocument(doc);
+
+      // add a gap
+      for (int j = random().nextInt(avgGap * 2); j >= 0; --j) {
+        writer.addDocument(new Document());
+      }
+    }
+
+    if (random().nextBoolean()) {
+      writer.forceMerge(1);
+    }
+
+    final IndexReader indexReader = writer.getReader();
+    writer.close();
+
+    for (LeafReaderContext context : indexReader.leaves()) {
+      final LeafReader reader = context.reader();
+      final NumericDocValues numeric = DocValues.getNumeric(reader, "numeric");
+      final Bits numericBits = DocValues.getDocsWithField(reader, "numeric");
+
+      final SortedDocValues sorted = DocValues.getSorted(reader, "sorted");
+      final Bits sortedBits = DocValues.getDocsWithField(reader, "sorted");
+
+      final BinaryDocValues binary = DocValues.getBinary(reader, "binary");
+      final Bits binaryBits = DocValues.getDocsWithField(reader, "binary");
+
+      final SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(reader, "sorted_numeric");
+      final Bits sortedNumericBits = DocValues.getDocsWithField(reader, "sorted_numeric");
+
+      final SortedSetDocValues sortedSet = DocValues.getSortedSet(reader, "sorted_set");
+      final Bits sortedSetBits = DocValues.getDocsWithField(reader, "sorted_set");
+
+      for (int i = 0; i < reader.maxDoc(); ++i) {
+        final StoredDocument doc = reader.document(i);
+        final StorableField valueField = doc.getField("value");
+        final Long value = valueField == null ? null : valueField.numericValue().longValue();
+
+        if (value == null) {
+          assertEquals(0, numeric.get(i));
+          assertEquals(-1, sorted.getOrd(i));
+          assertEquals(new BytesRef(), binary.get(i));
+
+          assertFalse(numericBits.get(i));
+          assertFalse(sortedBits.get(i));
+          assertFalse(binaryBits.get(i));
+        } else {
+          assertEquals(value.longValue(), numeric.get(i));
+          assertTrue(sorted.getOrd(i) >= 0);
+          assertEquals(new BytesRef(Long.toString(value)), sorted.lookupOrd(sorted.getOrd(i)));
+          assertEquals(new BytesRef(Long.toString(value)), binary.get(i));
+
+          assertTrue(numericBits.get(i));
+          assertTrue(sortedBits.get(i));
+          assertTrue(binaryBits.get(i));
+        }
+
+        final StorableField[] valuesFields = doc.getFields("values");
+        final Set<Long> valueSet = new HashSet<>();
+        for (StorableField sf : valuesFields) {
+          valueSet.add(sf.numericValue().longValue());
+        }
+
+        sortedNumeric.setDocument(i);
+        assertEquals(valuesFields.length, sortedNumeric.count());
+        for (int j = 0; j < sortedNumeric.count(); ++j) {
+          assertTrue(valueSet.contains(sortedNumeric.valueAt(j)));
+        }
+        sortedSet.setDocument(i);
+        int sortedSetCount = 0;
+        while (true) {
+          long ord = sortedSet.nextOrd();
+          if (ord == SortedSetDocValues.NO_MORE_ORDS) {
+            break;
+          }
+          assertTrue(valueSet.contains(Long.parseLong(sortedSet.lookupOrd(ord).utf8ToString())));
+          sortedSetCount++;
+        }
+        assertEquals(valueSet.size(), sortedSetCount);
+
+        assertEquals(!valueSet.isEmpty(), sortedNumericBits.get(i));
+        assertEquals(!valueSet.isEmpty(), sortedSetBits.get(i));
+      }
+    }
+
+    indexReader.close();
+    dir.close();
+  }
+
   // TODO: try to refactor this and some termsenum tests into the base class.
   // to do this we need to fix the test class to get a DVF not a Codec so we can setup
   // the postings format correctly.
@@ -275,6 +429,76 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       if (expectedStatus != SeekStatus.END) {
         assertEquals(expected.ord(), actual.ord());
         assertEquals(expected.term(), actual.term());
+      }
+    }
+  }
+
+  public void testSparseLongValues() {
+    final int iters = atLeast(5);
+    for (int iter = 0; iter < iters; ++iter) {
+      final int numDocs = TestUtil.nextInt(random(), 0, 100);
+      final long[] docIds = new long[numDocs];
+      final long[] values = new long[numDocs];
+      final long maxDoc;
+      if (numDocs == 0) {
+        maxDoc = 1 + random().nextInt(10);
+      } else {
+        docIds[0] = random().nextInt(10);
+        for (int i = 1; i < docIds.length; ++i) {
+          docIds[i] = docIds[i - 1] + 1 + random().nextInt(100);
+        }
+        maxDoc = docIds[numDocs - 1] + 1 + random().nextInt(10);
+      }
+      for (int i = 0; i < values.length; ++i) {
+        values[i] = random().nextLong();
+      }
+      final long missingValue = random().nextLong();
+      final LongValues docIdsValues = new LongValues() {
+        @Override
+        public long get(long index) {
+          return docIds[Math.toIntExact(index)];
+        }
+      };
+      final LongValues valuesValues = new LongValues() {
+        @Override
+        public long get(long index) {
+          return values[Math.toIntExact(index)];
+        }
+      };
+      final SparseBits liveBits = new SparseBits(maxDoc, numDocs, docIdsValues);
+      // random-access
+      for (int i = 0; i < 2000; ++i) {
+        final long docId = TestUtil.nextLong(random(), 0, maxDoc - 1);
+        final boolean exists = liveBits.get(Math.toIntExact(docId));
+        assertEquals(Arrays.binarySearch(docIds, docId) >= 0, exists);
+      }
+      // sequential access
+      for (int docId = 0; docId < maxDoc; docId += random().nextInt(3)) {
+        final boolean exists = liveBits.get(Math.toIntExact(docId));
+        assertEquals(Arrays.binarySearch(docIds, docId) >= 0, exists);
+      }
+
+      final SparseLongValues sparseValues = new SparseLongValues(liveBits, valuesValues, missingValue);
+      // random-access
+      for (int i = 0; i < 2000; ++i) {
+        final long docId = TestUtil.nextLong(random(), 0, maxDoc - 1);
+        final int idx = Arrays.binarySearch(docIds, docId);
+        final long value = sparseValues.get(docId);
+        if (idx >= 0) {
+          assertEquals(values[idx], value);
+        } else {
+          assertEquals(missingValue, value);
+        }
+      }
+      // sequential access
+      for (int docId = 0; docId < maxDoc; docId += random().nextInt(3)) {
+        final int idx = Arrays.binarySearch(docIds, docId);
+        final long value = sparseValues.get(docId);
+        if (idx >= 0) {
+          assertEquals(values[idx], value);
+        } else {
+          assertEquals(missingValue, value);
+        }
       }
     }
   }

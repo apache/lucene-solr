@@ -186,6 +186,9 @@ Optimizations
 * LUCENE-6885: StandardDirectoryReader (initialCapacity) tweaks
   (Christine Poerschke)
 
+* LUCENE-6863: Optimized storage requirements of doc values fields when less
+  than 1% of documents have a value. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 

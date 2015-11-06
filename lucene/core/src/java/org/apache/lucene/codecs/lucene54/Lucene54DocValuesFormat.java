@@ -19,18 +19,14 @@ package org.apache.lucene.codecs.lucene54;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.SmallFloat;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.packed.DirectWriter;
-import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 
 /**
  * Lucene 5.4 DocValues format.
@@ -51,6 +47,8 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *        as blocks of bitpacked integers, encoding the deviation from the expected delta.
  *    <li>Const-compressed: when there is only one possible non-missing value, only the missing
  *        bitset is encoded.
+ *    <li>Sparse-compressed: only documents with a value are stored, and lookups are performed
+ *        using binary search.
  * </ul>
  * <p>
  * {@link DocValuesType#BINARY BINARY}:
@@ -96,93 +94,6 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
  *   <li><tt>.dvd</tt>: DocValues data</li>
  *   <li><tt>.dvm</tt>: DocValues metadata</li>
  * </ol>
- * <ol>
- *   <li><a name="dvm"></a>
- *   <p>The DocValues metadata or .dvm file.</p>
- *   <p>For DocValues field, this stores metadata, such as the offset into the 
- *      DocValues data (.dvd)</p>
- *   <p>DocValues metadata (.dvm) --&gt; Header,&lt;Entry&gt;<sup>NumFields</sup>,Footer</p>
- *   <ul>
- *     <li>Entry --&gt; NumericEntry | BinaryEntry | SortedEntry | SortedSetEntry | SortedNumericEntry</li>
- *     <li>NumericEntry --&gt; GCDNumericEntry | TableNumericEntry | DeltaNumericEntry</li>
- *     <li>GCDNumericEntry --&gt; NumericHeader,MinValue,GCD,BitsPerValue</li>
- *     <li>TableNumericEntry --&gt; NumericHeader,TableSize,{@link DataOutput#writeLong Int64}<sup>TableSize</sup>,BitsPerValue</li>
- *     <li>DeltaNumericEntry --&gt; NumericHeader,MinValue,BitsPerValue</li>
- *     <li>MonotonicNumericEntry --&gt; NumericHeader,PackedVersion,BlockSize</li>
- *     <li>NumericHeader --&gt; FieldNumber,EntryType,NumericType,MissingOffset,DataOffset,Count,EndOffset</li>
- *     <li>BinaryEntry --&gt; FixedBinaryEntry | VariableBinaryEntry | PrefixBinaryEntry</li>
- *     <li>FixedBinaryEntry --&gt; BinaryHeader</li>
- *     <li>VariableBinaryEntry --&gt; BinaryHeader,AddressOffset,PackedVersion,BlockSize</li>
- *     <li>PrefixBinaryEntry --&gt; BinaryHeader,AddressInterval,AddressOffset,PackedVersion,BlockSize</li>
- *     <li>BinaryHeader --&gt; FieldNumber,EntryType,BinaryType,MissingOffset,MinLength,MaxLength,DataOffset</li>
- *     <li>SortedEntry --&gt; FieldNumber,EntryType,BinaryEntry,NumericEntry</li>
- *     <li>SortedSetEntry --&gt; SingleSortedSetEntry | AddressesSortedSetEntry | TableSortedSetEntry</li>
- *     <li>SingleSortedSetEntry --&gt; SetHeader,SortedEntry</li>
- *     <li>AddressesSortedSetEntry --&gt; SetHeader,BinaryEntry,NumericEntry,NumericEntry</li>
- *     <li>TableSortedSetEntry --&gt; SetHeader,TotalTableLength,{@link DataOutput#writeLong Int64}<sup>TotalTableLength</sup>,TableSize,{@link DataOutput#writeInt Int32}<sup>TableSize</sup>,BinaryEntry,NumericEntry</li>
- *     <li>SetHeader --&gt; FieldNumber,EntryType,SetType</li>
- *     <li>SortedNumericEntry --&gt; SingleSortedNumericEntry | AddressesSortedNumericEntry | TableSortedNumericEntry</li>
- *     <li>SingleNumericEntry --&gt; SetHeader,NumericEntry</li>
- *     <li>AddressesSortedNumericEntry --&gt; SetHeader,NumericEntry,NumericEntry</li>
- *     <li>TableSortedNumericEntry --&gt; SetHeader,TotalTableLength,{@link DataOutput#writeLong Int64}<sup>TotalTableLength</sup>,TableSize,{@link DataOutput#writeInt Int32}<sup>TableSize</sup>,NumericEntry</li>
- *     <li>FieldNumber,PackedVersion,MinLength,MaxLength,BlockSize,ValueCount --&gt; {@link DataOutput#writeVInt VInt}</li>
- *     <li>EntryType,CompressionType --&gt; {@link DataOutput#writeByte Byte}</li>
- *     <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- *     <li>MinValue,GCD,MissingOffset,AddressOffset,DataOffset,EndOffset --&gt; {@link DataOutput#writeLong Int64}</li>
- *     <li>TableSize,BitsPerValue,TotalTableLength --&gt; {@link DataOutput#writeVInt vInt}</li>
- *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- *   </ul>
- *   <p>Sorted fields have two entries: a BinaryEntry with the value metadata,
- *      and an ordinary NumericEntry for the document-to-ord metadata.</p>
- *   <p>FieldNumber of -1 indicates the end of metadata.</p>
- *   <p>EntryType is a 0 (NumericEntry) or 1 (BinaryEntry)</p>
- *   <p>DataOffset is the pointer to the start of the data in the DocValues data (.dvd)</p>
- *   <p>EndOffset is the pointer to the end of the data in the DocValues data (.dvd)</p>
- *   <p>NumericType indicates how Numeric values will be compressed:
- *      <ul>
- *         <li>0 --&gt; delta-compressed. For each block of 16k integers, every integer is delta-encoded
- *             from the minimum value within the block. 
- *         <li>1 --&gt; gcd-compressed. When all integers share a common divisor, only quotients are stored
- *             using blocks of delta-encoded ints.
- *         <li>2 --&gt; table-compressed. When the number of unique numeric values is small and it would save space,
- *             a lookup table of unique values is written, followed by the ordinal for each document.
- *         <li>3 --&gt; monotonic-compressed. Used to implement addressing for BINARY, SORTED_SET, SORTED_NUMERIC.
- *         <li>4 --&gt; const-compressed. Used when all non-missing values are the same.
- *      </ul>
- *   <p>BinaryType indicates how Binary values will be stored:
- *      <ul>
- *         <li>0 --&gt; fixed-width. All values have the same length, addressing by multiplication. 
- *         <li>1 --&gt; variable-width. An address for each value is stored.
- *         <li>2 --&gt; prefix-compressed. An address to the start of every interval'th value is stored.
- *      </ul>
- *   <p>SetType indicates how SortedSet and SortedNumeric values will be stored:
- *       <ul>
- *         <li>0 --&gt; with addresses. There are two numeric entries: a first one from document to start
- *             offset, and a second one from offset to ord/value.
- *         <li>1 --&gt; single-valued. Used when all documents have at most one value and is encoded like
- *             a regular Sorted/Numeric entry.
- *         <li>2 --&gt; table-encoded. A lookup table of unique sets of values is written, followed by a
- *             numeric entry that maps each document to an ordinal in this table.
- *       </ul>
- *   <p>MinLength and MaxLength represent the min and max byte[] value lengths for Binary values.
- *      If they are equal, then all values are of a fixed size, and can be addressed as DataOffset + (docID * length).
- *      Otherwise, the binary values are of variable size, and packed integer metadata (PackedVersion,BlockSize)
- *      is written for the addresses.
- *   <p>MissingOffset points to a byte[] containing a bitset of all documents that had a value for the field.
- *      If it's -1, then there are no missing values. If it's -2, all values are missing.
- *   <li><a name="dvd"></a>
- *   <p>The DocValues data or .dvd file.</p>
- *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>
- *   <p>DocValues data (.dvd) --&gt; Header,&lt;NumericData | BinaryData | SortedData&gt;<sup>NumFields</sup>,Footer</p>
- *   <ul>
- *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics | GCDCompressedNumerics</li>
- *     <li>BinaryData --&gt;  {@link DataOutput#writeByte Byte}<sup>DataLength</sup>,Addresses</li>
- *     <li>SortedData --&gt; {@link FST FST&lt;Int64&gt;}</li>
- *     <li>DeltaCompressedNumerics,TableCompressedNumerics,GCDCompressedNumerics --&gt; {@link DirectWriter PackedInts}</li>
- *     <li>Addresses --&gt; {@link MonotonicBlockPackedWriter MonotonicBlockPackedInts(blockSize=16k)}</li>
- *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- *   </ul>
- * </ol>
  * @lucene.experimental
  */
 public final class Lucene54DocValuesFormat extends DocValuesFormat {
@@ -207,8 +118,7 @@ public final class Lucene54DocValuesFormat extends DocValuesFormat {
   static final String META_CODEC = "Lucene54DocValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
-  static final int VERSION_SORTEDSET_TABLE = 1;
-  static final int VERSION_CURRENT = VERSION_SORTEDSET_TABLE;
+  static final int VERSION_CURRENT = VERSION_START;
   
   // indicates docvalues type
   static final byte NUMERIC = 0;
@@ -242,7 +152,9 @@ public final class Lucene54DocValuesFormat extends DocValuesFormat {
   static final int MONOTONIC_COMPRESSED = 3;
   /** Compressed with constant value (uses only missing bitset) */
   static final int CONST_COMPRESSED = 4;
-  
+  /** Compressed with sparse arrays. */
+  static final int SPARSE_COMPRESSED = 5;
+
   /** Uncompressed binary, written directly (fixed length). */
   static final int BINARY_FIXED_UNCOMPRESSED = 0;
   /** Uncompressed binary, written directly (variable length). */

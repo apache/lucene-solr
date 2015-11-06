@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -54,6 +55,13 @@ import static org.apache.lucene.codecs.lucene54.Lucene54DocValuesFormat.*;
 /** writer for {@link Lucene54DocValuesFormat} */
 final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
+  enum NumberType {
+    /** Dense ordinals */
+    ORDINAL,
+    /** Random long values */
+    VALUE;
+  }
+
   IndexOutput data, meta;
   final int maxDoc;
   
@@ -78,10 +86,10 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-    addNumericField(field, values, true);
+    addNumericField(field, values, NumberType.VALUE);
   }
 
-  void addNumericField(FieldInfo field, Iterable<Number> values, boolean optimizeStorage) throws IOException {
+  void addNumericField(FieldInfo field, Iterable<Number> values, NumberType numberType) throws IOException {
     long count = 0;
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
@@ -90,7 +98,8 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     long zeroCount = 0;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
-    if (optimizeStorage) {
+    long missingOrdCount = 0;
+    if (numberType == NumberType.VALUE) {
       uniqueValues = new HashSet<>();
 
       for (Number nv : values) {
@@ -133,6 +142,9 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     } else {
       for (Number nv : values) {
         long v = nv.longValue();
+        if (v == -1L) {
+          missingOrdCount++;
+        }
         minValue = Math.min(minValue, v);
         maxValue = Math.max(maxValue, v);
         ++count;
@@ -145,6 +157,18 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
         ? Integer.MAX_VALUE
         : DirectWriter.bitsRequired(uniqueValues.size() - 1);
 
+    final boolean sparse; // 1% of docs or less have a value
+    switch (numberType) {
+      case VALUE:
+        sparse = (double) missingCount / count >= 0.99;
+        break;
+      case ORDINAL:
+        sparse = (double) missingOrdCount / count >= 0.99;
+        break;
+      default:
+        throw new AssertionError();
+    }
+
     final int format;
     if (uniqueValues != null 
         && count <= Integer.MAX_VALUE
@@ -152,6 +176,9 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
            || (uniqueValues.size() == 2 && missingCount > 0 && zeroCount == missingCount))) {
       // either one unique value C or two unique values: "missing" and C
       format = CONST_COMPRESSED;
+    } else if (sparse && count >= 1024) {
+      // require at least 1024 docs to avoid flipping back and forth when doing NRT search
+      format = SPARSE_COMPRESSED;
     } else if (uniqueValues != null && tableBitsRequired < deltaBitsRequired) {
       format = TABLE_COMPRESSED;
     } else if (gcd != 0 && gcd != 1) {
@@ -164,7 +191,22 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeVInt(field.number);
     meta.writeByte(Lucene54DocValuesFormat.NUMERIC);
     meta.writeVInt(format);
-    if (missingCount == 0) {
+    if (format == SPARSE_COMPRESSED) {
+      meta.writeLong(data.getFilePointer());
+      final long numDocsWithValue;
+      switch (numberType) {
+        case VALUE:
+          numDocsWithValue = count - missingCount;
+          break;
+        case ORDINAL:
+          numDocsWithValue = count - missingOrdCount;
+          break;
+        default:
+          throw new AssertionError();
+      }
+      final long maxDoc = writeSparseMissingBitset(values, numberType, numDocsWithValue);
+      assert maxDoc == count;
+    } else if (missingCount == 0) {
       meta.writeLong(ALL_LIVE);
     } else if (missingCount == count) {
       meta.writeLong(ALL_MISSING);
@@ -220,6 +262,39 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
         }
         ordsWriter.finish();
         break;
+      case SPARSE_COMPRESSED:
+        final Iterable<Number> filteredMissingValues;
+        switch (numberType) {
+          case VALUE:
+            meta.writeByte((byte) 0);
+            filteredMissingValues = new Iterable<Number>() {
+              @Override
+              public Iterator<Number> iterator() {
+                return StreamSupport
+                    .stream(values.spliterator(), false)
+                    .filter(value -> value != null)
+                    .iterator();
+              }
+            };
+            break;
+          case ORDINAL:
+            meta.writeByte((byte) 1);
+            filteredMissingValues = new Iterable<Number>() {
+              @Override
+              public Iterator<Number> iterator() {
+                return StreamSupport
+                    .stream(values.spliterator(), false)
+                    .filter(value -> value.longValue() != -1L)
+                    .iterator();
+              }
+            };
+            break;
+          default:
+            throw new AssertionError();
+        }
+        // Write non-missing values as a numeric field
+        addNumericField(field, filteredMissingValues, numberType);
+        break;
       default:
         throw new AssertionError();
     }
@@ -245,6 +320,34 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     if (count > 0) {
       data.writeByte(bits);
     }
+  }
+
+  long writeSparseMissingBitset(Iterable<Number> values, NumberType numberType, long numDocsWithValue) throws IOException {
+    meta.writeVLong(numDocsWithValue);
+
+    // Write doc IDs that have a value
+    meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
+    final DirectMonotonicWriter docIdsWriter = DirectMonotonicWriter.getInstance(meta, data, numDocsWithValue, DIRECT_MONOTONIC_BLOCK_SHIFT);
+    long docID = 0;
+    for (Number nv : values) {
+      switch (numberType) {
+        case VALUE:
+          if (nv != null) {
+            docIdsWriter.add(docID);
+          }
+          break;
+        case ORDINAL:
+          if (nv.longValue() != -1L) {
+            docIdsWriter.add(docID);
+          }
+          break;
+        default:
+          throw new AssertionError();
+      }
+      docID++;
+    }
+    docIdsWriter.finish();
+    return docID;
   }
 
   @Override
@@ -458,7 +561,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeVInt(field.number);
     meta.writeByte(Lucene54DocValuesFormat.SORTED);
     addTermsDict(field, values);
-    addNumericField(field, docToOrd, false);
+    addNumericField(field, docToOrd, NumberType.ORDINAL);
   }
 
   @Override
@@ -478,11 +581,11 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
         writeDictionary(uniqueValueSets);
 
         // write the doc -> set_id as a numeric field
-        addNumericField(field, docToSetId(uniqueValueSets, docToValueCount, values), false);
+        addNumericField(field, docToSetId(uniqueValueSets, docToValueCount, values), NumberType.ORDINAL);
       } else {
         meta.writeVInt(SORTED_WITH_ADDRESSES);
         // write the stream of values as a numeric field
-        addNumericField(field, values, true);
+        addNumericField(field, values, NumberType.VALUE);
         // write the doc -> ord count as a absolute index to the stream
         addOrdIndex(field, docToValueCount);
       }
@@ -510,7 +613,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
         addTermsDict(field, values);
 
         // write the doc -> set_id as a numeric field
-        addNumericField(field, docToSetId(uniqueValueSets, docToOrdCount, ords), false);
+        addNumericField(field, docToSetId(uniqueValueSets, docToOrdCount, ords), NumberType.ORDINAL);
       } else {
         meta.writeVInt(SORTED_WITH_ADDRESSES);
 
@@ -519,7 +622,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
 
         // write the stream of ords as a numeric field
         // NOTE: we could return an iterator that delta-encodes these within a doc
-        addNumericField(field, ords, false);
+        addNumericField(field, ords, NumberType.ORDINAL);
 
         // write the doc -> ord count as a absolute index to the stream
         addOrdIndex(field, docToOrdCount);
