@@ -221,12 +221,26 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   /**
-   * Returns the number of documents in a given collection
+   * Assert the number of documents in a given collection
    */
-  protected long getNumDocs(String collection) throws SolrServerException, IOException {
+  protected void assertNumDocs(int expectedNumDocs, String collection)
+  throws SolrServerException, IOException, InterruptedException {
     CloudSolrClient client = createCloudClient(collection);
     try {
-      return client.query(new SolrQuery("*:*")).getResults().getNumFound();
+      int cnt = 30; // timeout after 15 seconds
+      AssertionError lastAssertionError = null;
+      while (cnt > 0) {
+        try {
+          assertEquals(expectedNumDocs, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+          return;
+        }
+        catch (AssertionError e) {
+          lastAssertionError = e;
+          cnt--;
+          Thread.sleep(500);
+        }
+      }
+      throw new AssertionError("Timeout while trying to assert number of documents on collection: " + collection, lastAssertionError);
     } finally {
       client.close();
     }
@@ -553,6 +567,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
     // delete the temporary collection - we will create our own collections later
     this.deleteCollection(temporaryCollection);
+    this.waitForCollectionToDisappear(temporaryCollection);
     System.clearProperty("collection");
 
     return nodeNames;

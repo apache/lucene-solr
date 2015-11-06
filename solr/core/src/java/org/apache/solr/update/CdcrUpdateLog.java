@@ -248,17 +248,41 @@ public class CdcrUpdateLog extends UpdateLog {
       for (CdcrLogReader reader : new ArrayList<>(logPointers.keySet())) {
         reader.close();
       }
+      logPointers.clear();
 
       // Close and clear logs
-      for (TransactionLog log : logs) {
-        log.deleteOnClose = false;
-        log.decref();
-        log.forceClose();
-      }
-      logs.clear();
+      doClose(prevTlog);
+      doClose(tlog);
 
-      // reset lastDataDir for #init()
+      for (TransactionLog log : logs) {
+        if (log == prevTlog || log == tlog) continue;
+        doClose(log);
+      }
+
+      logs.clear();
+      newestLogsOnStartup.clear();
+      tlog = prevTlog = null;
+      prevMapLog = prevMapLog2 = null;
+
+      map.clear();
+      if (prevMap != null) prevMap.clear();
+      if (prevMap2 != null) prevMap2.clear();
+
+      numOldRecords = 0;
+
+      oldDeletes.clear();
+      deleteByQueries.clear();
+
+      // reset lastDataDir for triggering full #init()
       lastDataDir = null;
+    }
+  }
+
+  private void doClose(TransactionLog theLog) {
+    if (theLog != null) {
+      theLog.deleteOnClose = false;
+      theLog.decref();
+      theLog.forceClose();
     }
   }
 

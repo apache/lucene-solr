@@ -491,7 +491,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    log.info("Returning the lowest last processed version {}  @ {}:{}", lastProcessedVersion, collectionName, shard);
+    log.debug("Returning the lowest last processed version {}  @ {}:{}", lastProcessedVersion, collectionName, shard);
     rsp.add(CdcrParams.LAST_PROCESSED_VERSION, lastProcessedVersion);
   }
 

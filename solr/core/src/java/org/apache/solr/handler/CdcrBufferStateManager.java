@@ -118,12 +118,14 @@ class CdcrBufferStateManager extends CdcrStateManager {
     try {
       if (!zkClient.exists(this.getZnodePath(), true)) {
         if (!zkClient.exists(this.getZnodeBase(), true)) {
-          zkClient.makePath(this.getZnodeBase(), CreateMode.PERSISTENT, true);
+          zkClient.makePath(this.getZnodeBase(), null, CreateMode.PERSISTENT, null, false, true); // Should be a no-op if node exists
         }
         zkClient.create(this.getZnodePath(), DEFAULT_STATE.getBytes(), CreateMode.PERSISTENT, true);
         log.info("Created znode {}", this.getZnodePath());
       }
-    } catch (KeeperException | InterruptedException e) {
+    } catch (KeeperException.NodeExistsException ne) {
+      // Someone got in first and created the node.
+    }  catch (KeeperException | InterruptedException e) {
       log.warn("Failed to create CDCR buffer state node", e);
     }
   }
