@@ -183,6 +183,9 @@ Optimizations
 
 * LUCENE-6878: Speed up TopDocs.merge. (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-6885: StandardDirectoryReader (initialCapacity) tweaks
+  (Christine Poerschke)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 

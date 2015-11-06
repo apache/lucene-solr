@@ -80,7 +80,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     // no need to process segments in reverse order
     final int numSegments = infos.size();
 
-    List<SegmentReader> readers = new ArrayList<>();
+    final List<SegmentReader> readers = new ArrayList<>(numSegments);
     final Directory dir = writer.getDirectory();
 
     final SegmentInfos segmentInfos = infos.clone();
@@ -136,7 +136,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
-    final Map<String,Integer> segmentReaders = new HashMap<>();
+    final Map<String,Integer> segmentReaders = (oldReaders == null ? Collections.emptyMap() : new HashMap<>(oldReaders.size()));
 
     if (oldReaders != null) {
       // create a Map SegmentName->SegmentReader
