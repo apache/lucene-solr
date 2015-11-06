@@ -63,7 +63,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.similarities.DefaultSimilarityFactory;
+import org.apache.solr.search.similarities.ClassicSimilarityFactory;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -495,11 +495,11 @@ public class IndexSchema {
       Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
-        similarityFactory = new DefaultSimilarityFactory();
+        similarityFactory = new ClassicSimilarityFactory();
         final NamedList similarityParams = new NamedList();
         Version luceneVersion = getDefaultLuceneMatchVersion();
         if (!luceneVersion.onOrAfter(Version.LUCENE_4_7_0)) {
-          similarityParams.add(DefaultSimilarityFactory.DISCOUNT_OVERLAPS, false);
+          similarityParams.add(ClassicSimilarityFactory.DISCOUNT_OVERLAPS, false);
         }
         similarityFactory.init(SolrParams.toSolrParams(similarityParams));
       } else {

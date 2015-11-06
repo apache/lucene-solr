@@ -17,7 +17,7 @@ package org.apache.solr.search.similarities;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
@@ -29,15 +29,15 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 /**
  * SimilarityFactory that returns a {@link PerFieldSimilarityWrapper}
  * that delegates to the field type, if it's configured, otherwise
- * {@link DefaultSimilarity}.
+ * {@link ClassicSimilarity}.
  *
  * <p>
  * <b>NOTE:</b> Users should be aware that in addition to supporting 
  * <code>Similarity</code> configurations specified on individual 
  * field types, this factory also differs in behavior from 
- * {@link DefaultSimilarityFactory} because of other differences in the 
+ * {@link ClassicSimilarityFactory} because of other differences in the 
  * implementations of <code>PerFieldSimilarityWrapper</code> and 
- * <code>DefaultSimilarity</code> - notably in methods such as 
+ * {@link ClassicSimilarity} - notably in methods such as 
  * {@link Similarity#coord} and {@link Similarity#queryNorm}.  
  * </p>
  *
@@ -45,7 +45,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  */
 public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCoreAware {
   private Similarity similarity;
-  private Similarity defaultSimilarity = new DefaultSimilarity();
+  private Similarity defaultSimilarity = new ClassicSimilarity();
   private volatile SolrCore core;
 
   @Override

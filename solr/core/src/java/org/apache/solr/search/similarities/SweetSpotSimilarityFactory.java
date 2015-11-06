@@ -18,7 +18,7 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.apache.lucene.search.similarities.DefaultSimilarity; // jdoc
+import org.apache.lucene.search.similarities.ClassicSimilarity; // jdoc
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
@@ -28,13 +28,13 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  * <p>Factory for {@link SweetSpotSimilarity}.</p>
  * <p>
  * <code>SweetSpotSimilarity</code> is an extension of 
- * {@link DefaultSimilarity} that provides additional tuning options for 
+ * {@link ClassicSimilarity} that provides additional tuning options for 
  * specifying the "sweetspot" of optimal <code>tf</code> and 
  * <code>lengthNorm</code> values in the source data.
  * </p>
  * <p>
  * In addition to the <code>discountOverlaps</code> init param supported by 
- * {@link DefaultSimilarityFactory} The following sets of init params are 
+ * {@link ClassicSimilarityFactory} The following sets of init params are 
  * supported by this factory:
  * </p>
  * <ul>
@@ -106,7 +106,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  *      <code>SweetSpotSimilarity</code> for SVG diagrams showing how the 
  *      each function behaves with various settings/inputs.
  */
-public class SweetSpotSimilarityFactory extends DefaultSimilarityFactory {
+public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
   private SweetSpotSimilarity sim = null;
 
   @Override
