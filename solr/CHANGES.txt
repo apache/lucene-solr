@@ -51,6 +51,9 @@ Upgrading from Solr 5.x
   to allow for multiple full query results (DocLists) per Solr request.
   TransformContext was rendered redundant and was removed. (yonik)
 
+* DefaultSimilarityFactory has been removed. If you currently have DefaultSimilarityFactory explicitly
+  refrenced in your schema.xml, edit your config to use the functionally identical ClassicSimilarityFactory.
+  See SOLR-8239 for more details.
 
 
 Detailed Change List

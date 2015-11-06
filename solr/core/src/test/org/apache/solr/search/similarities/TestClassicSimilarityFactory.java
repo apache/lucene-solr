@@ -22,7 +22,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
 /**
- * Tests {@link DefaultSimilarityFactory} when specified on a per-fieldtype basis with various init options.
+ * Tests {@link ClassicSimilarityFactory} when specified on a per-fieldtype basis with various init options.
  * @see SchemaSimilarityFactory
  */
 public class TestClassicSimilarityFactory extends BaseSimilarityTestCase {
@@ -42,15 +42,4 @@ public class TestClassicSimilarityFactory extends BaseSimilarityTestCase {
     assertEquals(false, sim.getDiscountOverlaps());
   }
   
-  /** Default w/ default parameters */
-  public void testDefaultWithDefaults() throws Exception {
-    ClassicSimilarity sim = getSimilarity("text__default", ClassicSimilarity.class);
-    assertEquals(true, sim.getDiscountOverlaps());
-  }
-  /** Default w/ explicit params */
-  public void testDefaultWithParams() throws Exception {
-    ClassicSimilarity sim = getSimilarity("text_overlap__default", ClassicSimilarity.class);
-    assertEquals(false, sim.getDiscountOverlaps());
-  }
-
 }

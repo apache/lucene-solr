@@ -38,22 +38,6 @@
     </similarity>
   </fieldType>
 
-  <!-- testDefaultWithDefaults -->
-  <field name="text__default" type="text__default" indexed="true" stored="false"/>
-  <fieldType name="text__default" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-    <similarity class="solr.DefaultSimilarityFactory"/>
-  </fieldType>
-  
-  <!-- testDefaultWithParams -->
-  <field name="text_overlap__default" type="text_overlap__default" indexed="true" stored="false"/>
-  <fieldType name="text_overlap__default" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-    <similarity class="solr.DefaultSimilarityFactory">
-      <bool name="discountOverlaps">false</bool>
-    </similarity>
-  </fieldType>
-
   <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
   <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <defaultSearchField>text</defaultSearchField>
