@@ -341,6 +341,17 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,2,1,3,4);
     
+    // full factory w/multi streams
+    stream = factory.constructStream("merge("
+                                    + "search(collection1, q=\"id:(0 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                                    + "search(collection1, q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                                    + "search(collection1, q=\"id:(2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                                    + "on=\"a_f asc\")");
+    tuples = getTuples(stream);
+    
+    assert(tuples.size() == 4);
+    assertOrder(tuples, 0,2,1,4);
+    
     del("*:*");
     commit();
   }

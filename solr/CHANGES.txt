@@ -83,6 +83,7 @@ New Features
 * SOLR-6273: Cross Data Center Replication. Active/passive replication for separate
   SolrClouds hosted on separate data centers. (Renaud Delbru, Yonik Seeley via Erick Erickson)
 
+* SOLR-7938: MergeStream now supports merging more than 2 streams together (Dennis Gove)
 
 Optimizations
 ----------------------
