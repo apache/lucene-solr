@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -620,6 +621,10 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     
     IndexOutput delegateOutput = in.createTempOutput(prefix, suffix, LuceneTestCase.newIOContext(randomState, context));
     String name = delegateOutput.getName();
+    if (name.toLowerCase(Locale.ROOT).endsWith(".tmp") == false) {
+      throw new IllegalStateException("wrapped directory failed to use .tmp extension: got: " + name);
+    }
+
     unSyncedFiles.add(name);
     createdFiles.add(name);
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);

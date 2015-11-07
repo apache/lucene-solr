@@ -85,6 +85,10 @@ Changes in Runtime Behavior
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
   Use ClassicSimilarity to get the old vector space DefaultSimilarity. (Robert Muir)
 
+* LUCENE-6886: Reserve the .tmp file name extension for temp files,
+  and codec components are no longer allowed to use this extension
+  (Robert Muir, Mike McCandless)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features

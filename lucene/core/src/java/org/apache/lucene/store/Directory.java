@@ -73,7 +73,8 @@ public abstract class Directory implements Closeable {
   public abstract IndexOutput createOutput(String name, IOContext context) throws IOException;
 
   /** Creates a new, empty file for writing in the directory, with a
-   *  temporary file name derived from prefix and suffix.  Use
+   *  temporary file name including prefix and suffix, ending with the
+   *  reserved extension <code>.tmp</code>.  Use
    *  {@link IndexOutput#getName} to see what name was used.  */
   public abstract IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException;
 

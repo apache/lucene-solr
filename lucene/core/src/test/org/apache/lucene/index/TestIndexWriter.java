@@ -18,9 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2809,6 +2811,32 @@ public class TestIndexWriter extends LuceneTestCase {
     // segments_N should have changed:
     assertFalse(r2.getIndexCommit().getSegmentsFileName().equals(r.getIndexCommit().getSegmentsFileName()));
     IOUtils.close(r, r2, w, dir);
+  }
+
+  public void testLeftoverTempFiles() throws Exception {
+    Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
+    }
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.close();
+    
+    IndexOutput out = dir.createTempOutput("_0", "bkd", IOContext.DEFAULT);
+    String tempName = out.getName();
+    out.close();
+    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    w = new IndexWriter(dir, iwc);
+
+    // Make sure IW deleted the unref'd file:
+    try {
+      dir.openInput(tempName, IOContext.DEFAULT);
+      fail("did not hit exception");
+    } catch (FileNotFoundException | NoSuchFileException e) {
+      // expected
+    }
+    w.close();
+    dir.close();
   }
 }
 

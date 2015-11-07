@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 
@@ -51,6 +52,9 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   
+  /** Used to generate temp file names in {@link #createTempOutput}. */
+  private final AtomicLong nextTempFileCounter = new AtomicLong();
+
   /** Constructs an empty {@link Directory}. */
   public RAMDirectory() {
     this(new SingleInstanceLockFactory());
@@ -186,7 +190,7 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
 
     // ... then try to find a unique name for it:
     while (true) {
-      String name = prefix + tempFileRandom.nextInt(Integer.MAX_VALUE) + "." + suffix;
+      String name = IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(nextTempFileCounter.getAndIncrement(), Character.MAX_RADIX), "tmp");
       if (fileMap.putIfAbsent(name, file) == null) {
         return new RAMOutputStream(name, file, true);
       }
