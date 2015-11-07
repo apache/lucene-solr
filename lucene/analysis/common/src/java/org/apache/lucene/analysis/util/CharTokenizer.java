@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.IntPredicate;
 import java.util.function.IntUnaryOperator;
 
@@ -116,6 +117,8 @@ public abstract class CharTokenizer extends Tokenizer {
    * </pre>
    */
   public static CharTokenizer fromTokenCharPredicate(AttributeFactory factory, final IntPredicate tokenCharPredicate, final IntUnaryOperator normalizer) {
+    Objects.requireNonNull(tokenCharPredicate, "predicate must not be null.");
+    Objects.requireNonNull(normalizer, "normalizer must not be null");
     return new CharTokenizer(factory) {
       @Override
       protected boolean isTokenChar(int c) {
