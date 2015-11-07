@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream; // for javadocs
@@ -80,9 +81,7 @@ public class AttributeSource {
    * An AttributeSource that uses the same attributes as the supplied one.
    */
   public AttributeSource(AttributeSource input) {
-    if (input == null) {
-      throw new IllegalArgumentException("input AttributeSource must not be null");
-    }
+    Objects.requireNonNull(input, "input AttributeSource must not be null");
     this.attributes = input.attributes;
     this.attributeImpls = input.attributeImpls;
     this.currentState = input.currentState;
@@ -96,7 +95,7 @@ public class AttributeSource {
     this.attributes = new LinkedHashMap<>();
     this.attributeImpls = new LinkedHashMap<>();
     this.currentState = new State[1];
-    this.factory = factory;
+    this.factory = Objects.requireNonNull(factory, "AttributeFactory must not be null");
   }
   
   /**
