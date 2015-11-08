@@ -738,7 +738,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
       assertNotNull(overseer.getStats());
-      assertEquals(0, (overseer.getStats().getSuccessCount(OverseerAction.STATE.toLower())));
       assertEquals(0, (overseer.getStats().getSuccessCount(OverseerAction.LEADER.toLower())));
 
     } finally {
