@@ -18,6 +18,8 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.bkd.BKDUtil;
 
 /** A field that is indexed dimensionally such that finding
  *  all documents within an N-dimensional at search time is
@@ -65,6 +67,9 @@ public final class DimensionalField extends Field {
     if (point.length == 0) {
       throw new IllegalArgumentException("point cannot be 0 dimensions");
     }
+    if (point.length == 1) {
+      return new BytesRef(point[0]);
+    }
     int bytesPerDim = -1;
     for(byte[] dim : point) {
       if (dim == null) {
@@ -86,19 +91,20 @@ public final class DimensionalField extends Field {
     return new BytesRef(packed);
   }
 
-  /** Sugar API: indexes a one-dimensional point */
-  public DimensionalField(String name, byte[] dim1) {
-    super(name, dim1, getType(1, dim1.length));
-  }
+  private static BytesRef pack(long... point) {
+    if (point == null) {
+      throw new IllegalArgumentException("point cannot be null");
+    }
+    if (point.length == 0) {
+      throw new IllegalArgumentException("point cannot be 0 dimensions");
+    }
+    byte[] packed = new byte[point.length * RamUsageEstimator.NUM_BYTES_LONG];
+    
+    for(int dim=0;dim<point.length;dim++) {
+      BKDUtil.longToBytes(point[dim], packed, dim);
+    }
 
-  /** Sugar API: indexes a two-dimensional point */
-  public DimensionalField(String name, byte[] dim1, byte[] dim2) {
-    super(name, pack(dim1, dim2), getType(2, dim1.length));
-  }
-
-  /** Sugar API: indexes a three-dimensional point */
-  public DimensionalField(String name, byte[] dim1, byte[] dim2, byte[] dim3) {
-    super(name, pack(dim1, dim2, dim3), getType(3, dim1.length));
+    return new BytesRef(packed);
   }
 
   /** General purpose API: creates a new DimensionalField, indexing the
@@ -108,8 +114,19 @@ public final class DimensionalField extends Field {
    *  @param point byte[][] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
-  public DimensionalField(String name, byte[][] point) {
+  public DimensionalField(String name, byte[]... point) {
     super(name, pack(point), getType(point));
+  }
+
+  /** General purpose API: creates a new DimensionalField, indexing the
+   *  provided N-dimensional long point.
+   *
+   *  @param name field name
+   *  @param point long[] value
+   *  @throws IllegalArgumentException if the field name or value is null.
+   */
+  public DimensionalField(String name, long... point) {
+    super(name, pack(point), getType(point.length, RamUsageEstimator.NUM_BYTES_LONG));
   }
 
   /** Expert API */

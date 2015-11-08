@@ -91,11 +91,11 @@ public class TestBKD extends LuceneTestCase {
               }
 
               if (max < queryMin || min > queryMax) {
-                return Relation.QUERY_OUTSIDE_CELL;
+                return Relation.CELL_OUTSIDE_QUERY;
               } else if (min >= queryMin && max <= queryMax) {
                 return Relation.CELL_INSIDE_QUERY;
               } else {
-                return Relation.QUERY_CROSSES_CELL;
+                return Relation.CELL_CROSSES_QUERY;
               }
             }
           });
@@ -198,14 +198,14 @@ public class TestBKD extends LuceneTestCase {
                 assert max >= min;
 
                 if (max < queryMin[dim] || min > queryMax[dim]) {
-                  return Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.CELL_OUTSIDE_QUERY;
                 } else if (min < queryMin[dim] || max > queryMax[dim]) {
                   crosses = true;
                 }
               }
 
               if (crosses) {
-                return Relation.QUERY_CROSSES_CELL;
+                return Relation.CELL_CROSSES_QUERY;
               } else {
                 return Relation.CELL_INSIDE_QUERY;
               }
@@ -319,14 +319,14 @@ public class TestBKD extends LuceneTestCase {
                 assert max.compareTo(min) >= 0;
 
                 if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
-                  return Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.CELL_OUTSIDE_QUERY;
                 } else if (min.compareTo(queryMin[dim]) < 0 || max.compareTo(queryMax[dim]) > 0) {
                   crosses = true;
                 }
               }
 
               if (crosses) {
-                return Relation.QUERY_CROSSES_CELL;
+                return Relation.CELL_CROSSES_QUERY;
               } else {
                 return Relation.CELL_INSIDE_QUERY;
               }
@@ -517,6 +517,87 @@ public class TestBKD extends LuceneTestCase {
     verify(docValuesArray, docIDsArray, numDims, numBytesPerDim);
   }
 
+  public void testBKDUtilAdd() throws Exception {
+    int iters = atLeast(10000);
+    int numBytes = TestUtil.nextInt(random(), 1, 100);
+    for(int iter=0;iter<iters;iter++) {
+      BigInteger v1 = new BigInteger(8*numBytes-1, random());
+      BigInteger v2 = new BigInteger(8*numBytes-1, random());
+
+      byte[] v1Bytes = new byte[numBytes];
+      byte[] v1RawBytes = v1.toByteArray();
+      assert v1RawBytes.length <= numBytes;
+      System.arraycopy(v1RawBytes, 0, v1Bytes, v1Bytes.length-v1RawBytes.length, v1RawBytes.length);
+
+      byte[] v2Bytes = new byte[numBytes];
+      byte[] v2RawBytes = v2.toByteArray();
+      assert v1RawBytes.length <= numBytes;
+      System.arraycopy(v2RawBytes, 0, v2Bytes, v2Bytes.length-v2RawBytes.length, v2RawBytes.length);
+
+      byte[] result = new byte[numBytes];
+      BKDUtil.add(numBytes, 0, v1Bytes, v2Bytes, result);
+
+      BigInteger sum = v1.add(v2);
+      assertTrue("sum=" + sum + " v1=" + v1 + " v2=" + v2 + " but result=" + new BigInteger(1, result), sum.equals(new BigInteger(1, result)));
+    }
+  }
+
+  public void testIllegalBKDUtilAdd() throws Exception {
+    byte[] bytes = new byte[4];
+    Arrays.fill(bytes, (byte) 0xff);
+    byte[] one = new byte[4];
+    one[3] = 1;
+    try {
+      BKDUtil.add(4, 0, bytes, one, new byte[4]);
+    } catch (IllegalArgumentException iae) {
+      assertEquals("a + b overflows bytesPerDim=4", iae.getMessage());
+    }
+  }
+  
+  public void testBKDUtilSubtract() throws Exception {
+    int iters = atLeast(10000);
+    int numBytes = TestUtil.nextInt(random(), 1, 100);
+    for(int iter=0;iter<iters;iter++) {
+      BigInteger v1 = new BigInteger(8*numBytes-1, random());
+      BigInteger v2 = new BigInteger(8*numBytes-1, random());
+      if (v1.compareTo(v2) < 0) {
+        BigInteger tmp = v1;
+        v1 = v2;
+        v2 = tmp;
+      }
+
+      byte[] v1Bytes = new byte[numBytes];
+      byte[] v1RawBytes = v1.toByteArray();
+      assert v1RawBytes.length <= numBytes: "length=" + v1RawBytes.length + " vs numBytes=" + numBytes;
+      System.arraycopy(v1RawBytes, 0, v1Bytes, v1Bytes.length-v1RawBytes.length, v1RawBytes.length);
+
+      byte[] v2Bytes = new byte[numBytes];
+      byte[] v2RawBytes = v2.toByteArray();
+      assert v2RawBytes.length <= numBytes;
+      assert v2RawBytes.length <= numBytes: "length=" + v2RawBytes.length + " vs numBytes=" + numBytes;
+      System.arraycopy(v2RawBytes, 0, v2Bytes, v2Bytes.length-v2RawBytes.length, v2RawBytes.length);
+
+      byte[] result = new byte[numBytes];
+      BKDUtil.subtract(numBytes, 0, v1Bytes, v2Bytes, result);
+
+      BigInteger diff = v1.subtract(v2);
+
+      assertTrue("diff=" + diff + " vs result=" + new BigInteger(result) + " v1=" + v1 + " v2=" + v2, diff.equals(new BigInteger(result)));
+    }
+  }
+
+  public void testIllegalBKDUtilSubtract() throws Exception {
+    byte[] v1 = new byte[4];
+    v1[3] = (byte) 0xf0;
+    byte[] v2 = new byte[4];
+    v2[3] = (byte) 0xf1;
+    try {
+      BKDUtil.subtract(4, 0, v1, v2, new byte[4]);
+    } catch (IllegalArgumentException iae) {
+      assertEquals("a < b", iae.getMessage());
+    }
+  }
+  
   /** docIDs can be null, for the single valued case, else it maps value to docID */
   private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim) throws Exception {
     try (Directory dir = getDirectory(docValues.length)) {
@@ -627,7 +708,7 @@ public class TestBKD extends LuceneTestCase {
               for(int dim=0;dim<numDims;dim++) {
                 if (BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMin[dim], 0) < 0 ||
                     BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMax[dim], 0) > 0) {
-                  return Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.CELL_OUTSIDE_QUERY;
                 } else if (BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMin[dim], 0) < 0 ||
                            BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMax[dim], 0) > 0) {
                   crosses = true;
@@ -635,7 +716,7 @@ public class TestBKD extends LuceneTestCase {
               }
 
               if (crosses) {
-                return Relation.QUERY_CROSSES_CELL;
+                return Relation.CELL_CROSSES_QUERY;
               } else {
                 return Relation.CELL_INSIDE_QUERY;
               }

@@ -1,4 +1,4 @@
-package org.apache.lucene.bkdtree3d;
+package org.apache.lucene.geo3d;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,24 +17,23 @@ package org.apache.lucene.bkdtree3d;
  * limitations under the License.
  */
 
-import org.apache.lucene.geo3d.PlanetModel;
-import org.apache.lucene.geo3d.GeoPoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.bkd.BKDUtil;
 
-// TODO: allow multi-valued, packing all points into a single BytesRef
-
-/** Add this to a document to index lat/lon point, but be sure to use {@link Geo3DDocValuesFormat} for the field.
-
+/** Add this to a document to index lat/lon or x/y/z point, indexed as a dimensional value.
+ *  Multiple values are allowed: just add multiple Geo3DPointField to the document with the
+ *  same field name.
+ *
  *  @lucene.experimental */
 public final class Geo3DPointField extends Field {
 
   /** Indexing {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValuesType(DocValuesType.BINARY);
+    TYPE.setDimensions(3, RamUsageEstimator.NUM_BYTES_INT);
     TYPE.freeze();
   }
 
@@ -62,9 +61,9 @@ public final class Geo3DPointField extends Field {
 
   private void fillFieldsData(double planetMax, double x, double y, double z) {
     byte[] bytes = new byte[12];
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetMax, x), bytes, 0);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetMax, y), bytes, 4);
-    Geo3DDocValuesFormat.writeInt(Geo3DDocValuesFormat.encodeValue(planetMax, z), bytes, 8);
+    BKDUtil.intToBytes(Geo3DUtil.encodeValue(planetMax, x), bytes, 0);
+    BKDUtil.intToBytes(Geo3DUtil.encodeValue(planetMax, y), bytes, 1);
+    BKDUtil.intToBytes(Geo3DUtil.encodeValue(planetMax, z), bytes, 2);
     fieldsData = new BytesRef(bytes);
   }
 }

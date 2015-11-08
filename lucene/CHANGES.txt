@@ -49,6 +49,9 @@ New Features
 * LUCENE-6879: Allow to define custom CharTokenizer instances without
   subclassing using Java 8 lambdas or method references. (Uwe Schindler)
 
+* LUCENE-6881: Cutover all BKD implementations to dimensional values
+  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to

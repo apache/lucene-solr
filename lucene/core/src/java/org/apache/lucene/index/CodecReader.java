@@ -321,6 +321,11 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     if (getTermVectorsReader() != null) {
       ramBytesUsed += getTermVectorsReader().ramBytesUsed();
     }
+
+    // dimensional values
+    if (getDimensionalReader() != null) {
+      ramBytesUsed += getDimensionalReader().ramBytesUsed();
+    }
     
     return ramBytesUsed;
   }
@@ -351,6 +356,11 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     // term vectors
     if (getTermVectorsReader() != null) {
       resources.add(Accountables.namedAccountable("term vectors", getTermVectorsReader()));
+    }
+
+    // dimensional values
+    if (getDimensionalReader() != null) {
+      resources.add(Accountables.namedAccountable("dimensional values", getDimensionalReader()));
     }
     
     return Collections.unmodifiableList(resources);

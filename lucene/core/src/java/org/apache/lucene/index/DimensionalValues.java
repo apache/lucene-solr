@@ -33,9 +33,9 @@ public abstract class DimensionalValues {
     /** Return this if the cell is fully contained by the query */
     CELL_INSIDE_QUERY,
     /** Return this if the cell and query do not overlap */
-    QUERY_OUTSIDE_CELL,
+    CELL_OUTSIDE_QUERY,
     /** Return this if the cell partially overlapps the query */
-    QUERY_CROSSES_CELL
+    CELL_CROSSES_QUERY
   };
 
   /** We recurse the BKD tree, using a provided instance of this to guide the recursion.
@@ -53,6 +53,10 @@ public abstract class DimensionalValues {
     /** Called for non-leaf cells to test how the cell relates to the query, to
      *  determine how to further recurse down the treer. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
+
+    /** Notifies the caller that this many documents (from one block) are about
+     *  to be visited */
+    default void grow(int count) {};
   }
 
   /** Finds all documents and points matching the provided visitor.

@@ -49,12 +49,18 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   private static final double DISTANCE_PCT_ERR = 0.005;
 
   @Override
+  protected boolean forceSmall() {
+    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
+    return true;
+  }
+
+  @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
     doc.add(new GeoPointField(field, lon, lat, Field.Store.NO));
   }
 
   @Override
-  protected Query newBBoxQuery(String field, GeoRect rect) {
+  protected Query newRectQuery(String field, GeoRect rect) {
     return new GeoPointInBBoxQuery(field, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
   }
 

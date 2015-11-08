@@ -321,11 +321,11 @@ public class ParallelLeafReader extends LeafReader {
       public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
         LeafReader reader = fieldToReader.get(fieldName);
         if (reader == null) {
-          throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index dimensional values");
+          return;
         }
         DimensionalValues dimValues = reader.getDimensionalValues();
         if (dimValues == null) {
-          throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index dimensional values");
+          return;
         }
         dimValues.intersect(fieldName, visitor);
       }

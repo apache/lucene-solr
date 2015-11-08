@@ -148,7 +148,7 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
 
         @Override
         public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-          return Relation.QUERY_CROSSES_CELL;
+          return Relation.CELL_CROSSES_QUERY;
         }
       });
     indexFPs.put(fieldInfo.name, writer.finish(dataOut));

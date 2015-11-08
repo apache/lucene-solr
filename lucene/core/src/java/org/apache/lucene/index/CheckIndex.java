@@ -1750,7 +1750,7 @@ public class CheckIndex implements Closeable {
 
                                  // We always pretend the query shape is so complex that it crosses every cell, so
                                  // that packedValue is passed for every document
-                                 return DimensionalValues.Relation.QUERY_CROSSES_CELL;
+                                 return DimensionalValues.Relation.CELL_CROSSES_QUERY;
                                }
 
                                private void checkPackedValue(String desc, byte[] packedValue, int docID) {

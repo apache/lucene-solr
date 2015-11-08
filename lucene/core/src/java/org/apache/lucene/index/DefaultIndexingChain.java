@@ -137,6 +137,9 @@ final class DefaultIndexingChain extends DocConsumer {
             if (dimensionalWriter == null) {
               // lazy init
               DimensionalFormat fmt = state.segmentInfo.getCodec().dimensionalFormat();
+              if (fmt == null) {
+                throw new IllegalStateException("field=\"" + perField.fieldInfo.name + "\" was indexed dimensionally but codec does not support dimensional formats");
+              }
               dimensionalWriter = fmt.fieldsWriter(state);
             }
 

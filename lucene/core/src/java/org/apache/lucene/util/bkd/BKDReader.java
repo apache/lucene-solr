@@ -113,6 +113,7 @@ public class BKDReader implements Accountable {
     //System.out.println("R: addAll nodeID=" + nodeID);
 
     if (nodeID >= leafNodeOffset) {
+      //System.out.println("ADDALL");
       visitDocIDs(state.in, leafBlockFPs[nodeID-leafNodeOffset], state.visitor);
     } else {
       addAll(state, 2*nodeID);
@@ -126,13 +127,12 @@ public class BKDReader implements Accountable {
       
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
+    visitor.grow(count);
 
     // TODO: especially for the 1D case, this was a decent speedup, because caller could know it should budget for around XXX docs:
     //state.docs.grow(count);
-    int docID = 0;
     for(int i=0;i<count;i++) {
-      docID += in.readVInt();
-      visitor.visit(docID);
+      visitor.visit(in.readInt());
     }
   }
 
@@ -145,16 +145,15 @@ public class BKDReader implements Accountable {
     // TODO: we could maybe pollute the IntersectVisitor API with a "grow" method if this maybe helps perf
     // enough (it did before, esp. for the 1D case):
     //state.docs.grow(count);
-    int docID = 0;
     for(int i=0;i<count;i++) {
-      docID += in.readVInt();
-      docIDs[i] = docID;
+      docIDs[i] = in.readInt();
     }
 
     return count;
   }
 
   protected void visitDocValues(byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+    visitor.grow(count);
     for(int i=0;i<count;i++) {
       in.readBytes(scratchPackedValue, 0, scratchPackedValue.length);
       visitor.visit(docIDs[i], scratchPackedValue);
@@ -175,7 +174,7 @@ public class BKDReader implements Accountable {
 
     Relation r = state.visitor.compare(cellMinPacked, cellMaxPacked);
 
-    if (r == Relation.QUERY_OUTSIDE_CELL) {
+    if (r == Relation.CELL_OUTSIDE_QUERY) {
       // This cell is fully outside of the query shape: stop recursing
       return;
     } else if (r == Relation.CELL_INSIDE_QUERY) {
@@ -187,6 +186,7 @@ public class BKDReader implements Accountable {
     }
 
     if (nodeID >= leafNodeOffset) {
+      //System.out.println("FILTER");
       // Leaf node; scan and filter all points in this block:
       int count = readDocIDs(state.in, leafBlockFPs[nodeID-leafNodeOffset], state.scratchDocIDs);
 

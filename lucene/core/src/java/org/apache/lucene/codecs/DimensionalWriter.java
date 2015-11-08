@@ -77,7 +77,7 @@ public abstract class DimensionalWriter implements Closeable {
                                                        @Override
                                                        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
                                                          // Forces this segment's DimensionalReader to always visit all docs + values:
-                                                         return Relation.QUERY_CROSSES_CELL;
+                                                         return Relation.CELL_CROSSES_QUERY;
                                                        }
                                                      });
                        }

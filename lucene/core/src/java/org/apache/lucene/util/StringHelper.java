@@ -380,4 +380,18 @@ public abstract class StringHelper {
 
     return new BytesRef(bytes);
   }
+
+  /** Compares a fixed length slice of two byte arrays interpreted as
+   *  unsigned values.  Returns positive int if a &gt; b, negative
+   *  int if a &lt; b and 0 if a == b */
+  public static int compare(int count, byte[] a, int aOffset, byte[] b, int bOffset) {
+    for(int i=0;i<count;i++) {
+      int cmp = (a[aOffset+i]&0xff) - (b[bOffset+i]&0xff);
+      if (cmp != 0) {
+        return cmp;
+      }
+    }
+
+    return 0;
+  }
 }

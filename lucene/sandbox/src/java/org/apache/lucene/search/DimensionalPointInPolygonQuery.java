@@ -1,4 +1,4 @@
-package org.apache.lucene.bkdtree;
+package org.apache.lucene.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,35 +19,24 @@ package org.apache.lucene.bkdtree;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
 
+import org.apache.lucene.document.DimensionalLatLonField;
+import org.apache.lucene.index.DimensionalValues;
+import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
+import org.apache.lucene.index.DimensionalValues.Relation;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.util.bkd.BKDUtil;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
- *  <p>The field must be indexed with {@link BKDTreeDocValuesFormat}, and {@link BKDPointField} added per document.
+ *  <p>The field must be indexed with using {@link DimensionalLatLonField} added per document.
  *
- *  <p>Because this implementation cannot intersect each cell with the polygon, it will be costly especially for large polygons, as every
- *   possible point must be checked.
- *
- *  <p><b>NOTE</b>: for fastest performance, this allocates FixedBitSet(maxDoc) for each segment.  The score of each hit is the query boost.
- *
- * @lucene.experimental */
+ *  @lucene.experimental */
 
-public class BKDPointInPolygonQuery extends Query {
+public class DimensionalPointInPolygonQuery extends Query {
   final String field;
   final double minLat;
   final double maxLat;
@@ -57,7 +46,7 @@ public class BKDPointInPolygonQuery extends Query {
   final double[] polyLons;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
-  public BKDPointInPolygonQuery(String field, double[] polyLats, double[] polyLons) {
+  public DimensionalPointInPolygonQuery(String field, double[] polyLats, double[] polyLons) {
     this.field = field;
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
@@ -83,13 +72,13 @@ public class BKDPointInPolygonQuery extends Query {
     double maxLat = Double.NEGATIVE_INFINITY;
     for(int i=0;i<polyLats.length;i++) {
       double lat = polyLats[i];
-      if (BKDTreeWriter.validLat(lat) == false) {
+      if (GeoUtils.isValidLat(lat) == false) {
         throw new IllegalArgumentException("polyLats[" + i + "]=" + lat + " is not a valid latitude");
       }
       minLat = Math.min(minLat, lat);
       maxLat = Math.max(maxLat, lat);
       double lon = polyLons[i];
-      if (BKDTreeWriter.validLon(lon) == false) {
+      if (GeoUtils.isValidLon(lon) == false) {
         throw new IllegalArgumentException("polyLons[" + i + "]=" + lat + " is not a valid longitude");
       }
       minLon = Math.min(minLon, lon);
@@ -115,42 +104,59 @@ public class BKDPointInPolygonQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        SortedNumericDocValues sdv = reader.getSortedNumericDocValues(field);
-        if (sdv == null) {
-          // No docs in this segment had this field
+        DimensionalValues values = reader.getDimensionalValues();
+        if (values == null) {
+          // No docs in this segment had any dimensional fields
           return null;
         }
 
-        if (sdv instanceof BKDTreeSortedNumericDocValues == false) {
-          throw new IllegalStateException("field \"" + field + "\" was not indexed with BKDTreeDocValuesFormat: got: " + sdv);
-        }
-        BKDTreeSortedNumericDocValues treeDV = (BKDTreeSortedNumericDocValues) sdv;
-        BKDTreeReader tree = treeDV.getBKDTreeReader();
-        
-        DocIdSet result = tree.intersect(minLat, maxLat, minLon, maxLon,
-                                         new BKDTreeReader.LatLonFilter() {
-                                           @Override
-                                           public boolean accept(double lat, double lon) {
-                                             return GeoUtils.pointInPolygon(polyLons, polyLats, lat, lon);
-                                           }
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        int[] hitCount = new int[1];
+        values.intersect(field,
+                         new IntersectVisitor() {
+                           @Override
+                           public void visit(int docID) {
+                             hitCount[0]++;
+                             result.add(docID);
+                           }
 
-                                           @Override
-                                           public BKDTreeReader.Relation compare(double cellLatMin, double cellLatMax, double cellLonMin, double cellLonMax) {
-                                             if (GeoUtils.rectWithinPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
-                                                                         polyLons, polyLats,
-                                                                         minLon, minLat, maxLon, maxLat)) {
-                                               return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
-                                             } else if (GeoUtils.rectCrossesPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
-                                                                                 polyLons, polyLats,
-                                                                                 minLon, minLat, maxLon, maxLat)) {
-                                               return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;
-                                             } else {
-                                               return BKDTreeReader.Relation.SHAPE_OUTSIDE_CELL;
-                                             }
-                                           }
-                                         }, treeDV.delegate);
+                           @Override
+                           public void visit(int docID, byte[] packedValue) {
+                             assert packedValue.length == 8;
+                             double lat = DimensionalLatLonField.decodeLat(BKDUtil.bytesToInt(packedValue, 0));
+                             double lon = DimensionalLatLonField.decodeLon(BKDUtil.bytesToInt(packedValue, 1));
+                             if (GeoUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
+                               hitCount[0]++;
+                               result.add(docID);
+                             }
+                           }
 
-        return new ConstantScoreScorer(this, score(), result.iterator());
+                           @Override
+                           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                             double cellMinLat = DimensionalLatLonField.decodeLat(BKDUtil.bytesToInt(minPackedValue, 0));
+                             double cellMinLon = DimensionalLatLonField.decodeLon(BKDUtil.bytesToInt(minPackedValue, 1));
+                             double cellMaxLat = DimensionalLatLonField.decodeLat(BKDUtil.bytesToInt(maxPackedValue, 0));
+                             double cellMaxLon = DimensionalLatLonField.decodeLon(BKDUtil.bytesToInt(maxPackedValue, 1));
+
+                             if (cellMinLat <= minLat && cellMaxLat >= maxLat && cellMinLon <= minLon && cellMaxLon >= maxLon) {
+                               // Cell fully encloses the query
+                               return Relation.CELL_CROSSES_QUERY;
+                             } else  if (GeoUtils.rectWithinPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
+                                                                 polyLons, polyLats,
+                                                                 minLon, minLat, maxLon, maxLat)) {
+                               return Relation.CELL_INSIDE_QUERY;
+                             } else if (GeoUtils.rectCrossesPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
+                                                                 polyLons, polyLats,
+                                                                 minLon, minLat, maxLon, maxLat)) {
+                               return Relation.CELL_CROSSES_QUERY;
+                             } else {
+                               return Relation.CELL_OUTSIDE_QUERY;
+                             }
+                           }
+                         });
+
+        // NOTE: hitCount[0] will be over-estimate in multi-valued case
+        return new ConstantScoreScorer(this, score(), result.build(hitCount[0]).iterator());
       }
     };
   }
@@ -162,7 +168,7 @@ public class BKDPointInPolygonQuery extends Query {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
 
-    BKDPointInPolygonQuery that = (BKDPointInPolygonQuery) o;
+    DimensionalPointInPolygonQuery that = (DimensionalPointInPolygonQuery) o;
 
     if (Arrays.equals(polyLons, that.polyLons) == false) {
       return false;

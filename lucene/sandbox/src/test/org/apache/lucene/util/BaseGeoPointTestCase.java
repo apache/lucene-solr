@@ -72,11 +72,18 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     originLat = GeoUtils.normalizeLat(GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2 * latRange) * random().nextDouble());
   }
 
+  /** Return true when testing on a non-small region may be too slow (GeoPoint*Query) */
+  protected boolean forceSmall() {
+    return false;
+  }
+
   // A particularly tricky adversary for BKD tree:
-  @Nightly
   public void testSamePointManyTimes() throws Exception {
+
+    // For GeoPointQuery, only run this test nightly:
+    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
+
     int numPoints = atLeast(1000);
-    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
     boolean small = random().nextBoolean();
 
     // Every doc has 2 points:
@@ -92,12 +99,13 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
-  @Nightly
   public void testAllLatEqual() throws Exception {
+
+    // For GeoPointQuery, only run this test nightly:
+    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
+
     int numPoints = atLeast(10000);
-    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
-    // boolean small = random().nextBoolean();
-    boolean small = true;
+    boolean small = forceSmall() || random().nextBoolean();
     double lat = randomLat(small);
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
@@ -142,12 +150,13 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
-  @Nightly
   public void testAllLonEqual() throws Exception {
+
+    // For GeoPointQuery, only run this test nightly:
+    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
+
     int numPoints = atLeast(10000);
-    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
-    // boolean small = random().nextBoolean();
-    boolean small = true;
+    boolean small = forceSmall() || random().nextBoolean();
     double theLon = randomLon(small);
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
@@ -194,8 +203,11 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
-  @Nightly
   public void testMultiValued() throws Exception {
+
+    // For GeoPointQuery, only run this test nightly:
+    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
+
     int numPoints = atLeast(10000);
     // Every doc has 2 points:
     double[] lats = new double[2*numPoints];
@@ -209,9 +221,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
     boolean small = random().nextBoolean();
-    //boolean small = true;
 
     for (int id=0;id<numPoints;id++) {
       Document doc = new Document();
@@ -231,6 +241,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       w.addDocument(doc);
     }
 
+    // TODO: share w/ verify; just need parallel array of the expected ids
     if (random().nextBoolean()) {
       w.forceMerge(1);
     }
@@ -245,10 +256,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       GeoRect rect = randomRect(small, small == false);
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " bbox=" + rect);
+        System.out.println("\nTEST: iter=" + iter + " rect=" + rect);
       }
 
-      Query query = newBBoxQuery(FIELD_NAME, rect);
+      Query query = newRectQuery(FIELD_NAME, rect);
 
       final FixedBitSet hits = new FixedBitSet(r.maxDoc());
       s.search(query, new SimpleCollector() {
@@ -340,7 +351,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
 
-    // TODO: GeoUtils are potentially slow if we use small=false with heavy testing
     boolean small = random().nextBoolean();
 
     boolean haveRealDoc = false;
@@ -424,6 +434,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
+    // TODO: we should not do this here!  it weakens the test, and users don't pre-quantize the lat/lons they send us:
     return unscaleLat(scaleLat(result));
   }
 
@@ -434,6 +445,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }
+    // TODO: we should not do this here!  it weakens the test, and users don't pre-quantize the lat/lons they send us:
     return unscaleLon(scaleLon(result));
   }
 
@@ -463,7 +475,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected abstract void addPointToDoc(String field, Document doc, double lat, double lon);
 
-  protected abstract Query newBBoxQuery(String field, GeoRect bbox);
+  protected abstract Query newRectQuery(String field, GeoRect bbox);
 
   protected abstract Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters);
 
@@ -557,7 +569,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     if (mbd != -1 && mbd < lats.length/100) {
       iwc.setMaxBufferedDocs(lats.length/100);
     }
-    initIndexWriterConfig(FIELD_NAME, iwc);
     Directory dir;
     if (lats.length > 100000) {
       dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
@@ -631,15 +642,15 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
               VerifyHits verifyHits;
 
               if (random().nextBoolean()) {
-                // BBox: don't allow dateline crossing when testing small:
-                final GeoRect bbox = randomRect(small, small == false);
+                // Rect: don't allow dateline crossing when testing small:
+                final GeoRect rect = randomRect(small, small == false);
 
-                query = newBBoxQuery(FIELD_NAME, bbox);
+                query = newRectQuery(FIELD_NAME, rect);
 
                 verifyHits = new VerifyHits() {
                     @Override
                     protected Boolean shouldMatch(double pointLat, double pointLon) {
-                      return rectContainsPoint(bbox, pointLat, pointLon);
+                      return rectContainsPoint(rect, pointLat, pointLon);
                     }
                     @Override
                     protected void describe(int docID, double lat, double lon) {

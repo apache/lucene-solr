@@ -240,17 +240,15 @@ public class BKDWriter implements Closeable {
 
       @Override
       protected int compare(int i, int j) {
-        if (dim != -1) {
-          writer.readPackedValue(i, scratch1);
-          writer.readPackedValue(j, scratch2);
-          int cmp = BKDUtil.compare(bytesPerDim, scratch1, dim, scratch2, dim);
-          if (cmp != 0) {
-            return cmp;
-          }
+        writer.readPackedValue(i, scratch1);
+        writer.readPackedValue(j, scratch2);
+        int cmp = BKDUtil.compare(bytesPerDim, scratch1, dim, scratch2, dim);
+        if (cmp != 0) {
+          return cmp;
         }
 
         // Tie-break
-        int cmp = Integer.compare(writer.docIDs[i], writer.docIDs[j]);
+        cmp = Integer.compare(writer.docIDs[i], writer.docIDs[j]);
         if (cmp != 0) {
           return cmp;
         }
@@ -422,9 +420,12 @@ public class BKDWriter implements Closeable {
 
     boolean success = false;
     try {
+      //long t0 = System.nanoTime();
       for(int dim=0;dim<numDims;dim++) {
         sortedPointWriters[dim] = new PathSlice(sort(dim), 0, pointCount);
       }
+      //long t1 = System.nanoTime();
+      //System.out.println("sort time: " + ((t1-t0)/1000000.0) + " msec");
 
       if (tempInput != null) {
         tempDir.deleteFile(tempInput.getName());
@@ -446,6 +447,8 @@ public class BKDWriter implements Closeable {
 
       // If no exception, we should have cleaned everything up:
       assert tempDir.getCreatedFiles().isEmpty();
+      //long t2 = System.nanoTime();
+      //System.out.println("write time: " + ((t2-t1)/1000000.0) + " msec");
 
       success = true;
     } finally {
@@ -485,11 +488,8 @@ public class BKDWriter implements Closeable {
   protected void writeLeafBlockDocs(IndexOutput out, int[] docIDs, int start, int count) throws IOException {
     out.writeVInt(count);
 
-    int lastDocID = 0;
     for (int i=0;i<count;i++) {
-      int docID = docIDs[start + i];
-      out.writeVInt(docID - lastDocID);
-      lastDocID = docID;
+      out.writeInt(docIDs[start + i]);
     }
   }
 
@@ -582,6 +582,7 @@ public class BKDWriter implements Closeable {
       }
     }
 
+    //System.out.println("SPLIT: " + splitDim);
     return splitDim;
   }
 
@@ -632,9 +633,6 @@ public class BKDWriter implements Closeable {
 
       // We ensured that maxPointsSortInHeap was >= maxPointsInLeafNode, so we better be in heap at this point:
       HeapPointWriter heapSource = (HeapPointWriter) source.writer;
-
-      // Sort by docID in the leaf so we can delta-vInt encode:
-      sortHeapPointWriter(heapSource, Math.toIntExact(source.start), Math.toIntExact(source.count), -1);
 
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();

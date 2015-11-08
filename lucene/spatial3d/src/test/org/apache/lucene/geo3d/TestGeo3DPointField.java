@@ -1,4 +1,4 @@
-package org.apache.lucene.bkdtree3d;
+package org.apache.lucene.geo3d;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,21 +28,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene60.Lucene60Codec;
+import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.lucene60.Lucene60DimensionalReader;
+import org.apache.lucene.codecs.lucene60.Lucene60DimensionalWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.geo3d.GeoArea;
-import org.apache.lucene.geo3d.GeoAreaFactory;
-import org.apache.lucene.geo3d.GeoBBoxFactory;
-import org.apache.lucene.geo3d.GeoCircleFactory;
-import org.apache.lucene.geo3d.GeoPath;
-import org.apache.lucene.geo3d.GeoPoint;
-import org.apache.lucene.geo3d.GeoPolygonFactory;
-import org.apache.lucene.geo3d.GeoShape;
-import org.apache.lucene.geo3d.PlanetModel;
-import org.apache.lucene.geo3d.XYZBounds;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -50,16 +44,13 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
@@ -68,12 +59,6 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
-
-import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueCenter;
-import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueMax;
-import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.decodeValueMin;
-import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.encodeValue;
-import static org.apache.lucene.bkdtree3d.Geo3DDocValuesFormat.encodeValueLenient;
 
 public class TestGeo3DPointField extends LuceneTestCase {
 
@@ -87,12 +72,39 @@ public class TestGeo3DPointField extends LuceneTestCase {
     }
   }
 
+  private static Codec getCodec() {
+    if (Codec.getDefault().getName().equals("Lucene60")) {
+      int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
+      double maxMBSortInHeap = 0.1 + (3*random().nextDouble());
+      if (VERBOSE) {
+        System.out.println("TEST: using Lucene60DimensionalFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
+      }
+
+      return new FilterCodec("Lucene60", Codec.getDefault()) {
+        @Override
+        public DimensionalFormat dimensionalFormat() {
+          return new DimensionalFormat() {
+            @Override
+            public DimensionalWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+              return new Lucene60DimensionalWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+            }
+
+            @Override
+            public DimensionalReader fieldsReader(SegmentReadState readState) throws IOException {
+              return new Lucene60DimensionalReader(readState);
+            }
+          };
+        }
+      };
+    } else {
+      return Codec.getDefault();
+    }
+  }
+
   public void testBasic() throws Exception {
     Directory dir = getDirectory();
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new Geo3DDocValuesFormat(PlanetModel.WGS84, maxPointsInLeaf, maxPointsSortInHeap)));
+    iwc.setCodec(getCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new Geo3DPointField("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
@@ -108,124 +120,8 @@ public class TestGeo3DPointField extends LuceneTestCase {
     dir.close();
   }
 
-  public void testPlanetModelChanged() throws Exception {
-    Directory dir = getDirectory();
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(TestUtil.alwaysDocValuesFormat(new Geo3DDocValuesFormat(PlanetModel.WGS84, maxPointsInLeaf, maxPointsSortInHeap)));
-    IndexWriter w = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    doc.add(new Geo3DPointField("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
-    w.addDocument(doc);
-    IndexReader r = DirectoryReader.open(w, true);
-    IndexSearcher s = new IndexSearcher(r);
-    try {
-      s.search(new PointInGeo3DShapeQuery(PlanetModel.SPHERE,
-                                          "field",
-                                          GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1);
-      fail("did not hit exc");      
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    w.close();
-    r.close();
-    dir.close();
-  }
-
   private static double toRadians(double degrees) {
     return Math.PI*(degrees/360.0);
-  }
-
-  public void testBKDBasic() throws Exception {
-    Directory dir = getDirectory();
-    IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-
-    BKD3DTreeWriter w = new BKD3DTreeWriter(dir, "bkd3d");
-
-    w.add(0, 0, 0, 0);
-    w.add(1, 1, 1, 1);
-    w.add(-1, -1, -1, 2);
-
-    long indexFP = w.finish(out);
-    out.close();
-
-    IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
-    in.seek(indexFP);
-    BKD3DTreeReader r = new BKD3DTreeReader(in, 3);
-
-    DocIdSet hits = r.intersect(Integer.MIN_VALUE, Integer.MAX_VALUE,
-                                Integer.MIN_VALUE, Integer.MAX_VALUE,
-                                Integer.MIN_VALUE, Integer.MAX_VALUE,
-
-                                new BKD3DTreeReader.ValueFilter() {
-
-                                  @Override
-                                  public boolean accept(int docID) {
-                                    return true;
-                                  }
-
-                                  @Override
-                                  public BKD3DTreeReader.Relation compare(int xMin, int xMax,
-                                                          int yMin, int yMax,
-                                                          int zMin, int zMax) {
-                                    return BKD3DTreeReader.Relation.SHAPE_INSIDE_CELL;
-                                  }
-
-                                });
-    DocIdSetIterator disi = hits.iterator();
-    assertEquals(0, disi.nextDoc());
-    assertEquals(1, disi.nextDoc());
-    assertEquals(2, disi.nextDoc());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc());
-    in.close();
-    dir.close();
-  }
-
-  static class Point {
-    final double x;
-    final double y;
-    final double z;
-
-    public Point(double x, double y, double z) {
-      this.x = x;
-      this.y = y;
-      this.z = z;
-    }
-
-    @Override
-    public String toString() {
-      return "x=" + x + " y=" + y + " z=" + z;
-    }
-  }
-
-  private static class Range {
-    final double min;
-    final double max;
-
-    public Range(double min, double max) {
-      this.min = min;
-      this.max = max;
-    }
-
-    @Override
-    public String toString() {
-      return min + " TO " + max;
-    }
-  }
-
-  private double randomCoord(PlanetModel planetModel) {
-    return planetModel.getMaximumMagnitude() * 2*(random().nextDouble()-0.5);
-  }
-
-  private Range randomRange(PlanetModel planetModel) {
-    double x = randomCoord(planetModel);
-    double y = randomCoord(planetModel);
-    if (x < y) {
-      return new Range(x, y);
-    } else {
-      return new Range(y, x);
-    }
   }
 
   private static PlanetModel getPlanetModel() {
@@ -241,161 +137,6 @@ public class TestGeo3DPointField extends LuceneTestCase {
       double oblateness = random().nextDouble() * 0.5 - 0.25;
       return new PlanetModel(1.0 + oblateness, 1.0 - oblateness);
     }
-  }
-
-  public void testBKDRandom() throws Exception {
-    List<Point> points = new ArrayList<>();
-    int numPoints = atLeast(10000);
-    Directory dir = getDirectory();
-    IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048); 
-
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
-
-    PlanetModel planetModel = getPlanetModel();
-    final double planetMax = planetModel.getMaximumMagnitude();
-    
-    BKD3DTreeWriter w = new BKD3DTreeWriter(dir, "bkd3d", maxPointsInLeaf, maxPointsSortInHeap);
-    for(int docID=0;docID<numPoints;docID++) {
-      Point point;
-      if (docID > 0 && random().nextInt(30) == 17) {
-        // Dup point
-        point = points.get(random().nextInt(points.size()));
-      } else {
-        point = new Point(randomCoord(planetModel),
-                          randomCoord(planetModel),
-                          randomCoord(planetModel));
-      }
-
-      if (VERBOSE) {
-        System.err.println("  docID=" + docID + " point=" + point);
-        System.err.println("    x=" + encodeValue(planetMax, point.x) +
-                           " y=" + encodeValue(planetMax, point.y) +
-                           " z=" + encodeValue(planetMax, point.z));
-      }
-
-      points.add(point);
-      w.add(encodeValue(planetMax, point.x),
-            encodeValue(planetMax, point.y),
-            encodeValue(planetMax, point.z),
-            docID);
-    }
-
-    long indexFP = w.finish(out);
-    out.close();
-
-    IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
-    in.seek(indexFP);
-    BKD3DTreeReader r = new BKD3DTreeReader(in, numPoints);
-
-    int numIters = atLeast(100);
-    for(int iter=0;iter<numIters;iter++) {
-      // bbox
-      Range x = randomRange(planetModel);
-      Range y = randomRange(planetModel);
-      Range z = randomRange(planetModel);
-
-      int xMinEnc = encodeValue(planetMax, x.min);
-      int xMaxEnc = encodeValue(planetMax, x.max);
-      int yMinEnc = encodeValue(planetMax, y.min);
-      int yMaxEnc = encodeValue(planetMax, y.max);
-      int zMinEnc = encodeValue(planetMax, z.min);
-      int zMaxEnc = encodeValue(planetMax, z.max);
-
-      if (VERBOSE) {
-        System.err.println("\nTEST: iter=" + iter + " bbox: x=" + x + " (" + xMinEnc + " TO " + xMaxEnc+ ")" + " y=" + y + " (" + yMinEnc + " TO " + yMaxEnc + ")"  + " z=" + z + " (" + zMinEnc + " TO " + zMaxEnc + ")" );
-      }
-
-      DocIdSet hits = r.intersect(xMinEnc, xMaxEnc,
-                                  yMinEnc, yMaxEnc,
-                                  zMinEnc, zMaxEnc,
-
-                                  new BKD3DTreeReader.ValueFilter() {
-
-                                    @Override
-                                    public boolean accept(int docID) {
-                                      Point point = points.get(docID);
-                                      //System.out.println("  accept docID=" + docID + " point=" + point + " (x=" + encodeValue(point.x) + " y=" + encodeValue(point.y) + " z=" + encodeValue(point.z) + ")");
-
-                                      // System.out.println("  accept docID=" + docID + " point: x=" + point.x + " y=" + point.y + " z=" + point.z);
-                                      int xEnc = encodeValue(planetMax, point.x);
-                                      int yEnc = encodeValue(planetMax, point.y);
-                                      int zEnc = encodeValue(planetMax, point.z);
-
-                                      boolean accept = xEnc >= xMinEnc && xEnc <= xMaxEnc &&
-                                        yEnc >= yMinEnc && yEnc <= yMaxEnc &&
-                                        zEnc >= zMinEnc && zEnc <= zMaxEnc;
-                                      //System.out.println("    " + accept);
-
-                                      return accept;
-                                    }
-
-                                    @Override
-                                    public BKD3DTreeReader.Relation compare(int cellXMin, int cellXMax,
-                                                                            int cellYMin, int cellYMax,
-                                                                            int cellZMin, int cellZMax) {
-                                      if (cellXMin > xMaxEnc || cellXMax < xMinEnc) {
-                                        return BKD3DTreeReader.Relation.SHAPE_OUTSIDE_CELL;
-                                      }
-                                      if (cellYMin > yMaxEnc || cellYMax < yMinEnc) {
-                                        return BKD3DTreeReader.Relation.SHAPE_OUTSIDE_CELL;
-                                      }
-                                      if (cellZMin > zMaxEnc || cellZMax < zMinEnc) {
-                                        return BKD3DTreeReader.Relation.SHAPE_OUTSIDE_CELL;
-                                      }
-
-                                      if (cellXMin >= xMinEnc && cellXMax <= xMaxEnc &&
-                                          cellYMin >= yMinEnc && cellYMax <= yMaxEnc &&
-                                          cellZMin >= zMinEnc && cellZMax <= zMaxEnc) {
-                                        return BKD3DTreeReader.Relation.CELL_INSIDE_SHAPE;
-                                      }
-
-                                      if (xMinEnc >= cellXMin && xMaxEnc <= cellXMax &&
-                                          yMinEnc >= cellYMin && yMaxEnc <= cellYMax &&
-                                          zMinEnc >= cellZMin && zMaxEnc <= cellZMax) {
-                                        return BKD3DTreeReader.Relation.SHAPE_INSIDE_CELL;
-                                      }
-
-                                      return BKD3DTreeReader.Relation.SHAPE_CROSSES_CELL;
-                                    }
-                                  });
-
-      DocIdSetIterator disi = hits.iterator();
-      FixedBitSet matches = new FixedBitSet(numPoints);
-      while (true) {
-        int nextHit = disi.nextDoc();
-        if (nextHit == DocIdSetIterator.NO_MORE_DOCS) {
-          break;
-        }
-        matches.set(nextHit);
-      }
-      if (VERBOSE) {
-        System.err.println("  total hits: " + matches.cardinality());
-      }
-
-      for(int docID=0;docID<numPoints;docID++) {
-        Point point = points.get(docID);
-        boolean actual = matches.get(docID);
-
-        // We must quantize exactly as BKD tree does else we'll get false failures
-        int xEnc = encodeValue(planetMax, point.x);
-        int yEnc = encodeValue(planetMax, point.y);
-        int zEnc = encodeValue(planetMax, point.z);
-
-        boolean expected = xEnc >= xMinEnc && xEnc <= xMaxEnc &&
-          yEnc >= yMinEnc && yEnc <= yMaxEnc &&
-          zEnc >= zMinEnc && zEnc <= zMaxEnc;
-
-        if (expected != actual) {
-          System.out.println("docID=" + docID + " is wrong: expected=" + expected + " actual=" + actual);
-          System.out.println("  x=" + point.x + " (" + xEnc + ")" + " y=" + point.y + " (" + yEnc + ")" + " z=" + point.z + " (" + zEnc + ")");
-          fail("wrong match");
-        }
-      }
-    }
-
-    in.close();
-    dir.close();
   }
 
   private static class Cell {
@@ -426,9 +167,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
     /** Returns true if the quantized point lies within this cell, inclusive on all bounds. */
     public boolean contains(double planetMax, GeoPoint point) {
-      int docX = encodeValue(planetMax, point.x);
-      int docY = encodeValue(planetMax, point.y);
-      int docZ = encodeValue(planetMax, point.z);
+      int docX = Geo3DUtil.encodeValue(planetMax, point.x);
+      int docY = Geo3DUtil.encodeValue(planetMax, point.y);
+      int docZ = Geo3DUtil.encodeValue(planetMax, point.z);
 
       return docX >= xMinEnc && docX <= xMaxEnc &&
         docY >= yMinEnc && docY <= yMaxEnc && 
@@ -442,9 +183,9 @@ public class TestGeo3DPointField extends LuceneTestCase {
   }
 
   private static GeoPoint quantize(double planetMax, GeoPoint point) {
-    return new GeoPoint(decodeValueCenter(planetMax, encodeValue(planetMax, point.x)),
-                        decodeValueCenter(planetMax, encodeValue(planetMax, point.y)),
-                        decodeValueCenter(planetMax, encodeValue(planetMax, point.z)));
+    return new GeoPoint(Geo3DUtil.decodeValueCenter(planetMax, Geo3DUtil.encodeValue(planetMax, point.x)),
+                        Geo3DUtil.decodeValueCenter(planetMax, Geo3DUtil.encodeValue(planetMax, point.y)),
+                        Geo3DUtil.decodeValueCenter(planetMax, Geo3DUtil.encodeValue(planetMax, point.z)));
   }
 
   /** Tests consistency of GeoArea.getRelationship vs GeoShape.isWithin */
@@ -488,12 +229,12 @@ public class TestGeo3DPointField extends LuceneTestCase {
 
       // Start with the root cell that fully contains the shape:
       Cell root = new Cell(null,
-                           encodeValueLenient(planetMax, bounds.getMinimumX()),
-                           encodeValueLenient(planetMax, bounds.getMaximumX()),
-                           encodeValueLenient(planetMax, bounds.getMinimumY()),
-                           encodeValueLenient(planetMax, bounds.getMaximumY()),
-                           encodeValueLenient(planetMax, bounds.getMinimumZ()),
-                           encodeValueLenient(planetMax, bounds.getMaximumZ()),
+                           Geo3DUtil.encodeValueLenient(planetMax, bounds.getMinimumX()),
+                           Geo3DUtil.encodeValueLenient(planetMax, bounds.getMaximumX()),
+                           Geo3DUtil.encodeValueLenient(planetMax, bounds.getMinimumY()),
+                           Geo3DUtil.encodeValueLenient(planetMax, bounds.getMaximumY()),
+                           Geo3DUtil.encodeValueLenient(planetMax, bounds.getMinimumZ()),
+                           Geo3DUtil.encodeValueLenient(planetMax, bounds.getMaximumZ()),
                            0);
 
       if (VERBOSE) {
@@ -534,14 +275,14 @@ public class TestGeo3DPointField extends LuceneTestCase {
         } else {
           
           GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel,
-                                                        decodeValueMin(planetMax, cell.xMinEnc), decodeValueMax(planetMax, cell.xMaxEnc),
-                                                        decodeValueMin(planetMax, cell.yMinEnc), decodeValueMax(planetMax, cell.yMaxEnc),
-                                                        decodeValueMin(planetMax, cell.zMinEnc), decodeValueMax(planetMax, cell.zMaxEnc));
+                                                        Geo3DUtil.decodeValueMin(planetMax, cell.xMinEnc), Geo3DUtil.decodeValueMax(planetMax, cell.xMaxEnc),
+                                                        Geo3DUtil.decodeValueMin(planetMax, cell.yMinEnc), Geo3DUtil.decodeValueMax(planetMax, cell.yMaxEnc),
+                                                        Geo3DUtil.decodeValueMin(planetMax, cell.zMinEnc), Geo3DUtil.decodeValueMax(planetMax, cell.zMaxEnc));
 
           if (VERBOSE) {
-            log.println("    minx="+decodeValueMin(planetMax, cell.xMinEnc)+" maxx="+decodeValueMax(planetMax, cell.xMaxEnc)+
-              " miny="+decodeValueMin(planetMax, cell.yMinEnc)+" maxy="+decodeValueMax(planetMax, cell.yMaxEnc)+
-              " minz="+decodeValueMin(planetMax, cell.zMinEnc)+" maxz="+decodeValueMax(planetMax, cell.zMaxEnc));
+            log.println("    minx="+Geo3DUtil.decodeValueMin(planetMax, cell.xMinEnc)+" maxx="+Geo3DUtil.decodeValueMax(planetMax, cell.xMaxEnc)+
+              " miny="+Geo3DUtil.decodeValueMin(planetMax, cell.yMinEnc)+" maxy="+Geo3DUtil.decodeValueMax(planetMax, cell.yMaxEnc)+
+              " minz="+Geo3DUtil.decodeValueMin(planetMax, cell.zMinEnc)+" maxz="+Geo3DUtil.decodeValueMax(planetMax, cell.zMaxEnc));
           }
 
           switch (xyzSolid.getRelationship(shape)) {          
@@ -898,8 +639,6 @@ public class TestGeo3DPointField extends LuceneTestCase {
   }
 
   private static void verify(double[] lats, double[] lons) throws Exception {
-    int maxPointsInLeaf = TestUtil.nextInt(random(), 16, 2048);
-    int maxPointsSortInHeap = TestUtil.nextInt(random(), maxPointsInLeaf, 1024*1024);
     IndexWriterConfig iwc = newIndexWriterConfig();
 
     PlanetModel planetModel = getPlanetModel();
@@ -909,18 +648,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     if (mbd != -1 && mbd < lats.length/100) {
       iwc.setMaxBufferedDocs(lats.length/100);
     }
-    final DocValuesFormat dvFormat = new Geo3DDocValuesFormat(planetModel, maxPointsInLeaf, maxPointsSortInHeap);
-    Codec codec = new Lucene60Codec() {
-        @Override
-        public DocValuesFormat getDocValuesFormatForField(String field) {
-          if (field.equals("point")) {
-            return dvFormat;
-          } else {
-            return super.getDocValuesFormatForField(field);
-          }
-        }
-      };
-    iwc.setCodec(codec);
+    iwc.setCodec(getCodec());
     Directory dir;
     if (lats.length > 100000) {
       dir = noVirusChecker(newFSDirectory(createTempDir("TestBKDTree")));

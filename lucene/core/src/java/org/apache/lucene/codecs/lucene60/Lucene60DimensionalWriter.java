@@ -1,6 +1,5 @@
 package org.apache.lucene.codecs.lucene60;
 
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -97,7 +96,7 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
 
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            return Relation.QUERY_CROSSES_CELL;
+            return Relation.CELL_CROSSES_QUERY;
           }
         });
 

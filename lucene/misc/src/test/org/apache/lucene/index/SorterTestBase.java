@@ -32,8 +32,8 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.DimensionalField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -395,7 +395,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
 
                        @Override
                        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                         return Relation.QUERY_CROSSES_CELL;
+                         return Relation.CELL_CROSSES_QUERY;
                        }
                      });
   }

@@ -77,7 +77,7 @@ public class TestDimensionalValues extends LuceneTestCase {
                      new IntersectVisitor() {
                        @Override
                        public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                         return Relation.QUERY_CROSSES_CELL;
+                         return Relation.CELL_CROSSES_QUERY;
                        }
                        public void visit(int docID) {
                          throw new IllegalStateException();
@@ -119,7 +119,7 @@ public class TestDimensionalValues extends LuceneTestCase {
                      new IntersectVisitor() {
                        @Override
                        public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                         return Relation.QUERY_CROSSES_CELL;
+                         return Relation.CELL_CROSSES_QUERY;
                        }
                        public void visit(int docID) {
                          throw new IllegalStateException();
@@ -164,7 +164,7 @@ public class TestDimensionalValues extends LuceneTestCase {
                        new IntersectVisitor() {
                          @Override
                          public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                           return Relation.QUERY_CROSSES_CELL;
+                           return Relation.CELL_CROSSES_QUERY;
                          }
                          public void visit(int docID) {
                            throw new IllegalStateException();
@@ -411,14 +411,14 @@ public class TestDimensionalValues extends LuceneTestCase {
                 assert max.compareTo(min) >= 0;
 
                 if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
-                  return Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.CELL_OUTSIDE_QUERY;
                 } else if (min.compareTo(queryMin[dim]) < 0 || max.compareTo(queryMax[dim]) > 0) {
                   crosses = true;
                 }
               }
 
               if (crosses) {
-                return Relation.QUERY_CROSSES_CELL;
+                return Relation.CELL_CROSSES_QUERY;
               } else {
                 return Relation.CELL_INSIDE_QUERY;
               }
@@ -1079,7 +1079,7 @@ public class TestDimensionalValues extends LuceneTestCase {
                 if (BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMin[dim], 0) < 0 ||
                     BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMax[dim], 0) > 0) {
                   //System.out.println("  query_outside_cell");
-                  return Relation.QUERY_OUTSIDE_CELL;
+                  return Relation.CELL_OUTSIDE_QUERY;
                 } else if (BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMin[dim], 0) < 0 ||
                            BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMax[dim], 0) > 0) {
                   crosses = true;
@@ -1088,7 +1088,7 @@ public class TestDimensionalValues extends LuceneTestCase {
 
               if (crosses) {
                 //System.out.println("  query_crosses_cell");
-                return Relation.QUERY_CROSSES_CELL;
+                return Relation.CELL_CROSSES_QUERY;
               } else {
                 //System.out.println("  cell_inside_query");
                 return Relation.CELL_INSIDE_QUERY;
