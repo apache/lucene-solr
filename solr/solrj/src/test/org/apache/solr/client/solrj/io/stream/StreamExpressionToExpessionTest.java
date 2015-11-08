@@ -133,10 +133,10 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     // Basic test
     stream = new ReducerStream(StreamExpressionParser.parse("group("
                                                   + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc, a_f asc\"),"
-                                                  + "by=\"a_s desc\")"), factory);
+                                                  + "by=\"a_s\")"), factory);
     expressionString = stream.toExpression(factory).toString();
     assertTrue(expressionString.contains("group(search(collection1"));
-    assertTrue(expressionString.contains("by=\"a_s desc\""));
+    assertTrue(expressionString.contains("by=a_s"));
   }
   
   @Test

@@ -85,6 +85,8 @@ New Features
 
 * SOLR-7938: MergeStream now supports merging more than 2 streams together (Dennis Gove)
 
+* SOLR-8198: Change ReducerStream to use StreamEqualitor instead of StreamComparator (Dennis Gove)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been

@@ -26,7 +26,11 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
@@ -53,14 +57,33 @@ public class ReducerStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
 
   private PushBackStream stream;
-  private StreamComparator comp;
+  private StreamEqualitor eq;
 
   private transient Tuple currentGroupHead;
+  
+  public ReducerStream(TupleStream stream,StreamEqualitor eq) throws IOException {
+    init(stream,eq);
+  }
 
   public ReducerStream(TupleStream stream,StreamComparator comp) throws IOException {
-    init(stream,comp);
+    init(stream, convertToEqualitor(comp));
   }
   
+  private StreamEqualitor convertToEqualitor(StreamComparator comp){
+    if(comp instanceof MultipleFieldComparator){
+      MultipleFieldComparator mComp = (MultipleFieldComparator)comp;
+      StreamEqualitor[] eqs = new StreamEqualitor[mComp.getComps().length];
+      for(int idx = 0; idx < mComp.getComps().length; ++idx){
+        eqs[idx] = convertToEqualitor(mComp.getComps()[idx]);
+      }
+      return new MultipleFieldEqualitor(eqs);
+    }
+    else{
+      FieldComparator fComp = (FieldComparator)comp;
+      return new FieldEqualitor(fComp.getFieldName());
+    }
+  }
+
   public ReducerStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
@@ -81,15 +104,15 @@ public class ReducerStream extends TupleStream implements Expressible {
     // Reducing is always done over equality, so always use an EqualTo comparator
     
     init(factory.constructStream(streamExpressions.get(0)),
-         factory.constructComparator(((StreamExpressionValue)byExpression.getParameter()).getValue(), FieldComparator.class)
+         factory.constructEqualitor(((StreamExpressionValue)byExpression.getParameter()).getValue(), FieldEqualitor.class)
         );
   }
   
-  private void init(TupleStream stream, StreamComparator comp) throws IOException{
+  private void init(TupleStream stream, StreamEqualitor eq) throws IOException{
     this.stream = new PushBackStream(stream);
-    this.comp = comp;
+    this.eq = eq;
     
-    if(!comp.isDerivedFrom(stream.getStreamSort())){
+    if(!eq.isDerivedFrom(stream.getStreamSort())){
       throw new IOException("Invalid ReducerStream - substream comparator (sort) must be a superset of this stream's comparator.");
     }
   }
@@ -103,8 +126,8 @@ public class ReducerStream extends TupleStream implements Expressible {
     expression.addParameter(stream.toExpression(factory));
     
     // over
-    if(comp instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("by",((Expressible)comp).toExpression(factory)));
+    if(eq instanceof Expressible){
+      expression.addParameter(new StreamExpressionNamedParameter("by",((Expressible)eq).toExpression(factory)));
     }
     else{
       throw new IOException("This ReducerStream contains a non-expressible comparator - it cannot be converted to an expression");
@@ -155,7 +178,7 @@ public class ReducerStream extends TupleStream implements Expressible {
         currentGroupHead = t;
         maps.add(t.getMap());
       } else {
-        if(comp.compare(currentGroupHead, t) == 0) {
+        if(eq.test(currentGroupHead, t)) {
           maps.add(t.getMap());
         } else {
           Tuple groupHead = currentGroupHead.clone();
@@ -170,7 +193,7 @@ public class ReducerStream extends TupleStream implements Expressible {
   
   /** Return the stream sort - ie, the order in which records are returned */
   public StreamComparator getStreamSort(){
-    return comp;
+    return stream.getStreamSort();
   }
 
   public int getCost() {

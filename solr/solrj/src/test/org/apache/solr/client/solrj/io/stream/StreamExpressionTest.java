@@ -444,7 +444,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     // basic
     expression = StreamExpressionParser.parse("group("
                                               + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
-                                              + "by=\"a_s asc\")");
+                                              + "by=\"a_s\")");
     stream = new ReducerStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -466,7 +466,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     // basic w/spaces
     expression = StreamExpressionParser.parse("group("
                                               + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
-                                              + "by=\"a_s asc\")");
+                                              + "by=\"a_s\")");
     stream = new ReducerStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -672,7 +672,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         .withFunctionName("group", ReducerStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
 
     List<Tuple> tuples = getTuples(pstream);
 
@@ -693,7 +693,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     //Test Descending with Ascending subsort
 
-    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s desc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s desc\")");
+    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s desc\")");
 
     tuples = getTuples(pstream);
 
