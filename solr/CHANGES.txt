@@ -55,6 +55,10 @@ Upgrading from Solr 5.x
   refrenced in your schema.xml, edit your config to use the functionally identical ClassicSimilarityFactory.
   See SOLR-8239 for more details.
 
+* SchemaSimilarityFactory has been modified to use BM25Similarity as the default for fieldTypes that
+  do not explicitly declare a Similarity.  The legacy behavior of using ClassicSimilarity as the
+  default will occur if the luceneMatchVersion for the collection is less then 6.0.  See SOLR-8261 for
+  more details.
 
 Detailed Change List
 ----------------------
@@ -129,6 +133,8 @@ Other Changes
 
 * SOLR-8114: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
   (Christine Poerschke)
+
+* SOLR-8261: Change SchemaSimilarityFactory default to BM25Similarity (hossman)
 
 ==================  5.4.0 ==================
 

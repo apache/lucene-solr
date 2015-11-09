@@ -18,21 +18,31 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Version;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
- * Tests per-field similarity support in the schema
- * @see TestPerFieldSimilarityClassic
+ * Tests per-field similarity support in the schema when luceneMatchVersion indicates 
+ * {@link ClassicSimilarity} should be the default.
+ * @see TestPerFieldSimilarity
  */
-public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
+public class TestPerFieldSimilarityClassic extends BaseSimilarityTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // any value below 6.0 should have this behavior
+    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_5_3_1.toString());
     initCore("solrconfig-basic.xml","schema-sim.xml");
   }
   
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("tests.luceneMatchVersion");
+  }
+
   /** test a field where the sim is specified directly */
   public void testDirect() throws Exception {
     assertEquals(SweetSpotSimilarity.class, getSimilarity("sim1text").getClass());
@@ -60,18 +70,18 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
   /** test a field where no similarity is specified */
   public void testDefaults() throws Exception {
     Similarity sim = getSimilarity("sim3text");
-    assertEquals(BM25Similarity.class, sim.getClass());;
+    assertEquals(ClassicSimilarity.class, sim.getClass());;
   }
   
   /** ... and for a dynamic field */
   public void testDefaultsDynamic() throws Exception {
     Similarity sim = getSimilarity("text_sim3");
-    assertEquals(BM25Similarity.class, sim.getClass());
+    assertEquals(ClassicSimilarity.class, sim.getClass());
   }
   
   /** test a field that does not exist */
   public void testNonexistent() throws Exception {
     Similarity sim = getSimilarity("sdfdsfdsfdswr5fsdfdsfdsfs");
-    assertEquals(BM25Similarity.class, sim.getClass());
+    assertEquals(ClassicSimilarity.class, sim.getClass());
   }
 }

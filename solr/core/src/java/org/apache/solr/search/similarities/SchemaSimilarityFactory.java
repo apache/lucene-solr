@@ -18,8 +18,11 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Version;
+
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -27,10 +30,15 @@ import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
+ * <p>
  * SimilarityFactory that returns a {@link PerFieldSimilarityWrapper}
  * that delegates to the field type, if it's configured, otherwise
- * {@link ClassicSimilarity}.
- *
+ * returns a sensible default depending on the {@link Version} matching configured.
+ * </p>
+ * <ul>
+ *  <li><code>luceneMatchVersion &lt; 6.0</code> = {@link ClassicSimilarity}</li>
+ *  <li><code>luceneMatchVersion &gt;= 6.0</code> = {@link BM25Similarity}</li>
+ * </ul>
  * <p>
  * <b>NOTE:</b> Users should be aware that in addition to supporting 
  * <code>Similarity</code> configurations specified on individual 
@@ -44,13 +52,16 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * @see FieldType#getSimilarity
  */
 public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCoreAware {
-  private Similarity similarity;
-  private Similarity defaultSimilarity = new ClassicSimilarity();
+  private Similarity similarity; // set by init
+  private Similarity defaultSimilarity; // set by inform(SolrCore)
   private volatile SolrCore core;
 
   @Override
   public void inform(SolrCore core) {
     this.core = core;
+    this.defaultSimilarity = this.core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_6_0_0)
+      ? new BM25Similarity()
+      : new ClassicSimilarity();
   }
   
   @Override
