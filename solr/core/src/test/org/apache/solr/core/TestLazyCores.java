@@ -17,6 +17,17 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
@@ -34,16 +45,6 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
@@ -567,7 +568,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     NodeConfig config = SolrXmlConfig.fromFile(loader, solrXml);
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
-    return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    return createCoreContainer(config, new CorePropertiesLocator(Paths.get(config.getCoreRootDirectory())));
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the directory.

@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -33,7 +34,6 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.ZkController;
@@ -55,8 +55,8 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.HttpClientInterceptorPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.SecurityPluginHolder;
@@ -69,7 +69,13 @@ import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Collections.EMPTY_MAP;
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 
@@ -198,11 +204,11 @@ public class CoreContainer {
   }
 
   public CoreContainer(NodeConfig config, Properties properties) {
-    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    this(config, properties, new CorePropertiesLocator(Paths.get(config.getCoreRootDirectory())));
   }
   
   public CoreContainer(NodeConfig config, Properties properties, boolean asyncSolrCoreLoad) {
-    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
+    this(config, properties, new CorePropertiesLocator(Paths.get(config.getCoreRootDirectory())), asyncSolrCoreLoad);
   }
 
   public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator) {

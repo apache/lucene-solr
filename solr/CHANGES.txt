@@ -466,6 +466,8 @@ Other Changes
 * SOLR-8253: AbstractDistribZkTestBase can sometimes fail to shut down its
   ZKServer (Alan Woodward)
 
+* SOLR-8260: Use NIO2 APIs in core discovery (Alan Woodward)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
