@@ -457,6 +457,9 @@ Other Changes
 
 * SOLR-8239: Added ClassicSimilarityFactory, marked DefaultSimilarityFactory as deprecated. (hossman)
 
+* SOLR-8253: AbstractDistribZkTestBase can sometimes fail to shut down its
+  ZKServer (Alan Woodward)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
