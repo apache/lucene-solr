@@ -348,6 +348,9 @@ Bug Fixes
 * SOLR-8223: Avoid accidentally swallowing OutOfMemoryError (in LeaderInitiatedRecoveryThread.java
   or CoreContainer.java) (Mike Drob via Christine Poerschke)
 
+* SOLR-8255: MiniSolrCloudCluster needs to use a thread-safe list to keep track
+  of its child nodes (Alan Woodward)
+
 Optimizations
 ----------------------
 
