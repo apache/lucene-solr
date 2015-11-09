@@ -268,8 +268,12 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty(MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
     
     resetExceptionIgnores();
-    super.distribTearDown();
-    zkServer.shutdown();
+    try {
+      super.distribTearDown();
+    }
+    finally {
+      zkServer.shutdown();
+    }
   }
   
   protected void printLayout() throws Exception {
