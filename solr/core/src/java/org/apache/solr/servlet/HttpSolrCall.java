@@ -783,10 +783,8 @@ public class HttpSolrCall {
     for (Map.Entry<String, Slice> entry : entries) {
       // first see if we have the leader
       Replica leaderProps = clusterState.getLeader(collection, entry.getKey());
-      if (liveNodes.contains(leaderProps.getNodeName()) && leaderProps.getState() == Replica.State.ACTIVE) {
-        if (leaderProps != null) {
-          core = checkProps(leaderProps);
-        }
+      if (leaderProps != null && liveNodes.contains(leaderProps.getNodeName()) && leaderProps.getState() == Replica.State.ACTIVE) {
+        core = checkProps(leaderProps);
         if (core != null) {
           return core;
         }
