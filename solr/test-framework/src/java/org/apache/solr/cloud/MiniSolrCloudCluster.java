@@ -26,11 +26,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -89,7 +89,7 @@ public class MiniSolrCloudCluster {
 
   private final ZkTestServer zkServer;
   private final boolean externalZkServer;
-  private final List<JettySolrRunner> jettys = new LinkedList<>();
+  private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
   private final CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
