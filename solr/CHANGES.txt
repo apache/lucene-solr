@@ -354,6 +354,9 @@ Bug Fixes
 * SOLR-8254: HttpSolrCore.getCoreByCollection() can throw NPE (Alan Woodward,
   Mark Miller)
 
+* SOLR-8262: Comment out /stream handler from sample solrconfig.xml's for security reasons
+  (Joel Bernstein)
+
 Optimizations
 ----------------------
 

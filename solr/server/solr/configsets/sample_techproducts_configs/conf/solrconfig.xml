@@ -899,15 +899,27 @@
 
 
   <!--
-  Distributed Stream processing.
-  -->
 
-  <requestHandler name="/stream" class="solr.StreamHandler">
-    <lst name="invariants">
-      <str name="wt">json</str>
-      <str name="distrib">false</str>
-    </lst>
-  </requestHandler>
+   Uncomment for distributed Stream processing (also required by the /sql handler in map_reduce mode).
+
+   SECURTIY WARNING: This feature uses Java Serialization for RPC (Remote Procedure Calls) to send executable
+                     Java Objects to Worker nodes.
+
+                     Solr also currently has apache commons-collections in it's classpath.
+
+                     This makes Solr vulnerable to this security exploit:
+
+                     https://issues.apache.org/jira/browse/COLLECTIONS-580.
+
+
+ <requestHandler name="/stream" class="solr.StreamHandler">
+   <lst name="invariants">
+     <str name="wt">json</str>
+     <str name="distrib">false</str>
+   </lst>
+ </requestHandler>
+
+ -->
 
 
   <requestHandler name="/sql" class="solr.SQLHandler">
