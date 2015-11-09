@@ -351,6 +351,9 @@ Bug Fixes
 * SOLR-8255: MiniSolrCloudCluster needs to use a thread-safe list to keep track
   of its child nodes (Alan Woodward)
 
+* SOLR-8254: HttpSolrCore.getCoreByCollection() can throw NPE (Alan Woodward,
+  Mark Miller)
+
 Optimizations
 ----------------------
 
