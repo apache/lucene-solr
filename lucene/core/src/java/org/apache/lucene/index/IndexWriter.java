@@ -3058,6 +3058,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return Thread.holdsLock(fullFlushLock);
   }
 
+  /** Moves all in-memory segments to the {@link Directory}, but does not commit
+   *  (fsync) them (call {@link #commit} for that). */
+  public final void flush() throws IOException {
+    flush(true, true);
+  }
+
   /**
    * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory.
@@ -3065,8 +3071,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  deletes or docs were flushed) if necessary
    * @param applyAllDeletes whether pending deletes should also
    */
-  // why protected
-  protected final void flush(boolean triggerMerge, boolean applyAllDeletes) throws IOException {
+  final void flush(boolean triggerMerge, boolean applyAllDeletes) throws IOException {
 
     // NOTE: this method cannot be sync'd because
     // maybeMerge() in turn calls mergeScheduler.merge which

@@ -520,8 +520,9 @@ public class TestIndexWriter extends LuceneTestCase {
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectorOffsets(true);
       doc.add(newField("field", "aaa", customType));
-      for(int i=0;i<19;i++)
+      for(int i=0;i<19;i++) {
         writer.addDocument(doc);
+      }
       writer.flush(false, true);
       writer.close();
       SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -529,6 +530,25 @@ public class TestIndexWriter extends LuceneTestCase {
       // have 10 segments
       assertEquals(10, sis.size());
       dir.close();
+    }
+
+    public void testFlushWithNoCommit() throws IOException {
+      Directory dir = newDirectory();
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      IndexWriter writer = new IndexWriter(dir, iwc);
+      Document doc = new Document();
+      writer.addDocument(doc);
+      writer.commit();
+      
+      writer.addDocument(doc);
+      writer.flush();
+      DirectoryReader r = DirectoryReader.open(dir);
+      assertEquals(1, r.maxDoc());
+      writer.commit();
+      DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+      assertNotNull(r2);
+      assertEquals(2, r2.maxDoc());
+      IOUtils.close(r2, r, writer, dir);
     }
 
     // Make sure we can flush segment w/ norms, then add
