@@ -1,6 +1,18 @@
 package org.apache.solr.cloud;
 
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
+import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,19 +31,6 @@ import java.util.Properties;
  * limitations under the License.
  */
 
-import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-
 /**
  * Test for {@link LeaderInitiatedRecoveryThread}
  */
@@ -48,8 +47,8 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
 
     final String leaderCoreNodeName = shardToLeaderJetty.get(SHARD1).coreNodeName;
     final CloudJettyRunner leaderRunner = shardToLeaderJetty.get(SHARD1);
-    SolrDispatchFilter filter = (SolrDispatchFilter) leaderRunner.jetty.getDispatchFilter().getFilter();
-    ZkController zkController = filter.getCores().getZkController();
+    CoreContainer coreContainer = leaderRunner.jetty.getCoreContainer();
+    ZkController zkController = coreContainer.getZkController();
 
     CloudJettyRunner notLeader = null;
     for (CloudJettyRunner cloudJettyRunner : shardToJetty.get(SHARD1)) {
@@ -82,7 +81,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
       */
     try {
       
-      LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
+      LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
           DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd);
       assertFalse(zkController.isReplicaInRecoveryHandling(replicaCoreNodeProps.getCoreUrl()));
       thread.run();
@@ -95,7 +94,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     /*
      2. Test that a non-live replica cannot be put into LIR or down state
       */
-    LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
+    LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
         DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd);
     // kill the replica
     int children = cloudClient.getZkStateReader().getZkClient().getChildren("/live_nodes", null, true).size();
@@ -126,7 +125,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     ChaosMonkey.start(notLeader.jetty);
     waitForRecoveriesToFinish(true);
 
-    thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
+    thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
         DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
@@ -141,7 +140,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     /*
      4. Test that if ZK connection loss or session expired then thread should not attempt to publish down state even if forcePublish=true
       */
-    thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
+    thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
         DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
@@ -156,7 +155,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     /*
      5. Test that any exception other then ZK connection loss or session expired should publish down state only if forcePublish=true
       */
-    thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
+    thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
         DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
@@ -191,12 +190,12 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     /*
     6. Test that non-leader cannot set LIR nodes
      */
-    
-    filter = (SolrDispatchFilter) notLeader.jetty.getDispatchFilter().getFilter();
-    zkController = filter.getCores().getZkController();
 
-    thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, filter.getCores().getCores().iterator().next().getCoreDescriptor()) {
+    coreContainer = notLeader.jetty.getCoreContainer();
+    zkController = coreContainer.getZkController();
+
+    thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, coreContainer.getCores().iterator().next().getCoreDescriptor()) {
       @Override
       protected void updateLIRState(String replicaCoreNodeName) {
         try {
@@ -215,10 +214,10 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
      7. assert that we can write a LIR state if everything else is fine
       */
     // reset the zkcontroller to the one from the leader
-    filter = (SolrDispatchFilter) leaderRunner.jetty.getDispatchFilter().getFilter();
-    zkController = filter.getCores().getZkController();
-    thread = new LeaderInitiatedRecoveryThread(zkController, filter.getCores(),
-        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, filter.getCores().getCores().iterator().next().getCoreDescriptor());
+    coreContainer = leaderRunner.jetty.getCoreContainer();
+    zkController = coreContainer.getZkController();
+    thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
+        DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, coreContainer.getCores().iterator().next().getCoreDescriptor());
     thread.publishDownState(replicaCoreNodeProps.getCoreName(), replica.getName(), replica.getNodeName(), replicaCoreNodeProps.getCoreUrl(), false);
     timeOut = new TimeOut(30, TimeUnit.SECONDS);
     while (!timeOut.hasTimedOut()) {

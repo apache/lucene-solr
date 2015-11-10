@@ -1200,8 +1200,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     log.info("Turning on auto soft commit: " + time);
     for (List<CloudJettyRunner> jettyList : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jettyList) {
-        CoreContainer cores = ((SolrDispatchFilter) jetty.jetty
-            .getDispatchFilter().getFilter()).getCores();
+        CoreContainer cores = jetty.jetty.getCoreContainer();
         for (SolrCore core : cores.getCores()) {
           ((DirectUpdateHandler2) core.getUpdateHandler())
               .getSoftCommitTracker().setTimeUpperBound(time);

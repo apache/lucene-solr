@@ -33,7 +33,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SnapShooter;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,8 +78,7 @@ public class CleanupOldIndexTest extends AbstractFullDistribZkTestBase {
 
     // create some "old" index directories
     JettySolrRunner jetty = chaosMonkey.getShard("shard1", 1);
-    SolrDispatchFilter filter = (SolrDispatchFilter)jetty.getDispatchFilter().getFilter();
-    CoreContainer coreContainer = filter.getCores();
+    CoreContainer coreContainer = jetty.getCoreContainer();
     File dataDir = null;
     try (SolrCore solrCore = coreContainer.getCore("collection1")) {
       dataDir = new File(solrCore.getDataDir());
