@@ -716,18 +716,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
 
-      mockController.publishState(collection, "core1", "core_node1", Replica.State.RECOVERING, 1);
+      mockController.publishState(collection, "core1", "core_node1", Replica.State.ACTIVE, 1);
 
-      // Wait till the leader election has finished
-      long maxWaitTimeForLeaderElection = 5000;
-      for (int i = 0; i < maxWaitTimeForLeaderElection / 200; i++) {
-        if (overseer.getStats().getSuccessCount(OverseerAction.LEADER.toLower()) > 0) {
-          break;
-        }
-        Thread.sleep(200);
-      }
       assertNotNull(overseer.getStats());
-      assertEquals(1, (overseer.getStats().getSuccessCount(OverseerAction.LEADER.toLower())));
       assertTrue((overseer.getStats().getSuccessCount(OverseerAction.STATE.toLower())) > 0);
 
       // shut it down
@@ -738,7 +729,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
       assertNotNull(overseer.getStats());
-      assertEquals(0, (overseer.getStats().getSuccessCount(OverseerAction.LEADER.toLower())));
+      assertEquals(0, (overseer.getStats().getSuccessCount(OverseerAction.STATE.toLower())));
 
     } finally {
       close(mockController);
