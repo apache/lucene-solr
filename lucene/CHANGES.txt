@@ -13,6 +13,9 @@ New Features
   input tokens. Useful for normalizing short text in clustering/linking 
   tasks. (Mark Harwood, Adrien Grand)
 
+* LUCENE-6875: New Serbian normalization filter. (Nikola Smolenski via 
+  Robert Muir, Dawid Weiss)
+
 * LUCENE-6720: New FunctionRangeQuery wrapper around ValueSourceScorer
   (returned from ValueSource/FunctionValues.getRangeScorer()). (David Smiley)
 
