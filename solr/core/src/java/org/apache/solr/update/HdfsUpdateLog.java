@@ -101,7 +101,7 @@ public class HdfsUpdateLog extends UpdateLog {
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
     
     tlogDfsReplication = (Integer) info.initArgs.get( "tlogDfsReplication");
-    if (tlogDfsReplication == null) tlogDfsReplication = 1;
+    if (tlogDfsReplication == null) tlogDfsReplication = 3;
 
     log.info("Initializing HdfsUpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} tlogDfsReplication={}",
         dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep, tlogDfsReplication);
