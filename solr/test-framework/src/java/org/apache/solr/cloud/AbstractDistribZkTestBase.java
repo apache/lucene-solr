@@ -31,7 +31,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 
@@ -116,8 +115,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     
     // now wait till we see the leader for each shard
     for (int i = 1; i <= numShards; i++) {
-      ZkStateReader zkStateReader = ((SolrDispatchFilter) jettys.get(0)
-          .getDispatchFilter().getFilter()).getCores().getZkController()
+      ZkStateReader zkStateReader = jettys.get(0).getCoreContainer().getZkController()
           .getZkStateReader();
       zkStateReader.getLeaderRetry("collection1", "shard" + (i + 2), 15000);
     }

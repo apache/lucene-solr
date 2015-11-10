@@ -1,7 +1,5 @@
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -13,7 +11,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.ForceLeader;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -29,13 +26,14 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -87,7 +85,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
       Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, SHARD1);
       JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
-      ZkController zkController = ((SolrDispatchFilter) notLeader0.getDispatchFilter().getFilter()).getCores().getZkController();
+      ZkController zkController = notLeader0.getCoreContainer().getZkController();
 
       putNonLeadersIntoLIR(testCollectionName, SHARD1, zkController, leader, notLeaders);
 
@@ -181,7 +179,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
       Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, SHARD1);
       JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
-      ZkController zkController = ((SolrDispatchFilter) notLeader0.getDispatchFilter().getFilter()).getCores().getZkController();
+      ZkController zkController = notLeader0.getCoreContainer().getZkController();
 
       // Mark all replicas down
       setReplicaState(testCollectionName, SHARD1, leader, State.DOWN);

@@ -477,6 +477,9 @@ Other Changes
 
 * SOLR-8260: Use NIO2 APIs in core discovery (Alan Woodward)
 
+* SOLR-8259: Deprecate JettySolrRunner.getDispatchFilter(), add
+  .getSolrDispatchFilter() and .getCoreContainer() (Alan Woodward)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

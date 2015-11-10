@@ -33,14 +33,12 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.Test;
 
 
@@ -104,7 +102,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     Map<String, Integer> shardVsCount = new HashMap<>();
     for (JettySolrRunner runner : jettys) {
-      CoreContainer container = ((SolrDispatchFilter) runner.getDispatchFilter().getFilter()).getCores();
+      CoreContainer container = runner.getCoreContainer();
       for (SolrCore core : container.getCores()) {
         SolrRequestHandler select = core.getRequestHandler("");
         long c = (long) select.getStatistics().get("requests");
@@ -179,7 +177,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     //Test to see if the query got forwarded to the active replica or not.
     for (JettySolrRunner jetty : jettys) {
-      CoreContainer container = ((SolrDispatchFilter) jetty.getDispatchFilter().getFilter()).getCores();
+      CoreContainer container = jetty.getCoreContainer();
       for (SolrCore core : container.getCores()) {
         if (core.getName().equals(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
           SolrRequestHandler select = core.getRequestHandler("");

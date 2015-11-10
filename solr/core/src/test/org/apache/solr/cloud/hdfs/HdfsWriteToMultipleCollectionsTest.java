@@ -17,8 +17,12 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -33,7 +37,6 @@ import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
 import org.apache.solr.store.blockcache.BlockDirectoryCache;
@@ -43,11 +46,6 @@ import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 @Slow
 @Nightly
@@ -127,8 +125,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
     BlockCache lastBlockCache = null;
     // assert that we are using the block directory and that write and read caching are being used
     for (JettySolrRunner jetty : jettys) {
-      CoreContainer cores = ((SolrDispatchFilter) jetty.getDispatchFilter()
-          .getFilter()).getCores();
+      CoreContainer cores = jetty.getCoreContainer();
       Collection<SolrCore> solrCores = cores.getCores();
       for (SolrCore core : solrCores) {
         if (core.getCoreDescriptor().getCloudDescriptor().getCollectionName()

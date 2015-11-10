@@ -35,7 +35,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.servlet.SolrDispatchFilter;
 
 /**
  * A ShardHandlerFactory that extends HttpShardHandlerFactory and
@@ -153,7 +152,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
    */
   public static void setTrackingQueue(List<JettySolrRunner> runners, Queue<ShardRequestAndParams> queue) {
     for (JettySolrRunner runner : runners) {
-      CoreContainer container = ((SolrDispatchFilter) runner.getDispatchFilter().getFilter()).getCores();
+      CoreContainer container = runner.getCoreContainer();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
       assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: " + factory.getClass();
       TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;

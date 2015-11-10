@@ -17,6 +17,13 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -32,18 +39,8 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.servlet.Filter;
-
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The monkey can stop random or specific jetties used with SolrCloud.
@@ -120,18 +117,15 @@ public class ChaosMonkey {
   // TODO: expire all clients at once?
   public void expireSession(final JettySolrRunner jetty) {
     monkeyLog("expire session for " + jetty.getLocalPort() + " !");
-    
-    SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty
-        .getDispatchFilter().getFilter();
-    if (solrDispatchFilter != null) {
-      CoreContainer cores = solrDispatchFilter.getCores();
-      if (cores != null) {
-        causeConnectionLoss(jetty);
-        long sessionId = cores.getZkController().getZkClient()
-            .getSolrZooKeeper().getSessionId();
-        zkServer.expire(sessionId);
-      }
+
+    CoreContainer cores = jetty.getCoreContainer();
+    if (cores != null) {
+      causeConnectionLoss(jetty);
+      long sessionId = cores.getZkController().getZkClient()
+          .getSolrZooKeeper().getSessionId();
+      zkServer.expire(sessionId);
     }
+
   }
   
   public void expireRandomSession() throws KeeperException, InterruptedException {
@@ -156,14 +150,10 @@ public class ChaosMonkey {
   }
   
   public static void causeConnectionLoss(JettySolrRunner jetty) {
-    SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty
-        .getDispatchFilter().getFilter();
-    if (solrDispatchFilter != null) {
-      CoreContainer cores = solrDispatchFilter.getCores();
-      if (cores != null) {
-        SolrZkClient zkClient = cores.getZkController().getZkClient();
-        zkClient.getSolrZooKeeper().closeCnxn();
-      }
+    CoreContainer cores = jetty.getCoreContainer();
+    if (cores != null) {
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      zkClient.getSolrZooKeeper().closeCnxn();
     }
   }
 
@@ -191,16 +181,11 @@ public class ChaosMonkey {
   private static void stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     assert(jetty != null);
     monkeyLog("stop shard! " + jetty.getLocalPort());
-    // get a clean close so that no dirs are left open...
-    FilterHolder fh = jetty.getDispatchFilter();
-    if (fh != null) {
-      SolrDispatchFilter sdf = (SolrDispatchFilter) fh.getFilter();
-      if (sdf != null) {
-        sdf.destroy();
-      }
-    }
+    SolrDispatchFilter sdf = jetty.getSolrDispatchFilter();
+    if (sdf != null)
+      sdf.destroy();
     jetty.stop();
-    
+
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not stop jetty");
     }
@@ -214,18 +199,13 @@ public class ChaosMonkey {
   }
   
   public static void kill(JettySolrRunner jetty) throws Exception {
-    FilterHolder filterHolder = jetty.getDispatchFilter();
-    if (filterHolder != null) {
-      Filter filter = filterHolder.getFilter();
-      if (filter != null) {
-        CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
-        if (cores != null) {
-          if (cores.isZooKeeperAware()) {
-            int zklocalport = ((InetSocketAddress) cores.getZkController()
-                .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
-            IpTables.blockPort(zklocalport);
-          }
-        }
+
+    CoreContainer cores = jetty.getCoreContainer();
+    if (cores != null) {
+      if (cores.isZooKeeperAware()) {
+        int zklocalport = ((InetSocketAddress) cores.getZkController()
+            .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+        IpTables.blockPort(zklocalport);
       }
     }
 
@@ -352,26 +332,10 @@ public class ChaosMonkey {
         log.error("Could not get leader", t);
         return null;
       }
-      
-      FilterHolder fh = cjetty.jetty.getDispatchFilter();
-      if (fh == null) {
-        monkeyLog("selected jetty not running correctly - skip");
-        return null;
-      }
-      SolrDispatchFilter df = ((SolrDispatchFilter) fh.getFilter());
-      if (df == null) {
-        monkeyLog("selected jetty not running correctly - skip");
-        return null;
-      }
-      CoreContainer cores = df.getCores();
-      if (cores == null) {
-        monkeyLog("selected jetty not running correctly - skip");
-        return null;
-      }
 
       // cluster state can be stale - also go by our 'near real-time' is leader prop
       boolean rtIsLeader;
-      try (SolrCore core = cores.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
+      try (SolrCore core = cjetty.jetty.getCoreContainer().getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
         if (core == null) {
           monkeyLog("selected jetty not running correctly - skip");
           return null;
@@ -589,20 +553,15 @@ public class ChaosMonkey {
         }
       }
     }
-    FilterHolder filterHolder = jetty.getDispatchFilter();
-    if (filterHolder != null) {
-      Filter filter = filterHolder.getFilter();
-      if (filter != null) {
-        CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
-        if (cores != null) {
-          if (cores.isZooKeeperAware()) {
-            int zklocalport = ((InetSocketAddress) cores.getZkController()
-                .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
-            IpTables.unblockPort(zklocalport);
-          }
-        }
+    CoreContainer cores = jetty.getCoreContainer();
+    if (cores != null) {
+      if (cores.isZooKeeperAware()) {
+        int zklocalport = ((InetSocketAddress) cores.getZkController()
+            .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+        IpTables.unblockPort(zklocalport);
       }
     }
+
     return true;
   }
 
