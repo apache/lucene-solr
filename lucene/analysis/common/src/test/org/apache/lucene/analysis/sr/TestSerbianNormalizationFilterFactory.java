@@ -36,7 +36,15 @@ public class TestSerbianNormalizationFilterFactory extends BaseTokenStreamFactor
     stream = tokenFilterFactory("SerbianNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] { "djura" });
   }
-  
+
+  public void testRegularStemming() throws Exception {
+    Reader reader = new StringReader("ђура");
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
+    stream = tokenFilterFactory("SerbianNormalization", "haircut", "regular").create(stream);
+    assertTokenStreamContents(stream, new String[] { "đura" });
+  }
+   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     try {
@@ -46,4 +54,5 @@ public class TestSerbianNormalizationFilterFactory extends BaseTokenStreamFactor
       assertTrue(expected.getMessage().contains("Unknown parameters"));
     }
   }
+
 }

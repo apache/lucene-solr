@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.sr;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -31,15 +32,19 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
- *     &lt;filter class="solr.SerbianNormalizationFilterFactory"/&gt;
+ *     &lt;filter class="solr.SerbianNormalizationFilterFactory"
+ *       haircut="bald"/&gt; 
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  */
 public class SerbianNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  final String haircut;
 
   /** Creates a new SerbianNormalizationFilterFactory */
   public SerbianNormalizationFilterFactory(Map<String,String> args) {
     super(args);
+
+	this.haircut = get(args, "haircut", Arrays.asList( "bald", "regular" ), "bald");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -47,7 +52,11 @@ public class SerbianNormalizationFilterFactory extends TokenFilterFactory implem
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new SerbianNormalizationFilter(input);
+	if( this.haircut.equals( "regular" ) ) {
+	    return new SerbianNormalizationRegularFilter(input);
+	} else {
+	    return new SerbianNormalizationFilter(input);
+	}
   }
 
   @Override
