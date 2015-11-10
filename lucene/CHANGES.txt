@@ -273,6 +273,8 @@ Bug Fixes
   "leak" if you tokenize large strings with many threads across many
   indices (Alex Chow via Mike McCandless)
 
+* LUCENE-6888: Explain output of map() function now also prints default value (janhoy)
+
 Other
 
 * LUCENE-6478: Test execution can hang with java.security.debug. (Dawid Weiss)
