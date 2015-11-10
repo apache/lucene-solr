@@ -136,6 +136,8 @@ Other Changes
 
 * SOLR-8261: Change SchemaSimilarityFactory default to BM25Similarity (hossman)
 
+* SOLR-8259: Remove deprecated JettySolrRunner.getDispatchFilter()
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

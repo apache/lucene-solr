@@ -354,14 +354,6 @@ public class JettySolrRunner {
   }
 
   /**
-   * @deprecated Use {@link #getSolrDispatchFilter()} or {@link #getCoreContainer()}
-   */
-  @Deprecated
-  public FilterHolder getDispatchFilter() {
-    return dispatchFilter;
-  }
-
-  /**
    * @return the {@link SolrDispatchFilter} for this node
    */
   public SolrDispatchFilter getSolrDispatchFilter() { return (SolrDispatchFilter) dispatchFilter.getFilter(); }
