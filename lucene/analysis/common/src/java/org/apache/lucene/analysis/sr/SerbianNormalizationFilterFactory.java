@@ -44,7 +44,7 @@ public class SerbianNormalizationFilterFactory extends TokenFilterFactory implem
   public SerbianNormalizationFilterFactory(Map<String,String> args) {
     super(args);
 
-	this.haircut = get(args, "haircut", Arrays.asList( "bald", "regular" ), "bald");
+  this.haircut = get(args, "haircut", Arrays.asList( "bald", "regular" ), "bald");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -52,11 +52,11 @@ public class SerbianNormalizationFilterFactory extends TokenFilterFactory implem
 
   @Override
   public TokenStream create(TokenStream input) {
-	if( this.haircut.equals( "regular" ) ) {
-	    return new SerbianNormalizationRegularFilter(input);
-	} else {
-	    return new SerbianNormalizationFilter(input);
-	}
+    if( this.haircut.equals( "regular" ) ) {
+      return new SerbianNormalizationRegularFilter(input);
+    } else {
+      return new SerbianNormalizationFilter(input);
+    }
   }
 
   @Override
