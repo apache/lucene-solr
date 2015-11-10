@@ -129,8 +129,6 @@ public class BKDReader implements Accountable {
     int count = in.readVInt();
     visitor.grow(count);
 
-    // TODO: especially for the 1D case, this was a decent speedup, because caller could know it should budget for around XXX docs:
-    //state.docs.grow(count);
     for(int i=0;i<count;i++) {
       visitor.visit(in.readInt());
     }
@@ -142,9 +140,6 @@ public class BKDReader implements Accountable {
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    // TODO: we could maybe pollute the IntersectVisitor API with a "grow" method if this maybe helps perf
-    // enough (it did before, esp. for the 1D case):
-    //state.docs.grow(count);
     for(int i=0;i<count;i++) {
       docIDs[i] = in.readInt();
     }

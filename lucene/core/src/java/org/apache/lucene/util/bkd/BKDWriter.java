@@ -474,6 +474,8 @@ public class BKDWriter implements Closeable {
 
     out.writeVInt(leafBlockFPs.length);
 
+    // TODO: for 1D case, don't waste the first byte of each split value (it's always 0)
+
     // NOTE: splitPackedValues[0] is unused, because nodeID is 1-based:
     out.writeBytes(splitPackedValues, 0, splitPackedValues.length);
 

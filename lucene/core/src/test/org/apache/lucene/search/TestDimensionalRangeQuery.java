@@ -50,7 +50,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -90,24 +89,11 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     int numValues = atLeast(10000);
     long value = randomValue(false);
     long[] values = new long[numValues];
-    FixedBitSet missing = new FixedBitSet(numValues);
 
     if (VERBOSE) {
       System.out.println("TEST: use same value=" + value);
     }
-
-    for(int docID=0;docID<numValues;docID++) {
-      int x = random().nextInt(20);
-      if (x == 17) {
-        // Some docs don't have a point:
-        missing.set(docID);
-        if (VERBOSE) {
-          System.out.println("  doc=" + docID + " is missing");
-        }
-        continue;
-      }
-      values[docID] = value;
-    }
+    Arrays.fill(values, value);
 
     verifyLongs(values, null);
   }
