@@ -118,7 +118,7 @@ final class SegmentMerger {
     }
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
-      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge dimensional values values [" + numMerged + " docs]");
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge dimensional values [" + numMerged + " docs]");
     }
     
     if (mergeState.mergeFieldInfos.hasNorms()) {
