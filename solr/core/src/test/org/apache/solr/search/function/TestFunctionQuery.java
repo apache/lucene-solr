@@ -28,6 +28,7 @@ import java.util.Random;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
@@ -326,28 +327,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", "{!func}docfreq($field,$value)", "fq","id:6", "field","a_t", "value","cow"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}termfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='5.0'");
 
-    TFIDFSimilarity similarity = new ClassicSimilarity();
-
     // make sure it doesn't get a NPE if no terms are present in a field.
     assertQ(req("fl","*,score","q", "{!func}termfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
     assertQ(req("fl","*,score","q", "{!func}docfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
-    assertQ(req("fl","*,score","q", "{!func}idf(nofield_t,cow)", "fq","id:6"),
-        "//float[@name='score']='" + similarity.idf(0,6)  + "'");
-     assertQ(req("fl","*,score","q", "{!func}tf(nofield_t,cow)", "fq","id:6"),
-        "//float[@name='score']='" + similarity.tf(0)  + "'");
-
-    assertQ(req("fl","*,score","q", "{!func}idf(a_t,cow)", "fq","id:6"),
-        "//float[@name='score']='" + similarity.idf(3,6)  + "'");
-    assertQ(req("fl","*,score","q", "{!func}tf(a_t,cow)", "fq","id:6"),
-        "//float[@name='score']='" + similarity.tf(5)  + "'");
-    FieldInvertState state = new FieldInvertState("a_t");
-    state.setBoost(1.0f);
-    state.setLength(4);
-    long norm = similarity.computeNorm(state);
-    float nrm = similarity.decodeNormValue((byte) norm);
-    assertQ(req("fl","*,score","q", "{!func}norm(a_t)", "fq","id:2"),
-        "//float[@name='score']='" + nrm  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
-
+    
     // test that ord and rord are working on a global index basis, not just
     // at the segment level (since Lucene 2.9 has switched to per-segment searching)
     assertQ(req("fl","*,score","q", "{!func}ord(id)", "fq","id:6"), "//float[@name='score']='5.0'");
@@ -374,7 +357,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     }
     assertU(commit());
     assertU(adoc("id","120", "text","batman superman"));   // in a smaller segment
-    assertU(adoc("id","121", "text","superman"));
+    assertU(adoc("id","121", "text","superman junkterm"));
     assertU(commit());
 
     // superman has a higher df (thus lower idf) in one segment, but reversed in the complete index
@@ -408,7 +391,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       // OK
     }
 
-    // test that sorting by function weights correctly.  superman should sort higher than batman due to idf of the whole index
+    // test that sorting by function query weights correctly.  superman should sort higher than batman due to idf of the whole index
 
     assertQ(req("q", "*:*", "fq","id:120 OR id:121", "sort","{!func v=$sortfunc} desc", "sortfunc","query($qq)", "qq","text:(batman OR superman)")
            ,"*//doc[1]/float[.='120.0']"
@@ -416,6 +399,50 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     );
   }
 
+  public void testTFIDFFunctions() {
+    clearIndex();
+
+    TFIDFSimilarity similarity = null;
+    {
+      Similarity sim = h.getCore().getLatestSchema().getFieldType("a_tfidf").getSimilarity();
+      assertNotNull("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config?", sim);
+      assertTrue("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config: " + sim.getClass(),
+                 sim instanceof TFIDFSimilarity);
+      similarity = (TFIDFSimilarity) sim;
+    }
+     
+    assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
+    assertU(adoc("id","2", "a_tfidf","how now brown cow"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","3", "a_tfidf","brown cow"));
+    assertU(adoc("id","4"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","5"));
+    assertU(adoc("id","6", "a_tfidf","cow cow cow cow cow"));
+    assertU(commit());
+
+    // make sure it doesn't get a NPE if no terms are present in a field.
+    assertQ(req("fl","*,score","q", "{!func}idf(nofield_tfidf,cow)", "fq","id:6"),
+            "//float[@name='score']='" + similarity.idf(0,6)  + "'");
+    assertQ(req("fl","*,score","q", "{!func}tf(nofield_tfidf,cow)", "fq","id:6"),
+            "//float[@name='score']='" + similarity.tf(0)  + "'");
+    
+    // fields with real values
+    assertQ(req("fl","*,score","q", "{!func}idf(a_tfidf,cow)", "fq","id:6"),
+            "//float[@name='score']='" + similarity.idf(3,6)  + "'");
+    assertQ(req("fl","*,score","q", "{!func}tf(a_tfidf,cow)", "fq","id:6"),
+            "//float[@name='score']='" + similarity.tf(5)  + "'");
+    
+    FieldInvertState state = new FieldInvertState("a_tfidf");
+    state.setBoost(1.0f);
+    state.setLength(4);
+    long norm = similarity.computeNorm(state);
+    float nrm = similarity.decodeNormValue((byte) norm);
+    assertQ(req("fl","*,score","q", "{!func}norm(a_tfidf)", "fq","id:2"),
+        "//float[@name='score']='" + nrm  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
+    
+  }
+  
   /**
    * test collection-level term stats (new in 4.x indexes)
    */

@@ -454,9 +454,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
       assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
       
-      assertU(adoc("id", "8", "title", "QQQQ", "str_s1", "q"));
-      assertU(adoc("id", "9", "title", "QQQQ QQQQ", "str_s1", "r"));
-      assertU(adoc("id", "10", "title", "QQQQ QQQQ QQQQ", "str_s1", "s"));
+      assertU(adoc("id", "8", "title", " QQQQ trash trash", "str_s1", "q"));
+      assertU(adoc("id", "9", "title", " QQQQ QQQQ  trash", "str_s1", "r"));
+      assertU(adoc("id", "10", "title", "QQQQ QQQQ  QQQQ ", "str_s1", "s"));
       
       assertU(commit());
 
@@ -498,21 +498,21 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "indent", "true",
           CommonParams.FL, "id, score")
           , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='8']"
+          , "//result/doc[1]/str[@name='id'][.='10']"
           , "//result/doc[2]/str[@name='id'][.='9']"
-          , "//result/doc[3]/str[@name='id'][.='10']"
+          , "//result/doc[3]/str[@name='id'][.='8']"
       );
       assertQ("", req(CommonParams.Q, "QQQQ", CommonParams.QT, "/elevate",
           QueryElevationParams.MARK_EXCLUDES, "true",
           "indent", "true",
           CommonParams.FL, "id, score, [excluded]")
           , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='8']"
+          , "//result/doc[1]/str[@name='id'][.='10']"
           , "//result/doc[2]/str[@name='id'][.='9']"
-          , "//result/doc[3]/str[@name='id'][.='10']",
-          "//result/doc[1]/bool[@name='[excluded]'][.='false']",
+          , "//result/doc[3]/str[@name='id'][.='8']",
+          "//result/doc[1]/bool[@name='[excluded]'][.='true']",
           "//result/doc[2]/bool[@name='[excluded]'][.='false']",
-          "//result/doc[3]/bool[@name='[excluded]'][.='true']"
+          "//result/doc[3]/bool[@name='[excluded]'][.='false']"
       );
     } finally {
       delete();
@@ -523,9 +523,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public void testSorting() throws Exception {
     try {
       init("schema12.xml");
-      assertU(adoc("id", "a", "title", "ipod", "str_s1", "a"));
-      assertU(adoc("id", "b", "title", "ipod ipod", "str_s1", "b"));
-      assertU(adoc("id", "c", "title", "ipod ipod ipod", "str_s1", "c"));
+      assertU(adoc("id", "a", "title", "ipod trash trash", "str_s1", "a"));
+      assertU(adoc("id", "b", "title", "ipod ipod  trash", "str_s1", "b"));
+      assertU(adoc("id", "c", "title", "ipod ipod  ipod ", "str_s1", "c"));
 
       assertU(adoc("id", "x", "title", "boosted", "str_s1", "x"));
       assertU(adoc("id", "y", "title", "boosted boosted", "str_s1", "y"));
@@ -546,9 +546,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertQ("Make sure standard sort works as expected", req
           , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
+          , "//result/doc[1]/str[@name='id'][.='c']"
           , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[3]/str[@name='id'][.='c']"
+          , "//result/doc[3]/str[@name='id'][.='a']"
       );
 
       // Explicitly set what gets boosted
@@ -562,9 +562,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[1]/str[@name='id'][.='x']"
           , "//result/doc[2]/str[@name='id'][.='y']"
           , "//result/doc[3]/str[@name='id'][.='z']"
-          , "//result/doc[4]/str[@name='id'][.='a']"
+          , "//result/doc[4]/str[@name='id'][.='c']"
           , "//result/doc[5]/str[@name='id'][.='b']"
-          , "//result/doc[6]/str[@name='id'][.='c']"
+          , "//result/doc[6]/str[@name='id'][.='a']"
       );
 
       booster.elevationCache.clear();
@@ -576,8 +576,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//*[@numFound='4']"
           , "//result/doc[1]/str[@name='id'][.='a']"
           , "//result/doc[2]/str[@name='id'][.='x']"
-          , "//result/doc[3]/str[@name='id'][.='b']"
-          , "//result/doc[4]/str[@name='id'][.='c']"
+          , "//result/doc[3]/str[@name='id'][.='c']"
+          , "//result/doc[4]/str[@name='id'][.='b']"
       );
 
       // Test reverse sort
@@ -585,10 +585,11 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
       assertQ("All four should make it", req
           , "//*[@numFound='4']"
+          // NOTE REVERSED doc[X] indices
           , "//result/doc[4]/str[@name='id'][.='a']"
           , "//result/doc[3]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[1]/str[@name='id'][.='c']"
+          , "//result/doc[2]/str[@name='id'][.='c']"
+          , "//result/doc[1]/str[@name='id'][.='b']"
       );
 
       // Try normal sort by 'id'
@@ -643,8 +644,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ(null, req
           , "//*[@numFound='3']"
           , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[3]/str[@name='id'][.='c']"
+          , "//result/doc[2]/str[@name='id'][.='c']"
+          , "//result/doc[3]/str[@name='id'][.='b']"
       );
 
 
@@ -659,8 +660,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[1]/str[@name='id'][.='x']"
           , "//result/doc[2]/str[@name='id'][.='y']"
           , "//result/doc[3]/str[@name='id'][.='z']"
-          , "//result/doc[4]/str[@name='id'][.='a']"
-          , "//result/doc[5]/str[@name='id'][.='c']"
+          , "//result/doc[4]/str[@name='id'][.='c']"
+          , "//result/doc[5]/str[@name='id'][.='a']"
       );
 
       args.put(QueryElevationParams.IDS, "x,z,y");

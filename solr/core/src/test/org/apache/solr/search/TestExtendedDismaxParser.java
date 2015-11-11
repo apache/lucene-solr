@@ -701,7 +701,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         req("q", "foo bar",
             "qf", "phrase_sw",
             "pf", "phrase_sw^10",
-            "bf", "boost_d",
             "fl", "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s0']");
@@ -710,7 +709,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         req("q",   "foo bar",
             "qf",  "phrase_sw",
             "pf2", "phrase_sw^10",
-            "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s0']");
@@ -719,7 +717,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         req("q",   "a b bar",
             "qf",  "phrase_sw",
             "pf3", "phrase_sw^10",
-            "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s2']");
@@ -729,7 +726,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "qf",  "phrase_sw",
             "pf2", "phrase_sw^10",
             "ps",  "2",
-            "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s0']");
@@ -739,7 +735,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "qf",  "phrase_sw",
             "pf3", "phrase_sw^10",
             "ps",  "3",
-            "bf",  "boost_d",
             "fl",  "score,*",
             "debugQuery",  "true",
             "defType", "edismax"),
@@ -772,31 +767,31 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(
         "ps2 not working",
         req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw^10", "ps2",
-            "2", "bf", "boost_d", "fl", "score,*", "defType", "edismax"),
+            "2", "fl", "score,*", "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s0']");
     
     assertQ(
         "Specifying slop in pf2 param not working",
-        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw~2^10", "bf",
-            "boost_d", "fl", "score,*", "defType", "edismax"),
+        req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw~2^10", 
+            "fl", "score,*", "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s0']");
     
     assertQ(
         "Slop in ps2 parameter should override ps",
         req("q", "bar foo", "qf", "phrase_sw", "pf2", "phrase_sw^10", "ps",
-            "0", "ps2", "2", "bf", "boost_d", "fl", "score,*", "defType",
+            "0", "ps2", "2", "fl", "score,*", "defType",
             "edismax"), "//doc[1]/str[@name='id'][.='s0']");
 
     assertQ(
         "ps3 not working",
         req("q", "a bar foo", "qf", "phrase_sw", "pf3", "phrase_sw^10", "ps3",
-            "3", "bf", "boost_d", "fl", "score,*", "defType", "edismax"),
+            "3", "fl", "score,*", "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s1']");
     
     assertQ(
         "Specifying slop in pf3 param not working",
-        req("q", "a bar foo", "qf", "phrase_sw", "pf3", "phrase_sw~3^10", "bf",
-            "boost_d", "fl", "score,*", "defType", "edismax"),
+        req("q", "a bar foo", "qf", "phrase_sw", "pf3", "phrase_sw~3^10",
+            "fl", "score,*", "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s1']");
    
     assertQ("ps2 should not override slop specified inline in pf2",

@@ -72,31 +72,30 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testGroupingGroupSortingScore_basic() {
-    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_i", "1")));
-    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_i", "2")));
-    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_i", "1")));
-    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_i", "2")));
-    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_i", "1")));
+    assertU(add(doc("id", "1", "id_i", "1", "name", "author1", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "2", "id_i", "2", "name", "author1", "title", "the title", "group_i", "2")));
+    assertU(add(doc("id", "3", "id_i", "3", "name", "author2", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "4", "id_i", "4", "name", "author2", "title", "title", "group_i", "2")));
+    assertU(add(doc("id", "5", "id_i", "5", "name", "author3", "title", "the title of a title", "group_i", "1")));
     assertU(commit());
-    
-    assertQ(req("q","title:title", "group", "true", "group.field","name")
+
+    // function based query for predictable scores not affect by similarity
+    assertQ(req("q","{!func}id_i", "group", "true", "group.field","name", "fl", "id, score")
             ,"//lst[@name='grouped']/lst[@name='name']"
             ,"*[count(//arr[@name='groups']/lst) = 3]"
 
-            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author2']"
-    //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
-            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
-
-            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author1']"
-    //       ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
+            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author3']"
+            ,"//arr[@name='groups']/lst[1]/result[@numFound='1']"
+            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='5']"
+            
+            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
             ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='2']"
+            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
 
-            ,"//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author3']"
-    //        ,"//arr[@name='groups']/lst[3]/int[@name='matches'][.='1']"
-            ,"//arr[@name='groups']/lst[3]/result[@numFound='1']"
-            ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
+            ,"//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author1']"
+            ,"//arr[@name='groups']/lst[3]/result[@numFound='2']"
+            ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='2']"
+
             );
 
     assertQ(req("q", "title:title", "group", "true", "group.field", "group_i")
@@ -115,71 +114,76 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testGroupingGroupSortingScore_withTotalGroupCount() {
-    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_i", "1")));
-    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_i", "2")));
-    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_i", "1")));
-    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_i", "2")));
-    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_i", "1")));
+    assertU(add(doc("id", "1", "id_i", "1", "name", "author1", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "2", "id_i", "2", "name", "author1", "title", "the title", "group_i", "2")));
+    assertU(add(doc("id", "3", "id_i", "3", "name", "author2", "title", "a book title", "group_i", "1")));
+    assertU(add(doc("id", "4", "id_i", "4", "name", "author2", "title", "title", "group_i", "2")));
+    assertU(add(doc("id", "5", "id_i", "5", "name", "author3", "title", "the title of a title", "group_i", "1")));
     assertU(commit());
 
-    assertQ(req("q","title:title", "group", "true", "group.field","name", "group.ngroups", "true")
+    // function based query for predictable scores not affect by similarity
+    assertQ(req("q","{!func}id_i", "group", "true", "group.field","name", "group.ngroups", "true")
             ,"//lst[@name='grouped']/lst[@name='name']"
             ,"//lst[@name='grouped']/lst[@name='name']/int[@name='matches'][.='5']"
             ,"//lst[@name='grouped']/lst[@name='name']/int[@name='ngroups'][.='3']"
             ,"*[count(//arr[@name='groups']/lst) = 3]"
 
-            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author2']"
-            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
-
-            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author1']"
+            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author3']"
+            ,"//arr[@name='groups']/lst[1]/result[@numFound='1']"
+            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='5']"
+            
+            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
             ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='2']"
+            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
 
-            ,"//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author3']"
-            ,"//arr[@name='groups']/lst[3]/result[@numFound='1']"
-            ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
+            ,"//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author1']"
+            ,"//arr[@name='groups']/lst[3]/result[@numFound='2']"
+            ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='2']"
+
             );
 
-    assertQ(req("q", "title:title", "group", "true", "group.field", "group_i", "group.ngroups", "true")
+    // function based query for predictable scores not affect by similarity
+    assertQ(req("q", "{!func}id_i", "group", "true", "group.field", "group_i", "group.ngroups", "true")
         , "//lst[@name='grouped']/lst[@name='group_i']/int[@name='matches'][.='5']"
         , "//lst[@name='grouped']/lst[@name='group_i']/int[@name='ngroups'][.='2']"
         , "*[count(//arr[@name='groups']/lst) = 2]"
 
-        , "//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
-        , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
-        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
+        , "//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='1']"
+        , "//arr[@name='groups']/lst[1]/result[@numFound='3']"
+        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='5']"
+            
+        , "//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='2']"
+        , "//arr[@name='groups']/lst[2]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
 
-        , "//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='1']"
-        , "//arr[@name='groups']/lst[2]/result[@numFound='3']"
-        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
     );
   }
 
   @Test
   public void testGroupingGroupSortingScore_basicWithGroupSortEqualToSort() {
-    assertU(add(doc("id", "1","name", "author1", "title", "a book title")));
-    assertU(add(doc("id", "2","name", "author1", "title", "the title")));
-    assertU(add(doc("id", "3","name", "author2", "title", "a book title")));
-    assertU(add(doc("id", "4","name", "author2", "title", "title")));
-    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title")));
+    assertU(add(doc("id", "1", "id_i", "1", "name", "author1", "title", "a book title")));
+    assertU(add(doc("id", "2", "id_i", "2", "name", "author1", "title", "the title")));
+    assertU(add(doc("id", "3", "id_i", "3", "name", "author2", "title", "a book title")));
+    assertU(add(doc("id", "4", "id_i", "4", "name", "author2", "title", "title")));
+    assertU(add(doc("id", "5", "id_i", "5", "name", "author3", "title", "the title of a title")));
     assertU(commit());
 
-    assertQ(req("q", "title:title", "group", "true", "group.field", "name", "sort", "score desc", "group.sort", "score desc")
-        , "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author2']"
-        //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
-        , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
-        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
-
-        , "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author1']"
-        //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
+    // function based query for predictable scores not affect by similarity
+    assertQ(req("q", "{!func}id_i", "group", "true", "group.field", "name",
+                "sort", "score desc", "group.sort", "score desc")
+            
+        , "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author3']"
+        , "//arr[@name='groups']/lst[1]/result[@numFound='1']"
+        , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='5']"
+            
+        , "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
         , "//arr[@name='groups']/lst[2]/result[@numFound='2']"
-        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='2']"
+        , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
 
-        , "//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author3']"
-        //        ,"//arr[@name='groups']/lst[3]/int[@name='matches'][.='1']"
-        , "//arr[@name='groups']/lst[3]/result[@numFound='1']"
-        , "//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
+        , "//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author1']"
+        , "//arr[@name='groups']/lst[3]/result[@numFound='2']"
+        , "//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='2']"
+
     );
   }
 

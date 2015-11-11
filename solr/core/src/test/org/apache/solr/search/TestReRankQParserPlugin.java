@@ -425,8 +425,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     //Test range query embedded in larger query
     params = new ModifiableSolrParams();
     params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
-    params.add("q", "*:* OR test_ti:[0 TO 2000]");
-    params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
+    // function query for predictible scores (relative to id) independent of similarity
+    params.add("q", "{!func}id");
+    // constant score for each clause (unique per doc) for predictible scores independent of similarity
+    // NOTE: biased in favor of doc id == 2
+    params.add("rqq", "id:1^=10 id:2^=40 id:3^=30 id:4^=40 id:5^=50 id:6^=60");
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "6");
@@ -435,9 +438,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/float[@name='id'][.='6.0']",
         "//result/doc[2]/float[@name='id'][.='5.0']",
         "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='2.0']",
-        "//result/doc[5]/float[@name='id'][.='1.0']",
-        "//result/doc[6]/float[@name='id'][.='3.0']"
+        "//result/doc[4]/float[@name='id'][.='2.0']", // reranked out of orig order
+        "//result/doc[5]/float[@name='id'][.='3.0']",
+        "//result/doc[6]/float[@name='id'][.='1.0']"
     );
 
 

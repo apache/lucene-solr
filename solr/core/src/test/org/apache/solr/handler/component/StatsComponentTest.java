@@ -993,7 +993,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
     assertU(adoc("id", "1", "a_f", "2.3", "b_f", "9.7", "foo_t", "how now brown cow"));
     assertU(adoc("id", "2", "a_f", "4.5", "b_f", "8.6", "foo_t", "cow cow cow cow"));
-    assertU(adoc("id", "3", "a_f", "5.6", "b_f", "7.5", "foo_t", "red fox"));
+    assertU(adoc("id", "3", "a_f", "5.6", "b_f", "7.5", "foo_t", "red fox")); // no cow
     assertU(adoc("id", "4", "a_f", "6.7", "b_f", "6.3", "foo_t", "red cow"));
     assertU(commit());
 
@@ -1011,20 +1011,21 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , kpre + "double[@name='stddev'][.='10.622007151430441']"
             );
 
+    // force constant score for matches so we aren't dependent on similarity
+    final float constScore = 4.2F;
+    final double expectedScore = (double) constScore;
     assertQ("functions over a query",
             req("q","*:*", "stats", "true",
-                "stats.field", "{!lucene key=k}foo_t:cow")
-            // TODO: change to not rely on exact scores
-            , kpre + "double[@name='min'][.='0.6115717887878418']"
-            , kpre + "double[@name='max'][.='1.2231435775756836']"
-            , kpre + "double[@name='sum'][.='2.5991801023483276']"
+                "stats.field", "{!lucene key=k}foo_t:cow^=" + constScore)
+            , kpre + "double[@name='min'][.='" + expectedScore + "']"
+            , kpre + "double[@name='max'][.='" + expectedScore + "']"
+            , kpre + "double[@name='sum'][.='" + (3D * expectedScore) + "']"
             , kpre + "long[@name='count'][.='3']"
             , kpre + "long[@name='missing'][.='1']"
-            , kpre + "double[@name='sumOfSquares'][.='2.4545065967701163']"
-            , kpre + "double[@name='mean'][.='0.8663933674494425']"
-            , kpre + "double[@name='stddev'][.='0.3182720497380833']"
+            , kpre + "double[@name='sumOfSquares'][.='" + (3D * Math.pow(expectedScore, 2D)) + "']"
+            , kpre + "double[@name='mean'][.='" + expectedScore + "']"
+            , kpre + "double[@name='stddev'][.='0.0']"
             );
-    
   }
 
   /**

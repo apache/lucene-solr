@@ -304,7 +304,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     assertJQ(req("q","+filter(*:*)^=10 +filter(id:1)", "fl","id,score", "sort","id asc")
-        ,"/response/docs/[0]/score==1.0"  // normalization reduces to 1
+        ,"/response/docs/[0]/score==10.0" 
     );
 
   }

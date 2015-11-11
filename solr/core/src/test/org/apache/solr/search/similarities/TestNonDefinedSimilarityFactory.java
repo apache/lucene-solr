@@ -18,6 +18,7 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.util.Version;
 import org.junit.After;
 
@@ -26,6 +27,7 @@ import org.junit.After;
  * (ie: no similarity configured in schema.xml at all) is consistnent with 
  * expectations based on the luceneMatchVersion
  * @see <a href="https://issues.apache.org/jira/browse/SOLR-5561">SOLR-5561</a>
+ * @see <a href="https://issues.apache.org/jira/browse/SOLR-8057">SOLR-8057</a>
  */
 public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
 
@@ -34,10 +36,19 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
     deleteCore();
   }
 
-  public void testCurrent() throws Exception {
+  public void testCurrentBM25() throws Exception {
     // no sys prop set, rely on LATEST
+    initCore("solrconfig-basic.xml","schema-tiny.xml");
+    BM25Similarity sim = getSimilarity("text", BM25Similarity.class);
+    assertEquals(0.75F, sim.getB(), 0.0F);
+  }
+  
+  public void testClassic() throws Exception {
+    // any value below 6.0 should have this behavior
+    System.setProperty("tests.luceneMatchVersion", "5.3");
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     ClassicSimilarity sim = getSimilarity("text", ClassicSimilarity.class);
     assertEquals(true, sim.getDiscountOverlaps());
+    System.clearProperty("tests.luceneMatchVersion");
   }
 }
