@@ -141,4 +141,8 @@ public class Tuple implements Cloneable {
     Tuple clone = new Tuple(m);
     return clone;
   }
+  
+  public void merge(Tuple other){
+    fields.putAll(other.getMap());
+  }
 }

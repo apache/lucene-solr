@@ -27,4 +27,5 @@ package org.apache.solr.client.solrj.io.eq;
  */
 public interface Equalitor<T> {
   public boolean test(T left, T right);
+  
 }

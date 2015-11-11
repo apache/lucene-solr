@@ -31,6 +31,8 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
+import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
 import org.apache.solr.client.solrj.io.stream.MergeStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
@@ -100,6 +102,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("parallel", ParallelStream.class)
       .withFunctionName("rollup", RollupStream.class)
       .withFunctionName("stats", StatsStream.class)
+      .withFunctionName("innerJoin", InnerJoinStream.class)
+      .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class)
       
       // metrics
       .withFunctionName("min", MinMetric.class)

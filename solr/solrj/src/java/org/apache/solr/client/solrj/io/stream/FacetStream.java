@@ -62,7 +62,7 @@ public class FacetStream extends TupleStream  {
                      Bucket[] buckets,
                      Metric[] metrics,
                      FieldComparator[] sorts,
-                     int limit) {
+                     int limit) throws IOException {
     this.zkHost  = zkHost;
     this.props   = props;
     this.buckets = buckets;
@@ -70,6 +70,15 @@ public class FacetStream extends TupleStream  {
     this.limit   = limit;
     this.collection = collection;
     this.sorts = sorts;
+    
+    // In a facet world it only makes sense to have the same field name in all of the sorters
+    // Because FieldComparator allows for left and right field names we will need to validate
+    // that they are the same
+    for(FieldComparator sort : sorts){
+      if(sort.hasDifferentFieldNames()){
+        throw new IOException("Invalid FacetStream - all sorts must be constructed with a single field name.");
+      }
+    }
   }
 
   public void setStreamContext(StreamContext context) {
@@ -144,7 +153,7 @@ public class FacetStream extends TupleStream  {
       return _sorts;
     } else if(_sorts.length == 1) {
       FieldComparator[] adjustedSorts = new FieldComparator[_buckets.length];
-      if (_sorts[0].getFieldName().contains("(")) {
+      if (_sorts[0].getLeftFieldName().contains("(")) {
         //Its a metric sort so apply the same sort criteria at each level.
         for (int i = 0; i < adjustedSorts.length; i++) {
           adjustedSorts[i] = _sorts[0];
@@ -174,7 +183,7 @@ public class FacetStream extends TupleStream  {
     buf.append("\"type\":\"terms\"");
     buf.append(",\"field\":\""+_buckets[level].toString()+"\"");
     buf.append(",\"limit\":"+_limit);
-    buf.append(",\"sort\":{\""+getFacetSort(_sorts[level].getFieldName(), _metrics)+"\":\""+_sorts[level].getOrder()+"\"}");
+    buf.append(",\"sort\":{\""+getFacetSort(_sorts[level].getLeftFieldName(), _metrics)+"\":\""+_sorts[level].getOrder()+"\"}");
 
     buf.append(",\"facet\":{");
     int metricCount = 0;

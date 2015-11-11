@@ -80,7 +80,7 @@ public class ReducerStream extends TupleStream implements Expressible {
     }
     else{
       FieldComparator fComp = (FieldComparator)comp;
-      return new FieldEqualitor(fComp.getFieldName());
+      return new FieldEqualitor(fComp.getLeftFieldName(), fComp.getRightFieldName());
     }
   }
 
@@ -100,8 +100,6 @@ public class ReducerStream extends TupleStream implements Expressible {
     if(null == byExpression || !(byExpression.getParameter() instanceof StreamExpressionValue)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting single 'by' parameter listing fields to group by but didn't find one",expression));
     }
-    
-    // Reducing is always done over equality, so always use an EqualTo comparator
     
     init(factory.constructStream(streamExpressions.get(0)),
          factory.constructEqualitor(((StreamExpressionValue)byExpression.getParameter()).getValue(), FieldEqualitor.class)

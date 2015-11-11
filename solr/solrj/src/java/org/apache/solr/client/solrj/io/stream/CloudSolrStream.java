@@ -407,9 +407,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected class TupleWrapper implements Comparable<TupleWrapper> {
     private Tuple tuple;
     private SolrStream stream;
-    private Comparator comp;
+    private StreamComparator comp;
 
-    public TupleWrapper(SolrStream stream, Comparator comp) {
+    public TupleWrapper(SolrStream stream, StreamComparator comp) {
       this.stream = stream;
       this.comp = comp;
     }
@@ -449,9 +449,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected class StreamOpener implements Callable<TupleWrapper> {
 
     private SolrStream stream;
-    private Comparator<Tuple> comp;
+    private StreamComparator comp;
 
-    public StreamOpener(SolrStream stream, Comparator<Tuple> comp) {
+    public StreamOpener(SolrStream stream, StreamComparator comp) {
       this.stream = stream;
       this.comp = comp;
     }

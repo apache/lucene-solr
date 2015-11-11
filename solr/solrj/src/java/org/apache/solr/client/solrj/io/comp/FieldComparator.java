@@ -17,11 +17,7 @@
 
 package org.apache.solr.client.solrj.io.comp;
 
-import java.io.Serializable;
-import java.util.Comparator;
-
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -33,28 +29,55 @@ public class FieldComparator implements StreamComparator {
 
   private static final long serialVersionUID = 1;
   
-  private String fieldName;
+  private String leftFieldName;
+  private String rightFieldName;
   private final ComparatorOrder order;
   private ComparatorLambda comparator;
   
-  public FieldComparator(String fieldName, ComparatorOrder order) {
-    this.fieldName = fieldName;
+  public FieldComparator(String fieldName, ComparatorOrder order){
+    leftFieldName = fieldName;
+    rightFieldName = fieldName;
     this.order = order;
     assignComparator();
   }
   
-  public String getFieldName(){
-    return fieldName;
+  public FieldComparator(String leftFieldName, String rightFieldName, ComparatorOrder order) {
+    this.leftFieldName = leftFieldName;
+    this.rightFieldName = rightFieldName;
+    this.order = order;
+    assignComparator();
+  }
+  
+  public void setLeftFieldName(String leftFieldName){
+    this.leftFieldName = leftFieldName;
+  }
+  public String getLeftFieldName(){
+    return leftFieldName;
+  }
+  
+  public void setRightFieldName(String rightFieldName){
+    this.rightFieldName = rightFieldName;
+  }
+  public String getRightFieldName(){
+    return rightFieldName;
   }
   
   public ComparatorOrder getOrder(){
     return order;
   }
   
+  public boolean hasDifferentFieldNames(){
+    return !leftFieldName.equals(rightFieldName);
+  }
+  
   public StreamExpressionParameter toExpression(StreamFactory factory){
     StringBuilder sb = new StringBuilder();
     
-    sb.append(fieldName);    
+    sb.append(leftFieldName);
+    if(!leftFieldName.equals(rightFieldName)){
+      sb.append("=");
+      sb.append(rightFieldName);
+    }
     sb.append(" ");
     sb.append(order);
     
@@ -76,8 +99,8 @@ public class FieldComparator implements StreamComparator {
       comparator = new ComparatorLambda() {
         @Override
         public int compare(Tuple leftTuple, Tuple rightTuple) {
-          Comparable leftComp = (Comparable)leftTuple.get(fieldName);
-          Comparable rightComp = (Comparable)rightTuple.get(fieldName);
+          Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+          Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
           
           if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
           if(null == leftComp){ return 1; }
@@ -92,8 +115,8 @@ public class FieldComparator implements StreamComparator {
       comparator = new ComparatorLambda() {
         @Override
         public int compare(Tuple leftTuple, Tuple rightTuple) {
-          Comparable leftComp = (Comparable)leftTuple.get(fieldName);
-          Comparable rightComp = (Comparable)rightTuple.get(fieldName);
+          Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+          Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
           
           if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
           if(null == leftComp){ return -1; }
@@ -114,7 +137,7 @@ public class FieldComparator implements StreamComparator {
     if(null == base){ return false; }
     if(base instanceof FieldComparator){
       FieldComparator baseComp = (FieldComparator)base;
-      return fieldName.equals(baseComp.fieldName) && order == baseComp.order;
+      return (leftFieldName.equals(baseComp.leftFieldName) || rightFieldName.equals(baseComp.rightFieldName)) && order == baseComp.order;
     }
     else if(base instanceof MultipleFieldComparator){
       // must equal the first one

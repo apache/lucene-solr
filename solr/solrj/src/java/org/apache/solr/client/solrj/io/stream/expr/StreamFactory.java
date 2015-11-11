@@ -204,10 +204,45 @@ public class StreamFactory implements Serializable {
       }
       return new MultipleFieldComparator(comps);
     }
+    else if(comparatorString.contains("=")){
+      // expected format is "left=right order"
+      String[] parts = comparatorString.split("[ =]");
+      
+      if(parts.length < 3){
+        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting 'left=right order'",comparatorString));
+      }
+      
+      String leftFieldName = null;
+      String rightFieldName = null;
+      String order = null;
+      for(String part : parts){
+        // skip empty
+        if(null == part || 0 == part.trim().length()){ continue; }
+        
+        // assign each in order
+        if(null == leftFieldName){ 
+          leftFieldName = part.trim(); 
+        }
+        else if(null == rightFieldName){ 
+          rightFieldName = part.trim(); 
+        }
+        else if(null == order){ 
+          order = part.trim();
+          break; // we're done, stop looping
+        }
+      }
+      
+      if(null == leftFieldName || null == rightFieldName || null == order){
+        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting 'left=right order'",comparatorString));
+      }
+      
+      return (StreamComparator)createInstance(comparatorType, new Class[]{ String.class, String.class, ComparatorOrder.class }, new Object[]{ leftFieldName, rightFieldName, ComparatorOrder.fromString(order) });
+    }
     else{
+      // expected format is "field order"
       String[] parts = comparatorString.split(" ");
       if(2 != parts.length){
-        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting fieldName and order",comparatorString));
+        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting 'field order'",comparatorString));
       }
       
       String fieldName = parts[0].trim();
@@ -254,7 +289,12 @@ public class StreamFactory implements Serializable {
       return ctor.newInstance(params);
       
     } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-      throw new IOException(String.format(Locale.ROOT,"Unable to construct instance of %s", clazz.getName()),e);
+      if(null != e.getMessage()){
+        throw new IOException(String.format(Locale.ROOT,"Unable to construct instance of %s caused by %s", clazz.getName(), e.getMessage()),e);
+      }
+      else{
+        throw new IOException(String.format(Locale.ROOT,"Unable to construct instance of %s", clazz.getName()),e);
+      }
     }
   }
   

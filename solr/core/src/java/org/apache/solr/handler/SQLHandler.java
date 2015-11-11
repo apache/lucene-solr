@@ -276,15 +276,17 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     if(sqlVisitor.sorts != null && sqlVisitor.sorts.size() > 0) {
       StreamComparator[] adjustedSorts = adjustSorts(sqlVisitor.sorts, buckets);
+        // Because of the way adjustSorts works we know that each FieldComparator has a single
+        // field name. For this reason we can just look at the leftFieldName
       FieldEqualitor[] fieldEqualitors = new FieldEqualitor[adjustedSorts.length];
       StringBuilder buf = new StringBuilder();
       for(int i=0; i<adjustedSorts.length; i++) {
         FieldComparator fieldComparator = (FieldComparator)adjustedSorts[i];
-        fieldEqualitors[i] = new FieldEqualitor(fieldComparator.getFieldName());
+        fieldEqualitors[i] = new FieldEqualitor(fieldComparator.getLeftFieldName());
         if(i>0) {
           buf.append(",");
         }
-        buf.append(fieldComparator.getFieldName()).append(" ").append(fieldComparator.getOrder().toString());
+        buf.append(fieldComparator.getLeftFieldName()).append(" ").append(fieldComparator.getOrder().toString());
       }
 
       sort = buf.toString();
