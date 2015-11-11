@@ -203,6 +203,9 @@ Optimizations
 * LUCENE-6863: Optimized storage requirements of doc values fields when less
   than 1% of documents have a value. (Adrien Grand)
 
+* LUCENE-6892: various lucene.index initialCapacity tweaks
+  (Christine Poerschke)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 

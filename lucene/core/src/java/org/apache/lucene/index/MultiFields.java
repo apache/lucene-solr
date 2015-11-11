@@ -66,8 +66,8 @@ public final class MultiFields extends Fields {
         // already an atomic reader / reader with one leave
         return leaves.get(0).reader().fields();
       default:
-        final List<Fields> fields = new ArrayList<>();
-        final List<ReaderSlice> slices = new ArrayList<>();
+        final List<Fields> fields = new ArrayList<>(leaves.size());
+        final List<ReaderSlice> slices = new ArrayList<>(leaves.size());
         for (final LeafReaderContext ctx : leaves) {
           final LeafReader r = ctx.reader();
           final Fields f = r.fields();

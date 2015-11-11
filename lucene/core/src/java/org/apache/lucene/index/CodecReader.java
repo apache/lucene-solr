@@ -333,7 +333,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   @Override
   public Collection<Accountable> getChildResources() {
     ensureOpen();
-    List<Accountable> resources = new ArrayList<>();
+    final List<Accountable> resources = new ArrayList<>(6);
     
     // terms/postings
     resources.add(Accountables.namedAccountable("postings", getPostingsReader()));

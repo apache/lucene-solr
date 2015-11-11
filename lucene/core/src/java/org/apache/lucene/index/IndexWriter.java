@@ -2390,7 +2390,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  to match with a call to {@link IOUtils#close} in a
    *  finally clause. */
   private List<Lock> acquireWriteLocks(Directory... dirs) throws IOException {
-    List<Lock> locks = new ArrayList<>();
+    List<Lock> locks = new ArrayList<>(dirs.length);
     for(int i=0;i<dirs.length;i++) {
       boolean success = false;
       try {
@@ -3967,7 +3967,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "merging " + segString(merge.segments));
     }
 
-    merge.readers = new ArrayList<>();
+    merge.readers = new ArrayList<>(sourceSegments.size());
 
     // This is try/finally to make sure merger's readers are
     // closed:
