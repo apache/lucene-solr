@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -52,6 +54,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
  * limitations under the License.
  */
 
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-7989")
 public class ForceLeaderTest extends HttpPartitionTest {
   protected static final transient Logger log =
       LoggerFactory.getLogger(ForceLeaderTest.class);
