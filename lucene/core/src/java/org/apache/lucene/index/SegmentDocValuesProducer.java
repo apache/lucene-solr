@@ -199,7 +199,7 @@ class SegmentDocValuesProducer extends DocValuesProducer {
 
   @Override
   public Collection<Accountable> getChildResources() {
-    List<Accountable> resources = new ArrayList<>();
+    final List<Accountable> resources = new ArrayList<>(dvProducers.size());
     for (Accountable producer : dvProducers) {
       resources.add(Accountables.namedAccountable("delegate", producer));
     }

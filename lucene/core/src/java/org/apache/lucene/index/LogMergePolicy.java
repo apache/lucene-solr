@@ -462,7 +462,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     // Compute levels, which is just log (base mergeFactor)
     // of the size of each segment
-    final List<SegmentInfoAndLevel> levels = new ArrayList<>();
+    final List<SegmentInfoAndLevel> levels = new ArrayList<>(numSegments);
     final float norm = (float) Math.log(mergeFactor);
 
     final Collection<SegmentCommitInfo> mergingSegments = writer.getMergingSegments();
@@ -564,7 +564,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         } else if (!anyTooLarge) {
           if (spec == null)
             spec = new MergeSpecification();
-          final List<SegmentCommitInfo> mergeInfos = new ArrayList<>();
+          final List<SegmentCommitInfo> mergeInfos = new ArrayList<>(end-start);
           for(int i=start;i<end;i++) {
             mergeInfos.add(levels.get(i).info);
             assert infos.contains(levels.get(i).info);
