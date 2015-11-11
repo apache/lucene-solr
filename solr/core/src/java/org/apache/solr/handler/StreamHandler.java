@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
 import org.apache.solr.client.solrj.io.stream.ReducerStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
@@ -98,6 +99,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("group", ReducerStream.class)
       .withFunctionName("parallel", ParallelStream.class)
       .withFunctionName("rollup", RollupStream.class)
+      .withFunctionName("stats", StatsStream.class)
       
       // metrics
       .withFunctionName("min", MinMetric.class)

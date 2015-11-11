@@ -91,6 +91,8 @@ New Features
 
 * SOLR-8198: Change ReducerStream to use StreamEqualitor instead of StreamComparator (Dennis Gove)
 
+* SOLR-8268: StatsStream now implements the Expressible interface (Dennis Gove)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
