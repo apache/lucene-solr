@@ -57,11 +57,12 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.LockValidatingDirectoryWrapper;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.SleepingLockWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1054,6 +1055,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             "index=" + segString() + "\n" +
             "version=" + Version.LATEST.toString() + "\n" +
             config.toString());
+      infoStream.message("IW", "MMapDirectory.UNMAP_SUPPORTED=" + MMapDirectory.UNMAP_SUPPORTED);
     }
   }
 
