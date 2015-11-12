@@ -16,6 +16,7 @@ import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 
@@ -281,6 +282,22 @@ public class StreamFactory implements Serializable {
       return (StreamEqualitor)createInstance(equalitorType, new Class[]{ String.class, String.class }, new Object[]{ leftFieldName, rightFieldName });
     }
   }
+  
+  public Metric constructOperation(String expressionClause) throws IOException {
+    return constructMetric(StreamExpressionParser.parse(expressionClause));
+  }
+  public StreamOperation constructOperation(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && StreamOperation.class.isAssignableFrom(clazz)){
+        return (StreamOperation)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+      }
+    }
+    
+    throw new IOException(String.format(Locale.ROOT,"Invalid operation expression %s - function '%s' is unknown (not mapped to a valid StreamOperation)", expression, expression.getFunctionName()));
+  }
+
 
   public <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException{
     Constructor<T> ctor;
@@ -306,5 +323,18 @@ public class StreamFactory implements Serializable {
     }
     
     throw new IOException(String.format(Locale.ROOT, "Unable to find function name for class '%s'", clazz.getName()));
+  }
+  
+  public Object constructPrimitiveObject(String original){
+    String lower = original.trim().toLowerCase(Locale.ROOT);
+    
+    if("null".equals(lower)){ return null; }
+    if("true".equals(lower) || "false".equals(lower)){ return Boolean.parseBoolean(lower); }
+    try{ return Long.valueOf(original); } catch(Exception e){};
+    try{ if (original.matches(".{1,8}")){ return Float.valueOf(original); }} catch(Exception e){};
+    try{ if (original.matches(".{1,17}")){ return Double.valueOf(original); }} catch(Exception e){};
+    
+    // is a string
+    return original;
   }
 }

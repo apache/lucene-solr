@@ -21,11 +21,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -134,6 +136,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testLeftOuterJoinStream();
     testHashJoinStream();
     testOuterHashJoinStream();
+    testSelectStream();
   }
 
   private void testCloudSolrStream() throws Exception {
@@ -1281,6 +1284,104 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     commit();
   }
   
+  private void testSelectStream() throws Exception {
+
+    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
+    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
+    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
+    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
+    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
+    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+
+    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
+    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
+    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
+    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
+    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
+    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
+    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
+    commit();
+
+    String clause;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("innerJoin", InnerJoinStream.class)
+      .withFunctionName("select", SelectStream.class)
+      .withFunctionName("replace", ReplaceOperation.class);
+    
+    // Basic test
+    clause = "select("
+            +   "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+            +   "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+
+    // Basic with replacements test
+    clause = "select("
+            +   "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+            +   "replace(join1, 0, withValue=12), replace(join1, 3, withValue=12), replace(join1, 2, withField=join2),"
+            +   "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+    assertLong(tuples.get(0), "join1", 12);
+    assertLong(tuples.get(1), "join1", 12);
+    assertLong(tuples.get(2), "join1", 12);
+    assertLong(tuples.get(7), "join1", 12);
+    assertString(tuples.get(6), "join1", "d");
+
+    
+    // Inner stream test
+    clause = "innerJoin("
+            +   "select("
+            +     "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+            +     "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            +   "),"
+            +   "select("
+            +     "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+            +     "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
+            +   "),"
+            +   "on=\"left.join1=right.join1, left.join2=right.join2\""
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "left.join1", "left.join2", "left.ident", "right.join1", "right.join2", "right.ident");
+    
+    // Wrapped select test
+    clause = "select("
+            +   "id, left.ident, right.ident,"
+            +   "innerJoin("
+            +     "select("
+            +       "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+            +       "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            +     "),"
+            +     "select("
+            +       "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+            +       "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
+            +     "),"
+            +     "on=\"left.join1=right.join1, left.join2=right.join2\""
+            +   ")"
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "left.ident", "right.ident");
+    assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
+    
+    del("*:*");
+    commit();
+  }
+  
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList<Tuple>();
@@ -1305,6 +1406,27 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
+  
+  protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
+    for(Tuple tuple : tuples){
+      for(String field : fields){
+        if(!tuple.fields.containsKey(field)){
+          throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
+        }
+      }
+    }
+    return true;
+  }
+  protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
+    for(Tuple tuple : tuples){
+      for(String field : fields){
+        if(tuple.fields.containsKey(field)){
+          throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
+        }
+      }
+    }
+    return true;
+  }  
 
   protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
     List<?> group = (List<?>)tuple.get("tuples");

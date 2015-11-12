@@ -18,8 +18,8 @@
 package org.apache.solr.client.solrj.io.comp;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -91,5 +91,16 @@ public class MultipleFieldComparator implements StreamComparator {
     }
     
     return false;
+  }
+  
+  @Override
+  public MultipleFieldComparator copyAliased(Map<String,String> aliases){
+    StreamComparator[] aliasedComps = new StreamComparator[comps.length];
+    
+    for(int idx = 0; idx < comps.length; ++idx){
+      aliasedComps[idx] = comps[idx].copyAliased(aliases);
+    }
+    
+    return new MultipleFieldComparator(aliasedComps);
   }
 }

@@ -1,3 +1,13 @@
+package org.apache.solr.client.solrj.io.ops;
+
+import java.io.IOException;
+import java.io.Serializable;
+
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,17 +25,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.comp;
-
-import java.io.Serializable;
-import java.util.Comparator;
-import java.util.Map;
-
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-
-/** Defines a comparator we can use with TupleStreams */
-public interface StreamComparator extends Comparator<Tuple>, Expressible, Serializable {
-  public boolean isDerivedFrom(StreamComparator base);
-  public StreamComparator copyAliased(Map<String,String> aliases);
+/**
+ * Interface for any operation one can perform on a tuple in a TupleStream
+ */
+public interface StreamOperation extends Expressible, Serializable {
+  public void operate(Tuple tuple);
 }

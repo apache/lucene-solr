@@ -28,6 +28,7 @@ import com.facebook.presto.sql.ExpressionFormatter;
 import com.facebook.presto.sql.tree.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
+
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -40,8 +41,8 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
-import org.apache.solr.client.solrj.io.stream.EditStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.SelectStream;
 import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -58,12 +59,13 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import com.facebook.presto.sql.parser.SqlParser;
 
@@ -449,7 +451,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
     }
 
-    return new EditStream(tupleStream, remove);
+    return new SelectStream(tupleStream, sqlVisitor.fields);
   }
 
   private static TupleStream doGroupByWithAggregatesFacets(SQLVisitor sqlVisitor) throws IOException {

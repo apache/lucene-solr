@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.io.comp;
 
+import java.util.Map;
+
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -74,7 +76,7 @@ public class FieldComparator implements StreamComparator {
     StringBuilder sb = new StringBuilder();
     
     sb.append(leftFieldName);
-    if(!leftFieldName.equals(rightFieldName)){
+    if(hasDifferentFieldNames()){
       sb.append("=");
       sb.append(rightFieldName);
     }
@@ -148,5 +150,14 @@ public class FieldComparator implements StreamComparator {
     }
     
     return false;
+  }
+  
+  @Override
+  public FieldComparator copyAliased(Map<String,String> aliases){
+    return new FieldComparator(
+        aliases.containsKey(leftFieldName) ? aliases.get(leftFieldName) : leftFieldName,
+        aliases.containsKey(rightFieldName) ? aliases.get(rightFieldName) : rightFieldName,
+        order
+    );
   }
 }

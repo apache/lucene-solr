@@ -15,17 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.comp;
+/**
+ * Operations for the Streaming Aggregation API
+ **/
+package org.apache.solr.client.solrj.io.ops;
 
-import java.io.Serializable;
-import java.util.Comparator;
-import java.util.Map;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 
-/** Defines a comparator we can use with TupleStreams */
-public interface StreamComparator extends Comparator<Tuple>, Expressible, Serializable {
-  public boolean isDerivedFrom(StreamComparator base);
-  public StreamComparator copyAliased(Map<String,String> aliases);
-}
+
