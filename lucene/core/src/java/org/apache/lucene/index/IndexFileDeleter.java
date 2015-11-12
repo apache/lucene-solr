@@ -693,7 +693,7 @@ final class IndexFileDeleter implements Closeable {
     if (!refCounts.containsKey(fileName)) {
       rc = new RefCount(fileName);
       // We should never incRef a file we are already wanting to delete:
-      assert deletable == null || deletable.contains(fileName) == false: "file \"" + fileName + "\" cannot be incRef'd: it's already pending delete";
+      assert deletable.contains(fileName) == false: "file \"" + fileName + "\" cannot be incRef'd: it's already pending delete";
       refCounts.put(fileName, rc);
     } else {
       rc = refCounts.get(fileName);
