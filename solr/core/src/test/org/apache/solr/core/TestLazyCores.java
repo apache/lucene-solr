@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -568,7 +567,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     NodeConfig config = SolrXmlConfig.fromFile(loader, solrXml);
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
-    return createCoreContainer(config, new CorePropertiesLocator(Paths.get(config.getCoreRootDirectory())));
+    return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the directory.

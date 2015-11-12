@@ -17,6 +17,10 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
+
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.TestUtil;
@@ -30,10 +34,6 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Locale;
 
 import static org.junit.internal.matchers.StringContains.containsString;
 
@@ -74,7 +74,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals("config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount());
-    assertThat("core root dir", cfg.getCoreRootDirectory(), containsString("testCoreRootDirectory"));
+    assertThat("core root dir", cfg.getCoreRootDirectory().toString(), containsString("testCoreRootDirectory"));
     assertEquals("distrib conn timeout", 22, cfg.getDistributedConnectionTimeout());
     assertEquals("distrib conn timeout", 22, cfg.getUpdateShardHandlerConfig().getDistributedConnectionTimeout());
     assertEquals("distrib socket timeout", 33, cfg.getDistributedSocketTimeout());
@@ -118,7 +118,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
 
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.getAbsolutePath());
-    assertThat(cfg.getCoreRootDirectory(), containsString("myCoreRoot"));
+    assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertEquals("schema cache", false, cfg.hasSchemaCache());
   }

@@ -17,6 +17,10 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -24,9 +28,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-
-import java.io.File;
-import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -56,13 +57,13 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public void testDefaultConfigSetBasePathResolution() throws IOException {
     try (SolrResourceLoader loader = new SolrResourceLoader(new File("/path/to/solr/home").getAbsolutePath())) {
 
-      ConfigSetService.Default relativeCSS = new ConfigSetService.Default(loader, "configsets");
-      assertThat(relativeCSS.getConfigSetBase().getAbsoluteFile(),
-                is(new File("/path/to/solr/home/configsets").getAbsoluteFile()));
+      NodeConfig config
+          = SolrXmlConfig.fromString(loader, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
+      assertThat(config.getConfigSetBaseDirectory(), is(Paths.get("/path/to/solr/home/configsets")));
 
-      ConfigSetService.Default absoluteCSS = new ConfigSetService.Default(loader, new File("/path/to/configsets").getAbsolutePath());
-      assertThat(absoluteCSS.getConfigSetBase().getAbsoluteFile(),
-                is(new File("/path/to/configsets").getAbsoluteFile()));
+      NodeConfig absConfig
+          = SolrXmlConfig.fromString(loader, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
+      assertThat(absConfig.getConfigSetBaseDirectory(), is(Paths.get("/path/to/configsets")));
     }
   }
 
