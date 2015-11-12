@@ -240,6 +240,9 @@ New Features
 * SOLR-7569: A collection API to force elect a leader, called FORCELEADER, when all replicas in a shard are down
   (Ishan Chattopadhyaya, Mark Miller, shalin, noble)
 
+* SOLR-6168: Add a 'sort' local param to the collapse QParser to support using complex sort options
+  to select the representitive doc for each collapsed group. (Umesh Prasad, hossman)
+
 Bug Fixes
 ----------------------
 

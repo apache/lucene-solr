@@ -52,6 +52,7 @@ public class CollapseScoreFunction extends ValueSource {
 
     public CollapseScoreFunctionValues(Map context) {
       this.cscore = (CollapseScore) context.get("CSCORE");
+      assert null != this.cscore;
     }
 
     public int intVal(int doc) {

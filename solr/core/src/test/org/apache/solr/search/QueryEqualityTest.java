@@ -236,7 +236,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testQueryCollapse() throws Exception {
-    SolrQueryRequest req = req("myField","foo_s");
+    SolrQueryRequest req = req("myField","foo_s",
+                               "g_sort","foo_s1 asc, foo_i desc");
 
     try {
       assertQueryEquals("collapse", req,
@@ -246,7 +247,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "{!collapse field=$myField max=a}");
 
       assertQueryEquals("collapse", req,
-          "{!collapse field=$myField min=a}");
+                        "{!collapse field=$myField min=a}",
+                        "{!collapse field=$myField min=a nullPolicy=ignore}");
+      
+      assertQueryEquals("collapse", req,
+                        "{!collapse field=$myField sort=$g_sort}",
+                        "{!collapse field=$myField sort='foo_s1 asc, foo_i desc'}",
+                        "{!collapse field=$myField sort=$g_sort nullPolicy=ignore}");
 
       assertQueryEquals("collapse", req,
           "{!collapse field=$myField max=a nullPolicy=expand}");
