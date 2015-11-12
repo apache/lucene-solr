@@ -59,11 +59,12 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
       NodeConfig config
           = SolrXmlConfig.fromString(loader, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
-      assertThat(config.getConfigSetBaseDirectory(), is(Paths.get("/path/to/solr/home/configsets")));
+      assertThat(config.getConfigSetBaseDirectory().toAbsolutePath(),
+                  is(Paths.get("/path/to/solr/home/configsets").toAbsolutePath()));
 
       NodeConfig absConfig
           = SolrXmlConfig.fromString(loader, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
-      assertThat(absConfig.getConfigSetBaseDirectory(), is(Paths.get("/path/to/configsets")));
+      assertThat(absConfig.getConfigSetBaseDirectory().toAbsolutePath(), is(Paths.get("/path/to/configsets").toAbsolutePath()));
     }
   }
 
