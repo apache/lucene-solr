@@ -33,7 +33,9 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
 import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
 import org.apache.solr.client.solrj.io.stream.MergeStream;
+import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
 import org.apache.solr.client.solrj.io.stream.ReducerStream;
@@ -103,8 +105,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("rollup", RollupStream.class)
       .withFunctionName("stats", StatsStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class)
-      .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class)
-      
+      .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class) 
+      .withFunctionName("hashJoin", HashJoinStream.class)
+      .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
+     
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
@@ -112,7 +116,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("sum", SumMetric.class)
       .withFunctionName("count", CountMetric.class)
       ;
-
     
     // This pulls all the overrides and additions from the config
     Object functionMappingsObj = initArgs.get("streamFunctions");
