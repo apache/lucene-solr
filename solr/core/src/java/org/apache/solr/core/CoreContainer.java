@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -204,11 +203,11 @@ public class CoreContainer {
   }
 
   public CoreContainer(NodeConfig config, Properties properties) {
-    this(config, properties, new CorePropertiesLocator(Paths.get(config.getCoreRootDirectory())));
+    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()));
   }
   
   public CoreContainer(NodeConfig config, Properties properties, boolean asyncSolrCoreLoad) {
-    this(config, properties, new CorePropertiesLocator(Paths.get(config.getCoreRootDirectory())), asyncSolrCoreLoad);
+    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
   }
 
   public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator) {
@@ -955,7 +954,7 @@ public class CoreContainer {
   }
 
   public String getCoreRootDirectory() {
-    return cfg.getCoreRootDirectory();
+    return cfg.getCoreRootDirectory().toString();
   }
 
   /**

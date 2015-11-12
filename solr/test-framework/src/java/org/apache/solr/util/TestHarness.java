@@ -20,7 +20,6 @@ package org.apache.solr.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,7 +153,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(Paths.get(nodeConfig.getCoreRootDirectory())));
+    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
   }
 
   /**

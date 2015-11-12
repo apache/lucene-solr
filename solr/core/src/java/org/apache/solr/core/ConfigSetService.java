@@ -17,6 +17,14 @@
 
 package org.apache.solr.core;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.apache.solr.cloud.CloudConfigSetService;
@@ -29,11 +37,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.Locale;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
@@ -138,34 +141,22 @@ public abstract class ConfigSetService {
    */
   public static class Default extends ConfigSetService {
 
-    private final File configSetBase;
+    private final Path configSetBase;
 
     /**
      * Create a new ConfigSetService.Default
      * @param loader the CoreContainer's resource loader
      * @param configSetBase the base directory under which to look for config set directories
      */
-    public Default(SolrResourceLoader loader, String configSetBase) {
+    public Default(SolrResourceLoader loader, Path configSetBase) {
       super(loader);
-      this.configSetBase = resolveBaseDirectory(loader, configSetBase);
-    }
-
-    private File resolveBaseDirectory(SolrResourceLoader loader, String configSetBase) {
-      File csBase = new File(configSetBase);
-      if (!csBase.isAbsolute())
-        csBase = new File(loader.getInstanceDir(), configSetBase);
-      return csBase;
-    }
-
-    // for testing
-    File getConfigSetBase() {
-      return this.configSetBase;
+      this.configSetBase = configSetBase;
     }
 
     @Override
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-      String instanceDir = locateInstanceDir(cd);
-      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader(), cd.getSubstitutableProperties());
+      Path instanceDir = locateInstanceDir(cd);
+      return new SolrResourceLoader(instanceDir.toString(), parentLoader.getClassLoader(), cd.getSubstitutableProperties());
     }
 
     @Override
@@ -173,15 +164,15 @@ public abstract class ConfigSetService {
       return (cd.getConfigSet() == null ? "instancedir " : "configset ") + locateInstanceDir(cd);
     }
 
-    protected String locateInstanceDir(CoreDescriptor cd) {
+    protected Path locateInstanceDir(CoreDescriptor cd) {
       String configSet = cd.getConfigSet();
       if (configSet == null)
-        return cd.getInstanceDir();
-      File configSetDirectory = new File(configSetBase, configSet);
-      if (!configSetDirectory.exists() || !configSetDirectory.isDirectory())
+        return Paths.get(cd.getInstanceDir());
+      Path configSetDirectory = configSetBase.resolve(configSet);
+      if (!Files.isDirectory(configSetDirectory))
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not load configuration from directory " + configSetDirectory.getAbsolutePath());
-      return configSetDirectory.getAbsolutePath();
+            "Could not load configuration from directory " + configSetDirectory);
+      return configSetDirectory;
     }
 
   }
@@ -195,25 +186,23 @@ public abstract class ConfigSetService {
 
     private final Cache<String, IndexSchema> schemaCache = CacheBuilder.newBuilder().build();
 
-    public SchemaCaching(SolrResourceLoader loader, String configSetBase) {
+    public SchemaCaching(SolrResourceLoader loader, Path configSetBase) {
       super(loader, configSetBase);
     }
 
     public static final DateTimeFormatter cacheKeyFormatter = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
-    public static String cacheName(File schemaFile) {
+    public static String cacheName(Path schemaFile) throws IOException {
+      long lastModified = Files.getLastModifiedTime(schemaFile).toMillis();
       return String.format(Locale.ROOT, "%s:%s",
-                            schemaFile.getAbsolutePath(), cacheKeyFormatter.print(schemaFile.lastModified()));
+                            schemaFile.toString(), cacheKeyFormatter.print(lastModified));
     }
 
     @Override
     public IndexSchema createIndexSchema(final CoreDescriptor cd, final SolrConfig solrConfig) {
       final String resourceNameToBeUsed = IndexSchemaFactory.getResourceNameToBeUsed(cd.getSchemaName(), solrConfig);
-      File schemaFile = new File(resourceNameToBeUsed);
-      if (!schemaFile.isAbsolute()) {
-        schemaFile = new File(solrConfig.getResourceLoader().getConfigDir(), schemaFile.getPath());
-      }
-      if (schemaFile.exists()) {
+      Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(resourceNameToBeUsed);
+      if (Files.exists(schemaFile)) {
         try {
           return schemaCache.get(cacheName(schemaFile), new Callable<IndexSchema>() {
             @Override
@@ -225,6 +214,9 @@ public abstract class ConfigSetService {
         } catch (ExecutionException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Error creating index schema for core " + cd.getName(), e);
+        } catch (IOException e) {
+          logger.warn("Couldn't get last modified time for schema file {}: {}", schemaFile, e.getMessage());
+          logger.warn("Will not use schema cache");
         }
       }
       return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
