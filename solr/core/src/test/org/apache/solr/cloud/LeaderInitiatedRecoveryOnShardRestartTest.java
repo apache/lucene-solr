@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistr
   public LeaderInitiatedRecoveryOnShardRestartTest() {
     super();
     sliceCount = 1;
-    fixShardCount(2);
+    fixShardCount(3);
   }
   
   @Test
@@ -50,7 +51,7 @@ public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistr
 
     String testCollectionName = "all_in_lir";
     String shardId = "shard1";
-    createCollection(testCollectionName, 1, 2, 1);
+    createCollection(testCollectionName, 1, 3, 1);
 
     cloudClient.setDefaultCollection(testCollectionName);
 
@@ -64,8 +65,9 @@ public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistr
     SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
     zkClient.makePath("/collections/" + testCollectionName + "/leader_initiated_recovery/" + shardId + "/core_node1", znodeData, true);
     zkClient.makePath("/collections/" + testCollectionName + "/leader_initiated_recovery/" + shardId + "/core_node2", znodeData, true);
+    zkClient.makePath("/collections/" + testCollectionName + "/leader_initiated_recovery/" + shardId + "/core_node3", znodeData, true);
     
-    printLayout();
+    // printLayout();
     
     for (JettySolrRunner jetty : jettys) {
       ChaosMonkey.stop(jetty);
@@ -76,6 +78,32 @@ public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistr
     for (JettySolrRunner jetty : jettys) {
       ChaosMonkey.start(jetty);
     }
+    
+    // recoveries will not finish without SOLR-8075
+    waitForRecoveriesToFinish(testCollectionName, true);
+    
+    // now expire each node
+    try {
+      zkClient.makePath("/collections/" + testCollectionName + "/leader_initiated_recovery/" + shardId + "/core_node1", znodeData, true);
+    } catch (NodeExistsException e) {
+    
+    }
+    try {
+      zkClient.makePath("/collections/" + testCollectionName + "/leader_initiated_recovery/" + shardId + "/core_node2", znodeData, true);
+    } catch (NodeExistsException e) {
+    
+    }
+    try {
+      zkClient.makePath("/collections/" + testCollectionName + "/leader_initiated_recovery/" + shardId + "/core_node3", znodeData, true);
+    } catch (NodeExistsException e) {
+    
+    }
+    
+    for (JettySolrRunner jetty : jettys) {
+      chaosMonkey.expireSession(jetty);
+    }
+    
+    Thread.sleep(2000);
     
     // recoveries will not finish without SOLR-8075
     waitForRecoveriesToFinish(testCollectionName, true);
