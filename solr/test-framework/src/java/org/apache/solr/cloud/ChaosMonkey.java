@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -224,6 +225,27 @@ public class ChaosMonkey {
   
   public static void kill(CloudJettyRunner cjetty) throws Exception {
     kill(cjetty.jetty);
+  }
+  
+  public void stopAll(int pauseBetweenMs) throws Exception {
+    Set<String> keys = shardToJetty.keySet();
+    for (String key : keys) {
+      List<CloudJettyRunner> jetties = shardToJetty.get(key);
+      for (CloudJettyRunner jetty : jetties) {
+        Thread.sleep(pauseBetweenMs);
+        stopJetty(jetty);
+      }
+    }
+  }
+  
+  public void startAll() throws Exception {
+    Set<String> keys = shardToJetty.keySet();
+    for (String key : keys) {
+      List<CloudJettyRunner> jetties = shardToJetty.get(key);
+      for (CloudJettyRunner jetty : jetties) {
+        start(jetty.jetty);
+      }
+    }
   }
   
   public void stopShard(String slice) throws Exception {
