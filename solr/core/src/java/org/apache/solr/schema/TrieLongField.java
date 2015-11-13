@@ -50,6 +50,19 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
   }
 
   @Override
+  public Object toNativeType(Object val) {
+    if(val==null) return null;
+    if (val instanceof Number) return ((Number) val).longValue();
+    try {
+      if (val instanceof String) return Long.parseLong((String) val);
+    } catch (NumberFormatException e) {
+      Double v = Double.parseDouble((String) val);
+      return v.longValue();
+    }
+    return super.toNativeType(val);
+  }
+
+  @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
     
     return new SortedSetFieldSource(f.getName(), choice) {

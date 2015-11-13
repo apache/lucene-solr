@@ -388,6 +388,9 @@ Bug Fixes
   if the last published state is something else if it has already registered with ZK.
   (Ishan Chattopadhyaya, Mark Miller via noble)
 
+* SOLR-8287: TrieDoubleField and TrieLongField now override toNativeType
+  (Ishan Chattopadhyaya via Christine Poerschke)
+
 Optimizations
 ----------------------
 
