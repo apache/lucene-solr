@@ -1,5 +1,22 @@
 package org.apache.solr.cloud;
 
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,6 +28,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -38,23 +56,6 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 public abstract class ElectionContext implements Closeable {
   static Logger log = LoggerFactory.getLogger(ElectionContext.class);
@@ -405,6 +406,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           super.runLeaderProcess(weAreReplacement, 0);
           try (SolrCore core = cc.getCore(coreName)) {
             core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
+            publishActiveIfRegisteredAndNotActive(core);
           }
           log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
 
@@ -441,6 +443,21 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  public void publishActiveIfRegisteredAndNotActive(SolrCore core) throws KeeperException, InterruptedException {
+      if (core.getCoreDescriptor().getCloudDescriptor().hasRegistered()) {
+        ZkStateReader zkStateReader = zkController.getZkStateReader();
+        zkStateReader.updateClusterState();
+        ClusterState clusterState = zkStateReader.getClusterState();
+        Replica rep = (clusterState == null) ? null
+            : clusterState.getReplica(collection, leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP));
+        if (rep != null && rep.getState() != Replica.State.ACTIVE
+            && rep.getState() != Replica.State.RECOVERING) {
+          log.info("We have become the leader after core registration but are not in an ACTIVE state - publishing ACTIVE");
+          zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+        }
+      }
   }
 
   public void checkLIR(String coreName, boolean allReplicasInLine)
