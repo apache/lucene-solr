@@ -36,7 +36,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.LeaderInitiatedRecoveryThread;
 import org.apache.solr.cloud.DistributedQueue;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
@@ -844,10 +843,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // before we go setting other replicas to down, make sure we're still the leader!
         String leaderCoreNodeName = null;
         Exception getLeaderExc = null;
+        Replica leaderProps = null;
         try {
-          Replica leader = zkController.getZkStateReader().getLeader(collection, shardId);
-          if (leader != null) {
-            leaderCoreNodeName = leader.getName();
+            leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
+          if (leaderProps != null) {
+            leaderCoreNodeName = leaderProps.getName();
           }
         } catch (Exception exc) {
           getLeaderExc = exc;
@@ -875,7 +875,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           continue;
         }
 
-        if (cloudDesc.getCoreNodeName().equals(leaderCoreNodeName) && foundErrorNodeInReplicaList) {
+        if (leaderCoreNodeName != null && cloudDesc.getCoreNodeName().equals(leaderCoreNodeName) // we are still same leader
+            && foundErrorNodeInReplicaList // we found an error for one of replicas
+            && !stdNode.getNodeProps().getCoreUrl().equals(leaderProps.getCoreUrl())) { // we do not want to put ourself into LIR
           try {
             // if false, then the node is probably not "live" anymore
             // and we do not need to send a recovery message
@@ -900,9 +902,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             log.warn("Core "+cloudDesc.getCoreNodeName()+" belonging to "+collection+" "+
                 shardId+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
                 "No request recovery command will be sent!");
-          } else  {
-            log.warn("Core "+cloudDesc.getCoreNodeName()+" is no longer the leader for "+collection+" "+
-                shardId+", no request recovery command will be sent!");
+          } else {
+            log.warn("Core " + cloudDesc.getCoreNodeName() + " is no longer the leader for " + collection + " "
+                + shardId + " or we tried to put ourself into LIR, no request recovery command will be sent!");
           }
         }
       }
