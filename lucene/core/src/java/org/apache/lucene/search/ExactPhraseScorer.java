@@ -44,9 +44,11 @@ final class ExactPhraseScorer extends Scorer {
 
   private final Similarity.SimScorer docScorer;
   private final boolean needsScores;
+  private float matchCost;
 
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.SimScorer docScorer, boolean needsScores) throws IOException {
+                    Similarity.SimScorer docScorer, boolean needsScores,
+                    float matchCost) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.needsScores = needsScores;
@@ -59,6 +61,7 @@ final class ExactPhraseScorer extends Scorer {
     }
     conjunction = ConjunctionDISI.intersect(iterators);
     this.postings = postingsAndPositions.toArray(new PostingsAndPosition[postingsAndPositions.size()]);
+    this.matchCost = matchCost;
   }
 
   @Override
@@ -67,6 +70,11 @@ final class ExactPhraseScorer extends Scorer {
       @Override
       public boolean matches() throws IOException {
         return phraseFreq() > 0;
+      }
+
+      @Override
+      public float matchCost() {
+        return matchCost;
       }
     };
   }

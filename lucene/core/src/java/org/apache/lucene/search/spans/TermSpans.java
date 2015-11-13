@@ -37,13 +37,17 @@ public class TermSpans extends Spans {
   protected int count;
   protected int position;
   protected boolean readPayload;
+  private final float positionsCost;
 
-  public TermSpans(SpanWeight weight, Similarity.SimScorer scorer, PostingsEnum postings, Term term) {
+  public TermSpans(SpanWeight weight, Similarity.SimScorer scorer,
+                    PostingsEnum postings, Term term, float positionsCost) {
     super(weight, scorer);
     this.postings = Objects.requireNonNull(postings);
     this.term = Objects.requireNonNull(term);
     this.doc = -1;
     this.position = -1;
+    assert positionsCost > 0; // otherwise the TermSpans should not be created.
+    this.positionsCost = positionsCost;
   }
 
   @Override
@@ -119,6 +123,11 @@ public class TermSpans extends Spans {
   }
 
   @Override
+  public float positionsCost() {
+    return positionsCost;
+  }
+
+  @Override
   public String toString() {
     return "spans(" + term.toString() + ")@" +
             (doc == -1 ? "START" : (doc == NO_MORE_DOCS) ? "ENDDOC"
@@ -128,5 +137,4 @@ public class TermSpans extends Spans {
   public PostingsEnum getPostings() {
     return postings;
   }
-
 }

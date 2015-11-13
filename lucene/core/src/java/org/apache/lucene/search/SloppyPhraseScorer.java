@@ -52,9 +52,11 @@ final class SloppyPhraseScorer extends Scorer {
   
   private int numMatches;
   final boolean needsScores;
+  private final float matchCost;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SimScorer docScorer, boolean needsScores) {
+      int slop, Similarity.SimScorer docScorer, boolean needsScores,
+      float matchCost) {
     super(weight);
     this.docScorer = docScorer;
     this.needsScores = needsScores;
@@ -68,6 +70,7 @@ final class SloppyPhraseScorer extends Scorer {
       phrasePositions[i] = new PhrasePositions(postings[i].postings, postings[i].position, i, postings[i].terms);
     }
     conjunction = ConjunctionDISI.intersect(Arrays.asList(iterators));
+    this.matchCost = matchCost;
   }
 
   /**
@@ -595,6 +598,16 @@ final class SloppyPhraseScorer extends Scorer {
       public boolean matches() throws IOException {
         sloppyFreq = phraseFreq(); // check for phrase
         return sloppyFreq != 0F;
+      }
+
+      @Override
+      public float matchCost() {
+        return matchCost;
+      }
+
+      @Override
+      public String toString() {
+        return "SloppyPhraseScorer@asTwoPhaseIterator(" + SloppyPhraseScorer.this + ")";
       }
     };
   }

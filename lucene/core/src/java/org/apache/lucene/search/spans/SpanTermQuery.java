@@ -118,8 +118,38 @@ public class SpanTermQuery extends SpanQuery {
       termsEnum.seekExact(term.bytes(), state);
 
       final PostingsEnum postings = termsEnum.postings(null, requiredPostings.getRequiredPostings());
-      return new TermSpans(this, getSimScorer(context), postings, term);
+      float positionsCost = termPositionsCost(termsEnum) * PHRASE_TO_SPAN_TERM_POSITIONS_COST;
+      return new TermSpans(this, getSimScorer(context), postings, term, positionsCost);
     }
+  }
+
+  /** A guess of
+   * the relative cost of dealing with the term positions
+   * when using a SpanNearQuery instead of a PhraseQuery.
+   */
+  private static final float PHRASE_TO_SPAN_TERM_POSITIONS_COST = 4.0f;
+
+  private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
+
+  private static final int TERM_OPS_PER_POS = 7;
+
+  /** Returns an expected cost in simple operations
+   *  of processing the occurrences of a term
+   *  in a document that contains the term.
+   *  <br>This may be inaccurate when {@link TermsEnum#totalTermFreq()} is not available.
+   *  @param termsEnum The term is the term at which this TermsEnum is positioned.
+   *  <p>
+   *  This is a copy of org.apache.lucene.search.PhraseQuery.termPositionsCost().
+   *  <br>
+   *  TODO: keep only a single copy of this method and the constants used in it
+   *  when SpanTermQuery moves to the o.a.l.search package.
+   */
+  static float termPositionsCost(TermsEnum termsEnum) throws IOException {
+    int docFreq = termsEnum.docFreq();
+    assert docFreq > 0;
+    long totalTermFreq = termsEnum.totalTermFreq(); // -1 when not available
+    float expOccurrencesInMatchingDoc = (totalTermFreq < docFreq) ? 1 : (totalTermFreq / (float) docFreq);
+    return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
   }
 
   @Override

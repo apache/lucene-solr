@@ -142,6 +142,16 @@ public abstract class FilterSpans extends Spans {
         public boolean matches() throws IOException {
           return inner.matches() && twoPhaseCurrentDocMatches();
         }
+
+        @Override
+        public float matchCost() {
+          return inner.matchCost(); // underestimate
+        }
+
+        @Override
+        public String toString() {
+          return "FilterSpans@asTwoPhaseIterator(inner=" + inner + ", in=" + in + ")";
+        }
       };
     } else {
       // wrapped instance has no approximation, but 
@@ -151,10 +161,25 @@ public abstract class FilterSpans extends Spans {
         public boolean matches() throws IOException {
           return twoPhaseCurrentDocMatches();
         }
+
+        @Override
+        public float matchCost() {
+          return in.positionsCost(); // overestimate
+        }
+
+        @Override
+        public String toString() {
+          return "FilterSpans@asTwoPhaseIterator(in=" + in + ")";
+        }
       };
     }
   }
   
+  @Override
+  public float positionsCost() {
+    throw new UnsupportedOperationException(); // asTwoPhaseIterator never returns null
+  }
+
   /**
    * Returns true if the current document matches.
    * <p>

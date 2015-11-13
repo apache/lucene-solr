@@ -195,6 +195,19 @@ public class AssertingScorer extends Scorer {
         }
         return matches;
       }
+
+      @Override
+      public float matchCost() {
+        float matchCost = in.matchCost();
+        assert ! Float.isNaN(matchCost);
+        assert matchCost >= 0;
+        return matchCost;
+      }
+
+      @Override
+      public String toString() {
+        return "AssertingScorer@asTwoPhaseIterator(" + in + ")";
+      }
     };
   }
 }

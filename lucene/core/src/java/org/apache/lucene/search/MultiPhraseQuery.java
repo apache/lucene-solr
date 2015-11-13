@@ -190,6 +190,7 @@ public class MultiPhraseQuery extends Query {
 
       // Reuse single TermsEnum below:
       final TermsEnum termsEnum = fieldTerms.iterator();
+      float totalMatchCost = 0;
 
       for (int pos=0; pos<postingsFreqs.length; pos++) {
         Term[] terms = termArrays.get(pos);
@@ -200,6 +201,7 @@ public class MultiPhraseQuery extends Query {
           if (termState != null) {
             termsEnum.seekExact(term.bytes(), termState);
             postings.add(termsEnum.postings(null, PostingsEnum.POSITIONS));
+            totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
           }
         }
         
@@ -223,9 +225,13 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        return new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context), needsScores);
+        return new ExactPhraseScorer(this, postingsFreqs,
+                                      similarity.simScorer(stats, context),
+                                      needsScores, totalMatchCost);
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.simScorer(stats, context), needsScores);
+        return new SloppyPhraseScorer(this, postingsFreqs, slop,
+                                        similarity.simScorer(stats, context),
+                                        needsScores, totalMatchCost);
       }
     }
 

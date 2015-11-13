@@ -37,6 +37,11 @@ public class TestConjunctionDISI extends LuceneTestCase {
       public boolean matches() throws IOException {
         return confirmed.get(iterator.docID());
       }
+
+      @Override
+      public float matchCost() {
+        return 5; // #operations in FixedBitSet#get()
+      }
     };
   }
 

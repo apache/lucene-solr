@@ -84,15 +84,23 @@ public abstract class TwoPhaseIterator {
     return approximation;
   }
 
-  /** Return whether the current doc ID that the iterator is on matches. This
+  /** Return whether the current doc ID that {@link #approximation()} is on matches. This
    *  method should only be called when the iterator is positioned -- ie. not
    *  when {@link DocIdSetIterator#docID()} is {@code -1} or
    *  {@link DocIdSetIterator#NO_MORE_DOCS} -- and at most once. */
   public abstract boolean matches() throws IOException;
 
+  /** An estimate of the expected cost to determine that a single document {@link #matches()}.
+   *  This can be called before iterating the documents of {@link #approximation()}.
+   *  Returns an expected cost in number of simple operations like addition, multiplication,
+   *  comparing two numbers and indexing an array.
+   *  The returned value must be positive.
+   */
+  public abstract float matchCost();
+
   /**
    * Returns a {@link TwoPhaseIterator} for this {@link DocIdSetIterator}
-   * when available * otherwise returns null.
+   * when available, otherwise returns null.
    */
   public static TwoPhaseIterator asTwoPhaseIterator(DocIdSetIterator iter) {
     return (iter instanceof Scorer)

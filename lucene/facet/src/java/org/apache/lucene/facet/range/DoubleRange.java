@@ -179,6 +179,11 @@ public final class DoubleRange extends Range {
             public boolean matches() throws IOException {
               return range.accept(values.doubleVal(approximation.docID()));
             }
+
+            @Override
+            public float matchCost() {
+              return 100; // TODO: use cost of range.accept()
+            }
           };
           return new ConstantScoreScorer(this, score(), twoPhase);
         }

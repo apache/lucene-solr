@@ -331,6 +331,10 @@ public class FilteredQuery extends Query {
                 final int doc = approximation.docID();
                 return bits.get(doc);
               }
+              @Override
+              public float matchCost() {
+                return 10; // TODO use cost of bits.get()
+              }
             };
             return new ConstantScoreScorer(this, 0f, twoPhase);
           } else {

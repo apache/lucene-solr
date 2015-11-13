@@ -297,6 +297,11 @@ public class PayloadNearQuery extends SpanNearQuery {
     public long cost() {
       return spans.cost();
     }
+
+    @Override
+    public float positionsCost() {
+      return spans.positionsCost();
+    }
   }
 
 }

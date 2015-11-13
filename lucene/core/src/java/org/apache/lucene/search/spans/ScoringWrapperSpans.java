@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.TwoPhaseIterator;
 
 /**
  * A Spans that wraps another Spans with a different SimScorer
@@ -81,5 +82,15 @@ public class ScoringWrapperSpans extends Spans {
   @Override
   public long cost() {
     return in.cost();
+  }
+
+  @Override
+  public TwoPhaseIterator asTwoPhaseIterator() {
+    return in.asTwoPhaseIterator();
+  }
+
+  @Override
+  public float positionsCost() {
+    return in.positionsCost();
   }
 }

@@ -111,6 +111,11 @@ public class CompositeVerifyQuery extends Query {
           public boolean matches() throws IOException {
             return predFuncValues.boolVal(indexQueryScorer.docID());
           }
+
+          @Override
+          public float matchCost() {
+            return 100; // TODO: use cost of predFuncValues.boolVal()
+          }
         };
 
         return new ConstantScoreScorer(this, score(), twoPhaseIterator);
