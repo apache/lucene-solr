@@ -56,6 +56,14 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
   }
   
   @Override
+  public Object toNativeType(Object val) {
+    if(val==null) return null;
+    if (val instanceof Number) return ((Number) val).doubleValue();
+    if (val instanceof String) return Double.parseDouble((String) val);
+    return super.toNativeType(val);
+  }
+
+  @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
     
     return new SortedSetFieldSource(f.getName(), choice) {
