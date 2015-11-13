@@ -512,6 +512,9 @@ Other Changes
 
 * SOLR-8278: Use NIO2 APIs in ConfigSetService (Alan Woodward)
 
+* SOLR-8286: Remove instances of solr.hdfs.blockcache.write.enabled from tests
+  and docs (Gregory Chanan)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
