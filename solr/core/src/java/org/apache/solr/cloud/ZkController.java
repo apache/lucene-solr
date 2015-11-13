@@ -519,6 +519,7 @@ public final class ZkController {
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
         descriptor.getCloudDescriptor().setLeader(false);
+        descriptor.getCloudDescriptor().setHasRegistered(false);
       }
     }
   }
@@ -973,6 +974,8 @@ public final class ZkController {
         if (!didRecovery) {
           publish(desc, Replica.State.ACTIVE);
         }
+        
+        core.getCoreDescriptor().getCloudDescriptor().setHasRegistered(true);
       }
       
       // make sure we have an update cluster state right away

@@ -384,6 +384,10 @@ Bug Fixes
 * SOLR-8262: Comment out /stream handler from sample solrconfig.xml's for security reasons
   (Joel Bernstein)
 
+* SOLR-7989: After a new leader is elected it should change it's state to ACTIVE even
+  if the last published state is something else if it has already registered with ZK.
+  (Ishan Chattopadhyaya, Mark Miller via noble)
+
 Optimizations
 ----------------------
 
