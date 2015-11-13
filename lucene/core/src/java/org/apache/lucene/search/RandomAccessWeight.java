@@ -62,6 +62,11 @@ public abstract class RandomAccessWeight extends ConstantScoreWeight {
 
         return matchingDocs.get(doc);
       }
+
+      @Override
+      public float matchCost() {
+        return 10; // TODO: use some cost of matchingDocs
+      }
     };
 
     return new ConstantScoreScorer(this, score(), twoPhase);

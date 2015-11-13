@@ -168,6 +168,11 @@ public final class LongRange extends Range {
             public boolean matches() throws IOException {
               return range.accept(values.longVal(approximation.docID()));
             }
+
+            @Override
+            public float matchCost() {
+              return 100; // TODO: use cost of range.accept()
+            }
           };
           return new ConstantScoreScorer(this, score(), twoPhase);
         }

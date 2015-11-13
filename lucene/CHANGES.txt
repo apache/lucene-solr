@@ -206,6 +206,9 @@ Optimizations
 * LUCENE-6892: various lucene.index initialCapacity tweaks
   (Christine Poerschke)
 
+* LUCENE-6276: Added TwoPhaseIterator.matchCost() which allows to confirm the
+  least costly TwoPhaseIterators first. (Paul Elschot via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 

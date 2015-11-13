@@ -155,7 +155,7 @@ public class ConjunctionDISI extends DocIdSetIterator {
 
   @Override
   public long cost() {
-    return lead.cost();
+    return lead.cost(); // overestimate
   }
 
   /**
@@ -164,21 +164,43 @@ public class ConjunctionDISI extends DocIdSetIterator {
   private static class TwoPhaseConjunctionDISI extends TwoPhaseIterator {
 
     private final TwoPhaseIterator[] twoPhaseIterators;
+    private final float matchCost;
 
     private TwoPhaseConjunctionDISI(List<? extends DocIdSetIterator> iterators, List<TwoPhaseIterator> twoPhaseIterators) {
       super(new ConjunctionDISI(iterators));
       assert twoPhaseIterators.size() > 0;
+
+      CollectionUtil.timSort(twoPhaseIterators, new Comparator<TwoPhaseIterator>() {
+        @Override
+        public int compare(TwoPhaseIterator o1, TwoPhaseIterator o2) {
+          return Float.compare(o1.matchCost(), o2.matchCost());
+        }
+      });
+
       this.twoPhaseIterators = twoPhaseIterators.toArray(new TwoPhaseIterator[twoPhaseIterators.size()]);
+
+      // Compute the matchCost as the total matchCost of the sub iterators.
+      // TODO: This could be too high because the matching is done cheapest first: give the lower matchCosts a higher weight.
+      float totalMatchCost = 0;
+      for (TwoPhaseIterator tpi : twoPhaseIterators) {
+        totalMatchCost += tpi.matchCost();
+      }
+      matchCost = totalMatchCost;
     }
 
     @Override
     public boolean matches() throws IOException {
-      for (TwoPhaseIterator twoPhaseIterator : twoPhaseIterators) {
+      for (TwoPhaseIterator twoPhaseIterator : twoPhaseIterators) { // match cheapest first
         if (twoPhaseIterator.matches() == false) {
           return false;
         }
       }
       return true;
+    }
+
+    @Override
+    public float matchCost() {
+      return matchCost;
     }
 
   }

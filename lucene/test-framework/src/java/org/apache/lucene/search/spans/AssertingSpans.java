@@ -191,6 +191,14 @@ class AssertingSpans extends Spans {
   }
 
   @Override
+  public float positionsCost() {
+    float cost = in.positionsCost();
+    assert ! Float.isNaN(cost) : "positionsCost() should not be NaN";
+    assert cost > 0 : "positionsCost() must be positive";
+    return cost;
+  }
+
+  @Override
   protected float scoreCurrentDoc() throws IOException {
     assert in.docScorer != null : in.getClass() + " has no docScorer!";
     return in.scoreCurrentDoc();
@@ -228,6 +236,18 @@ class AssertingSpans extends Spans {
         state = State.POS_START;
       }
       return v;
+    }
+
+    @Override
+    public float matchCost() {
+      float cost = in.matchCost();
+      if (Float.isNaN(cost)) {
+        throw new AssertionError("matchCost()=" + cost + " should not be NaN on doc ID " + approximation.docID());
+      }
+      if (cost < 0) {
+        throw new AssertionError("matchCost()=" + cost + " should be non negative on doc ID " + approximation.docID());
+      }
+      return cost;
     }
   }
   

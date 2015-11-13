@@ -149,6 +149,10 @@ class ReqExclScorer extends Scorer {
         return ReqExclScorer.matches(doc, exclDoc, reqTwoPhaseIterator, exclTwoPhaseIterator);
       }
 
+      @Override
+      public float matchCost() {
+        return reqTwoPhaseIterator.matchCost(); // TODO: also use cost of exclApproximation.advance()
+      }
     };
   }
 }

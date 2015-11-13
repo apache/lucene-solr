@@ -53,6 +53,11 @@ public abstract class ValueSourceScorer extends Scorer {
       public boolean matches() throws IOException {
         return ValueSourceScorer.this.matches(docID());
       }
+
+      @Override
+      public float matchCost() {
+        return 100; // TODO: use cost of ValueSourceScorer.this.matches()
+      }
     };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
   }

@@ -134,6 +134,11 @@ public class NearSpansUnordered extends ConjunctionSpans {
     }
 
     @Override
+    public float positionsCost() {
+      return in.positionsCost();
+    }
+
+    @Override
     public int docID() {
       return in.docID();
     }

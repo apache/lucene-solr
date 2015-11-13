@@ -130,6 +130,11 @@ public class IntersectsRPTVerifyQuery extends Query {
 
             return predFuncValues.boolVal(doc);
           }
+
+          @Override
+          public float matchCost() {
+            return 100; // TODO: use cost of exactIterator.advance() and predFuncValues.boolVal()
+          }
         };
 
         return new ConstantScoreScorer(this, score(), twoPhaseIterator);

@@ -274,6 +274,11 @@ public class PayloadScoreQuery extends SpanQuery {
     public long cost() {
       return in.cost();
     }
+
+    @Override
+    public float positionsCost() {
+      return in.positionsCost();
+    }
   }
 
 }

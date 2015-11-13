@@ -211,6 +211,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
           return false;
         }
 
+        @Override
+        public float matchCost() {
+          return 100; // TODO: use cost of values.getOrd() and collector.score()
+        }
       };
     }
   }
@@ -252,6 +256,11 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
             }
           }
           return false;
+        }
+
+        @Override
+        public float matchCost() {
+          return 100; // TODO: use cost.getOrd() of values and collector.score()
         }
       };
     }

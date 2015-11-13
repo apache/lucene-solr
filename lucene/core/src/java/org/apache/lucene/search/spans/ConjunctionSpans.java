@@ -88,14 +88,34 @@ abstract class ConjunctionSpans extends Spans {
    */
   @Override
   public TwoPhaseIterator asTwoPhaseIterator() {
-    TwoPhaseIterator res = new TwoPhaseIterator(conjunction) {
+    float totalMatchCost = 0;
+    // Compute the matchCost as the total matchCost/positionsCostant of the sub spans.
+    for (Spans spans : subSpans) {
+      TwoPhaseIterator tpi = spans.asTwoPhaseIterator();
+      if (tpi != null) {
+        totalMatchCost += tpi.matchCost();
+      } else {
+        totalMatchCost += spans.positionsCost();
+      }
+    }
+    final float matchCost = totalMatchCost;
 
+    return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
         return twoPhaseCurrentDocMatches();
       }
+
+      @Override
+      public float matchCost() {
+        return matchCost;
+      }
     };
-    return res;
+  }
+
+  @Override
+  public float positionsCost() {
+    throw new UnsupportedOperationException(); // asTwoPhaseIterator never returns null here.
   }
 
   public Spans[] getSubSpans() {

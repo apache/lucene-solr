@@ -52,18 +52,24 @@ abstract class DisjunctionScorer extends Scorer {
 
   @Override
   public TwoPhaseIterator asTwoPhaseIterator() {
-    boolean hasApproximation = false;
+    float sumMatchCost = 0;
+    long sumApproxCost = 0;
+
+    // Compute matchCost as the avarage over the matchCost of the subScorers.
+    // This is weighted by the cost, which is an expected number of matching documents.
     for (DisiWrapper<Scorer> w : subScorers) {
       if (w.twoPhaseView != null) {
-        hasApproximation = true;
-        break;
+        long costWeight = (w.cost <= 1) ? 1 : w.cost;
+        sumMatchCost += w.twoPhaseView.matchCost() * costWeight;
+        sumApproxCost += costWeight;
       }
     }
 
-    if (! hasApproximation) {
-      // none of the sub scorers supports approximations
+    if (sumApproxCost == 0) { // no sub scorer supports approximations
       return null;
     }
+
+    final float matchCost = sumMatchCost / sumApproxCost;
 
     // note it is important to share the same pq as this scorer so that
     // rebalancing the pq through the approximation will also rebalance
@@ -104,6 +110,11 @@ abstract class DisjunctionScorer extends Scorer {
         // non-matching scorers
         DisjunctionScorer.this.topScorers = topScorers;
         return true;
+      }
+
+      @Override
+      public float matchCost() {
+        return matchCost;
       }
     };
   }

@@ -129,6 +129,11 @@ public abstract class Filter extends Query {
             public boolean matches() throws IOException {
               return bits.get(approximation.docID());
             }
+
+            @Override
+            public float matchCost() {
+              return 10; // TODO use cost of bits.get()
+            }
           };
           return new ConstantScoreScorer(this, 0f, twoPhase);
         }

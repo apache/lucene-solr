@@ -86,6 +86,17 @@ public abstract class Spans extends Scorer {
    */
   public abstract void collect(SpanCollector collector) throws IOException;
 
+  /**
+   * Return an estimation of the cost of using the positions of
+   * this {@link Spans} for any single document, but only after
+   * {@link #asTwoPhaseIterator} returned {@code null}.
+   * Otherwise this method should not be called.
+   * The returned value is independent of the current document.
+   *
+   * @lucene.experimental
+   */
+  public abstract float positionsCost();
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

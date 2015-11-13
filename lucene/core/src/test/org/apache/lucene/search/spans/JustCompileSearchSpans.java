@@ -82,6 +82,11 @@ final class JustCompileSearchSpans {
     public long cost() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+
+    @Override
+    public float positionsCost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
 
   static final class JustCompileSpanQuery extends SpanQuery {

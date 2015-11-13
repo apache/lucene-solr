@@ -210,24 +210,56 @@ public final class SpanOrQuery extends SpanQuery {
 
         @Override
         public TwoPhaseIterator asTwoPhaseIterator() {
-          boolean hasApproximation = false;
+          float sumMatchCost = 0; // See also DisjunctionScorer.asTwoPhaseIterator()
+          long sumApproxCost = 0;
+
           for (DisiWrapper<Spans> w : byDocQueue) {
             if (w.twoPhaseView != null) {
-              hasApproximation = true;
-              break;
+              long costWeight = (w.cost <= 1) ? 1 : w.cost;
+              sumMatchCost += w.twoPhaseView.matchCost() * costWeight;
+              sumApproxCost += costWeight;
             }
           }
 
-          if (!hasApproximation) { // none of the sub spans supports approximations
+          if (sumApproxCost == 0) { // no sub spans supports approximations
+            computePositionsCost();
             return null;
           }
+
+          final float matchCost = sumMatchCost / sumApproxCost;
 
           return new TwoPhaseIterator(new DisjunctionDISIApproximation<Spans>(byDocQueue)) {
             @Override
             public boolean matches() throws IOException {
               return twoPhaseCurrentDocMatches();
             }
+
+            @Override
+            public float matchCost() {
+              return matchCost;
+            }
           };
+        }
+
+        float positionsCost = -1;
+
+        void computePositionsCost() {
+          float sumPositionsCost = 0;
+          long sumCost = 0;
+          for (DisiWrapper<Spans> w : byDocQueue) {
+            long costWeight = (w.cost <= 1) ? 1 : w.cost;
+            sumPositionsCost += w.iterator.positionsCost() * costWeight;
+            sumCost += costWeight;
+          }
+          positionsCost = sumPositionsCost / sumCost;
+        }
+
+        @Override
+        public float positionsCost() {
+          // This may be called when asTwoPhaseIterator returned null,
+          // which happens when none of the sub spans supports approximations.
+          assert positionsCost > 0;
+          return positionsCost;
         }
 
         int lastDocTwoPhaseMatched = -1;
