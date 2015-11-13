@@ -418,6 +418,8 @@ Optimizations
   more than doubled the performance of faceting 5M documents over a field with 1M unique values.
   (yonik)
 
+* SOLR-8288: DistributedUpdateProcessor#doFinish should explicitly check and ensure it
+  does not try to put itself into LIR. (Mark Miller)
 
 Other Changes
 ----------------------
