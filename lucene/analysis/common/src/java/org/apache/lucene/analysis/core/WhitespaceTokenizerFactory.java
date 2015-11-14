@@ -17,32 +17,56 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
-
-import java.util.Map;
 
 /**
  * Factory for {@link WhitespaceTokenizer}. 
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ws" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory" rule="unicode"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * Options:
+ * <ul>
+ *   <li>rule: either "java" for {@link WhitespaceTokenizer}
+ *      or "unicode" for {@link UnicodeWhitespaceTokenizer}</li>
+ * </ul>
  */
 public class WhitespaceTokenizerFactory extends TokenizerFactory {
+  public static final String RULE_JAVA = "java";
+  public static final String RULE_UNICODE = "unicode";
+  private static final Collection<String> RULE_NAMES = Arrays.asList(RULE_JAVA, RULE_UNICODE);
+
+  private final String rule;
 
   /** Creates a new WhitespaceTokenizerFactory */
   public WhitespaceTokenizerFactory(Map<String,String> args) {
     super(args);
+
+    rule = get(args, "rule", RULE_NAMES, RULE_JAVA);
+
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 
   @Override
-  public WhitespaceTokenizer create(AttributeFactory factory) {
-    return new WhitespaceTokenizer(factory);
+  public Tokenizer create(AttributeFactory factory) {
+    switch (rule) {
+      case RULE_JAVA:
+        return new WhitespaceTokenizer(factory);
+      case RULE_UNICODE:
+        return new UnicodeWhitespaceTokenizer(factory);
+      default:
+        throw new AssertionError();
+    }
   }
 }

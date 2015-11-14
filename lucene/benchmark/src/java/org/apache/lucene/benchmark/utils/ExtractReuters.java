@@ -47,6 +47,7 @@ public class ExtractReuters {
 
   public void extract() throws IOException {
     long count = 0;
+    Files.createDirectories(outputDir);
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(reutersDir, "*.sgm")) {
       for (Path sgmFile : stream) {
         extractFile(sgmFile);
@@ -70,7 +71,7 @@ public class ExtractReuters {
    * Override if you wish to change what is extracted
    */
   protected void extractFile(Path sgmFile) {
-    try (BufferedReader reader = Files.newBufferedReader(sgmFile, StandardCharsets.UTF_8)) {
+    try (BufferedReader reader = Files.newBufferedReader(sgmFile, StandardCharsets.ISO_8859_1)) {
       StringBuilder buffer = new StringBuilder(1024);
       StringBuilder outBuffer = new StringBuilder(1024);
 

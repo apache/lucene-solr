@@ -130,7 +130,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new WhitespaceTokenizer();
+      Tokenizer tokenizer = random().nextBoolean() ? new WhitespaceTokenizer() : new UnicodeWhitespaceTokenizer();
       return new TokenStreamComponents(tokenizer, new LowerCaseFilter(tokenizer));
     }
     
@@ -140,7 +140,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new WhitespaceTokenizer();
+      Tokenizer tokenizer = random().nextBoolean() ? new WhitespaceTokenizer() : new UnicodeWhitespaceTokenizer();
       return new TokenStreamComponents(tokenizer, new UpperCaseFilter(tokenizer));
     }
     
@@ -230,7 +230,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer() };
+    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer(), new UnicodeWhitespaceAnalyzer() };
     for (Analyzer analyzer : analyzers) {
       checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
     }
@@ -239,7 +239,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer() };
+    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer(), new UnicodeWhitespaceAnalyzer() };
     for (Analyzer analyzer : analyzers) {
       checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
     }
