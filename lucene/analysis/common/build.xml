@@ -31,6 +31,8 @@
   
   <property name="snowball.programs.dir" location="src/java/org/tartarus/snowball/ext"/>  
   
+  <property name="unicode-props-file" location="src/java/org/apache/lucene/analysis/util/UnicodeProps.java"/>
+
   <target name="jflex" depends="-install-jflex,clean-jflex,-jflex-StandardAnalyzer,-jflex-UAX29URLEmailTokenizer,
                                 -jflex-wiki-tokenizer,-jflex-HTMLStripCharFilter"/>
 
@@ -114,6 +116,18 @@
     </delete>
   </target>
   
+  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="-resolve-icu4j" unless="icu4j.resolved" depends="ivy-availability-check,ivy-configure">
+    <loadproperties prefix="ivyversions" srcFile="${common.dir}/ivy-versions.properties"/>
+    <ivy:cachepath organisation="com.ibm.icu" module="icu4j" revision="${ivyversions./com.ibm.icu/icu4j}"
+      inline="true" conf="default" transitive="true" pathid="icu4j.classpath"/>
+    <property name="icu4j.resolved" value="true"/>
+  </target>
+  
+  <target name="unicode-data" depends="-resolve-icu4j,resolve-groovy">
+    <groovy classpathref="icu4j.classpath" src="src/tools/groovy/generate-unicode-data.groovy"/>
+    <fixcrlf file="${unicode-props-file}" encoding="UTF-8"/>
+  </target>
+  
   <property name="tld.zones" value="http://www.internic.net/zones/root.zone"/>
   <property name="tld.output" location="src/java/org/apache/lucene/analysis/standard/ASCIITLD.jflex-macro"/>
 
@@ -141,7 +155,7 @@
 
   <target name="javadocs" depends="module-build.javadocs"/>
 
-  <target name="regenerate" depends="jflex"/>
+  <target name="regenerate" depends="jflex,unicode-data"/>
   
   <target name="patch-snowball" description="Patches all snowball programs in '${snowball.programs.dir}' to make them work with MethodHandles">
       <fileset id="snowball.programs" dir="${snowball.programs.dir}" includes="*Stemmer.java"/>

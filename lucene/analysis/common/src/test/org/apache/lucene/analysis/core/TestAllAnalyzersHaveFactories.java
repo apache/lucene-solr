@@ -101,7 +101,8 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       ReversePathHierarchyTokenizer.class, // this is supported via an option to PathHierarchyTokenizer's factory
       SnowballFilter.class, // this is called SnowballPorterFilterFactory
       PatternKeywordMarkerFilter.class,
-      SetKeywordMarkerFilter.class
+      SetKeywordMarkerFilter.class,
+      UnicodeWhitespaceTokenizer.class // a supported option via WhitespaceTokenizerFactory
     );
   }
 

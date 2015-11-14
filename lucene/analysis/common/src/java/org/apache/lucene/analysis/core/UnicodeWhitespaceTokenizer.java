@@ -19,38 +19,39 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
+import org.apache.lucene.analysis.util.UnicodeProps;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
- * A tokenizer that divides text at whitespace characters as defined by
- * {@link Character#isWhitespace(int)}.  Note: That definition explicitly excludes the non-breaking space.
- * Adjacent sequences of non-Whitespace characters form tokens.
- *
- * @see UnicodeWhitespaceTokenizer
+ * A UnicodeWhitespaceTokenizer is a tokenizer that divides text at whitespace.
+ * Adjacent sequences of non-Whitespace characters form tokens (according to
+ * Unicode's WHITESPACE property).
+ * <p>
+ * <em>For Unicode version see: {@link UnicodeProps}</em>
  */
-public final class WhitespaceTokenizer extends CharTokenizer {
+public final class UnicodeWhitespaceTokenizer extends CharTokenizer {
   
   /**
-   * Construct a new WhitespaceTokenizer.
+   * Construct a new UnicodeWhitespaceTokenizer.
    */
-  public WhitespaceTokenizer() {
+  public UnicodeWhitespaceTokenizer() {
   }
 
   /**
-   * Construct a new WhitespaceTokenizer using a given
+   * Construct a new UnicodeWhitespaceTokenizer using a given
    * {@link org.apache.lucene.util.AttributeFactory}.
    *
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    */
-  public WhitespaceTokenizer(AttributeFactory factory) {
+  public UnicodeWhitespaceTokenizer(AttributeFactory factory) {
     super(factory);
   }
   
-  /** Collects only characters which do not satisfy
-   * {@link Character#isWhitespace(int)}.*/
+  /** Collects only characters which do not satisfy Unicode's WHITESPACE property. */
   @Override
   protected boolean isTokenChar(int c) {
-    return !Character.isWhitespace(c);
+    return !UnicodeProps.WHITESPACE.get(c);
   }
+  
 }

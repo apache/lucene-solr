@@ -122,6 +122,11 @@ New Features
   within a "ring" (beyond a minimum distance and below a maximum
   distance) (Nick Knize via Mike McCandless)
 
+* LUCENE-6874: Add a new UnicodeWhitespaceTokenizer to analysis/common
+  that uses Unicode character properties extracted from ICU4J to tokenize
+  text on whitespace. This tokenizer will split on non-breaking
+  space (NBSP), too.  (David Smiley, Uwe Schindler, Steve Rowe)
+
 API Changes
 
 * LUCENE-6590: Query.setBoost(), Query.getBoost() and Query.clone() are gone.
