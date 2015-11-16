@@ -160,49 +160,53 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
                    "rows", "200",
                    "fq", ("{!collapse" + csize + nullPs +
                           " field="+collapseField+" sort='"+collapseSort+"'}"));
-        
-        final QueryResponse mainRsp = SOLR.query(SolrParams.wrapDefaults(collapseP, mainP));
 
-        for (SolrDocument doc : mainRsp.getResults()) {
-          final Object groupHeadId = doc.getFieldValue("id");
-          final Object collapseVal = doc.getFieldValue(collapseField);
-          
-          if (null == collapseVal) {
-            if (NULL_EXPAND.equals(nullPolicy)) {
-              // nothing to check for this doc, it's in it's own group
-              continue;
+        try {
+          final QueryResponse mainRsp = SOLR.query(SolrParams.wrapDefaults(collapseP, mainP));
+
+          for (SolrDocument doc : mainRsp.getResults()) {
+            final Object groupHeadId = doc.getFieldValue("id");
+            final Object collapseVal = doc.getFieldValue(collapseField);
+            
+            if (null == collapseVal) {
+              if (NULL_EXPAND.equals(nullPolicy)) {
+                // nothing to check for this doc, it's in it's own group
+                continue;
+              }
+              
+              assertFalse(groupHeadId + " has null collapseVal but nullPolicy==ignore; " + 
+                          "mainP: " + mainP + ", collapseP: " + collapseP,
+                          NULL_IGNORE.equals(nullPolicy));
             }
             
-            assertFalse(groupHeadId + " has null collapseVal but nullPolicy==ignore; " + 
-                        "mainP: " + mainP + ", collapseP: " + collapseP,
-                        NULL_IGNORE.equals(nullPolicy));
+            // work arround for SOLR-8082...
+            //
+            // what's important is that we already did the collapsing on the *real* collapseField
+            // to verify the groupHead returned is really the best our verification filter
+            // on docs with that value in a differnet ifeld containing the exact same values
+            final String checkField = collapseField.replace("float_dv", "float");
+            
+            final String checkFQ = ((null == collapseVal)
+                                    ? ("-" + checkField + ":[* TO *]")
+                                    : ("{!field f="+checkField+"}" + collapseVal.toString()));
+            
+            final SolrParams checkP = params("fq", checkFQ,
+                                             "rows", "1",
+                                             "sort", collapseSort);
+            
+            final QueryResponse checkRsp = SOLR.query(SolrParams.wrapDefaults(checkP, mainP));
+            
+            assertTrue("not even 1 match for sanity check query? expected: " + doc,
+                       ! checkRsp.getResults().isEmpty());
+            final SolrDocument firstMatch = checkRsp.getResults().get(0);
+            final Object firstMatchId = firstMatch.getFieldValue("id");
+            assertEquals("first match for filtered group '"+ collapseVal +
+                         "' not matching expected group head ... " +
+                         "mainP: " + mainP + ", collapseP: " + collapseP + ", checkP: " + checkP,
+                         groupHeadId, firstMatchId);
           }
-
-          // work arround for SOLR-8082...
-          //
-          // what's important is that we already did the collapsing on the *real* collapseField
-          // to verify the groupHead returned is really the best our verification filter
-          // on docs with that value in a differnet ifeld containing the exact same values
-          final String checkField = collapseField.replace("float_dv", "float");
-          
-          final String checkFQ = ((null == collapseVal)
-                                  ? ("-" + checkField + ":[* TO *]")
-                                  : ("{!field f="+checkField+"}" + collapseVal.toString()));
-          
-          final SolrParams checkP = params("fq", checkFQ,
-                                           "rows", "1",
-                                           "sort", collapseSort);
-          
-          final QueryResponse checkRsp = SOLR.query(SolrParams.wrapDefaults(checkP, mainP));
-
-          assertTrue("not even 1 match for sanity check query? expected: " + doc,
-                     ! checkRsp.getResults().isEmpty());
-          final SolrDocument firstMatch = checkRsp.getResults().get(0);
-          final Object firstMatchId = firstMatch.getFieldValue("id");
-          assertEquals("first match for filtered group '"+ collapseVal +
-                       "' not matching expected group head ... " +
-                       "mainP: " + mainP + ", collapseP: " + collapseP + ", checkP: " + checkP,
-                       groupHeadId, firstMatchId);
+        } catch (Exception e) {
+          throw new RuntimeException("BUG using params: " + collapseP + " + " + mainP, e);
         }
       }
     }
