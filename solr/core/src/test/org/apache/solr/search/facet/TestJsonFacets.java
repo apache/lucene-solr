@@ -542,6 +542,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+    // test sorting by default count/index order
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'count' }  }" +
+                "           , f2:{terms:{${terms} field:'${cat_s}', sort:'count asc'  }  }" +
+                "           , f3:{terms:{${terms} field:'${cat_s}', sort:'index'  }  }" +
+                "           , f4:{terms:{${terms} field:'${cat_s}', sort:'index desc' }  }" +
+                "}"
+        )
+        , "facets=={ count:6 " +
+            " ,f1:{buckets:[ {val:B,count:3}, {val:A,count:2} ] }" +
+            " ,f2:{buckets:[ {val:A,count:2}, {val:B,count:3} ] }" +
+            " ,f3:{buckets:[ {val:A,count:2}, {val:B,count:3} ] }" +
+            " ,f4:{buckets:[ {val:B,count:3}, {val:A,count:2} ] }" +
+            "}"
+    );
+
 
     // test tiebreaks when sorting by count
     client.testJQ(params(p, "q", "id:1 id:6"

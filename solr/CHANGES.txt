@@ -391,6 +391,10 @@ Bug Fixes
 * SOLR-8287: TrieDoubleField and TrieLongField now override toNativeType
   (Ishan Chattopadhyaya via Christine Poerschke)
 
+* SOLR-8284: JSON Facet API - fix NPEs when short form "sort:index" or "sort:count" 
+  are used. (Michael Sun via yonik)
+
+
 Optimizations
 ----------------------
 
