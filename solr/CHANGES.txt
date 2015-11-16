@@ -394,6 +394,7 @@ Bug Fixes
 * SOLR-8284: JSON Facet API - fix NPEs when short form "sort:index" or "sort:count" 
   are used. (Michael Sun via yonik)
 
+* SOLR-8295: Fix NPE in collapse QParser when collapse field is missing from all docs in a segment (hossman)
 
 Optimizations
 ----------------------

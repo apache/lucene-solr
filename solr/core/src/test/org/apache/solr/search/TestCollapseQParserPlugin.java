@@ -653,6 +653,26 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/float[@name='id'][.='5.0']",
         "//result/doc[2]/float[@name='id'][.='1.0']");
     
+    // Test collapse using selector field in no docs
+    // tie selector in all of these cases, so index order applies
+    for (String selector : new String[] {
+        " min=bogus_ti ", " sort='bogus_ti asc' ",
+        " max=bogus_ti ", " sort='bogus_ti desc' ",
+        " min=bogus_tf ", " sort='bogus_tf asc' ",
+        " max=bogus_tf ", " sort='bogus_tf desc' ",
+        " sort='bogus_td asc' ", " sort='bogus_td desc' ",
+        " sort='bogus_s asc' ", " sort='bogus_s desc' ", 
+      }) {
+      params = new ModifiableSolrParams();
+      params.add("q", "*:*");
+      params.add("fq", "{!collapse field="+group + selector + hint+"}");
+      params.add("sort", "id asc");
+      assertQ(req(params),
+              "*[count(//doc)=2]",
+              "//result/doc[1]/float[@name='id'][.='1.0']",
+              "//result/doc[2]/float[@name='id'][.='5.0']");
+    }
+    
     // attempting to use cscore() in sort local param should fail
     assertQEx("expected error trying to sort on a function that includes cscore()",
               req(params("q", "{!func}sub(sub(test_tl,1000),id)",
@@ -771,6 +791,74 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+" "+optional_min_or_max+"}");
     assertQ(req(params), "*[count(//doc)=0]");
+  }
+
+  public void testNoDocsHaveGroupField() throws Exception {
+    // as unlikely as this test seems, it's important for the possibility that a segment exists w/o
+    // any live docs that have DocValues for the group field -- ie: every doc in segment is in null group.
+    
+    assertU(adoc("id", "1", "group_s", "group1", "test_ti", "5", "test_tl", "10"));
+    assertU(commit());
+    assertU(adoc("id", "2", "group_s", "group1", "test_ti", "5", "test_tl", "1000"));
+    assertU(adoc("id", "3", "group_s", "group1", "test_ti", "5", "test_tl", "1000"));
+    assertU(adoc("id", "4", "group_s", "group1", "test_ti", "10", "test_tl", "100"));
+    //
+    assertU(adoc("id", "5", "group_s", "group2", "test_ti", "5", "test_tl", "10", "term_s", "YYYY"));
+    assertU(commit());
+    assertU(adoc("id", "6", "group_s", "group2", "test_ti", "5", "test_tl","1000"));
+    assertU(adoc("id", "7", "group_s", "group2", "test_ti", "5", "test_tl","1000", "term_s", "XXXX"));
+    assertU(adoc("id", "8", "group_s", "group2", "test_ti", "10","test_tl", "100"));
+    assertU(commit());
+    
+    // none of these grouping fields are in any doc
+    for (String group : new String[] {
+        "field=bogus_s", "field=bogus_s_dv",
+        "field=bogus_s hint=top_fc", // alternative docvalues codepath w/ hint
+        "field=bogus_s_dv hint=top_fc", // alternative docvalues codepath w/ hint
+        "field=bogus_ti", "field=bogus_tf" }) {
+      
+      // for any of these selectors, behavior of these checks should be consistent
+      for (String selector : new String[] {
+          "", " sort='score desc' ",
+          " min=test_ti ", " max=test_ti ", " sort='test_ti asc' ",  " sort='test_ti desc' ",
+          " min=test_tf ", " max=test_tf ", " sort='test_tf asc' ",  " sort='test_tf desc' ",
+          " sort='group_s asc' ",  " sort='group_s desc' ",
+          // fields that don't exist
+          " min=bogus_sort_ti ", " max=bogus_sort_ti ",
+          " sort='bogus_sort_ti asc' ",  " sort='bogus_sort_ti desc' ",
+          " sort='bogus_sort_s asc' ",  " sort='bogus_sort_s desc' ",
+        }) {
+          
+          
+        ModifiableSolrParams params = null;
+
+        // w/default nullPolicy, no groups found
+        params = new ModifiableSolrParams();
+        params.add("q", "*:*");
+        params.add("sort", "id desc");
+        params.add("fq", "{!collapse "+group+" "+selector+"}");
+        assertQ(req(params), "*[count(//doc)=0]");
+
+        // w/nullPolicy=expand, every doc found
+        params = new ModifiableSolrParams();
+        params.add("q", "*:*");
+        params.add("sort", "id desc");
+        params.add("fq", "{!collapse field="+group+" nullPolicy=expand "+selector+"}");
+        assertQ(req(params)
+                , "*[count(//doc)=8]"
+                ,"//result/doc[1]/float[@name='id'][.='8.0']"
+                ,"//result/doc[2]/float[@name='id'][.='7.0']"
+                ,"//result/doc[3]/float[@name='id'][.='6.0']"
+                ,"//result/doc[4]/float[@name='id'][.='5.0']"
+                ,"//result/doc[5]/float[@name='id'][.='4.0']"
+                ,"//result/doc[6]/float[@name='id'][.='3.0']"
+                ,"//result/doc[7]/float[@name='id'][.='2.0']"
+                ,"//result/doc[8]/float[@name='id'][.='1.0']"
+                );
+
+        
+      }
+    }
   }
 
   public void testGroupHeadSelector() {
