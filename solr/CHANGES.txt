@@ -515,6 +515,8 @@ Other Changes
 * SOLR-8286: Remove instances of solr.hdfs.blockcache.write.enabled from tests
   and docs (Gregory Chanan)
 
+* SOLR-8269: Upgrade commons-collections to 3.2.2. This fixes a known serialization vulnerability (janhoy)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
