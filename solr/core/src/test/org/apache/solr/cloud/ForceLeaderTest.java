@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -381,8 +382,8 @@ public class ForceLeaderTest extends HttpPartitionTest {
     for (int j = 0; j < notLeaders.size(); j++)
       lirStates[j] = zkController.getLeaderInitiatedRecoveryState(collectionName, shard, notLeaders.get(j).getName());
     for (State lirState : lirStates)
-      assertEquals("Expected that the LIR state would've been down by now",
-          Replica.State.DOWN, (lirState));
+      assertTrue("Expected that the replicas would be in LIR state by now. LIR states: "+Arrays.toString(lirStates),
+          Replica.State.DOWN == lirState || Replica.State.RECOVERING == lirState);
   }
 
   protected void bringBackOldLeaderAndSendDoc(String collection, Replica leader, List<Replica> notLeaders, int docid) throws Exception {
