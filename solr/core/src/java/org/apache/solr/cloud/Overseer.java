@@ -298,8 +298,8 @@ public class Overseer implements Closeable {
     private void checkIfIamStillLeader() {
       if (zkController != null && zkController.getCoreContainer().isShutDown()) return;//shutting down no need to go further
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-      String path = "/overseer_elect/leader";
-      byte[] data = null;
+      String path = OverseerElectionContext.OVERSEER_ELECT + "/leader";
+      byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
       } catch (Exception e) {
@@ -409,7 +409,7 @@ public class Overseer implements Closeable {
       boolean success = true;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
-            "/overseer_elect/leader", null, null, true));
+            OverseerElectionContext.OVERSEER_ELECT + "/leader", null, null, true));
         if (myId.equals(props.getStr("id"))) {
           return LeaderStatus.YES;
         }

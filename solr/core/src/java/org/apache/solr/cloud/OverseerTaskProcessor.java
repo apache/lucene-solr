@@ -306,7 +306,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
-      children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
+      children = zk.getChildren(OverseerElectionContext.OVERSEER_ELECT + LeaderElector.ELECTION_NODE, null, true);
     } catch (Exception e) {
       log.warn("error ", e);
       return new ArrayList<>();
@@ -339,7 +339,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   public static String getLeaderId(SolrZkClient zkClient) throws KeeperException,InterruptedException{
     byte[] data = null;
     try {
-      data = zkClient.getData("/overseer_elect/leader", null, new Stat(), true);
+      data = zkClient.getData(OverseerElectionContext.OVERSEER_ELECT + "/leader", null, new Stat(), true);
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
@@ -353,7 +353,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     boolean success = true;
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
-          "/overseer_elect/leader", null, null, true));
+          OverseerElectionContext.OVERSEER_ELECT + "/leader", null, null, true));
       if (myId.equals(props.getStr("id"))) {
         return LeaderStatus.YES;
       }
