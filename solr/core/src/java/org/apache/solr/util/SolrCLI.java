@@ -1573,7 +1573,7 @@ public class SolrCLI {
             throw new IllegalArgumentException("\n"+configSetDir.getAbsolutePath()+" doesn't contain a conf subdirectory or solrconfig.xml\n");
           }
         }
-        echo("\nSetup new core instance directory:\n" + coreInstanceDir.getAbsolutePath());
+        echo("\nCopying configuration to new core instance directory:\n" + coreInstanceDir.getAbsolutePath());
       }
 
       String createCoreUrl =
@@ -1585,12 +1585,17 @@ public class SolrCLI {
 
       echo("\nCreating new core '" + coreName + "' using command:\n" + createCoreUrl + "\n");
 
-      Map<String,Object> json = getJson(createCoreUrl);
-
-      CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(json);
-      echo(arr.toString());
-      echo("\n");
+      try {
+        Map<String,Object> json = getJson(createCoreUrl);
+        CharArr arr = new CharArr();
+        new JSONWriter(arr, 2).write(json);
+        echo(arr.toString());
+        echo("\n");
+      } catch (Exception e) {
+        /* create-core failed, cleanup the copied configset before propagating the error. */
+        FileUtils.deleteDirectory(coreInstanceDir);
+        throw e;
+      }
     }
   } // end CreateCoreTool class
 
