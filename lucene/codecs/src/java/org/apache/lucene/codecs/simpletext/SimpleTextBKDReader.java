@@ -63,7 +63,8 @@ class SimpleTextBKDReader extends BKDReader {
   }
 
   @Override
-  protected void visitDocValues(byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+  protected void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+    // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
     assert scratchPackedValue.length == packedBytesLength;
     BytesRefBuilder scratch = new BytesRefBuilder();
     for(int i=0;i<count;i++) {

@@ -83,6 +83,12 @@ API Changes
   IndexOutput.getName returns its name (Dawid Weiss, Robert Muir, Mike
   McCandless)
 
+Optimizations
+
+* LUCENE-6891: Use prefix coding when writing dimensional values in 
+  each leaf block in the default codec, to reduce the index
+  size (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.

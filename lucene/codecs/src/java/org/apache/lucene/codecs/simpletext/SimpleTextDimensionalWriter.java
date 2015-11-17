@@ -128,10 +128,16 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
         }
 
         @Override
-        protected void writeLeafBlockPackedValue(IndexOutput out, byte[] bytes, int offset, int length) throws IOException {
-          assert length == packedBytesLength;
+        protected void writeCommonPrefixes(IndexOutput out, int[] commonPrefixLengths, byte[] packedValue) {
+          // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
+        }
+
+        @Override
+        protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes) throws IOException {
+          // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
+          assert bytes.length == packedBytesLength;
           write(out, BLOCK_VALUE);
-          write(out, new BytesRef(bytes, offset, length).toString());
+          write(out, new BytesRef(bytes, 0, bytes.length).toString());
           newline(out);
         }          
       };

@@ -104,6 +104,7 @@ public class BKDWriter implements Closeable {
   final byte[] scratchPackedValue;
   final byte[] scratch1;
   final byte[] scratch2;
+  final int[] commonPrefixLengths;
 
   private OfflinePointWriter offlinePointWriter;
   private HeapPointWriter heapPointWriter;
@@ -133,6 +134,7 @@ public class BKDWriter implements Closeable {
     scratchPackedValue = new byte[packedBytesLength];
     scratch1 = new byte[packedBytesLength];
     scratch2 = new byte[packedBytesLength];
+    commonPrefixLengths = new int[numDims];
 
     // dimensional values (numDims * bytesPerDim) + ord (long) + docID (int)
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
@@ -398,6 +400,7 @@ public class BKDWriter implements Closeable {
     innerNodeCount--;
 
     int numLeaves = (int) (innerNodeCount+1);
+    //System.out.println("LEAVES: " + numLeaves);
 
     // NOTE: we could save the 1+ here, to use a bit less heap at search time, but then we'd need a somewhat costly check at each
     // step of the recursion to recompute the split dim:
@@ -495,8 +498,19 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  protected void writeLeafBlockPackedValue(IndexOutput out, byte[] bytes, int offset, int length) throws IOException {
-    out.writeBytes(bytes, 0, length);
+  protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes) throws IOException {
+    for(int dim=0;dim<numDims;dim++) {
+      int prefix = commonPrefixLengths[dim];
+      out.writeBytes(bytes, dim*bytesPerDim+prefix, bytesPerDim-prefix);
+    }
+  }
+
+  protected void writeCommonPrefixes(IndexOutput out, int[] commonPrefixes, byte[] packedValue) throws IOException {
+    for(int dim=0;dim<numDims;dim++) {
+      out.writeVInt(commonPrefixes[dim]);
+      //System.out.println(commonPrefixes[dim] + " of " + bytesPerDim);
+      out.writeBytes(packedValue, dim*bytesPerDim, commonPrefixes[dim]);
+    }
   }
 
   @Override
@@ -646,14 +660,35 @@ public class BKDWriter implements Closeable {
       // TODO: we should delta compress / only write suffix bytes, like terms dict (the values will all be "close together" since we are at
       // a leaf cell):
 
-      // Now write the full values:
+      // First pass: find the per-dim common prefix for all values in this block:
+      Arrays.fill(commonPrefixLengths, bytesPerDim);
+      for (int i=0;i<source.count;i++) {
+        if (i == 0) {
+          heapSource.readPackedValue(Math.toIntExact(source.start + i), scratch1);
+        } else {
+          heapSource.readPackedValue(Math.toIntExact(source.start + i), scratchPackedValue);
+          for(int dim=0;dim<numDims;dim++) {
+            int offset = dim * bytesPerDim;
+            for(int j=0;j<commonPrefixLengths[dim];j++) {
+              if (scratch1[offset+j] != scratchPackedValue[offset+j]) {
+                commonPrefixLengths[dim] = j;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      writeCommonPrefixes(out, commonPrefixLengths, scratch1);
+
+      // Second pass: write the full values:
       for (int i=0;i<source.count;i++) {
         // TODO: we could do bulk copying here, avoiding the intermediate copy:
         heapSource.readPackedValue(Math.toIntExact(source.start + i), scratchPackedValue);
 
         // Make sure this value does in fact fall within this leaf cell:
         assert valueInBounds(scratchPackedValue, minPackedValue, maxPackedValue);
-        writeLeafBlockPackedValue(out, scratchPackedValue, 0, scratchPackedValue.length);
+        writeLeafBlockPackedValue(out, commonPrefixLengths, scratchPackedValue);
       }
 
     } else {

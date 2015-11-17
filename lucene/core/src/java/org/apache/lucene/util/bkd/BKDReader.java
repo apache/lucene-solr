@@ -85,21 +85,25 @@ public class BKDReader implements Accountable {
     final IndexInput in;
     final int[] scratchDocIDs;
     final byte[] scratchPackedValue;
+    final int[] commonPrefixLengths;
 
     final IntersectVisitor visitor;
 
-    public IntersectState(IndexInput in, int packedBytesLength,
+    public IntersectState(IndexInput in, int numDims,
+                          int packedBytesLength,
                           int maxPointsInLeafNode,
                           IntersectVisitor visitor) {
       this.in = in;
       this.visitor = visitor;
+      this.commonPrefixLengths = new int[numDims];
       this.scratchDocIDs = new int[maxPointsInLeafNode];
       this.scratchPackedValue = new byte[packedBytesLength];
     }
   }
 
   public void intersect(IntersectVisitor visitor) throws IOException {
-    IntersectState state = new IntersectState(in.clone(), packedBytesLength,
+    IntersectState state = new IntersectState(in.clone(), numDims,
+                                              packedBytesLength,
                                               maxPointsInLeafNode,
                                               visitor);
     byte[] rootMinPacked = new byte[packedBytesLength];
@@ -147,10 +151,21 @@ public class BKDReader implements Accountable {
     return count;
   }
 
-  protected void visitDocValues(byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+  protected void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
     visitor.grow(count);
+    for(int dim=0;dim<numDims;dim++) {
+      int prefix = in.readVInt();
+      commonPrefixLengths[dim] = prefix;
+      if (prefix > 0) {
+        in.readBytes(scratchPackedValue, dim*bytesPerDim, prefix);
+      }
+      //System.out.println("R: " + dim + " of " + numDims + " prefix=" + prefix);
+    }
     for(int i=0;i<count;i++) {
-      in.readBytes(scratchPackedValue, 0, scratchPackedValue.length);
+      for(int dim=0;dim<numDims;dim++) {
+        int prefix = commonPrefixLengths[dim];
+        in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
+      }
       visitor.visit(docIDs[i], scratchPackedValue);
     }
   }
@@ -186,7 +201,7 @@ public class BKDReader implements Accountable {
       int count = readDocIDs(state.in, leafBlockFPs[nodeID-leafNodeOffset], state.scratchDocIDs);
 
       // Again, this time reading values and checking with the visitor
-      visitDocValues(state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
+      visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
 
     } else {
       
