@@ -522,6 +522,9 @@ Other Changes
 
 * SOLR-8269: Upgrade commons-collections to 3.2.2. This fixes a known serialization vulnerability (janhoy)
 
+* SOLR-8246: Fix SolrCLI to clean the config directory in case creating a core failed.
+  (Jason Gerlowski via Shai Erera)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
