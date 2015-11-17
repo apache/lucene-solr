@@ -77,9 +77,6 @@
   <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-cell-\d.*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
-
   <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
 
@@ -1196,105 +1193,6 @@
     </lst>
     <arr name="last-components">
       <str>tvComponent</str>
-    </arr>
-  </requestHandler>
-
-  <!-- Clustering Component
-
-       You'll need to set the solr.clustering.enabled system property
-       when running solr to run with clustering enabled:
-
-            java -Dsolr.clustering.enabled=true -jar start.jar
-
-       http://wiki.apache.org/solr/ClusteringComponent
-       http://carrot2.github.io/solr-integration-strategies/
-    -->
-  <searchComponent name="clustering"
-                   enable="${solr.clustering.enabled:false}"
-                   class="solr.clustering.ClusteringComponent" >
-    <lst name="engine">
-      <str name="name">lingo</str>
-
-      <!-- Class name of a clustering algorithm compatible with the Carrot2 framework.
-
-           Currently available open source algorithms are:
-           * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
-           * org.carrot2.clustering.stc.STCClusteringAlgorithm
-           * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
-
-           See http://project.carrot2.org/algorithms.html for more information.
-
-           A commercial algorithm Lingo3G (needs to be installed separately) is defined as:
-           * com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm
-        -->
-      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
-
-      <!-- Override location of the clustering algorithm's resources 
-           (attribute definitions and lexical resources).
-
-           A directory from which to load algorithm-specific stop words,
-           stop labels and attribute definition XMLs. 
-
-           For an overview of Carrot2 lexical resources, see:
-           http://download.carrot2.org/head/manual/#chapter.lexical-resources
-
-           For an overview of Lingo3G lexical resources, see:
-           http://download.carrotsearch.com/lingo3g/manual/#chapter.lexical-resources
-       -->
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
-    </lst>
-
-    <!-- An example definition for the STC clustering algorithm. -->
-    <lst name="engine">
-      <str name="name">stc</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
-    </lst>
-
-    <!-- An example definition for the bisecting kmeans clustering algorithm. -->
-    <lst name="engine">
-      <str name="name">kmeans</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm</str>
-    </lst>
-  </searchComponent>
-
-  <!-- A request handler for demonstrating the clustering component
-
-       This is purely as an example.
-
-       In reality you will likely want to add the component to your 
-       already specified request handlers. 
-    -->
-  <requestHandler name="/clustering"
-                  startup="lazy"
-                  enable="${solr.clustering.enabled:false}"
-                  class="solr.SearchHandler">
-    <lst name="defaults">
-      <bool name="clustering">true</bool>
-      <bool name="clustering.results">true</bool>
-      <!-- Field name with the logical "title" of a each document (optional) -->
-      <str name="carrot.title">name</str>
-      <!-- Field name with the logical "URL" of a each document (optional) -->
-      <str name="carrot.url">id</str>
-      <!-- Field name with the logical "content" of a each document (optional) -->
-      <str name="carrot.snippet">features</str>
-      <!-- Apply highlighter to the title/ content and use this for clustering. -->
-      <bool name="carrot.produceSummary">true</bool>
-      <!-- the maximum number of labels per cluster -->
-      <!--<int name="carrot.numDescriptions">5</int>-->
-      <!-- produce sub clusters -->
-      <bool name="carrot.outputSubClusters">false</bool>
-
-      <!-- Configure the remaining request handler parameters. -->
-      <str name="defType">edismax</str>
-      <str name="qf">
-        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
-      </str>
-      <str name="q.alt">*:*</str>
-      <str name="rows">10</str>
-      <str name="fl">*,score</str>
-    </lst>
-    <arr name="last-components">
-      <str>clustering</str>
     </arr>
   </requestHandler>
   
