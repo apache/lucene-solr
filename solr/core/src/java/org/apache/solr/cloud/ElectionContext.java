@@ -652,14 +652,14 @@ final class OverseerElectionContext extends ElectionContext {
   private static Logger log = LoggerFactory.getLogger(OverseerElectionContext.class);
   private final SolrZkClient zkClient;
   private Overseer overseer;
-  public static final String PATH = "/overseer_elect";
+  public static final String OVERSEER_ELECT = "/overseer_elect";
 
   public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
-    super(zkNodeName,PATH , PATH+"/leader", null, zkClient);
+    super(zkNodeName, OVERSEER_ELECT, OVERSEER_ELECT + "/leader", null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
     try {
-      new ZkCmdExecutor(zkClient.getZkClientTimeout()).ensureExists("/overseer_elect", zkClient);
+      new ZkCmdExecutor(zkClient.getZkClientTimeout()).ensureExists(OVERSEER_ELECT, zkClient);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {

@@ -527,6 +527,8 @@ Other Changes
 
 * SOLR-8290: remove SchemaField.checkFieldCacheSource's unused QParser argument (Christine Poerschke)
 
+* SOLR-8300: Use constants for the /overseer_elect znode (Varun Thacker)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

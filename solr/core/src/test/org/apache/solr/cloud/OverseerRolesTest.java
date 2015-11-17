@@ -177,7 +177,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     log.info("leader node {}", leaderJetty.getBaseUrl());
     log.info ("current election Queue",
         OverseerCollectionConfigSetProcessor.getSortedElectionNodes(client.getZkStateReader().getZkClient(),
-            OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE));
+            "/overseer_elect/election"));
     ChaosMonkey.stop(leaderJetty);
     timeout = new TimeOut(10, TimeUnit.SECONDS);
     leaderchanged = false;
