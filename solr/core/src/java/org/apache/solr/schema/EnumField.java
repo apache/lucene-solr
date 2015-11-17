@@ -203,7 +203,7 @@ public class EnumField extends PrimitiveFieldType {
    */
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
-    field.checkFieldCacheSource(qparser);
+    field.checkFieldCacheSource();
     return new EnumFieldSource(field.getName(), enumIntToStringMap, enumStringToIntMap);
   }
 

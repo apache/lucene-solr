@@ -228,7 +228,7 @@ public class TrieField extends PrimitiveFieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
-    field.checkFieldCacheSource(qparser);
+    field.checkFieldCacheSource();
     switch (type) {
       case INTEGER:
         return new IntFieldSource( field.getName());
