@@ -654,7 +654,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[2]/float[@name='id'][.='1.0']");
     
     // Test collapse using selector field in no docs
-    // tie selector in all of these cases, so index order applies
+    // tie selector in all of these cases
     for (String selector : new String[] {
         " min=bogus_ti ", " sort='bogus_ti asc' ",
         " max=bogus_ti ", " sort='bogus_ti desc' ",
@@ -666,11 +666,14 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       params = new ModifiableSolrParams();
       params.add("q", "*:*");
       params.add("fq", "{!collapse field="+group + selector + hint+"}");
-      params.add("sort", "id asc");
+      params.add("sort", group + " asc");
       assertQ(req(params),
               "*[count(//doc)=2]",
-              "//result/doc[1]/float[@name='id'][.='1.0']",
-              "//result/doc[2]/float[@name='id'][.='5.0']");
+              // since selector is bogus, group head is undefined
+              // (should be index order, but don't make absolute assumptions: segments may be re-ordered)
+              // key assertion is that there is one doc from each group & groups are in order
+              "//result/doc[1]/*[@name='"+group+"'][starts-with(.,'1')]",
+              "//result/doc[2]/*[@name='"+group+"'][starts-with(.,'2')]");
     }
     
     // attempting to use cscore() in sort local param should fail
