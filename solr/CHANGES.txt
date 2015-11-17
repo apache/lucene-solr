@@ -525,6 +525,8 @@ Other Changes
 * SOLR-8246: Fix SolrCLI to clean the config directory in case creating a core failed.
   (Jason Gerlowski via Shai Erera)
 
+* SOLR-8290: remove SchemaField.checkFieldCacheSource's unused QParser argument (Christine Poerschke)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

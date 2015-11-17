@@ -274,7 +274,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    */
   public RawCurrencyValueSource getValueSource(SchemaField field, 
                                                QParser parser) {
-    field.checkFieldCacheSource(parser);
+    field.checkFieldCacheSource();
     return new RawCurrencyValueSource(field, defaultCurrency, parser);
   }
 

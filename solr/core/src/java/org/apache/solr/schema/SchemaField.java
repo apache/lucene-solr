@@ -28,7 +28,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.search.QParser;
 
 /**
  * Encapsulates all information about a Field in a Solr Schema
@@ -177,7 +176,7 @@ public final class SchemaField extends FieldProperties {
    * getValueSource implementation 
    * @see FieldType#getValueSource
    */
-  public void checkFieldCacheSource(QParser parser) throws SolrException {
+  public void checkFieldCacheSource() throws SolrException {
     if (! (indexed() || hasDocValues()) ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                               "can not use FieldCache on a field which is neither indexed nor has doc values: " 
