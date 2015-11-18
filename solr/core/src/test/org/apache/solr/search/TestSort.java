@@ -139,7 +139,7 @@ public class TestSort extends SolrTestCaseJ4 {
       SortField[] sorts = null;
       List<SchemaField> fields = null;
       try {
-        SortSpec spec = QueryParsing.parseSortSpec(input.toString(), req);
+        SortSpec spec = SortSpecParsing.parseSortSpec(input.toString(), req);
         sorts = spec.getSort().getSort();
         fields = spec.getSchemaFields();
       } catch (RuntimeException e) {
