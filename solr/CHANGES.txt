@@ -9,9 +9,6 @@ caching, replication, and a web administration interface.
 See http://lucene.apache.org/solr for more information.
 
 
-* SOLR-8114: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
-  (Christine Poerschke)
-
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
@@ -342,6 +339,9 @@ Other Changes
   (Alan Woodward)
 
 * SOLR-8116: SearchGroupsResultTransformer tweaks (String literals, list/map initialCapacity)
+  (Christine Poerschke)
+
+* SOLR-8114: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
   (Christine Poerschke)
 
 * SOLR-8074: LoadAdminUIServlet directly references admin.html (Mark Miller, Upayavira)
