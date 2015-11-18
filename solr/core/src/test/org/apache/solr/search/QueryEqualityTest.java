@@ -982,7 +982,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   protected void assertFuncEquals(final SolrQueryRequest req,
                                   final String... inputs) throws Exception {
     // pull out the function name
-    final String funcName = (new QueryParsing.StrParser(inputs[0])).getId();
+    final String funcName = (new StrParser(inputs[0])).getId();
     valParsersTested.add(funcName);
 
     assertQueryEquals(FunctionQParserPlugin.NAME, req, inputs);

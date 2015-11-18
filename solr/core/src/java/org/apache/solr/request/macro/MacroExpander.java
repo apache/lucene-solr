@@ -18,7 +18,7 @@ package org.apache.solr.request.macro;
  */
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
 
 import java.util.ArrayList;
@@ -148,7 +148,7 @@ public class MacroExpander {
       start = rbrace + 1;
 
       // String inbetween = val.substring(idx, rbrace);
-      QueryParsing.StrParser parser = new QueryParsing.StrParser(val, idx, rbrace);
+      StrParser parser = new StrParser(val, idx, rbrace);
       try {
         String paramName = parser.getId();
         String defVal = null;
