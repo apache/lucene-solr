@@ -145,9 +145,6 @@ Other Changes
 
 * SOLR-8132: HDFSDirectoryFactory now defaults to using the global block cache. (Mark Miller)
 
-* SOLR-8114: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
-  (Christine Poerschke)
-
 * SOLR-8261: Change SchemaSimilarityFactory default to BM25Similarity (hossman)
 
 * SOLR-8259: Remove deprecated JettySolrRunner.getDispatchFilter()
@@ -486,6 +483,9 @@ Other Changes
   (Alan Woodward)
 
 * SOLR-8116: SearchGroupsResultTransformer tweaks (String literals, list/map initialCapacity)
+  (Christine Poerschke)
+
+* SOLR-8114: in Grouping.java rename groupSort and sort to withinGroupSort and groupSort
   (Christine Poerschke)
 
 * SOLR-8074: LoadAdminUIServlet directly references admin.html (Mark Miller, Upayavira)
