@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
@@ -41,8 +40,7 @@ import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
 
 public class DistanceStrategyTest extends StrategyTestCase {
-
-  @ParametersFactory
+  @ParametersFactory(argumentFormatting = "strategy=%s")
   public static Iterable<Object[]> parameters() {
     List<Object[]> ctorArgs = new ArrayList<>();
 
@@ -52,46 +50,29 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
     grid = new QuadPrefixTree(ctx,25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_quad");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     grid = new PackedQuadPrefixTree(ctx,25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_packedquad");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     strategy = new PointVectorStrategy(ctx, "pointvector");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     strategy = new BBoxStrategy(ctx, "bbox");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     strategy = new SerializedDVStrategy(ctx, "serialized");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     return ctorArgs;
   }
 
-  // this is a hack for clover!
-  static class Param {
-    SpatialStrategy strategy;
-
-    Param(SpatialStrategy strategy) {
-      this.strategy = strategy;
-    }
-
-    @Override
-    public String toString() {
-      return strategy.getFieldName();
-    }
-  }
-
-//  private String fieldName;
-
-  public DistanceStrategyTest(@Name("strategy") Param param) {
-    SpatialStrategy strategy = param.strategy;
+  public DistanceStrategyTest(String suiteName, SpatialStrategy strategy) {
     this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
   }

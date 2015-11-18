@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
@@ -44,7 +43,7 @@ import org.junit.Test;
  */
 public class PortedSolr3Test extends StrategyTestCase {
 
-  @ParametersFactory
+  @ParametersFactory(argumentFormatting = "strategy=%s")
   public static Iterable<Object[]> parameters() {
     List<Object[]> ctorArgs = new ArrayList<>();
 
@@ -54,36 +53,23 @@ public class PortedSolr3Test extends StrategyTestCase {
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_geohash");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     grid = new QuadPrefixTree(ctx,25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_quad");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     strategy = new PointVectorStrategy(ctx, "pointvector");
-    ctorArgs.add(new Object[]{new Param(strategy)});
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     return ctorArgs;
   }
-  
-  // this is a hack for clover! (otherwise strategy.toString() used as file name)
-  static class Param {
-    SpatialStrategy strategy;
 
-    Param(SpatialStrategy strategy) { this.strategy = strategy; }
-    
-    @Override
-    public String toString() { return strategy.getFieldName(); }
-  }
-
-//  private String fieldName;
-
-  public PortedSolr3Test(@Name("strategy") Param param) {
-    SpatialStrategy strategy = param.strategy;
+  public PortedSolr3Test(String suiteName, SpatialStrategy strategy) {
     this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
   }

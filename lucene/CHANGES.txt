@@ -294,6 +294,8 @@ Bug Fixes
 
 Other
 
+* LUCENE-6899: Upgrade randomizedtesting to 2.3.1. (Dawid Weiss)
+
 * LUCENE-6478: Test execution can hang with java.security.debug. (Dawid Weiss)
 
 * LUCENE-6862: Upgrade of RandomizedRunner to version 2.2.0. (Dawid Weiss)
