@@ -532,7 +532,8 @@ Other Changes
 
 * SOLR-8300: Use constants for the /overseer_elect znode (Varun Thacker)
 
-* SOLR-8283: factor out StrParser from QueryParsing.StrParser (Christine Poerschke)
+* SOLR-8283: factor out StrParser from QueryParsing.StrParser and SortSpecParsing[Test]
+  from QueryParsing[Test] (Christine Poerschke)
 
 ==================  5.3.1 ==================
 

@@ -295,7 +295,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         
       
       this.sortSpec = GroupHeadSelectorType.SORT.equals(groupHeadSelector.type) 
-        ? QueryParsing.parseSortSpec(groupHeadSelector.selectorText, request)
+        ? SortSpecParsing.parseSortSpec(groupHeadSelector.selectorText, request)
         : null;
 
       this.hint = localParams.get("hint");

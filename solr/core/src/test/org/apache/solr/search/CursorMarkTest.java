@@ -62,7 +62,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     final IndexSchema schema = req.getSchema();
 
     final String randomSortString = CursorPagingTest.buildRandomSort(allFieldNames);
-    final SortSpec ss = QueryParsing.parseSortSpec(randomSortString, req);
+    final SortSpec ss = SortSpecParsing.parseSortSpec(randomSortString, req);
 
     final CursorMark previous = new CursorMark(schema, ss);
     previous.parseSerializedTotem(CURSOR_MARK_START);
@@ -74,7 +74,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
     try {
       // append to our random sort string so we know it has wrong num clauses
-      final SortSpec otherSort = QueryParsing.parseSortSpec(randomSortString+",id asc", req);
+      final SortSpec otherSort = SortSpecParsing.parseSortSpec(randomSortString+",id asc", req);
       CursorMark trash = previous.createNext(Arrays.<Object>asList
                                              (buildRandomSortObjects(otherSort)));
       fail("didn't fail on next with incorrect num of sortvalues");
@@ -88,7 +88,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     final IndexSchema schema = req.getSchema();
 
     try {
-      final SortSpec ss = QueryParsing.parseSortSpec("str desc, score desc", req);
+      final SortSpec ss = SortSpecParsing.parseSortSpec("str desc, score desc", req);
       final CursorMark totem = new CursorMark(schema, ss);
       fail("no failure from sort that doesn't include uniqueKey field");
     } catch (SolrException e) {
@@ -98,7 +98,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
     for (final String dir : Arrays.asList("asc", "desc")) {
       try {
-        final SortSpec ss = QueryParsing.parseSortSpec("score " + dir, req);
+        final SortSpec ss = SortSpecParsing.parseSortSpec("score " + dir, req);
         final CursorMark totem = new CursorMark(schema, ss);
         fail("no failure from score only sort: " + dir);
       } catch (SolrException e) {
@@ -107,7 +107,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
       }
       
       try {
-        final SortSpec ss = QueryParsing.parseSortSpec("_docid_ "+dir+", id desc", req);
+        final SortSpec ss = SortSpecParsing.parseSortSpec("_docid_ "+dir+", id desc", req);
         final CursorMark totem = new CursorMark(schema, ss);
         fail("no failure from sort that includes _docid_: " + dir);
       } catch (SolrException e) {
@@ -121,7 +121,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
   public void testGarbageParsing() throws IOException {
     final SolrQueryRequest req = req();
     final IndexSchema schema = req.getSchema();
-    final SortSpec ss = QueryParsing.parseSortSpec("str asc, float desc, id asc", req);
+    final SortSpec ss = SortSpecParsing.parseSortSpec("str asc, float desc, id asc", req);
     final CursorMark totem = new CursorMark(schema, ss);
 
     // totem string that isn't even valid base64
@@ -153,7 +153,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
     // totem string from sort with diff num clauses
     try {
-      final SortSpec otherSort = QueryParsing.parseSortSpec("double desc, id asc", req);
+      final SortSpec otherSort = SortSpecParsing.parseSortSpec("double desc, id asc", req);
       final CursorMark otherTotem = new CursorMark(schema, otherSort);
       otherTotem.setSortValues(Arrays.<Object>asList(buildRandomSortObjects(otherSort)));
       
@@ -176,7 +176,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     final int numRandomSorts = atLeast(50);
     final int numRandomValIters = atLeast(10);
     for (int i = 0; i < numRandomSorts; i++) {
-      final SortSpec ss = QueryParsing.parseSortSpec
+      final SortSpec ss = SortSpecParsing.parseSortSpec
         (CursorPagingTest.buildRandomSort(allFieldNames), req);
       final CursorMark totemIn = new CursorMark(schema, ss);
       final CursorMark totemOut = new CursorMark(schema, ss);

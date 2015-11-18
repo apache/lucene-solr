@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
  */
 public class SolrQuery extends ModifiableSolrParams 
 {  
-  public static final String DOCID = "_docid_"; // duplicate of org.apache.solr.search.QueryParsing.DOCID which is not accessible from here
+  public static final String DOCID = "_docid_"; // duplicate of org.apache.solr.search.SortSpecParsing.DOCID which is not accessible from here
   
   public enum ORDER { desc, asc;
     public ORDER reverse() {

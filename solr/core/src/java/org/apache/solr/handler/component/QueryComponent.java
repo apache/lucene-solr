@@ -85,6 +85,7 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
@@ -257,7 +258,7 @@ public class QueryComponent extends SearchComponent
     // groupSort defaults to sort
     String groupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(QueryParsing.parseSortSpec(groupSortStr, req).getSort());
+    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(groupSortStr, req).getSort());
     if (sortWithinGroup == null) {
       sortWithinGroup = Sort.RELEVANCE;
     }
