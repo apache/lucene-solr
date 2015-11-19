@@ -535,6 +535,8 @@ Other Changes
 * SOLR-8283: factor out StrParser from QueryParsing.StrParser and SortSpecParsing[Test]
   from QueryParsing[Test] (Christine Poerschke)
 
+* SOLR-8298: small preferLocalShards implementation refactor (Christine Poerschke)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

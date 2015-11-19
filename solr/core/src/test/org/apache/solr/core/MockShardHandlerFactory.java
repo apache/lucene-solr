@@ -43,7 +43,7 @@ public class MockShardHandlerFactory extends ShardHandlerFactory implements Plug
 
       @Override
       public void submit(ShardRequest sreq, String shard,
-          ModifiableSolrParams params) {}
+          ModifiableSolrParams params, String preferredHostAddress) {}
 
       @Override
       public ShardResponse takeCompletedIncludingErrors() {
