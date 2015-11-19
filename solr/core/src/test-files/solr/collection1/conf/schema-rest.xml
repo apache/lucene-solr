@@ -634,4 +634,5 @@
 
   <solrQueryParser defaultOperator="OR"/>
 
+  <similarity class="solr.SchemaSimilarityFactory" />
 </schema>

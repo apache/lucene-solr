@@ -22,21 +22,52 @@ import java.io.IOException;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
+
+import org.apache.lucene.search.similarities.Similarity;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.similarities.LMJelinekMercerSimilarityFactory;
+import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
+  
+  public static Class<? extends SimilarityFactory> simfac1;
+  public static Class<? extends SimilarityFactory> simfac2;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
+
+    simfac1 = LMJelinekMercerSimilarityFactory.class;
+    simfac2 = SchemaSimilarityFactory.class;
+    
+    // sanity check our test...
+    assertTrue("Effectiveness of tets depends on SchemaSimilarityFactory being SolrCoreAware " + 
+               "something changed in the impl and now major portions of this test are useless",
+               SolrCoreAware.class.isAssignableFrom(simfac2));
+    
+    // randomize the order these similarities are used in the changed schemas
+    // to help test proper initialization in both code paths
+    if (random().nextBoolean()) {
+      Class<? extends SimilarityFactory> tmp = simfac1;
+      simfac1 = simfac2;
+      simfac2 = tmp;
+    }
+    System.setProperty("solr.test.simfac1", simfac1.getName());
+    System.setProperty("solr.test.simfac2", simfac2.getName());
+      
     initCore();
   }
 
@@ -66,12 +97,29 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     return cores;
   }
 
+  public void testSanityOfSchemaSimilarityFactoryInform() {
+    // sanity check that SchemaSimilarityFactory will throw an Exception if you
+    // try to use it w/o inform(SolrCoreAware) otherwise assertSimilarity is useless
+    SchemaSimilarityFactory broken = new SchemaSimilarityFactory();
+    broken.init(new ModifiableSolrParams());
+    // NO INFORM
+    try {
+      Similarity bogus = broken.getSimilarity();
+      fail("SchemaSimilarityFactory should have thrown IllegalStateException b/c inform not used");
+    } catch (IllegalStateException expected) {
+      assertTrue("GOT: " + expected.getMessage(),
+                 expected.getMessage().contains("SolrCoreAware.inform"));
+    }
+  }
+  
   @Test
   public void testOptimizeDiffSchemas() throws Exception {
     // load up a core (why not put it on disk?)
     CoreContainer cc = init();
     try (SolrCore changed = cc.getCore("changed")) {
 
+      assertSimilarity(changed, simfac1);
+                       
       // add some documents
       addDoc(changed, "id", "1", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "2", "which", "15", "text", "some stuff with which");
@@ -85,6 +133,10 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
       IndexSchema iSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());
       changed.setLatestSchema(iSchema);
+      
+      assertSimilarity(changed, simfac2);
+      // sanity check our sanity check
+      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2)); 
 
       addDoc(changed, "id", "1", "text", "some stuff without which");
       addDoc(changed, "id", "5", "text", "some stuff without which");
@@ -99,6 +151,13 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     }
   }
 
+  private static void assertSimilarity(SolrCore core, Class<? extends SimilarityFactory> expected) {
+    SimilarityFactory actual = core.getLatestSchema().getSimilarityFactory();
+    assertNotNull(actual);
+    assertEquals(expected, actual.getClass());
+    // if SolrCoreAware sim isn't properly initialized, this will throw an exception
+    assertNotNull(actual.getSimilarity());
+  }
 
   private static String withWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
       "  <fields>\n" +
@@ -119,6 +178,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
       "    <fieldType name=\"int\" class=\"solr.TrieIntField\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
       "  </types>\n" +
+      "  <similarity class=\"${solr.test.simfac1}\"/> " +
       "</schema>";
 
   private static String withoutWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
@@ -138,6 +198,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
       "    <fieldType name=\"int\" class=\"solr.TrieIntField\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
       "  </types>\n" +
+      "  <similarity class=\"${solr.test.simfac2}\"/> " +
       "</schema>";
 
 

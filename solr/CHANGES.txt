@@ -393,6 +393,9 @@ Bug Fixes
 
 * SOLR-8295: Fix NPE in collapse QParser when collapse field is missing from all docs in a segment (hossman)
 
+* SOLR-8280: Fixed bug in SimilarityFactory initialization that prevented SolrCoreAware factories -- such
+  as SchemaSimilarityFactory -- from functioning properly with managed schema features. (hossman)
+
 Optimizations
 ----------------------
 

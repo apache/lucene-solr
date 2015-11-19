@@ -29,6 +29,9 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * <p>
  * SimilarityFactory that returns a {@link PerFieldSimilarityWrapper}
@@ -52,6 +55,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * @see FieldType#getSimilarity
  */
 public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCoreAware {
+  
   private Similarity similarity; // set by init
   private Similarity defaultSimilarity; // set by inform(SolrCore)
   private volatile SolrCore core;
@@ -83,7 +87,9 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
 
   @Override
   public Similarity getSimilarity() {
-    assert core != null : "inform must be called first";
+    if (null == core) {
+      throw new IllegalStateException("SchemaSimilarityFactory can not be used until SolrCoreAware.inform has been called");
+    }
     return similarity;
   }
 }
