@@ -18,8 +18,19 @@ package org.apache.solr.rest.schema;
  */
 
 import org.apache.commons.io.FileUtils;
+
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.misc.SweetSpotSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
+
 import org.junit.After;
 import org.junit.Before;
 import org.noggit.JSONParser;
@@ -356,18 +367,21 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull(m);
     m = (Map)m.get("similarity");
     assertNotNull(m);
-    assertEquals("org.apache.lucene.misc.SweetSpotSimilarity", m.get("class"));
+    assertEquals(SweetSpotSimilarity.class.getName(), m.get("class"));
 
     m = getObj(harness, "a4", "fields");
     assertNotNull("field a4 not created", m);
     assertEquals("mySimField", m.get("type"));
-
+    assertFieldSimilarity("a4", SweetSpotSimilarity.class);
+    
     m = getObj(harness, "myWhitespaceTxtField", "fieldTypes");
     assertNotNull(m);
+    assertNull(m.get("similarity")); // unspecified, expect default
 
     m = getObj(harness, "a5", "fields");
     assertNotNull("field a5 not created", m);
     assertEquals("myWhitespaceTxtField", m.get("type"));
+    assertFieldSimilarity("a5", ClassicSimilarity.class); // unspecified, expect default
 
     m = getObj(harness, "wdf_nocase", "fields");
     assertNull("field 'wdf_nocase' not deleted", m);
@@ -664,5 +678,30 @@ public class TestBulkSchemaAPI extends RestTestBase {
       if (dest.equals(m.get("dest"))) result.add(m);
     }
     return result;
+  }
+
+  /**
+   * whitebox checks the Similarity for the specified field according to {@link SolrCore#getLatestSchema}
+   */
+  private static void assertFieldSimilarity(String fieldname, Class<? extends Similarity> expected) {
+    CoreContainer cc = jetty.getCoreContainer();
+    try (SolrCore core = cc.getCore("collection1")) {
+      SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();
+      assertNotNull(simfac);
+      assertTrue("test only works with SchemaSimilarityFactory",
+                 simfac instanceof SchemaSimilarityFactory);
+      
+      Similarity mainSim = core.getLatestSchema().getSimilarity();
+      assertNotNull(mainSim);
+      
+      // sanity check simfac vs sim in use - also verify infom called on simfac, otherwise exception
+      assertEquals(mainSim, simfac.getSimilarity());
+      
+      assertTrue("test only works with PerFieldSimilarityWrapper, SchemaSimilarityFactory redefined?",
+                 mainSim instanceof PerFieldSimilarityWrapper);
+      Similarity fieldSim = ((PerFieldSimilarityWrapper)mainSim).get(fieldname);
+      assertEquals("wrong sim for field=" + fieldname, expected, fieldSim.getClass());
+      
+    }
   }
 }

@@ -745,6 +745,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     awareCompatibility = new HashMap<>();
     awareCompatibility.put( 
       SolrCoreAware.class, new Class[] {
+        // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
+        // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
         CodecFactory.class,
         DirectoryFactory.class,
         ManagedIndexSchemaFactory.class,
@@ -759,6 +761,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
     awareCompatibility.put(
       ResourceLoaderAware.class, new Class[] {
+        // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
+        // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
         CharFilterFactory.class,
         TokenFilterFactory.class,
         TokenizerFactory.class,

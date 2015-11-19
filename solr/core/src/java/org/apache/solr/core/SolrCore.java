@@ -259,17 +259,37 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public String getSchemaResource() {
     return getLatestSchema().getResourceName();
   }
-
-  /** @return the latest snapshot of the schema used by this core instance. */
+  
+  /** 
+   * @return the latest snapshot of the schema used by this core instance. 
+   * @see #setLatestSchema 
+   */
   public IndexSchema getLatestSchema() {
     return schema;
   }
-
-  /** Sets the latest schema snapshot to be used by this core instance. */
+  
+  /** 
+   * Sets the latest schema snapshot to be used by this core instance. 
+   * If the specified <code>replacementSchema</code> uses a {@link SimilarityFactory} which is 
+   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that factory about 
+   * this SolrCore prior to using the <code>replacementSchema</code>
+   * @see #getLatestSchema
+   */
   public void setLatestSchema(IndexSchema replacementSchema) {
-    schema = replacementSchema;
+    // 1) For a newly instantiated core, the Similarity needs SolrCore before inform() is called on
+    // any registered SolrCoreAware listeners (which will likeley need to use the SolrIndexSearcher.
+    //
+    // 2) If a new IndexSchema is assigned to an existing live SolrCore (ie: managed schema
+    // replacement via SolrCloud) then we need to explicitly inform() the similarity because
+    // we can't rely on the normal SolrResourceLoader lifecycle because the sim was instantiated
+    // after the SolrCore was already live (see: SOLR-8311 + SOLR-8280)
+    final SimilarityFactory similarityFactory = replacementSchema.getSimilarityFactory();
+    if (similarityFactory instanceof SolrCoreAware) {
+      ((SolrCoreAware) similarityFactory).inform(this);
+    }
+    this.schema = replacementSchema;
   }
-
+  
   public NamedList getConfigSetProperties() {
     return configSetProperties;
   }
@@ -751,7 +771,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.infoRegistry = initInfoRegistry(name, config);
     infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
 
-    this.schema = initSchema(config, schema);
+    initSchema(config, schema);
 
     this.maxWarmingSearchers = config.maxWarmingSearchers;
     this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
@@ -948,17 +968,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
   }
-
-  private IndexSchema initSchema(SolrConfig config, IndexSchema schema) {
+  
+  /**
+   * Initializes the "Latest Schema" for this SolrCore using either the provided <code>schema</code> 
+   * if non-null, or a new instance build via the factory identified in the specified <code>config</code>
+   * @see IndexSchemaFactory
+   * @see #setLatestSchema
+   */
+  private void initSchema(SolrConfig config, IndexSchema schema) {
     if (schema == null) {
       schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
     }
-    final SimilarityFactory similarityFactory = schema.getSimilarityFactory();
-    if (similarityFactory instanceof SolrCoreAware) {
-      // Similarity needs SolrCore before inform() is called on all registered SolrCoreAware listeners below
-      ((SolrCoreAware) similarityFactory).inform(this);
-    }
-    return schema;
+    setLatestSchema(schema);
   }
 
   private Map<String,SolrInfoMBean> initInfoRegistry(String name, SolrConfig config) {
