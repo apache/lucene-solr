@@ -220,6 +220,10 @@ Optimizations
 * LUCENE-6276: Added TwoPhaseIterator.matchCost() which allows to confirm the
   least costly TwoPhaseIterators first. (Paul Elschot via Adrien Grand)
 
+* LUCENE-6898: In the default codec, the last stored field value will not
+  be fully read from disk if the supplied StoredFieldVisitor doesn't want it.
+  So put your largest text field value last to benefit. (David Smiley)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 
