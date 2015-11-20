@@ -540,6 +540,9 @@ Other Changes
 
 * SOLR-8298: small preferLocalShards implementation refactor (Christine Poerschke)
 
+* SOLR-8315: Removed default core checks in the dispatch filter since we don't have a default
+  core anymore (Varun Thacker)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
