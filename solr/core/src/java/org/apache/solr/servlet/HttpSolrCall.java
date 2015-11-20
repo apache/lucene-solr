@@ -279,11 +279,6 @@ public class HttpSolrCall {
       // if we couldn't find it locally, look on other nodes
       extractRemotePath(corename, origCorename, idx);
       if (action != null) return;
-
-      // try the default core
-      if (core == null) {
-        core = cores.getCore("");
-      }
     }
 
     // With a valid core...
@@ -615,11 +610,7 @@ public class HttpSolrCall {
       } else {
         solrResp.setException(new RuntimeException(ex));
       }
-      if (core == null) {
-        localCore = cores.getCore(""); // default core
-      } else {
-        localCore = core;
-      }
+      localCore = core;
       if (solrReq == null) {
         final SolrParams solrParams;
         if (req != null) {
