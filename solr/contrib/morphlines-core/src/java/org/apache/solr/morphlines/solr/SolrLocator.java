@@ -16,6 +16,11 @@
  */
 package org.apache.solr.morphlines.solr;
 
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+
 import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
@@ -38,10 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
 
 /**
  * Set of configuration parameters that identify the location and schema of a Solr server or
@@ -149,7 +150,7 @@ public class SolrLocator {
       
       LOG.debug("SolrLocator loading IndexSchema from dir {}", mySolrHomeDir);
       try {
-        SolrResourceLoader loader = new SolrResourceLoader(mySolrHomeDir);
+        SolrResourceLoader loader = new SolrResourceLoader(Paths.get(mySolrHomeDir));
         SolrConfig solrConfig = new SolrConfig(loader, "solrconfig.xml", null);
         InputSource is = new InputSource(loader.openSchema("schema.xml"));
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName("schema.xml"));

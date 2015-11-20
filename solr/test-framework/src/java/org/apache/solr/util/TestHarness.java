@@ -17,9 +17,9 @@
 
 package org.apache.solr.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,21 +66,21 @@ public class TestHarness extends BaseTestHarness {
    * follows the basic conventions of being a relative path in the solrHome 
    * dir. (ie: <code>${solrHome}/${coreName}/conf/${confFile}</code>
    */
-  public static SolrConfig createConfig(String solrHome, String coreName, String confFile) {
+  public static SolrConfig createConfig(Path solrHome, String coreName, String confFile) {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome + File.separator + coreName, confFile, null);
+      return new SolrConfig(solrHome.resolve(coreName), confFile, null);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
   }
   
   /**
-   * Creates a SolrConfig object for the default test core using {@link #createConfig(String,String,String)}
+   * Creates a SolrConfig object for the default test core using {@link #createConfig(Path,String,String)}
    */
-  public static SolrConfig createConfig(String solrHome, String confFile) {
+  public static SolrConfig createConfig(Path solrHome, String confFile) {
     return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
   }
 
@@ -139,7 +139,7 @@ public class TestHarness extends BaseTestHarness {
    * @param solrHome the solr home directory
    * @param solrXml the text of a solrxml
    */
-  public TestHarness(String solrHome, String solrXml) {
+  public TestHarness(Path solrHome, String solrXml) {
     this(new SolrResourceLoader(solrHome), solrXml);
   }
 

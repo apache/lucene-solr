@@ -17,8 +17,7 @@
 
 package org.apache.solr;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
+import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -34,31 +33,22 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.logging.Level;
 
-import javax.xml.xpath.XPathExpressionException;
-
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
@@ -116,9 +106,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4. To change which core is used when loading the schema and solrconfig.xml, simply
@@ -340,16 +328,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @param xmlStr - the text of an XML file to use. If null, use the what's the absolute minimal file.
    * @throws Exception Lost of file-type things can go wrong.
    */
-  public static void setupNoCoreTest(File solrHome, String xmlStr) throws Exception {
+  public static void setupNoCoreTest(Path solrHome, String xmlStr) throws Exception {
 
-    File tmpFile = new File(solrHome, SolrXmlConfig.SOLR_XML_FILE);
-    if (xmlStr == null) {
+    if (xmlStr == null)
       xmlStr = "<solr></solr>";
-    }
-    FileUtils.write(tmpFile, xmlStr, IOUtils.UTF_8);
-
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome.getAbsolutePath());
-    h = new TestHarness(SolrXmlConfig.fromFile(loader, new File(solrHome, "solr.xml")));
+    Files.write(solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE), xmlStr.getBytes(StandardCharsets.UTF_8));
+    h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome));
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
   }
   
@@ -412,7 +396,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     assertNotNull(solrHome);
     configString = config;
     schemaString = schema;
-    testSolrHome = solrHome;
+    testSolrHome = Paths.get(solrHome);
     if (solrHome != null) {
       System.setProperty("solr.solr.home", solrHome);
     }
@@ -497,7 +481,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected static String configString;
   protected static String schemaString;
-  protected static String testSolrHome;
+  protected static Path testSolrHome;
 
   protected static SolrConfig solrConfig;
 
@@ -591,7 +575,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
             ("standard",0,20,CommonParams.VERSION,"2.2");
   }
 
-  public static CoreContainer createCoreContainer(String solrHome, String solrXML) {
+  public static CoreContainer createCoreContainer(Path solrHome, String solrXML) {
     testSolrHome = checkNotNull(solrHome);
     h = new TestHarness(solrHome, solrXML);
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
@@ -599,21 +583,21 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
-    testSolrHome = config.getSolrResourceLoader().getInstanceDir();
+    testSolrHome = config.getSolrResourceLoader().getInstancePath();
     h = new TestHarness(config, locator);
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
 
   public static CoreContainer createCoreContainer(String coreName, String dataDir, String solrConfig, String schema) {
-    NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()));
+    NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(new SolrResourceLoader(TEST_PATH()));
     CoresLocator locator = new TestHarness.TestCoresLocator(coreName, dataDir, solrConfig, schema);
     CoreContainer cc = createCoreContainer(nodeConfig, locator);
     h.coreName = coreName;
     return cc;
   }
 
-  public static CoreContainer createDefaultCoreContainer(String solrHome) {
+  public static CoreContainer createDefaultCoreContainer(Path solrHome) {
     testSolrHome = checkNotNull(solrHome);
     h = new TestHarness("collection1", initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
@@ -1762,6 +1746,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static String TEST_HOME() {
     return getFile("solr/collection1").getParent();
   }
+
+  public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
 
   public static Throwable getRootCause(Throwable t) {
     Throwable result = t;

@@ -17,8 +17,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,6 +39,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 /**
  * <p>
  *  Writes properties using {@link Properties#store} .
@@ -116,7 +116,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     } else {
       SolrCore core = dataImporter.getCore();
       if (core == null) {
-        configDir = SolrResourceLoader.locateSolrHome();
+        configDir = SolrResourceLoader.locateSolrHome().toString();
       } else {
         configDir = core.getResourceLoader().getConfigDir();
       }

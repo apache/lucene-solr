@@ -18,6 +18,8 @@ package org.apache.solr.handler.extraction;
  */
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.nio.file.Paths;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.tika.parser.ParseContext;
@@ -43,7 +45,7 @@ public class ParseContextConfigTest extends SolrTestCaseJ4 {
     entry.appendChild(property);
     entries.appendChild(entry);
 
-    ParseContext parseContext = new ParseContextConfig(new SolrResourceLoader("."), entries).create();
+    ParseContext parseContext = new ParseContextConfig(new SolrResourceLoader(Paths.get(".")), entries).create();
 
     PDFParserConfig pdfParserConfig = parseContext.get(PDFParserConfig.class);
 

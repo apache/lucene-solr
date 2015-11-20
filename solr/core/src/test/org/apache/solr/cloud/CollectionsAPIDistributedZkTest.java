@@ -909,14 +909,12 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     for (SolrCore core : theCores) {
 
       // look for core props file
-      assertTrue("Could not find expected core.properties file",
-          new File((String) core.getStatistics().get("instanceDir"),
-              "core.properties").exists());
+      Path instancedir = (Path) core.getStatistics().get("instanceDir");
+      assertTrue("Could not find expected core.properties file", Files.exists(instancedir.resolve("core.properties")));
 
       Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve("cores").resolve(core.getName());
-      Path reported = Paths.get((String) core.getStatistics().get("instanceDir"));
 
-      assertTrue("Expected: " + expected + "\nFrom core stats: " + reported, Files.isSameFile(expected, reported));
+      assertTrue("Expected: " + expected + "\nFrom core stats: " + instancedir, Files.isSameFile(expected, instancedir));
 
     }
   }

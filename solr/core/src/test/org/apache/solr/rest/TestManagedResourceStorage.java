@@ -17,22 +17,23 @@ package org.apache.solr.rest;
  */
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.FileStorageIO;
-import org.apache.solr.rest.ManagedResourceStorage.ZooKeeperStorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.JsonStorage;
+import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
+import org.apache.solr.rest.ManagedResourceStorage.ZooKeeperStorageIO;
 import org.junit.Test;
 
 /**
@@ -51,7 +52,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
     SolrZkClient zkClient = h.getCoreContainer().getZkController().getZkClient();
-    SolrResourceLoader loader = new SolrResourceLoader("./");    
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     // Solr unit tests can only write to their working directory due to
     // a custom Java Security Manager installed in the test environment
     NamedList<String> initArgs = new NamedList<>();
@@ -71,7 +72,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
   @Test
   public void testFileBasedJsonStorage() throws Exception {
     File instanceDir = createTempDir("json-storage").toFile();
-    SolrResourceLoader loader = new SolrResourceLoader(instanceDir.getAbsolutePath());
+    SolrResourceLoader loader = new SolrResourceLoader(instanceDir.toPath());
     try {
       NamedList<String> initArgs = new NamedList<>();
       String managedDir = instanceDir.getAbsolutePath() + File.separator + "managed";

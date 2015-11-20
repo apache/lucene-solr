@@ -16,6 +16,11 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -35,11 +40,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 
 /** Factory for ManagedIndexSchema */
 public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements SolrCoreAware {
@@ -284,7 +284,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
               + "nor under SolrConfig.getConfigDir() or the current directory."
               + "  PLEASE REMOVE THIS FILE.");
         } else {
-          File upgradedSchemaFile = new File(nonManagedSchemaFile.getPath() + UPGRADED_SCHEMA_EXTENSION);
+          File upgradedSchemaFile = new File(nonManagedSchemaFile + UPGRADED_SCHEMA_EXTENSION);
           if (nonManagedSchemaFile.renameTo(upgradedSchemaFile)) {
             // Set the resource name to the managed schema so that the CoreAdminHandler returns a findable filename 
             schema.setResourceName(managedSchemaResourceName);
@@ -309,25 +309,10 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    *@return the File for the named resource, or null if it can't be found
    */
   private File locateConfigFile(String resource) {
-    File located = null;
-    File file = new File(resource);
-    if (file.isAbsolute()) {
-      if (file.isFile() && file.canRead()) {
-        located = file;
-      }
-    } else {
-      // try $configDir/$resource
-      File fileUnderConfigDir = new File(config.getResourceLoader().getConfigDir() + resource);
-      if (fileUnderConfigDir.isFile() && fileUnderConfigDir.canRead()) {
-        located = fileUnderConfigDir;
-      } else {
-        // no success with $configDir/$resource - try $CWD/$resource
-        if (file.isFile() && file.canRead()) {
-          located = file;
-        }
-      }
-    }
-    return located;
+    String location = config.getResourceLoader().resourceLocation(resource);
+    if (location.equals(resource) || location.startsWith("classpath:"))
+      return null;
+    return new File(location);
   }
 
   /**

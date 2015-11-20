@@ -17,9 +17,6 @@
 
 package org.apache.solr.core;
 
-import static com.google.common.base.Preconditions.*;
-import static org.apache.solr.common.params.CommonParams.*;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,22 +28,7 @@ import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -94,20 +76,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.CSVResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
-import org.apache.solr.response.SchemaXmlResponseWriter;
-import org.apache.solr.response.SmileResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.SortingResponseWriter;
-import org.apache.solr.response.XMLResponseWriter;
+import org.apache.solr.response.*;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -146,6 +115,9 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  *
@@ -763,7 +735,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.dataDir = initDataDir(dataDir, config, coreDescriptor);
     this.ulogDir = initUpdateLogDir(coreDescriptor);
 
-    log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstanceDir(), dataDir);
+    log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(), dataDir);
 
     checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
@@ -2465,7 +2437,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", startTime);
     lst.add("refCount", getOpenCount());
-    lst.add("instanceDir", resourceLoader.getInstanceDir());
+    lst.add("instanceDir", resourceLoader.getInstancePath());
     lst.add("indexDir", getIndexDir());
 
     CoreDescriptor cd = getCoreDescriptor();

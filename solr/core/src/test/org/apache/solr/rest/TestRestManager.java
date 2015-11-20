@@ -17,6 +17,7 @@ package org.apache.solr.rest;
  */
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
@@ -79,7 +80,7 @@ public class TestRestManager extends SolrRestletTestBase {
   public void testManagedResourceRegistrationAndInitialization() throws Exception {
     // first, we need to register some ManagedResources, which is done with the registry
     // provided by the SolrResourceLoader
-    SolrResourceLoader loader = new SolrResourceLoader("./");
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     
     RestManager.Registry registry = loader.getManagedResourceRegistry();
     assertNotNull("Expected a non-null RestManager.Registry from the SolrResourceLoader!", registry);
@@ -229,7 +230,7 @@ public class TestRestManager extends SolrRestletTestBase {
   
   @Test
   public void testReloadFromPersistentStorage() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader("./");
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     File unitTestStorageDir = createTempDir("testRestManager").toFile();
     assertTrue(unitTestStorageDir.getAbsolutePath()+" is not a directory!", 
         unitTestStorageDir.isDirectory());    

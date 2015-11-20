@@ -17,14 +17,15 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import org.apache.solr.core.SolrResourceLoader;
+import java.io.File;
+import java.nio.file.Path;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-
-import java.io.File;
+import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
-import org.apache.commons.io.IOUtils;
 
 public class TestSystemIdResolver extends LuceneTestCase {
   
@@ -48,8 +49,8 @@ public class TestSystemIdResolver extends LuceneTestCase {
   }
   
   public void testResolving() throws Exception {
-    final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
-    final ResourceLoader loader = new SolrResourceLoader(testHome + "/collection1", this.getClass().getClassLoader());
+    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final ResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
     

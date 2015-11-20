@@ -543,6 +543,9 @@ Other Changes
 * SOLR-8315: Removed default core checks in the dispatch filter since we don't have a default
   core anymore (Varun Thacker)
 
+* SOLR-8302: SolrResourceLoader now takes a Path as its instance directory (Alan
+  Woodward, Shawn Heisey)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

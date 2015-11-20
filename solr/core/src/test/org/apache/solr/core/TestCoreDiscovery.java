@@ -457,7 +457,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   @Test
   public void testRootDirectoryResolution() {
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
+    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
 
     NodeConfig config = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
     assertThat(config.getCoreRootDirectory().toString(), containsString(solrHomeDirectory.getAbsolutePath()));

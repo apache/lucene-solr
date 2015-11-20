@@ -26,6 +26,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -102,11 +104,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         extraProperties = new Properties();
 
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      if (solrHome == null)
-        solrHome = SolrResourceLoader.locateSolrHome();
       ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
 
-      this.cores = createCoreContainer(solrHome, extraProperties);
+      this.cores = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
+                                       extraProperties);
       this.httpClient = cores.getUpdateShardHandler().getHttpClient();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
@@ -126,7 +127,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * Override this to change CoreContainer initialization
    * @return a CoreContainer to hold this server's cores
    */
-  protected CoreContainer createCoreContainer(String solrHome, Properties extraProperties) {
+  protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
     cores = new CoreContainer(nodeConfig, extraProperties, true);
     cores.load();
@@ -138,7 +139,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * This may also be used by custom filters to load relevant configuration.
    * @return the NodeConfig
    */
-  public static NodeConfig loadNodeConfig(String solrHome, Properties nodeProperties) {
+  public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHome, null, nodeProperties);
     if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
@@ -159,7 +160,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
       log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
     }
-    return SolrXmlConfig.fromSolrHome(loader, loader.getInstanceDir());
+    return SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath());
   }
   
   public CoreContainer getCores() {

@@ -51,7 +51,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupLoader() throws Exception {
     solrHome = createTempDir().toFile();
-    loader = new SolrResourceLoader(solrHome.getAbsolutePath());
+    loader = new SolrResourceLoader(solrHome.toPath());
   }
 
   @AfterClass
@@ -65,7 +65,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
 
-    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.getAbsolutePath());
+    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.toPath());
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
     
@@ -117,7 +117,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
 
-    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.getAbsolutePath());
+    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.toPath());
     assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertEquals("schema cache", false, cfg.hasSchemaCache());

@@ -17,27 +17,12 @@
 
 package org.apache.solr.core;
 
-import junit.framework.Assert;
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
-import org.apache.lucene.analysis.ngram.NGramFilterFactory;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.handler.admin.LukeRequestHandler;
-import org.apache.solr.handler.component.FacetComponent;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -45,46 +30,46 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
+import junit.framework.Assert;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
+import org.apache.lucene.analysis.ngram.NGramFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.admin.LukeRequestHandler;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.util.plugin.SolrCoreAware;
+
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
+import static org.hamcrest.core.Is.is;
 
-public class ResourceLoaderTest extends SolrTestCaseJ4 
-{
+public class ResourceLoaderTest extends SolrTestCaseJ4 {
+
   public void testInstanceDir() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(null);
-    String instDir = loader.getInstanceDir();
-    assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr/") == true);
-    loader.close();
-
-    loader = new SolrResourceLoader("solr");
-    instDir = loader.getInstanceDir();
-    assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr" + File.separator) == true);
-    loader.close();
-  }
-
-  public void testEscapeInstanceDir() throws Exception {
-    File temp = createTempDir("testEscapeInstanceDir").toFile();
-    try {
-      temp.mkdirs();
-      new File(temp, "dummy.txt").createNewFile();
-      File instanceDir = new File(temp, "instance");
-      instanceDir.mkdir();
-      new File(instanceDir, "conf").mkdir();
-      SolrResourceLoader loader = new SolrResourceLoader(instanceDir.getAbsolutePath());
-      try {
-        loader.openResource("../../dummy.txt").close();
-        fail();
-      } catch (IOException ioe) {
-        assertTrue(ioe.getMessage().startsWith("For security reasons, SolrResourceLoader"));
-      }
-      loader.close();
-    } finally {
-      IOUtils.rm(temp.toPath());
+    try (SolrResourceLoader loader = new SolrResourceLoader()) {
+      assertThat(loader.getInstancePath(), is(Paths.get("solr").toAbsolutePath()));
     }
   }
 
-  public void testAwareCompatibility() throws Exception
-  {
-    SolrResourceLoader loader = new SolrResourceLoader( "." );
+  public void testEscapeInstanceDir() throws Exception {
+
+    Path temp = createTempDir("testEscapeInstanceDir");
+    Files.write(temp.resolve("dummy.txt"), new byte[]{});
+    Path instanceDir = temp.resolve("instance");
+    Files.createDirectories(instanceDir.resolve("conf"));
+    try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
+      loader.openResource("../../dummy.txt").close();
+      fail();
+    } catch (IOException ioe) {
+      assertTrue(ioe.getMessage().contains("is outside resource loader dir"));
+    }
+
+  }
+
+  public void testAwareCompatibility() throws Exception {
     
     Class<?> clazz = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
@@ -126,13 +111,12 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
       }
       catch( SolrException ex ) { } // OK
     }
-    
-    loader.close();
+
   }
   
   public void testBOMMarkers() throws Exception {
     final String fileWithBom = "stopwithbom.txt";
-    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
 
     // preliminary sanity check
     InputStream bomStream = loader.openResource(fileWithBom);
@@ -160,7 +144,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
   
   public void testWrongEncoding() throws Exception {
     String wrongEncoding = "stopwordsWrongEncoding.txt";
-    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
     // ensure we get our exception
     try {
       loader.getLines(wrongEncoding);
@@ -172,48 +156,41 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
   }
 
   public void testClassLoaderLibs() throws Exception {
-    File tmpRoot = createTempDir("testClassLoaderLibs").toFile();
+    Path tmpRoot = createTempDir("testClassLoaderLibs");
 
-    File lib = new File(tmpRoot, "lib");
-    lib.mkdirs();
+    Path lib = tmpRoot.resolve("lib");
+    Files.createDirectories(lib);
 
-    JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")));
-    jar1.putNextEntry(new JarEntry("aLibFile"));
-    jar1.closeEntry();
-    jar1.close();
+    try (JarOutputStream os = new JarOutputStream(Files.newOutputStream(lib.resolve("jar1.jar")))) {
+      os.putNextEntry(new JarEntry("aLibFile"));
+      os.closeEntry();
+    }
 
-    File otherLib = new File(tmpRoot, "otherLib");
-    otherLib.mkdirs();
+    Path otherLib = tmpRoot.resolve("otherLib");
+    Files.createDirectories(otherLib);
 
-    JarOutputStream jar2 = new JarOutputStream(new FileOutputStream(new File(otherLib, "jar2.jar")));
-    jar2.putNextEntry(new JarEntry("explicitFile"));
-    jar2.closeEntry();
-    jar2.close();
-    JarOutputStream jar3 = new JarOutputStream(new FileOutputStream(new File(otherLib, "jar3.jar")));
-    jar3.putNextEntry(new JarEntry("otherFile"));
-    jar3.closeEntry();
-    jar3.close();
+    try (JarOutputStream os = new JarOutputStream(Files.newOutputStream(otherLib.resolve("jar2.jar")))) {
+      os.putNextEntry(new JarEntry("explicitFile"));
+      os.closeEntry();
+    }
+    try (JarOutputStream os = new JarOutputStream(Files.newOutputStream(otherLib.resolve("jar3.jar")))) {
+      os.putNextEntry(new JarEntry("otherFile"));
+      os.closeEntry();
+    }
 
-    SolrResourceLoader loader = new SolrResourceLoader(tmpRoot.getAbsolutePath());
+    SolrResourceLoader loader = new SolrResourceLoader(tmpRoot);
 
     // ./lib is accessible by default
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
-    // file filter works (and doesn't add other files in the same dir)
-    final File explicitFileJar = new File(otherLib, "jar2.jar").getAbsoluteFile();
-    loader.addToClassLoader("otherLib",
-        new FileFilter() {
-          @Override
-          public boolean accept(File pathname) {
-            return pathname.equals(explicitFileJar);
-          }
-        }, false);
+    // add inidividual jars from other paths
+    loader.addToClassLoader(otherLib.resolve("jar2.jar").toUri().toURL());
+
     assertNotNull(loader.getClassLoader().getResource("explicitFile"));
     assertNull(loader.getClassLoader().getResource("otherFile"));
 
-
-    // null file filter means accept all (making otherFile accessible)
-    loader.addToClassLoader("otherLib", null, false);
+    // add all jars from another path
+    loader.addToClassLoader(SolrResourceLoader.getURLs(otherLib));
     assertNotNull(loader.getClassLoader().getResource("otherFile"));
     loader.close();
   }
@@ -231,9 +208,10 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
     }
     
   }
-  
+
+  @SuppressWarnings("deprecation")
   public void testLoadDeprecatedFactory() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1"));
     // ensure we get our exception
     loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
         new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });

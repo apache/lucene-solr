@@ -17,11 +17,18 @@ package org.apache.solr.client.solrj.response;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -35,13 +42,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 /**
  * A test for parsing Solr response from query by NoOpResponseParser.
  * @see org.apache.solr.client.solrj.impl.NoOpResponseParser
@@ -50,7 +50,7 @@ import java.util.List;
 public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   private static InputStream getResponse() throws IOException {
-    return new SolrResourceLoader(null, null).openResource("solrj/sampleDateFacetResponse.xml");
+    return new SolrResourceLoader().openResource("solrj/sampleDateFacetResponse.xml");
   }
 
   @BeforeClass

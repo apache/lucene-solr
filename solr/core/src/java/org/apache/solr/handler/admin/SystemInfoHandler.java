@@ -142,7 +142,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
-    dirs.add( "instance", new File( core.getResourceLoader().getInstanceDir() ).getAbsolutePath() );
+    dirs.add("instance", core.getResourceLoader().getInstancePath().toString());
     try {
       dirs.add( "data", core.getDirectoryFactory().normalize(core.getDataDir()));
     } catch (IOException e) {

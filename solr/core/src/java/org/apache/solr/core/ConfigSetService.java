@@ -156,7 +156,7 @@ public abstract class ConfigSetService {
     @Override
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
       Path instanceDir = locateInstanceDir(cd);
-      return new SolrResourceLoader(instanceDir.toString(), parentLoader.getClassLoader(), cd.getSubstitutableProperties());
+      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader(), cd.getSubstitutableProperties());
     }
 
     @Override
@@ -204,7 +204,8 @@ public abstract class ConfigSetService {
       Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(resourceNameToBeUsed);
       if (Files.exists(schemaFile)) {
         try {
-          return schemaCache.get(cacheName(schemaFile), new Callable<IndexSchema>() {
+          String cachedName = cacheName(schemaFile);
+          return schemaCache.get(cachedName, new Callable<IndexSchema>() {
             @Override
             public IndexSchema call() throws Exception {
               logger.info("Creating new index schema for core {}", cd.getName());

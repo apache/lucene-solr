@@ -17,6 +17,10 @@
 
 package org.apache.solr.core;
 
+import javax.xml.xpath.XPathConstants;
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -30,10 +34,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import javax.xml.xpath.XPathConstants;
-import java.io.IOException;
-import java.io.InputStream;
 
 public class TestConfig extends SolrTestCaseJ4 {
 
@@ -113,7 +113,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     int numDefaultsTested = 0;
     int numNullDefaults = 0;
 
-    SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-defaults.xml", null);
+    SolrConfig sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-defaults.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
 
     ++numDefaultsTested; assertEquals("default useCompoundFile", false, sic.getUseCompoundFile());
@@ -151,7 +151,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   // sanity check that sys propertis are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
 
-    SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
+    SolrConfig sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
 
     assertEquals("ramBufferSizeMB sysprop", 

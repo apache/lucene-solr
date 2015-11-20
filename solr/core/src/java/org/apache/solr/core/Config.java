@@ -17,24 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.lucene.util.Version;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.update.SolrIndexConfig;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.SystemIdResolver;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.apache.commons.io.IOUtils;
-
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -48,7 +30,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -62,6 +43,23 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.SystemIdResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
  *
@@ -110,7 +108,7 @@ public class Config {
   public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
     if( loader == null ) {
-      loader = new SolrResourceLoader( null );
+      loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
     }
     this.loader = loader;
     this.name = name;
