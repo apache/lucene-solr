@@ -369,6 +369,9 @@ Other
 * LUCENE-6887: DefaultSimilarity is deprecated, use ClassicSimilarity for equivilent behavior,
   or consider switching to BM25Similarity which will become the new default in Lucene 6.0 (hossman)
 
+* LUCENE-6893: factor out CorePlusQueriesParser from CorePlusExtensionsParser
+  (Christine Poerschke)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
