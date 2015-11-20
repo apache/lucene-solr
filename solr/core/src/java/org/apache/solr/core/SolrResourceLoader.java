@@ -133,24 +133,10 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     this(instanceDir, parent, null);
   }
 
-  /** Use {@link #SolrResourceLoader(Path, ClassLoader)} */
-  @Deprecated
-  public SolrResourceLoader(String instanceDir, ClassLoader parent) {
-    this(Paths.get(instanceDir), parent);
-  }
-
   public SolrResourceLoader(Path instanceDir) {
     this(instanceDir, null, null);
   }
 
-  /**
-   * Use {@link #SolrResourceLoader(Path)}
-   */
-  @Deprecated
-  public SolrResourceLoader(String instanceDir) {
-    this(Paths.get(instanceDir));
-  }
-  
   /**
    * <p>
    * This loader will delegate to the context classloader when possible,
@@ -192,14 +178,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       }
     }
     this.coreProperties = coreProperties;
-  }
-
-  /**
-   * Use {@link #SolrResourceLoader(Path, ClassLoader, Properties)}
-   */
-  @Deprecated
-  public SolrResourceLoader(String instanceDir, ClassLoader parent, Properties properties) {
-    this(Paths.get(instanceDir), parent, properties);
   }
 
   /**
@@ -796,12 +774,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    */
   public Path getInstancePath() {
     return instanceDir;
-  }
-
-  /** Use {@link #getInstancePath()} */
-  @Deprecated
-  public String getInstanceDir() {
-    return instanceDir.toString();
   }
   
   /**
