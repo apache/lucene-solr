@@ -18,7 +18,6 @@ package org.apache.solr.core;
  */
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.apache.solr.common.SolrException;
@@ -221,17 +220,17 @@ public class NodeConfig {
     public NodeConfigBuilder(String nodeName, SolrResourceLoader loader) {
       this.nodeName = nodeName;
       this.loader = loader;
-      this.coreRootDirectory = Paths.get(loader.getInstanceDir());
-      this.configSetBaseDirectory = Paths.get(loader.getInstanceDir()).resolve("configsets");
+      this.coreRootDirectory = loader.getInstancePath();
+      this.configSetBaseDirectory = loader.getInstancePath().resolve("configsets");
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
-      this.coreRootDirectory = Paths.get(loader.getInstanceDir()).resolve(coreRootDirectory);
+      this.coreRootDirectory = loader.getInstancePath().resolve(coreRootDirectory);
       return this;
     }
 
     public NodeConfigBuilder setConfigSetBaseDirectory(String configSetBaseDirectory) {
-      this.configSetBaseDirectory = Paths.get(loader.resolve(configSetBaseDirectory));
+      this.configSetBaseDirectory = loader.getInstancePath().resolve(configSetBaseDirectory);
       return this;
     }
 

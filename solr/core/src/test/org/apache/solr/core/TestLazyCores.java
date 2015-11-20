@@ -80,7 +80,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
+    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
     NodeConfig config = new NodeConfig.NodeConfigBuilder("testNode", loader).setTransientCacheSize(4).build();
     return createCoreContainer(config, testCores);
   }
@@ -559,12 +559,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       writeCustomConfig(coreName, min_config, bad_schema, rand_snip);
     }
 
-    // Write the solr.xml file. Cute how minimal it can be now....
-    File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, "<solr/>", Charsets.UTF_8.toString());
-
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
-    NodeConfig config = SolrXmlConfig.fromFile(loader, solrXml);
+    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
+    NodeConfig config = SolrXmlConfig.fromString(loader, "<solr/>");
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
     return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));

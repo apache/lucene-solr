@@ -34,8 +34,6 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-
 /**
  *
  * @since solr 1.3
@@ -43,16 +41,9 @@ import java.io.File;
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
 
-  private static final String SOLR_XML = "solr.xml";
-
   @Rule
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  @Override
-  protected File getSolrXml() throws Exception {
-    return new File(SOLR_HOME, SOLR_XML);
-  }
 
   protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");

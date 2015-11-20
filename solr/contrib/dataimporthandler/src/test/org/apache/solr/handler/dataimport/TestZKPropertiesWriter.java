@@ -62,7 +62,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
         "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
     //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
-    cc = createDefaultCoreContainer(getFile("dih/solr").getAbsolutePath());
+    cc = createDefaultCoreContainer(getFile("dih/solr").toPath());
   }
 
   @Before

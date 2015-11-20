@@ -19,18 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -1191,7 +1180,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       try (SolrCore core = cores.getCore(cname)) {
         if (core != null) {
           info.add(NAME, core.getName());
-          info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
+          info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
           info.add("dataDir", normalizePath(core.getDataDir()));
           info.add("config", core.getConfigResource());
           info.add("schema", core.getSchemaResource());

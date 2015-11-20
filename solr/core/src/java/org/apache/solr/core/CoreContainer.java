@@ -17,8 +17,9 @@
 
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -61,7 +62,6 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.FileUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,7 +178,7 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(SolrResourceLoader loader) {
-    this(SolrXmlConfig.fromSolrHome(loader, loader.getInstanceDir()));
+    this(SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath()));
   }
 
   /**
@@ -188,7 +188,7 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(String solrHome) {
-    this(new SolrResourceLoader(solrHome));
+    this(new SolrResourceLoader(Paths.get(solrHome)));
   }
 
   /**
@@ -216,7 +216,7 @@ public class CoreContainer {
   
   public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.loader = config.getSolrResourceLoader();
-    this.solrHome = loader.getInstanceDir();
+    this.solrHome = loader.getInstancePath().toString();
     this.cfg = checkNotNull(config);
     this.coresLocator = locator;
     this.containerProperties = new Properties(properties);
@@ -340,6 +340,10 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
   }
+
+  public static CoreContainer createAndLoad(Path solrHome) {
+    return createAndLoad(solrHome, solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE));
+  }
   
   /**
    * Create a new CoreContainer and load its cores
@@ -347,7 +351,7 @@ public class CoreContainer {
    * @param configFile the file containing this container's configuration
    * @return a loaded CoreContainer
    */
-  public static CoreContainer createAndLoad(String solrHome, File configFile) {
+  public static CoreContainer createAndLoad(Path solrHome, Path configFile) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     CoreContainer cc = new CoreContainer(SolrXmlConfig.fromFile(loader, configFile));
     try {
@@ -375,15 +379,18 @@ public class CoreContainer {
    * Load the cores defined for this CoreContainer
    */
   public void load()  {
-    log.info("Loading cores into CoreContainer [instanceDir={}]", loader.getInstanceDir());
+    log.info("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
 
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
     String libDir = cfg.getSharedLibDirectory();
     if (libDir != null) {
-      File f = FileUtils.resolvePath(new File(solrHome), libDir);
-      log.info("loading shared library: " + f.getAbsolutePath());
-      loader.addToClassLoader(libDir, null, false);
-      loader.reloadLuceneSPI();
+      Path libPath = loader.getInstancePath().resolve(libDir);
+      try {
+        loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
+        loader.reloadLuceneSPI();
+      } catch (IOException e) {
+        log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+      }
     }
 
 

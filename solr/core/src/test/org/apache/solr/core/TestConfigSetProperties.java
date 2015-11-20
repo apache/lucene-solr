@@ -17,21 +17,22 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.noggit.JSONUtil;
-
-import java.io.File;
 
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
@@ -80,14 +81,14 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
   }
 
   private NamedList createConfigSetProps(String props) throws Exception {
-    File testDirectory = createTempDir().toFile();
+    Path testDirectory = createTempDir();
     String filename = "configsetprops.json";
     if (props != null) {
-      File confDir = new File(testDirectory, "conf");
-      FileUtils.forceMkdir(confDir);
-      FileUtils.write(new File(confDir, filename), new StringBuilder(props));
+      Path confDir = testDirectory.resolve("conf");
+      Files.createDirectories(confDir);
+      Files.write(confDir.resolve(filename), props.getBytes(StandardCharsets.UTF_8));
     }
-    SolrResourceLoader loader = new SolrResourceLoader(testDirectory.getAbsolutePath());
+    SolrResourceLoader loader = new SolrResourceLoader(testDirectory);
     return ConfigSetProperties.readFromResourceLoader(loader, filename);
   }
 }

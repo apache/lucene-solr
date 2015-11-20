@@ -17,6 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Properties;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -26,13 +34,6 @@ import org.apache.solr.core.SolrResourceNotFoundException;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Properties;
 
 /**
  * ResourceLoader that works with ZooKeeper.
@@ -44,8 +45,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   private ZkController zkController;
   private ZkIndexSchemaReader zkIndexSchemaReader;
 
-  public ZkSolrResourceLoader(String instanceDir, String configSet,
-      ZkController zooKeeperController) {
+  public ZkSolrResourceLoader(Path instanceDir, String configSet, ZkController zooKeeperController) {
     super(instanceDir);
     this.zkController = zooKeeperController;
     configSetZkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
@@ -58,7 +58,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    * otherwise it will attempt to resolve resources using any jar files found in
    * the "lib/" directory in the specified instance directory.
    */
-  public ZkSolrResourceLoader(String instanceDir, String configSet, ClassLoader parent,
+  public ZkSolrResourceLoader(Path instanceDir, String configSet, ClassLoader parent,
       Properties coreProperties, ZkController zooKeeperController) {
     super(instanceDir, parent, coreProperties);
     this.zkController = zooKeeperController;

@@ -17,19 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.admin.InfoHandler;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.xml.sax.SAXParseException;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
@@ -41,6 +28,19 @@ import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.InfoHandler;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.xml.sax.SAXParseException;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -75,7 +75,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init(Path homeDirectory, String xml) throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(homeDirectory.toString());
+    SolrResourceLoader loader = new SolrResourceLoader(homeDirectory);
     CoreContainer ret = new CoreContainer(SolrXmlConfig.fromString(loader, xml));
     ret.load();
     return ret;
@@ -213,7 +213,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     MockCoresLocator cl = new MockCoresLocator();
 
-    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir().toString());
+    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir());
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
@@ -469,7 +469,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // init the  CoreContainer with the mix of ok/bad cores
     MockCoresLocator cl = new MockCoresLocator();
 
-    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir().toString());
+    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir());
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 

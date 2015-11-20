@@ -23,22 +23,23 @@ import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -70,7 +71,6 @@ import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +91,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   };
 
   protected URLClassLoader classLoader;
-  private final String instanceDir;
+  private final Path instanceDir;
   private String dataDir;
   
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
@@ -116,6 +116,40 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
     return managedResourceRegistry; 
   }
+
+  public SolrResourceLoader() {
+    this(SolrResourceLoader.locateSolrHome(), null, null);
+  }
+
+  /**
+   * <p>
+   * This loader will delegate to the context classloader when possible,
+   * otherwise it will attempt to resolve resources using any jar files
+   * found in the "lib/" directory in the specified instance directory.
+   * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
+   */
+  public SolrResourceLoader(Path instanceDir, ClassLoader parent)
+  {
+    this(instanceDir, parent, null);
+  }
+
+  /** Use {@link #SolrResourceLoader(Path, ClassLoader)} */
+  @Deprecated
+  public SolrResourceLoader(String instanceDir, ClassLoader parent) {
+    this(Paths.get(instanceDir), parent);
+  }
+
+  public SolrResourceLoader(Path instanceDir) {
+    this(instanceDir, null, null);
+  }
+
+  /**
+   * Use {@link #SolrResourceLoader(Path)}
+   */
+  @Deprecated
+  public SolrResourceLoader(String instanceDir) {
+    this(Paths.get(instanceDir));
+  }
   
   /**
    * <p>
@@ -127,86 +161,78 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
    * @see #locateSolrHome
    */
-  public SolrResourceLoader( String instanceDir, ClassLoader parent, Properties coreProperties )
-  {
-    if( instanceDir == null ) {
-      this.instanceDir = SolrResourceLoader.locateSolrHome();
-      log.info("new SolrResourceLoader for deduced Solr Home: '{}'", 
-               this.instanceDir);
+  public SolrResourceLoader(Path instanceDir, ClassLoader parent, Properties coreProperties) {
+    if (instanceDir == null) {
+      this.instanceDir = SolrResourceLoader.locateSolrHome().toAbsolutePath().normalize();
+      log.info("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else{
-      this.instanceDir = normalizeDir(instanceDir);
-      log.info("new SolrResourceLoader for directory: '{}'",
-               this.instanceDir);
+      this.instanceDir = instanceDir.toAbsolutePath().normalize();
+      log.info("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
-    
-    this.classLoader = createClassLoader(null, parent);
+
+    if (parent == null)
+      parent = Thread.currentThread().getContextClassLoader();
+    this.classLoader = new URLClassLoader(new URL[0], parent);
+
     /* 
      * Skip the lib subdirectory when we are loading from the solr home.
      * Otherwise load it, so core lib directories still get loaded.
      * The default sharedLib will pick this up later, and if the user has
      * changed sharedLib, then we don't want to load that location anyway.
      */
-    if (! this.instanceDir.equals(SolrResourceLoader.locateSolrHome())) {
-      addToClassLoader("./lib/", null, true);
-      reloadLuceneSPI();
+    if (!this.instanceDir.equals(SolrResourceLoader.locateSolrHome())) {
+      Path libDir = this.instanceDir.resolve("lib");
+      if (Files.exists(libDir)) {
+        try {
+          addToClassLoader(getURLs(libDir));
+        } catch (IOException e) {
+          log.warn("Couldn't add files from {} to classpath: {}", libDir, e.getMessage());
+        }
+        reloadLuceneSPI();
+      }
     }
     this.coreProperties = coreProperties;
   }
 
   /**
-   * <p>
-   * This loader will delegate to the context classloader when possible,
-   * otherwise it will attempt to resolve resources using any jar files
-   * found in the "lib/" directory in the specified instance directory.
-   * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
+   * Use {@link #SolrResourceLoader(Path, ClassLoader, Properties)}
    */
-  public SolrResourceLoader( String instanceDir, ClassLoader parent )
-  {
-    this(instanceDir, parent, null);
+  @Deprecated
+  public SolrResourceLoader(String instanceDir, ClassLoader parent, Properties properties) {
+    this(Paths.get(instanceDir), parent, properties);
   }
 
   /**
-   * Adds every file/dir found in the baseDir which passes the specified Filter
-   * to the ClassLoader used by this ResourceLoader.  This method <b>MUST</b>
+   * Adds URLs to the ResourceLoader's internal classloader.  This method <b>MUST</b>
    * only be called prior to using this ResourceLoader to get any resources, otherwise
    * its behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
    * before using this ResourceLoader.
-   * 
-   * <p>This method will quietly ignore missing or non-directory <code>baseDir</code>
-   *  folder. 
    *
-   * @param baseDir base directory whose children (either jars or directories of
-   *                classes) will be in the classpath, will be resolved relative
-   *                the instance dir.
-   * @param filter The filter files must satisfy, if null all files will be accepted.
-   * @param quiet  Be quiet if baseDir does not point to a directory or if no file is 
-   *               left after applying the filter. 
+   * @param urls    the URLs of files to add
    */
-  void addToClassLoader(final String baseDir, final FileFilter filter, boolean quiet) {
-    File base = FileUtils.resolvePath(new File(getInstanceDir()), baseDir);
-    if (base != null && base.exists() && base.isDirectory()) {
-      File[] files = base.listFiles(filter);
-      if (files == null || files.length == 0) {
-        if (!quiet) {
-          log.warn("No files added to classloader from lib: "
-                   + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
-        }
-      } else {
-        this.classLoader = replaceClassLoader(classLoader, base, filter);
-      }
-    } else {
-      if (!quiet) {
-        log.warn("Can't find (or read) directory to add to classloader: "
-            + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
-      }
+  void addToClassLoader(List<URL> urls) {
+    URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
+    if (newLoader != classLoader) {
+      this.classLoader = newLoader;
     }
+  }
+
+  /**
+   * Adds URLs to the ResourceLoader's internal classloader.  This method <b>MUST</b>
+   * only be called prior to using this ResourceLoader to get any resources, otherwise
+   * its behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
+   * before using this ResourceLoader.
+   *
+   * @param urls    the URLs of files to add
+   */
+  void addToClassLoader(URL... urls) {
+    addToClassLoader(Arrays.asList(urls));
   }
   
   /**
    * Reloads all Lucene SPI implementations using the new classloader.
-   * This method must be called after {@link #addToClassLoader(String, FileFilter, boolean)}
-   * and {@link #addToClassLoader(String,FileFilter,boolean)} before using
-   * this ResourceLoader.
+   * This method must be called after {@link #addToClassLoader(List)}
+   * and before using this ResourceLoader.
    */
   void reloadLuceneSPI() {
     // Codecs:
@@ -218,55 +244,75 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     TokenFilterFactory.reloadTokenFilters(this.classLoader);
     TokenizerFactory.reloadTokenizers(this.classLoader);
   }
-  
-  private static URLClassLoader replaceClassLoader(final URLClassLoader oldLoader,
-                                                   final File base,
-                                                   final FileFilter filter) {
-    if (null != base && base.canRead() && base.isDirectory()) {
-      File[] files = base.listFiles(filter);
-      
-      if (null == files || 0 == files.length) return oldLoader;
-      
-      URL[] oldElements = oldLoader.getURLs();
-      URL[] elements = new URL[oldElements.length + files.length];
-      System.arraycopy(oldElements, 0, elements, 0, oldElements.length);
-      
-      for (int j = 0; j < files.length; j++) {
-        try {
-          URL element = files[j].toURI().normalize().toURL();
-          log.info("Adding '" + element.toString() + "' to classloader");
-          elements[oldElements.length + j] = element;
-        } catch (MalformedURLException e) {
-          SolrException.log(log, "Can't add element to classloader: " + files[j], e);
-        }
-      }
-      ClassLoader oldParent = oldLoader.getParent();
-      IOUtils.closeWhileHandlingException(oldLoader); // best effort
-      return URLClassLoader.newInstance(elements, oldParent);
+
+  private static URLClassLoader addURLsToClassLoader(final URLClassLoader oldLoader, List<URL> urls) {
+    if (urls.size() == 0) {
+      return oldLoader;
     }
-    // are we still here?
-    return oldLoader;
+
+    List<URL> allURLs = new ArrayList<>();
+    allURLs.addAll(Arrays.asList(oldLoader.getURLs()));
+    allURLs.addAll(urls);
+    for (URL url : urls) {
+      log.info("Adding '{}' to classloader", url.toString());
+    }
+
+    ClassLoader oldParent = oldLoader.getParent();
+    IOUtils.closeWhileHandlingException(oldLoader);
+    return URLClassLoader.newInstance(allURLs.toArray(new URL[allURLs.size()]), oldParent);
   }
-  
+
   /**
-   * Convenience method for getting a new ClassLoader using all files found
-   * in the specified lib directory.
+   * Utility method to get the URLs of all paths under a given directory that match a filter
+   * @param libDir the root directory
+   * @param filter the filter
+   * @return all matching URLs
+   * @throws IOException on error
    */
-  static URLClassLoader createClassLoader(final File libDir, ClassLoader parent) {
-    if ( null == parent ) {
-      parent = Thread.currentThread().getContextClassLoader();
+  public static List<URL> getURLs(Path libDir, DirectoryStream.Filter<Path> filter) throws IOException {
+    List<URL> urls = new ArrayList<>();
+    try (DirectoryStream<Path> directory = Files.newDirectoryStream(libDir, filter)) {
+      for (Path element : directory) {
+        urls.add(element.toUri().normalize().toURL());
+      }
     }
-    return replaceClassLoader(URLClassLoader.newInstance(new URL[0], parent),
-                              libDir, null);
+    return urls;
   }
-  
-  public SolrResourceLoader( String instanceDir )
-  {
-    this( instanceDir, null, null );
+
+  /**
+   * Utility method to get the URLs of all paths under a given directory
+   * @param libDir the root directory
+   * @return all subdirectories as URLs
+   * @throws IOException on error
+   */
+  public static List<URL> getURLs(Path libDir) throws IOException {
+    return getURLs(libDir, new DirectoryStream.Filter<Path>() {
+      @Override
+      public boolean accept(Path entry) throws IOException {
+        return true;
+      }
+    });
+  }
+
+  /**
+   * Utility method to get the URLs of all paths under a given directory that match a regex
+   * @param libDir the root directory
+   * @param regex the regex as a String
+   * @return all matching URLs
+   * @throws IOException on error
+   */
+  public static List<URL> getFilteredURLs(Path libDir, String regex) throws IOException {
+    final PathMatcher matcher = libDir.getFileSystem().getPathMatcher("regex:" + regex);
+    return getURLs(libDir, new DirectoryStream.Filter<Path>() {
+      @Override
+      public boolean accept(Path entry) throws IOException {
+        return matcher.matches(entry.getFileName());
+      }
+    });
   }
   
   /** Ensures a directory name always ends with a '/'. */
-  public  static String normalizeDir(String path) {
+  public static String normalizeDir(String path) {
     return ( path != null && (!(path.endsWith("/") || path.endsWith("\\"))) )? path + File.separator : path;
   }
   
@@ -280,7 +326,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   }
 
   public String getConfigDir() {
-    return instanceDir + "conf" + File.separator;
+    return instanceDir.resolve("conf").toString();
   }
   
   public String getDataDir()    {
@@ -316,6 +362,16 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public InputStream openConfig(String name) throws IOException {
     return openResource(name);
   }
+
+  private Path checkPathIsSafe(Path pathToCheck) throws IOException {
+    if (Boolean.getBoolean("solr.allow.unsafe.resourceloading"))
+      return pathToCheck;
+    pathToCheck = pathToCheck.normalize();
+    if (pathToCheck.startsWith(instanceDir))
+      return pathToCheck;
+    throw new IOException("File " + pathToCheck + " is outside resource loader dir " + instanceDir +
+        "; set -Dsolr.allow.unsafe.resourceloading=true to allow unsafe loading");
+  }
   
   /** Opens any resource by its name.
    * By default, this will look in multiple locations to load the resource:
@@ -327,50 +383,53 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    InputStream is=null;
-    try {
-      File f0 = new File(resource), f = f0;
-      if (!f.isAbsolute()) {
-        // try $CWD/$configDir/$resource
-        f = new File(getConfigDir() + resource).getAbsoluteFile();
-      }
-      boolean found = f.isFile() && f.canRead();
-      if (!found) { // no success with $CWD/$configDir/$resource
-        f = f0.getAbsoluteFile();
-        found = f.isFile() && f.canRead();
-      }
-      // check that we don't escape instance dir
-      if (found) {
-        if (!Boolean.parseBoolean(System.getProperty("solr.allow.unsafe.resourceloading", "false"))) {
-          final URI instanceURI = new File(getInstanceDir()).getAbsoluteFile().toURI().normalize();
-          final URI fileURI = f.toURI().normalize();
-          if (instanceURI.relativize(fileURI) == fileURI) {
-            // no URI relativize possible, so they don't share same base folder
-            throw new IOException("For security reasons, SolrResourceLoader cannot load files from outside the instance's directory: " + f +
-                "; if you want to override this safety feature and you are sure about the consequences, you can pass the system property "+
-                "-Dsolr.allow.unsafe.resourceloading=true to your JVM");
-          }
-        }
-        // relativize() returned a relative, new URI, so we are fine!
-        return new FileInputStream(f);
-      }
-      // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
-      // We need a ClassLoader-compatible (forward-slashes) path here!
-      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
-      // This is a hack just for tests (it is not done in ZKResourceLoader)!
-      // -> the getConfigDir's path must not be absolute!
-      if (is == null && System.getProperty("jetty.testMode") != null && !new File(getConfigDir()).isAbsolute()) {
-        is = classLoader.getResourceAsStream((getConfigDir() + resource).replace(File.separatorChar, '/'));
-      }
-    } catch (IOException ioe) {
-      throw ioe;
-    } catch (Exception e) {
-      throw new IOException("Error opening " + resource, e);
+
+    Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
+    if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
+      return Files.newInputStream(checkPathIsSafe(inConfigDir));
     }
-    if (is==null) {
-      throw new SolrResourceNotFoundException("Can't find resource '" + resource + "' in classpath or '" + new File(getConfigDir()).getAbsolutePath() + "'");
+
+    Path inInstanceDir = getInstancePath().resolve(resource);
+    if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
+      return Files.newInputStream(checkPathIsSafe(inInstanceDir));
+    }
+
+    // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
+    // We need a ClassLoader-compatible (forward-slashes) path here!
+    InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+
+    // This is a hack just for tests (it is not done in ZKResourceLoader)!
+    // TODO can we nuke this?
+    if (is == null && System.getProperty("jetty.testMode") != null) {
+      is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
+    }
+
+    if (is == null) {
+      throw new SolrResourceNotFoundException("Can't find resource '" + resource + "' in classpath or '" + instanceDir + "'");
     }
     return is;
+  }
+
+  /**
+   * Report the location of a resource found by the resource loader
+   */
+  public String resourceLocation(String resource) {
+    Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
+    if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
+      return inConfigDir.toAbsolutePath().normalize().toString();
+
+    Path inInstanceDir = getInstancePath().resolve(resource);
+    if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir))
+      return inInstanceDir.toAbsolutePath().normalize().toString();
+
+    try (InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+      if (is != null)
+        return "classpath:" + resource;
+    } catch (IOException e) {
+      // ignore
+    }
+
+    return resource;
   }
 
   /**
@@ -699,7 +758,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    * @return A normalized solrhome
    * @see #normalizeDir(String)
    */
-  public static String locateSolrHome() {
+  public static Path locateSolrHome() {
 
     String home = null;
     // Try JNDI
@@ -729,12 +788,20 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       home = project + '/';
       log.info(project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
-    return normalizeDir( home );
+    return Paths.get(home);
   }
 
-
-  public String getInstanceDir() {
+  /**
+   * @return the instance path for this resource loader
+   */
+  public Path getInstancePath() {
     return instanceDir;
+  }
+
+  /** Use {@link #getInstancePath()} */
+  @Deprecated
+  public String getInstanceDir() {
+    return instanceDir.toString();
   }
   
   /**
@@ -836,7 +903,4 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
   }
 
-  public String resolve(String pathToResolve) {
-    return Paths.get(instanceDir).resolve(pathToResolve).toString();
-  }
 }

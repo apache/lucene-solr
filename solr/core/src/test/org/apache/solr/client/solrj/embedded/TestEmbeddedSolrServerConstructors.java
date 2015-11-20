@@ -17,6 +17,10 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -24,10 +28,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
 
@@ -43,7 +43,7 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
   public void testNodeConfigConstructor() throws Exception {
     Path path = createTempDir();
 
-    SolrResourceLoader loader = new SolrResourceLoader(path.toString());
+    SolrResourceLoader loader = new SolrResourceLoader(path);
     NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", loader)
         .setConfigSetBaseDirectory(Paths.get(TEST_HOME()).resolve("configsets").toString())
         .build();

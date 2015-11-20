@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,8 +25,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-import javax.xml.parsers.ParserConfigurationException;
-
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,56 +35,35 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.TestHarness;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.xml.sax.SAXException;
 
 /**
  *
  */
-public class TestArbitraryIndexDir extends AbstractSolrTestCase{
+public class TestArbitraryIndexDir extends AbstractSolrTestCase {
+
+  @Rule
+  public TestRule testRules = new SystemPropertiesRestoreRule();
 
   // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
+
   @BeforeClass
   public static void beforeClass() {
     // this test wants to start solr, and then open a separate indexwriter of its own on the same dir.
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
-  }
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
   }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    
-    File tmpDataDir = createTempDir().toFile();
-
-    solrConfig = TestHarness.createConfig(getSolrHome(), "solrconfig.xml");
-    h = new TestHarness( tmpDataDir.getAbsolutePath(),
-        solrConfig,
-        "schema12.xml");
-    lrf = h.getRequestFactory
-    ("standard",0,20,CommonParams.VERSION,"2.2");
-  }
-  
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   @Test

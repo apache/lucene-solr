@@ -19,25 +19,30 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.*;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.Base64;
-import org.apache.solr.util.DateFormatUtil;
-import org.apache.solr.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.util.FastWriter;
 
 /** Base class for text-oriented response writers.
  *
@@ -163,6 +168,8 @@ public abstract class TextResponseWriter {
       writeNamedList(name, (NamedList)val);
     } else if (val instanceof TupleStream) {
       writeTupleStream((TupleStream) val);
+    } else if (val instanceof Path) {
+      writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
     } else if (val instanceof Iterable) {
       writeArray(name,((Iterable)val).iterator());
     } else if (val instanceof Object[]) {

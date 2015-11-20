@@ -17,17 +17,15 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.util.Version;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.Version;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -199,7 +197,7 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
   @Test
   public void testCustomTypes() throws Exception {
     String testText = "I borrowed $5,400.00 at 25% interest-rate";
-    ResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
     Map<String,String> args = new HashMap<>();
     args.put("luceneMatchVersion", Version.LATEST.toString());
     args.put("generateWordParts", "1");

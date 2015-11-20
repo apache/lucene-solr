@@ -16,6 +16,19 @@
  */
 package org.apache.solr.hadoop;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.FileSystem;
@@ -34,18 +47,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   
@@ -139,12 +140,12 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
 
     String dataDirStr = solrDataDir.toUri().toString();
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toString(), null, null);
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get(solrHomeDir.toString()), null, null);
 
     LOG.info(String
         .format(Locale.ENGLISH, 
             "Constructed instance information solr.home %s (%s), instance dir %s, conf dir %s, writing index to solr.data.dir %s, with permdir %s",
-            solrHomeDir, solrHomeDir.toUri(), loader.getInstanceDir(),
+            solrHomeDir, solrHomeDir.toUri(), loader.getInstancePath(),
             loader.getConfigDir(), dataDirStr, outputShardDir));
 
     // TODO: This is fragile and should be well documented

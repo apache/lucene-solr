@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
@@ -33,8 +34,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.nio.charset.StandardCharsets;
 
 public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
@@ -52,7 +51,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     solrHomeDirectory = createTempDir().toFile();
 
-    setupNoCoreTest(solrHomeDirectory, null);
+    setupNoCoreTest(solrHomeDirectory.toPath(), null);
 
     admin = new CoreAdminHandler(h.getCoreContainer());
   }

@@ -17,28 +17,13 @@
 
 package org.apache.solr.schema;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.regex.Pattern;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.*;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -51,7 +36,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
-import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
@@ -446,9 +430,6 @@ public class IndexSchema {
   }
 
   protected void readSchema(InputSource is) {
-    String resourcePath = CloudUtil.unifiedResourcePath(loader) + resourceName;
-    log.info("Reading Solr Schema from " + resourcePath);
-
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
@@ -593,13 +574,12 @@ public class IndexSchema {
       postReadInform();
 
     } catch (SolrException e) {
-      throw new SolrException(ErrorCode.getErrorCode(e.code()), e.getMessage() + ". Schema file is " +
-          resourcePath, e);
+      throw new SolrException(ErrorCode.getErrorCode(e.code()),
+          "Can't load schema " + loader.resourceLocation(resourceName) + ": " + e.getMessage(), e);
     } catch(Exception e) {
       // unexpected exception...
       throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Schema Parsing Failed: " + e.getMessage() + ". Schema file is " + resourcePath,
-          e);
+          "Can't load schema " + loader.resourceLocation(resourceName) + ": " + e.getMessage(), e);
     }
 
     // create the field analyzers
