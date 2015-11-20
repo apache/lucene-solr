@@ -548,6 +548,9 @@ Other Changes
 * SOLR-8302: SolrResourceLoader now takes a Path as its instance directory (Alan
   Woodward, Shawn Heisey)
 
+* SOLR-8303: CustomBufferedIndexInput now includes resource description when
+  throwing EOFException.  (Mike Drob via Uwe Schindler)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
