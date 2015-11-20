@@ -95,7 +95,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
         if (bufferLength < len) {
           // Throw an exception when refill() could not read len bytes:
           System.arraycopy(buffer, 0, b, offset, bufferLength);
-          throw new IOException("read past EOF");
+          throw new EOFException("read past EOF: " + this);
         } else {
           System.arraycopy(buffer, 0, b, offset, len);
           bufferPosition = len;
@@ -109,7 +109,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
         // here, because there's no need to reread what we
         // had in the buffer.
         long after = bufferStart + bufferPosition + len;
-        if (after > length()) throw new IOException("read past EOF");
+        if (after > length()) throw new EOFException("read past EOF: " + this);
         readInternal(b, offset, len);
         bufferStart = after;
         bufferPosition = 0;
@@ -183,7 +183,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
     if (end > length()) // don't read past EOF
     end = length();
     int newLength = (int) (end - start);
-    if (newLength <= 0) throw new EOFException("read past EOF");
+    if (newLength <= 0) throw new EOFException("read past EOF: " + this);
     
     if (buffer == null) {
       buffer = store.takeBuffer(bufferSize);
