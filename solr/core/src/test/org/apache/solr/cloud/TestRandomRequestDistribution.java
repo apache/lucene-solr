@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -167,25 +168,58 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     String baseUrl = notLeader.getStr(ZkStateReader.BASE_URL_PROP);
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
-    log.info("Firing query against path=" + path);
+    log.info("Firing queries against path=" + path);
     HttpSolrClient client = new HttpSolrClient(path);
     client.setSoTimeout(5000);
     client.setConnectionTimeout(2000);
 
-    client.query(new SolrQuery("*:*"));
-    client.close();
-
-    //Test to see if the query got forwarded to the active replica or not.
+    SolrCore leaderCore = null;
     for (JettySolrRunner jetty : jettys) {
       CoreContainer container = jetty.getCoreContainer();
       for (SolrCore core : container.getCores()) {
         if (core.getName().equals(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          SolrRequestHandler select = core.getRequestHandler("");
-          long c = (long) select.getStatistics().get("requests");
-          assertEquals(core.getName() + " should have got 1 request", 1, c);
+          leaderCore = core;
           break;
         }
       }
+    }
+    assertNotNull(leaderCore);
+
+    //All queries should be served by the active replica
+    //To make sure that's true we keep querying the down replica
+    //If queries are getting processed by the down replica then the cluster state hasn't updated for that replica locally
+    //So we keep trying till it has updated and then verify if ALL queries go to the active reploca
+    long count = 0;
+    while (true) {
+      count++;
+      client.query(new SolrQuery("*:*"));
+
+      SolrRequestHandler select = leaderCore.getRequestHandler("");
+      long c = (long) select.getStatistics().get("requests");
+
+      if (c == 1) {
+        break;  //cluster state has got update locally
+      } else {
+        Thread.sleep(100);
+      }
+
+      if (count > 10000) {
+        fail("After 10k queries we still see all requests being processed by the down replica");
+      }
+    }
+
+    //Now we fire a few additional queries and make sure ALL of them
+    //are served by the active replica
+    int moreQueries = TestUtil.nextInt(random(), 4, 10);
+    count = 1; //Since 1 query has already hit the leader
+    for (int i=0; i<moreQueries; i++) {
+      client.query(new SolrQuery("*:*"));
+      count++;
+
+      SolrRequestHandler select = leaderCore.getRequestHandler("");
+      long c = (long) select.getStatistics().get("requests");
+
+      assertEquals("Query wasn't served by leader", count, c);
     }
 
   }
