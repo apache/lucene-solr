@@ -17,12 +17,15 @@
 -->
 
 <schema name="bad-schema-sim-global-vs-ft-mismatch" version="1.0">
+
+  <similarity class="solr.BM25SimilarityFactory" /> <!-- global sim -->
+  
   <types>
     <fieldType name="sim1" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
       </analyzer>
-      <!-- BAD: similarity here but no global sim that allows it -->
+      <!-- BAD: similarity here but global sim does not allow it -->
       <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
     </fieldType>
  </types>

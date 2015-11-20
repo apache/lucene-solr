@@ -63,6 +63,12 @@
  <defaultSearchField>sim1text</defaultSearchField>
  <uniqueKey>id</uniqueKey>
 
- <!-- default similarity, defers to the fieldType -->
+ <!-- Global similarity, defers to the fieldType.
+      
+      Even though SchemaSimilarityFactory is the current implicit default in IndexSchema, we
+      are explicit about it here in this schema file because TestPerFieldSimilarityClassic overrides
+      the luceneMatchVersion which results in a diff implicit global default - but we still
+      need per-fieldtype sims for that test.
+ -->
  <similarity class="solr.SchemaSimilarityFactory"/>
 </schema>

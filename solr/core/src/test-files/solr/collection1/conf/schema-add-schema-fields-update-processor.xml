@@ -48,8 +48,4 @@
 
   <uniqueKey>id</uniqueKey>
 
-  <!-- testing with a similarity that is SolrCoreAware -->
-  <similarity class="solr.SchemaSimilarityFactory"/>    
-        
-
 </schema>

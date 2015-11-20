@@ -42,5 +42,4 @@
   <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
-  <similarity class="solr.SchemaSimilarityFactory"/>
 </schema>

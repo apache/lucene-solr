@@ -41,6 +41,7 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
@@ -49,8 +50,8 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.similarities.BM25SimilarityFactory;
 import org.apache.solr.search.similarities.ClassicSimilarityFactory;
+import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -479,14 +480,11 @@ public class IndexSchema {
       Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
-        Version luceneVersion = getDefaultLuceneMatchVersion();
-        if (getDefaultLuceneMatchVersion().onOrAfter(Version.LUCENE_6_0_0)) {
-          similarityFactory = new BM25SimilarityFactory();
-        } else {
-          similarityFactory = new ClassicSimilarityFactory();
-        }
-        final NamedList similarityParams = new NamedList();
-        similarityFactory.init(SolrParams.toSolrParams(similarityParams));
+        final boolean modernSim = getDefaultLuceneMatchVersion().onOrAfter(Version.LUCENE_6_0_0);
+        final Class simClass = modernSim ? SchemaSimilarityFactory.class : ClassicSimilarityFactory.class;
+        // use the loader to ensure proper SolrCoreAware handling
+        similarityFactory = loader.newInstance(simClass.getName(), SimilarityFactory.class);
+        similarityFactory.init(new ModifiableSolrParams());
       } else {
         isExplicitSimilarity = true;
       }

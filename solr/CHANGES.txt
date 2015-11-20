@@ -58,9 +58,9 @@ Upgrading from Solr 5.x
     refrenced in your schema.xml, edit your config to use the functionally identical ClassicSimilarityFactory.
     See SOLR-8239 for more details.
   * The implicit default Similarity used when no <similarity/> is configured in schema.xml has
-    been changed to BM25SimilarityFactory.  Users who wish to preserve backcompatible behavior should
+    been changed to SchemaSimilarityFactory.  Users who wish to preserve backcompatible behavior should
     either explicitly configure ClassicSimilarityFactory, or ensure that the luceneMatchVersion
-    for the collection is less then 6.0.  See SOLR-8270 for details.
+    for the collection is less then 6.0.  See SOLR-8270 + SOLR-8271 for details.
   * SchemaSimilarityFactory has been modified to use BM25Similarity as the default for fieldTypes that
     do not explicitly declare a Similarity.  The legacy behavior of using ClassicSimilarity as the
     default will occur if the luceneMatchVersion for the collection is less then 6.0.  See SOLR-8261 for
@@ -152,6 +152,8 @@ Other Changes
 * SOLR-8258: Change default hdfs tlog replication factor from 1 to 3. (Mark Miller)
 
 * SOLR-8270: Change implicit default Similarity to use BM25 when luceneMatchVersion >= 6 (hossman)
+
+* SOLR-8271: Change implicit default Similarity to use SchemaSimilarityFactory when luceneMatchVersion >= 6 (hossman)
 
 ==================  5.4.0 ==================
 

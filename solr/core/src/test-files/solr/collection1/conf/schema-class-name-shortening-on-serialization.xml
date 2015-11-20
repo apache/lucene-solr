@@ -39,5 +39,10 @@
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
     <field name="signatureField" type="string" indexed="true" stored="false"/>
   </fields>
+
+  <!--
+      Even though SchemaSimilarityFactory is the current implicit default in IndexSchema, we
+      are explicit about it here in this schema file to verify the short class name is preserved
+  -->
   <similarity class="solr.SchemaSimilarityFactory"/>
 </schema>
