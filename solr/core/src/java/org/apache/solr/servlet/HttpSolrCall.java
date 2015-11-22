@@ -517,11 +517,7 @@ public class HttpSolrCall {
     HttpEntity httpEntity = null;
     boolean success = false;
     try {
-      String urlstr = coreUrl;
-
-      String queryString = req.getQueryString();
-
-      urlstr += queryString == null ? "" : "?" + queryString;
+      String urlstr = coreUrl + queryParams.toQueryString();
 
       boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
       if ("GET".equals(req.getMethod())) {
@@ -565,8 +561,8 @@ public class HttpSolrCall {
 
         // We pull out these two headers below because they can cause chunked
         // encoding issues with Tomcat
-        if (header != null && !header.getName().equals(TRANSFER_ENCODING_HEADER)
-            && !header.getName().equals(CONNECTION_HEADER)) {
+        if (header != null && !header.getName().equalsIgnoreCase(TRANSFER_ENCODING_HEADER)
+            && !header.getName().equalsIgnoreCase(CONNECTION_HEADER)) {
           resp.addHeader(header.getName(), header.getValue());
         }
       }

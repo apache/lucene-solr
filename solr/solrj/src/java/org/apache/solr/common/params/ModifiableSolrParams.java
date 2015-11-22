@@ -17,8 +17,6 @@
 
 package org.apache.solr.common.params;
 
-import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -190,30 +188,5 @@ public class ModifiableSolrParams extends SolrParams
   @Override
   public String[] getParams(String param) {
     return vals.get( param );
-  }
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder(128);
-    try {
-      boolean first=true;
-
-      for (Map.Entry<String,String[]> entry : vals.entrySet()) {
-        String key = entry.getKey();
-        String[] valarr = entry.getValue();
-        for (String val : valarr) {
-          if (!first) sb.append('&');
-          first=false;
-          sb.append(key);
-          sb.append('=');
-          if( val != null ) {
-            sb.append( URLEncoder.encode( val, "UTF-8" ) );
-          }
-        }
-      }
-    }
-    catch (IOException e) {throw new RuntimeException(e);}  // can't happen
-
-    return sb.toString();
   }
 }

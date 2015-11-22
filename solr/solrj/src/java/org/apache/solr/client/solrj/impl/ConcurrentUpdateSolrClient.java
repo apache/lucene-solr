@@ -271,7 +271,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
           method = new HttpPost(client.getBaseURL() + "/update"
-              + ClientUtils.toQueryString(requestParams, false));
+              + requestParams.toQueryString());
           method.setEntity(template);
           method.addHeader("User-Agent", HttpSolrClient.AGENT);
           method.addHeader("Content-Type", contentType);
