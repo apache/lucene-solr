@@ -466,4 +466,28 @@ public class TestIOUtils extends LuceneTestCase {
     assertFalse(IOUtils.spinsLinux(mockPath));
   }
   
+  public void testFsyncDirectory() throws Exception {
+    Path dir = createTempDir();
+    dir = FilterPath.unwrap(dir).toRealPath();
+
+    Path devdir = dir.resolve("dev");
+    Files.createDirectories(devdir);
+    IOUtils.fsync(devdir, true);
+    // no exception
+  }
+
+  public void testFsyncFile() throws Exception {
+    Path dir = createTempDir();
+    dir = FilterPath.unwrap(dir).toRealPath();
+
+    Path devdir = dir.resolve("dev");
+    Files.createDirectories(devdir);
+    Path somefile = devdir.resolve("somefile");
+    try (OutputStream o = Files.newOutputStream(somefile)) {
+      o.write("0\n".getBytes(StandardCharsets.US_ASCII));
+    }
+    IOUtils.fsync(somefile, false);
+    // no exception
+  }
+
 }

@@ -372,6 +372,9 @@ Other
 * LUCENE-6893: factor out CorePlusQueriesParser from CorePlusExtensionsParser
   (Christine Poerschke)
 
+* LUCENE-6902: Don't retry to fsync files / directories; fail
+  immediately. (Daniel Mitterdorfer, Uwe Schindler)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also
