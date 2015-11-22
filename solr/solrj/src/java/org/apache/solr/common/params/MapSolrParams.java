@@ -17,12 +17,8 @@
 
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.util.StrUtils;
-
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-import java.io.IOException;
 
 /**
  *
@@ -61,28 +57,4 @@ public class MapSolrParams extends SolrParams {
 
   public Map<String,String> getMap() { return map; }
 
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder(128);
-    try {
-      boolean first=true;
-
-      for (Map.Entry<String,String> entry : map.entrySet()) {
-        String key = entry.getKey();
-        Object val = entry.getValue();
-        if (val instanceof String[]) {
-          String[] strings = (String[]) val;
-          val =  StrUtils.join(Arrays.asList(strings),',');
-        }
-        if (!first) sb.append('&');
-        first=false;
-        sb.append(key);
-        sb.append('=');
-        StrUtils.partialURLEncodeVal(sb, val==null ? "" : String.valueOf(val));
-      }
-    }
-    catch (IOException e) {throw new RuntimeException(e);}  // can't happen
-
-    return sb.toString();
-  }
 }

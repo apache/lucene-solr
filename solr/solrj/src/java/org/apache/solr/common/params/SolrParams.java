@@ -22,7 +22,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -384,5 +388,55 @@ public abstract class SolrParams implements Serializable {
       }
     }
     return sink;
+  }
+  
+  /** Returns this SolrParams as a properly URL encoded string, starting with {@code "?"}, if not empty. */
+  public String toQueryString() {
+    try {
+      final String charset = StandardCharsets.UTF_8.name();
+      final StringBuilder sb = new StringBuilder(128);
+      boolean first = true;
+      for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
+        final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
+        for (String val : getParams(name)) {
+          sb.append(first ? '?' : '&').append(nameEnc).append('=').append(URLEncoder.encode(val, charset));
+          first = false;
+        }
+      }
+      return sb.toString();
+    } catch (UnsupportedEncodingException e) {
+      // impossible!
+      throw new AssertionError(e);
+    }
+  }
+  
+  /** Like {@link #toQueryString()}, but only replacing enough chars so that
+   * the URL may be unambiguously pasted back into a browser.
+   * This method can be used to properly log query parameters without
+   * making them unreadable.
+   * <p>
+   * Characters with a numeric value less than 32 are encoded.
+   * &amp;,=,%,+,space are encoded.
+   */
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder(128);
+    try {
+      boolean first=true;
+      for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
+        final String name = it.next();
+        for (String val : getParams(name)) {
+          if (!first) sb.append('&');
+          first=false;
+          StrUtils.partialURLEncodeVal(sb, name);
+          sb.append('=');
+          StrUtils.partialURLEncodeVal(sb, val);
+        }
+      }
+      return sb.toString();
+    } catch (IOException e) {
+      // impossible!
+      throw new AssertionError(e);
+    }
   }
 }

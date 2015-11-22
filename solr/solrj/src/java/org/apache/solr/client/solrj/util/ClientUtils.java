@@ -21,7 +21,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -31,12 +30,10 @@ import org.apache.solr.common.util.XML;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -206,37 +203,6 @@ public class ClientUtils
       }
       sb.append(c);
     }
-    return sb.toString();
-  }
-
-  public static String toQueryString( SolrParams params, boolean xml ) {
-    StringBuilder sb = new StringBuilder(128);
-    try {
-      String amp = xml ? "&amp;" : "&";
-      boolean first=true;
-      Iterator<String> names = params.getParameterNamesIterator();
-      while( names.hasNext() ) {
-        String key = names.next();
-        String[] valarr = params.getParams( key );
-        if( valarr == null ) {
-          sb.append( first?"?":amp );
-          sb.append(key);
-          first=false;
-        }
-        else {
-          for (String val : valarr) {
-            sb.append( first? "?":amp );
-            sb.append(key);
-            if( val != null ) {
-              sb.append('=');
-              sb.append( URLEncoder.encode( val, "UTF-8" ) );
-            }
-            first=false;
-          }
-        }
-      }
-    }
-    catch (IOException e) {throw new RuntimeException(e);}  // can't happen
     return sb.toString();
   }
 
