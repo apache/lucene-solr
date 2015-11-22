@@ -1213,6 +1213,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
 
+    // test facet on children nested under terms facet on parents
+    client.testJQ(params("q", "*:*"
+            , "json.facet", "{" +
+                "books:{ type:terms, field:book_s, facet:{ pages:{type:terms, field:v_t, domain:{blockChildren:'type_s:book'}} } }" +
+                "}"
+        )
+        , "facets=={ count:10" +
+            ", books:{buckets:[{val:A,count:1,pages:{buckets:[]}}" +
+            "                 ,{val:B,count:1,pages:{buckets:[{val:y,count:3},{val:x,count:2},{val:z,count:2}]}}" +
+            "                 ,{val:C,count:1,pages:{buckets:[{val:x,count:1},{val:y,count:1},{val:z,count:1}]}}" +
+            "                 ,{val:D,count:1,pages:{buckets:[]}}"+
+            "] }" +
+            "}"
+    );
+
+
   }
 
 
