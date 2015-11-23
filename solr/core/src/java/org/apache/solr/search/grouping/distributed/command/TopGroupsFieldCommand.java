@@ -131,8 +131,8 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return Collections.emptyList();
     }
 
-    List<Collector> collectors = new ArrayList<>();
-    FieldType fieldType = field.getType();
+    final List<Collector> collectors = new ArrayList<>(1);
+    final FieldType fieldType = field.getType();
     if (fieldType.getNumericType() != null) {
       ValueSource vs = fieldType.getValueSource(field, null);
       Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
