@@ -51,20 +51,21 @@ Upgrading from Solr 5.x
   to allow for multiple full query results (DocLists) per Solr request.
   TransformContext was rendered redundant and was removed. (yonik)
 
-* Several changes have been made regarding the "Similiarity" used in Solr, in order to provide
+* Several changes have been made regarding the "Similarity" used in Solr, in order to provide
   better default behavior for new users.  There are 3 key impacts of these changes on existing
   users who upgrade:
   * DefaultSimilarityFactory has been removed. If you currently have DefaultSimilarityFactory explicitly
-    refrenced in your schema.xml, edit your config to use the functionally identical ClassicSimilarityFactory.
-    See SOLR-8239 for more details.
+    referenced in your schema.xml, edit your config to use the functionally identical
+    ClassicSimilarityFactory.  See SOLR-8239 for more details.
   * The implicit default Similarity used when no <similarity/> is configured in schema.xml has
-    been changed to SchemaSimilarityFactory.  Users who wish to preserve backcompatible behavior should
+    been changed to SchemaSimilarityFactory.  Users who wish to preserve back-compatible behavior should
     either explicitly configure ClassicSimilarityFactory, or ensure that the luceneMatchVersion
     for the collection is less then 6.0.  See SOLR-8270 + SOLR-8271 for details.
   * SchemaSimilarityFactory has been modified to use BM25Similarity as the default for fieldTypes that
     do not explicitly declare a Similarity.  The legacy behavior of using ClassicSimilarity as the
-    default will occur if the luceneMatchVersion for the collection is less then 6.0.  See SOLR-8261 for
-    more details.
+    default will occur if the luceneMatchVersion for the collection is less then 6.0, or the
+    'defaultSimFromFieldType' configuration option may be used to specify any default of your choosing.
+    See SOLR-8261 + SOLR-8329 for more details.
 
 Detailed Change List
 ----------------------
