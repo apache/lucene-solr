@@ -66,6 +66,7 @@ public class GeoPointInBBoxQuery extends Query {
     // short-circuit to match all if specifying the whole map
     if (minLon == GeoUtils.MIN_LON_INCL && maxLon == GeoUtils.MAX_LON_INCL
         && minLat == GeoUtils.MIN_LAT_INCL && maxLat == GeoUtils.MAX_LAT_INCL) {
+      // FieldValueQuery is valid since DocValues are *required* for GeoPointField
       return new FieldValueQuery(field);
     }
 
