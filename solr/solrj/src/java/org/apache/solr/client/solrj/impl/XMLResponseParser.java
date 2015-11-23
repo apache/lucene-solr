@@ -25,6 +25,7 @@ import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.util.EmptyEntityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,8 @@ public class XMLResponseParser extends ResponseParser
   static final XMLInputFactory factory;
   static {
     factory = XMLInputFactory.newInstance();
+    EmptyEntityResolver.configureXMLInputFactory(factory);
+
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the
