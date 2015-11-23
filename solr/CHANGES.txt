@@ -242,6 +242,9 @@ New Features
 * SOLR-6168: Add a 'sort' local param to the collapse QParser to support using complex sort options
   to select the representitive doc for each collapsed group. (Umesh Prasad, hossman)
 
+* SOLR-8329: SchemaSimilarityFactory now supports a 'defaultSimFromFieldType' init option for using
+  a fieldType name to identify which Similarity to use as a default. (hossman)
+
 Bug Fixes
 ----------------------
 
