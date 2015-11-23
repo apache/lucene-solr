@@ -22,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.GeoPointField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -97,7 +98,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
         new GeoPointField(FIELD_NAME, -83.99724648980559, 58.29438379542874, storedPoint),
         new GeoPointField(FIELD_NAME, -26.779373834241003, 33.541429799076354, storedPoint),
         new GeoPointField(FIELD_NAME, -77.35379276106497, 26.774024500421728, storedPoint),
-        new GeoPointField(FIELD_NAME, -14.796283808944777, -62.455081198245665, storedPoint),
+        new GeoPointField(FIELD_NAME, -14.796283808944777, -90.0, storedPoint),
         new GeoPointField(FIELD_NAME, -178.8538113027811, 32.94823588839368, storedPoint),
         new GeoPointField(FIELD_NAME, 178.8538113027811, 32.94823588839368, storedPoint),
         new GeoPointField(FIELD_NAME, -73.998776, 40.720611, storedPoint),
@@ -114,6 +115,13 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
       Document doc = new Document();
       doc.add(pts[i]);
       doc.add(pts[i+1]);
+      writer.addDocument(doc);
+    }
+
+    // index random string documents
+    for (int i=0; i<random().nextInt(10); ++i) {
+      Document doc = new Document();
+      doc.add(new StringField("string", Integer.toString(i), Field.Store.NO));
       writer.addDocument(doc);
     }
 
@@ -258,7 +266,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   public void testWholeMap() throws Exception {
-    TopDocs td = bboxQuery(-179.9, -89.9, 179.9, 89.9, 20);
+    TopDocs td = bboxQuery(GeoUtils.MIN_LON_INCL, GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MAX_LAT_INCL, 20);
     assertEquals("testWholeMap failed", 24, td.totalHits);
   }
 
