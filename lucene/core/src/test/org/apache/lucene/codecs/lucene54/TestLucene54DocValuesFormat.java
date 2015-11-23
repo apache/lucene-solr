@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.lucene54;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -138,7 +140,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
 
   @Slow
   public void testSparseDocValuesVsStoredFields() throws Exception {
-    int numIterations = atLeast(2);
+    int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSparseDocValuesVsStoredFields();
     }
@@ -158,7 +160,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     // sparse compression is only enabled if less than 1% of docs have a value
     final int avgGap = 100;
 
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(200);
     for (int i = random().nextInt(avgGap * 2); i >= 0; --i) {
       writer.addDocument(new Document());
     }
@@ -185,7 +187,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       writer.addDocument(doc);
 
       // add a gap
-      for (int j = random().nextInt(avgGap * 2); j >= 0; --j) {
+      for (int j = TestUtil.nextInt(random(), 0, avgGap * 2); j >= 0; --j) {
         writer.addDocument(new Document());
       }
     }
@@ -502,4 +504,5 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       }
     }
   }
+
 }
