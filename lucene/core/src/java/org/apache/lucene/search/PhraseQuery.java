@@ -48,7 +48,11 @@ import org.apache.lucene.util.ToStringUtils;
  * 
  * <p>This query may be combined with other terms or queries with a {@link BooleanQuery}.
  *
- * <b>NOTE</b>: Leading holes don't have any particular meaning for this query
+ * <p><b>NOTE</b>:
+ * All terms in the phrase must match, even those at the same position. If you
+ * have terms at the same position, perhaps synonyms, you probably want {@link MultiPhraseQuery}
+ * instead which only requires one term at a position to match.
+ * <br >Also, Leading holes don't have any particular meaning for this query
  * and will be ignored. For instance this query:
  * <pre class="prettyprint">
  * PhraseQuery.Builder builder = new PhraseQuery.Builder();
@@ -99,10 +103,12 @@ public class PhraseQuery extends Query {
 
     /**
      * Adds a term to the end of the query phrase.
-     * The relative position of the term within the phrase is specified explicitly.
-     * This allows e.g. phrases with more than one term at the same position
-     * or phrases with gaps (e.g. in connection with stopwords).
-     * 
+     * The relative position of the term within the phrase is specified explicitly, but must be greater than
+     * or equal to that of the previously added term.
+     * A greater position allows phrases with gaps (e.g. in connection with stopwords).
+     * If the position is equal, you most likely should be using
+     * {@link MultiPhraseQuery} instead which only requires one term at each position to match; this class requires
+     * all of them.
      */
     public Builder add(Term term, int position) {
       if (position < 0) {
