@@ -375,6 +375,10 @@ Other
 * LUCENE-6902: Don't retry to fsync files / directories; fail
   immediately. (Daniel Mitterdorfer, Uwe Schindler)
 
+* LUCENE-6801: Clarify JavaDocs of PhraseQuery that it in fact supports terms
+  at the same position (as does MultiPhraseQuery), treated like a conjunction.
+  Added test. (David Smiley, Adrien Grand)
+
 Build
 
 * LUCENE-6732: Improve checker for invalid source patterns to also

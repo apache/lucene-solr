@@ -23,19 +23,23 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -547,6 +551,52 @@ public class TestPhraseQuery extends LuceneTestCase {
     PhraseQuery pq = new PhraseQuery("foo", "bar");
     Query rewritten = pq.rewrite(searcher.getIndexReader());
     assertTrue(rewritten instanceof TermQuery);
+  }
+
+  /** Tests PhraseQuery with terms at the same position in the query. */
+  public void testZeroPosIncr() throws IOException {
+    Directory dir = newDirectory();
+    final Token[] tokens = new Token[3];
+    tokens[0] = new Token();
+    tokens[0].append("a");
+    tokens[0].setPositionIncrement(1);
+    tokens[1] = new Token();
+    tokens[1].append("aa");
+    tokens[1].setPositionIncrement(0);
+    tokens[2] = new Token();
+    tokens[2].append("b");
+    tokens[2].setPositionIncrement(1);
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new TextField("field", new CannedTokenStream(tokens)));
+    writer.addDocument(doc);
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(r);
+
+    // Sanity check; simple "a b" phrase:
+    PhraseQuery.Builder pqBuilder = new PhraseQuery.Builder();
+    pqBuilder.add(new Term("field", "a"), 0);
+    pqBuilder.add(new Term("field", "b"), 1);
+    assertEquals(1, searcher.search(pqBuilder.build(), 1).totalHits);
+
+    // Now with "a|aa b"
+    pqBuilder = new PhraseQuery.Builder();
+    pqBuilder.add(new Term("field", "a"), 0);
+    pqBuilder.add(new Term("field", "aa"), 0);
+    pqBuilder.add(new Term("field", "b"), 1);
+    assertEquals(1, searcher.search(pqBuilder.build(), 1).totalHits);
+
+    // Now with "a|z b" which should not match; this isn't a MultiPhraseQuery
+    pqBuilder = new PhraseQuery.Builder();
+    pqBuilder.add(new Term("field", "a"), 0);
+    pqBuilder.add(new Term("field", "z"), 0);
+    pqBuilder.add(new Term("field", "b"), 1);
+    assertEquals(0, searcher.search(pqBuilder.build(), 1).totalHits);
+
+    r.close();
+    dir.close();
   }
 
   public void testRandomPhrases() throws Exception {
