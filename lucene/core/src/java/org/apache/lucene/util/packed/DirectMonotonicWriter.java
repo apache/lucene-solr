@@ -123,7 +123,9 @@ public final class DirectMonotonicWriter {
     if (finished) {
       throw new IllegalStateException("#finish has been called already");
     }
-    flush();
+    if (bufferSize > 0) {
+      flush();
+    }
     finished = true;
   }
 

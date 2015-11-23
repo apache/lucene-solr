@@ -3149,6 +3149,172 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(term2.get(), enum2.term());
   }
 
+  // same as testSortedMergeAwayAllValues but on more than 1024 docs to have sparse encoding on
+  public void testSortedMergeAwayAllValuesLargeSegment() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField("field", new BytesRef("hello")));
+    iwriter.addDocument(doc);
+    final int numEmptyDocs = atLeast(1024);
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      iwriter.addDocument(new Document());
+    }
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      assertEquals(-1, dv.getOrd(i));
+    }
+
+    ireader.close();
+    directory.close();
+  }
+
+  // same as testSortedSetMergeAwayAllValues but on more than 1024 docs to have sparse encoding on
+  public void testSortedSetMergeAwayAllValuesLargeSegment() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
+    iwriter.addDocument(doc);
+    final int numEmptyDocs = atLeast(1024);
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      iwriter.addDocument(new Document());
+    }
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      dv.setDocument(i);
+      assertEquals(-1L, dv.nextOrd());
+    }
+
+    ireader.close();
+    directory.close();
+  }
+
+  // same as testNumericMergeAwayAllValues but on more than 1024 docs to have sparse encoding on
+  public void testNumericMergeAwayAllValuesLargeSegment() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new NumericDocValuesField("field", 42L));
+    iwriter.addDocument(doc);
+    final int numEmptyDocs = atLeast(1024);
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      iwriter.addDocument(new Document());
+    }
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    NumericDocValues dv = getOnlySegmentReader(ireader).getNumericDocValues("field");
+    Bits docsWithField = getOnlySegmentReader(ireader).getDocsWithField("field");
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      assertEquals(0, dv.get(i));
+      assertFalse(docsWithField.get(i));
+    }
+
+    ireader.close();
+    directory.close();
+  }
+
+  // same as testSortedNumericMergeAwayAllValues but on more than 1024 docs to have sparse encoding on
+  public void testSortedNumericMergeAwayAllValuesLargeSegment() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedNumericDocValuesField("field", 42L));
+    iwriter.addDocument(doc);
+    final int numEmptyDocs = atLeast(1024);
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      iwriter.addDocument(new Document());
+    }
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedNumericDocValues dv = getOnlySegmentReader(ireader).getSortedNumericDocValues("field");
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      dv.setDocument(i);
+      assertEquals(0, dv.count());
+    }
+
+    ireader.close();
+    directory.close();
+  }
+
+  // same as testBinaryMergeAwayAllValues but on more than 1024 docs to have sparse encoding on
+  public void testBinaryMergeAwayAllValuesLargeSegment() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new BinaryDocValuesField("field", new BytesRef("hello")));
+    iwriter.addDocument(doc);
+    final int numEmptyDocs = atLeast(1024);
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      iwriter.addDocument(new Document());
+    }
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    BinaryDocValues dv = getOnlySegmentReader(ireader).getBinaryDocValues("field");
+    Bits docsWithField = getOnlySegmentReader(ireader).getDocsWithField("field");
+    for (int i = 0; i < numEmptyDocs; ++i) {
+      assertEquals(new BytesRef(), dv.get(i));
+      assertFalse(docsWithField.get(i));
+    }
+
+    ireader.close();
+    directory.close();
+  }
+
   protected boolean codecAcceptsHugeBinaryValues(String field) {
     return true;
   }

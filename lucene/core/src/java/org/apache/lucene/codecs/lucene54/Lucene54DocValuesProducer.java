@@ -319,7 +319,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       // sparse bits need a bit more metadata
       entry.numDocsWithValue = meta.readVLong();
       final int blockShift = meta.readVInt();
-      entry.monotonicMeta = DirectMonotonicReader.loadMeta(meta, entry.numDocsWithValue + 1, blockShift);
+      entry.monotonicMeta = DirectMonotonicReader.loadMeta(meta, entry.numDocsWithValue, blockShift);
       ramBytesUsed.addAndGet(entry.monotonicMeta.ramBytesUsed());
       directAddressesMeta.put(info.name, entry.monotonicMeta);
     }

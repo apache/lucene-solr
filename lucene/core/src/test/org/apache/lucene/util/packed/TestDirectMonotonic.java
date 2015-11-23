@@ -32,6 +32,28 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestDirectMonotonic extends LuceneTestCase {
 
+  public void testEmpty() throws IOException {
+    Directory dir = newDirectory();
+    final int blockShift = TestUtil.nextInt(random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
+
+    final long dataLength;
+    try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
+        IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
+      DirectMonotonicWriter w = DirectMonotonicWriter.getInstance(metaOut, dataOut, 0, blockShift);
+      w.finish();
+      dataLength = dataOut.getFilePointer();
+    }
+
+    try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
+        IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
+      DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, 0, blockShift);
+      DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
+      // no exception
+    }
+
+    dir.close();
+  }
+
   public void testSimple() throws IOException {
     Directory dir = newDirectory();
     final int blockShift = 2;
@@ -100,38 +122,52 @@ public class TestDirectMonotonic extends LuceneTestCase {
   }
 
   public void testRandom() throws IOException {
-    Directory dir = newDirectory();
-    final int blockShift = TestUtil.nextInt(random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
-    final int numValues = TestUtil.nextInt(random(), 1, 1 << 20);
-    List<Long> actualValues = new ArrayList<>();
-    long previous = random().nextLong();
-    actualValues.add(previous);
-    for (int i = 1; i < numValues; ++i) {
-      previous += random().nextInt(1 << random().nextInt(20));
-      actualValues.add(previous);
-    }
-
-    final long dataLength;
-    try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
-        IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
-      DirectMonotonicWriter w = DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
-      for (long v : actualValues) {
-        w.add(v);
+    final int iters = atLeast(3);
+    for (int iter = 0; iter < iters; ++iter) {
+      Directory dir = newDirectory();
+      final int blockShift = TestUtil.nextInt(random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
+      final int maxNumValues = 1 << 20;
+      final int numValues;
+      if (random().nextBoolean()) {
+        // random number
+        numValues = TestUtil.nextInt(random(), 1, maxNumValues);
+      } else {
+        // multiple of the block size
+        final int numBlocks = TestUtil.nextInt(random(), 0, maxNumValues >>> blockShift);
+        numValues = TestUtil.nextInt(random(), 0, numBlocks) << blockShift;
       }
-      w.finish();
-      dataLength = dataOut.getFilePointer();
-    }
-
-    try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
-        IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
-      DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
-      LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
-      for (int i = 0; i < numValues; ++i) {
-        assertEquals(actualValues.get(i).longValue(), values.get(i));
+      List<Long> actualValues = new ArrayList<>();
+      long previous = random().nextLong();
+      if (numValues > 0) {
+        actualValues.add(previous);
       }
+      for (int i = 1; i < numValues; ++i) {
+        previous += random().nextInt(1 << random().nextInt(20));
+        actualValues.add(previous);
+      }
+  
+      final long dataLength;
+      try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
+          IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
+        DirectMonotonicWriter w = DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
+        for (long v : actualValues) {
+          w.add(v);
+        }
+        w.finish();
+        dataLength = dataOut.getFilePointer();
+      }
+  
+      try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
+          IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
+        DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
+        LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
+        for (int i = 0; i < numValues; ++i) {
+          assertEquals(actualValues.get(i).longValue(), values.get(i));
+        }
+      }
+  
+      dir.close();
     }
-
-    dir.close();
   }
 
 }
