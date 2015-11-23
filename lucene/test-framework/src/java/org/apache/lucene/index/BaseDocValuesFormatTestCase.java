@@ -3174,7 +3174,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
     SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
-      assertEquals(-1, dv.getOrd(i));
+      if (codecSupportsDocsWithField()) {
+        assertEquals(-1, dv.getOrd(i));
+      } else {
+        assertEquals(0, dv.getOrd(i));
+        assertEquals(new BytesRef(), dv.lookupOrd(0));
+      }
     }
 
     ireader.close();
@@ -3183,6 +3188,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
   // same as testSortedSetMergeAwayAllValues but on more than 1024 docs to have sparse encoding on
   public void testSortedSetMergeAwayAllValuesLargeSegment() throws IOException {
+    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -3241,7 +3247,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Bits docsWithField = getOnlySegmentReader(ireader).getDocsWithField("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
       assertEquals(0, dv.get(i));
-      assertFalse(docsWithField.get(i));
+      if (codecSupportsDocsWithField()) {
+        assertFalse(docsWithField.get(i));
+      } else {
+        assertTrue(docsWithField.get(i));
+      }
     }
 
     ireader.close();
@@ -3250,6 +3260,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
   // same as testSortedNumericMergeAwayAllValues but on more than 1024 docs to have sparse encoding on
   public void testSortedNumericMergeAwayAllValuesLargeSegment() throws IOException {
+    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -3308,7 +3319,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Bits docsWithField = getOnlySegmentReader(ireader).getDocsWithField("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
       assertEquals(new BytesRef(), dv.get(i));
-      assertFalse(docsWithField.get(i));
+      if (codecSupportsDocsWithField()) {
+        assertFalse(docsWithField.get(i));
+      } else {
+        assertTrue(docsWithField.get(i));
+      }
     }
 
     ireader.close();
