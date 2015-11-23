@@ -401,6 +401,8 @@ Bug Fixes
 * SOLR-5971: Fix error 'Illegal character in query' when proxying request.
   (Uwe Schindler, Ishan Chattopadhyaya, Eric Bus)
 
+* SOLR-8307: Fix XXE vulnerability in MBeansHandler "diff" feature (Erik Hatcher)
+
 Optimizations
 ----------------------
 
