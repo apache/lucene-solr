@@ -101,10 +101,9 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
     params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=0 mintf=1}26");
     params.set(CommonParams.DEBUG, "true");
     assertQ(req(params),
-        "//result/doc[1]/int[@name='id'][.='26']",
-        "//result/doc[2]/int[@name='id'][.='29']",
-        "//result/doc[3]/int[@name='id'][.='27']",
-        "//result/doc[4]/int[@name='id'][.='28']"
+        "//result/doc[1]/int[@name='id'][.='29']",
+        "//result/doc[2]/int[@name='id'][.='27']",
+        "//result/doc[3]/int[@name='id'][.='28']"
     );
 
     params = new ModifiableSolrParams();
@@ -118,14 +117,14 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
     params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=3 mintf=1 mindf=1}26");
     params.set(CommonParams.DEBUG, "true");
     assertQ(req(params),
-        "//result[@numFound='4']"
+        "//result[@numFound='3']"
     );
 
     params = new ModifiableSolrParams();
     params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=4 mintf=1 mindf=1}26");
     params.set(CommonParams.DEBUG, "true");
     assertQ(req(params),
-        "//result[@numFound='1']"
+        "//result[@numFound='0']"
     );
   }
 

@@ -18,6 +18,9 @@ package org.apache.solr.search.mlt;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -32,9 +35,11 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -55,6 +60,7 @@ public class SimpleMLTQParser extends QParser {
 
     SolrIndexSearcher searcher = req.getSearcher();
     Query docIdQuery = createIdQuery(defaultField, uniqueValue);
+    Map<String,Float> boostFields = new HashMap<>();
 
     try {
       TopDocs td = searcher.search(docIdQuery, 1);
@@ -84,6 +90,11 @@ public class SimpleMLTQParser extends QParser {
 
       if(localParams.get("maxdf") != null) {
         mlt.setMaxDocFreq(localParams.getInt("maxdf"));
+      }
+
+      if(localParams.get("boost") != null) {
+        mlt.setBoost(localParams.getBool("boost"));
+        boostFields = SolrPluginUtils.parseFieldBoosts(qf);
       }
       
       ArrayList<String> fields = new ArrayList();
@@ -115,8 +126,35 @@ public class SimpleMLTQParser extends QParser {
       mlt.setFieldNames(fields.toArray(new String[fields.size()]));
       mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
-      return mlt.like(scoreDocs[0].doc);
+      Query rawMLTQuery = mlt.like(scoreDocs[0].doc);
+      BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
 
+      if (boostFields.size() > 0) {
+        BooleanQuery.Builder newQ = new BooleanQuery.Builder();
+        newQ.setDisableCoord(boostedMLTQuery.isCoordDisabled());
+        newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
+
+        for (BooleanClause clause : boostedMLTQuery) {
+          Query q = clause.getQuery();
+          Float b = boostFields.get(((TermQuery) q).getTerm().field());
+
+          if (b != null) {
+            q = new BoostQuery(q, b);
+          }
+
+          newQ.add(q, clause.getOccur());
+        }
+
+        boostedMLTQuery = newQ.build();
+      }
+
+      // exclude current document from results
+      BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
+      realMLTQuery.setDisableCoord(true);
+      realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
+      realMLTQuery.add(docIdQuery, BooleanClause.Occur.MUST_NOT);
+
+      return realMLTQuery.build();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Error completing MLT request" + e.getMessage());
