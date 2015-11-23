@@ -245,6 +245,9 @@ New Features
 * SOLR-8329: SchemaSimilarityFactory now supports a 'defaultSimFromFieldType' init option for using
   a fieldType name to identify which Similarity to use as a default. (hossman)
 
+* SOLR-7912: Add boost support, and also exclude the queried document in MoreLikeThis QParser
+  (Jens Wille via Anshum Gupta)
+
 Bug Fixes
 ----------------------
 

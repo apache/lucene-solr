@@ -109,7 +109,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     params.set(CommonParams.Q, "{!mlt qf=lowerfilt}17");
     QueryResponse queryResponse = cloudClient.query(params);
     SolrDocumentList solrDocuments = queryResponse.getResults();
-    int[] expectedIds = new int[]{17, 7, 13, 14, 15, 16, 20, 22, 24, 32};
+    int[] expectedIds = new int[]{7, 13, 14, 15, 16, 20, 22, 24, 32, 9};
     int[] actualIds = new int[10];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
@@ -122,7 +122,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     params.set(CommonParams.DEBUG, "true");
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{3, 29, 27, 26, 28};
+    expectedIds = new int[]{29, 27, 26, 28};
     actualIds = new int[solrDocuments.size()];
     i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
@@ -130,30 +130,27 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     }
     assertArrayEquals(expectedIds, actualIds);
 
-    String expectedQueryString = "lowerfilt:bmw lowerfilt:usa";
+    String[] expectedQueryStrings = new String[]{
+      "(+(lowerfilt:bmw lowerfilt:usa) -id:3)/no_coord",
+      "(+(lowerfilt:usa lowerfilt:bmw) -id:3)/no_coord"};
 
-    ArrayList<String> actualParsedQueries;
+    String[] actualParsedQueries;
     
     if(queryResponse.getDebugMap().get("parsedquery") instanceof  String) {
-      actualParsedQueries = new ArrayList();
-      actualParsedQueries.add((String) queryResponse.getDebugMap().get("parsedquery"));
+      actualParsedQueries = new String[]{(String) queryResponse.getDebugMap().get("parsedquery")};
     } else {
-      actualParsedQueries = (ArrayList<String>) queryResponse
-          .getDebugMap().get("parsedquery");
+      actualParsedQueries = ((ArrayList<String>) queryResponse
+          .getDebugMap().get("parsedquery")).toArray(new String[0]);
+      Arrays.sort(actualParsedQueries);
     }
-      
-    for (int counter = 0; counter < actualParsedQueries.size(); counter++) {
-      assertTrue("Parsed queries aren't equal",
-          compareParsedQueryStrings(expectedQueryString,
-              actualParsedQueries.get(counter)));
-    }
+    assertArrayEquals(expectedQueryStrings, actualParsedQueries);
 
     params = new ModifiableSolrParams();
     params.set(CommonParams.Q, "{!mlt qf=lowerfilt,lowerfilt1 mindf=0 mintf=1}26");
     params.set(CommonParams.DEBUG, "true");
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{26, 27, 3, 29, 28};
+    expectedIds = new int[]{27, 3, 29, 28};
     actualIds = new int[solrDocuments.size()];
     i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
@@ -162,21 +159,18 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     
     assertArrayEquals(expectedIds, actualIds);
 
-    expectedQueryString = "lowerfilt:bmw lowerfilt:usa lowerfilt:328i";
+    expectedQueryStrings = new String[]{
+      "(+(lowerfilt:bmw lowerfilt:usa) -id:26)/no_coord",
+      "(+(lowerfilt:usa lowerfilt:bmw lowerfilt:328i) -id:26)/no_coord"};
 
     if(queryResponse.getDebugMap().get("parsedquery") instanceof  String) {
-      actualParsedQueries = new ArrayList();
-      actualParsedQueries.add((String) queryResponse.getDebugMap().get("parsedquery"));
+      actualParsedQueries = new String[]{(String) queryResponse.getDebugMap().get("parsedquery")};
     } else {
-      actualParsedQueries = (ArrayList<String>) queryResponse
-          .getDebugMap().get("parsedquery");
+      actualParsedQueries = ((ArrayList<String>) queryResponse
+          .getDebugMap().get("parsedquery")).toArray(new String[0]);
+      Arrays.sort(actualParsedQueries);
     }
-      
-    for (int counter = 0; counter < actualParsedQueries.size(); counter++) {
-      assertTrue("Parsed queries aren't equal",
-          compareParsedQueryStrings(expectedQueryString,
-              actualParsedQueries.get(counter)));
-    }
+    assertArrayEquals(expectedQueryStrings, actualParsedQueries);
 
     params = new ModifiableSolrParams();
     // Test out a high value of df and make sure nothing matches.
@@ -200,7 +194,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     params.set(CommonParams.DEBUG, "true");
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();
-    assertEquals("Expected to match 4 documents with a minwl of 3 but found more", 5, solrDocuments.size());
+    assertEquals("Expected to match 4 documents with a minwl of 3 but found more", 4, solrDocuments.size());
 
     // Assert that {!mlt}id does not throw an exception i.e. implicitly, only fields that are stored + have explicit
     // analyzer are used for MLT Query construction.
@@ -210,7 +204,7 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     queryResponse = queryServer(params);
     solrDocuments = queryResponse.getResults();
     actualIds = new int[solrDocuments.size()];
-    expectedIds = new int[]{13, 14, 15, 16, 20, 22, 24, 32, 18, 19};
+    expectedIds = new int[]{13, 14, 15, 16, 22, 24, 32, 18, 19, 21};
     i = 0;
     StringBuilder sb = new StringBuilder();
     for (SolrDocument solrDocument : solrDocuments) {
