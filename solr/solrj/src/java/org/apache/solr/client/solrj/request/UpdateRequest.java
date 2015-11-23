@@ -17,16 +17,6 @@
 
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.XML;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -38,7 +28,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
+
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.XML;
 
 /**
  * 
@@ -88,25 +89,50 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   // ---------------------------------------------------------------------------
   // ---------------------------------------------------------------------------
-  
+
+  /**
+   * Add a SolrInputDocument to this request
+   *
+   * @throws NullPointerException if the document is null
+   */
   public UpdateRequest add(final SolrInputDocument doc) {
+    Objects.requireNonNull(doc, "Cannot add a null SolrInputDocument");
     if (documents == null) {
       documents = new LinkedHashMap<>();
     }
     documents.put(doc, null);
     return this;
   }
-  
+
+  /**
+   * Add a SolrInputDocument to this request
+   * @param doc the document
+   * @param overwrite true if the document should overwrite existing docs with the same id
+   * @throws NullPointerException if the document is null
+   */
   public UpdateRequest add(final SolrInputDocument doc, Boolean overwrite) {
     return add(doc, null, overwrite);
   }
-  
+
+  /**
+   * Add a SolrInputDocument to this request
+   * @param doc the document
+   * @param commitWithin the time horizon by which the document should be committed (in ms)
+   * @throws NullPointerException if the document is null
+   */
   public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin) {
     return add(doc, commitWithin, null);
   }
-  
-  public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin,
-      Boolean overwrite) {
+
+  /**
+   * Add a SolrInputDocument to this request
+   * @param doc the document
+   * @param commitWithin the time horizon by which the document should be committed (in ms)
+   * @param overwrite true if the document should overwrite existing docs with the same id
+   * @throws NullPointerException if the document is null
+   */
+  public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin, Boolean overwrite) {
+    Objects.requireNonNull(doc, "Cannot add a null SolrInputDocument");
     if (documents == null) {
       documents = new LinkedHashMap<>();
     }
@@ -118,12 +144,18 @@ public class UpdateRequest extends AbstractUpdateRequest {
     
     return this;
   }
-  
+
+  /**
+   * Add a collection of SolrInputDocuments to this request
+   *
+   * @throws NullPointerException if any of the documents in the collection are null
+   */
   public UpdateRequest add(final Collection<SolrInputDocument> docs) {
     if (documents == null) {
       documents = new LinkedHashMap<>();
     }
     for (SolrInputDocument doc : docs) {
+      Objects.requireNonNull(doc, "Cannot add a null SolrInputDocument");
       documents.put(doc, null);
     }
     return this;

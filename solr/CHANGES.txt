@@ -554,6 +554,9 @@ Other Changes
 * SOLR-8303: CustomBufferedIndexInput now includes resource description when
   throwing EOFException.  (Mike Drob via Uwe Schindler)
 
+* SOLR-8194: Improve error reporting for null documents in UpdateRequest (Markus
+  Jelsma, Alan Woodward)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
