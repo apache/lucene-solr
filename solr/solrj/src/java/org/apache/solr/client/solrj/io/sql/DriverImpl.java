@@ -18,22 +18,26 @@ package org.apache.solr.client.solrj.io.sql;
  */
 
 
-import java.net.URLDecoder;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- *  Get a Connection with with a url and properties.
+ * Get a Connection with with a url and properties.
  *
- *  jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
+ * jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
  **/
-
 
 public class DriverImpl implements Driver {
 
@@ -50,55 +54,26 @@ public class DriverImpl implements Driver {
       return null;
     }
 
-    StringBuilder buf = new StringBuilder(url);
-    boolean needsAmp = true;
-    if(!url.contains("?")) {
-      buf.append("?");
-      needsAmp = false;
+    URI uri = processUrl(url);
+
+    loadParams(uri, props);
+
+    if (!props.containsKey("collection")) {
+      throw new SQLException("The connection url has no connection properties. At a mininum the collection must be specified.");
+    }
+    String collection = (String) props.remove("collection");
+
+    if (!props.containsKey("aggregationMode")) {
+      props.setProperty("aggregationMode", "facet");
     }
 
-    for(Object key : props.keySet()) {
-      Object value = props.get(key);
-      if(needsAmp) {
-        buf.append("&");
-      }
-      buf.append(key.toString()).append("=").append(value);
-      needsAmp = true;
-    }
+    String zkHost = uri.getAuthority() + uri.getPath();
 
-    return connect(buf.toString());
+    return new ConnectionImpl(zkHost, collection, props);
   }
 
   public Connection connect(String url) throws SQLException {
-
-    if(!acceptsURL(url)) {
-      return null;
-    }
-
-    String[] parts = url.split("://", 0);
-
-    if(parts.length < 2) {
-      throw new SQLException("The zkHost must start with ://");
-    }
-
-    String zkUrl  = parts[1];
-    String[] zkUrlParts = zkUrl.split("\\?");
-
-    if(zkUrlParts.length < 2) {
-      throw new SQLException("The connection url has no connection properties. At a mininum the collection must be specified.");
-    }
-
-    String connectionProps = zkUrlParts[1];
-    String zkHost = zkUrlParts[0];
-    Properties props = new Properties();
-    loadParams(connectionProps, props);
-    String collection = (String)props.remove("collection");
-
-    if(!props.containsKey("aggregationMode")) {
-      props.setProperty("aggregationMode","facet");
-    }
-
-    return new ConnectionImpl(zkHost, collection, props);
+    return connect(url, new Properties());
   }
 
   public int getMajorVersion() {
@@ -110,11 +85,7 @@ public class DriverImpl implements Driver {
   }
 
   public boolean acceptsURL(String url) {
-    if(url.startsWith("jdbc:solr")) {
-      return true;
-    } else {
-      return false;
-    }
+    return url != null && url.startsWith("jdbc:solr");
   }
 
   public boolean jdbcCompliant() {
@@ -132,17 +103,29 @@ public class DriverImpl implements Driver {
     return null;
   }
 
-  private void loadParams(String params, Properties props) throws SQLException {
+  protected URI processUrl(String url) throws SQLException {
+    URI uri;
     try {
-      String[] pairs = params.split("&");
-      for (String pair : pairs) {
-        String[] keyValue = pair.split("=");
-        String key = URLDecoder.decode(keyValue[0], "UTF-8");
-        String value = URLDecoder.decode(keyValue[1], "UTF-8");
-        props.put(key, value);
-      }
-    } catch(Exception e) {
+      uri = new URI(url.replaceFirst("jdbc:", ""));
+    } catch (URISyntaxException e) {
       throw new SQLException(e);
+    }
+
+    if (uri.getAuthority() == null) {
+      throw new SQLException("The zkHost must not be null");
+    }
+
+    return uri;
+  }
+
+  private void loadParams(URI uri, Properties props) throws SQLException {
+    List<NameValuePair> parsedParams = URLEncodedUtils.parse(uri, "UTF-8");
+    for (NameValuePair pair : parsedParams) {
+      if (pair.getValue() != null) {
+        props.put(pair.getName(), pair.getValue());
+      } else {
+        props.put(pair.getName(), "");
+      }
     }
   }
 }

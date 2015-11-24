@@ -19,17 +19,15 @@ package org.apache.solr.client.solrj.io.sql;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.ResultSet;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -37,17 +35,16 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
- *  SolrStream will get fully exercised through these tests.
- *
+ * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
+ * SolrStream will get fully exercised through these tests.
  **/
 
 @Slow
-@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class JdbcTest extends AbstractFullDistribZkTestBase {
 
   private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();
-  private StreamFactory streamFactory;
+
 
   static {
     schemaString = "schema-sql.xml";
@@ -55,7 +52,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeSuperClass() {
-    AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
+    AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME);
   }
 
   @AfterClass
@@ -67,25 +64,17 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     return "solrconfig-sql.xml";
   }
 
-
   @Override
   public String getSolrHome() {
     return SOLR_HOME;
   }
 
-  public static String SOLR_HOME() {
-    return SOLR_HOME;
+
+  @Override
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
   }
 
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
-    //System.setProperty("export.test", "true");
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
 
   @Override
   @After
@@ -94,14 +83,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     resetExceptionIgnores();
   }
 
-  public JdbcTest() {
-    super();
-    sliceCount = 2;
-
-
-  }
-
   @Test
+  @ShardsFixed(num = 2)
   public void doTest() throws Exception {
 
     waitForRecoveriesToFinish(false);
@@ -183,8 +166,6 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     con.close();
 
     //Test facet aggregation
-
-
     props = new Properties();
     props.put("aggregationMode", "facet");
     con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props);
@@ -208,9 +189,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     stmt.close();
     con.close();
 
-
     //Test map / reduce aggregation
-
     props = new Properties();
     props.put("aggregationMode", "map_reduce");
     props.put("numWorkers", "2");
@@ -234,10 +213,9 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     con.close();
 
     //Test params on the url
-
     con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1&aggregationMode=map_reduce&numWorkers=2");
 
-    Properties p = ((ConnectionImpl)con).props;
+    Properties p = ((ConnectionImpl) con).props;
 
     assert(p.getProperty("aggregationMode").equals("map_reduce"));
     assert(p.getProperty("numWorkers").equals("2"));
@@ -260,13 +238,66 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     stmt.close();
     con.close();
 
-    del("*:*");
-    commit();
-  }
+    // Test JDBC paramters in URL
+    con = DriverManager.getConnection(
+        "jdbc:solr://" + zkHost + "?collection=collection1&username=&password=&testKey1=testValue&testKey2");
 
-  @Override
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = getDoc(fields);
-    indexDoc(doc);
+    p = ((ConnectionImpl) con).props;
+    assert(p.getProperty("username").equals(""));
+    assert(p.getProperty("password").equals(""));
+    assert(p.getProperty("testKey1").equals("testValue"));
+    assert(p.getProperty("testKey2").equals(""));
+
+    stmt = con.createStatement();
+    rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s order by sum(a_f) desc");
+
+    assert(rs.next());
+    assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getDouble("sum(a_f)") == 26);
+
+    assert(rs.next());
+    assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getDouble("sum(a_f)") == 18);
+
+    assert(rs.next());
+    assert(rs.getString("a_s").equals("hello4"));
+    assert(rs.getDouble("sum(a_f)") == 11);
+
+    stmt.close();
+    con.close();
+
+    // Test JDBC paramters in properties
+    Properties providedProperties = new Properties();
+    providedProperties.put("collection", "collection1");
+    providedProperties.put("username", "");
+    providedProperties.put("password", "");
+    providedProperties.put("testKey1", "testValue");
+    providedProperties.put("testKey2", "");
+
+    con = DriverManager.getConnection("jdbc:solr://" + zkHost, providedProperties);
+
+    p = ((ConnectionImpl) con).props;
+    assert(p.getProperty("username").equals(""));
+    assert(p.getProperty("password").equals(""));
+    assert(p.getProperty("testKey1").equals("testValue"));
+    assert(p.getProperty("testKey2").equals(""));
+
+    stmt = con.createStatement();
+    rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s order by sum(a_f) desc");
+
+    assert(rs.next());
+    assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getDouble("sum(a_f)") == 26);
+
+    assert(rs.next());
+    assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getDouble("sum(a_f)") == 18);
+
+    assert(rs.next());
+    assert(rs.getString("a_s").equals("hello4"));
+    assert(rs.getDouble("sum(a_f)") == 11);
+
+    stmt.close();
+    con.close();
   }
 }
