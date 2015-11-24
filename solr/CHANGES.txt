@@ -574,6 +574,9 @@ Other Changes
 
 * SOLR-8277: (Search|Top)GroupsFieldCommand tweaks (Christine Poerschke)
 
+* SOLR-8299: ConfigSet DELETE operation no longer allows deletion of config sets that
+  are currently in use by other collections (Anshum Gupta)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
