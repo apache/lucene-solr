@@ -117,7 +117,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     assertFalse(t_web.typeSupported("text/foo"));
 
     t_web.fileTypes = "doc,xls,ppt";
-    t_web.globFileFilter = t_web.getFileFilterFromFileTypes(t_web.fileTypes);
+    t_web.fileFilter = t_web.getFileFilterFromFileTypes(t_web.fileTypes);
     assertFalse(t_web.typeSupported("application/pdf"));
     assertTrue(t_web.typeSupported("application/msword"));
   }
