@@ -71,7 +71,9 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
         int fieldNumber = indexIn.readVInt();
         long fp = indexIn.readVLong();
         dataIn.seek(fp);
-        readers.put(fieldNumber, new BKDReader(dataIn));
+        BKDReader reader = new BKDReader(dataIn);
+        readers.put(fieldNumber, reader);
+        //reader.verify(readState.segmentInfo.maxDoc());
       }
       CodecUtil.checkFooter(indexIn);
       success = true;

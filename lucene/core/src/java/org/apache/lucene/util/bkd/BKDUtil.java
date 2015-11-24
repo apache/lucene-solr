@@ -69,8 +69,12 @@ public final class BKDUtil {
 
   /** Returns positive int if a &gt; b, negative int if a &lt; b and 0 if a == b */
   public static int compare(int bytesPerDim, byte[] a, int aIndex, byte[] b, int bIndex) {
+    assert aIndex >= 0;
+    assert bIndex >= 0;
+    int aOffset = aIndex*bytesPerDim;
+    int bOffset = bIndex*bytesPerDim;
     for(int i=0;i<bytesPerDim;i++) {
-      int cmp = (a[aIndex*bytesPerDim+i]&0xff) - (b[bIndex*bytesPerDim+i]&0xff);
+      int cmp = (a[aOffset+i]&0xff) - (b[bOffset+i]&0xff);
       if (cmp != 0) {
         return cmp;
       }

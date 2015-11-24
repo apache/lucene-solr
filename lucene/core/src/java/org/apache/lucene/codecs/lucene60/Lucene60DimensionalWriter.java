@@ -19,7 +19,9 @@ package org.apache.lucene.codecs.lucene60;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -28,10 +30,13 @@ import org.apache.lucene.codecs.DimensionalWriter;
 import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
 import org.apache.lucene.index.DimensionalValues.Relation;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Writes dimensional values */
@@ -104,6 +109,61 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
     }
   }
 
+  @Override
+  public void merge(MergeState mergeState) throws IOException {
+    for(DimensionalReader reader : mergeState.dimensionalReaders) {
+      if (reader instanceof Lucene60DimensionalReader == false) {
+        // We can only bulk merge when all to-be-merged segments use our format:
+        super.merge(mergeState);
+        return;
+      }
+    }
+
+    for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
+      if (fieldInfo.getDimensionCount() != 0) {
+        if (fieldInfo.getDimensionCount() == 1) {
+          //System.out.println("MERGE: field=" + fieldInfo.name);
+          // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
+          // already sorted incoming segments, instead of trying to sort all points again as if
+          // we were simply reindexing them:
+          try (BKDWriter writer = new BKDWriter(writeState.directory,
+                                                writeState.segmentInfo.name,
+                                                fieldInfo.getDimensionCount(),
+                                                fieldInfo.getDimensionNumBytes(),
+                                                maxPointsInLeafNode,
+                                                maxMBSortInHeap)) {
+            List<BKDReader> bkdReaders = new ArrayList<>();
+            List<MergeState.DocMap> docMaps = new ArrayList<>();
+            List<Integer> docIDBases = new ArrayList<>();
+            for(int i=0;i<mergeState.dimensionalReaders.length;i++) {
+              DimensionalReader reader = mergeState.dimensionalReaders[i];
+
+              Lucene60DimensionalReader reader60 = (Lucene60DimensionalReader) reader;
+              if (reader60 != null) {
+                // TODO: I could just use the merged fieldInfo.number instead of resolving to this
+                // reader's FieldInfo, right?  Field numbers are always consistent across segments,
+                // since when?
+                FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
+                FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
+                if (readerFieldInfo != null) {
+                  BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
+                  if (bkdReader != null) {
+                    docIDBases.add(mergeState.docBase[i]);
+                    bkdReaders.add(bkdReader);
+                    docMaps.add(mergeState.docMaps[i]);
+                  }
+                }
+              }
+            }
+
+            indexFPs.put(fieldInfo.name, writer.merge(dataOut, docMaps, bkdReaders, docIDBases));
+          }
+        } else {
+          mergeOneField(mergeState, fieldInfo);
+        }
+      }
+    } 
+  }  
 
   @Override
   public void close() throws IOException {

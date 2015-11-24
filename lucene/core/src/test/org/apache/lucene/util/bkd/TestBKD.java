@@ -114,7 +114,7 @@ public class TestBKD extends LuceneTestCase {
     try (Directory dir = getDirectory(numDocs)) {
       int numDims = TestUtil.nextInt(random(), 1, 5);
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
-      float maxMB = (float) 0.1 + (3*random().nextFloat());
+      float maxMB = (float) 3.0 + (3*random().nextFloat());
       BKDWriter w = new BKDWriter(dir, "tmp", numDims, 4, maxPointsInLeafNode, maxMB);
 
       if (VERBOSE) {
@@ -238,7 +238,7 @@ public class TestBKD extends LuceneTestCase {
       int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
       int numDims = TestUtil.nextInt(random(), 1, 5);
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
-      float maxMB = (float) 0.1 + (3*random().nextFloat());
+      float maxMB = (float) 3.0 + (3*random().nextFloat());
       BKDWriter w = new BKDWriter(dir, "tmp", numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
       BigInteger[][] docs = new BigInteger[numDocs][];
 
@@ -425,6 +425,7 @@ public class TestBKD extends LuceneTestCase {
   private void doTestRandomBinary(int count) throws Exception {
     int numDocs = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
+
     int numDims = TestUtil.nextInt(random(), 1, 5);
 
     byte[][][] docValues = new byte[numDocs][][];
@@ -597,21 +598,13 @@ public class TestBKD extends LuceneTestCase {
       assertEquals("a < b", iae.getMessage());
     }
   }
-  
+
   /** docIDs can be null, for the single valued case, else it maps value to docID */
   private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim) throws Exception {
     try (Directory dir = getDirectory(docValues.length)) {
-      while (true) {
-        int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 100);
-        double maxMB = (float) 0.1 + (3*random().nextDouble());
-        try {
-          verify(dir, docValues, docIDs, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
-          return;
-        } catch (IllegalArgumentException iae) {
-          // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry
-          assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
-        }
-      }
+      int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 1000);
+      double maxMB = (float) 3.0 + (3*random().nextDouble());
+      verify(dir, docValues, docIDs, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
     }
   }
 
@@ -620,10 +613,32 @@ public class TestBKD extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: numValues=" + numValues + " numDims=" + numDims + " numBytesPerDim=" + numBytesPerDim + " maxPointsInLeafNode=" + maxPointsInLeafNode + " maxMB=" + maxMB);
     }
-    long indexFP;
-    try (BKDWriter w = new BKDWriter(dir, "tmp", numDims, numBytesPerDim, maxPointsInLeafNode, maxMB)) {
+
+    List<Long> toMerge = null;
+    List<Integer> docIDBases = null;
+    int seg = 0;
+
+    BKDWriter w = new BKDWriter(dir, "_" + seg, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
+    IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+    IndexInput in = null;
+
+    boolean success = false;
+
+    try {
 
       byte[] scratch = new byte[numBytesPerDim*numDims];
+      int lastDocIDBase = 0;
+      boolean useMerge = numDims == 1 && numValues >= 10 && random().nextBoolean();
+      int valuesInThisSeg;
+      if (useMerge) {
+        // Sometimes we will call merge with a single segment:
+        valuesInThisSeg = TestUtil.nextInt(random(), numValues/10, numValues);
+      } else {
+        valuesInThisSeg = 0;
+      }
+
+      int segCount = 0;
+
       for(int ord=0;ord<numValues;ord++) {
         int docID;
         if (docIDs == null) {
@@ -632,7 +647,7 @@ public class TestBKD extends LuceneTestCase {
           docID = docIDs[ord];
         }
         if (VERBOSE) {
-          System.out.println("  ord=" + ord + " docID=" + docID);
+          System.out.println("  ord=" + ord + " docID=" + docID + " lastDocIDBase=" + lastDocIDBase);
         }
         for(int dim=0;dim<numDims;dim++) {
           if (VERBOSE) {
@@ -640,21 +655,56 @@ public class TestBKD extends LuceneTestCase {
           }
           System.arraycopy(docValues[ord][dim], 0, scratch, dim*numBytesPerDim, numBytesPerDim);
         }
-        w.add(scratch, docID);
-      }
+        w.add(scratch, docID-lastDocIDBase);
 
-      boolean success = false;
-      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        indexFP = w.finish(out);
-        success = true;
-      } finally {
-        if (success == false) {
-          IOUtils.deleteFilesIgnoringExceptions(dir, "bkd");
+        segCount++;
+
+        if (useMerge && segCount == valuesInThisSeg) {
+          if (toMerge == null) {
+            toMerge = new ArrayList<>();
+            docIDBases = new ArrayList<>();
+          }
+          docIDBases.add(lastDocIDBase);
+          toMerge.add(w.finish(out));
+          valuesInThisSeg = TestUtil.nextInt(random(), numValues/10, numValues/2);
+          segCount = 0;
+
+          seg++;
+          maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 1000);
+          maxMB = (float) 3.0 + (3*random().nextDouble());
+          w = new BKDWriter(dir, "_" + seg, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
+          lastDocIDBase = docID;
         }
       }
-    }
 
-    try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
+      long indexFP;
+
+      if (toMerge != null) {
+        System.out.println("merge " + toMerge.size());
+        if (segCount > 0) {
+          docIDBases.add(lastDocIDBase);
+          toMerge.add(w.finish(out));
+        }
+        out.close();
+        in = dir.openInput("bkd", IOContext.DEFAULT);
+        seg++;
+        w = new BKDWriter(dir, "_" + seg, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
+        List<BKDReader> readers = new ArrayList<>();
+        for(long fp : toMerge) {
+          in.seek(fp);
+          readers.add(new BKDReader(in));
+        }
+        out = dir.createOutput("bkd2", IOContext.DEFAULT);
+        indexFP = w.merge(out, null, readers, docIDBases);
+        out.close();
+        in.close();
+        in = dir.openInput("bkd2", IOContext.DEFAULT);
+      } else {
+        indexFP = w.finish(out);
+        out.close();
+        in = dir.openInput("bkd", IOContext.DEFAULT);
+      }
+
       in.seek(indexFP);
       BKDReader r = new BKDReader(in);
 
@@ -751,8 +801,17 @@ public class TestBKD extends LuceneTestCase {
           assertEquals("docID=" + docID, expected.get(docID), hits.get(docID));
         }
       }
-    } finally {
+      in.close();
       dir.deleteFile("bkd");
+      if (toMerge != null) {
+        dir.deleteFile("bkd2");
+      }
+      success = true;
+    } finally {
+      if (success == false) {
+        IOUtils.closeWhileHandlingException(w, in, out);
+        IOUtils.deleteFilesIgnoringExceptions(dir, "bkd", "bkd2");
+      }
     }
   }
 

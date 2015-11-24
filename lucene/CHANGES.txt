@@ -89,6 +89,11 @@ Optimizations
   each leaf block in the default codec, to reduce the index
   size (Mike McCandless)
 
+* LUCENE-6901: Optimize dimensional values indexing: use faster
+  IntroSorter instead of InPlaceMergeSorter, and specialize 1D
+  merging to merge sort the already sorted segments instead of
+  re-indexing (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
