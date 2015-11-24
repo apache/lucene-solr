@@ -87,6 +87,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -1052,11 +1053,30 @@ public class IndexFetcher {
   private boolean moveTlogFiles(File tmpTlogDir) {
     UpdateLog ulog = solrCore.getUpdateHandler().getUpdateLog();
 
-    // reset the update log before copying the new tlog directory, it will be reinitialized
-    // during the core reload
-    ((CdcrUpdateLog) ulog).reset();
-    // try to move the temp tlog files to the tlog directory
-    if (!copyTmpTlogFiles2Tlog(tmpTlogDir)) return false;
+    VersionInfo vinfo = ulog.getVersionInfo();
+    vinfo.blockUpdates(); // block updates until the new update log is initialised
+    try {
+      // reset the update log before copying the new tlog directory
+      CdcrUpdateLog.BufferedUpdates bufferedUpdates = ((CdcrUpdateLog) ulog).resetForRecovery();
+      // try to move the temp tlog files to the tlog directory
+      if (!copyTmpTlogFiles2Tlog(tmpTlogDir)) return false;
+      // reinitialise the update log and copy the buffered updates
+      if (bufferedUpdates.tlog != null) {
+        // map file path to its new backup location
+        File parentDir = FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getLogDir()).getParent().toFile();
+        File backupTlogDir = new File(parentDir, tmpTlogDir.getName());
+        bufferedUpdates.tlog = new File(backupTlogDir, bufferedUpdates.tlog.getName());
+      }
+      // init the update log with the new set of tlog files, and copy the buffered updates
+      ((CdcrUpdateLog) ulog).initForRecovery(bufferedUpdates.tlog, bufferedUpdates.offset);
+    }
+    catch (Exception e) {
+      LOG.error("Unable to copy tlog files", e);
+      return false;
+    }
+    finally {
+      vinfo.unblockUpdates();
+    }
     return true;
   }
 

@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -27,8 +28,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -239,13 +247,23 @@ public class CdcrUpdateLog extends UpdateLog {
   }
 
   /**
-   * expert: Reset the update log before initialisation. This is needed by the IndexFetcher during a
+   * expert: Reset the update log before initialisation. This is called by
+   * {@link org.apache.solr.handler.IndexFetcher#moveTlogFiles(File)} during a
    * a Recovery operation in order to re-initialise the UpdateLog with a new set of tlog files.
+   * @see #initForRecovery(File, long)
    */
-  public void reset() {
-    synchronized (this) {
+  public BufferedUpdates resetForRecovery() {
+    synchronized (this) { // since we blocked updates in IndexFetcher, this synchronization shouldn't strictly be necessary.
+      // If we are buffering, we need to return the related information to the index fetcher
+      // for properly initialising the new update log - SOLR-8263
+      BufferedUpdates bufferedUpdates = new BufferedUpdates();
+      if (state == State.BUFFERING && tlog != null) {
+        bufferedUpdates.tlog = tlog.tlogFile; // file to keep
+        bufferedUpdates.offset = this.recoveryInfo.positionOfStart;
+      }
+
       // Close readers
-      for (CdcrLogReader reader : new ArrayList<>(logPointers.keySet())) {
+      for (CdcrLogReader reader : logPointers.keySet()) {
         reader.close();
       }
       logPointers.clear();
@@ -268,13 +286,163 @@ public class CdcrUpdateLog extends UpdateLog {
       if (prevMap != null) prevMap.clear();
       if (prevMap2 != null) prevMap2.clear();
 
+      tlogFiles = null;
       numOldRecords = 0;
 
       oldDeletes.clear();
       deleteByQueries.clear();
 
-      // reset lastDataDir for triggering full #init()
-      lastDataDir = null;
+      return bufferedUpdates;
+    }
+  }
+
+  public static class BufferedUpdates {
+    public File tlog;
+    public long offset;
+  }
+
+  /**
+   * <p>
+   *   expert: Initialise the update log with a tlog file containing buffered updates. This is called by
+   *   {@link org.apache.solr.handler.IndexFetcher#moveTlogFiles(File)} during a Recovery operation.
+   * </p>
+   *
+   *   This is mainly a copy of the original {@link UpdateLog#init(UpdateHandler, SolrCore)} method, but modified
+   *   to:
+   *   <ul>
+   *     <li>preserve the same {@link VersionInfo} instance in order to not "unblock" updates, since the
+   *     {@link org.apache.solr.handler.IndexFetcher#moveTlogFiles(File)} acquired a write lock from this instance.</li>
+   *     <li>copy the buffered updates.</li>
+   *   </ul>
+   *
+   * @see #resetForRecovery()
+   */
+  public void initForRecovery(File bufferedTlog, long offset) {
+    tlogFiles = getLogList(tlogDir);
+    id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
+
+    if (debug) {
+      log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", existing tlogs=" + Arrays.asList(tlogFiles) + ", next id=" + id);
+    }
+
+    TransactionLog oldLog = null;
+    for (String oldLogName : tlogFiles) {
+      File f = new File(tlogDir, oldLogName);
+      try {
+        oldLog = newTransactionLog(f, null, true);
+        addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
+      } catch (Exception e) {
+        SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
+        deleteFile(f);
+      }
+    }
+
+    // Record first two logs (oldest first) at startup for potential tlog recovery.
+    // It's possible that at abnormal close both "tlog" and "prevTlog" were uncapped.
+    for (TransactionLog ll : logs) {
+      newestLogsOnStartup.addFirst(ll);
+      if (newestLogsOnStartup.size() >= 2) break;
+    }
+
+    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
+    UpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
+    try {
+      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+      startingOperation = startingUpdates.getLatestOperation();
+
+      // populate recent deletes list (since we can't get that info from the index)
+      for (int i=startingUpdates.deleteList.size()-1; i>=0; i--) {
+        DeleteUpdate du = startingUpdates.deleteList.get(i);
+        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1,du.version));
+      }
+
+      // populate recent deleteByQuery commands
+      for (int i=startingUpdates.deleteByQueryList.size()-1; i>=0; i--) {
+        Update update = startingUpdates.deleteByQueryList.get(i);
+        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
+        long version = (Long) dbq.get(1);
+        String q = (String) dbq.get(2);
+        trackDeleteByQuery(q, version);
+      }
+
+    } finally {
+      startingUpdates.close();
+    }
+
+    // Copy buffered updates
+    if (bufferedTlog != null) {
+      this.copyBufferedUpdates(bufferedTlog, offset);
+    }
+  }
+
+  /**
+   * Read the entries from the given tlog file and replay them as buffered updates.
+   */
+  private void copyBufferedUpdates(File tlogSrc, long offsetSrc) {
+    recoveryInfo = new RecoveryInfo();
+    recoveryInfo.positionOfStart = tlog == null ? 0 : tlog.snapshot();
+    state = State.BUFFERING;
+    operationFlags |= FLAG_GAP;
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
+    SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
+
+    CdcrTransactionLog src = new CdcrTransactionLog(tlogSrc, null, true);
+    TransactionLog.LogReader tlogReader = src.getReader(offsetSrc);
+    try {
+      int operationAndFlags = 0;
+      for (; ; ) {
+        Object o = tlogReader.next();
+        if (o == null) break; // we reached the end of the tlog
+        // should currently be a List<Oper,Ver,Doc/Id>
+        List entry = (List) o;
+        operationAndFlags = (Integer) entry.get(0);
+        int oper = operationAndFlags & OPERATION_MASK;
+        long version = (Long) entry.get(1);
+
+        switch (oper) {
+          case UpdateLog.ADD: {
+            SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size() - 1);
+            AddUpdateCommand cmd = new AddUpdateCommand(req);
+            cmd.solrDoc = sdoc;
+            cmd.setVersion(version);
+            cmd.setFlags(UpdateCommand.BUFFERING);
+            this.add(cmd);
+            break;
+          }
+          case UpdateLog.DELETE: {
+            byte[] idBytes = (byte[]) entry.get(2);
+            DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+            cmd.setIndexedId(new BytesRef(idBytes));
+            cmd.setVersion(version);
+            cmd.setFlags(UpdateCommand.BUFFERING);
+            this.delete(cmd);
+            break;
+          }
+
+          case UpdateLog.DELETE_BY_QUERY: {
+            String query = (String) entry.get(2);
+            DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+            cmd.query = query;
+            cmd.setVersion(version);
+            cmd.setFlags(UpdateCommand.BUFFERING);
+            this.deleteByQuery(cmd);
+            break;
+          }
+
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid Operation! " + oper);
+        }
+
+      }
+    }
+    catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to copy buffered updates", e);
+    }
+    finally {
+      tlogReader.close();
+      src.close();
     }
   }
 

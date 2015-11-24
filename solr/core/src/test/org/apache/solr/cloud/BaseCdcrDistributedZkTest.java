@@ -257,7 +257,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
           Thread.sleep(500);
         }
       }
-      throw new AssertionError("Timeout while trying to assert number of documents on collection: " + collection, lastAssertionError);
+      throw new AssertionError("Timeout while trying to assert number of documents @ " + collection, lastAssertionError);
     } finally {
       client.close();
     }
