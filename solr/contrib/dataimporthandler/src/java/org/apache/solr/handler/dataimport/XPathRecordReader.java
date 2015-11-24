@@ -17,7 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.util.EmptyEntityResolver;
+import org.apache.solr.common.EmptyEntityResolver;
 import javax.xml.stream.XMLInputFactory;
 import static javax.xml.stream.XMLStreamConstants.*;
 import javax.xml.stream.XMLStreamException;

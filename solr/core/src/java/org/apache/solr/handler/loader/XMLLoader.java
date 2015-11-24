@@ -59,7 +59,7 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.util.EmptyEntityResolver;
+import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.util.xslt.TransformerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
