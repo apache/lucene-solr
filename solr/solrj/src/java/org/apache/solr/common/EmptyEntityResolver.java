@@ -1,4 +1,4 @@
-package org.apache.solr.util;
+package org.apache.solr.common;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,8 +24,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.input.ClosedInputStream;
 
