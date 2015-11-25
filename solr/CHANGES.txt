@@ -9,6 +9,9 @@ caching, replication, and a web administration interface.
 See http://lucene.apache.org/solr for more information.
 
 
+==================  5.5.0 ==================
+(No Changes)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

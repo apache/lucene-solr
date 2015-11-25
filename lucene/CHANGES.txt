@@ -4,6 +4,9 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 
+======================= Lucene 5.5.0 =======================
+(No Changes)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
