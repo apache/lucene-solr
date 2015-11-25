@@ -419,6 +419,9 @@ Bug Fixes
 
 * SOLR-8307: Fix XXE vulnerability in MBeansHandler "diff" feature (Erik Hatcher)
 
+* SOLR-8073: Solr fails to start on Windows with obscure errors when using relative path.
+  (Alexandre Rafalovitch, Ishan Chattopadhyaya via shalin)
+
 Optimizations
 ----------------------
 
