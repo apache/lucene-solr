@@ -238,6 +238,9 @@ Optimizations
 
 Bug Fixes
 
+* LUCENE-6905: Unwrap center longitude for dateline crossing 
+  GeoPointDistanceQuery. (Nick Knize)
+
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 
   slop in toString(). (Ahmet Arslan via Dawid Weiss)
 
