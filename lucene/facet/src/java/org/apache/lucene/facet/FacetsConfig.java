@@ -111,7 +111,7 @@ public class FacetsConfig {
   }
   
   /** Get the current configuration for a dimension. */
-  public synchronized DimConfig getDimConfig(String dimName) {
+  public DimConfig getDimConfig(String dimName) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
       ft = getDefaultDimConfig();

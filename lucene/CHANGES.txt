@@ -232,6 +232,10 @@ Optimizations
   be fully read from disk if the supplied StoredFieldVisitor doesn't want it.
   So put your largest text field value last to benefit. (David Smiley)
 
+* LUCENE-6909: Remove unnecessary synchronized from
+  FacetsConfig.getDimConfig for better concurrency (Sanne Grinovero
+  via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-6817: ComplexPhraseQueryParser.ComplexPhraseQuery does not display 
