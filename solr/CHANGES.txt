@@ -583,6 +583,8 @@ Other Changes
 * SOLR-8299: ConfigSet DELETE operation no longer allows deletion of config sets that
   are currently in use by other collections (Anshum Gupta)
 
+* SOLR-8101: Improve Linux service installation script (Sergey Urushkin via Timothy Potter)
+
 ==================  5.3.1 ==================
 
 Bug Fixes

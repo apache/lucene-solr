@@ -90,7 +90,7 @@ if [ -z "$SOLR_INCLUDE" ]; then
                "$HOME/.solr.in.sh" \
                /usr/share/solr/solr.in.sh \
                /usr/local/share/solr/solr.in.sh \
-               /var/solr/solr.in.sh \
+               /etc/default/solr.in.sh \
                /opt/solr/solr.in.sh; do
     if [ -r "$include" ]; then
         . "$include"
