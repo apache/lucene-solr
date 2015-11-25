@@ -295,7 +295,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
 
       Map<String,Object> domainMap = (Map<String,Object>) m.get("domain");
       if (domainMap != null) {
-        excludeTags = getStringList(m, "excludeTags");
+        excludeTags = getStringList(domainMap, "excludeTags");
         if (excludeTags != null) {
           getDomain().excludeTags = excludeTags;
         }

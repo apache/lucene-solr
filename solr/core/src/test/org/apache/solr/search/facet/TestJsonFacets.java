@@ -940,14 +940,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
-    // terms facet with nested query facet (with excludeTags)
+    // terms facet with nested query facet (with excludeTags, using new format inside domain:{})
     client.testJQ(params(p, "q", "*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
 
             , "json.facet", "{processEmpty:true, " +
                 " f0:{${terms} type:terms, field:${cat_s},                                    facet:{nj:{query:'${where_s}:NJ'}} }  " +
-                ",f1:{${terms} type:terms, field:${cat_s}, excludeTags:doc3,   missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
-                ",f2:{${terms} type:terms, field:${cat_s}, excludeTags:allfilt,missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
-                ",f3:{${terms} type:terms, field:${cat_s}, excludeTags:doc6,   missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
+                ",f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3},   missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
+                ",f2:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:allfilt},missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
+                ",f3:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc6},   missing:true,  facet:{nj:{query:'${where_s}:NJ'}} }  " +
                 "}"
         )
         , "facets=={ count:4, " +
@@ -961,7 +961,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // range facet with sub facets and stats, with "other:all" (with excludeTags)
     client.testJQ(params(p, "q", "*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
             , "json.facet", "{processEmpty:true " +
-                ", f1:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}} , excludeTags:allfilt }" +
+                ", f1:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}} , domain:{excludeTags:allfilt} }" +
                 ", f2:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}  }" +
                 "}"
         )
