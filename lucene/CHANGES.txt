@@ -103,6 +103,9 @@ Changes in Runtime Behavior
   and codec components are no longer allowed to use this extension
   (Robert Muir, Mike McCandless)
 
+======================= Lucene 5.5.0 =======================
+(No Changes)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
