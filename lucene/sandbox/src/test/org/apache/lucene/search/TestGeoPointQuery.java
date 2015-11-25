@@ -101,7 +101,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
          new GeoPointField(FIELD_NAME, -96.4538113027811, 32.94823588839368, storedPoint),
          new GeoPointField(FIELD_NAME, -96.65084838867188, 33.06047141970814, storedPoint),
          new GeoPointField(FIELD_NAME, -96.7772, 32.778650, storedPoint),
-         new GeoPointField(FIELD_NAME, -83.99724648980559, 58.29438379542874, storedPoint),
+         new GeoPointField(FIELD_NAME, -177.23537676036358, -88.56029371730983, storedPoint),
          new GeoPointField(FIELD_NAME, -26.779373834241003, 33.541429799076354, storedPoint),
          new GeoPointField(FIELD_NAME, -77.35379276106497, 26.774024500421728, storedPoint),
          new GeoPointField(FIELD_NAME, -14.796283808944777, -90.0, storedPoint),
@@ -295,6 +295,12 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     assertEquals("GeoDistanceQuery failed", 2, td.totalHits);
   }
 
+  /** see https://issues.apache.org/jira/browse/LUCENE-6905 */
+  public void testNonEmptyTermsEnum() throws Exception {
+    TopDocs td = geoDistanceQuery(-177.23537676036358, -88.56029371730983, 7757.999232959935, 20);
+    assertEquals("GeoDistanceQuery failed", 2, td.totalHits);
+  }
+
   public void testMultiValuedQuery() throws Exception {
     TopDocs td = bboxQuery(-96.4538113027811, 32.7559529921407, -96.7706036567688, 32.7756745755423, 20);
     // 3 single valued docs + 2 multi-valued docs
@@ -314,7 +320,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
    */
   public void testGeoDistanceQueryHuge() throws Exception {
     TopDocs td = geoDistanceQuery(-96.4538113027811, 32.94823588839368, 6000000, 20);
-    assertEquals("GeoDistanceQuery failed",18, td.totalHits);
+    assertEquals("GeoDistanceQuery failed", 16, td.totalHits);
   }
 
   public void testGeoDistanceQueryCrossDateline() throws Exception {

@@ -18,9 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.GeoDistanceUtils;
 import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.SloppyMath;
 
 /** Implements a simple point distance query on a GeoPoint field. This is based on
  * {@link org.apache.lucene.search.GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
@@ -53,7 +53,7 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     {
       // check longitudinal overlap (limits radius)
-      final double maxRadius = SloppyMath.haversin(centerLat, centerLon, centerLat, (180.0 + centerLon) % 360)*1000.0;
+      final double maxRadius = GeoDistanceUtils.maxRadialDistanceMeters(centerLon, centerLat);
       if (radiusMeters > maxRadius) {
         throw new IllegalArgumentException("radiusMeters " + radiusMeters + " exceeds maxRadius [" + maxRadius
             + "] at location [" + centerLon + " " + centerLat + "]");
@@ -79,18 +79,32 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
 
   @Override
   public Query rewrite(IndexReader reader) {
+    // query crosses dateline; split into left and right queries
     if (maxLon < minLon) {
       BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
-      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, new GeoRect(GeoUtils.MIN_LON_INCL, maxLon,
-          minLat, maxLat));
+      // unwrap the longitude iff outside the specified min/max lon range
+      double unwrappedLon = centerLon;
+      if (unwrappedLon > maxLon) {
+        // unwrap left
+        unwrappedLon += -360.0D;
+      }
+      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
+          new GeoRect(GeoUtils.MIN_LON_INCL, maxLon, minLat, maxLat));
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
-      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, new GeoRect(minLon, GeoUtils.MAX_LON_INCL,
-          minLat, maxLat));
+
+      if (unwrappedLon < maxLon) {
+        // unwrap right
+        unwrappedLon += 360.0D;
+      }
+      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
+          new GeoRect(minLon, GeoUtils.MAX_LON_INCL, minLat, maxLat));
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
+
       return bqb.build();
     }
-    return new GeoPointDistanceQueryImpl(field, this, new GeoRect(this.minLon, this.maxLon, this.minLat, this.maxLat));
+    return new GeoPointDistanceQueryImpl(field, this, centerLon,
+        new GeoRect(this.minLon, this.maxLon, this.minLat, this.maxLat));
   }
 
   @Override

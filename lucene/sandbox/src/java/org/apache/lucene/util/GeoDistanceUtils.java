@@ -149,6 +149,14 @@ public class GeoDistanceUtils {
     }
   }
 
+  /** Returns the maximum distance/radius (in meters) from the point 'center' before overlapping */
+  public static double maxRadialDistanceMeters(final double centerLon, final double centerLat) {
+    if (Math.abs(centerLat) == GeoUtils.MAX_LAT_INCL) {
+      return SloppyMath.haversin(centerLat, centerLon, 0, centerLon)*1000.0;
+    }
+    return SloppyMath.haversin(centerLat, centerLon, centerLat, (GeoUtils.MAX_LON_INCL + centerLon) % 360)*1000.0;
+  }
+
   /**
    * Compute the inverse haversine to determine distance in degrees longitude for provided distance in meters
    * @param lat latitude to compute delta degrees lon
