@@ -425,6 +425,10 @@ Bug Fixes
 * SOLR-7169: bin/solr status should return exit code 3, not 0 if Solr is not running 
   (Dominik Siebel via Timothy Potter)
 
+* SOLR-8341: Fix JSON Facet API excludeTags when specified in the
+  form of domain:{excludeTags:mytag} (yonik)
+
+
 Optimizations
 ----------------------
 
