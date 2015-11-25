@@ -422,6 +422,9 @@ Bug Fixes
 * SOLR-8073: Solr fails to start on Windows with obscure errors when using relative path.
   (Alexandre Rafalovitch, Ishan Chattopadhyaya via shalin)
 
+* SOLR-7169: bin/solr status should return exit code 3, not 0 if Solr is not running 
+  (Dominik Siebel via Timothy Potter)
+
 Optimizations
 ----------------------
 

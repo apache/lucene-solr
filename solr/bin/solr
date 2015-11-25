@@ -423,42 +423,49 @@ function run_tool() {
 
 # get information about any Solr nodes running on this host
 function get_info() {
+  CODE=4
   # first, see if Solr is running
   numSolrs=`find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' '`
   if [ "$numSolrs" != "0" ]; then
     echo -e "\nFound $numSolrs Solr nodes: "
-    find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | while read PIDF
+    while read PIDF
       do
         ID=`cat "$PIDF"`
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
           run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
+          CODE=$?
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
+          CODE=1
         fi
-    done
+    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
   else
     # no pid files but check using ps just to be sure
     numSolrs=`ps auxww | grep start\.jar | grep solr.solr.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
     if [ "$numSolrs" != "0" ]; then
       echo -e "\nFound $numSolrs Solr nodes: "
-      for ID in `ps auxww | grep start\.jar | grep solr.solr.home | grep -v grep | awk '{print $2}' | sort -r`
+      PROCESSES=$(ps auxww | grep start\.jar | grep solr.solr.home | grep -v grep | awk '{print $2}' | sort -r)
+      for ID in $PROCESSES
         do
           port=`jetty_port "$ID"`
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
             run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
+            CODE=$?
             echo ""
           fi
       done
     else
       echo -e "\nNo Solr nodes are running.\n"
+      CODE=3
     fi
   fi
-  
+
+  return $CODE
 } # end get_info
 
 # tries to gracefully stop Solr using the Jetty 
@@ -506,7 +513,7 @@ if [ $# -eq 1 ]; then
     ;;
     -info|-i|status)
         get_info
-        exit
+        exit $?
     ;;
     -version|-v|version)
         run_tool version
