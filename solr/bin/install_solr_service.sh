@@ -46,6 +46,8 @@ print_usage() {
   echo "    -u     User to own the Solr files and run the Solr process as; defaults to solr"
   echo "             This script will create the specified user account if it does not exist."
   echo ""
+  echo "    -f     Upgrade Solr. Overwrite symlink and init script of previous installation."
+  echo ""
   echo " NOTE: Must be run as the root user"
   echo ""
 } # end print_usage
@@ -137,6 +139,10 @@ if [ $# -gt 1 ]; then
             SOLR_PORT="$2"
             shift 2
         ;;
+        -f)
+            SOLR_UPGRADE="YES"
+            shift 1
+        ;;
         -help|-usage)
             print_usage ""
             exit 0
@@ -171,7 +177,7 @@ if [ -z "$SOLR_SERVICE" ]; then
 fi
 
 if [ -z "$SOLR_VAR_DIR" ]; then
-  SOLR_VAR_DIR=/var/$SOLR_SERVICE
+  SOLR_VAR_DIR="/var/$SOLR_SERVICE"
 fi
 
 if [ -z "$SOLR_USER" ]; then
@@ -182,37 +188,51 @@ if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
 fi
 
-if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
-  echo -e "\nERROR: /etc/init.d/$SOLR_SERVICE already exists! Perhaps Solr is already setup as a service on this host?\n" 1>&2
-  exit 1
+if [ -z "$SOLR_UPGRADE" ]; then
+  SOLR_UPGRADE=NO
 fi
 
-if [ -e "$SOLR_EXTRACT_DIR/$SOLR_SERVICE" ]; then
-  print_usage "$SOLR_EXTRACT_DIR/$SOLR_SERVICE already exists! Please move this directory / link or choose a different service name using the -s option."
-  exit 1
-fi
+if [ ! "$SOLR_UPGRADE" = "YES" ]; then
+  if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
+    print_usage "/etc/init.d/$SOLR_SERVICE already exists! Perhaps Solr is already setup as a service on this host? To upgrade Solr use the -f option."
+    exit 1
+  fi
 
-solr_uid=`id -u $SOLR_USER`
-if [ $? -ne 0 ]; then
-  echo "Creating new user: $SOLR_USER"
-  if [ "$distro" == "RedHat" ]; then
-    adduser $SOLR_USER
-  elif [ "$distro" == "SUSE" ]; then
-    useradd -m $SOLR_USER
-  else
-    adduser --system --shell /bin/bash --group --disabled-password --home /home/$SOLR_USER $SOLR_USER
+  if [ -e "$SOLR_EXTRACT_DIR/$SOLR_SERVICE" ]; then
+    print_usage "$SOLR_EXTRACT_DIR/$SOLR_SERVICE already exists! Please move this directory / link or choose a different service name using the -s option."
+    exit 1
   fi
 fi
 
-SOLR_INSTALL_DIR=$SOLR_EXTRACT_DIR/$SOLR_DIR
+# stop running instance
+if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
+  echo -e "\nStopping Solr instance if exists ...\n"
+  service "$SOLR_SERVICE" stop
+fi
+
+# create user if not exists
+solr_uid="`id -u "$SOLR_USER"`"
+if [ $? -ne 0 ]; then
+  echo "Creating new user: $SOLR_USER"
+  if [ "$distro" == "RedHat" ]; then
+    adduser "$SOLR_USER"
+  elif [ "$distro" == "SUSE" ]; then
+    useradd -m "$SOLR_USER"
+  else
+    adduser --system --shell /bin/bash --group --disabled-password --home "$SOLR_VAR_DIR" "$SOLR_USER"
+  fi
+fi
+
+# extract
+SOLR_INSTALL_DIR="$SOLR_EXTRACT_DIR/$SOLR_DIR"
 if [ ! -d "$SOLR_INSTALL_DIR" ]; then
 
-  echo "Extracting $SOLR_ARCHIVE to $SOLR_EXTRACT_DIR"
+  echo -e "\nExtracting $SOLR_ARCHIVE to $SOLR_EXTRACT_DIR\n"
 
   if $is_tar ; then
-    tar zxf $SOLR_ARCHIVE -C $SOLR_EXTRACT_DIR
+    tar zxf "$SOLR_ARCHIVE" -C "$SOLR_EXTRACT_DIR"
   else
-    unzip -q $SOLR_ARCHIVE -d $SOLR_EXTRACT_DIR
+    unzip -q "$SOLR_ARCHIVE" -d "$SOLR_EXTRACT_DIR"
   fi
 
   if [ ! -d "$SOLR_INSTALL_DIR" ]; then
@@ -220,51 +240,91 @@ if [ ! -d "$SOLR_INSTALL_DIR" ]; then
     exit 1
   fi
 
-  chown -R $SOLR_USER: $SOLR_INSTALL_DIR
+  chown -R root: "$SOLR_INSTALL_DIR"
+  find "$SOLR_INSTALL_DIR" -type d -print0 | xargs -0 chmod 0755
+  find "$SOLR_INSTALL_DIR" -type f -print0 | xargs -0 chmod 0644
+  chmod -R 0755 "$SOLR_INSTALL_DIR/bin"
 else
   echo -e "\nWARNING: $SOLR_INSTALL_DIR already exists! Skipping extract ...\n"
 fi
 
 # create a symlink for easier scripting
-ln -s $SOLR_INSTALL_DIR $SOLR_EXTRACT_DIR/$SOLR_SERVICE
-chown -h $SOLR_USER: $SOLR_EXTRACT_DIR/$SOLR_SERVICE
-
-mkdir -p $SOLR_VAR_DIR/data
-mkdir -p $SOLR_VAR_DIR/logs
-cp $SOLR_INSTALL_DIR/server/solr/solr.xml $SOLR_VAR_DIR/data/
-cp $SOLR_INSTALL_DIR/bin/solr.in.sh $SOLR_VAR_DIR/
-cp $SOLR_INSTALL_DIR/server/resources/log4j.properties $SOLR_VAR_DIR/log4j.properties
-sed_expr="s#solr.log=.*#solr.log=\${solr.solr.home}/../logs#"
-sed -i -e "$sed_expr" $SOLR_VAR_DIR/log4j.properties
-chown -R $SOLR_USER: $SOLR_VAR_DIR
-
-echo "SOLR_PID_DIR=$SOLR_VAR_DIR
-SOLR_HOME=$SOLR_VAR_DIR/data
-LOG4J_PROPS=$SOLR_VAR_DIR/log4j.properties
-SOLR_LOGS_DIR=$SOLR_VAR_DIR/logs
-SOLR_PORT=$SOLR_PORT
-" >> $SOLR_VAR_DIR/solr.in.sh
-
-echo "Creating /etc/init.d/$SOLR_SERVICE script ..."
-cp $SOLR_INSTALL_DIR/bin/init.d/solr /etc/init.d/$SOLR_SERVICE
-chmod 744 /etc/init.d/$SOLR_SERVICE
-chown root:root /etc/init.d/$SOLR_SERVICE
-
-# do some basic variable substitution on the init.d script
-sed_expr1="s#SOLR_INSTALL_DIR=.*#SOLR_INSTALL_DIR=$SOLR_EXTRACT_DIR/$SOLR_SERVICE#"
-sed_expr2="s#SOLR_ENV=.*#SOLR_ENV=$SOLR_VAR_DIR/solr.in.sh#"
-sed_expr3="s#RUNAS=.*#RUNAS=$SOLR_USER#"
-sed_expr4="s#Provides:.*#Provides: $SOLR_SERVICE#"
-sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" -e "$sed_expr4" /etc/init.d/$SOLR_SERVICE
-
-if [[ "$distro" == "RedHat" || "$distro" == "SUSE" ]]; then
-  chkconfig $SOLR_SERVICE on
+if [ -h "$SOLR_EXTRACT_DIR/$SOLR_SERVICE" ]; then
+  echo -e "\nRemoving old symlink $SOLR_EXTRACT_DIR/$SOLR_SERVICE ...\n"
+  rm "$SOLR_EXTRACT_DIR/$SOLR_SERVICE"
+fi
+if [ -e "$SOLR_EXTRACT_DIR/$SOLR_SERVICE" ]; then
+  echo -e "\nWARNING: $SOLR_EXTRACT_DIR/$SOLR_SERVICE is not symlink! Skipping symlink update ...\n"
 else
-  update-rc.d $SOLR_SERVICE defaults
+  echo -e "\nInstalling symlink $SOLR_EXTRACT_DIR/$SOLR_SERVICE -> $SOLR_INSTALL_DIR ...\n"
+  ln -s "$SOLR_INSTALL_DIR" "$SOLR_EXTRACT_DIR/$SOLR_SERVICE"
 fi
 
-service $SOLR_SERVICE start
+# install init.d script
+echo -e "\nInstalling /etc/init.d/$SOLR_SERVICE script ...\n"
+cp "$SOLR_INSTALL_DIR/bin/init.d/solr" "/etc/init.d/$SOLR_SERVICE"
+chmod 0744 "/etc/init.d/$SOLR_SERVICE"
+chown root: "/etc/init.d/$SOLR_SERVICE"
+# do some basic variable substitution on the init.d script
+sed_expr1="s#SOLR_INSTALL_DIR=.*#SOLR_INSTALL_DIR=\"$SOLR_EXTRACT_DIR/$SOLR_SERVICE\"#"
+sed_expr2="s#SOLR_ENV=.*#SOLR_ENV=\"/etc/default/$SOLR_SERVICE.in.sh\"#"
+sed_expr3="s#RUNAS=.*#RUNAS=\"$SOLR_USER\"#"
+sed_expr4="s#Provides:.*#Provides: $SOLR_SERVICE#"
+sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" -e "$sed_expr4" "/etc/init.d/$SOLR_SERVICE"
+
+# install/move configuration
+if [ ! -d /etc/default ]; then
+  mkdir /etc/default
+  chown root: /etc/default
+  chmod 0755 /etc/default
+fi
+if [ -f "$SOLR_VAR_DIR/solr.in.sh" ]; then
+  echo -e "\nMoving existing $SOLR_VAR_DIR/solr.in.sh to /etc/default/$SOLR_SERVICE.in.sh ...\n"
+  mv "$SOLR_VAR_DIR/solr.in.sh" "/etc/default/$SOLR_SERVICE.in.sh"
+elif [ -f "/etc/default/$SOLR_SERVICE.in.sh" ]; then
+  echo -e "\n/etc/default/$SOLR_SERVICE.in.sh already exist. Skipping install ...\n"
+else
+  echo -e "\nInstalling /etc/default/$SOLR_SERVICE.in.sh ...\n"
+  cp "$SOLR_INSTALL_DIR/bin/solr.in.sh" "/etc/default/$SOLR_SERVICE.in.sh"
+  echo "SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
+SOLR_HOME=\"$SOLR_VAR_DIR/data\"
+LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j.properties\"
+SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
+SOLR_PORT=\"$SOLR_PORT\"
+" >> "/etc/default/$SOLR_SERVICE.in.sh"
+fi
+chown root: "/etc/default/$SOLR_SERVICE.in.sh"
+chmod 0644 "/etc/default/$SOLR_SERVICE.in.sh"
+
+# install data directories and files
+mkdir -p "$SOLR_VAR_DIR/data"
+mkdir -p "$SOLR_VAR_DIR/logs"
+if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
+  echo -e "\n$SOLR_VAR_DIR/data/solr.xml already exists. Skipping install ...\n"
+else
+  cp "$SOLR_INSTALL_DIR/server/solr/solr.xml" "$SOLR_VAR_DIR/data/solr.xml"
+fi
+if [ -f "$SOLR_VAR_DIR/log4j.properties" ]; then
+  echo -e "\n$SOLR_VAR_DIR/log4j.properties already exists. Skipping install ...\n"
+else
+  cp "$SOLR_INSTALL_DIR/server/resources/log4j.properties" "$SOLR_VAR_DIR/log4j.properties"
+  sed_expr="s#solr.log=.*#solr.log=\${solr.solr.home}/../logs#"
+  sed -i -e "$sed_expr" "$SOLR_VAR_DIR/log4j.properties"
+fi
+chown -R "$SOLR_USER:" "$SOLR_VAR_DIR"
+find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750
+find "$SOLR_VAR_DIR" -type f -print0 | xargs -0 chmod 0640
+
+# configure autostart of service
+if [[ "$distro" == "RedHat" || "$distro" == "SUSE" ]]; then
+  chkconfig "$SOLR_SERVICE" on
+else
+  update-rc.d "$SOLR_SERVICE" defaults
+fi
+
+# start service
+service "$SOLR_SERVICE" start
 sleep 5
-service $SOLR_SERVICE status
+service "$SOLR_SERVICE" status
 
 echo "Service $SOLR_SERVICE installed."
