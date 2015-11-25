@@ -609,11 +609,11 @@ IF NOT "%EXAMPLE%"=="" goto run_example
 
 :start_solr
 IF "%SOLR_HOME%"=="" set "SOLR_HOME=%SOLR_SERVER_DIR%\solr"
+IF EXIST "%cd%\%SOLR_HOME%" set "SOLR_HOME=%cd%\%SOLR_HOME%"
+
 IF NOT EXIST "%SOLR_HOME%\" (
   IF EXIST "%SOLR_SERVER_DIR%\%SOLR_HOME%" (
     set "SOLR_HOME=%SOLR_SERVER_DIR%\%SOLR_HOME%"
-  ) ELSE IF EXIST "%cd%\%SOLR_HOME%" (
-    set "SOLR_HOME=%cd%\%SOLR_HOME%"
   ) ELSE (
     set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% not found!"
     goto err
