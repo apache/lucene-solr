@@ -33,10 +33,13 @@ import org.apache.lucene.util.SloppyMath;
  */
 final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointDistanceQuery query;
+  private final double centerLon;
 
-  GeoPointDistanceQueryImpl(final String field, final GeoPointDistanceQuery q, final GeoRect bbox) {
+  GeoPointDistanceQueryImpl(final String field, final GeoPointDistanceQuery q, final double centerLonUnwrapped,
+                            final GeoRect bbox) {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     query = q;
+    centerLon = centerLonUnwrapped;
   }
 
   @Override @SuppressWarnings("unchecked")
@@ -74,12 +77,12 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radiusMeters);
+      return GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat, centerLon, query.centerLat, query.radiusMeters);
     }
 
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radiusMeters);
+      return GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat, centerLon, query.centerLat, query.radiusMeters);
     }
 
     @Override
@@ -96,7 +99,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
      */
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return (SloppyMath.haversin(query.centerLat, query.centerLon, lat, lon) * 1000.0 <= query.radiusMeters);
+      return (SloppyMath.haversin(query.centerLat, centerLon, lat, lon) * 1000.0 <= query.radiusMeters);
     }
   }
 
