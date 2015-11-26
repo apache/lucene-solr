@@ -9,8 +9,14 @@ caching, replication, and a web administration interface.
 See http://lucene.apache.org/solr for more information.
 
 
-==================  5.5.0 ==================
-(No Changes)
+======================= Lucene 5.5.0 =======================
+
+Other Changes
+----------------------
+
+* LUCENE-6900: Added test for score ordered grouping, and refactored TopGroupsResultTransformer.
+  (David Smiley)
+
 
 ==================  5.4.0 ==================
 

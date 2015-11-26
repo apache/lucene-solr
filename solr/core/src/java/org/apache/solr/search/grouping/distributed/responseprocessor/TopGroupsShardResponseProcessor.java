@@ -61,6 +61,9 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     String[] fields = rb.getGroupingSpec().getFields();
     String[] queries = rb.getGroupingSpec().getQueries();
     Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
+    if (sortWithinGroup == null) { // TODO prevent it from being null in the first place
+      sortWithinGroup = Sort.RELEVANCE;
+    }
 
     // If group.format=simple group.offset doesn't make sense
     int groupOffsetDefault;
@@ -173,7 +176,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
         int topN = rb.getGroupingSpec().getOffset() + rb.getGroupingSpec().getLimit();
         final TopDocs mergedTopDocs;
-        if (sortWithinGroup == null) {
+        if (sortWithinGroup.equals(Sort.RELEVANCE)) {
           mergedTopDocs = TopDocs.merge(topN, topDocs.toArray(new TopDocs[topDocs.size()]));
         } else {
           mergedTopDocs = TopDocs.merge(sortWithinGroup, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
