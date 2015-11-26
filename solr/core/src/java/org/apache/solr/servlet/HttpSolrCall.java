@@ -414,7 +414,7 @@ public class HttpSolrCall {
         */
       if (cores.getAuthorizationPlugin() != null && shouldAuthorize()) {
         AuthorizationContext context = getAuthCtx();
-        log.info(context.toString());
+        log.debug("AuthorizationContext : {}", context);
         AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
         if (authResponse.statusCode == AuthorizationResponse.PROMPT.statusCode) {
           Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
