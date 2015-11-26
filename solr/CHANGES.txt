@@ -159,7 +159,28 @@ Other Changes
 * SOLR-8179: SQL JDBC - DriverImpl loadParams doesn't support keys with no values in the connection string
   (Kevin Risden, Joel Bernstein)
 
-======================= Lucene 5.5.0 =======================
+======================= 5.5.0 =======================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.10.4
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.13.v20150730
+
+Upgrading from Solr 5.4
+-----------------------
+
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
 
 Other Changes
 ----------------------
