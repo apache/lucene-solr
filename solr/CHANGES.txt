@@ -455,6 +455,8 @@ Bug Fixes
 * SOLR-8341: Fix JSON Facet API excludeTags when specified in the
   form of domain:{excludeTags:mytag} (yonik)
 
+* SOLR-8326: If BasicAuth enabled, inter node requests fail after node restart (noble, Anshum Gupta)
+
 
 Optimizations
 ----------------------
