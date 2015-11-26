@@ -307,6 +307,10 @@ public final class CryptoKeys {
       return pubKeyStr;
     }
 
+    public PublicKey getPublicKey() {
+      return publicKey;
+    }
+
     public byte[] encrypt(ByteBuffer buffer) {
       try {
         Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
