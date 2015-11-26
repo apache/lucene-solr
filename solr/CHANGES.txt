@@ -159,8 +159,14 @@ Other Changes
 * SOLR-8179: SQL JDBC - DriverImpl loadParams doesn't support keys with no values in the connection string
   (Kevin Risden, Joel Bernstein)
 
-==================  5.5.0 ==================
-(No Changes)
+======================= Lucene 5.5.0 =======================
+
+Other Changes
+----------------------
+
+* LUCENE-6900: Added test for score ordered grouping, and refactored TopGroupsResultTransformer.
+  (David Smiley)
+
 
 ==================  5.4.0 ==================
 

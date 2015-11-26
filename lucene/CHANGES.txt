@@ -104,7 +104,11 @@ Changes in Runtime Behavior
   (Robert Muir, Mike McCandless)
 
 ======================= Lucene 5.5.0 =======================
-(No Changes)
+
+API Changes
+
+* LUCENE-6900: Grouping sortWithinGroup variables used to allow null to mean
+  Sort.RELEVANCE.  Null is no longer permitted.  (David Smiley)
 
 ======================= Lucene 5.4.0 =======================
 

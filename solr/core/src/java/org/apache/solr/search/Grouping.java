@@ -40,7 +40,6 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
@@ -74,7 +73,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Basic Solr Grouping infrastructure.
- * Warning NOT thread save!
+ * Warning NOT thread safe!
  *
  * @lucene.experimental
  */
@@ -109,7 +108,7 @@ public class Grouping {
   private NamedList grouped = new SimpleOrderedMap();
   private Set<Integer> idSet = new LinkedHashSet<>();  // used for tracking unique docs when we need a doclist
   private int maxMatches;  // max number of matches from any grouping command
-  private float maxScore = Float.NEGATIVE_INFINITY;  // max score seen in any doclist
+  private float maxScore = Float.NaN;  // max score seen in any doclist
   private boolean signalCacheWarning = false;
   private TimeLimitingCollector timeLimitingCollector;
 
@@ -311,16 +310,8 @@ public class Grouping {
     boolean cacheScores = false;
     // NOTE: Change this when withinGroupSort can be specified per group
     if (!needScores && !commands.isEmpty()) {
-      if (commands.get(0).withinGroupSort == null) {
-        cacheScores = true;
-      } else {
-        for (SortField field : commands.get(0).withinGroupSort.getSort()) {
-          if (field.getType() == SortField.Type.SCORE) {
-            cacheScores = true;
-            break;
-          }
-        }
-      }
+      Sort withinGroupSort = commands.get(0).withinGroupSort;
+      cacheScores = withinGroupSort == null || withinGroupSort.needsScores();
     } else if (needScores) {
       cacheScores = needScores;
     }
@@ -638,7 +629,7 @@ public class Grouping {
       }
 
       float score = groups.maxScore;
-      maxScore = Math.max(maxScore, score);
+      maxScore = maxAvoidNaN(score, maxScore);
       DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits, score);
 
       if (getDocList) {
@@ -661,13 +652,11 @@ public class Grouping {
       List<Float> scores = new ArrayList<>();
       int docsToGather = getMax(offset, numGroups, maxDoc);
       int docsGathered = 0;
-      float maxScore = Float.NEGATIVE_INFINITY;
+      float maxScore = Float.NaN;
 
       outer:
       for (GroupDocs group : groups) {
-        if (group.maxScore > maxScore) {
-          maxScore = group.maxScore;
-        }
+        maxScore = maxAvoidNaN(maxScore, group.maxScore);
 
         for (ScoreDoc scoreDoc : group.scoreDocs) {
           if (docsGathered >= docsToGather) {
@@ -694,6 +683,15 @@ public class Grouping {
       return docSlice;
     }
 
+  }
+
+  /** Differs from {@link Math#max(float, float)} in that if only one side is NaN, we return the other. */
+  private float maxAvoidNaN(float valA, float valB) {
+    if (Float.isNaN(valA) || valB > valA) {
+      return valB;
+    } else {
+      return valA;
+    }
   }
 
   /**
@@ -759,6 +757,7 @@ public class Grouping {
 
       int groupedDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupedDocsToCollect = Math.max(groupedDocsToCollect, 1);
+      Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
       secondPass = new TermSecondPassGroupingCollector(
           groupBy, topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false
       );
@@ -776,7 +775,7 @@ public class Grouping {
      */
     @Override
     public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
-      Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : new Sort();
+      Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : Sort.RELEVANCE;
       return TermAllGroupHeadsCollector.create(groupBy, sortWithinGroup);
     }
 
@@ -882,7 +881,7 @@ public class Grouping {
 
     TopDocsCollector newCollector(Sort sort, boolean needScores) throws IOException {
       int groupDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
-      if (sort == null || sort == Sort.RELEVANCE) {
+      if (sort == null || sort.equals(Sort.RELEVANCE)) {
         return TopScoreDocCollector.create(groupDocsToCollect);
       } else {
         return TopFieldCollector.create(searcher.weightSort(sort), groupDocsToCollect, false, needScores, needScores);
@@ -979,6 +978,7 @@ public class Grouping {
 
       int groupdDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupdDocsToCollect = Math.max(groupdDocsToCollect, 1);
+      Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
       secondPass = new FunctionSecondPassGroupingCollector(
           topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false, groupBy, context
       );
@@ -993,7 +993,7 @@ public class Grouping {
 
     @Override
     public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
-      Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : new Sort();
+      Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : Sort.RELEVANCE;
       return new FunctionAllGroupHeadsCollector(groupBy, context, sortWithinGroup);
     }
 

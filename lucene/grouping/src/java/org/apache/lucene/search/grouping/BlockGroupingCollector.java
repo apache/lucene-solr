@@ -231,8 +231,7 @@ public class BlockGroupingCollector extends SimpleCollector {
 
     this.needsScores = needsScores;
     this.lastDocPerGroup = lastDocPerGroup;
-    // TODO: allow null groupSort to mean "by relevance",
-    // and specialize it?
+
     this.groupSort = groupSort;
     
     this.topNGroups = topNGroups;
@@ -265,8 +264,7 @@ public class BlockGroupingCollector extends SimpleCollector {
    *  DocValues, etc.)
    *
    *  @param withinGroupSort The {@link Sort} used to sort
-   *    documents within each group.  Passing null is
-   *    allowed, to sort by relevance.
+   *    documents within each group.
    *  @param groupOffset Which group to start from
    *  @param withinGroupOffset Which document to start from
    *    within each group
@@ -300,7 +298,7 @@ public class BlockGroupingCollector extends SimpleCollector {
       // At this point we hold all docs w/ in each group,
       // unsorted; we now sort them:
       final TopDocsCollector<?> collector;
-      if (withinGroupSort == null) {
+      if (withinGroupSort.equals(Sort.RELEVANCE)) {
         // Sort by score
         if (!needsScores) {
           throw new IllegalArgumentException("cannot sort by relevance within group: needsScores=false");
@@ -356,7 +354,7 @@ public class BlockGroupingCollector extends SimpleCollector {
     */
 
     return new TopGroups<>(new TopGroups<>(groupSort.getSort(),
-                                       withinGroupSort == null ? null : withinGroupSort.getSort(),
+                                       withinGroupSort.getSort(),
                                        totalHitCount, totalGroupedHitCount, groups, maxScore),
                          totalGroupCount);
   }

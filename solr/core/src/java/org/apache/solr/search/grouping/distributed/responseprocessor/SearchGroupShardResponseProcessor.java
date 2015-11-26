@@ -51,6 +51,10 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     SortSpec ss = rb.getSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSort();
     String[] fields = rb.getGroupingSpec().getFields();
+    Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
+    if (sortWithinGroup == null) { // TODO prevent it from being null in the first place
+      sortWithinGroup = Sort.RELEVANCE;
+    }
 
     Map<String, List<Collection<SearchGroup<BytesRef>>>> commandSearchGroups = new HashMap<>();
     Map<String, Map<SearchGroup<BytesRef>, Set<String>>> tempSearchGroupToShards = new HashMap<>();
@@ -106,7 +110,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
         @SuppressWarnings("unchecked")
         NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");
-        final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, null, srsp.getShard());
+        final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, sortWithinGroup, srsp.getShard());
         for (String field : commandSearchGroups.keySet()) {
           final SearchGroupsFieldCommandResult firstPhaseCommandResult = result.get(field);
 
