@@ -188,6 +188,9 @@ Other Changes
 * LUCENE-6900: Added test for score ordered grouping, and refactored TopGroupsResultTransformer.
   (David Smiley)
 
+* SOLR-8340: Fixed NullPointerException in HighlightComponent.
+  (zengjie via Christine Poerschke)
+
 
 ==================  5.4.0 ==================
 
