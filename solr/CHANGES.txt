@@ -194,6 +194,9 @@ Other Changes
 * SOLR-8336: CoreDescriptor now takes a Path for its instance directory, rather
   than a String (Alan Woodward)
 
+* SOLR-8351: Improve HdfsDirectory toString representation
+  (Mike Drob via Gregory Chanan)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
