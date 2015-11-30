@@ -186,7 +186,7 @@ API Changes
 
 * LUCENE-6911: Add correct StandardQueryParser.getMultiFields() method,
   deprecate no-op StandardQueryParser.getMultiFields(CharSequence[]) method.
-  (Christine Poerschke, Coverity Scan (via Rishabh Patel))
+  (Christine Poerschke, Mikhail Khludnev, Coverity Scan (via Rishabh Patel))
 
 Optimizations
 
