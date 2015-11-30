@@ -248,7 +248,7 @@
             <reportFormat>plain</reportFormat>
             <workingDirectory>${project.build.directory}/test</workingDirectory>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <argLine>-Xmx512M -XX:MaxPermSize=256M</argLine>
+            <argLine>-Xmx512M</argLine>
             <systemPropertyVariables>
               <tempDir>.</tempDir>
               <java.awt.headless>true</java.awt.headless>
