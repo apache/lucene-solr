@@ -17,6 +17,13 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
@@ -27,20 +34,12 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 @Slow
 public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
@@ -157,10 +156,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
         CreateMode.PERSISTENT, true);
     zkClient.close();
 
-    CoreDescriptor dcore = buildCoreDescriptor(container1, "testcore", "testcore")
-                              .withDataDir(dataDir4.getAbsolutePath()).build();
-
-    SolrCore core = container1.create(dcore);
+    container1.create("testcore", ImmutableMap.of("dataDir", dataDir4.getAbsolutePath()));
     
     ZkController zkController2 = container2.getZkController();
 

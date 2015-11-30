@@ -20,9 +20,9 @@ package org.apache.solr;
 import java.io.StringWriter;
 import java.util.Collections;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -49,15 +49,8 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
     initCore("solrconfig.xml", "schema12.xml", TEST_HOME(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
-    final CoreDescriptor toCoreDescriptor = coreContainer.getCoreDescriptor("collection1");
-    final CoreDescriptor fromCoreDescriptor = new CoreDescriptor("fromCore", toCoreDescriptor) {
-      @Override
-      public String getSchemaName() {
-        return "schema.xml";
-      }
-    };
 
-    fromCore = coreContainer.create(fromCoreDescriptor);
+    fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal"));
 
     assertU(add(doc("id", "1", "name", "john", "title", "Director", "dept_s", "Engineering")));
     assertU(add(doc("id", "2", "name", "mark", "title", "VP", "dept_s", "Marketing")));
@@ -108,15 +101,17 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   @Test
   public void testCoresAreDifferent() throws Exception {
     assertQEx("schema12.xml" + " has no \"cat\" field", req("cat:*"), ErrorCode.BAD_REQUEST);
-    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(fromCore, "cat:*", "lucene", 0, 100, Collections.emptyMap());
+    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(fromCore, "cat:*", "/select", 0, 100, Collections.emptyMap());
     final String resp = query(fromCore, req);
     assertTrue(resp, resp.contains("numFound=\"1\""));
-    assertTrue(resp, resp.contains("<int name=\"id\">10</int>"));
+    assertTrue(resp, resp.contains("<str name=\"id\">10</str>"));
 
   }
 
   public String query(SolrCore core, SolrQueryRequest req) throws Exception {
     String handler = "standard";
+    if (req.getParams().get("qt") != null)
+      handler = req.getParams().get("qt");
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
     core.execute(core.getRequestHandler(handler), req, rsp);

@@ -28,7 +28,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import com.google.common.collect.Lists;
@@ -158,7 +160,11 @@ public class CorePropertiesLocator implements CoresLocator {
     try (InputStream fis = Files.newInputStream(propertiesFile)) {
       coreProperties.load(new InputStreamReader(fis, StandardCharsets.UTF_8));
       String name = createName(coreProperties, instanceDir);
-      return new CoreDescriptor(cc, name, instanceDir.toString(), coreProperties);
+      Map<String, String> propMap = new HashMap<>();
+      for (String key : coreProperties.stringPropertyNames()) {
+        propMap.put(key, coreProperties.getProperty(key));
+      }
+      return new CoreDescriptor(cc, name, instanceDir, propMap);
     }
     catch (IOException e) {
       logger.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());
@@ -175,9 +181,6 @@ public class CorePropertiesLocator implements CoresLocator {
     Properties p = new Properties();
     p.putAll(cd.getPersistableStandardProperties());
     p.putAll(cd.getPersistableUserProperties());
-    // We don't persist the instance directory, as that's defined by the location
-    // of the properties file.
-    p.remove(CoreDescriptor.CORE_INSTDIR);
     return p;
   }
 

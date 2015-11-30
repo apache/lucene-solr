@@ -1006,10 +1006,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private String initUpdateLogDir(CoreDescriptor coreDescriptor) {
     String updateLogDir = coreDescriptor.getUlogDir();
     if (updateLogDir == null) {
-      updateLogDir = dataDir;
-      if (new File(updateLogDir).isAbsolute() == false) {
-        updateLogDir = SolrResourceLoader.normalizeDir(coreDescriptor.getInstanceDir()) + updateLogDir;
-      }
+      updateLogDir = coreDescriptor.getInstanceDir().resolve(dataDir).normalize().toAbsolutePath().toString();
     }
     return updateLogDir;
   }
@@ -2492,12 +2489,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         public void postClose(SolrCore core) {
           CoreDescriptor cd = core.getCoreDescriptor();
           if (cd != null) {
-            File instanceDir = new File(cd.getInstanceDir());
             try {
-              FileUtils.deleteDirectory(instanceDir);
+              FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
             } catch (IOException e) {
               SolrException.log(log, "Failed to delete instance dir for core:"
-                  + core.getName() + " dir:" + instanceDir.getAbsolutePath());
+                  + core.getName() + " dir:" + cd.getInstanceDir());
             }
           }
         }
@@ -2516,12 +2512,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
     if (deleteInstanceDir) {
-      File instanceDir = new File(cd.getInstanceDir());
       try {
-        FileUtils.deleteDirectory(instanceDir);
+        FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
       } catch (IOException e) {
         SolrException.log(log, "Failed to delete instance dir for unloaded core:" + cd.getName()
-            + " dir:" + instanceDir.getAbsolutePath());
+            + " dir:" + cd.getInstanceDir());
       }
     }
   }

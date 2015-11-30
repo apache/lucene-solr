@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -518,7 +519,7 @@ public class CoreContainer {
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
-    Map<String, String> addedCores = Maps.newHashMap();
+    Map<String, Path> addedCores = Maps.newHashMap();
     for (CoreDescriptor cd : cds) {
       final String name = cd.getName();
       if (addedCores.containsKey(name))
@@ -707,12 +708,82 @@ public class CoreContainer {
   }
 
   /**
-   * Creates a new core based on a CoreDescriptor, publishing the core state to the cluster
-   * @param cd the CoreDescriptor
+   * Creates a new core, publishing the core state to the cluster
+   * @param coreName the core name
+   * @param parameters the core parameters
    * @return the newly created core
    */
-  public SolrCore create(CoreDescriptor cd) {
-    return create(cd, true);
+  public SolrCore create(String coreName, Map<String, String> parameters) {
+    return create(coreName, cfg.getCoreRootDirectory().resolve(coreName), parameters);
+  }
+
+  /**
+   * Creates a new core in a specified instance directory, publishing the core state to the cluster
+   * @param coreName the core name
+   * @param instancePath the instance directory
+   * @param parameters the core parameters
+   * @return the newly created core
+   */
+  public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters) {
+
+    CoreDescriptor cd = new CoreDescriptor(this, coreName, instancePath, parameters);
+
+    // TODO: There's a race here, isn't there?
+    if (getAllCoreNames().contains(coreName)) {
+      log.warn("Creating a core with existing name is not allowed");
+      // TODO: Shouldn't this be a BAD_REQUEST?
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
+    }
+
+    boolean preExisitingZkEntry = false;
+    try {
+      if (getZkController() != null) {
+        if (!Overseer.isLegacy(getZkController().getZkStateReader().getClusterProps())) {
+          if (cd.getCloudDescriptor().getCoreNodeName() == null) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "non legacy mode coreNodeName missing " + parameters.toString());
+
+          }
+        }
+        preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
+      }
+
+      SolrCore core = create(cd, true);
+
+      // only write out the descriptor if the core is successfully created
+      coresLocator.create(this, cd);
+
+      return core;
+    }
+    catch (Exception ex) {
+      if (isZooKeeperAware() && !preExisitingZkEntry) {
+        try {
+          getZkController().unregister(coreName, cd);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          SolrException.log(log, null, e);
+        } catch (KeeperException e) {
+          SolrException.log(log, null, e);
+        }
+      }
+
+      Throwable tc = ex;
+      Throwable c = null;
+      do {
+        tc = tc.getCause();
+        if (tc != null) {
+          c = tc;
+        }
+      } while (tc != null);
+
+      String rootMsg = "";
+      if (c != null) {
+        rootMsg = " Caused by: " + c.getMessage();
+      }
+
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg, ex);
+    }
+
   }
 
   /**
@@ -723,7 +794,7 @@ public class CoreContainer {
    *
    * @return the newly created core
    */
-  public SolrCore create(CoreDescriptor dcore, boolean publishState) {
+  private SolrCore create(CoreDescriptor dcore, boolean publishState) {
 
     if (isShutDown) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has been shutdown.");
@@ -960,8 +1031,8 @@ public class CoreContainer {
     return null;
   }
 
-  public String getCoreRootDirectory() {
-    return cfg.getCoreRootDirectory().toString();
+  public Path getCoreRootDirectory() {
+    return cfg.getCoreRootDirectory();
   }
 
   /**
@@ -1007,7 +1078,7 @@ public class CoreContainer {
         if (zkSys.getZkController() != null) {
           zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
         }
-        core = create(desc); // This should throw an error if it fails.
+        core = create(desc, true); // This should throw an error if it fails.
       }
       core.open();
     }

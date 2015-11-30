@@ -71,7 +71,6 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
@@ -397,9 +396,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     configString = config;
     schemaString = schema;
     testSolrHome = Paths.get(solrHome);
-    if (solrHome != null) {
-      System.setProperty("solr.solr.home", solrHome);
-    }
+    System.setProperty("solr.solr.home", solrHome);
     initCore();
   }
 
@@ -1860,53 +1857,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     FileUtils.copyFile(new File(top, "solrconfig.xml"), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "stopwords.txt"), new File(subHome, "stopwords.txt"));
     FileUtils.copyFile(new File(top, "synonyms.txt"), new File(subHome, "synonyms.txt"));
-  }
-
-  public static CoreDescriptorBuilder buildCoreDescriptor(CoreContainer container, String name, String instancedir) {
-    return new CoreDescriptorBuilder(container, name, instancedir);
-  }
-
-  public static class CoreDescriptorBuilder {
-
-    final String name;
-    final String instanceDir;
-    final CoreContainer container;
-    final Properties properties = new Properties();
-
-    public CoreDescriptorBuilder(CoreContainer container, String name, String instancedir) {
-      this.name = name;
-      this.instanceDir = instancedir;
-      this.container = container;
-    }
-
-    public CoreDescriptorBuilder withSchema(String schema) {
-      properties.setProperty(CoreDescriptor.CORE_SCHEMA, schema);
-      return this;
-    }
-
-    public CoreDescriptorBuilder withConfig(String config) {
-      properties.setProperty(CoreDescriptor.CORE_CONFIG, config);
-      return this;
-    }
-
-    public CoreDescriptorBuilder withDataDir(String datadir) {
-      properties.setProperty(CoreDescriptor.CORE_DATADIR, datadir);
-      return this;
-    }
-
-    public CoreDescriptor build() {
-      return new CoreDescriptor(container, name, instanceDir, properties);
-    }
-
-    public CoreDescriptorBuilder isTransient(boolean isTransient) {
-      properties.setProperty(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isTransient));
-      return this;
-    }
-
-    public CoreDescriptorBuilder loadOnStartup(boolean loadOnStartup) {
-      properties.setProperty(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
-      return this;
-    }
   }
 
   public boolean compareSolrDocument(Object expected, Object actual) {

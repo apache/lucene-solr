@@ -25,10 +25,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.FileSystem;
@@ -158,13 +158,8 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
     
     CoreContainer container = new CoreContainer(loader);
     container.load();
-    
-    Properties props = new Properties();
-    props.setProperty(CoreDescriptor.CORE_DATADIR, dataDirStr);
-    
-    CoreDescriptor descr = new CoreDescriptor(container, "core1", solrHomeDir.toString(), props);
-    
-    SolrCore core = container.create(descr);
+
+    SolrCore core = container.create("core1", ImmutableMap.of(CoreDescriptor.CORE_DATADIR, dataDirStr));
     
     if (!(core.getDirectoryFactory() instanceof HdfsDirectoryFactory)) {
       throw new UnsupportedOperationException(

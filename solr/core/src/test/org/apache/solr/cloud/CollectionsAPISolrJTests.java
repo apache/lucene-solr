@@ -17,6 +17,17 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -36,17 +47,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossCollection;
 
@@ -232,12 +232,10 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
     String collectionName = "solrj_test_core_props";
     
     File tmpDir = createTempDir("testPropertyParamsForCreate").toFile();
-    File instanceDir = new File(tmpDir, "instanceDir-" + TestUtil.randomSimpleString(random(), 1, 5));
     File dataDir = new File(tmpDir, "dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
     File ulogDir = new File(tmpDir, "ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
 
     Properties properties = new Properties();
-    properties.put(CoreAdminParams.INSTANCE_DIR, instanceDir.getAbsolutePath());
     properties.put(CoreAdminParams.DATA_DIR, dataDir.getAbsolutePath());
     properties.put(CoreAdminParams.ULOG_DIR, ulogDir.getAbsolutePath());
 
@@ -262,9 +260,6 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
       CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), client);
       NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
       String dataDirStr = (String) coreStatus.get("dataDir");
-      String instanceDirStr = (String) coreStatus.get("instanceDir");
-      assertEquals("Instance dir does not match param passed in property.instanceDir syntax",
-          new File(instanceDirStr).getAbsolutePath(), instanceDir.getAbsolutePath());
       assertEquals("Data dir does not match param given in property.dataDir syntax",
           new File(dataDirStr).getAbsolutePath(), dataDir.getAbsolutePath());
     }

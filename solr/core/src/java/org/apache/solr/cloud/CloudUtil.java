@@ -72,12 +72,11 @@ public class CloudUtil {
               cc.unload(desc.getName());
             }
             
-            File instanceDir = new File(desc.getInstanceDir());
             try {
-              FileUtils.deleteDirectory(instanceDir);
+              FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
             } catch (IOException e) {
               SolrException.log(log, "Failed to delete instance dir for core:"
-                  + desc.getName() + " dir:" + instanceDir.getAbsolutePath());
+                  + desc.getName() + " dir:" + desc.getInstanceDir());
             }
             log.error("", new SolrException(ErrorCode.SERVER_ERROR,
                 "Will not load SolrCore " + desc.getName()

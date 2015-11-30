@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -219,9 +220,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     MockSearcherListener.numberOfTimesCalledFirstSearcher = new AtomicInteger();
     
     try {
-      CoreDescriptor newCd = new CoreDescriptor(cores, "core1", cd.getInstanceDir(), "config", "solrconfig-searcher-listeners1.xml");
       // Create a new core, this should call all the firstSearcherListeners
-      newCore = cores.create(newCd);
+      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"));
       
       //validate that the new core was created with the correct solrconfig
       assertNotNull(newCore.getSearchComponent("mock"));
@@ -270,9 +270,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     final SolrCore newCore;
     boolean coreCreated = false;
     try {
-      CoreDescriptor newCd = new CoreDescriptor(cores, "core1", cd.getInstanceDir(), "config", "solrconfig-searcher-listeners1.xml");
       // Create a new core, this should call all the firstSearcherListeners
-      newCore = cores.create(newCd);
+      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"));
       coreCreated = true;
       
       //validate that the new core was created with the correct solrconfig
@@ -337,9 +336,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     boolean coreCreated = false;
     try {
       System.setProperty("tests.solr.useColdSearcher", "true");
-      CoreDescriptor newCd = new CoreDescriptor(cores, "core1", cd.getInstanceDir(), "config", "solrconfig-searcher-listeners1.xml");
       // Create a new core, this should call all the firstSearcherListeners
-      newCore = cores.create(newCd);
+      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"));
       coreCreated = true;
       
       //validate that the new core was created with the correct solrconfig

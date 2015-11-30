@@ -17,31 +17,24 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
+import com.google.common.base.Strings;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.PropertiesUtil;
-
-import com.google.common.base.Strings;
 
 public class CloudDescriptor {
 
   private final CoreDescriptor cd;
   private String shardId;
   private String collectionName;
-  private SolrParams params;
   private String roles = null;
   private Integer numShards;
   private String nodeName = null;
-
-  /* shardRange and shardState are used once-only during sub shard creation for shard splits
-   * Use the values from {@link Slice} instead */
-  volatile String shardRange = null;
-  volatile Slice.State shardState = Slice.State.ACTIVE;
-  volatile String shardParent = null;
+  private Map<String, String> collectionParams = new HashMap<>();
 
   private volatile boolean isLeader = false;
   
@@ -64,6 +57,12 @@ public class CloudDescriptor {
     if (Strings.isNullOrEmpty(nodeName))
       this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
+
+    for (String propName : props.stringPropertyNames()) {
+      if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
+        collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), props.getProperty(propName));
+      }
+    }
   }
   
   public Replica.State getLastPublished() {
@@ -115,12 +114,8 @@ public class CloudDescriptor {
   }
   
   /** Optional parameters that can change how a core is created. */
-  public SolrParams getParams() {
-    return params;
-  }
-
-  public void setParams(SolrParams params) {
-    this.params = params;
+  public Map<String, String> getParams() {
+    return collectionParams;
   }
 
   // setting only matters on core creation
