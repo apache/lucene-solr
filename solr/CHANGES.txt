@@ -188,7 +188,8 @@ Other Changes
 * LUCENE-6900: Added test for score ordered grouping, and refactored TopGroupsResultTransformer.
   (David Smiley)
 
-
+* SOLR-8336: CoreDescriptor now takes a Path for its instance directory, rather
+  than a String (Alan Woodward)
 
 ==================  5.4.0 ==================
 

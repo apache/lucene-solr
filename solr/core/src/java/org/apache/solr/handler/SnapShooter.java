@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,8 +25,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
@@ -63,8 +60,7 @@ public class SnapShooter {
       snapDir = core.getDataDir();
     }
     else  {
-      File base = new File(core.getCoreDescriptor().getInstanceDir());
-      snapDir = org.apache.solr.util.FileUtils.resolvePath(base, location).getAbsolutePath();
+      snapDir = core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
     }
     this.snapshotName = snapshotName;
 

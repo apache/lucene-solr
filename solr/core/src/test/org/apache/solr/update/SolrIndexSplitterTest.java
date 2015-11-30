@@ -17,6 +17,12 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
@@ -28,18 +34,12 @@ import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.util.Hash;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   File indexDir1 = null, indexDir2 = null, indexDir3 = null;
@@ -159,15 +159,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
     SolrCore core1 = null, core2 = null;
     try {
-      String instanceDir = h.getCore().getCoreDescriptor().getInstanceDir();
 
-      CoreDescriptor dcore1 = buildCoreDescriptor(h.getCoreContainer(), "split1", instanceDir)
-          .withDataDir(indexDir1.getAbsolutePath()).withSchema("schema12.xml").build();
-      core1 = h.getCoreContainer().create(dcore1);
-
-      CoreDescriptor dcore2 = buildCoreDescriptor(h.getCoreContainer(), "split2", instanceDir)
-          .withDataDir(indexDir2.getAbsolutePath()).withSchema("schema12.xml").build();
-      core2 = h.getCoreContainer().create(dcore2);
+      core1 = h.getCoreContainer().create("split1",
+          ImmutableMap.of("dataDir", indexDir1.getAbsolutePath(), "configSet", "minimal"));
+      core2 = h.getCoreContainer().create("split2",
+          ImmutableMap.of("dataDir", indexDir2.getAbsolutePath(), "configSet", "minimal"));
 
       LocalSolrQueryRequest request = null;
       try {

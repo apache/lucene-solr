@@ -17,25 +17,25 @@
 
 package org.apache.solr.core;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.PropertiesUtil;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.Locale;
-import java.util.Properties;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A Solr core descriptor
@@ -47,8 +47,6 @@ public class CoreDescriptor {
   // Properties file name constants
   public static final String CORE_NAME = "name";
   public static final String CORE_CONFIG = "config";
-  public static final String CORE_INSTDIR = "instanceDir";
-  public static final String CORE_ABS_INSTDIR = "absoluteInstDir";
   public static final String CORE_DATADIR = "dataDir";
   public static final String CORE_ULOGDIR = "ulogDir";
   public static final String CORE_SCHEMA = "schema";
@@ -91,13 +89,12 @@ public class CoreDescriptor {
       .build();
 
   private static ImmutableList<String> requiredProperties = ImmutableList.of(
-      CORE_NAME, CORE_INSTDIR, CORE_ABS_INSTDIR
+      CORE_NAME
   );
 
   public static ImmutableList<String> standardPropNames = ImmutableList.of(
       CORE_NAME,
       CORE_CONFIG,
-      CORE_INSTDIR,
       CORE_DATADIR,
       CORE_ULOGDIR,
       CORE_SCHEMA,
@@ -118,6 +115,8 @@ public class CoreDescriptor {
 
   private final CloudDescriptor cloudDesc;
 
+  private final Path instanceDir;
+
   /** The original standard core properties, before substitution */
   protected final Properties originalCoreProperties = new Properties();
 
@@ -130,61 +129,72 @@ public class CoreDescriptor {
   /** The properties for this core, substitutable by resource loaders */
   protected final Properties substitutableProperties = new Properties();
 
-  /**
-   * Create a new CoreDescriptor.
-   * @param container       the CoreDescriptor's container
-   * @param name            the CoreDescriptor's name
-   * @param instanceDir     a String containing the instanceDir
-   * @param coreProps       a Properties object of the properties for this core
-   */
-  public CoreDescriptor(CoreContainer container, String name, String instanceDir,
-                        Properties coreProps) {
-    this(container, name, instanceDir, coreProps, null);
+  public CoreDescriptor(CoreContainer container, String name, Path instanceDir, String... properties) {
+    this(container, name, instanceDir, toMap(properties));
   }
 
-  public CoreDescriptor(CoreContainer container, String name, String instanceDir, String... properties) {
-    this(container, name, instanceDir, toProperties(properties));
-  }
-
-  private static Properties toProperties(String... properties) {
-    Properties props = new Properties();
+  private static Map<String, String> toMap(String... properties) {
+    Map<String, String> props = new HashMap<>();
     assert properties.length % 2 == 0;
     for (int i = 0; i < properties.length; i += 2) {
-      props.setProperty(properties[i], properties[i+1]);
+      props.put(properties[i], properties[i+1]);
     }
     return props;
   }
-  
+
+  /**
+   * Create a new CoreDescriptor with a given name and instancedir
+   * @param container     the CoreDescriptor's container
+   * @param name          the CoreDescriptor's name
+   * @param instanceDir   the CoreDescriptor's instancedir
+   */
+  public CoreDescriptor(CoreContainer container, String name, Path instanceDir) {
+    this(container, name, instanceDir, Collections.emptyMap());
+  }
+
+  /**
+   * Create a new CoreDescriptor using the properties of an existing one
+   * @param coreName the new CoreDescriptor's name
+   * @param other    the CoreDescriptor to copy
+   */
+  public CoreDescriptor(String coreName, CoreDescriptor other) {
+    this.coreContainer = other.coreContainer;
+    this.cloudDesc = other.cloudDesc;
+    this.instanceDir = other.instanceDir;
+    this.originalExtraProperties.putAll(other.originalExtraProperties);
+    this.originalCoreProperties.putAll(other.originalCoreProperties);
+    this.coreProperties.putAll(other.coreProperties);
+    this.substitutableProperties.putAll(other.substitutableProperties);
+    this.coreProperties.setProperty(CORE_NAME, coreName);
+    this.originalCoreProperties.setProperty(CORE_NAME, coreName);
+    this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
+  }
+
   /**
    * Create a new CoreDescriptor.
    * @param container       the CoreDescriptor's container
    * @param name            the CoreDescriptor's name
-   * @param instanceDir     a String containing the instanceDir
-   * @param coreProps       a Properties object of the properties for this core
-   * @param params          additional params
+   * @param instanceDir     a Path resolving to the instanceDir
+   * @param coreProps       a Map of the properties for this core
    */
-  public CoreDescriptor(CoreContainer container, String name, String instanceDir,
-                        Properties coreProps, SolrParams params) {
+  public CoreDescriptor(CoreContainer container, String name, Path instanceDir,
+                        Map<String, String> coreProps) {
 
     this.coreContainer = container;
+    this.instanceDir = instanceDir;
 
     originalCoreProperties.setProperty(CORE_NAME, name);
-    originalCoreProperties.setProperty(CORE_INSTDIR, instanceDir);
 
     Properties containerProperties = container.getContainerProperties();
     name = PropertiesUtil.substituteProperty(checkPropertyIsNotEmpty(name, CORE_NAME),
                                              containerProperties);
-    instanceDir = PropertiesUtil.substituteProperty(checkPropertyIsNotEmpty(instanceDir, CORE_INSTDIR),
-                                                    containerProperties);
 
     coreProperties.putAll(defaultProperties);
     coreProperties.put(CORE_NAME, name);
-    coreProperties.put(CORE_INSTDIR, instanceDir);
-    coreProperties.put(CORE_ABS_INSTDIR, convertToAbsolute(instanceDir, container.getCoreRootDirectory()));
 
-    for (String propname : coreProps.stringPropertyNames()) {
+    for (String propname : coreProps.keySet()) {
 
-      String propvalue = coreProps.getProperty(propname);
+      String propvalue = coreProps.get(propname);
 
       if (isUserDefinedProperty(propname))
         originalExtraProperties.put(propname, propvalue);
@@ -202,9 +212,6 @@ public class CoreDescriptor {
     // TODO maybe make this a CloudCoreDescriptor subclass?
     if (container.isZooKeeperAware()) {
       cloudDesc = new CloudDescriptor(name, coreProperties, this);
-      if (params != null) {
-        cloudDesc.setParams(params);
-      }
     }
     else {
       cloudDesc = null;
@@ -226,20 +233,16 @@ public class CoreDescriptor {
    */
   protected void loadExtraProperties() {
     String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
-    File propertiesFile = resolvePaths(filename);
-    if (propertiesFile.exists()) {
-      FileInputStream in = null;
-      try {
-        in = new FileInputStream(propertiesFile);
+    Path propertiesFile = instanceDir.resolve(filename);
+    if (Files.exists(propertiesFile)) {
+      try (InputStream is = Files.newInputStream(propertiesFile)) {
         Properties externalProps = new Properties();
-        externalProps.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+        externalProps.load(new InputStreamReader(is, StandardCharsets.UTF_8));
         coreProperties.putAll(externalProps);
       } catch (IOException e) {
         String message = String.format(Locale.ROOT, "Could not load properties from %s: %s:",
-            propertiesFile.getAbsoluteFile(), e.toString());
+            propertiesFile.toString(), e.toString());
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
-      } finally {
-        IOUtils.closeQuietly(in);
       }
     }
   }
@@ -256,13 +259,6 @@ public class CoreDescriptor {
         propName = SOLR_CORE_PROP_PREFIX + propName;
       substitutableProperties.setProperty(propName, propValue);
     }
-  }
-
-  protected File resolvePaths(String filepath) {
-    File file = new File(filepath);
-    if (file.isAbsolute())
-      return file;
-    return new File(getInstanceDir(), filepath);
   }
 
   /**
@@ -283,33 +279,6 @@ public class CoreDescriptor {
     return value;
   }
 
-  /**
-   * Create a new CoreDescriptor with a given name and instancedir
-   * @param container     the CoreDescriptor's container
-   * @param name          the CoreDescriptor's name
-   * @param instanceDir   the CoreDescriptor's instancedir
-   */
-  public CoreDescriptor(CoreContainer container, String name, String instanceDir) {
-    this(container, name, instanceDir, new Properties());
-  }
-
-  /**
-   * Create a new CoreDescriptor using the properties of an existing one
-   * @param coreName the new CoreDescriptor's name
-   * @param other    the CoreDescriptor to copy
-   */
-  public CoreDescriptor(String coreName, CoreDescriptor other) {
-    this.coreContainer = other.coreContainer;
-    this.cloudDesc = other.cloudDesc;
-    this.originalExtraProperties.putAll(other.originalExtraProperties);
-    this.originalCoreProperties.putAll(other.originalCoreProperties);
-    this.coreProperties.putAll(other.coreProperties);
-    this.substitutableProperties.putAll(other.substitutableProperties);
-    this.coreProperties.setProperty(CORE_NAME, coreName);
-    this.originalCoreProperties.setProperty(CORE_NAME, coreName);
-    this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
-  }
-
   public String getPropertiesName() {
     return coreProperties.getProperty(CORE_PROPERTIES);
   }
@@ -322,22 +291,11 @@ public class CoreDescriptor {
     return defaultProperties.get(CORE_DATADIR).equals(coreProperties.getProperty(CORE_DATADIR));
   }
 
-  /**@return the core instance directory. */
-  public String getRawInstanceDir() {
-    return coreProperties.getProperty(CORE_INSTDIR);
-  }
-
-  private static String convertToAbsolute(String instDir, String solrHome) {
-    checkNotNull(instDir);
-    return SolrResourceLoader.normalizeDir(Paths.get(solrHome).resolve(instDir).toString());
-  }
-
   /**
-   *
-   * @return the core instance directory, prepended with solr_home if not an absolute path.
+   * @return the core instance directory
    */
-  public String getInstanceDir() {
-    return coreProperties.getProperty(CORE_ABS_INSTDIR);
+  public Path getInstanceDir() {
+    return instanceDir;
   }
 
   /**@return the core configuration resource name. */
@@ -401,12 +359,7 @@ public class CoreDescriptor {
 
   @Override
   public String toString() {
-    return new StringBuilder("CoreDescriptor[name=")
-        .append(this.getName())
-        .append(";instanceDir=")
-        .append(this.getInstanceDir())
-        .append("]")
-        .toString();
+    return "CoreDescriptor[name=" + this.getName() + ";instanceDir=" + this.getInstanceDir() + "]";
   }
 
   public String getConfigSet() {

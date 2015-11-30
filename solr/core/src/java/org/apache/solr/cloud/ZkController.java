@@ -25,19 +25,7 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -52,25 +40,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.BeforeReconnect;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ClusterStateUtil;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.OnReconnect;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -102,11 +72,11 @@ import org.slf4j.MDC;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 
 /**
  * Handle ZooKeeper interactions.
@@ -1337,7 +1307,6 @@ public final class ZkController {
     try {
       if (!zkClient.exists(collectionPath, true)) {
         log.info("Creating collection in ZooKeeper:" + collection);
-        SolrParams params = cd.getParams();
 
         try {
           Map<String, Object> collectionProps = new HashMap<>();
@@ -1346,15 +1315,8 @@ public final class ZkController {
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX + CONFIGNAME_PROP, collection);
 
           // params passed in - currently only done via core admin (create core commmand).
-          if (params != null) {
-            Iterator<String> iter = params.getParameterNamesIterator();
-            while (iter.hasNext()) {
-              String paramName = iter.next();
-              if (paramName.startsWith(COLLECTION_PARAM_PREFIX)) {
-                collectionProps.put(paramName.substring(COLLECTION_PARAM_PREFIX.length()), params.get(paramName));
-              }
-            }
-
+          if (cd.getParams().size() > 0) {
+            collectionProps.putAll(cd.getParams());
             // if the config name wasn't passed in, use the default
             if (!collectionProps.containsKey(CONFIGNAME_PROP)) {
               // TODO: getting the configName from the collectionPath should fail since we already know it doesn't exist?
@@ -1795,8 +1757,7 @@ public final class ZkController {
       String confName = cd.getCollectionName();
       if (StringUtils.isEmpty(confName))
         confName = coreName;
-      String instanceDir = cd.getInstanceDir();
-      Path udir = Paths.get(instanceDir).resolve("conf");
+      Path udir = cd.getInstanceDir().resolve("conf");
       log.info("Uploading directory " + udir + " with name " + confName + " for SolrCore " + coreName);
       configManager.uploadConfigDir(udir, confName);
     }
@@ -2523,5 +2484,23 @@ public final class ZkController {
     public NotLeaderException(ErrorCode code, String msg) {
       super(code, msg);
     }
+  }
+
+  public boolean checkIfCoreNodeNameAlreadyExists(CoreDescriptor dcore) {
+    DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(dcore.getCollectionName());
+    if (collection != null) {
+      Collection<Slice> slices = collection.getSlices();
+
+      for (Slice slice : slices) {
+        Collection<Replica> replicas = slice.getReplicas();
+        for (Replica replica : replicas) {
+          if (replica.getName().equals(
+              dcore.getCloudDescriptor().getCoreNodeName())) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 }

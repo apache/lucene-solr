@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import java.nio.file.Paths;
-
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -37,7 +35,7 @@ public class CloudConfigSetService extends ConfigSetService {
     // TODO: Shouldn't the collection node be created by the Collections API?
     zkController.createCollectionZkNode(cd.getCloudDescriptor());
     String configName = zkController.getZkStateReader().readConfigName(cd.getCollectionName());
-    return new ZkSolrResourceLoader(Paths.get(cd.getInstanceDir()), configName, parentLoader.getClassLoader(),
+    return new ZkSolrResourceLoader(cd.getInstanceDir(), configName, parentLoader.getClassLoader(),
         cd.getSubstitutableProperties(), zkController);
   }
 

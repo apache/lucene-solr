@@ -167,7 +167,7 @@ public abstract class ConfigSetService {
     protected Path locateInstanceDir(CoreDescriptor cd) {
       String configSet = cd.getConfigSet();
       if (configSet == null)
-        return Paths.get(cd.getInstanceDir());
+        return cd.getInstanceDir();
       Path configSetDirectory = configSetBase.resolve(configSet);
       if (!Files.isDirectory(configSetDirectory))
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

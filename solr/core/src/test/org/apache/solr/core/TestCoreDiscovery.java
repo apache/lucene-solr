@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -68,7 +69,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isLazy));
     props.put(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
     props.put(CoreDescriptor.CORE_DATADIR, "${core.dataDir:stuffandnonsense}");
-    props.put(CoreDescriptor.CORE_INSTDIR, "totallybogus"); // For testing that this property is ignored if present.
 
     for (String extra : extraProps) {
       String[] parts = extra.split("=");
@@ -154,9 +154,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
         // This is too long and ugly to put in. Besides, it varies.
         assertNotNull(desc.getInstanceDir());
-
-        // Prove we're ignoring this even though it's set in the properties file
-        assertFalse("InstanceDir should be ignored", desc.getInstanceDir().contains("totallybogus"));
 
         assertEquals("core1", desc.getDataDir());
         assertEquals("solrconfig-minimal.xml", desc.getConfigName());
@@ -302,8 +299,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
       assertNull(cc.getCore("core0"));
 
-      SolrCore core3 = cc.create(new CoreDescriptor(cc, "core3", "core3", "configSet", "minimal"));
-      assertThat(core3.getCoreDescriptor().getInstanceDir(), containsString("relative"));
+      SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
+      assertThat(core3.getCoreDescriptor().getInstanceDir().toAbsolutePath().toString(), containsString("relative"));
 
     } finally {
       cc.shutdown();
