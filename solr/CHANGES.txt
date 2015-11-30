@@ -182,6 +182,9 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-7928: Improve CheckIndex to work against HdfsDirectory
+  (Mike Drob, Gregory Chanan)
+
 Other Changes
 ----------------------
 

@@ -73,7 +73,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * @lucene.experimental Please make a complete backup of your
  * index before using this to exorcise corrupted documents from your index!
  */
-public class CheckIndex implements Closeable {
+public final class CheckIndex implements Closeable {
 
   private PrintStream infoStream;
   private Directory dir;
@@ -2297,7 +2297,11 @@ public class CheckIndex implements Closeable {
     return true;
   }
 
-  private static boolean assertsOn() {
+  /**
+   * Check whether asserts are enabled or not.
+   * @return true iff asserts are enabled
+   */
+  public static boolean assertsOn() {
     assert testAsserts();
     return assertsOn;
   }
@@ -2338,11 +2342,11 @@ public class CheckIndex implements Closeable {
     int exitCode = doMain(args);
     System.exit(exitCode);
   }
-  
-  // actual main: returns exit code instead of terminating JVM (for easy testing)
-  @SuppressForbidden(reason = "System.out required: command line tool")
-  private static int doMain(String args[]) throws IOException, InterruptedException {
 
+  /**
+   * Run-time configuration options for CheckIndex commands.
+   */
+  public static class Options {
     boolean doExorcise = false;
     boolean doCrossCheckTermVectors = false;
     boolean verbose = false;
@@ -2350,44 +2354,113 @@ public class CheckIndex implements Closeable {
     List<String> onlySegments = new ArrayList<>();
     String indexPath = null;
     String dirImpl = null;
+    PrintStream out = null;
+
+    /** Sole constructor. */
+    public Options() {}
+
+    /**
+     * Get the name of the FSDirectory implementation class to use.
+     */
+    public String getDirImpl() {
+      return dirImpl;
+    }
+
+    /**
+     * Get the directory containing the index.
+     */
+    public String getIndexPath() {
+      return indexPath;
+    }
+
+    /**
+     * Set the PrintStream to use for reporting results.
+     */
+    public void setOut(PrintStream out) {
+      this.out = out;
+    }
+  }
+
+  // actual main: returns exit code instead of terminating JVM (for easy testing)
+  @SuppressForbidden(reason = "System.out required: command line tool")
+  private static int doMain(String args[]) throws IOException, InterruptedException {
+    Options opts;
+    try {
+      opts = parseOptions(args);
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return 1;
+    }
+
+    if (!assertsOn())
+      System.out.println("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene...', so assertions are enabled");
+
+    System.out.println("\nOpening index @ " + opts.indexPath + "\n");
+    Directory directory = null;
+    Path path = Paths.get(opts.indexPath);
+    try {
+      if (opts.dirImpl == null) {
+        directory = FSDirectory.open(path);
+      } else {
+        directory = CommandLineUtil.newFSDirectory(opts.dirImpl, path);
+      }
+    } catch (Throwable t) {
+      System.out.println("ERROR: could not open directory \"" + opts.indexPath + "\"; exiting");
+      t.printStackTrace(System.out);
+      return 1;
+    }
+
+    try (Directory dir = directory;
+         CheckIndex checker = new CheckIndex(dir)) {
+      opts.out = System.out;
+      return checker.doCheck(opts);
+    }
+  }
+
+  /**
+   * Parse command line args into fields
+   * @param args The command line arguments
+   * @return An Options struct
+   * @throws IllegalArgumentException if any of the CLI args are invalid
+   */
+  public static Options parseOptions(String[] args) {
+    Options opts = new Options();
+
     int i = 0;
     while(i < args.length) {
       String arg = args[i];
       if ("-fast".equals(arg)) {
-        doChecksumsOnly = true;
+        opts.doChecksumsOnly = true;
       } else if ("-exorcise".equals(arg)) {
-        doExorcise = true;
+        opts.doExorcise = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
-        doCrossCheckTermVectors = true;
+        opts.doCrossCheckTermVectors = true;
       } else if (arg.equals("-verbose")) {
-        verbose = true;
+        opts.verbose = true;
       } else if (arg.equals("-segment")) {
         if (i == args.length-1) {
-          System.out.println("ERROR: missing name for -segment option");
-          return 1;
+          throw new IllegalArgumentException("ERROR: missing name for -segment option");
         }
         i++;
-        onlySegments.add(args[i]);
+        opts.onlySegments.add(args[i]);
       } else if ("-dir-impl".equals(arg)) {
         if (i == args.length - 1) {
-          System.out.println("ERROR: missing value for -dir-impl option");
-          return 1;
+          throw new IllegalArgumentException("ERROR: missing value for -dir-impl option");
         }
         i++;
-        dirImpl = args[i];
+        opts.dirImpl = args[i];
       } else {
-        if (indexPath != null) {
-          System.out.println("ERROR: unexpected extra argument '" + args[i] + "'");
-          return 1;
+        if (opts.indexPath != null) {
+          throw new IllegalArgumentException("ERROR: unexpected extra argument '" + args[i] + "'");
         }
-        indexPath = args[i];
+        opts.indexPath = args[i];
       }
       i++;
     }
 
-    if (indexPath == null) {
-      System.out.println("\nERROR: index path not specified");
-      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
+    if (opts.indexPath == null) {
+      throw new IllegalArgumentException("\nERROR: index path not specified" +
+                         "\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-crossCheckTermVectors] [-segment X] [-segment Y] [-dir-impl X]\n" +
                          "\n" +
                          "  -exorcise: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -fast: just verify file checksums, omitting logical integrity checks\n" + 
@@ -2413,73 +2486,58 @@ public class CheckIndex implements Closeable {
                          "\n" +
                          "This tool exits with exit code 1 if the index cannot be opened or has any\n" +
                          "corruption, else 0.\n");
-      return 1;
     }
 
-    if (!assertsOn())
-      System.out.println("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene...', so assertions are enabled");
-
-    if (onlySegments.size() == 0)
-      onlySegments = null;
-    else if (doExorcise) {
-      System.out.println("ERROR: cannot specify both -exorcise and -segment");
-      return 1;
+    if (opts.onlySegments.size() == 0) {
+      opts.onlySegments = null;
+    } else if (opts.doExorcise) {
+      throw new IllegalArgumentException("ERROR: cannot specify both -exorcise and -segment");
     }
     
-    if (doChecksumsOnly && doCrossCheckTermVectors) {
-      System.out.println("ERROR: cannot specify both -fast and -crossCheckTermVectors");
+    if (opts.doChecksumsOnly && opts.doCrossCheckTermVectors) {
+      throw new IllegalArgumentException("ERROR: cannot specify both -fast and -crossCheckTermVectors");
+    }
+
+    return opts;
+  }
+
+  /**
+   * Actually perform the index check
+   * @param opts The options to use for this check
+   * @return 0 iff the index is clean, 1 otherwise
+   */
+  public int doCheck(Options opts) throws IOException, InterruptedException {
+    setCrossCheckTermVectors(opts.doCrossCheckTermVectors);
+    setChecksumsOnly(opts.doChecksumsOnly);
+    setInfoStream(opts.out, opts.verbose);
+
+    Status result = checkIndex(opts.onlySegments);
+    if (result.missingSegments) {
       return 1;
     }
 
-    System.out.println("\nOpening index @ " + indexPath + "\n");
-    Directory directory = null;
-    Path path = Paths.get(indexPath);
-    try {
-      if (dirImpl == null) {
-        directory = FSDirectory.open(path);
+    if (!result.clean) {
+      if (!opts.doExorcise) {
+        opts.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -exorcise were specified\n");
       } else {
-        directory = CommandLineUtil.newFSDirectory(dirImpl, path);
-      }
-    } catch (Throwable t) {
-      System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
-      t.printStackTrace(System.out);
-      return 1;
-    }
-
-    try (Directory dir = directory;
-         CheckIndex checker = new CheckIndex(dir)) {
-      checker.setCrossCheckTermVectors(doCrossCheckTermVectors);
-      checker.setChecksumsOnly(doChecksumsOnly);
-      checker.setInfoStream(System.out, verbose);
-      
-      Status result = checker.checkIndex(onlySegments);
-      if (result.missingSegments) {
-        return 1;
-      }
-      
-      if (!result.clean) {
-        if (!doExorcise) {
-          System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -exorcise were specified\n");
-        } else {
-          System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
-          System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. YOU WILL LOSE DATA. THIS IS YOUR LAST CHANCE TO CTRL+C!");
-          for(int s=0;s<5;s++) {
-            Thread.sleep(1000);
-            System.out.println("  " + (5-s) + "...");
-          }
-          System.out.println("Writing...");
-          checker.exorciseIndex(result);
-          System.out.println("OK");
-          System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
+        opts.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
+        opts.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. YOU WILL LOSE DATA. THIS IS YOUR LAST CHANCE TO CTRL+C!");
+        for(int s=0;s<5;s++) {
+          Thread.sleep(1000);
+          opts.out.println("  " + (5-s) + "...");
         }
+        opts.out.println("Writing...");
+        exorciseIndex(result);
+        opts.out.println("OK");
+        opts.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
       }
-      System.out.println("");
-      
-      if (result.clean == true) {
-        return 0;
-      } else {
-        return 1;
-      }
+    }
+    opts.out.println("");
+
+    if (result.clean == true) {
+      return 0;
+    } else {
+      return 1;
     }
   }
 
