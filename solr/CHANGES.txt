@@ -11,6 +11,12 @@ See http://lucene.apache.org/solr for more information.
 
 ======================= Lucene 5.5.0 =======================
 
+New Features
+----------------------
+
+* SOLR-7928: Improve CheckIndex to work against HdfsDirectory
+  (Mike Drob, Gregory Chanan)
+
 Other Changes
 ----------------------
 
