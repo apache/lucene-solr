@@ -120,5 +120,10 @@ public class HdfsLockFactory extends LockFactory {
     public void ensureValid() throws IOException {
       // no idea how to implement this on HDFS
     }
+
+    @Override
+    public String toString() {
+      return "HdfsLock(lockFile=" + lockFile + ")";
+    }
   }
 }
