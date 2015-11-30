@@ -120,7 +120,7 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
      * is <code>null</code>
      * 
      * @see StandardQueryParser#setMultiFields(CharSequence[])
-     * @see StandardQueryParser#getMultiFields(CharSequence[])
+     * @see StandardQueryParser#getMultiFields()
      */
     final public static ConfigurationKey<CharSequence[]> MULTI_FIELDS = ConfigurationKey.newInstance();
     
