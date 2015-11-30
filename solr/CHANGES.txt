@@ -188,8 +188,6 @@ Other Changes
 * LUCENE-6900: Added test for score ordered grouping, and refactored TopGroupsResultTransformer.
   (David Smiley)
 
-* SOLR-8340: Fixed NullPointerException in HighlightComponent.
-  (zengjie via Christine Poerschke)
 
 
 ==================  5.4.0 ==================
@@ -460,6 +458,8 @@ Bug Fixes
 
 * SOLR-8326: If BasicAuth enabled, inter node requests fail after node restart (noble, Anshum Gupta)
 
+* SOLR-8340: Fixed NullPointerException in HighlightComponent.
+  (zengjie via Christine Poerschke)
 
 Optimizations
 ----------------------
