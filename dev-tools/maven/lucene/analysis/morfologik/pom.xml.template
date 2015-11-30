@@ -70,6 +70,9 @@
           <exclude>**/*.java</exclude>
         </excludes>
       </testResource>
+      <testResource>
+        <directory>${module-path}/src/test-files</directory>
+      </testResource>
     </testResources>
   </build>
 </project>
