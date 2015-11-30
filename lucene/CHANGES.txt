@@ -184,6 +184,10 @@ API Changes
   in-memory segments to disk without opening a near-real-time reader
   nor calling fsync (Robert Muir, Simon Willnauer, Mike McCandless)
 
+* LUCENE-6911: Add correct StandardQueryParser.getMultiFields() method,
+  deprecate no-op StandardQueryParser.getMultiFields(CharSequence[]) method.
+  (Christine Poerschke, Coverity Scan (via Rishabh Patel))
+
 Optimizations
 
 * LUCENE-6708: TopFieldCollector does not compute the score several times on the

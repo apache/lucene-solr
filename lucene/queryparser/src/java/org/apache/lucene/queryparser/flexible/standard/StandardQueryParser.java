@@ -298,9 +298,21 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * certain query is <code>null</code>
    * 
    * @param fields the fields used to expand the query
+   * @deprecated Use StandardQueryParser#getMultiFields() instead.
    */
+  @Deprecated
   public void getMultiFields(CharSequence[] fields) {
     getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
+  }
+
+  /**
+   * Returns the fields used to expand the query when the field for a
+   * certain query is <code>null</code>
+   *
+   * @return the fields used to expand the query
+   */
+  public CharSequence[] getMultiFields() {
+    return getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
   }
 
   /**
