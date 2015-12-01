@@ -481,7 +481,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V> {
     return map;
   }
 
-  private static class CacheEntry<K,V> implements Comparable<CacheEntry<K,V>> {
+  public static class CacheEntry<K,V> implements Comparable<CacheEntry<K,V>> {
     K key;
     V value;
     volatile long lastAccessed = 0;

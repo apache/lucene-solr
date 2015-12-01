@@ -21,7 +21,7 @@ package org.apache.solr.util.hll;
  * A serialization schema for HLLs. Reads and writes HLL metadata to
  * and from <code>byte[]</code> representations.
  */
-interface ISchemaVersion {
+public interface ISchemaVersion {
     /**
      * The number of metadata bytes required for a serialized HLL of the
      * specified type.
