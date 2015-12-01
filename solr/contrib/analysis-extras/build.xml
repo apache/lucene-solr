@@ -43,11 +43,6 @@
     <path refid="solr.base.classpath"/>
   </path>
 
-  <path id="test.classpath">
-    <path refid="solr.test.base.classpath"/>
-    <fileset dir="${test.lib.dir}" includes="*.jar"/>
-  </path>
-
   <!-- 
     Although the smartcn, stempel, and morfologik jars are not dependencies of
     code in the analysis-extras contrib, they must remain here in order to
