@@ -35,8 +35,6 @@
     <dependency org="com.sun.mail" name="javax.mail" rev="${/com.sun.mail/javax.mail}" conf="compile"/>
     <dependency org="com.sun.mail" name="gimap" rev="${/com.sun.mail/gimap}" conf="compile"/>  
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

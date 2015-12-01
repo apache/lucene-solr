@@ -95,7 +95,6 @@
     <pathelement location="${common-solr.dir}/build/contrib/solr-morphlines-core/classes/test"/>
     <pathelement location="${common-solr.dir}/contrib/morphlines-core/src/test-files"/>
     <fileset dir="${common-solr.dir}/contrib/morphlines-core/test-lib" excludes="${common.classpath.excludes}"/>
-    <fileset dir="${test.lib.dir}" includes="*.jar"/>
   </path>
 
   <path id="javadoc.classpath">

@@ -637,6 +637,9 @@ Other Changes
 
 * SOLR-8101: Improve Linux service installation script (Sergey Urushkin via Timothy Potter)
 
+* SOLR-8180: jcl-over-slf4j should have officially been a SolrJ dependency; it now is.
+  (David Smiley, Kevin Risden)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
