@@ -18,14 +18,16 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ActionThrottle;
+import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
@@ -57,6 +59,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private volatile boolean recoveryRunning;
   private RecoveryStrategy recoveryStrat;
+  private Future future;
   private volatile boolean lastReplicationSuccess = true;
 
   // will we attempt recovery as if we just started up (i.e. use starting versions rather than recent versions for peersync
@@ -281,7 +284,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         
         recoveryStrat = new RecoveryStrategy(cc, cd, this);
         recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-        recoveryStrat.start();
+        future = cc.getUpdateShardHandler().getUpdateExecutor().submit(recoveryStrat);
         recoveryRunning = true;
       }
     } finally {
@@ -296,10 +299,12 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         recoveryStrat.close();
         while (true) {
           try {
-            recoveryStrat.join();
+            future.get();
           } catch (InterruptedException e) {
             // not interruptible - keep waiting
             continue;
+          } catch (ExecutionException e) {
+            break;
           }
           break;
         }

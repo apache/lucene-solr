@@ -424,6 +424,7 @@ public class HttpSolrCall {
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
+          log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
           return RETURN;
@@ -489,8 +490,10 @@ public class HttpSolrCall {
   private boolean shouldAuthorize() {
     if(PKIAuthenticationPlugin.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
-    if( cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null){
-      return cores.getPkiAuthenticationPlugin().needsAuthorization(req);
+    if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
+      boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
+      log.debug("PkiAuthenticationPlugin says authorization required : {} ", b);
+      return b;
     }
     return true;
   }
@@ -997,6 +1000,7 @@ public class HttpSolrCall {
           response.delete(response.length() - 1, response.length());
         
         response.append("], Path: [").append(resource).append("]");
+        response.append(" path : ").append(path).append(" params :").append(solrReq.getParams());
         return response.toString();
       }
 
