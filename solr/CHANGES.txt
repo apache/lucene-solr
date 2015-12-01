@@ -209,6 +209,9 @@ Other Changes
 * SOLR-8321: add a (SolrQueryRequest free) SortSpecParsing.parseSortSpec variant
   (Christine Poerschke)
 
+* SOLR-8338: in OverseerTest replace strings such as "collection1" and "state" with variable
+  or enum equivalent. (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

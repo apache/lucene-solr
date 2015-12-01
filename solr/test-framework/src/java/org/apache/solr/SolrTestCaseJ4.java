@@ -121,7 +121,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
-  public static final String DEFAULT_TEST_CORENAME = "collection1";
+  public static final String DEFAULT_TEST_COLLECTION_NAME = "collection1";
+  public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
   private static String coreName = DEFAULT_TEST_CORENAME;
