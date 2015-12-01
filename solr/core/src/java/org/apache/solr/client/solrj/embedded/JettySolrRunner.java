@@ -500,7 +500,7 @@ public class JettySolrRunner {
         throw new IllegalStateException("Jetty Connector is not open: " + 
                                         c.getLocalPort());
       }
-      protocol = c.getDefaultProtocol().equals("SSL-http/1.1")  ? "https" : "http";
+      protocol = c.getDefaultProtocol().startsWith("SSL")  ? "https" : "http";
       return new URL(protocol, c.getHost(), c.getLocalPort(), config.context);
 
     } catch (MalformedURLException e) {
