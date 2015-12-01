@@ -28,8 +28,6 @@
     <dependency org="org.apache.velocity" name="velocity" rev="${/org.apache.velocity/velocity}" conf="compile"/>
     <dependency org="org.apache.velocity" name="velocity-tools" rev="${/org.apache.velocity/velocity-tools}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

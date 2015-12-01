@@ -34,9 +34,7 @@
 
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations"  rev="${/com.fasterxml.jackson.core/jackson-annotations}"   conf="compile"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-databind"     rev="${/com.fasterxml.jackson.core/jackson-databind}"      conf="compile"/>
-    
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
-    
+
     <!--
     NOTE: There are dependencies that are part of core Solr server (jackson-core, HPPC, etc.).
     -->

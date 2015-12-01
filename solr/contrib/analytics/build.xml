@@ -25,9 +25,4 @@
 
   <import file="../contrib-build.xml"/>
 
-  <path id="test.classpath">
-    <path refid="solr.test.base.classpath"/>
-    <fileset dir="${test.lib.dir}" includes="*.jar"/>
-  </path>
-
 </project>

@@ -24,7 +24,6 @@
     </configurations>
 
    <dependencies>
-     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
    </dependencies>
 </ivy-module>

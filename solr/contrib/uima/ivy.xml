@@ -30,8 +30,6 @@
     <dependency org="org.apache.uima" name="WhitespaceTokenizer" rev="${/org.apache.uima/WhitespaceTokenizer}" conf="compile"/>
     <dependency org="org.apache.uima" name="uimaj-core" rev="${/org.apache.uima/uimaj-core}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

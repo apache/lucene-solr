@@ -30,8 +30,6 @@
     <dependency org="net.sf.saxon" name="Saxon-HE" rev="${/net.sf.saxon/Saxon-HE}" conf="compile" />
     <dependency org="org.kitesdk" name="kite-morphlines-hadoop-sequencefile" rev="${/org.kitesdk/kite-morphlines-hadoop-sequencefile}" conf="compile" />
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test" />
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
   </dependencies>
 </ivy-module>

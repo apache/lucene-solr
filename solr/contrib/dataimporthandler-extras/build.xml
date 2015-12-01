@@ -63,7 +63,6 @@
     <path refid="solr.test.base.classpath"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
     <path refid="classpath"/>
-    <fileset dir="${test.lib.dir}" includes="*.jar"/>
   </path>
 
   <!-- TODO: make this nicer like lucene? -->
