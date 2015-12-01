@@ -138,10 +138,6 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    SolrQueryRequest eoe = req("fl", "" + FIELD_NAME, "q",
-        FIELD_NAME + ":bla");
-    String eoe1 = eoe.toString();
-
     assertQ(req("fl", "" + FIELD_NAME, "q",
             FIELD_NAME + ":bla"),
             "//*[@numFound='0']");
