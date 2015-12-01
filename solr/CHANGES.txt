@@ -210,7 +210,7 @@ Other Changes
   (Christine Poerschke)
 
 * SOLR-8338: in OverseerTest replace strings such as "collection1" and "state" with variable
-  or enum equivalent. (Christine Poerschke)
+  or enum equivalent  (Christine Poerschke)
 
 ==================  5.4.0 ==================
 
