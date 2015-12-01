@@ -326,7 +326,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
     return map;
   }
 
-  private static class CacheEntry<K, V> implements Comparable<CacheEntry<K, V>> {
+  public static class CacheEntry<K, V> implements Comparable<CacheEntry<K, V>> {
     K key;
     V value;
     volatile AtomicLong hits = new AtomicLong(0);
