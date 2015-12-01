@@ -200,6 +200,9 @@ Other Changes
 * SOLR-8351: Improve HdfsDirectory toString representation
   (Mike Drob via Gregory Chanan)
 
+* SOLR-8321: add a (SolrQueryRequest free) SortSpecParsing.parseSortSpec variant
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
