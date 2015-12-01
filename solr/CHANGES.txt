@@ -188,6 +188,12 @@ New Features
 * SOLR-7928: Improve CheckIndex to work against HdfsDirectory
   (Mike Drob, Gregory Chanan)
 
+Bug Fixes
+----------------------
+
+* SOLR-8175: Word Break Spellchecker would throw AIOOBE with certain queries containing 
+   "should" clauses. (Ryan Josal via James Dyer)
+
 Other Changes
 ----------------------
 
