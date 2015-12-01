@@ -480,6 +480,9 @@ Bug Fixes
 * SOLR-8340: Fixed NullPointerException in HighlightComponent.
   (zengjie via Christine Poerschke)
 
+* SOLR-8355: update permissions were failing node recovery (noble , Anshum Gupta)
+
+
 Optimizations
 ----------------------
 

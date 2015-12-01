@@ -142,6 +142,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
         return MatchStatus.PERMITTED;
       }
       if (principal == null) {
+        log.info("request has come without principal. failed permission {} ",permission);
         //this resource needs a principal but the request has come without
         //any credential.
         return MatchStatus.USER_REQUIRED;
@@ -151,8 +152,10 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
         Set<String> userRoles = usersVsRoles.get(principal.getName());
         if (userRoles != null && userRoles.contains(role)) return MatchStatus.PERMITTED;
       }
+      log.info("This resource is configured to have a permission {}, The principal {} does not have the right role ", permission, principal);
       return MatchStatus.FORBIDDEN;
     }
+    log.debug("No permissions configured for the resource {} . So allowed to access", context.getResource());
     return MatchStatus.NO_PERMISSIONS_FOUND;
   }
 
