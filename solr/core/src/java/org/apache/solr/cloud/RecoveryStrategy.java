@@ -254,17 +254,11 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     boolean firstTime = true;
 
     List<Long> recentVersions;
-    UpdateLog.RecentUpdates recentUpdates = null;
-    try {
-      recentUpdates = ulog.getRecentUpdates();
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     } catch (Exception e) {
       SolrException.log(log, "Corrupt tlog - ignoring.", e);
       recentVersions = new ArrayList<>(0);
-    } finally {
-      if (recentUpdates != null) {
-        recentUpdates.close();
-      }
     }
 
     List<Long> startingVersions = ulog.getStartingVersions();

@@ -215,6 +215,8 @@ Other Changes
 * SOLR-8333: Several API tweaks so that public APIs were no longer refering to private classes
   (ehatcher, Shawn Heisey, hossman)
 
+* SOLR-8357: UpdateLog.RecentUpdates now implements Closeable (Alan Woodward)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

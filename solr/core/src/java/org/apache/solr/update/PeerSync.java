@@ -17,9 +17,6 @@
 
 package org.apache.solr.update;
 
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -56,6 +53,9 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 /** @lucene.experimental */
 public class PeerSync  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -70,7 +70,6 @@ public class PeerSync  {
   private HttpShardHandlerFactory shardHandlerFactory;
   private ShardHandler shardHandler;
 
-  private UpdateLog.RecentUpdates recentUpdates;
   private List<Long> startingVersions;
 
   private List<Long> ourUpdates;
@@ -203,12 +202,9 @@ public class PeerSync  {
       for (String replica : replicas) {
         requestVersions(replica);
       }
-      
-      recentUpdates = ulog.getRecentUpdates();
-      try {
+
+      try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
         ourUpdates = recentUpdates.getVersions(nUpdates);
-      } finally {
-        recentUpdates.close();
       }
       
       Collections.sort(ourUpdates, absComparator);

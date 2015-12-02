@@ -17,9 +17,16 @@
 package org.apache.solr.search;
 
 
-import org.apache.lucene.index.PostingsEnum;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -27,13 +34,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.UpdateLog;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -112,14 +112,9 @@ public class TestRTGBase extends SolrTestCaseJ4 {
 
 
   protected List<Long> getLatestVersions() {
-    List<Long> recentVersions;
-    UpdateLog.RecentUpdates startingRecentUpdates = h.getCore().getUpdateHandler().getUpdateLog().getRecentUpdates();
-    try {
-      recentVersions = startingRecentUpdates.getVersions(100);
-    } finally {
-      startingRecentUpdates.close();
+    try (UpdateLog.RecentUpdates startingRecentUpdates = h.getCore().getUpdateHandler().getUpdateLog().getRecentUpdates()) {
+      return startingRecentUpdates.getVersions(100);
     }
-    return recentVersions;
   }
 
 
