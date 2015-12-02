@@ -217,6 +217,10 @@ Other Changes
 
 * SOLR-8357: UpdateLog.RecentUpdates now implements Closeable (Alan Woodward)
 
+* SOLR-8339: Refactor SolrDocument and SolrInputDocument to have a common base abstract class
+  called SolrDocumentBase. Deprecated methods toSolrInputDocument and toSolrDocument in ClientUtils.
+  (Ishan Chattopadhyaya via shalin)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
