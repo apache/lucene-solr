@@ -2329,6 +2329,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       });
 
     IndexWriterConfig iwc = newIndexWriterConfig();
+    MergePolicy mp = iwc.getMergePolicy();
+    if (mp instanceof TieredMergePolicy) {
+      TieredMergePolicy tmp = (TieredMergePolicy) mp;
+      if (tmp.getMaxMergedSegmentMB() < 0.2) {
+        tmp.setMaxMergedSegmentMB(0.2);
+      }
+    }
     MergeScheduler ms = iwc.getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
       ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
