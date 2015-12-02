@@ -22,6 +22,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -108,7 +109,7 @@ public class IndexSchema {
   private static final String TEXT_FUNCTION = "text()";
   private static final String XPATH_OR = " | ";
 
-  final static Logger log = LoggerFactory.getLogger(IndexSchema.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrConfig solrConfig;
   protected String resourceName;
   protected String name;

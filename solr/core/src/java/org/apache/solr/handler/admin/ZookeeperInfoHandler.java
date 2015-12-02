@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -81,7 +82,7 @@ import static org.apache.solr.common.params.CommonParams.WT;
 public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private final CoreContainer cores;
 
-  static final Logger log = LoggerFactory.getLogger(ZookeeperInfoHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // used for custom sorting collection names looking like prefix##
   // only go out to 7 digits (which safely fits in an int)

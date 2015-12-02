@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,7 +47,7 @@ import java.util.Map;
  */
 public class ExtractingRequestHandler extends ContentStreamHandlerBase implements SolrCoreAware {
 
-  private transient static Logger log = LoggerFactory.getLogger(ExtractingRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
   public static final String CONFIG_LOCATION = "tika.config";

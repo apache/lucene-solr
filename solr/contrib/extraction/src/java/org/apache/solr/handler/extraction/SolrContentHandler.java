@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.extraction;
 
+import java.lang.invoke.MethodHandles;
 import java.text.DateFormat;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -57,7 +58,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * @see org.apache.solr.handler.extraction.ExtractingDocumentLoader
  */
 public class SolrContentHandler extends DefaultHandler implements ExtractingParams {
-  private transient static final Logger log = LoggerFactory.getLogger(SolrContentHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String contentFieldName = "content";
 

@@ -21,6 +21,7 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ import org.slf4j.LoggerFactory;
 
 /** @lucene.experimental */
 public class PeerSync  {
-  public static Logger log = LoggerFactory.getLogger(PeerSync.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public boolean debug = log.isDebugEnabled();
 
   private List<String> replicas;

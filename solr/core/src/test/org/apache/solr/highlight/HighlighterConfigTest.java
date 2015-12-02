@@ -16,56 +16,61 @@
  */
 package org.apache.solr.highlight;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HighlighterConfigTest extends AbstractSolrTestCase {
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
-      initCore("solrconfig-highlight.xml", "schema.xml");
-    }
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @Override
-    public void setUp() throws Exception {
-      // if you override setUp or tearDown, you better call
-      // the super classes version
-      super.setUp();
-    }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-highlight.xml", "schema.xml");
+  }
 
-    @Override
-    public void tearDown() throws Exception {
-      // if you override setUp or tearDown, you better call
-      // the super classes version
-      super.tearDown();
-    }
+  @Override
+  public void setUp() throws Exception {
+    // if you override setUp or tearDown, you better call
+    // the super classes version
+    super.setUp();
+  }
 
-    public void testConfig()
-    {
-            SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
-      log.info( "highlighter" );
+  @Override
+  public void tearDown() throws Exception {
+    // if you override setUp or tearDown, you better call
+    // the super classes version
+    super.tearDown();
+  }
 
-      assertTrue( highlighter instanceof DummyHighlighter );
+  public void testConfig()
+  {
+          SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+    log.info( "highlighter" );
 
-      // check to see that doHighlight is called from the DummyHighlighter
-      HashMap<String,String> args = new HashMap<>();
-      args.put("hl", "true");
-      args.put("df", "t_text");
-      args.put("hl.fl", "");
-      TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-        "standard", 0, 200, args);
+    assertTrue( highlighter instanceof DummyHighlighter );
 
-      assertU(adoc("t_text", "a long day's night", "id", "1"));
-      assertU(commit());
-      assertU(optimize());
-      assertQ("Basic summarization",
-              sumLRF.makeRequest("long"),
-              "//lst[@name='highlighting']/str[@name='dummy']"
-              );
+    // check to see that doHighlight is called from the DummyHighlighter
+    HashMap<String,String> args = new HashMap<>();
+    args.put("hl", "true");
+    args.put("df", "t_text");
+    args.put("hl.fl", "");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+
+    assertU(adoc("t_text", "a long day's night", "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Basic summarization",
+            sumLRF.makeRequest("long"),
+            "//lst[@name='highlighting']/str[@name='dummy']"
+            );
     }
 }
 

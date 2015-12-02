@@ -18,6 +18,7 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +43,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * @lucene.internal
  */
 public class SchemaXmlWriter extends TextResponseWriter {
-  private static final Logger log = LoggerFactory.getLogger(SchemaXmlWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final char[] XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>".toCharArray();
   private static final char[] MANAGED_SCHEMA_DO_NOT_EDIT_WARNING 
       = "<!-- Solr managed schema - automatically generated - DO NOT EDIT -->".toCharArray();

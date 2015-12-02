@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,7 +73,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   
   private static final String REPLICATION_HANDLER = "/replication";
 
-  private static Logger log = LoggerFactory.getLogger(RecoveryStrategy.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static interface RecoveryListener {
     public void recovered();

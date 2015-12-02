@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -95,7 +96,7 @@ import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_
  */
 public class LukeRequestHandler extends RequestHandlerBase
 {
-  private static Logger log = LoggerFactory.getLogger(LukeRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String NUMTERMS = "numTerms";
   public static final String INCLUDE_INDEX_FIELD_FLAGS = "includeIndexFieldFlags";

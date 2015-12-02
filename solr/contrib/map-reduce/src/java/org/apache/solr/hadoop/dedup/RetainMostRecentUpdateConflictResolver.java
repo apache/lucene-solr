@@ -16,6 +16,7 @@
  */
 package org.apache.solr.hadoop.dedup;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -49,7 +50,7 @@ public class RetainMostRecentUpdateConflictResolver implements UpdateConflictRes
   public static final String DUPLICATES_COUNTER_NAME = "Number of documents ignored as duplicates";
   public static final String OUTDATED_COUNTER_NAME =   "Number of documents ignored as outdated";
   
-  private static final Logger LOG = LoggerFactory.getLogger(RetainMostRecentUpdateConflictResolver.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   @Override
   public void setConf(Configuration conf) {

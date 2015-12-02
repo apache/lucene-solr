@@ -18,6 +18,7 @@ package org.apache.solr.handler;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -80,7 +81,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     remove.add("count(*)");
   }
 
-  private Logger logger = LoggerFactory.getLogger(SQLHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void inform(SolrCore core) {
 

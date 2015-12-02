@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,7 @@ import java.util.regex.Pattern;
  * @since solr 1.4
  */
 public class URLDataSource extends DataSource<Reader> {
-  Logger LOG = LoggerFactory.getLogger(URLDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String baseUrl;
 

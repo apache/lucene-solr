@@ -37,6 +37,8 @@ import javax.management.openmbean.SimpleType;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
+
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -71,8 +73,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class JmxMonitoredMap<K, V> extends
         ConcurrentHashMap<String, SolrInfoMBean> {
-  private static final Logger LOG = LoggerFactory.getLogger(JmxMonitoredMap.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // set to true to use cached statistics NamedLists between getMBeanInfo calls to work
   // around over calling getStatistics on MBeanInfos when iterating over all attributes (SOLR-6586)

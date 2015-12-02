@@ -20,6 +20,7 @@ package org.apache.solr.store.blockcache;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * @lucene.experimental
  */
 public class BlockDirectory extends FilterDirectory {
-  public static Logger LOG = LoggerFactory.getLogger(BlockDirectory.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final long BLOCK_SHIFT = 13; // 2^13 = 8,192 bytes per block
   public static final long BLOCK_MOD = 0x1FFF;

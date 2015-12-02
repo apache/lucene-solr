@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -56,7 +57,7 @@ import java.util.Map;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
-  static final Logger log = LoggerFactory.getLogger(TestBlobHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void doBlobHandlerTest() throws Exception {

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class SolrClientCache implements Serializable {
 
-  protected static final Logger log = LoggerFactory.getLogger(SolrClientCache.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private Map<String, SolrClient> solrClients = new HashMap();
 

@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop.morphline;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
 
@@ -57,7 +58,7 @@ public class MorphlineMapper extends SolrMapper<LongWritable, Text> {
   private MorphlineMapRunner runner;
   private HeartBeater heartBeater;
   
-  private static final Logger LOG = LoggerFactory.getLogger(MorphlineMapper.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected IndexSchema getSchema() {
     return runner.getSchema();

@@ -26,16 +26,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * Shares common code between various handlers that manipulate 
  * {@link org.apache.solr.common.util.ContentStream} objects.
  */
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
-  public static Logger log = LoggerFactory.getLogger(ContentStreamHandlerBase.class);
 
   @Override
   public void init(NamedList args) {

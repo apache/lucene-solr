@@ -41,11 +41,13 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,7 +65,8 @@ import java.util.Set;
 @SolrTestCaseJ4.SuppressSSL
 //@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
 public class SolrTestCaseHS extends SolrTestCaseJ4 {
-
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @SafeVarargs
   public static <T> Set<T> set(T... a) {
     LinkedHashSet<T> s = new LinkedHashSet<>();
@@ -378,7 +381,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   // To manage multiple servers, see SolrInstances
   //
   public static class SolrInstance {
-    private static Logger log = SolrTestCaseJ4.log;
+    private static Logger log = SolrTestCaseHS.log;
     private String collection = "collection1";
     private int port = 0;
     private String solrconfigFile;

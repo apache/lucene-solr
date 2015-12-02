@@ -20,8 +20,6 @@ package org.apache.solr.common.cloud;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,9 +31,6 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 public class ImplicitDocRouter extends DocRouter {
 
   public static final String NAME = "implicit";
-
-  private static Logger log = LoggerFactory
-      .getLogger(ImplicitDocRouter.class);
 
   @Override
   public Slice getTargetSlice(String id, SolrInputDocument sdoc, String route, SolrParams params, DocCollection collection) {

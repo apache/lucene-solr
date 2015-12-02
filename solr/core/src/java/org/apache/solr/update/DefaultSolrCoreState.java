@@ -18,6 +18,7 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class DefaultSolrCoreState extends SolrCoreState implements RecoveryStrategy.RecoveryListener {
-  public static Logger log = LoggerFactory.getLogger(DefaultSolrCoreState.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 

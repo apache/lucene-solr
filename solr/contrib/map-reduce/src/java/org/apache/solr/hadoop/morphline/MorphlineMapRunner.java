@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -91,7 +92,7 @@ public final class MorphlineMapRunner {
    */
   public static final String DISABLE_FILE_OPEN = "morphlineDisableFileOpen";
   
-  private static final Logger LOG = LoggerFactory.getLogger(MorphlineMapRunner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   MorphlineContext getMorphlineContext() {
     return morphlineContext;

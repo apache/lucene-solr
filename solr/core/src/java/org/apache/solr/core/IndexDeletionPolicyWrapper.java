@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -45,8 +46,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
 public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
-  private static final Logger LOG = LoggerFactory.getLogger(IndexDeletionPolicyWrapper.class.getName());
-
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   private final IndexDeletionPolicy deletionPolicy;
   private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<>();
   private final Map<Long, Long> reserves = new ConcurrentHashMap<>();

@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -78,6 +79,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -100,6 +103,8 @@ public class SolrPluginUtils {
    * the corresponding readable purpose as value
    */
   private static final Map<Integer, String> purposes;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
       Map<Integer, String> map = new TreeMap<>();
@@ -917,7 +922,7 @@ public class SolrPluginUtils {
       /* we definitely had some sort of sort string from the user,
        * but no SortSpec came out of it
        */
-      SolrCore.log.warn("Invalid sort \""+sort+"\" was specified, ignoring", sortE);
+      log.warn("Invalid sort \""+sort+"\" was specified, ignoring", sortE);
       return null;
     }
 

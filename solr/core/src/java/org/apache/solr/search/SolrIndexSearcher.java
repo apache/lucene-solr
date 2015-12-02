@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -107,7 +108,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public static final AtomicLong numCloses = new AtomicLong();
 
 
-  static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCore core;
   private final IndexSchema schema;
 

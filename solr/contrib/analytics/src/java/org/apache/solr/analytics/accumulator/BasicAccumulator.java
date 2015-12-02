@@ -18,6 +18,7 @@
 package org.apache.solr.analytics.accumulator;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -46,7 +47,7 @@ import com.google.common.base.Supplier;
  * A <code>BasicAccumulator</code> manages the ValueCounters and Expressions without regard to Facets.
  */
 public class BasicAccumulator extends ValueAccumulator {
-  private static final Logger log = LoggerFactory.getLogger(BasicAccumulator.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrIndexSearcher searcher;
   protected final AnalyticsRequest request;
   protected final DocSet docs;

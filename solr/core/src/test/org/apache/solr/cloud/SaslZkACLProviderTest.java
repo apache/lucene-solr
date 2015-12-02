@@ -2,6 +2,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.util.Locale;
 
@@ -46,8 +47,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 })
 public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
-  protected static Logger log = LoggerFactory
-      .getLogger(SaslZkACLProviderTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
 

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -160,8 +161,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       DocCollection.RULE, null,
       SNITCH, null));
 
-  private static Logger log = LoggerFactory
-      .getLogger(OverseerCollectionMessageHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private Overseer overseer;
   private ShardHandlerFactory shardHandlerFactory;

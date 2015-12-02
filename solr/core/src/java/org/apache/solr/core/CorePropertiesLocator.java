@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -45,7 +46,7 @@ public class CorePropertiesLocator implements CoresLocator {
 
   public static final String PROPERTIES_FILENAME = "core.properties";
 
-  private static final Logger logger = LoggerFactory.getLogger(CoresLocator.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Path rootDirectory;
 

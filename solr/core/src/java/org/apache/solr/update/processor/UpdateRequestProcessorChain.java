@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -92,7 +93,7 @@ import java.util.Objects;
  */
 public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 {
-  public final static Logger log = LoggerFactory.getLogger(UpdateRequestProcessorChain.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private List<UpdateRequestProcessorFactory> chain;
   private final SolrCore solrCore;

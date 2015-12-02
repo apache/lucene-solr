@@ -21,6 +21,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -49,12 +50,11 @@ import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.BaseDistributedSearchTestCase.log;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.handler.TestBlobHandler.getAsString;
 
 public class TestSolrConfigHandler extends RestTestBase {
-  public static final Logger log = LoggerFactory.getLogger(TestSolrConfigHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static File tmpSolrHome;
   private static File tmpConfDir;

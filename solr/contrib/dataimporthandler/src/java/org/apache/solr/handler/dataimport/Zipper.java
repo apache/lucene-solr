@@ -1,5 +1,6 @@
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ import com.google.common.collect.PeekingIterator;
 
 class Zipper {
   
-  private static final Logger log = LoggerFactory.getLogger(Zipper.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final DIHCacheSupport.Relation relation;
   
   @SuppressWarnings("rawtypes")

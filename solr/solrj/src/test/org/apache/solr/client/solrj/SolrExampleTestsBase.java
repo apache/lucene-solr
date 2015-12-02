@@ -28,8 +28,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,8 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
-  private static Logger log = LoggerFactory
-      .getLogger(SolrExampleTestsBase.class);
   
   /**
    * query the example

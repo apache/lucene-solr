@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -65,7 +66,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {
-  protected static final Logger log = LoggerFactory.getLogger(BlobHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
   private long maxSize = DEFAULT_MAX_SIZE;

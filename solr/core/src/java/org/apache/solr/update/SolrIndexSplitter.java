@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,7 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SolrIndexSplitter {
-  public static Logger log = LoggerFactory.getLogger(SolrIndexSplitter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   SolrIndexSearcher searcher;
   SchemaField field;

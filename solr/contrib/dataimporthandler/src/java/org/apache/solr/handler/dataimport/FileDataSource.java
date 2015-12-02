@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
@@ -57,7 +58,7 @@ public class FileDataSource extends DataSource<Reader> {
    */
   protected String encoding = null;
 
-  private static final Logger LOG = LoggerFactory.getLogger(FileDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void init(Context context, Properties initProps) {

@@ -30,6 +30,7 @@ import javax.xml.transform.sax.SAXSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 public class XMLLoader extends ContentStreamLoader {
-  public static Logger log = LoggerFactory.getLogger(XMLLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
@@ -163,11 +164,11 @@ public class XMLLoader extends ContentStreamLoader {
     else {
       try {
         is = stream.getStream();
-        if (UpdateRequestHandler.log.isTraceEnabled()) {
+        if (log.isTraceEnabled()) {
           final byte[] body = IOUtils.toByteArray(is);
           // TODO: The charset may be wrong, as the real charset is later
           // determined by the XML parser, the content-type is only used as a hint!
-          UpdateRequestHandler.log.trace("body", new String(body, (charset == null) ?
+          log.trace("body", new String(body, (charset == null) ?
             ContentStreamBase.DEFAULT_CHARSET : charset));
           IOUtils.closeQuietly(is);
           is = new ByteArrayInputStream(body);

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -62,7 +63,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class TransactionLog {
-  public static Logger log = LoggerFactory.getLogger(TransactionLog.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   final boolean debug = log.isDebugEnabled();
   final boolean trace = log.isTraceEnabled();
 

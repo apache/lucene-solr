@@ -34,13 +34,10 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SnapShooter;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slow
 public class CleanupOldIndexTest extends AbstractFullDistribZkTestBase {
 
-  private static Logger log = LoggerFactory.getLogger(CleanupOldIndexTest.class);
   private StoppableIndexingThread indexThread;
 
   public CleanupOldIndexTest() {

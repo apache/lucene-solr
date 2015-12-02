@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,7 +45,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
 
 public class SchemaHandler extends RequestHandlerBase {
-  private static final Logger log = LoggerFactory.getLogger(SchemaHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
 
   @Override

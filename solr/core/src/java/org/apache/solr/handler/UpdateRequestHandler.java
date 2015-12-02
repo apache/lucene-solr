@@ -38,8 +38,6 @@ import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -47,7 +45,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  * UpdateHandler that uses content-type to pick the right Loader
  */
 public class UpdateRequestHandler extends ContentStreamHandlerBase {
-  public static Logger log = LoggerFactory.getLogger(UpdateRequestHandler.class);
 
   // XML Constants
   public static final String ADD = "add";

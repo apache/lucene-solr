@@ -19,6 +19,7 @@ package org.apache.solr.util.xslt;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.util.TimeOut;
@@ -50,7 +51,7 @@ public class TransformerProvider {
   private Templates lastTemplates = null;
   private TimeOut cacheExpiresTimeout;
 
-  private static final Logger log = LoggerFactory.getLogger(TransformerProvider.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
   public static TransformerProvider instance = new TransformerProvider();

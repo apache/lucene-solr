@@ -31,6 +31,7 @@ import org.restlet.routing.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
@@ -40,7 +41,7 @@ import java.util.Set;
  * Restlet servlet handling /&lt;context&gt;/&lt;collection&gt;/schema/* URL paths
  */
 public class SolrSchemaRestApi extends Application {
-  public static final Logger log = LoggerFactory.getLogger(SolrSchemaRestApi.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String FIELDS_PATH = "/" + IndexSchema.FIELDS;
   
   public static final String DYNAMIC_FIELDS = IndexSchema.DYNAMIC_FIELDS.toLowerCase(Locale.ROOT);

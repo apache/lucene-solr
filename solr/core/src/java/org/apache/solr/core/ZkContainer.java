@@ -18,6 +18,7 @@ package org.apache.solr.core;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ZkContainer {
-  protected static Logger log = LoggerFactory.getLogger(ZkContainer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected ZkController zkController;
   private SolrZkServer zkServer;
@@ -227,10 +228,10 @@ public class ZkContainer {
       try {
         zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
       } catch (KeeperException e) {
-        CoreContainer.log.error("", e);
+        ZkContainer.log.error("", e);
       } catch (InterruptedException e) {
         Thread.interrupted();
-        CoreContainer.log.error("", e);
+        ZkContainer.log.error("", e);
       }
     }
   }

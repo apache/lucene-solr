@@ -19,6 +19,7 @@ package org.apache.solr.handler.clustering.carrot2;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -32,6 +33,7 @@ import org.carrot2.text.util.MutableCharArray;
 import org.carrot2.util.ExceptionUtils;
 import org.carrot2.util.ReflectionUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of Carrot2's {@link ITokenizerFactory} based on Lucene's
@@ -42,8 +44,7 @@ import org.slf4j.Logger;
  * @lucene.experimental
  */
 public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
-  final static Logger logger = org.slf4j.LoggerFactory
-      .getLogger(LuceneCarrot2TokenizerFactory.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public ITokenizer getTokenizer(LanguageCode language) {

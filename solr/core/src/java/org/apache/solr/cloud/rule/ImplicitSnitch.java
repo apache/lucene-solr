@@ -32,11 +32,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable {
-  static final Logger log = LoggerFactory.getLogger(ImplicitSnitch.class);
 
   public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
 

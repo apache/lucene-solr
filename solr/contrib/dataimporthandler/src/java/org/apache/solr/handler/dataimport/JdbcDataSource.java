@@ -33,6 +33,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class JdbcDataSource extends
         DataSource<Iterator<Map<String, Object>>> {
-  private static final Logger LOG = LoggerFactory.getLogger(JdbcDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected Callable<Connection> factory;
 

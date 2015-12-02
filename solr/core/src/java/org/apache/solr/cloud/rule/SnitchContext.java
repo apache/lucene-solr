@@ -18,6 +18,7 @@ package org.apache.solr.cloud.rule;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +46,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVO
  * instance.
  */
 public class SnitchContext implements RemoteCallback {
-  static final Logger log = LoggerFactory.getLogger(SnitchContext.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, Object> tags = new HashMap<>();
   private String node;
   final SnitchInfo snitchInfo;

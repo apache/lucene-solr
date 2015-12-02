@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
-  private static Logger log = LoggerFactory.getLogger(TestRebalanceLeaders.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String COLLECTION_NAME = "testcollection";
 
   public TestRebalanceLeaders() {

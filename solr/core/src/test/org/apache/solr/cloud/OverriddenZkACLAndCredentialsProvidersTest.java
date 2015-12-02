@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -47,8 +48,7 @@ import java.util.List;
 
 public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
-  protected static Logger log = LoggerFactory
-      .getLogger(AbstractZkTestCase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
   

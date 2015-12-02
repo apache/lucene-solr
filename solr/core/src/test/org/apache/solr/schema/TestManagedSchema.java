@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,8 +37,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestManagedSchema extends AbstractBadConfigTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static File tmpSolrHome;
   private static File tmpConfDir;

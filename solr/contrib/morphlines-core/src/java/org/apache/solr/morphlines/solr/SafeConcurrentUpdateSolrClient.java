@@ -16,6 +16,8 @@
  */
 package org.apache.solr.morphlines.solr;
 
+import java.lang.invoke.MethodHandles;
+
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.slf4j.Logger;
@@ -30,7 +32,7 @@ final class SafeConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
   private Throwable currentException = null;
   private final Object myLock = new Object();
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SafeConcurrentUpdateSolrClient.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public SafeConcurrentUpdateSolrClient(String solrServerUrl, int queueSize, int threadCount) {
     this(solrServerUrl, null, queueSize, threadCount);

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.hadoop;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HeartBeater extends Thread {
   
-  public static Logger LOG = LoggerFactory.getLogger(HeartBeater.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * count of threads asking for heart beat, at 0 no heart beat done. This could

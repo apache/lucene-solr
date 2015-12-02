@@ -1,5 +1,7 @@
 package org.apache.solr.update.processor;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -42,7 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AtomicUpdateDocumentMerger {
   
-  private final static Logger log = LoggerFactory.getLogger(AtomicUpdateDocumentMerger.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected final IndexSchema schema;
   protected final SchemaField idField;

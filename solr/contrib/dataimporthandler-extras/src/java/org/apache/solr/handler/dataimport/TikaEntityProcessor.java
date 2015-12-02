@@ -27,8 +27,6 @@ import org.apache.tika.parser.html.IdentityHtmlMapper;
 import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.ContentHandlerDecorator;
 import org.apache.tika.sax.XHTMLContentHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -65,7 +63,6 @@ import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
  */
 public class TikaEntityProcessor extends EntityProcessorBase {
   private TikaConfig tikaConfig;
-  private static final Logger LOG = LoggerFactory.getLogger(TikaEntityProcessor.class);
   private String format = "text";
   private boolean done = false;
   private boolean extractEmbedded = false;

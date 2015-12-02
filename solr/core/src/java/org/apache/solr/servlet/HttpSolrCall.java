@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,7 +118,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
  * This class represents a call made to Solr
  **/
 public class HttpSolrCall {
-  protected static Logger log = LoggerFactory.getLogger(HttpSolrCall.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final Random random;
   static {
@@ -309,7 +310,7 @@ public class HttpSolrCall {
         return; // we are done with a valid handler
       }
     }
-    SolrDispatchFilter.log.debug("no handler or core retrieved for " + path + ", follow through...");
+    log.debug("no handler or core retrieved for " + path + ", follow through...");
 
     action = PASSTHROUGH;
   }
@@ -474,7 +475,7 @@ public class HttpSolrCall {
       while (t != null) {
         if (t instanceof Error) {
           if (t != ex) {
-            SolrDispatchFilter.log.error("An Error was wrapped in another exception - please report complete stacktrace on SOLR-6161", ex);
+            log.error("An Error was wrapped in another exception - please report complete stacktrace on SOLR-6161", ex);
           }
           throw (Error) t;
         }
@@ -501,7 +502,7 @@ public class HttpSolrCall {
   void destroy() {
     try {
       if (solrReq != null) {
-        SolrDispatchFilter.log.debug("Closing out SolrRequest: {}", solrReq);
+        log.debug("Closing out SolrRequest: {}", solrReq);
         solrReq.close();
       }
     } finally {
@@ -630,7 +631,7 @@ public class HttpSolrCall {
       try {
         if (exp != null) {
           SimpleOrderedMap info = new SimpleOrderedMap();
-          int code = ResponseUtils.getErrorInfo(ex, info, SolrDispatchFilter.log);
+          int code = ResponseUtils.getErrorInfo(ex, info, log);
           sendError(code, info.toString());
         }
       } finally {
@@ -645,7 +646,7 @@ public class HttpSolrCall {
     try {
       response.sendError(code, message);
     } catch (EOFException e) {
-      SolrDispatchFilter.log.info("Unable to write error response, client closed connection or we are shutting down", e);
+      log.info("Unable to write error response, client closed connection or we are shutting down", e);
     }
   }
 
@@ -662,8 +663,8 @@ public class HttpSolrCall {
     SolrCore.preDecorateResponse(solrReq, solrResp);
     handler.handleRequest(solrReq, solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
-    if (SolrDispatchFilter.log.isInfoEnabled() && solrResp.getToLog().size() > 0) {
-      SolrDispatchFilter.log.info(solrResp.getToLogAsString("[admin] "));
+    if (log.isInfoEnabled() && solrResp.getToLog().size() > 0) {
+      log.info(solrResp.getToLogAsString("[admin] "));
     }
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard");
@@ -721,7 +722,7 @@ public class HttpSolrCall {
 
       if (solrRsp.getException() != null) {
         NamedList info = new SimpleOrderedMap();
-        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, SolrDispatchFilter.log);
+        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
         solrRsp.add("error", info);
         response.setStatus(code);
       }
@@ -731,7 +732,7 @@ public class HttpSolrCall {
       }
       //else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
-      SolrDispatchFilter.log.info("Unable to write response, client closed connection or we are shutting down", e);
+      log.info("Unable to write response, client closed connection or we are shutting down", e);
     }
   }
 

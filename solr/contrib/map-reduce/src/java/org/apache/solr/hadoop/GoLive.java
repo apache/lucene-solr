@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 class GoLive {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GoLive.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // TODO: handle clusters with replicas
   public boolean goLive(Options options, FileStatus[] outDirs) {

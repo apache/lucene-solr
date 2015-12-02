@@ -17,6 +17,7 @@
 
 package org.apache.solr.analytics.statistics;
 
+import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,7 +75,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Supplier;
 
 public class StatsCollectorSupplierFactory {
-  private static final Logger log = LoggerFactory.getLogger(StatsCollectorSupplierFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // FunctionTypes
   final static int NUMBER_TYPE = 0;

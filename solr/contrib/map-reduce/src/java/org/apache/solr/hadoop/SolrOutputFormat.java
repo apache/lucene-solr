@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
 
 public class SolrOutputFormat<K, V> extends FileOutputFormat<K, V> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SolrOutputFormat.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * The parameter used to pass the solr config zip file information. This will

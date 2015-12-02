@@ -20,6 +20,8 @@ package org.apache.solr.security;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -43,7 +45,7 @@ import static org.apache.solr.security.TestAuthorizationFramework.verifySecurity
 
 @SolrTestCaseJ4.SuppressSSL
 public class PKIAuthenticationIntegrationTest extends AbstractFullDistribZkTestBase {
-  final private Logger log = LoggerFactory.getLogger(PKIAuthenticationIntegrationTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int TIMEOUT = 10000;
 

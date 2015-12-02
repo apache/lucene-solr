@@ -1,6 +1,7 @@
 package org.apache.solr.security;
 
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
@@ -51,7 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class KerberosPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
-  static final Logger log = LoggerFactory.getLogger(KerberosPlugin.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   HttpClientConfigurer kerberosConfigurer = new Krb5HttpClientConfigurer();
   Filter kerberosFilter = new KerberosFilter();

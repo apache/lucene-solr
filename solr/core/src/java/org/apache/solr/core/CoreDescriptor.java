@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +37,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Solr core descriptor
@@ -43,7 +46,7 @@ import org.apache.solr.util.PropertiesUtil;
  * @since solr 1.3
  */
 public class CoreDescriptor {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // Properties file name constants
   public static final String CORE_NAME = "name";
   public static final String CORE_CONFIG = "config";
@@ -217,7 +220,7 @@ public class CoreDescriptor {
       cloudDesc = null;
     }
 
-    SolrCore.log.info("Created CoreDescriptor: " + coreProperties);
+    log.info("Created CoreDescriptor: " + coreProperties);
   }
 
   /**

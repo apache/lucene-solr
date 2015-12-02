@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -81,7 +82,7 @@ import java.util.concurrent.Future;
  */
 public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrCore core;
   private String collection;

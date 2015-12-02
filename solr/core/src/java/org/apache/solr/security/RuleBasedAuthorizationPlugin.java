@@ -18,6 +18,7 @@ package org.apache.solr.security;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,7 +48,7 @@ import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 
 public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, ConfigEditablePlugin {
-  static final Logger log = LoggerFactory.getLogger(RuleBasedAuthorizationPlugin.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, Set<String>> usersVsRoles = new HashMap<>();
   private final Map<String, WildCardSupportMap> mapping = new HashMap<>();

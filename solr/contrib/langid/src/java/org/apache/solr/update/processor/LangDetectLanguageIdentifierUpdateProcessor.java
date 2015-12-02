@@ -17,6 +17,7 @@ package org.apache.solr.update.processor;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +31,8 @@ import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
 import com.cybozu.labs.langdetect.Language;
 import org.apache.solr.common.SolrInputDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Identifies the language of a set of input fields using http://code.google.com/p/language-detection
@@ -38,7 +41,9 @@ import org.apache.solr.common.SolrInputDocument;
  * @since 3.5
  */
 public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {
-  
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public LangDetectLanguageIdentifierUpdateProcessor(SolrQueryRequest req, 
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);

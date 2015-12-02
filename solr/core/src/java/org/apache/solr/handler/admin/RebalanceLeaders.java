@@ -13,6 +13,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -56,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class RebalanceLeaders {
-  private static Logger log = LoggerFactory.getLogger(RebalanceLeaders.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   final SolrQueryRequest req;
   final SolrQueryResponse rsp;

@@ -65,6 +65,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   // Pattern is thread safe -- TODO? share this with general 'fl' param
   private static final Pattern splitList = Pattern.compile(",| ");
 
-  protected static Logger log = LoggerFactory.getLogger(MoreLikeThisHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   @Override
   public void init(NamedList args) {
@@ -273,7 +274,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
               rsp.add("debug", dbgInfo);
             }
           } catch (Exception e) {
-            SolrException.log(SolrCore.log, "Exception during debug", e);
+            SolrException.log(log, "Exception during debug", e);
             rsp.add("exception_during_debug", SolrException.toStr(e));
           }
         }

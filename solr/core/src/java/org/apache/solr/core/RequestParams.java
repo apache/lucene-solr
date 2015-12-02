@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * returns a copy of the Object with the changed values
  */
 public class RequestParams implements MapSerializable {
-  public static final Logger log = LoggerFactory.getLogger(RequestParams.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map data;
   private final Map<String, VersionedParams> paramsets = new LinkedHashMap<>();

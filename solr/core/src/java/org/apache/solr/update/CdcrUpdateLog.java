@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -54,7 +55,7 @@ public class CdcrUpdateLog extends UpdateLog {
 
   public static String LOG_FILENAME_PATTERN = "%s.%019d.%1d";
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrUpdateLog.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void init(UpdateHandler uhandler, SolrCore core) {

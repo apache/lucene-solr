@@ -29,8 +29,6 @@ import java.util.regex.PatternSyntaxException;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An updated processor that applies a configured regex to any 
@@ -69,8 +67,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProcessorFactory {
   
-  private static final Logger log = LoggerFactory.getLogger(RegexReplaceProcessorFactory.class);
-
   private static final String REPLACEMENT_PARAM = "replacement";
   private static final String PATTERN_PARAM = "pattern";
   private static final String LITERAL_REPLACEMENT_PARAM = "literalReplacement";

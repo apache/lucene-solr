@@ -37,8 +37,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class MapReduceIndexerToolArgumentParserTest extends SolrTestCaseJ4 {
   
@@ -55,8 +53,6 @@ public class MapReduceIndexerToolArgumentParserTest extends SolrTestCaseJ4 {
 
   private static final String MORPHLINE_FILE = RESOURCES_DIR + "/test-morphlines/solrCellDocumentTypes.conf";
     
-  private static final Logger LOG = LoggerFactory.getLogger(MapReduceIndexerToolArgumentParserTest.class);
-  
   private final File solrHomeDirectory = createTempDir().toFile();
   
   @BeforeClass

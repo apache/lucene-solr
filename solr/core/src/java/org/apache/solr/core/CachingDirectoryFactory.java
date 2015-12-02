@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -94,8 +95,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
   
-  private static Logger log = LoggerFactory
-      .getLogger(CachingDirectoryFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected Map<String,CacheValue> byPathCache = new HashMap<>();
   

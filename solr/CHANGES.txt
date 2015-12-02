@@ -244,6 +244,11 @@ Upgrading from Solr 5.3
 * SOLR-8307: EmptyEntityResolver was moved from core to solrj, and moved from the org.apache.solr.util
   package to org.apache.solr.common.  If you are using this class, you will need to adjust the import package.
 
+* Logger declarations in most source files have changed to code that
+  no longer needs to explicitly state the class name.  This fixes situations
+  where a logger for a different class was incorrectly used. See SOLR-8324
+  and its sub-issues for details.
+
 Detailed Change List
 ----------------------
 
@@ -654,6 +659,9 @@ Other Changes
 
 * SOLR-8180: jcl-over-slf4j should have officially been a SolrJ dependency; it now is.
   (David Smiley, Kevin Risden)
+
+* SOLR-8330: Standardize and fix logger creation and usage so that they aren't shared
+  across source files.(Jason Gerlowski, Uwe Schindler, Anshum Gupta)
 
 ==================  5.3.1 ==================
 

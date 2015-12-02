@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.lang.invoke.MethodHandles;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
 
   static SolrClientCache clientCache = new SolrClientCache();
   private StreamFactory streamFactory = new StreamFactory();
-  private Logger logger = LoggerFactory.getLogger(StreamHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void inform(SolrCore core) {
     

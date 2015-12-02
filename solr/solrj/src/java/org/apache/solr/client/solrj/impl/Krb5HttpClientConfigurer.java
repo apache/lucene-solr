@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -50,7 +51,7 @@ import org.apache.http.entity.BufferedHttpEntity;
 public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
   
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
-  private static final Logger logger = LoggerFactory.getLogger(Krb5HttpClientConfigurer.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Configuration jaasConfig = new SolrJaasConfiguration();
 

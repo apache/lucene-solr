@@ -19,19 +19,18 @@ package org.apache.solr.cloud;
 
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
 */
 @Slow
 public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestBase {
-  public static Logger log = LoggerFactory.getLogger(CloudExitableDirectoryReaderTest.class);
   private static final int NUM_DOCS_PER_TYPE = 20;
   private static final String sleep = "2";
   

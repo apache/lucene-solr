@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,7 +81,7 @@ public class Overseer implements Closeable {
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   
-  private static Logger log = LoggerFactory.getLogger(Overseer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   enum LeaderStatus {DONT_KNOW, NO, YES}
 

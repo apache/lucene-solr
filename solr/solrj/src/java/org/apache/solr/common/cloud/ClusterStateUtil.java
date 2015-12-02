@@ -1,5 +1,7 @@
 package org.apache.solr.common.cloud;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -28,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ClusterStateUtil {
-  private static Logger log = LoggerFactory.getLogger(ClusterStateUtil.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final int TIMEOUT_POLL_MS = 1000;
   

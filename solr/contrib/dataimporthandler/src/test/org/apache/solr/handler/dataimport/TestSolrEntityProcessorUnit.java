@@ -17,15 +17,12 @@
 package org.apache.solr.handler.dataimport;
 
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Unit test of SolrEntityProcessor. A very basic test outside of the DIH.
  */
 public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(TestSolrEntityProcessorUnit.class);
   private static final String ID = "id";
 
   public void testQuery() {

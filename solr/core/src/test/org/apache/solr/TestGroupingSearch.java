@@ -19,6 +19,7 @@ package org.apache.solr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,8 +46,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String FOO_STRING_FIELD = "foo_s1";
   public static final String SMALL_STRING_FIELD = "small_s1";

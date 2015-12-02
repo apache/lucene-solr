@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Map;
 
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @Deprecated
 public class AdminHandlers extends RequestHandlerBase implements SolrCoreAware
 {
-  public static Logger log = LoggerFactory.getLogger(AdminHandlers.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   NamedList initArgs = null;
   
   private static class StandardHandler {

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class CollectionReloadTest extends AbstractFullDistribZkTestBase {
 
-  protected static final transient Logger log = LoggerFactory.getLogger(CollectionReloadTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public CollectionReloadTest() {
     super();

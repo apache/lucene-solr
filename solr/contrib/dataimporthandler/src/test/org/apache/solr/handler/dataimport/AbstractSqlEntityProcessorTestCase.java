@@ -4,8 +4,11 @@ import junit.framework.Assert;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -41,6 +44,9 @@ import java.util.Set;
 
 public abstract class AbstractSqlEntityProcessorTestCase extends
     AbstractDIHJdbcTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected boolean underlyingDataModified;  
   protected boolean useSimpleCaches;
   protected boolean countryEntity;

@@ -25,8 +25,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A size limited distributed map maintained in zk.
@@ -34,9 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SizeLimitedDistributedMap extends DistributedMap {
 
-  protected static final Logger log = LoggerFactory
-      .getLogger(DistributedMap.class);
-  
   private final int maxSize;
 
   public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, List<ACL> acl, int maxSize) {

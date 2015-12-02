@@ -1,6 +1,7 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +67,7 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
 
   private static final int DEFAULT_TIME_SCHEDULE = 60000;  // by default, every minute
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrUpdateLogSynchronizer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrUpdateLogSynchronizer(SolrCore core, String path, SolrParams updateLogSynchonizerConfiguration) {
     this.core = core;

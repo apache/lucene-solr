@@ -34,8 +34,11 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,6 +49,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slow
 @Ignore("SOLR-4944")
 public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int TIMEOUT = 10000;
   private AtomicInteger killCounter = new AtomicInteger();

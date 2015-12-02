@@ -1,5 +1,6 @@
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.Locale;
@@ -10,6 +11,8 @@ import junit.framework.Assert;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,6 +32,8 @@ import org.junit.Test;
  */
 
 public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void test() throws Exception {

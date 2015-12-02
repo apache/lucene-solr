@@ -23,6 +23,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.*;
 
 /**
@@ -49,7 +50,7 @@ class CdcrReplicatorScheduler {
   private static final int DEFAULT_TIME_SCHEDULE = 10;
   private static final int DEFAULT_BATCH_SIZE = 128;
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrReplicatorScheduler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrReplicatorScheduler(final CdcrReplicatorManager replicatorStatesManager, final SolrParams replicatorConfiguration) {
     this.replicatorManager = replicatorStatesManager;

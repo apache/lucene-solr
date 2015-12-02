@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -78,7 +79,7 @@ import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MAT
  *
  */
 public abstract class FieldType extends FieldProperties {
-  public static final Logger log = LoggerFactory.getLogger(FieldType.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * The default poly field separator.

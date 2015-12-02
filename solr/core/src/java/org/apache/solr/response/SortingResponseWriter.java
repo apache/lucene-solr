@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReader;
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
 
 public class SortingResponseWriter implements QueryResponseWriter {
 
-  private final static Logger logger = LoggerFactory.getLogger(SortingResponseWriter.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void init(NamedList args) {
     /* NOOP */

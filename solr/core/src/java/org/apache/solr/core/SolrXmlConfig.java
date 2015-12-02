@@ -22,6 +22,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,7 +55,7 @@ public class SolrXmlConfig {
 
   public final static String SOLR_XML_FILE = "solr.xml";
 
-  private static final Logger log = LoggerFactory.getLogger(SolrXmlConfig.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static NodeConfig fromConfig(Config config) {
 

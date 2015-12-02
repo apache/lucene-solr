@@ -49,8 +49,6 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * GraphQuery - search for nodes and traverse edges in an index.

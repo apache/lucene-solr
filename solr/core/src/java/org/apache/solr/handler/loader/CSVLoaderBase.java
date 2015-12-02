@@ -36,8 +36,6 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.io.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 abstract class CSVLoaderBase extends ContentStreamLoader {
   public static final String SEPARATOR="separator";
@@ -59,8 +57,6 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   private static Pattern colonSplit = Pattern.compile(":");
   private static Pattern commaSplit = Pattern.compile(",");
   
-  public static Logger log = LoggerFactory.getLogger(CSVLoaderBase.class);
-
   final SolrParams params;
   final CSVStrategy strategy;
   final UpdateRequestProcessor processor;

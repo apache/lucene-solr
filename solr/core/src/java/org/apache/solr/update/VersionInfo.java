@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 public class VersionInfo {
 
-  public static Logger log = LoggerFactory.getLogger(VersionInfo.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String VERSION_FIELD="_version_";
 

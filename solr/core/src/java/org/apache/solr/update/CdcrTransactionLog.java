@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.invoke.MethodHandles;
 import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.util.Collection;
@@ -28,6 +29,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Extends {@link org.apache.solr.update.TransactionLog} to:
@@ -43,6 +46,8 @@ public class CdcrTransactionLog extends TransactionLog {
 
   private boolean isReplaying;
   long startVersion; // (absolute) version of the first element of this transaction log
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrTransactionLog(File tlogFile, Collection<String> globalStrings) {
     super(tlogFile, globalStrings);

@@ -33,6 +33,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.search.*;
 
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -55,6 +56,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
   private static final SimpleDateFormat afterFmt = 
       new SimpleDateFormat("yyyy/MM/dd", Locale.ROOT);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static interface CustomFilter {
     public SearchTerm getCustomSearch(Folder folder);
@@ -806,7 +808,6 @@ public class MailEntityProcessor extends EntityProcessorBase {
   private MessageIterator msgIter;
   private List<CustomFilter> filters = new ArrayList<>();
   private static FetchProfile fp = new FetchProfile();
-  private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
   
   static {
     fp.add(FetchProfile.Item.ENVELOPE);

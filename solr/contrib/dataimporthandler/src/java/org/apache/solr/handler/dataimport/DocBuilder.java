@@ -34,6 +34,7 @@ import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +51,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class DocBuilder {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DocBuilder.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Date EPOCH = new Date(0);
   public static final String DELETE_DOC_BY_ID = "$deleteDocById";

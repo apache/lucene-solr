@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,8 +45,7 @@ import org.slf4j.LoggerFactory;
  * the same ConfigSet and base ConfigSet.
  */
 public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
-  private static Logger log = LoggerFactory
-      .getLogger(TestConfigSetsAPIExclusivity.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private MiniSolrCloudCluster solrCluster;
   private static final String GRANDBASE_CONFIGSET_NAME = "grandBaseConfigSet1";

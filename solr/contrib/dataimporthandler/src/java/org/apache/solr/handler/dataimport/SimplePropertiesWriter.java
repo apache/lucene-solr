@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.text.ParseException;
@@ -49,8 +50,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
  * </p> 
  */
 public class SimplePropertiesWriter extends DIHProperties {
-  private static final Logger log = LoggerFactory
-      .getLogger(SimplePropertiesWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   static final String LAST_INDEX_KEY = "last_index_time";
   

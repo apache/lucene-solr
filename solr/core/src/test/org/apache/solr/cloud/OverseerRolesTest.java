@@ -34,8 +34,11 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +56,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 @LuceneTestCase.Slow
 @SuppressSSL(bugUrl = "SOLR-5776")
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected String getSolrXml() {
     return "solr-no-core.xml";

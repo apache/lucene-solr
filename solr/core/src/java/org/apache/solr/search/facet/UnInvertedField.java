@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +46,8 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -78,6 +81,8 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public class UnInvertedField extends DocTermOrds {
   private static int TNUM_OFFSET=2;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static class TopTerm {
     Query termQuery;
@@ -192,7 +197,7 @@ public class UnInvertedField extends DocTermOrds {
     if (tnums != null) {
       for(byte[] target : tnums) {
         if (target != null && target.length > (1<<24)*.9) {
-          SolrCore.log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
+          log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
         }
       }
     }
@@ -204,7 +209,7 @@ public class UnInvertedField extends DocTermOrds {
       maxTermCounts = newMaxTermCounts;
     }
 
-    SolrCore.log.info("UnInverted multi-valued field " + toString());
+    log.info("UnInverted multi-valued field " + toString());
     //System.out.println("CREATED: " + toString() + " ti.index=" + ti.index);
   }
 

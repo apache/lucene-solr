@@ -34,10 +34,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.CoreMatchers.*;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -45,7 +48,9 @@ import java.util.Set;
  * Tests using fromIndex that points to a collection in SolrCloud mode.
  */
 public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase {
-  
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final private static String[] scoreModes = {"avg","max","min","total"};
 
   public DistribJoinFromCollectionTest() {

@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 
 import org.apache.hadoop.io.Text;
@@ -51,7 +52,7 @@ public class SolrReducer extends Reducer<Text, SolrInputDocumentWritable, Text, 
   
   public static final String UPDATE_CONFLICT_RESOLVER = SolrReducer.class.getName() + ".updateConflictResolver";
   
-  private static final Logger LOG = LoggerFactory.getLogger(SolrReducer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {

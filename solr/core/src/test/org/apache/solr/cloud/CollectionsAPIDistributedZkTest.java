@@ -22,6 +22,7 @@ import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,6 +71,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -82,6 +85,8 @@ import static org.apache.solr.common.util.Utils.makeMap;
  */
 @Slow
 public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String DEFAULT_COLLECTION = "collection1";
 

@@ -57,6 +57,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -245,7 +246,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected Map<String, Integer> handle = new HashMap<>();
 
   protected String id = "id";
-  public static Logger log = LoggerFactory.getLogger(BaseDistributedSearchTestCase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static RandVal rint = new RandVal() {
     @Override

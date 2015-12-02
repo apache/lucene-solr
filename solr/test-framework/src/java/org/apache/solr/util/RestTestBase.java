@@ -30,11 +30,12 @@ import org.xml.sax.SAXException;
 
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.SortedMap;
 
 abstract public class RestTestBase extends SolrJettyTestBase {
-  private static final Logger log = LoggerFactory.getLogger(RestTestBase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static RestTestHarness restTestHarness;
 
   @AfterClass

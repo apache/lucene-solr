@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -95,7 +96,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  * @since solr 1.3
  */
 public class CoreAdminHandler extends RequestHandlerBase {
-  protected static Logger log = LoggerFactory.getLogger(CoreAdminHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   protected final Map<String, Map<String, TaskObject>> requestStatusMap;
 

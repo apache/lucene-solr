@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -51,7 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 60;
 
-  public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 

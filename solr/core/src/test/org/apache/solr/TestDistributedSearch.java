@@ -18,6 +18,7 @@
 package org.apache.solr;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,6 +56,8 @@ import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO? perhaps use:
@@ -66,6 +69,8 @@ import org.junit.Test;
  */
 @Slow
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String t1="a_t";
   String i1="a_i1";

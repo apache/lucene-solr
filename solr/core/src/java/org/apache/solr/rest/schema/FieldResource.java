@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -52,7 +53,7 @@ import java.util.Map;
  * The PUT method accepts field addition requests in JSON format.
  */
 public class FieldResource extends BaseFieldResource implements GETable, PUTable {
-  private static final Logger log = LoggerFactory.getLogger(FieldResource.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private boolean includeDynamic;
   private String fieldName;

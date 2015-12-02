@@ -1,9 +1,13 @@
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
+
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,6 +30,9 @@ import org.junit.Test;
  * Test with various combinations of parameters, child entities, transformers.
  */
 public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private boolean delta = false;
   private boolean useParentDeltaQueryParam = false;
   private IntChanges personChanges = null;

@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -103,7 +104,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
   
   private static final String FULL_INPUT_LIST = "full-input-list.txt";
   
-  private static final Logger LOG = LoggerFactory.getLogger(MapReduceIndexerTool.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   
   /**

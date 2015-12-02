@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
@@ -56,7 +57,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrap
  */
 public class SolrEntityProcessor extends EntityProcessorBase {
   
-  private static final Logger LOG = LoggerFactory.getLogger(SolrEntityProcessor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String SOLR_SERVER = "url";
   public static final String QUERY = "query";

@@ -19,6 +19,7 @@ package org.apache.solr.morphlines.solr;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 
 import com.google.common.base.Preconditions;
@@ -59,7 +60,7 @@ public class SolrLocator {
   private String solrHomeDir;
   private int batchSize = 1000;
   
-  private static final Logger LOG = LoggerFactory.getLogger(SolrLocator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected SolrLocator(MorphlineContext context) {
     Preconditions.checkNotNull(context);

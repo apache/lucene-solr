@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
   private SolrCore core;
   private String path;
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrReplicatorManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrReplicatorManager(final SolrCore core, String path,
                         SolrParams replicatorConfiguration,

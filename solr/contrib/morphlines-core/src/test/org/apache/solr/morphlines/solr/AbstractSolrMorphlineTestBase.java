@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
@@ -78,7 +79,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   
   protected static final Object NON_EMPTY_FIELD = new Object();
   
-  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSolrMorphlineTestBase.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected String tempDir;
 

@@ -1,5 +1,7 @@
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThread {
-  static Logger log = LoggerFactory.getLogger(AbstractFullDistribZkTestBase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CloudSolrClient cloudClient;
   private volatile boolean stop = false;
