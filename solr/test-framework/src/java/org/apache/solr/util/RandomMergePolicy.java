@@ -42,7 +42,6 @@ public final class RandomMergePolicy extends MergePolicy {
   
   /** 
    * Not private so tests can inspect it, 
-   * Not final so it can be set on clone
    */
   final MergePolicy inner;
 
