@@ -22,6 +22,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
 public class JarRepository {
-  public static Logger log = LoggerFactory.getLogger(JarRepository.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final Random RANDOM;
 
   static {

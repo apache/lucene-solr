@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,8 +62,7 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRI
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
 
-  protected static final transient Logger log =
-      LoggerFactory.getLogger(DistributedVersionInfoTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final int maxWaitSecsToSeeAllActive = 30;
 

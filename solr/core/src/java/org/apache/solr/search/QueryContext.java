@@ -19,12 +19,15 @@ package org.apache.solr.search;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.IdentityHashMap;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrRequestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Bridge between old style context and a real class.
@@ -37,6 +40,8 @@ public class QueryContext extends IdentityHashMap implements Closeable {
   private final SolrIndexSearcher searcher;
   private final IndexSearcher indexSearcher;
   private IdentityHashMap<Closeable,String> closeHooks;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // migrated from ValueSource
   public static QueryContext newContext(IndexSearcher searcher) {
@@ -94,7 +99,7 @@ public class QueryContext extends IdentityHashMap implements Closeable {
         try {
           hook.close();
         } catch (Exception e) {
-          SolrException.log(SolrCore.log, "Exception during close hook", e);
+          SolrException.log(log, "Exception during close hook", e);
         }
       }
     }

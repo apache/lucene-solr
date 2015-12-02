@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConfigSetProperties {
 
-  private static final Logger log = LoggerFactory.getLogger(ConfigSetProperties.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_FILENAME = "configsetprops.json";
   public static final String IMMUTABLE_CONFIGSET_ARG = "immutable";

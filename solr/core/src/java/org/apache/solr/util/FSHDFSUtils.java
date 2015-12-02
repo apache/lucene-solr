@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class FSHDFSUtils {
-  public static Logger log = LoggerFactory.getLogger(FSHDFSUtils.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // internal, for tests
   public static AtomicLong RECOVER_LEASE_SUCCESS_COUNT = new AtomicLong();

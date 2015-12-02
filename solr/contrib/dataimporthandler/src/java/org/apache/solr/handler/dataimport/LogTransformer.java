@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 /**
@@ -32,7 +33,7 @@ import java.util.Map;
  * @since solr 1.4
  */
 public class LogTransformer extends Transformer {
-  Logger LOG = LoggerFactory.getLogger(LogTransformer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public Object transformRow(Map<String, Object> row, Context ctx) {

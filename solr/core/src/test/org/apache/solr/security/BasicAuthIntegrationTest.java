@@ -19,6 +19,7 @@ package org.apache.solr.security;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -66,7 +67,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
 
-  private static final Logger log = LoggerFactory.getLogger(BasicAuthIntegrationTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected void doExtraTests(MiniSolrCloudCluster miniCluster, SolrZkClient zkClient, ZkStateReader zkStateReader,

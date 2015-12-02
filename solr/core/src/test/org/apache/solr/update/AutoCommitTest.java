@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,6 +38,8 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class NewSearcherListener implements SolrEventListener {
 
@@ -110,6 +113,8 @@ class NewSearcherListener implements SolrEventListener {
 
 @Slow
 public class AutoCommitTest extends AbstractSolrTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
    @BeforeClass
   public static void beforeClass() throws Exception {

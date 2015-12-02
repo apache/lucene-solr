@@ -21,6 +21,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -55,8 +57,7 @@ public final class FieldTypePluginLoader
   private static final String LUCENE_MATCH_VERSION_PARAM
     = IndexSchema.LUCENE_MATCH_VERSION_PARAM;
 
-  protected final static Logger log 
-    = LoggerFactory.getLogger(FieldTypePluginLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final XPath xpath = XPathFactory.newInstance().newXPath();
 

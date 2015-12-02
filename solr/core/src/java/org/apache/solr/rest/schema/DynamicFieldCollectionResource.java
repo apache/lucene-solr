@@ -32,6 +32,7 @@ import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,7 +48,7 @@ import java.util.Map;
  * parameter. 
  */
 public class DynamicFieldCollectionResource extends BaseFieldResource implements GETable, POSTable {
-  private static final Logger log = LoggerFactory.getLogger(DynamicFieldCollectionResource.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DynamicFieldCollectionResource() {
     super();

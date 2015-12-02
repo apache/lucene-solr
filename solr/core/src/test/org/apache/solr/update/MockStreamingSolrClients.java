@@ -22,16 +22,12 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 
 public class MockStreamingSolrClients extends StreamingSolrClients {
-  public static Logger log = LoggerFactory
-      .getLogger(MockStreamingSolrClients.class);
   
   public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION};
   

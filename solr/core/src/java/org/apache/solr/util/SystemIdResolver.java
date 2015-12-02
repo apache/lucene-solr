@@ -27,6 +27,7 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.ext.EntityResolver2;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.xml.transform.Source;
@@ -55,7 +56,7 @@ import javax.xml.stream.XMLStreamException;
  * </pre>
  */
 public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
-  private static final Logger log = LoggerFactory.getLogger(SystemIdResolver.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String RESOURCE_LOADER_URI_SCHEME = "solrres";
   public static final String RESOURCE_LOADER_AUTHORITY_ABSOLUTE = "@";

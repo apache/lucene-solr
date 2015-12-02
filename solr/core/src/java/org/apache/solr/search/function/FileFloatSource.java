@@ -38,6 +38,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -55,7 +56,7 @@ public class FileFloatSource extends ValueSource {
   private final float defVal;
   private final String dataDir;
 
-  private static final Logger log = LoggerFactory.getLogger(FileFloatSource.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Creates a new FileFloatSource
@@ -248,7 +249,7 @@ public class FileFloatSource extends ValueSource {
       is = VersionedFile.getLatestFile(ffs.dataDir, fname);
     } catch (IOException e) {
       // log, use defaults
-      SolrCore.log.error("Error opening external value source file: " +e);
+      log.error("Error opening external value source file: " +e);
       return vals;
     }
 
@@ -290,7 +291,7 @@ public class FileFloatSource extends ValueSource {
           fval=Float.parseFloat(val);
         } catch (Exception e) {
           if (++otherErrors<=10) {
-            SolrCore.log.error( "Error loading external value source + fileName + " + e
+            log.error( "Error loading external value source + fileName + " + e
               + (otherErrors<10 ? "" : "\tSkipping future errors for this file.")
             );
           }
@@ -314,14 +315,14 @@ public class FileFloatSource extends ValueSource {
 
     } catch (IOException e) {
       // log, use defaults
-      SolrCore.log.error("Error loading external value source: " +e);
+      log.error("Error loading external value source: " +e);
     } finally {
       // swallow exceptions on close so we don't override any
       // exceptions that happened in the loop
       try{r.close();}catch(Exception e){}
     }
 
-    SolrCore.log.info("Loaded external value source " + fname
+    log.info("Loaded external value source " + fname
       + (notFoundCount==0 ? "" : " :"+notFoundCount+" missing keys "+notFound)
     );
 
@@ -329,8 +330,7 @@ public class FileFloatSource extends ValueSource {
   }
 
   public static class ReloadCacheRequestHandler extends RequestHandlerBase {
-    
-    static final Logger log = LoggerFactory.getLogger(ReloadCacheRequestHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)

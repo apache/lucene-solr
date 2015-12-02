@@ -18,6 +18,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.SolrException;
 
@@ -169,7 +170,7 @@ public final class DocExpirationUpdateProcessorFactory
   extends UpdateRequestProcessorFactory 
   implements SolrCoreAware {
 
-  public final static Logger log = LoggerFactory.getLogger(DocExpirationUpdateProcessorFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String DEF_TTL_KEY = "_ttl_";
   private static final String EXP_FIELD_NAME_CONF = "expirationFieldName";

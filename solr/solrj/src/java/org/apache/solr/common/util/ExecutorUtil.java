@@ -1,5 +1,6 @@
 package org.apache.solr.common.util;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -44,7 +45,7 @@ import org.slf4j.MDC;
 
 
 public class ExecutorUtil {
-  public static Logger log = LoggerFactory.getLogger(ExecutorUtil.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static volatile List<InheritableThreadLocalProvider> providers = new ArrayList<>();
 

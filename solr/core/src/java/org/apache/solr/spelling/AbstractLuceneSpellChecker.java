@@ -29,8 +29,6 @@ import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
@@ -62,7 +60,6 @@ import org.apache.solr.search.SolrIndexSearcher;
  * @since solr 1.3
  */
 public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
-  public static final Logger log = LoggerFactory.getLogger(AbstractLuceneSpellChecker.class);
   
   public static final String SPELLCHECKER_ARG_NAME = "spellchecker";
   public static final String LOCATION = "sourceLocation";

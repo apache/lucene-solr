@@ -18,6 +18,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,8 +61,7 @@ import org.slf4j.LoggerFactory;
 public class MoreLikeThisComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "mlt";
   public static final String DIST_DOC_ID = "mlt.dist.id";
-  static final Logger log = LoggerFactory
-      .getLogger(MoreLikeThisComponent.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {

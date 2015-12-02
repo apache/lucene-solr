@@ -58,16 +58,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RTimerTree;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 public class SolrRequestParsers 
 {
-  final static Logger log = LoggerFactory.getLogger(SolrRequestParsers.class);
-  
   // Should these constants be in a more public place?
   public static final String MULTIPART = "multipart";
   public static final String FORMDATA = "formdata";

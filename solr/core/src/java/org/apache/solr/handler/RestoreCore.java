@@ -17,6 +17,7 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 public class RestoreCore implements Callable<Boolean> {
 
-  private static final Logger log = LoggerFactory.getLogger(RestoreCore.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String backupName;
   private final String backupLocation;

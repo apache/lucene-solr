@@ -25,12 +25,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.junit.After;
 import org.junit.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 {
-
-  protected static Logger log = LoggerFactory.getLogger(AbstractEmbeddedSolrServerTestCase.class);
 
   protected static final Path SOLR_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
 

@@ -27,6 +27,7 @@ import org.apache.uima.jcas.tcas.Annotation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 /**
@@ -36,7 +37,7 @@ import java.util.Map;
  */
 public class UIMAToSolrMapper {
 
-  private final Logger log = LoggerFactory.getLogger(UIMAToSolrMapper.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrInputDocument document;
 

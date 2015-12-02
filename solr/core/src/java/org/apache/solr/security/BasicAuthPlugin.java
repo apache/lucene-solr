@@ -44,11 +44,8 @@ import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.CommandOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin {
-  protected static final Logger log = LoggerFactory.getLogger(BasicAuthPlugin.class);
   private AuthenticationProvider zkAuthentication;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
 

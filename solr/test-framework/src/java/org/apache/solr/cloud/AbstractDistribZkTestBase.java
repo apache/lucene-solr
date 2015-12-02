@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +34,8 @@ import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
   
@@ -44,6 +47,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   private static final boolean DEBUG = false;
   protected ZkTestServer zkServer;
   private AtomicInteger homeCount = new AtomicInteger();
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeThisClass() throws Exception {

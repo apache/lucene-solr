@@ -47,7 +47,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private SolrClientCache clientCache = new SolrClientCache();
   private StreamFactory streamFactory = new StreamFactory();
-  
+
   public void inform(SolrCore core) {
     
     /* The stream factory will always contain the zkUrl for the given collection

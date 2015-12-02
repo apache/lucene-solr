@@ -31,6 +31,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 /**
@@ -39,8 +40,7 @@ import java.util.List;
  * don't have to be ordered i.e. DistributedQueue.
  */
 public class DistributedMap {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(DistributedMap.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static long DEFAULT_TIMEOUT = 5*60*1000;
 

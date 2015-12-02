@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
@@ -34,6 +35,8 @@ import org.apache.solr.core.SolrResourceNotFoundException;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ResourceLoader that works with ZooKeeper.
@@ -44,6 +47,8 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   private final String configSetZkPath;
   private ZkController zkController;
   private ZkIndexSchemaReader zkIndexSchemaReader;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public ZkSolrResourceLoader(Path instanceDir, String configSet, ZkController zooKeeperController) {
     super(instanceDir);

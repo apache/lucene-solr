@@ -18,6 +18,7 @@ package org.apache.solr.handler.clustering;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -57,7 +58,7 @@ import com.google.common.collect.Maps;
  * @lucene.experimental
  */
 public class ClusteringComponent extends SearchComponent implements SolrCoreAware {
-  private transient static Logger log = LoggerFactory.getLogger(ClusteringComponent.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Base name for all component parameters. This name is also used to

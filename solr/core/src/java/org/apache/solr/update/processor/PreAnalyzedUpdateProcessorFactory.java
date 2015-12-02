@@ -1,5 +1,6 @@
 package org.apache.solr.update.processor;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,8 @@ import org.apache.solr.schema.PreAnalyzedField;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SimplePreAnalyzedParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -133,6 +136,8 @@ class PreAnalyzedUpdateProcessor extends FieldMutatingUpdateProcessor {
   
   private PreAnalyzedField parser;
   private IndexSchema schema;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public PreAnalyzedUpdateProcessor(FieldNameSelector sel, UpdateRequestProcessor next, IndexSchema schema, PreAnalyzedField parser) {
     super(sel, next);

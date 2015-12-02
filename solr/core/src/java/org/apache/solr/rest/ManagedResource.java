@@ -18,6 +18,7 @@ package org.apache.solr.rest;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,8 +43,8 @@ import org.slf4j.LoggerFactory;
  * needs to be managed using the REST API.
  */
 public abstract class ManagedResource {
-    
-  public static final Logger log = LoggerFactory.getLogger(ManagedResource.class);
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /**
    * Marker interface to indicate a ManagedResource implementation class also supports

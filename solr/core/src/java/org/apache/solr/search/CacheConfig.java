@@ -18,6 +18,8 @@
 package org.apache.solr.search;
 
 import javax.xml.xpath.XPathConstants;
+
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +31,8 @@ import org.apache.solr.core.MapSerializable;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DOMUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -42,6 +46,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  *
  */
 public class CacheConfig implements MapSerializable{
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   private String nodeName;
 
   private Class<? extends SolrCache> clazz;
@@ -129,7 +135,7 @@ public class CacheConfig implements MapSerializable{
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {
-      SolrException.log(SolrCache.log,"Error instantiating cache",e);
+      SolrException.log(log,"Error instantiating cache",e);
       // we can carry on without a cache... but should we?
       // in some cases (like an OOM) we probably should try to continue.
       return null;

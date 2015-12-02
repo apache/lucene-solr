@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +30,6 @@ import java.util.Set;
  */
 public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(TestSolrEntityProcessorUnit.class);
   private static final String ID = "id";
 
   public void testQuery() {

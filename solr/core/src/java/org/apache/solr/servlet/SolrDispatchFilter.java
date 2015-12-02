@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.2
  */
 public class SolrDispatchFilter extends BaseSolrFilter {
-  static final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile CoreContainer cores;
 

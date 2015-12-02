@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class ElectionContext implements Closeable {
-  static Logger log = LoggerFactory.getLogger(ElectionContext.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   final String electionPath;
   final ZkNodeProps leaderProps;
   final String id;
@@ -105,8 +106,7 @@ public abstract class ElectionContext implements Closeable {
 }
 
 class ShardLeaderElectionContextBase extends ElectionContext {
-  private static Logger log = LoggerFactory
-      .getLogger(ShardLeaderElectionContextBase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrZkClient zkClient;
   protected String shardId;
   protected String collection;
@@ -232,7 +232,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
 // add core container and stop passing core around...
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
-  private static Logger log = LoggerFactory.getLogger(ShardLeaderElectionContext.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final ZkController zkController;
   private final CoreContainer cc;
@@ -650,7 +650,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 }
 
 final class OverseerElectionContext extends ElectionContext {
-  private static Logger log = LoggerFactory.getLogger(OverseerElectionContext.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
   private Overseer overseer;
   public static final String OVERSEER_ELECT = "/overseer_elect";

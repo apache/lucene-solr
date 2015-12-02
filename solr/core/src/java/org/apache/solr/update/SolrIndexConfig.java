@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +45,7 @@ import static org.apache.solr.core.Config.assertWarnOrFail;
  * defined in the &lt;indexConfig&gt; section of solrconfig.xml
  */
 public class SolrIndexConfig implements MapSerializable {
-  public static final Logger log = LoggerFactory.getLogger(SolrIndexConfig.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   final String defaultMergePolicyClassName;
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();

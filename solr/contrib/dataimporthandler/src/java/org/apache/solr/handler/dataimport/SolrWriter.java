@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -38,7 +39,7 @@ import java.nio.charset.StandardCharsets;
  * @since solr 1.3
  */
 public class SolrWriter extends DIHWriterBase implements DIHWriter {
-  private static final Logger log = LoggerFactory.getLogger(SolrWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String LAST_INDEX_KEY = "last_index_time";
 

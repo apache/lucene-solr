@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LineRandomizerReducer extends Reducer<LongWritable, Text, Text, NullWritable> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(LineRandomizerReducer.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {

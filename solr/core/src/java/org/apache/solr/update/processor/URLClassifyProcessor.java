@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -55,7 +56,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
   private static final String DEFAULT_LEVELS_FIELDNAME = "url_levels";
   private static final String DEFAULT_TOPLEVEL_FIELDNAME = "url_toplevel";
   private static final String DEFAULT_LANDINGPAGE_FIELDNAME = "url_landingpage";
-  private final static Logger log = LoggerFactory.getLogger(URLClassifyProcessor.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean enabled = true;
   private String urlFieldname = DEFAULT_URL_FIELDNAME;
   private String lengthFieldname = DEFAULT_LENGTH_FIELDNAME;

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.*;
 
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -40,8 +41,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void deleteInactiveReplicaTest() throws Exception {

@@ -40,14 +40,10 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SyntaxError;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Processor for Range Facets
  */
 public class RangeFacetProcessor extends SimpleFacets {
-  private final static Logger log = LoggerFactory.getLogger(RangeFacetProcessor.class);
 
   public RangeFacetProcessor(SolrQueryRequest req, DocSet docs, SolrParams params, ResponseBuilder rb) {
     super(req, docs, params, rb);

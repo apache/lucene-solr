@@ -29,11 +29,8 @@ import org.apache.solr.core.CoreContainer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestZkChroot extends SolrTestCaseJ4 {
-  protected static Logger log = LoggerFactory.getLogger(TestZkChroot.class);
   protected CoreContainer cores = null;
   private Path home;
   

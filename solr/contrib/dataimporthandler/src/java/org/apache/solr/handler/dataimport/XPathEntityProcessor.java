@@ -34,6 +34,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.CharArrayReader;
 import java.io.CharArrayWriter;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -54,7 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since solr 1.3
  */
 public class XPathEntityProcessor extends EntityProcessorBase {
-  private static final Logger LOG = LoggerFactory.getLogger(XPathEntityProcessor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(LOG);
 
   private static final Map<String, Object> END_MARKER = new HashMap<>();

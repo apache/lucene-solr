@@ -26,6 +26,7 @@ import static org.apache.solr.handler.dataimport.EntityProcessorBase.SKIP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,7 +39,7 @@ import java.util.Map;
  * @since solr 1.4
  */
 public class EntityProcessorWrapper extends EntityProcessor {
-  private static final Logger log = LoggerFactory.getLogger(EntityProcessorWrapper.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private EntityProcessor delegate;
   private Entity entity;

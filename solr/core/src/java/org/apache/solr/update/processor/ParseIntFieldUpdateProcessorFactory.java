@@ -24,6 +24,7 @@ import org.apache.solr.schema.IntValueFieldType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
 import java.util.Locale;
@@ -63,7 +64,7 @@ import java.util.Locale;
  */
 public class ParseIntFieldUpdateProcessorFactory extends ParseNumericFieldUpdateProcessorFactory {
 
-  private static final Logger log = LoggerFactory.getLogger(ParseIntFieldUpdateProcessorFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,

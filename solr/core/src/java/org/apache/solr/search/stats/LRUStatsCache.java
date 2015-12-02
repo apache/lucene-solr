@@ -18,6 +18,7 @@ package org.apache.solr.search.stats;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * that is updated with the global statistics on every request.
  */
 public class LRUStatsCache extends ExactStatsCache {
-  private static final Logger LOG = LoggerFactory.getLogger(LRUStatsCache.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // local stats obtained from shard servers
   private final Map<String,SolrCache<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();

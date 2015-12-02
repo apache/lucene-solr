@@ -18,6 +18,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +61,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("rawtypes")
 public class FacetComponent extends SearchComponent {
-  public static Logger log = LoggerFactory.getLogger(FacetComponent.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String COMPONENT_NAME = "facet";
 

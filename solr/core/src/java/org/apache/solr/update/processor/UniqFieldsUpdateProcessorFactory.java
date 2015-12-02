@@ -33,9 +33,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Removes duplicate values found in fields matching the specified conditions.  
  * The existing field values are iterated in order, and values are removed when 
@@ -57,8 +54,6 @@ import org.slf4j.LoggerFactory;
  * </pre> 
  */
 public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
-
-  public final static Logger log = LoggerFactory.getLogger(UniqFieldsUpdateProcessorFactory.class);
 
   @Override
   public FieldMutatingUpdateProcessor.FieldNameSelector 

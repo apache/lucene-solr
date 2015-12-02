@@ -28,17 +28,12 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @Nightly
 public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistribZkTestBase {
   
-  protected static final transient Logger log = LoggerFactory.getLogger(LeaderInitiatedRecoveryOnShardRestartTest.class);
-  
-
   public LeaderInitiatedRecoveryOnShardRestartTest() {
     super();
     sliceCount = 1;

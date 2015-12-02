@@ -18,6 +18,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,7 +84,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  */
 public class SpellCheckComponent extends SearchComponent implements SolrCoreAware, SpellingParams {
-  private static final Logger LOG = LoggerFactory.getLogger(SpellCheckComponent.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final boolean DEFAULT_ONLY_MORE_POPULAR = false;
 
@@ -754,7 +755,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
                   + checker.getDictionaryName());
           checker.reload(core, newSearcher);
         } catch (IOException e) {
-          log.error( "Exception in reloading spell check index for spellchecker: " + checker.getDictionaryName(), e);
+          LOG.error( "Exception in reloading spell check index for spellchecker: " + checker.getDictionaryName(), e);
         }
       } else {
         // newSearcher event
@@ -776,7 +777,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         LOG.info("Building spell index for spell checker: " + checker.getDictionaryName());
         checker.build(core, newSearcher);
       } catch (Exception e) {
-        log.error(
+        LOG.error(
                 "Exception in building spell check index for spellchecker: " + checker.getDictionaryName(), e);
       }
     }

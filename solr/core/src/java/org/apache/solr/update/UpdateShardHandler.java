@@ -34,12 +34,13 @@ import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class UpdateShardHandler {
   
-  private static Logger log = LoggerFactory.getLogger(UpdateShardHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /*
    * A downside to configuring an upper bound will be big update reorders (when that upper bound is hit)

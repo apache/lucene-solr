@@ -39,8 +39,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrPluginUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,8 +56,6 @@ public class CloudMLTQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
-  private static Logger log = LoggerFactory
-      .getLogger(CloudMLTQParser.class);
   public Query parse() {
     String id = localParams.get(QueryParsing.V);
     // Do a Real Time Get for the document

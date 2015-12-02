@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.EnumSet;
@@ -69,7 +70,7 @@ import org.slf4j.MDC;
  */
 public class JettySolrRunner {
 
-  private static final Logger logger = LoggerFactory.getLogger(JettySolrRunner.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   Server server;
 

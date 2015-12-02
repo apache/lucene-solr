@@ -45,11 +45,8 @@ import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
-  static final Logger log = LoggerFactory.getLogger(TestNamedUpdateProcessors.class);
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   private void setupHarnesses() {

@@ -18,6 +18,7 @@ package org.apache.solr.schema;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,7 +83,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   public static final String RECIP_DISTANCE = "recipDistance";
   public static final String NONE = "none";
 
-  protected final Logger log = LoggerFactory.getLogger( getClass() );
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected SpatialContext ctx;
   protected SpatialArgsParser argsParser;

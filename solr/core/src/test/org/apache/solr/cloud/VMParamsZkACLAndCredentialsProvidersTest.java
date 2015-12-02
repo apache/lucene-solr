@@ -1,6 +1,7 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -34,8 +35,7 @@ import org.slf4j.LoggerFactory;
 
 public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
-  protected static Logger log = LoggerFactory
-      .getLogger(AbstractZkTestCase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
   

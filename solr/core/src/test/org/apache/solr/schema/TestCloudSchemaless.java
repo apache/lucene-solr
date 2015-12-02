@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.Math;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ import java.util.TreeMap;
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
-  private static final Logger log = LoggerFactory.getLogger(TestCloudSchemaless.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
 
   @After

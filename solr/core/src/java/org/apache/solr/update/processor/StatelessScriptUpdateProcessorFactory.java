@@ -40,6 +40,7 @@ import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.LinkedHashSet;
@@ -152,7 +153,7 @@ import org.slf4j.LoggerFactory;
  */
 public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware {
 
-  public static Logger log = LoggerFactory.getLogger(StatelessScriptUpdateProcessorFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final static String SCRIPT_ARG = "script";
   private final static String PARAMS_ARG = "params";

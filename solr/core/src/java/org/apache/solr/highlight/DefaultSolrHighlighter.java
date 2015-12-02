@@ -17,6 +17,7 @@
 package org.apache.solr.highlight;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -82,7 +83,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized
 {
 
-  public static Logger log = LoggerFactory.getLogger(DefaultSolrHighlighter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore solrCore;
 

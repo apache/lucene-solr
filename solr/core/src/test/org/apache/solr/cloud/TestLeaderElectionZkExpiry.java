@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -29,8 +30,13 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String SOLRXML = "<solr></solr>";
   private static final int MAX_NODES = 16;
   private static final int MIN_NODES = 4;

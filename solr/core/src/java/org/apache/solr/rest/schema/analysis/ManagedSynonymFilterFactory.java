@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema.analysis;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
   
-  public static final Logger log = LoggerFactory.getLogger(ManagedSynonymFilterFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String SYNONYM_MAPPINGS = "synonymMappings";
   public static final String IGNORE_CASE_INIT_ARG = "ignoreCase";

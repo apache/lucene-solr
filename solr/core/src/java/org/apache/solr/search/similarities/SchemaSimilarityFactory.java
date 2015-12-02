@@ -28,9 +28,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * <code>SimilarityFactory</code> that returns a global {@link PerFieldSimilarityWrapper}
  * that delegates to the field type, if it's configured.  For field type's that

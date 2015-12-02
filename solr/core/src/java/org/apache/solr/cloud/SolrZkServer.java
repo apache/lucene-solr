@@ -25,6 +25,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.apache.zookeeper.server.quorum.flexible.QuorumHierarchical;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
@@ -32,6 +33,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -42,7 +44,7 @@ import java.util.Properties;
 
 
 public class SolrZkServer {
-  static org.slf4j.Logger log = LoggerFactory.getLogger(SolrZkServer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   String zkRun;
   String zkHost;
@@ -152,7 +154,7 @@ public class SolrZkServer {
 // Allows us to set a default for the data dir before parsing
 // zoo.cfg (which validates that there is a dataDir)
 class SolrZkServerProps extends QuorumPeerConfig {
-  protected static org.slf4j.Logger LOG = LoggerFactory.getLogger(QuorumPeerConfig.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String solrPort; // port that Solr is listening on
   String zkRun;

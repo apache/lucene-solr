@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
 import org.apache.lucene.store.Directory;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  **/
 public class MMapDirectoryFactory extends StandardDirectoryFactory {
-  private transient static Logger log = LoggerFactory.getLogger(MMapDirectoryFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   boolean unmapHack;
   private int maxChunk;
 

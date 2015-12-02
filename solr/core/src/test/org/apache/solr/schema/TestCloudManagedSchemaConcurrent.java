@@ -16,6 +16,7 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
@@ -43,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestBase {
-  private static final Logger log = LoggerFactory.getLogger(TestCloudManagedSchemaConcurrent.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
   private static final String PUT_DYNAMIC_FIELDNAME = "newdynamicfieldPut";
   private static final String POST_DYNAMIC_FIELDNAME = "newdynamicfieldPost";

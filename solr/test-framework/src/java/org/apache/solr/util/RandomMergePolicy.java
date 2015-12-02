@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexWriter;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class RandomMergePolicy extends MergePolicy {
 
-  public static Logger log = LoggerFactory.getLogger(RandomMergePolicy.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** 
    * Not private so tests can inspect it, 

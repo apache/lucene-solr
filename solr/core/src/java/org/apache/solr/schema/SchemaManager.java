@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,7 +61,7 @@ import static org.apache.solr.schema.IndexSchema.TYPE;
  * It is an all or nothing operation.
  */
 public class SchemaManager {
-  private static final Logger log = LoggerFactory.getLogger(SchemaManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrQueryRequest req;
   ManagedIndexSchema managedIndexSchema;

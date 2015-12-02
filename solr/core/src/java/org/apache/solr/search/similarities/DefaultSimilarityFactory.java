@@ -16,7 +16,7 @@ package org.apache.solr.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.search.similarities.Similarity;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.params.SolrParams;
 
@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
  */
 @Deprecated
 public class DefaultSimilarityFactory extends ClassicSimilarityFactory {
-  
-  public static final Logger log = LoggerFactory.getLogger(DefaultSimilarityFactory.class);
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void init(SolrParams params) {

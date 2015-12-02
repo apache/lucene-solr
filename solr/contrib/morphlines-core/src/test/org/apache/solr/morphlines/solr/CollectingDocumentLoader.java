@@ -16,6 +16,7 @@
  */
 package org.apache.solr.morphlines.solr;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +35,7 @@ class CollectingDocumentLoader implements DocumentLoader {
   private final List<SolrInputDocument> batch = new ArrayList<> ();
   private List<SolrInputDocument> results = new ArrayList<> ();
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CollectingDocumentLoader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public CollectingDocumentLoader(int batchSize) {
     if (batchSize <= 0) {

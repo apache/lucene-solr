@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -46,8 +47,7 @@ import org.xml.sax.SAXException;
 
 @Slow
 public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
-  protected static Logger log = LoggerFactory
-      .getLogger(AbstractZkTestCase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final static int NUM_SHARD_REPLICAS = 5;
   

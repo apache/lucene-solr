@@ -18,6 +18,7 @@
 
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * A distributed queue.
  */
 public class DistributedQueue {
-  private static final Logger LOG = LoggerFactory.getLogger(DistributedQueue.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String PREFIX = "qn-";
 

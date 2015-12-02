@@ -25,6 +25,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,7 +67,7 @@ import org.xml.sax.SAXException;
  */
 public class EnumField extends PrimitiveFieldType {
 
-  public static final Logger log = LoggerFactory.getLogger(EnumField.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Locale LOCALE = Locale.getDefault();
   protected static final String PARAM_ENUMS_CONFIG = "enumsConfig";
   protected static final String PARAM_ENUM_NAME = "enumName";

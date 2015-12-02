@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -39,8 +40,7 @@ import org.slf4j.LoggerFactory;
 
 public class TestWriterPerf extends AbstractSolrTestCase {
 
-  public static final Logger log 
-    = LoggerFactory.getLogger(TestWriterPerf.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {

@@ -45,6 +45,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -62,7 +63,7 @@ import java.util.concurrent.TimeUnit;
 public class ZkTestServer {
   public static final int TICK_TIME = 1000;
 
-  private static Logger log = LoggerFactory.getLogger(ZkTestServer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected final ZKServerMain zkServer = new ZKServerMain();
 

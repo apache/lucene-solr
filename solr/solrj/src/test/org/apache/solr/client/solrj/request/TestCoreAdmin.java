@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
@@ -46,7 +47,7 @@ import static org.hamcrest.core.Is.is;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
-  protected static Logger log = LoggerFactory.getLogger(TestCoreAdmin.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String tempDirProp;
 

@@ -20,6 +20,7 @@ package org.apache.solr.util;
 
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -61,7 +62,7 @@ public abstract class AbstractSolrTestCase extends SolrTestCaseJ4 {
     return SolrTestCaseJ4.TEST_HOME();
   }
 
-  public static Logger log = LoggerFactory.getLogger(AbstractSolrTestCase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
     /** Causes an exception matching the regex pattern to not be logged. */

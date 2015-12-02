@@ -18,6 +18,7 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +55,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
 
   private final ResponseBuilder rb;
 
-  private static final Logger log = LoggerFactory.getLogger(TopGroupsResultTransformer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public TopGroupsResultTransformer(ResponseBuilder rb) {
     this.rb = rb;

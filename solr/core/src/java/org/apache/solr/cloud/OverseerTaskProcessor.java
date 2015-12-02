@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,8 +63,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   public ExecutorService tpe ;
 
-  private static Logger log = LoggerFactory
-      .getLogger(OverseerTaskProcessor.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private OverseerTaskQueue workQueue;
   private DistributedMap runningMap;

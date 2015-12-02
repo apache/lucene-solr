@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -51,7 +52,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
  * optionally with an independent stored value of a field.
  */
 public class PreAnalyzedField extends FieldType {
-  private static final Logger LOG = LoggerFactory.getLogger(PreAnalyzedField.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Init argument name. Value is a fully-qualified class name of the parser
    * that implements {@link PreAnalyzedParser}.
@@ -159,8 +160,8 @@ public class PreAnalyzedField extends FieldType {
    */
   public static org.apache.lucene.document.FieldType createFieldType(SchemaField field) {
     if (!field.indexed() && !field.stored()) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+      if (LOG.isTraceEnabled())
+        LOG.trace("Ignoring unindexed/unstored field: " + field);
       return null;
     }
     org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();

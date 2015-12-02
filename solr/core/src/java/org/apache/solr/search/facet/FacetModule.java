@@ -41,11 +41,8 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SyntaxError;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FacetModule extends SearchComponent {
-  public static Logger log = LoggerFactory.getLogger(FacetModule.class);
 
   public static final String COMPONENT_NAME = "facet_module";
 

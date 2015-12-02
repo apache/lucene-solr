@@ -19,6 +19,7 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
@@ -66,7 +67,7 @@ import org.xml.sax.SAXException;
  **/
 public class ExtractingDocumentLoader extends ContentStreamLoader {
 
-  private static final Logger log = LoggerFactory.getLogger(ExtractingDocumentLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Extract Only supported format

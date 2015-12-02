@@ -34,12 +34,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AssignTest extends SolrTestCaseJ4 {
-  protected static Logger log = LoggerFactory.getLogger(AssignTest.class);
-
   
   @Override
   @Before

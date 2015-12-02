@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 
 import org.apache.lucene.document.Field;
@@ -27,9 +28,13 @@ import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.response.TextResponseWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class BinaryField extends FieldType  {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String toBase64String(ByteBuffer buf) {
     return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());

@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,7 +45,7 @@ class BatchWriter {
   private final EmbeddedSolrServer solr;
   private volatile Exception batchWriteException = null;
   
-  private static final Logger LOG = LoggerFactory.getLogger(BatchWriter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public Exception getBatchWriteException() {
     return batchWriteException;

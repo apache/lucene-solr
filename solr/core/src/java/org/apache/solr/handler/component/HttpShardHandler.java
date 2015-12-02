@@ -16,6 +16,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -68,7 +69,7 @@ public class HttpShardHandler extends ShardHandler {
   private Map<String,List<String>> shardToURLs;
   private HttpClient httpClient;
 
-  protected static Logger log = LoggerFactory.getLogger(HttpShardHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
     this.httpClient = httpClient;

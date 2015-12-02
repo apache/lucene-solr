@@ -26,14 +26,11 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slow
 public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
-  private static Logger log = LoggerFactory.getLogger(RecoveryZkTest.class);
   private StoppableIndexingThread indexThread;
   private StoppableIndexingThread indexThread2;
 

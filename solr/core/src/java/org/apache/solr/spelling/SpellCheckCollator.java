@@ -16,6 +16,7 @@ package org.apache.solr.spelling;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -41,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SpellCheckCollator {
-  private static final Logger LOG = LoggerFactory.getLogger(SpellCheckCollator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private int maxCollations = 1;
   private int maxCollationTries = 0;
   private int maxCollationEvaluations = 10000;

@@ -21,6 +21,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.common.params.CommonParams;
@@ -28,12 +30,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 /**
  *
  */
 public class QuerySenderListener extends AbstractSolrEventListener {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   public QuerySenderListener(SolrCore core) {
     super(core);
   }

@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,7 +68,7 @@ import org.slf4j.LoggerFactory;
 
 public class RealTimeGetComponent extends SearchComponent
 {
-  public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String COMPONENT_NAME = "get";
 
   @Override

@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ConfigSetService {
 
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
     if (zkController != null)
       return new CloudConfigSetService(loader, zkController);
@@ -181,8 +183,6 @@ public abstract class ConfigSetService {
    * A ConfigSetService that shares schema objects between cores
    */
   public static class SchemaCaching extends Default {
-
-    private static final Logger logger = LoggerFactory.getLogger(SchemaCaching.class);
 
     private final Cache<String, IndexSchema> schemaCache = CacheBuilder.newBuilder().build();
 

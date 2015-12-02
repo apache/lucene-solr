@@ -62,6 +62,7 @@ import org.slf4j.MDC;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -110,7 +111,7 @@ public class HttpSolrClient extends SolrClient {
    */
   public static final String AGENT = "Solr[" + HttpSolrClient.class.getName() + "] 1.0";
   
-  private static Logger log = LoggerFactory.getLogger(HttpSolrClient.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /**
    * The URL of the Solr server.

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -131,8 +132,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore, Exception>());
 
 
-  public static final Logger log = LoggerFactory.getLogger(SolrCore.class);
-  public static final Logger requestLog = LoggerFactory.getLogger(SolrCore.class.getName() + ".Request");
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
 
   private String name;
   private String logid; // used to show what name is set

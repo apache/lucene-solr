@@ -23,6 +23,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,7 +53,7 @@ class SolrCores {
   
   private Set<String> currentlyLoadingCores = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
 
-  private static final Logger log = LoggerFactory.getLogger(SolrCores.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // This map will hold objects that are being currently operated on. The core (value) may be null in the case of
   // initial load. The rule is, never to any operation on a core that is currently being operated upon.
@@ -70,7 +71,7 @@ class SolrCores {
   // there is no setting for max size, nothing is done and all cores go in the regular "cores" list
   protected void allocateLazyCores(final int cacheSize, final SolrResourceLoader loader) {
     if (cacheSize != Integer.MAX_VALUE) {
-      CoreContainer.log.info("Allocating transient cache for {} transient cores", cacheSize);
+      log.info("Allocating transient cache for {} transient cores", cacheSize);
       transientCores = new LinkedHashMap<String, SolrCore>(cacheSize, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
@@ -123,7 +124,7 @@ class SolrCores {
         try {
           core.close();
         } catch (Throwable e) {
-          SolrException.log(CoreContainer.log, "Error shutting down core", e);
+          SolrException.log(log, "Error shutting down core", e);
           if (e instanceof Error) {
             throw (Error) e;
           }
@@ -137,7 +138,7 @@ class SolrCores {
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
   protected SolrCore putTransientCore(NodeConfig cfg, String name, SolrCore core, SolrResourceLoader loader) {
     SolrCore retCore;
-    CoreContainer.log.info("Opening transient core {}", name);
+    log.info("Opening transient core {}", name);
     synchronized (modifyLock) {
       retCore = transientCores.put(name, core);
     }
@@ -352,7 +353,7 @@ class SolrCores {
       // We _really_ need to do this within the synchronized block!
       if (! container.isShutDown()) {
         if (! pendingCoreOps.add(name)) {
-          CoreContainer.log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
+          log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
         }
         return getCoreFromAnyList(name, false); // we might have been _unloading_ the core, so return the core if it was loaded.
       }
@@ -365,7 +366,7 @@ class SolrCores {
   protected void removeFromPendingOps(String name) {
     synchronized (modifyLock) {
       if (! pendingCoreOps.remove(name)) {
-        CoreContainer.log.warn("Tried to remove core {} from pendingCoreOps and it wasn't there. ", name);
+        log.warn("Tried to remove core {} from pendingCoreOps and it wasn't there. ", name);
       }
       modifyLock.notifyAll();
     }

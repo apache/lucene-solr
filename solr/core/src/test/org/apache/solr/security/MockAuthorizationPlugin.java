@@ -18,6 +18,7 @@ package org.apache.solr.security;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class MockAuthorizationPlugin implements AuthorizationPlugin{
 
-  private Logger log = LoggerFactory.getLogger(MockAuthorizationPlugin.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final HashSet<String> denyUsers = new HashSet<>();
   static Predicate<AuthorizationContext> predicate;
 

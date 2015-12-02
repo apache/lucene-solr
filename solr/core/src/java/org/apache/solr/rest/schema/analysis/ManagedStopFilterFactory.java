@@ -25,8 +25,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.rest.ManagedResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TokenFilterFactory that uses the ManagedWordSetResource implementation
@@ -34,8 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
 
-  public static final Logger log = LoggerFactory.getLogger(ManagedStopFilterFactory.class);
-  
   // this only gets changed once during core initialization and not every
   // time an update is made to the underlying managed word set.
   private CharArraySet stopWords = null;

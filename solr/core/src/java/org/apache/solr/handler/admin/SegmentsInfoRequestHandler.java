@@ -18,8 +18,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -44,7 +42,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * This handler exposes information about last commit generation segments
  */
 public class SegmentsInfoRequestHandler extends RequestHandlerBase {
-  private static Logger log = LoggerFactory.getLogger(SegmentsInfoRequestHandler.class);
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)

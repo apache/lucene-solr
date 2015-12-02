@@ -46,6 +46,7 @@ import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -75,8 +76,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ConcurrentUpdateSolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
-  static final Logger log = LoggerFactory
-      .getLogger(ConcurrentUpdateSolrClient.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private HttpSolrClient client;
   final BlockingQueue<UpdateRequest> queue;
   final ExecutorService scheduler;

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TemplateTransformer extends Transformer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(TemplateTransformer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Map<String ,List<String>> templateVsVars = new HashMap<>();
 
   @Override

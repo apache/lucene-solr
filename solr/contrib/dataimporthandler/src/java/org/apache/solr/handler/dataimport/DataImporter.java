@@ -48,6 +48,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -73,7 +74,7 @@ public class DataImporter {
     IDLE, RUNNING_FULL_DUMP, RUNNING_DELTA_DUMP, JOB_FAILED
   }
 
-  private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
 
   private Status status = Status.IDLE;

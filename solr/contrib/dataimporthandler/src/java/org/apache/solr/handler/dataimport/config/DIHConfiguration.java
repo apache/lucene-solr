@@ -1,5 +1,6 @@
 package org.apache.solr.handler.dataimport.config;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ import org.w3c.dom.Element;
  * @since solr 1.3
  */
 public class DIHConfiguration {
-  private static final Logger LOG = LoggerFactory.getLogger(DIHConfiguration.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // TODO - remove from here and add it to entity
   private final String deleteQuery;

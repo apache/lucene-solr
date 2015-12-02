@@ -28,6 +28,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -450,7 +451,7 @@ public abstract class ManagedResourceStorage {
     }
   } // end JsonStorage 
   
-  public static final Logger log = LoggerFactory.getLogger(ManagedResourceStorage.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final Charset UTF_8 = StandardCharsets.UTF_8;
   

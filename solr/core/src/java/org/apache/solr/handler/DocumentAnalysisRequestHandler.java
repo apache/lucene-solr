@@ -23,6 +23,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -81,7 +82,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
-  public static final Logger log = LoggerFactory.getLogger(DocumentAnalysisRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   private static final float DEFAULT_BOOST = 1.0f;

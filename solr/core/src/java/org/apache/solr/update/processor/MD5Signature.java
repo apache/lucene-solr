@@ -21,11 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class MD5Signature extends Signature {
-  protected final static Logger log = LoggerFactory.getLogger(MD5Signature.class);
   private static ThreadLocal<MessageDigest> DIGESTER_FACTORY = new ThreadLocal<MessageDigest>() {
     @Override
     protected MessageDigest initialValue() {
