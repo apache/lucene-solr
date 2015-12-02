@@ -357,11 +357,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           boolean hasRecentUpdates = false;
           if (ulog != null) {
             // TODO: we could optimize this if necessary
-            UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
-            try {
+            try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
               hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
-            } finally {
-              recentUpdates.close();
             }
           }
           

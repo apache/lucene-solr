@@ -545,11 +545,8 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
     if (ulog == null) return;
 
-    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
-    try {
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
-    } finally {
-      recentUpdates.close();  // cache this somehow?
     }
   }
 
@@ -602,8 +599,7 @@ public class RealTimeGetComponent extends SearchComponent
     long minVersion = Long.MAX_VALUE;
 
     // TODO: get this from cache instead of rebuilding?
-    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
-    try {
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       for (String versionStr : versions) {
         long version = Long.parseLong(versionStr);
         try {
@@ -613,7 +609,7 @@ public class RealTimeGetComponent extends SearchComponent
           if (version > 0) {
             minVersion = Math.min(minVersion, version);
           }
-          
+
           // TODO: do any kind of validation here?
           updates.add(o);
 
@@ -624,12 +620,10 @@ public class RealTimeGetComponent extends SearchComponent
 
       // Must return all delete-by-query commands that occur after the first add requested
       // since they may apply.
-      updates.addAll( recentUpdates.getDeleteByQuery(minVersion));
+      updates.addAll(recentUpdates.getDeleteByQuery(minVersion));
 
       rb.rsp.add("updates", updates);
 
-    } finally {
-      recentUpdates.close();  // cache this somehow?
     }
   }
 
