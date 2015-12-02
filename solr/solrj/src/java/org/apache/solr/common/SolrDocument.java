@@ -17,7 +17,6 @@
 
 package org.apache.solr.common;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,7 +40,7 @@ import org.apache.solr.common.util.NamedList;
  *
  * @since solr 1.3
  */
-public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<String, Object>>, Serializable
+public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> implements Iterable<Map.Entry<String, Object>>
 {
   private final Map<String,Object> _fields;
   
@@ -56,6 +55,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
    * @return a list of field names defined in this document - this Collection is directly backed by this SolrDocument.
    * @see #keySet
    */
+  @Override
   public Collection<String> getFieldNames() {
     return this.keySet();
   }
@@ -124,6 +124,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
    * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
    */
   @SuppressWarnings("unchecked")
+  @Override
   public void addField(String name, Object value) 
   { 
     Object existing = _fields.get(name);
@@ -186,6 +187,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   /**
    * Get the value or collection of values for a given field.  
    */
+  @Override
   public Object getFieldValue(String name) {
     return _fields.get( name );
   }
@@ -194,6 +196,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
    * Get a collection of values for a given field name
    */
   @SuppressWarnings("unchecked")
+  @Override
   public Collection<Object> getFieldValues(String name) {
     Object v = _fields.get( name );
     if( v instanceof Collection ) {
@@ -366,7 +369,8 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   public Collection<Object> values() {
     return _fields.values();
   }
-  
+
+  @Override
   public void addChildDocument(SolrDocument child) {
     if (_childDocuments == null) {
       _childDocuments = new ArrayList<>();
@@ -374,22 +378,26 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
      _childDocuments.add(child);
    }
    
-   public void addChildDocuments(Collection<SolrDocument> childs) {
-     for (SolrDocument child : childs) {
+  @Override
+   public void addChildDocuments(Collection<SolrDocument> children) {
+     for (SolrDocument child : children) {
        addChildDocument(child);
      }
    }
 
    /** Returns the list of child documents, or null if none. */
+   @Override
    public List<SolrDocument> getChildDocuments() {
      return _childDocuments;
    }
    
+   @Override
    public boolean hasChildDocuments() {
      boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
      return !isEmpty;
    }
 
+  @Override
   public int getChildDocumentCount() {
     return _childDocuments.size();
   }
