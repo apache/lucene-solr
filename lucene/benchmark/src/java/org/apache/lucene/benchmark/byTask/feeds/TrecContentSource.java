@@ -147,8 +147,6 @@ public class TrecContentSource extends ContentSource {
         continue;
       }
 
-      line.length();
-
       if (lineStart!=null && line.startsWith(lineStart)) {
         if (collectMatchLine) {
           buf.append(sep).append(line);
