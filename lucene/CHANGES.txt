@@ -52,6 +52,9 @@ New Features
 * LUCENE-6881: Cutover all BKD implementations to dimensional values
   (Mike McCandless)
 
+* LUCENE-6837: Add N-best output support to JapaneseTokenizer.
+  (Hiroharu Konno via Christian Moen)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to

@@ -24,6 +24,7 @@ import java.io.LineNumberReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -59,9 +60,22 @@ public class
       throw new RuntimeException(ioe);
     }
   }
-  
-  private Analyzer analyzer, analyzerNormal, analyzerNoPunct, extendedModeAnalyzerNoPunct;
-  
+
+  private Analyzer analyzer, analyzerNormal, analyzerNormalNBest, analyzerNoPunct, extendedModeAnalyzerNoPunct;
+
+  private JapaneseTokenizer makeTokenizer(boolean discardPunctuation, Mode mode) {
+    return new JapaneseTokenizer(newAttributeFactory(), readDict(), discardPunctuation, mode);
+  }
+
+  private Analyzer makeAnalyzer(final Tokenizer t) {
+    return new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(t, t);
+      }
+    };
+  }
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -76,6 +90,14 @@ public class
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.NORMAL);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    analyzerNormalNBest = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        JapaneseTokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.NORMAL);
+        tokenizer.setNBestCost(2000);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -94,7 +116,7 @@ public class
       }
     };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     IOUtils.close(analyzer, analyzerNormal, analyzerNoPunct, extendedModeAnalyzerNoPunct);
@@ -107,14 +129,109 @@ public class
                      new String[] {"シニアソフトウェアエンジニア"});
   }
 
+  public void testNormalModeNbest() throws Exception {
+    JapaneseTokenizer t = makeTokenizer(true, Mode.NORMAL);
+    Analyzer a = makeAnalyzer(t);
+
+    t.setNBestCost(2000);
+    assertAnalyzesTo(a,
+                     "シニアソフトウェアエンジニア",
+                     new String[] {"シニア", "シニアソフトウェアエンジニア", "ソフトウェア", "エンジニア"});
+
+    t.setNBestCost(5000);
+    assertAnalyzesTo(a,
+                     "シニアソフトウェアエンジニア",
+                     new String[] {"シニア", "シニアソフトウェアエンジニア", "ソフト", "ソフトウェア", "ウェア", "エンジニア"});
+
+    t.setNBestCost(0);
+    assertAnalyzesTo(a,
+                     "数学部長谷川",
+                     new String[] {"数学", "部長", "谷川"});
+
+    t.setNBestCost(3000);
+    assertAnalyzesTo(a,
+                     "数学部長谷川",
+                     new String[] {"数学", "部", "部長", "長谷川", "谷川"});
+
+    t.setNBestCost(0);
+    assertAnalyzesTo(a,
+                     "経済学部長",
+                     new String[] {"経済", "学", "部長"});
+
+    t.setNBestCost(2000);
+    assertAnalyzesTo(a,
+                     "経済学部長",
+                     new String[] {"経済", "経済学部", "学", "部長", "長"});
+
+    t.setNBestCost(0);
+    assertAnalyzesTo(a,
+                     "成田空港、米原油流出",
+                     new String[] {"成田空港", "米", "原油", "流出"});
+
+    t.setNBestCost(4000);
+    assertAnalyzesTo(a,
+                     "成田空港、米原油流出",
+                     new String[] {"成田空港", "米", "米原", "原油", "油", "流出"});
+  }
+
+  public void testSearchModeNbest() throws Exception {
+    JapaneseTokenizer t = makeTokenizer(true, Mode.SEARCH);
+    Analyzer a = makeAnalyzer(t);
+
+    t.setNBestCost(0);
+    assertAnalyzesTo(a,
+                     "成田空港、米原油流出",
+                     new String[] {"成田", "成田空港", "空港", "米", "原油", "流出"});
+
+    t.setNBestCost(4000);
+    assertAnalyzesTo(a,
+                     "成田空港、米原油流出",
+                     new String[] {"成田", "成田空港", "空港", "米", "米原", "原油", "油", "流出"});
+  }
+
+  private ArrayList<String> makeTokenList(Analyzer a, String in) throws Exception {
+    ArrayList<String> list = new ArrayList<>();
+    TokenStream ts = a.tokenStream("dummy", in);
+    CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+
+    ts.reset();
+    while (ts.incrementToken()) {
+      list.add(termAtt.toString());
+    }
+    ts.end();
+    ts.close();
+    return list;
+  }
+
+  private boolean checkToken(Analyzer a, String in, String requitedToken) throws Exception {
+    return makeTokenList(a, in).indexOf(requitedToken) != -1;
+  }
+
+  public void testNBestCost() throws Exception {
+    JapaneseTokenizer t = makeTokenizer(true, Mode.NORMAL);
+    Analyzer a = makeAnalyzer(t);
+
+    t.setNBestCost(0);
+    assertFalse("学部 is not a token of 数学部長谷川", checkToken(a, "数学部長谷川", "学部"));
+
+    assertTrue("cost calculated /数学部長谷川-学部/", 0 <= t.calcNBestCost("/数学部長谷川-学部/"));
+    t.setNBestCost(t.calcNBestCost("/数学部長谷川-学部/"));
+    assertTrue("学部 is a token of 数学部長谷川", checkToken(a, "数学部長谷川", "学部"));
+
+    assertTrue("cost calculated /数学部長谷川-数/成田空港-成/", 0 <= t.calcNBestCost("/数学部長谷川-数/成田空港-成/"));
+    t.setNBestCost(t.calcNBestCost("/数学部長谷川-数/成田空港-成/"));
+    assertTrue("数 is a token of 数学部長谷川", checkToken(a, "数学部長谷川", "数"));
+    assertTrue("成 is a token of 成田空港", checkToken(a, "成田空港", "成"));
+  }
+
   public void testDecomposition1() throws Exception {
     assertAnalyzesTo(analyzerNoPunct, "本来は、貧困層の女性や子供に医療保護を提供するために創設された制度である、" +
                          "アメリカ低所得者医療援助制度が、今日では、その予算の約３分の１を老人に費やしている。",
-     new String[] { "本来", "は",  "貧困", "層", "の", "女性", "や", "子供", "に", "医療", "保護", "を",      
-                    "提供", "する", "ため", "に", "創設", "さ", "れ", "た", "制度", "で", "ある",  "アメリカ", 
+     new String[] { "本来", "は",  "貧困", "層", "の", "女性", "や", "子供", "に", "医療", "保護", "を",
+                    "提供", "する", "ため", "に", "創設", "さ", "れ", "た", "制度", "で", "ある",  "アメリカ",
                     "低", "所得", "者", "医療", "援助", "制度", "が",  "今日", "で", "は",  "その",
                     "予算", "の", "約", "３", "分の", "１", "を", "老人", "に", "費やし", "て", "いる" },
-     new int[] { 0, 2, 4, 6, 7,  8, 10, 11, 13, 14, 16, 18, 19, 21, 23, 25, 26, 28, 29, 30, 
+     new int[] { 0, 2, 4, 6, 7,  8, 10, 11, 13, 14, 16, 18, 19, 21, 23, 25, 26, 28, 29, 30,
                  31, 33, 34, 37, 41, 42, 44, 45, 47, 49, 51, 53, 55, 56, 58, 60,
                  62, 63, 64, 65, 67, 68, 69, 71, 72, 75, 76 },
      new int[] { 2, 3, 6, 7, 8, 10, 11, 13, 14, 16, 18, 19, 21, 23, 25, 26, 28, 29, 30, 31,
@@ -122,7 +239,7 @@ public class
                  63, 64, 65, 67, 68, 69, 71, 72, 75, 76, 78 }
     );
   }
-  
+
   public void testDecomposition2() throws Exception {
     assertAnalyzesTo(analyzerNoPunct, "麻薬の密売は根こそぎ絶やさなければならない",
       new String[] { "麻薬", "の", "密売", "は", "根こそぎ", "絶やさ", "なけれ", "ば", "なら", "ない" },
@@ -130,7 +247,7 @@ public class
       new int[] { 2, 3, 5, 6, 10, 13, 16, 17, 19, 21 }
     );
   }
-  
+
   public void testDecomposition3() throws Exception {
     assertAnalyzesTo(analyzerNoPunct, "魔女狩大将マシュー・ホプキンス。",
       new String[] { "魔女", "狩", "大将", "マシュー",  "ホプキンス" },
@@ -154,7 +271,7 @@ public class
     try (TokenStream ts = analyzer.tokenStream("bogus", "くよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよくよ")) {
       ts.reset();
       while (ts.incrementToken()) {
-      
+
       }
       ts.end();
     }
@@ -196,13 +313,15 @@ public class
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), analyzer, 500*RANDOM_MULTIPLIER);
     checkRandomData(random(), analyzerNoPunct, 500*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNormalNBest, 500*RANDOM_MULTIPLIER);
   }
-  
+
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
     checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerNoPunct, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNormalNBest, 20*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -231,13 +350,13 @@ public class
       }
     }
   }
-  
+
   /** simple test for supplementary characters */
   public void testSurrogates() throws IOException {
     assertAnalyzesTo(analyzer, "𩬅艱鍟䇹愯瀛",
       new String[] { "𩬅", "艱", "鍟", "䇹", "愯", "瀛" });
   }
-  
+
   /** random test ensuring we don't ever split supplementaries */
   public void testSurrogates2() throws IOException {
     int numIterations = atLeast(10000);
@@ -272,7 +391,7 @@ public class
       ts.end();
     }
   }
-  
+
   // note: test is kinda silly since kuromoji emits punctuation tokens.
   // but, when/if we filter these out it will be useful.
   public void testEnd() throws Exception {
@@ -338,7 +457,7 @@ public class
     );
   }
   */
-  
+
   public void testSegmentation() throws Exception {
     // Skip tests for Michelle Kwan -- UniDic segments Kwan as ク ワン
     //   String input = "ミシェル・クワンが優勝しました。スペースステーションに行きます。うたがわしい。";
@@ -376,7 +495,7 @@ public class
     assertAnalyzesTo(analyzer,
                      input,
                      surfaceForms);
-    
+
     assertTrue(gv2.finish().indexOf("22.0") != -1);
     analyzer.close();
   }
@@ -406,7 +525,7 @@ public class
       ts.end();
     }
   }
-  
+
   private void assertBaseForms(String input, String... baseForms) throws IOException {
     try (TokenStream ts = analyzer.tokenStream("ignored", input)) {
       BaseFormAttribute baseFormAtt = ts.addAttribute(BaseFormAttribute.class);
@@ -445,7 +564,7 @@ public class
       ts.end();
     }
   }
-  
+
   private void assertPartsOfSpeech(String input, String... partsOfSpeech) throws IOException {
     try (TokenStream ts = analyzer.tokenStream("ignored", input)) {
       PartOfSpeechAttribute partOfSpeechAtt = ts.addAttribute(PartOfSpeechAttribute.class);
@@ -458,7 +577,7 @@ public class
       ts.end();
     }
   }
-  
+
   public void testReadings() throws Exception {
     assertReadings("寿司が食べたいです。",
                    "スシ",
@@ -468,7 +587,7 @@ public class
                    "デス",
                    "。");
   }
-  
+
   public void testReadings2() throws Exception {
     assertReadings("多くの学生が試験に落ちた。",
                    "オオク",
@@ -481,7 +600,7 @@ public class
                    "タ",
                    "。");
   }
-  
+
   public void testPronunciations() throws Exception {
     assertPronunciations("寿司が食べたいです。",
                          "スシ",
@@ -491,7 +610,7 @@ public class
                          "デス",
                          "。");
   }
-  
+
   public void testPronunciations2() throws Exception {
     // pronunciation differs from reading here
     assertPronunciations("多くの学生が試験に落ちた。",
@@ -505,7 +624,7 @@ public class
                          "タ",
                          "。");
   }
-  
+
   public void testBasicForms() throws Exception {
     assertBaseForms("それはまだ実験段階にあります。",
                     null,
@@ -518,7 +637,7 @@ public class
                     null,
                     null);
   }
-  
+
   public void testInflectionTypes() throws Exception {
     assertInflectionTypes("それはまだ実験段階にあります。",
                           null,
@@ -531,7 +650,7 @@ public class
                           "特殊・マス",
                           null);
   }
-  
+
   public void testInflectionForms() throws Exception {
     assertInflectionForms("それはまだ実験段階にあります。",
                           null,
@@ -544,7 +663,7 @@ public class
                           "基本形",
                           null);
   }
-  
+
   public void testPartOfSpeech() throws Exception {
     assertPartsOfSpeech("それはまだ実験段階にあります。",
                         "名詞-代名詞-一般",
@@ -626,13 +745,13 @@ public class
   }
   */
 
-  
+
   private void doTestBocchan(int numIterations) throws Exception {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(
         this.getClass().getResourceAsStream("bocchan.utf-8"), StandardCharsets.UTF_8));
     String line = reader.readLine();
     reader.close();
-    
+
     if (VERBOSE) {
       System.out.println("Test for Bocchan without pre-splitting sentences");
     }

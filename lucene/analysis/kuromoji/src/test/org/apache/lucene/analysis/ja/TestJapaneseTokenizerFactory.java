@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ja;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,7 +41,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
         new int[] { 2, 3, 4, 5, 6, 8 }
     );
   }
-  
+
   /**
    * Test that search mode is enabled and working by default
    */
@@ -55,7 +54,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
                               new String[] { "シニア", "シニアソフトウェアエンジニア", "ソフトウェア", "エンジニア" }
     );
   }
-  
+
   /**
    * Test mode parameter: specifying normal mode
    */
@@ -75,7 +74,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
    * Test user dictionary
    */
   public void testUserDict() throws IOException {
-    String userDict = 
+    String userDict =
         "# Custom segmentation for long entries\n" +
         "日本経済新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞\n" +
         "関西国際空港,関西 国際 空港,カンサイ コクサイ クウコウ,テスト名詞\n" +
@@ -109,7 +108,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
             "お", "寿司", "が", "食べ", "たい", "な", "。", "。", "。"}
     );
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     try {
@@ -120,5 +119,32 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
     }
+  }
+
+  private TokenStream makeTokenStream(HashMap<String, String> args, String in) throws IOException {
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(args);
+    factory.inform(new StringMockResourceLoader(""));
+    Tokenizer t = factory.create(newAttributeFactory());
+    t.setReader(new StringReader(in));
+    return t;
+  }
+
+  /**
+   * Test nbestCost parameter
+   */
+  public void testNbestCost() throws IOException {
+    assertTokenStreamContents(makeTokenStream(new HashMap<String, String>() {{put("nBestCost", "2000");}},
+                                              "鳩山積み"),
+                              new String[] {"鳩", "鳩山", "山積み", "積み"});
+  }
+
+  /**
+   * Test nbestExamples parameter
+   */
+  public void testNbestExample() throws IOException {
+    assertTokenStreamContents(makeTokenStream(new HashMap<String, String>()
+                                              {{put("nBestExamples", "/鳩山積み-鳩山/鳩山積み-鳩/");}},
+                                              "鳩山積み"),
+                              new String[] {"鳩", "鳩山", "山積み", "積み"});
   }
 }
