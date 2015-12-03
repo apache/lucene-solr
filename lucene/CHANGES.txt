@@ -113,6 +113,12 @@ API Changes
 * LUCENE-6900: Grouping sortWithinGroup variables used to allow null to mean
   Sort.RELEVANCE.  Null is no longer permitted.  (David Smiley)
 
+Optimizations
+
+* LUCENE-6889: BooleanQuery.rewrite now performs some query optimization, in
+  particular to rewrite queries that look like: "+*:* #filter" to a
+  "ConstantScore(filter)". (Adrien Grand)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
