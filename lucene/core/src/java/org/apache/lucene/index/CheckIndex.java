@@ -549,7 +549,6 @@ public final class CheckIndex implements Closeable {
     }
 
     String sFormat = "";
-    boolean skip = false;
 
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
@@ -587,11 +586,6 @@ public final class CheckIndex implements Closeable {
       msg(infoStream, ":");
     }
 
-    if (skip) {
-      msg(infoStream, "\nERROR: this index appears to be created by a newer version of Lucene than this tool was compiled on; please re-compile this tool on the matching version of Lucene; exiting");
-      result.toolOutOfDate = true;
-      return result;
-    }
 
 
     result.newSegments = sis.clone();
