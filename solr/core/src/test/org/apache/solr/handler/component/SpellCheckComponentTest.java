@@ -66,7 +66,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertU((adoc("id", "6", "lowerfilt", "boue")));
     assertU((adoc("id", "7", "lowerfilt", "glue")));
     assertU((adoc("id", "8", "lowerfilt", "blee")));
-    assertU((adoc("id", "9", "lowerfilt", "pixmaa")));
+    assertU((adoc("id", "9", "lowerfilt", "pixmaa 12345")));
     assertU((commit()));
   }
   
@@ -95,6 +95,13 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   public void test() throws Exception {
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemt")
        ,"/spellcheck=={'suggestions':['documemt',{'numFound':1,'startOffset':0,'endOffset':8,'suggestion':['document']}]}"
+    );
+  }
+  
+  @Test
+  public void testNumericQuery() throws Exception {
+    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","12346")
+       ,"/spellcheck=={'suggestions':['12346',{'numFound':1,'startOffset':0,'endOffset':5,'suggestion':['12345']}]}"
     );
   }
 

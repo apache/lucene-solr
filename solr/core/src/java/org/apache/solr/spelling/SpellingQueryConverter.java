@@ -90,7 +90,7 @@ public class SpellingQueryConverter extends QueryConverter  {
     NMTOKEN = "([" + sb.toString() + "]|" + SURROGATE_PAIR + ")+";
   }
 
-  final static String PATTERN = "(?:(?!(" + NMTOKEN + ":|\\d+)))[\\p{L}_\\-0-9]+";
+  final static String PATTERN = "(?:(?!(" + NMTOKEN + ":|[\\^.]\\d+)))[^^.\\s][\\p{L}_\\-0-9]+";
   // previous version: Pattern.compile("(?:(?!(\\w+:|\\d+)))\\w+");
   protected Pattern QUERY_REGEX = Pattern.compile(PATTERN);
   

@@ -45,7 +45,21 @@ public class SpellingQueryConverterTest extends LuceneTestCase {
     assertTrue("tokens is null and it shouldn't be", tokens != null);
     assertTrue("tokens Size: " + tokens.size() + " is not: " + 1, tokens.size() == 1);
   }
-
+  
+  @Test
+  public void testNumeric() throws Exception {
+    SpellingQueryConverter converter = new SpellingQueryConverter();
+    converter.init(new NamedList());
+    converter.setAnalyzer(new WhitespaceAnalyzer());
+    String[] queries = {"12345", "foo:12345", "12345 67890", "foo:(12345 67890)", "foo:(life 67890)", "12345 life",
+        "+12345 +life", "-12345 life"};
+    int[] tokensToExpect = {1, 1, 2, 2, 2, 2, 2, 2};
+    for (int i = 0; i < queries.length; i++) {
+      Collection<Token> tokens = converter.convert(queries[i]);
+      assertTrue("tokens Size: " + tokens.size() + " is not: " + tokensToExpect[i], tokens.size() == tokensToExpect[i]);
+    }
+  }
+  
   @Test
   public void testSpecialChars()  {
     SpellingQueryConverter converter = new SpellingQueryConverter();
