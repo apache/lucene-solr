@@ -82,6 +82,7 @@
   </target>
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
+    <property name="skipRegexChecksum" value=""/>
     <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses">
       <additional-filters>
         <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
