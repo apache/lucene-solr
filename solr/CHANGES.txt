@@ -224,6 +224,8 @@ Other Changes
   called SolrDocumentBase. Deprecated methods toSolrInputDocument and toSolrDocument in ClientUtils.
   (Ishan Chattopadhyaya via shalin)
 
+* SOLR-8353: Support regex for skipping license checksums (Gregory Chanan)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

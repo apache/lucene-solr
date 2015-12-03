@@ -59,7 +59,7 @@
     <sequential>
       <!-- LICENSE and NOTICE verification macro. -->
       <echo>License check under: @{dir}</echo>
-      <licenses licenseDirectory="@{licensedir}" skipChecksum="${skipChecksum}" skipSnapshotsChecksum="${skipSnapshotsChecksum}">
+      <licenses licenseDirectory="@{licensedir}" skipChecksum="${skipChecksum}" skipRegexChecksum="${skipRegexChecksum}" skipSnapshotsChecksum="${skipSnapshotsChecksum}">
         <fileset dir="@{dir}">
           <include name="**/*.jar" />
           <!-- Speed up scanning a bit. -->

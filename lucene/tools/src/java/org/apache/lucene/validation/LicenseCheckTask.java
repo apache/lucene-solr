@@ -29,6 +29,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -56,6 +59,7 @@ public class LicenseCheckTask extends Task {
       + "If you recently modified ivy-versions.properties or any module's ivy.xml,\n"
       + "make sure you run \"ant clean-jars jar-checksums\" before running precommit.";
 
+  private Pattern skipRegexChecksum;
   private boolean skipSnapshotsChecksum;
   private boolean skipChecksum;
   
@@ -117,6 +121,17 @@ public class LicenseCheckTask extends Task {
     this.skipChecksum = skipChecksum;
   }
 
+  public void setSkipRegexChecksum(String skipRegexChecksum) {
+    try {
+      if (skipRegexChecksum != null && skipRegexChecksum.length() > 0) {
+        this.skipRegexChecksum = Pattern.compile(skipRegexChecksum);
+      }
+    } catch (PatternSyntaxException e) {
+      throw new BuildException("Unable to compile skipRegexChecksum pattern.  Reason: "
+          + e.getMessage() + " " + skipRegexChecksum, e);
+    }
+  }
+
   /**
    * Execute the task.
    */
@@ -128,8 +143,15 @@ public class LicenseCheckTask extends Task {
 
     if (skipChecksum) {
       log("Skipping checksum verification for dependencies", Project.MSG_INFO);
-    } else if (skipSnapshotsChecksum) {
-      log("Skipping checksum for SNAPSHOT dependencies", Project.MSG_INFO);
+    } else {
+      if (skipSnapshotsChecksum) {
+        log("Skipping checksum for SNAPSHOT dependencies", Project.MSG_INFO);
+      }
+
+      if (skipRegexChecksum != null) {
+        log("Skipping checksum for dependencies matching regex: " + skipRegexChecksum.pattern(),
+            Project.MSG_INFO);
+      }
     }
 
     jarResources.setProject(getProject());
@@ -181,7 +203,8 @@ public class LicenseCheckTask extends Task {
     log("Scanning: " + jarFile.getPath(), verboseLevel);
     
     if (!skipChecksum) {
-      if (!skipSnapshotsChecksum || !jarFile.getName().contains("-SNAPSHOT")) {
+      boolean skipDueToSnapshot = skipSnapshotsChecksum && jarFile.getName().contains("-SNAPSHOT");
+      if (!skipDueToSnapshot && !matchesRegexChecksum(jarFile, skipRegexChecksum)) {
         // validate the jar matches against our expected hash
         final File checksumFile = new File(licenseDirectory, jarFile.getName()
             + "." + CHECKSUM_TYPE);
@@ -230,9 +253,12 @@ public class LicenseCheckTask extends Task {
                 + " not supported by your JVM", ae);
           }
         }
-      } else if (skipSnapshotsChecksum) {
+      } else if (skipDueToSnapshot) {
         log("Skipping jar because it is a SNAPSHOT : "
             + jarFile.getAbsolutePath(), Project.MSG_INFO);
+      } else {
+        log("Skipping jar because it matches regex pattern: "
+            + jarFile.getAbsolutePath() + " pattern: " + skipRegexChecksum.pattern(), Project.MSG_INFO);
       }
     }
     
@@ -319,4 +345,11 @@ outer:
     }
   }
 
+  private static final boolean matchesRegexChecksum(File jarFile, Pattern skipRegexChecksum) {
+    if (skipRegexChecksum == null) {
+      return false;
+    }
+    Matcher m = skipRegexChecksum.matcher(jarFile.getName());
+    return m.matches();
+  }
 }
