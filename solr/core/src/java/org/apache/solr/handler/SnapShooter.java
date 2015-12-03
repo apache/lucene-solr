@@ -19,6 +19,8 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+
+import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class SnapShooter {
-  private static final Logger LOG = LoggerFactory.getLogger(SnapShooter.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String snapDir = null;
   private SolrCore solrCore;
   private String snapshotName = null;

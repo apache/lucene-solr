@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
 
+import java.lang.invoke.MethodHandles;
+
 /**
  * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for
  * both stateFormat=1 collection (stored in shared /clusterstate.json in ZK) and stateFormat=2 collections
@@ -53,7 +55,7 @@ import static java.util.Collections.singletonMap;
  */
 public class ZkStateWriter {
   private static final long MAX_FLUSH_INTERVAL = TimeUnit.NANOSECONDS.convert(Overseer.STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
-  private static Logger log = LoggerFactory.getLogger(ZkStateWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Represents a no-op {@link ZkWriteCommand} which will result in no modification to cluster state

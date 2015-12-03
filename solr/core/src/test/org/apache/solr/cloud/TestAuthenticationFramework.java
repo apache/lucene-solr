@@ -23,6 +23,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.http.HttpException;
@@ -51,6 +52,8 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.Slow
 @SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
 public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public TestAuthenticationFramework () {
     NUM_SERVERS = 5;
@@ -113,8 +116,6 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
   }
   
   public static class MockAuthenticationPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
-    private static Logger log = LoggerFactory.getLogger(MockAuthenticationPlugin.class);
-
     public static String expectedUsername;
     public static String expectedPassword;
 

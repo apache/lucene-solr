@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +50,7 @@ import java.util.List;
  */
 final class ZooKeeperInspector {
   
-  private static final Logger LOG = LoggerFactory.getLogger(ZooKeeperInspector.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public List<List<String>> extractShardUrls(String zkHost, String collection) {
 

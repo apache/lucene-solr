@@ -31,8 +31,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -48,7 +46,6 @@ import java.util.Set;
  * @see org.apache.solr.common.util.JavaBinCodec
  */
 public class JavabinLoader extends ContentStreamLoader {
-  public static Logger log = LoggerFactory.getLogger(JavabinLoader.class);
 
   @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream, UpdateRequestProcessor processor) throws Exception {

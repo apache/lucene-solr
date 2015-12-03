@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +51,7 @@ import org.slf4j.LoggerFactory;
 
 class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   
-  private static final Logger LOG = LoggerFactory.getLogger(SolrRecordWriter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public final static List<String> allowedConfigDirectories = new ArrayList<>(
       Arrays.asList(new String[] { "conf", "lib", "solr.xml" }));

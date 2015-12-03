@@ -20,7 +20,8 @@ package org.apache.solr.update.processor;
 import org.apache.solr.common.SolrInputField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-                   
+
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -39,7 +40,7 @@ import java.util.Locale;
  */
 public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor extends FieldMutatingUpdateProcessor {
 
-  private static final Logger log = LoggerFactory.getLogger(AllValuesOrNoneFieldMutatingUpdateProcessor.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final Object DELETE_VALUE_SINGLETON = new Object() {
     @Override

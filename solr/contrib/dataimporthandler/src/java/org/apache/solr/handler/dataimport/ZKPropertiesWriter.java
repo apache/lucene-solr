@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
@@ -35,8 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ZKPropertiesWriter extends SimplePropertiesWriter {
   
-  private static final Logger log = LoggerFactory
-      .getLogger(ZKPropertiesWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private String path;
   private SolrZkClient zkClient;

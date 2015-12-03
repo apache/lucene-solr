@@ -26,15 +26,12 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slow
 @Nightly
 public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
-  private static Logger log = LoggerFactory.getLogger(RestartWhileUpdatingTest.class);
   private List<StoppableIndexingThread> threads;
 
   public RestartWhileUpdatingTest() {

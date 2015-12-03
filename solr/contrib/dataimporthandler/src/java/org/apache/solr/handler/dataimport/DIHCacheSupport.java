@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,8 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DIHCacheSupport {
-  private static final Logger log = LoggerFactory
-      .getLogger(DIHCacheSupport.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String cacheForeignKey;
   private String cacheImplName;
   private Map<String,DIHCache> queryVsCache = new HashMap<>();

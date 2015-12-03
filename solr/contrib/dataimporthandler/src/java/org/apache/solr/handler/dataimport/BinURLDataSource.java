@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Properties;
@@ -35,7 +36,7 @@ import java.util.Properties;
  * @since solr 3.1
  */
 public class BinURLDataSource extends DataSource<InputStream>{
-  private static final Logger LOG = LoggerFactory.getLogger(BinURLDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String baseUrl;
   private int connectionTimeout = CONNECTION_TIMEOUT;

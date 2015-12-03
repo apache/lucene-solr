@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TreeMergeMapper extends Mapper<LongWritable, Text, Text, NullWritable> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TreeMergeMapper.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String MAX_SEGMENTS_ON_TREE_MERGE = "maxSegmentsOnTreeMerge";
 

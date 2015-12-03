@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -121,7 +122,7 @@ import org.slf4j.LoggerFactory;
 public class QueryComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "query";
-  private static final Logger LOG = LoggerFactory.getLogger(QueryComponent.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException

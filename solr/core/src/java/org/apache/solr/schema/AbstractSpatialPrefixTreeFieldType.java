@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
@@ -32,6 +33,8 @@ import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.solr.util.MapListener;
 
 import com.spatial4j.core.shape.Shape;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @see PrefixTreeStrategy
@@ -45,6 +48,8 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
   protected SpatialPrefixTree grid;
   private Double distErrPct;
   private Integer defaultFieldValuesArrayLen;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {

@@ -36,6 +36,7 @@ import javax.xml.stream.XMLStreamReader;
 
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -49,7 +50,7 @@ import java.util.Locale;
 public class XMLResponseParser extends ResponseParser
 {
   public static final String XML_CONTENT_TYPE = "application/xml; charset=UTF-8";
-  public static Logger log = LoggerFactory.getLogger(XMLResponseParser.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   // reuse the factory among all parser instances so things like string caches

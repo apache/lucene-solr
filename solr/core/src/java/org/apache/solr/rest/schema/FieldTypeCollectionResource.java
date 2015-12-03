@@ -32,6 +32,7 @@ import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,7 +46,7 @@ import java.util.TreeMap;
  * The GET method returns properties for all field types defined in the schema.
  */
 public class FieldTypeCollectionResource extends BaseFieldTypeResource implements GETable, POSTable {
-  private static final Logger log = LoggerFactory.getLogger(FieldTypeCollectionResource.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private Map<String,List<String>> fieldsByFieldType;
   private Map<String,List<String>> dynamicFieldsByFieldType;

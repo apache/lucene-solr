@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Vector;
 
 import org.apache.solr.core.DirectoryFactory;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public abstract class UpdateHandler implements SolrInfoMBean {
-  protected final static Logger log = LoggerFactory.getLogger(UpdateHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore core;
 

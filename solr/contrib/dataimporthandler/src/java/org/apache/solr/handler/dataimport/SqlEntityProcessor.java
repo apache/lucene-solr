@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ import java.util.regex.Pattern;
  * @since solr 1.3
  */
 public class SqlEntityProcessor extends EntityProcessorBase {
-  private static final Logger LOG = LoggerFactory.getLogger(SqlEntityProcessor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected DataSource<Iterator<Map<String, Object>>> dataSource;
 

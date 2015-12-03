@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.embedded;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +37,7 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  protected static Logger log = LoggerFactory.getLogger(TestEmbeddedSolrServer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected EmbeddedSolrServer getSolrCore1() {

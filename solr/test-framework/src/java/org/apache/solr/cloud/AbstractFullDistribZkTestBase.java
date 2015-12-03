@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
@@ -94,7 +95,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  */
 @Slow
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
-  static Logger log = LoggerFactory.getLogger(AbstractFullDistribZkTestBase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeFullSolrCloudTest() {

@@ -30,6 +30,7 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +41,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 public class StreamingSolrClients {
-  public static Logger log = LoggerFactory.getLogger(StreamingSolrClients.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private HttpClient httpClient;
   

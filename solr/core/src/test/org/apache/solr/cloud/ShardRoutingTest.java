@@ -24,12 +24,17 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
 
 public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String bucket1 = "shard1";      // shard1: top bits:10  80000000:bfffffff
   String bucket2 = "shard2";      // shard2: top bits:11  c0000000:ffffffff

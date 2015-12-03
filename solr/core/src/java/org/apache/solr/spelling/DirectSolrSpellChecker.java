@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -65,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * @see DirectSpellChecker
  */
 public class DirectSolrSpellChecker extends SolrSpellChecker {
-  private static final Logger LOG = LoggerFactory.getLogger(DirectSolrSpellChecker.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // configuration params shared with other spellcheckers
   public static final String COMPARATOR_CLASS = AbstractLuceneSpellChecker.COMPARATOR_CLASS;

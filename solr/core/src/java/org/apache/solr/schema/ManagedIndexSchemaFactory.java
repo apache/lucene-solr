@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
@@ -43,7 +44,7 @@ import org.xml.sax.InputSource;
 
 /** Factory for ManagedIndexSchema */
 public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements SolrCoreAware {
-  private static final Logger log = LoggerFactory.getLogger(ManagedIndexSchemaFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String UPGRADED_SCHEMA_EXTENSION = ".bak";
   private static final String SCHEMA_DOT_XML = "schema.xml";
 

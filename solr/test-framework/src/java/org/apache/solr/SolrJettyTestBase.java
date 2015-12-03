@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.OutputStreamWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
@@ -41,7 +42,7 @@ import java.util.SortedMap;
 
 abstract public class SolrJettyTestBase extends SolrTestCaseJ4 
 {
-  private static Logger log = LoggerFactory.getLogger(SolrJettyTestBase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeSolrJettyTestBase() throws Exception {

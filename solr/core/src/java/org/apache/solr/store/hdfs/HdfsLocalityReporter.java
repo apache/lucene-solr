@@ -18,6 +18,7 @@ package org.apache.solr.store.hdfs;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -44,7 +45,7 @@ public class HdfsLocalityReporter implements SolrInfoMBean {
   public static final String LOCALITY_BLOCKS_LOCAL = "locality.blocks.local";
   public static final String LOCALITY_BLOCKS_RATIO = "locality.blocks.ratio";
 
-  public static final Logger logger = LoggerFactory.getLogger(HdfsLocalityReporter.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String hostname;
   private final ConcurrentMap<HdfsDirectory,ConcurrentMap<FileStatus,BlockLocation[]>> cache;

@@ -1,5 +1,7 @@
 package org.apache.solr.handler.component;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -48,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * calculates all the ranges (gaps) required to be counted.
  */
 public class RangeFacetRequest extends FacetComponent.FacetBase {
-  private final static Logger log = LoggerFactory.getLogger(RangeFacetRequest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SchemaField schemaField;
   protected final String start;

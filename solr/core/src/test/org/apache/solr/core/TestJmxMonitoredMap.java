@@ -23,6 +23,8 @@ import org.apache.solr.core.SolrConfig.JmxConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectInstance;
@@ -34,6 +36,7 @@ import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnectorServer;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.RMIServerSocketFactory;
@@ -50,6 +53,8 @@ import static org.hamcrest.CoreMatchers.instanceOf;
  * @since solr 1.3
  */
 public class TestJmxMonitoredMap extends LuceneTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private int port = 0;
 
@@ -80,7 +85,7 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
       LocalhostRMIServerSocketFactory factory = new LocalhostRMIServerSocketFactory();
       LocateRegistry.createRegistry(0, null, factory);
       port = factory.socket.getLocalPort();
-      AbstractSolrTestCase.log.info("Using port: " + port);
+      log.info("Using port: " + port);
       String url = "service:jmx:rmi:///jndi/rmi://127.0.0.1:"+port+"/solrjmx";
       JmxConfiguration config = new JmxConfiguration(true, null, url, null);
       monitoredMap = new JmxMonitoredMap<>("", "", config);

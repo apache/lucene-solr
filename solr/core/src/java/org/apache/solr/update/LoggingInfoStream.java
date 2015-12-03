@@ -22,12 +22,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 /**
  * An {@link InfoStream} implementation which passes messages on to Solr's logging.
  */
 public class LoggingInfoStream extends InfoStream {
-  public static final Logger log = LoggerFactory.getLogger(LoggingInfoStream.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void message(String component, String message) {

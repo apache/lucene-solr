@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -63,7 +64,7 @@ import java.util.concurrent.TimeUnit;
 })
 public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
-  private static final Logger log = LoggerFactory.getLogger(TestLBHttpSolrClient.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   SolrInstance[] solr = new SolrInstance[3];
   CloseableHttpClient httpClient;

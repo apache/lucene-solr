@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
   private static final String DEFAULT_INPUT_FIELDNAME = "url";
   private static final String DEFAULT_BOOST_FIELDNAME = "urlboost";
 
-  private static final Logger log = LoggerFactory.getLogger(RegexpBoostProcessor.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private boolean enabled = true;
   private String inputFieldname = DEFAULT_INPUT_FIELDNAME;

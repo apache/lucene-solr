@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
@@ -41,8 +42,12 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static Class<? extends SimilarityFactory> simfac1;
   public static Class<? extends SimilarityFactory> simfac2;
@@ -143,6 +148,9 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, true));
+    } catch (Throwable e) {
+      log.error("Test exception, logging so not swallowed if there is a (finally) shutdown exception: " + e.getMessage(), e);
+      throw e;
     } finally {
       if (cc != null) cc.shutdown();
     }

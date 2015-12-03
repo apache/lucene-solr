@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +45,7 @@ import java.util.Map;
  * The GET method returns properties for the named field type.
  */
 public class FieldTypeResource extends BaseFieldTypeResource implements GETable, PUTable {
-  private static final Logger log = LoggerFactory.getLogger(FieldTypeResource.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String typeName;
 

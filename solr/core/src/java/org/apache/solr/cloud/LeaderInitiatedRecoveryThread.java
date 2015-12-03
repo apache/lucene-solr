@@ -19,6 +19,7 @@ import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.List;
@@ -47,7 +48,7 @@ import java.util.List;
  */
 public class LeaderInitiatedRecoveryThread extends Thread {
 
-  public final static Logger log = LoggerFactory.getLogger(LeaderInitiatedRecoveryThread.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected ZkController zkController;
   protected CoreContainer coreContainer;

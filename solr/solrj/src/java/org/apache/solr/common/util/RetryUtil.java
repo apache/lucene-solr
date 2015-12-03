@@ -1,5 +1,6 @@
 package org.apache.solr.common.util;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Set;
 
@@ -28,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RetryUtil {
-  private static final Logger log = LoggerFactory.getLogger(RetryUtil.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static interface RetryCmd {
     public void execute() throws Throwable;

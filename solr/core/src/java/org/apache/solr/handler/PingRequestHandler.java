@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.Locale;
@@ -129,7 +130,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAware
 {
-  public static Logger log = LoggerFactory.getLogger(PingRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String HEALTHCHECK_FILE_PARAM = "healthcheckFile";
   protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};

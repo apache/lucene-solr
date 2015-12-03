@@ -29,10 +29,11 @@ import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 
 /** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
-  private static final Logger log = LoggerFactory.getLogger(IndexSchemaFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** Returns an index schema created from a local resource */
   public IndexSchema create(String resourceName, SolrConfig config) {

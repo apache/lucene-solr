@@ -1,6 +1,7 @@
 package org.apache.solr.common.util;
 
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class IOUtils {
-  public static Logger LOG = LoggerFactory.getLogger(IOUtils.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static void closeQuietly(Closeable closeable) {
     try {

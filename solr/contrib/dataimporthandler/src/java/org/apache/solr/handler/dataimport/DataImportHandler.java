@@ -45,6 +45,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.*;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 
 import org.slf4j.Logger;
@@ -71,7 +72,7 @@ import org.xml.sax.InputSource;
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DataImportHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private DataImporter importer;
 

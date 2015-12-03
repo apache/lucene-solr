@@ -17,6 +17,8 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.FieldDoc;
@@ -56,7 +58,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
 
   private final ResponseBuilder rb;
 
-  private static final Logger log = LoggerFactory.getLogger(TopGroupsResultTransformer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public TopGroupsResultTransformer(ResponseBuilder rb) {
     this.rb = rb;

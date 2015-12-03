@@ -1,5 +1,7 @@
 package org.apache.solr.cloud.overseer;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -43,7 +45,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class SliceMutator {
-  private static Logger log = LoggerFactory.getLogger(SliceMutator.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PREFERRED_LEADER_PROP = COLL_PROP_PREFIX + "preferredleader";
 

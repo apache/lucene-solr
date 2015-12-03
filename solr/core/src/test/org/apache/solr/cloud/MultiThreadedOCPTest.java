@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -41,8 +42,7 @@ import org.slf4j.LoggerFactory;
 public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private static final int REQUEST_STATUS_TIMEOUT = 5 * 60;
-  private static Logger log = LoggerFactory
-      .getLogger(MultiThreadedOCPTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int NUM_COLLECTIONS = 4;
 

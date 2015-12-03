@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.nio.file.Path;
@@ -98,7 +99,7 @@ import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 @SuppressWarnings("serial")
 public class CloudSolrClient extends SolrClient {
 
-  protected static final Logger log = LoggerFactory.getLogger(CloudSolrClient.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private volatile ZkStateReader zkStateReader;
   private String zkHost; // the zk server connect string

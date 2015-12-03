@@ -18,6 +18,7 @@ package org.apache.solr.store.hdfs;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -35,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HdfsLockFactory extends LockFactory {
-  public static Logger log = LoggerFactory.getLogger(HdfsLockFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final HdfsLockFactory INSTANCE = new HdfsLockFactory();
   

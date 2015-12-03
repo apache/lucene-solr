@@ -24,11 +24,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ActionThrottle.NanoTimeSource;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ActionThrottleTest extends SolrTestCaseJ4 {
-  protected static Logger log = LoggerFactory.getLogger(ActionThrottleTest.class);
   
   static class TestNanoTimeSource implements NanoTimeSource {
     

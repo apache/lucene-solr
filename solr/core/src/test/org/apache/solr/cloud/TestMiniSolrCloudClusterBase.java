@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +52,7 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
 public class TestMiniSolrCloudClusterBase extends LuceneTestCase {
 
-  private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected int NUM_SERVERS = 5;
   protected int NUM_SHARDS = 2;
   protected int REPLICATION_FACTOR = 2;

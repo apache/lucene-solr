@@ -22,6 +22,7 @@ import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -46,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
-  static final Logger log =  LoggerFactory.getLogger(TestBulkSchemaConcurrent.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   @BeforeClass

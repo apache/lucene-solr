@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -64,11 +65,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
 
-
-  
-
-  
-  protected static Logger log = LoggerFactory.getLogger(SearchHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory ;

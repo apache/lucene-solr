@@ -1,5 +1,7 @@
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -111,7 +113,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CollectionsHandler extends RequestHandlerBase {
-  protected static Logger log = LoggerFactory.getLogger(CollectionsHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
 
   public CollectionsHandler() {

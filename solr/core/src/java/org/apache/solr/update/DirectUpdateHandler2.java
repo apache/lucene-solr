@@ -51,8 +51,11 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,6 +98,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   protected boolean commitWithinSoftCommit;
 
   protected boolean indexWriterCloseWaitsForMerges;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public DirectUpdateHandler2(SolrCore core) {
     super(core);
@@ -143,7 +148,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void deleteAll() throws IOException {
-    SolrCore.log.info(core.getLogId() + "REMOVING ALL DOCUMENTS FROM INDEX");
+    log.info(core.getLogId() + "REMOVING ALL DOCUMENTS FROM INDEX");
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       iw.get().deleteAll();

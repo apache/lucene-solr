@@ -18,6 +18,7 @@ package org.apache.solr.morphlines.solr;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.apache.solr.cloud.ZkController;
@@ -40,7 +41,7 @@ import com.google.common.io.Files;
  */
 final class ZooKeeperDownloader {
   
-  private static final Logger LOG = LoggerFactory.getLogger(ZooKeeperDownloader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public SolrZkClient getZkClient(String zkHost) {
     if (zkHost == null) {

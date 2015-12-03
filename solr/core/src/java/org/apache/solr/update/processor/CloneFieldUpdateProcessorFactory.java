@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -164,7 +165,7 @@ import org.slf4j.LoggerFactory;
 public class CloneFieldUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory implements SolrCoreAware {
 
-  private final static Logger log = LoggerFactory.getLogger(CloneFieldUpdateProcessorFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String SOURCE_PARAM = "source";
   public static final String DEST_PARAM = "dest";

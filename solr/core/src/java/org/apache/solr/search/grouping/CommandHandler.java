@@ -18,6 +18,7 @@ package org.apache.solr.search.grouping;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -113,7 +114,7 @@ public class CommandHandler {
 
   }
 
-  private final static Logger logger = LoggerFactory.getLogger(CommandHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrIndexSearcher.QueryCommand queryCommand;
   private final List<Command> commands;

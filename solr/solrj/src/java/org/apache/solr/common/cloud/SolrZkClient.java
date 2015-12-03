@@ -50,6 +50,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -67,8 +68,7 @@ public class SolrZkClient implements Closeable {
 
   static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 30000;
 
-  private static final Logger log = LoggerFactory
-      .getLogger(SolrZkClient.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private ConnectionManager connManager;
 

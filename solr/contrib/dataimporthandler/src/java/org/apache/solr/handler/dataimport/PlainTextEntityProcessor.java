@@ -20,8 +20,6 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -36,7 +34,6 @@ import java.util.Map;
  * @since solr 1.4
  */
 public class PlainTextEntityProcessor extends EntityProcessorBase {
-  private static final Logger LOG = LoggerFactory.getLogger(PlainTextEntityProcessor.class);
   private boolean ended = false;
 
   @Override

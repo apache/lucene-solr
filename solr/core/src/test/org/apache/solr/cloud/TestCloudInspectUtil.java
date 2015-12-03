@@ -1,5 +1,7 @@
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,12 +28,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCloudInspectUtil extends SolrTestCaseJ4 {
-  protected static Logger log = LoggerFactory.getLogger(TestCloudInspectUtil.class);
-
   
   @Override
   @Before

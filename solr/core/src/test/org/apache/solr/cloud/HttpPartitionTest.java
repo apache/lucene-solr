@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,8 +68,7 @@ import org.slf4j.LoggerFactory;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
-  protected static final transient Logger log =
-      LoggerFactory.getLogger(HttpPartitionTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // To prevent the test assertions firing too fast before cluster state
   // recognizes (and propagates) partitions

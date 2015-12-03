@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -80,7 +81,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Grouping {
 
-  private final static Logger logger = LoggerFactory.getLogger(Grouping.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrIndexSearcher searcher;
   private final SolrIndexSearcher.QueryResult qr;

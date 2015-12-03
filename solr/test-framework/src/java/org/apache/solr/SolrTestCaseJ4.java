@@ -31,6 +31,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -123,6 +124,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static final String DEFAULT_TEST_CORENAME = "collection1";
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
   private static String coreName = DEFAULT_TEST_CORENAME;
@@ -539,8 +542,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * </ul>
    *
    */
-
-  public static Logger log = LoggerFactory.getLogger(SolrTestCaseJ4.class);
 
   private static String factoryProp;
 

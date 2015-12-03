@@ -82,6 +82,7 @@ import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -100,7 +101,7 @@ import java.util.WeakHashMap;
  * @since solr 1.3
  */
 public class QueryElevationComponent extends SearchComponent implements SolrCoreAware {
-  private static Logger log = LoggerFactory.getLogger(QueryElevationComponent.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // Constants used in solrconfig.xml
   static final String FIELD_TYPE = "queryFieldType";

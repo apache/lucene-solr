@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.StaticLoggerBinder;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -38,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class LogWatcher<E> {
 
-  private static final Logger log = LoggerFactory.getLogger(LogWatcher.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected CircularList<E> history;
   protected long last = -1;

@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SocketProxy {
   
-  private static final transient Logger log = LoggerFactory.getLogger(SocketProxy.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final int ACCEPT_TIMEOUT_MILLIS = 100;
 

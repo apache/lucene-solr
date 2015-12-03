@@ -17,6 +17,7 @@ package org.apache.solr.security;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +32,8 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.solr.util.CommandOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
@@ -38,6 +41,8 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
   private Map<String, String> credentials;
   private String realm;
   private Map<String, String> promptHeader;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   static void putUser(String user, String pwd, Map credentials) {
@@ -60,13 +65,13 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     credentials = new LinkedHashMap<>();
     Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
     if (users == null) {
-      BasicAuthPlugin.log.warn("No users configured yet");
+      log.warn("No users configured yet");
       return;
     }
     for (Map.Entry<String, String> e : users.entrySet()) {
       String v = e.getValue();
       if (v == null) {
-        BasicAuthPlugin.log.warn("user has no password " + e.getKey());
+        log.warn("user has no password " + e.getKey());
         continue;
       }
       credentials.put(e.getKey(), v);
@@ -99,7 +104,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     try {
       digest = MessageDigest.getInstance("SHA-256");
     } catch (NoSuchAlgorithmException e) {
-      BasicAuthPlugin.log.error(e.getMessage(), e);
+      log.error(e.getMessage(), e);
       return null;//should not happen
     }
     if (saltKey != null) {

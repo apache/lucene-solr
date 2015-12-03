@@ -23,6 +23,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+
+import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.queryparser.surround.parser.*;
 import org.apache.lucene.queryparser.surround.query.*;
 import org.slf4j.Logger;
@@ -42,6 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class SurroundQParserPlugin extends QParserPlugin {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String NAME = "surround";
 
   @Override
@@ -54,55 +58,53 @@ public class SurroundQParserPlugin extends QParserPlugin {
     return new SurroundQParser(qstr, localParams, params, req);
   }
 
-}
-
-class SurroundQParser extends QParser {
-  protected static final Logger LOG = LoggerFactory .getLogger(SurroundQParser.class);
-  static final int DEFMAXBASICQUERIES = 1000;
-  static final String MBQParam = "maxBasicQueries";
-  
-  String sortStr;
-  SolrQueryParser lparser;
-  int maxBasicQueries;
-
-  public SurroundQParser(String qstr, SolrParams localParams,
-      SolrParams params, SolrQueryRequest req) {
-    super(qstr, localParams, params, req);
-  }
-
-  @Override
-  public Query parse()
-      throws SyntaxError {
-    SrndQuery sq;
-    String qstr = getString();
-    if (qstr == null)
-      return null;
-    String mbqparam = getParam(MBQParam);
-    if (mbqparam == null) {
-      this.maxBasicQueries = DEFMAXBASICQUERIES;
-    } else {
-      try {
-        this.maxBasicQueries = Integer.parseInt(mbqparam);
-      } catch (Exception e) {
-        LOG.warn("Couldn't parse maxBasicQueries value " + mbqparam +", using default of 1000");
-        this.maxBasicQueries = DEFMAXBASICQUERIES;
-      }
-    }
-    // ugh .. colliding ParseExceptions
-    try {
-      sq = org.apache.lucene.queryparser.surround.parser.QueryParser
-          .parse(qstr);
-    } catch (org.apache.lucene.queryparser.surround.parser.ParseException pe) {
-      throw new SyntaxError(pe);
-    }
+  static class SurroundQParser extends QParser {
+    protected static final Logger LOG = SurroundQParserPlugin.log;
+    static final int DEFMAXBASICQUERIES = 1000;
+    static final String MBQParam = "maxBasicQueries";
     
-    // so what do we do with the SrndQuery ??
-    // processing based on example in LIA Ch 9
+    String sortStr;
+    SolrQueryParser lparser;
+    int maxBasicQueries;
 
-    BasicQueryFactory bqFactory = new BasicQueryFactory(this.maxBasicQueries);
-    String defaultField = QueryParsing.getDefaultField(getReq().getSchema(),getParam(CommonParams.DF));
-    Query lquery = sq.makeLuceneQueryField(defaultField, bqFactory);
-    return lquery;
+    public SurroundQParser(String qstr, SolrParams localParams,
+        SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse()
+        throws SyntaxError {
+      SrndQuery sq;
+      String qstr = getString();
+      if (qstr == null)
+        return null;
+      String mbqparam = getParam(MBQParam);
+      if (mbqparam == null) {
+        this.maxBasicQueries = DEFMAXBASICQUERIES;
+      } else {
+        try {
+          this.maxBasicQueries = Integer.parseInt(mbqparam);
+        } catch (Exception e) {
+          LOG.warn("Couldn't parse maxBasicQueries value " + mbqparam +", using default of 1000");
+          this.maxBasicQueries = DEFMAXBASICQUERIES;
+        }
+      }
+      // ugh .. colliding ParseExceptions
+      try {
+        sq = org.apache.lucene.queryparser.surround.parser.QueryParser
+            .parse(qstr);
+      } catch (org.apache.lucene.queryparser.surround.parser.ParseException pe) {
+        throw new SyntaxError(pe);
+      }
+      
+      // so what do we do with the SrndQuery ??
+      // processing based on example in LIA Ch 9
+
+      BasicQueryFactory bqFactory = new BasicQueryFactory(this.maxBasicQueries);
+      String defaultField = QueryParsing.getDefaultField(getReq().getSchema(),getParam(CommonParams.DF));
+      Query lquery = sq.makeLuceneQueryField(defaultField, bqFactory);
+      return lquery;
+    }
   }
-
 }

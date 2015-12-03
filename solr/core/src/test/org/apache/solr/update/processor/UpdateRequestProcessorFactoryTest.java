@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,11 +28,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
  */
 public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -79,8 +84,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     //
     // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is evil.
     assertTrue("Tests must be run with INFO level logging "+
-               "otherwise LogUpdateProcessor isn't used and can't be tested.",
-               LogUpdateProcessor.log.isInfoEnabled());
+               "otherwise LogUpdateProcessor isn't used and can't be tested.", log.isInfoEnabled());
     
     final int EXPECTED_CHAIN_LENGTH = 5;
     SolrCore core = h.getCore();
@@ -118,8 +122,8 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
       assertTrue(name + " second proc isn't LogUpdateProcessor: " + procs.toString(),
                  ( // compare them both just because i'm going insane and the more checks the better
-                   proc.next instanceof LogUpdateProcessor
-                   && procs.get(1) instanceof LogUpdateProcessor));
+                   proc.next instanceof LogUpdateProcessorFactory.LogUpdateProcessor
+                   && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 
       // fetch the distributed version of this chain
       proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "non_blank_value"),
@@ -132,8 +136,8 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
       assertTrue(name + " (distrib) first proc should be LogUpdateProcessor because of @RunAllways: "
                  + procs.toString(),
                  ( // compare them both just because i'm going insane and the more checks the better
-                   proc instanceof LogUpdateProcessor
-                   && procs.get(0) instanceof LogUpdateProcessor));
+                   proc instanceof LogUpdateProcessorFactory.LogUpdateProcessor
+                   && procs.get(0) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 
       // for these 3 (distrib) chains, the last proc should always be RunUpdateProcessor
       assertTrue(name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs.toString(),

@@ -17,6 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -44,8 +46,7 @@ import java.util.regex.Pattern;
 
 @Slow
 public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
-  protected static Logger log = LoggerFactory
-      .getLogger(AbstractZkTestCase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final static int NUM_SHARD_REPLICAS = 5;
   

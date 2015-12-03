@@ -23,14 +23,14 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ExactSharedStatsCache extends ExactStatsCache {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(ExactSharedStatsCache.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // local stats obtained from shard servers
   private final Map<String,Map<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();

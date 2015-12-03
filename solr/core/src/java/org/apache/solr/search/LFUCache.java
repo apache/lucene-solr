@@ -17,6 +17,7 @@ package org.apache.solr.search;
  */
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ConcurrentLFUCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -47,6 +50,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * @since solr 3.6
  */
 public class LFUCache<K, V> implements SolrCache<K, V> {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLFUCache.Stats> statsList;

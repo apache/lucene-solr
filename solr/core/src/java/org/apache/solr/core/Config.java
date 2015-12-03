@@ -32,6 +32,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -65,7 +66,7 @@ import org.xml.sax.SAXException;
  *
  */
 public class Config {
-  public static final Logger log = LoggerFactory.getLogger(Config.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();

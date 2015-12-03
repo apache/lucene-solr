@@ -32,7 +32,6 @@ import java.util.Map;
 public class ExportQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xport";
-  
   public void init(NamedList namedList) {
   }
   

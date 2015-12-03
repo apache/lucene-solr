@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,8 +82,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   final private Set configSetWriteWip;
   final private Set configSetReadWip;
 
-  private static Logger log = LoggerFactory
-      .getLogger(OverseerConfigSetMessageHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public OverseerConfigSetMessageHandler(ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;

@@ -27,6 +27,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -80,7 +81,7 @@ import org.slf4j.LoggerFactory;
  */ 
 public class SolrResourceLoader implements ResourceLoader,Closeable
 {
-  public static final Logger log = LoggerFactory.getLogger(SolrResourceLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;

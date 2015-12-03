@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +51,7 @@ import java.util.List;
 @Slow
 public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
 
-  private static final Logger logger = LoggerFactory.getLogger(AliasIntegrationTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public AliasIntegrationTest() {
     super();

@@ -30,8 +30,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -43,7 +41,6 @@ import java.util.Properties;
 import java.util.Set;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
-  private static Logger log = LoggerFactory.getLogger(SolrSchemalessExampleTest.class);
 
   @BeforeClass
   public static void beforeClass() throws Exception {

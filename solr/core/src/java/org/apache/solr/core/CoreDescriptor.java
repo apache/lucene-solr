@@ -30,12 +30,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Properties;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Solr core descriptor
@@ -43,7 +46,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @since solr 1.3
  */
 public class CoreDescriptor {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // Properties file name constants
   public static final String CORE_NAME = "name";
   public static final String CORE_CONFIG = "config";
@@ -210,7 +213,7 @@ public class CoreDescriptor {
       cloudDesc = null;
     }
 
-    SolrCore.log.info("Created CoreDescriptor: " + coreProperties);
+    log.info("Created CoreDescriptor: " + coreProperties);
   }
 
   /**

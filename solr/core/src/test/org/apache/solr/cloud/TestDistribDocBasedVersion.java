@@ -25,7 +25,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +37,8 @@ import java.util.Set;
 
 
 public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String bucket1 = "shard1";      // shard1: top bits:10  80000000:ffffffff
   String bucket2 = "shard2";      // shard2: top bits:00  00000000:7fffffff

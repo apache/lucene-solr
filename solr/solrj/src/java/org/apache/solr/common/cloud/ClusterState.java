@@ -31,8 +31,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.Watcher;
 import org.noggit.JSONWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
@@ -40,7 +38,6 @@ import org.slf4j.LoggerFactory;
  * @lucene.experimental
  */
 public class ClusterState implements JSONWriter.Writable {
-  private static Logger log = LoggerFactory.getLogger(ClusterState.class);
   
   private final Integer znodeVersion;
   

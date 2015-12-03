@@ -28,9 +28,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
 /**
@@ -45,6 +48,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
   private String saveProp;
   private File dataDir1;
   private File dataDir2;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public String getSolrHome() {
@@ -76,7 +81,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 
     setupCoreContainer();
-    SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
+    log.info("CORES=" + cores + " : " + cores.getCoreNames());
 
   }
 

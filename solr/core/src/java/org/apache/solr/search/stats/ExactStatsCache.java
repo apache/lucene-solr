@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +55,7 @@ import java.util.Set;
  * query terms (and collection statistics for term fields).
  */
 public class ExactStatsCache extends StatsCache {
-  private static final Logger LOG = LoggerFactory.getLogger(ExactStatsCache.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // experimenting with strategy that takes more RAM, but also doesn't share memory
   // across threads

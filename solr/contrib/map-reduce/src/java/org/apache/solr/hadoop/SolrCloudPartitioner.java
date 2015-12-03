@@ -16,6 +16,7 @@
  */
 package org.apache.solr.hadoop;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +59,7 @@ public class SolrCloudPartitioner extends Partitioner<Text, SolrInputDocumentWri
   public static final String ZKHOST = SolrCloudPartitioner.class.getName() + ".zkHost";
   public static final String COLLECTION = SolrCloudPartitioner.class.getName() + ".collection";
   
-  private static final Logger LOG = LoggerFactory.getLogger(SolrCloudPartitioner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public SolrCloudPartitioner() {}
 

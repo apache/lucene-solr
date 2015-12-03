@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -114,7 +115,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
   
   private volatile boolean closed = false;

@@ -16,6 +16,7 @@ package org.apache.solr.rest.schema.analysis;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +34,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ManagedResource implementation for managing a set of words using the REST API;
@@ -45,7 +48,9 @@ public class ManagedWordSetResource extends ManagedResource
   public static final String WORD_SET_JSON_FIELD = "wordSet";
   public static final String IGNORE_CASE_INIT_ARG = "ignoreCase";
       
-  private SortedSet<String> managedWords = null;  
+  private SortedSet<String> managedWords = null;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public ManagedWordSetResource(String resourceId, SolrResourceLoader loader, StorageIO storageIO) 
       throws SolrException {
