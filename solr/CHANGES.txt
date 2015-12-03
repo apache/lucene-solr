@@ -193,6 +193,9 @@ Bug Fixes
 
 * SOLR-8175: Word Break Spellchecker would throw AIOOBE with certain queries containing 
    "should" clauses. (Ryan Josal via James Dyer)
+   
+* SOLR-2556: The default spellcheck query converter was ignoring terms consisting entirely
+  of digits. (James Dyer)
 
 Other Changes
 ----------------------
