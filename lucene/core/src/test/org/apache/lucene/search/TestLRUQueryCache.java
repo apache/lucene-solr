@@ -795,6 +795,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(new StringField("foo", "bar", Store.YES));
+    doc.add(new StringField("foo", "quux", Store.YES));
     w.addDocument(doc);
     w.commit();
     final IndexReader reader = w.getReader();
@@ -808,7 +809,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     TermQuery should = new TermQuery(new Term("foo", "baz"));
     TermQuery must = new TermQuery(new Term("foo", "bar"));
-    TermQuery filter = new TermQuery(new Term("foo", "bar"));
+    TermQuery filter = new TermQuery(new Term("foo", "quux"));
     TermQuery mustNot = new TermQuery(new Term("foo", "foo"));
     bq.add(should, Occur.SHOULD);
     bq.add(must, Occur.MUST);

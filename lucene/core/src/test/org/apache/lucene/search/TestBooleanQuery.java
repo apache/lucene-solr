@@ -459,34 +459,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     directory.close();
   }
 
-  public void testOneClauseRewriteOptimization() throws Exception {
-    final String FIELD = "content";
-    final String VALUE = "foo";
-
-    Directory dir = newDirectory();
-    (new RandomIndexWriter(random(), dir)).close();
-    IndexReader r = DirectoryReader.open(dir);
-
-    TermQuery expected = new TermQuery(new Term(FIELD, VALUE));
-
-    final int numLayers = atLeast(3);
-    Query actual = new TermQuery(new Term(FIELD, VALUE));
-
-    for (int i = 0; i < numLayers; i++) {
-
-      BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.add(actual, random().nextBoolean()
-             ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST);
-      actual = bq.build();
-    }
-
-    assertEquals(numLayers + ": " + actual.toString(),
-                 expected, new IndexSearcher(r).rewrite(actual));
-
-    r.close();
-    dir.close();
-  }
-
   public void testMinShouldMatchLeniency() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
@@ -671,43 +643,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     qBuilder.setMinimumNumberShouldMatch(1);
     q = qBuilder.build();
     assertSameScoresWithoutFilters(searcher, q);
-
-    reader.close();
-    w.close();
-    dir.close();
-  }
-
-  public void testSingleFilterClause() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field f = newTextField("field", "a", Field.Store.NO);
-    doc.add(f);
-    w.addDocument(doc);
-    w.commit();
-
-    DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
-
-    BooleanQuery.Builder query1 = new BooleanQuery.Builder();
-    query1.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
-
-    // Single clauses rewrite to a term query
-    final Query rewritten1 = query1.build().rewrite(reader);
-    assertTrue(rewritten1 instanceof BoostQuery);
-    assertEquals(0f, ((BoostQuery) rewritten1).getBoost(), 0f);
-
-    // When there are two clauses, we cannot rewrite, but if one of them creates
-    // a null scorer we will end up with a single filter scorer and will need to
-    // make sure to set score=0
-    BooleanQuery.Builder query2 = new BooleanQuery.Builder();
-    query2.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
-    query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
-    final Weight weight = searcher.createNormalizedWeight(query2.build(), true);
-    final Scorer scorer = weight.scorer(reader.leaves().get(0));
-    assertEquals(0, scorer.nextDoc());
-    assertTrue(scorer.getClass().getName(), scorer instanceof FilterScorer);
-    assertEquals(0f, scorer.score(), 0f);
 
     reader.close();
     w.close();
