@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentProducer;
@@ -287,12 +288,18 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             SolrException solrExc = new SolrException(ErrorCode.getErrorCode(statusCode), msg.toString());
             // parse out the metadata from the SolrException
             try {
-              NamedList<Object> resp =
-                  client.parser.processResponse(response.getEntity().getContent(),
-                      response.getEntity().getContentType().getValue());
+              String encoding = "UTF-8"; // default
+              if (response.getEntity().getContentType().getElements().length > 0) {
+                NameValuePair param = response.getEntity().getContentType().getElements()[0].getParameterByName("charset");
+                if (param != null)  {
+                  encoding = param.getValue();
+                }
+              }
+              NamedList<Object> resp = client.parser.processResponse(response.getEntity().getContent(), encoding);
               NamedList<Object> error = (NamedList<Object>) resp.get("error");
-              if (error != null)
+              if (error != null) {
                 solrExc.setMetadata((NamedList<String>) error.get("metadata"));
+              }
             } catch (Exception exc) {
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from " + client.getBaseURL() + " due to: " + exc);
