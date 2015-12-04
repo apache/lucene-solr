@@ -1165,4 +1165,31 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.getIndexReader().close();
     dir.close();
   }
+
+  public void testEvictEmptySegmentCache() throws IOException {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    w.addDocument(new Document());
+    final DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = newSearcher(reader);
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000) {
+      @Override
+      protected void onDocIdSetEviction(Object readerCoreKey, int numEntries, long sumRamBytesUsed) {
+        super.onDocIdSetEviction(readerCoreKey, numEntries, sumRamBytesUsed);
+        assertTrue(numEntries > 0);
+      }
+    };
+
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
+
+    Query query = new DummyQuery();
+    searcher.count(query);
+    assertEquals(Collections.singletonList(query), queryCache.cachedQueries());
+    queryCache.clearQuery(query);
+
+    reader.close(); // make sure this does not trigger eviction of segment caches with no entries
+    w.close();
+    dir.close();
+  }
 }

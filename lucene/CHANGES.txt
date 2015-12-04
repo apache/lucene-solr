@@ -119,6 +119,11 @@ Optimizations
   particular to rewrite queries that look like: "+*:* #filter" to a
   "ConstantScore(filter)". (Adrien Grand)
 
+Bug Fixes
+
+* LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least
+  one DocIdSet is being evicted. (Adrien Grand)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
