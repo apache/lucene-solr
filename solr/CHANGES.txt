@@ -197,6 +197,9 @@ Bug Fixes
 * SOLR-2556: The default spellcheck query converter was ignoring terms consisting entirely
   of digits. (James Dyer)
 
+* SOLR-8366: ConcurrentUpdateSolrClient attempts to use response's content type as charset encoding
+  for parsing exception. (shalin)
+
 Other Changes
 ----------------------
 
