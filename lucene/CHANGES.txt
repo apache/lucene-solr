@@ -124,6 +124,11 @@ Bug Fixes
 * LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least
   one DocIdSet is being evicted. (Adrien Grand)
 
+* LUCENE-6910: fix 'if ... > Integer.MAX_VALUE' check in
+  (Binary|Numeric)DocValuesFieldUpdates.merge
+  (https://scan.coverity.com/projects/5620 CID 119973 and CID 120081)
+  (Christine Poerschke, Coverity Scan (via Rishabh Patel))
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
