@@ -300,7 +300,13 @@ public class LRUQueryCache implements QueryCache, Accountable {
     final LeafCache leafCache = cache.remove(coreKey);
     if (leafCache != null) {
       ramBytesUsed -= HASHTABLE_RAM_BYTES_PER_ENTRY;
-      onDocIdSetEviction(coreKey, leafCache.cache.size(), leafCache.ramBytesUsed);
+      final int numEntries = leafCache.cache.size();
+      if (numEntries > 0) {
+        onDocIdSetEviction(coreKey, numEntries, leafCache.ramBytesUsed);
+      } else {
+        assert numEntries == 0;
+        assert leafCache.ramBytesUsed == 0;
+      }
     }
   }
 
