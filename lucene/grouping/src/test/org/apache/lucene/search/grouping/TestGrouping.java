@@ -837,22 +837,9 @@ public class TestGrouping extends LuceneTestCase {
         final boolean getMaxScores = random().nextBoolean();
         final Sort groupSort = getRandomSort();
         //final Sort groupSort = new Sort(new SortField[] {new SortField("sort1", SortField.STRING), new SortField("id", SortField.INT)});
-        // TODO: also test null (= sort by relevance)
         final Sort docSort = getRandomSort();
         
-        for(SortField sf : docSort.getSort()) {
-          if (sf.getType() == SortField.Type.SCORE) {
-            getScores = true;
-            break;
-          }
-        }
-        
-        for(SortField sf : groupSort.getSort()) {
-          if (sf.getType() == SortField.Type.SCORE) {
-            getScores = true;
-            break;
-          }
-        }
+        getScores |= (groupSort.needsScores() || docSort.needsScores());
         
         final int topNGroups = TestUtil.nextInt(random(), 1, 30);
         //final int topNGroups = 10;
@@ -863,7 +850,7 @@ public class TestGrouping extends LuceneTestCase {
         
         final int docOffset = TestUtil.nextInt(random(), 0, docsPerGroup - 1);
         //final int docOffset = 0;
-        
+
         final boolean doCache = random().nextBoolean();
         final boolean doAllGroups = random().nextBoolean();
         if (VERBOSE) {
@@ -1170,7 +1157,7 @@ public class TestGrouping extends LuceneTestCase {
       System.out.println("TEST: " + subSearchers.length + " shards: " + Arrays.toString(subSearchers) + " canUseIDV=" + canUseIDV);
     }
     // Run 1st pass collector to get top groups per shard
-    final Weight w = topSearcher.createNormalizedWeight(query, true);
+    final Weight w = topSearcher.createNormalizedWeight(query, getScores);
     final List<Collection<SearchGroup<BytesRef>>> shardGroups = new ArrayList<>();
     List<AbstractFirstPassGroupingCollector<?>> firstPassGroupingCollectors = new ArrayList<>();
     AbstractFirstPassGroupingCollector<?> firstPassCollector = null;

@@ -52,4 +52,9 @@ public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinc
     }
   }
 
+  @Override
+  public boolean needsScores() {
+    return false; // not needed to fetch all values
+  }
+
 }

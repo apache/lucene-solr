@@ -99,6 +99,9 @@ public abstract class CachingCollector extends FilterCollector {
       return new NoScoreCachingLeafCollector(in, maxDocsToCache);
     }
 
+    // note: do *not* override needScore to say false. Just because we aren't caching the score doesn't mean the
+    //   wrapped collector doesn't need it to do its job.
+
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       postCollection();
       final LeafCollector in = this.in.getLeafCollector(context);
@@ -177,6 +180,13 @@ public abstract class CachingCollector extends FilterCollector {
       scores.add(coll.cachedScores());
     }
 
+    /** Ensure the scores are collected so they can be replayed, even if the wrapped collector doesn't need them. */
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
+
+    @Override
     protected void collect(LeafCollector collector, int i) throws IOException {
       final int[] docs = this.docs.get(i);
       final float[] scores = this.scores.get(i);
@@ -189,7 +199,6 @@ public abstract class CachingCollector extends FilterCollector {
         collector.collect(scorer.doc);
       }
     }
-
   }
 
   private class NoScoreCachingLeafCollector extends FilterLeafCollector {

@@ -40,12 +40,14 @@ import java.util.Objects;
  */
 public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> extends SimpleCollector {
 
-  protected final Map<GROUP_VALUE_TYPE, SearchGroupDocs<GROUP_VALUE_TYPE>> groupMap;
-  private final int maxDocsPerGroup;
-  protected SearchGroupDocs<GROUP_VALUE_TYPE>[] groupDocs;
   private final Collection<SearchGroup<GROUP_VALUE_TYPE>> groups;
-  private final Sort withinGroupSort;
   private final Sort groupSort;
+  private final Sort withinGroupSort;
+  private final int maxDocsPerGroup;
+  private final boolean needsScores;
+  protected final Map<GROUP_VALUE_TYPE, SearchGroupDocs<GROUP_VALUE_TYPE>> groupMap;
+
+  protected SearchGroupDocs<GROUP_VALUE_TYPE>[] groupDocs;
 
   private int totalHitCount;
   private int totalGroupedHitCount;
@@ -59,12 +61,13 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
       throw new IllegalArgumentException("no groups to collect (groups is empty)");
     }
 
+    this.groups = Objects.requireNonNull(groups);
     this.groupSort = Objects.requireNonNull(groupSort);
     this.withinGroupSort = Objects.requireNonNull(withinGroupSort);
-    this.groups = Objects.requireNonNull(groups);
     this.maxDocsPerGroup = maxDocsPerGroup;
-    this.groupMap = new HashMap<>(groups.size());
+    this.needsScores = getScores || getMaxScores || withinGroupSort.needsScores();
 
+    this.groupMap = new HashMap<>(groups.size());
     for (SearchGroup<GROUP_VALUE_TYPE> group : groups) {
       //System.out.println("  prep group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
       final TopDocsCollector<?> collector;
@@ -77,6 +80,11 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
       }
       groupMap.put(group.groupValue, new SearchGroupDocs<>(group.groupValue, collector));
     }
+  }
+
+  @Override
+  public boolean needsScores() {
+    return needsScores;
   }
 
   @Override
