@@ -282,10 +282,23 @@
 
   <target name="check-example-lucene-match-version">
     <property name="configsets.dir" value="${server.dir}/solr/configsets"/>
+    <!-- validates all configset solrconfig files-->
     <fail message="Some example solrconfig.xml files under ${configsets.dir} do not refer to the correct luceneMatchVersion: ${tests.luceneMatchVersion}">
       <condition>
         <resourcecount when="greater" count="0">
           <fileset dir="${configsets.dir}" includes="**/solrconfig.xml">
+            <not>
+              <contains text="&lt;luceneMatchVersion&gt;${tests.luceneMatchVersion}&lt;" casesensitive="no"/>
+            </not>
+          </fileset>
+        </resourcecount>
+      </condition>
+    </fail>
+    <!-- validates remaining example solrconfig files-->
+    <fail message="Some example solrconfig.xml files under ${example} do not refer to the correct luceneMatchVersion: ${tests.luceneMatchVersion}">
+      <condition>
+        <resourcecount when="greater" count="0">
+          <fileset dir="${example}" includes="**/solrconfig.xml">
             <not>
               <contains text="&lt;luceneMatchVersion&gt;${tests.luceneMatchVersion}&lt;" casesensitive="no"/>
             </not>
