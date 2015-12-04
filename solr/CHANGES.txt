@@ -199,6 +199,9 @@ Bug Fixes
 
 * SOLR-8366: ConcurrentUpdateSolrClient attempts to use response's content type as charset encoding
   for parsing exception. (shalin)
+  
+* SOLR-6271: fix ConjunctionSolrSpellChecker to not compare StringDistance by instance.
+  (Igor Kostromin via James Dyer)
 
 Other Changes
 ----------------------
