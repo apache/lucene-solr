@@ -117,9 +117,5 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
       }
     }
   }
-  
-  @Override
-  public boolean needsScores() {
-    return true; // TODO, maybe we don't?
-  }
+
 }

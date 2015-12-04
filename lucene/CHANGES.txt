@@ -119,6 +119,9 @@ Optimizations
   particular to rewrite queries that look like: "+*:* #filter" to a
   "ConstantScore(filter)". (Adrien Grand)
 
+* LUCENE-6912: Grouping's Collectors now calculate a response to needsScores()
+  instead of always 'true'. (David Smiley)
+
 Bug Fixes
 
 * LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least

@@ -91,9 +91,5 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
     super.doSetNextReader(readerContext);
     index = DocValues.getSorted(readerContext.reader(), groupField);
   }
-  
-  @Override
-  public boolean needsScores() {
-    return true; // TODO, maybe we don't?
-  }
+
 }

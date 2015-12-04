@@ -39,6 +39,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
   private final LeafFieldComparator[] leafComparators;
   private final int[] reversed;
   private final int topNGroups;
+  private final boolean needsScores;
   private final HashMap<GROUP_VALUE_TYPE, CollectedSearchGroup<GROUP_VALUE_TYPE>> groupMap;
   private final int compIDXEnd;
 
@@ -70,7 +71,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
     // and specialize it?
 
     this.topNGroups = topNGroups;
-
+    this.needsScores = groupSort.needsScores();
     final SortField[] sortFields = groupSort.getSort();
     comparators = new FieldComparator[sortFields.length];
     leafComparators = new LeafFieldComparator[sortFields.length];
@@ -86,6 +87,11 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
 
     spareSlot = topNGroups;
     groupMap = new HashMap<>(topNGroups);
+  }
+
+  @Override
+  public boolean needsScores() {
+    return needsScores;
   }
 
   /**
