@@ -674,6 +674,9 @@ Other Changes
 * SOLR-8330: Standardize and fix logger creation and usage so that they aren't shared
   across source files.(Jason Gerlowski, Uwe Schindler, Anshum Gupta)
 
+* SOLR-8363: Fix check-example-lucene-match-version Ant task and addVersion.py script to
+  check and update luceneMatchVersion under solr/example/ configs as well logic. (Varun Thacker)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
