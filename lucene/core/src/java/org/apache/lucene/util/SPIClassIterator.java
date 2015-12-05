@@ -23,12 +23,15 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.ServiceConfigurationError;
 
 /**
@@ -47,35 +50,54 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
   private final Enumeration<URL> profilesEnum;
   private Iterator<String> linesIterator;
   
+  /** Creates a new SPI iterator to lookup services of type {@code clazz} using the context classloader. */
   public static <S> SPIClassIterator<S> get(Class<S> clazz) {
     return new SPIClassIterator<>(clazz, Thread.currentThread().getContextClassLoader());
   }
   
+  /** Creates a new SPI iterator to lookup services of type {@code clazz} using the given classloader. */
   public static <S> SPIClassIterator<S> get(Class<S> clazz, ClassLoader loader) {
     return new SPIClassIterator<>(clazz, loader);
   }
   
-  /** Utility method to check if some class loader is a (grand-)parent of or the same as another one.
-   * This means the child will be able to load all classes from the parent, too. */
-  public static boolean isParentClassLoader(final ClassLoader parent, ClassLoader child) {
-    while (child != null) {
-      if (child == parent) {
-        return true;
-      }
-      child = child.getParent();
+  /**
+   * Utility method to check if some class loader is a (grand-)parent of or the same as another one.
+   * This means the child will be able to load all classes from the parent, too.
+   * <p>
+   * If Lucene's codebase doesn't have enough permissions to do the check, {@code false} is returned.
+   */
+  public static boolean isParentClassLoader(final ClassLoader parent, final ClassLoader child) {
+    if (parent == child) {
+      return true; // don't try to use AccessController for performance
     }
-    return false;
+    return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+      @Override
+      public Boolean run() {
+        try {
+          ClassLoader cl = child;
+          while (cl != null) {
+            if (cl == parent) {
+              return true;
+            }
+            cl = cl.getParent();
+          }
+          return false;
+        } catch (SecurityException se) {
+          return false;
+        }
+      }
+    });
   }
   
   private SPIClassIterator(Class<S> clazz, ClassLoader loader) {
-    this.clazz = clazz;
+    this.clazz = Objects.requireNonNull(clazz, "clazz");
+    this.loader = Objects.requireNonNull(loader, "loader");
     try {
       final String fullName = META_INF_SERVICES + clazz.getName();
-      this.profilesEnum = (loader == null) ? ClassLoader.getSystemResources(fullName) : loader.getResources(fullName);
+      this.profilesEnum = loader.getResources(fullName);
     } catch (IOException ioe) {
       throw new ServiceConfigurationError("Error loading SPI profiles for type " + clazz.getName() + " from classpath", ioe);
     }
-    this.loader = (loader == null) ? ClassLoader.getSystemClassLoader() : loader;
     this.linesIterator = Collections.<String>emptySet().iterator();
   }
   
