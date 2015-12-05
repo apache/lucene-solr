@@ -50,7 +50,11 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
   
   /** Creates a new SPI iterator to lookup services of type {@code clazz} using the context classloader. */
   public static <S> SPIClassIterator<S> get(Class<S> clazz) {
-    return new SPIClassIterator<>(clazz, Thread.currentThread().getContextClassLoader());
+    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    if (cl == null) {
+      cl = clazz.getClassLoader();
+    }
+    return new SPIClassIterator<>(clazz, cl);
   }
   
   /** Creates a new SPI iterator to lookup services of type {@code clazz} using the given classloader. */
