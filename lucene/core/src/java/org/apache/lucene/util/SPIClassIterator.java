@@ -23,8 +23,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -64,29 +62,22 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
    * Utility method to check if some class loader is a (grand-)parent of or the same as another one.
    * This means the child will be able to load all classes from the parent, too.
    * <p>
-   * If Lucene's codebase doesn't have enough permissions to do the check, {@code false} is returned.
+   * If caller's codesource doesn't have enough permissions to do the check, {@code false} is returned
+   * (this is fine, because if we get a {@code SecurityException} it is for sure no parent).
    */
   public static boolean isParentClassLoader(final ClassLoader parent, final ClassLoader child) {
-    if (parent == child) {
-      return true; // don't try to use AccessController for performance
-    }
-    return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
-      @Override
-      public Boolean run() {
-        try {
-          ClassLoader cl = child;
-          while (cl != null) {
-            if (cl == parent) {
-              return true;
-            }
-            cl = cl.getParent();
-          }
-          return false;
-        } catch (SecurityException se) {
-          return false;
+    try {
+      ClassLoader cl = child;
+      while (cl != null) {
+        if (cl == parent) {
+          return true;
         }
+        cl = cl.getParent();
       }
-    });
+      return false;
+    } catch (SecurityException se) {
+      return false;
+    }
   }
   
   private SPIClassIterator(Class<S> clazz, ClassLoader loader) {
