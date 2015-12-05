@@ -132,6 +132,12 @@ Bug Fixes
   (https://scan.coverity.com/projects/5620 CID 119973 and CID 120081)
   (Christine Poerschke, Coverity Scan (via Rishabh Patel))
 
+Other
+
+* LUCENE-6920: Improve custom function checks in expressions module
+  to use MethodHandles and work without extra security privileges.
+  (Uwe Schindler, Robert Muir)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
