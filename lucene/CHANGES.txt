@@ -138,6 +138,9 @@ Other
   to use MethodHandles and work without extra security privileges.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-6921: Fix SPIClassIterator#isParentClassLoader to don't
+  require extra permissions.  (Uwe Schindler)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
