@@ -18,6 +18,8 @@ package org.apache.lucene.expressions.js;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -140,7 +142,8 @@ public final class JavascriptCompiler {
       throw new NullPointerException("A parent ClassLoader must be given.");
     }
     for (Method m : functions.values()) {
-      checkFunction(m, parent);
+      checkFunctionClassLoader(m, parent);
+      checkFunction(m);
     }
     return new JavascriptCompiler(sourceText, functions).compileExpression(parent);
   }
@@ -692,7 +695,7 @@ public final class JavascriptCompiler {
         @SuppressWarnings({"rawtypes", "unchecked"}) Class[] args = new Class[arity];
         Arrays.fill(args, double.class);
         Method method = clazz.getMethod(methodName, args);
-        checkFunction(method, JavascriptCompiler.class.getClassLoader());
+        checkFunction(method);
         map.put(call, method);
       }
     } catch (ReflectiveOperationException | IOException e) {
@@ -700,40 +703,44 @@ public final class JavascriptCompiler {
     }
     DEFAULT_FUNCTIONS = Collections.unmodifiableMap(map);
   }
-  
-  private static void checkFunction(Method method, ClassLoader parent) {
-    // We can only call the function if the given parent class loader of our compiled class has access to the method:
-    final ClassLoader functionClassloader = method.getDeclaringClass().getClassLoader();
-    if (functionClassloader != null) { // it is a system class iff null!
-      boolean found = false;
-      while (parent != null) {
-        if (parent == functionClassloader) {
-          found = true;
-          break;
-        }
-        parent = parent.getParent();
-      }
-      if (!found) {
-        throw new IllegalArgumentException(method + " is not declared by a class which is accessible by the given parent ClassLoader.");
-      }
+    
+  /** Check Method signature for compatibility. */
+  private static void checkFunction(Method method) {
+    // check that the Method is public in some public reachable class:
+    final MethodType type;
+    try {
+      type = MethodHandles.publicLookup().unreflect(method).type();
+    } catch (IllegalAccessException iae) {
+      throw new IllegalArgumentException(method + " is not accessible (declaring class or method not public).");
     }
     // do some checks if the signature is "compatible":
     if (!Modifier.isStatic(method.getModifiers())) {
       throw new IllegalArgumentException(method + " is not static.");
     }
-    if (!Modifier.isPublic(method.getModifiers())) {
-      throw new IllegalArgumentException(method + " is not public.");
-    }
-    if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
-      throw new IllegalArgumentException(method.getDeclaringClass().getName() + " is not public.");
-    }
-    for (Class<?> clazz : method.getParameterTypes()) {
-      if (!clazz.equals(double.class)) {
-        throw new IllegalArgumentException(method + " must take only double parameters");
+    for (int arg = 0, arity = type.parameterCount(); arg < arity; arg++) {
+      if (type.parameterType(arg) != double.class) {
+        throw new IllegalArgumentException(method + " must take only double parameters.");
       }
     }
-    if (method.getReturnType() != double.class) {
+    if (type.returnType() != double.class) {
       throw new IllegalArgumentException(method + " does not return a double.");
+    }
+  }
+  
+  /** Cross check if declaring class of given method is the same as
+   * returned by the given parent {@link ClassLoader} on string lookup.
+   * This prevents {@link NoClassDefFoundError}.
+   */
+  private static void checkFunctionClassLoader(Method method, ClassLoader parent) {
+    boolean ok = false;
+    try {
+      final Class<?> clazz = method.getDeclaringClass();
+      ok = Class.forName(clazz.getName(), false, parent) == clazz;
+    } catch (ClassNotFoundException e) {
+      ok = false;
+    }
+    if (!ok) {
+      throw new IllegalArgumentException(method + " is not declared by a class which is accessible by the given parent ClassLoader.");
     }
   }
 }
