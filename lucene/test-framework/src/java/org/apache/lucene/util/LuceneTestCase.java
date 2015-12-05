@@ -41,6 +41,7 @@ import java.security.Permissions;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
+import java.security.SecurityPermission;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2601,10 +2602,13 @@ public abstract class LuceneTestCase extends Assert {
    * because it would start with empty permissions). You cannot grant more permissions than
    * our policy file allows, but you may restrict writing to several dirs...
    * <p><em>Note:</em> This assumes a {@link SecurityManager} enabled, otherwise it
-   * stops test execution.
+   * stops test execution. If enabled, it needs the following {@link SecurityPermission}:
+   * {@code "createAccessControlContext"}
    */
   public static <T> T runWithRestrictedPermissions(PrivilegedExceptionAction<T> action, Permission... permissions) throws Exception {
     assumeTrue("runWithRestrictedPermissions requires a SecurityManager enabled", System.getSecurityManager() != null);
+    // be sure to have required permission, otherwise doPrivileged runs with *no* permissions:
+    AccessController.checkPermission(new SecurityPermission("createAccessControlContext"));
     final PermissionCollection perms = new Permissions();
     Arrays.stream(permissions).forEach(perms::add);
     final AccessControlContext ctx = new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, perms) });
