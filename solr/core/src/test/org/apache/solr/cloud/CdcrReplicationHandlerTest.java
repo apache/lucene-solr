@@ -18,18 +18,36 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * This class is testing the cdcr extension to the {@link org.apache.solr.handler.ReplicationHandler} and
+ * {@link org.apache.solr.handler.IndexFetcher}.
+ */
 @Nightly
 public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void distribSetUp() throws Exception {
@@ -188,6 +206,84 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
     // at this stage, the slave should have replicated the 5 missing tlog files
     this.assertUpdateLogsEquals(SOURCE_COLLECTION, 15);
+  }
+
+  /**
+   * Test the scenario where the slave is killed while the leader is still receiving updates.
+   * The slave should buffer updates while in recovery, then replay them at the end of the recovery.
+   * If updates were properly buffered and replayed, then the slave should have the same number of documents
+   * than the leader. This checks if cdcr tlog replication interferes with buffered updates - SOLR-8263.
+   */
+  @Test
+  @ShardsFixed(num = 2)
+  public void testReplicationWithBufferedUpdates() throws Exception {
+    List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
+
+    AtomicInteger numDocs = new AtomicInteger(0);
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new DefaultSolrThreadFactory("cdcr-test-update-scheduler"));
+    executor.scheduleWithFixedDelay(new UpdateThread(numDocs), 10, 10, TimeUnit.MILLISECONDS);
+
+    // Restart the slave node to trigger Replication strategy
+    this.restartServer(slaves.get(0));
+
+    // shutdown the update thread and wait for its completion
+    executor.shutdown();
+    executor.awaitTermination(500, TimeUnit.MILLISECONDS);
+
+    // check that we have the expected number of documents in the cluster
+    assertNumDocs(numDocs.get(), SOURCE_COLLECTION);
+
+    // check that we have the expected number of documents on the slave
+    assertNumDocs(numDocs.get(), slaves.get(0));
+  }
+
+  private void assertNumDocs(int expectedNumDocs, CloudJettyRunner jetty)
+  throws InterruptedException, IOException, SolrServerException {
+    SolrClient client = createNewSolrServer(jetty.url);
+    try {
+      int cnt = 30; // timeout after 15 seconds
+      AssertionError lastAssertionError = null;
+      while (cnt > 0) {
+        try {
+          assertEquals(expectedNumDocs, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+          return;
+        }
+        catch (AssertionError e) {
+          lastAssertionError = e;
+          cnt--;
+          Thread.sleep(500);
+        }
+      }
+      throw new AssertionError("Timeout while trying to assert number of documents @ " + jetty.url, lastAssertionError);
+    } finally {
+      client.close();
+    }
+  }
+
+  private class UpdateThread implements Runnable {
+
+    private AtomicInteger numDocs;
+
+    private UpdateThread(AtomicInteger numDocs) {
+      this.numDocs = numDocs;
+    }
+
+    @Override
+    public void run() {
+      try {
+        List<SolrInputDocument> docs = new ArrayList<>();
+        for (int j = numDocs.get(); j < (numDocs.get() + 10); j++) {
+          docs.add(getDoc(id, Integer.toString(j)));
+        }
+        index(SOURCE_COLLECTION, docs);
+        numDocs.getAndAdd(10);
+        log.info("Sent batch of {} updates - numDocs:{}", docs.size(), numDocs);
+      }
+      catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
   }
 
   private List<CloudJettyRunner> getShardToSlaveJetty(String collection, String shard) {

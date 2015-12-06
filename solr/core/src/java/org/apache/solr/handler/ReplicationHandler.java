@@ -42,7 +42,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,6 +59,7 @@ import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -88,6 +88,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -544,6 +545,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       rsp.add("status", "invalid index generation");
       return;
     }
+
     // reserve the indexcommit for sometime
     core.getDeletionPolicy().setReserveDuration(gen, reserveCommitDuration);
     List<Map<String, Object>> result = new ArrayList<>();
@@ -553,7 +555,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
       for (SegmentCommitInfo commitInfo : infos) {
         for (String file : commitInfo.files()) {
-          Map<String,Object> fileMeta = new HashMap<>();
+          Map<String, Object> fileMeta = new HashMap<>();
           fileMeta.put(NAME, file);
           fileMeta.put(SIZE, dir.fileLength(file));
 
@@ -561,7 +563,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             try {
               long checksum = CodecUtil.retrieveChecksum(in);
               fileMeta.put(CHECKSUM, checksum);
-            } catch(Exception e) {
+            } catch (Exception e) {
               LOG.warn("Could not read checksum from index file: " + file, e);
             }
           }
@@ -572,15 +574,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       // add the segments_N file
 
-      Map<String,Object> fileMeta = new HashMap<>();
+      Map<String, Object> fileMeta = new HashMap<>();
       fileMeta.put(NAME, infos.getSegmentsFileName());
       fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
       if (infos.getId() != null) {
         try (final IndexInput in = dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
           try {
             fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
-          } catch(Exception e) {
-             LOG.warn("Could not read checksum from index file: " + infos.getSegmentsFileName(), e);
+          } catch (Exception e) {
+            LOG.warn("Could not read checksum from index file: " + infos.getSegmentsFileName(), e);
           }
         }
       }
@@ -602,9 +604,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     // fetch list of tlog files only if cdcr is activated
     if (core.getUpdateHandler().getUpdateLog() != null && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
-      List<Map<String, Object>> tlogfiles = getTlogFileList();
-      LOG.info("Adding tlog files to list: " + tlogfiles);
-      rsp.add(TLOG_FILES, tlogfiles);
+      try {
+        List<Map<String, Object>> tlogfiles = getTlogFileList(commit);
+        LOG.info("Adding tlog files to list: " + tlogfiles);
+        rsp.add(TLOG_FILES, tlogfiles);
+      }
+      catch (IOException e) {
+        rsp.add("status", "unable to get tlog file names for given index generation");
+        rsp.add(EXCEPTION, e);
+        LOG.error("Unable to get tlog file names for indexCommit generation: " + gen, e);
+      }
     }
 
     if (confFileNameAlias.size() < 1 || core.getCoreDescriptor().getCoreContainer().isZooKeeperAware())
@@ -614,17 +623,37 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));
   }
 
-  List<Map<String, Object>> getTlogFileList() {
-    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+  /**
+   * Retrieves the list of tlog files associated to a commit point.
+   */
+  List<Map<String, Object>> getTlogFileList(IndexCommit commit) throws IOException {
+    long maxVersion = this.getMaxVersion(commit);
+    CdcrUpdateLog ulog = (CdcrUpdateLog) core.getUpdateHandler().getUpdateLog();
     String[] logList = ulog.getLogList(new File(ulog.getLogDir()));
     List<Map<String, Object>> tlogFiles = new ArrayList<>();
     for (String fileName : logList) {
-      Map<String, Object> fileMeta = new HashMap<>();
-      fileMeta.put(NAME, fileName);
-      fileMeta.put(SIZE, new File(ulog.getLogDir(), fileName).length());
-      tlogFiles.add(fileMeta);
+      // filter out tlogs that are older than the current index commit generation, so that the list of tlog files is
+      // in synch with the latest index commit point
+      long startVersion = Math.abs(Long.parseLong(fileName.substring(fileName.lastIndexOf('.') + 1)));
+      if (startVersion < maxVersion) {
+        Map<String, Object> fileMeta = new HashMap<>();
+        fileMeta.put(NAME, fileName);
+        fileMeta.put(SIZE, new File(ulog.getLogDir(), fileName).length());
+        tlogFiles.add(fileMeta);
+      }
     }
     return tlogFiles;
+  }
+
+  /**
+   * Retrieves the maximum version number from an index commit.
+   */
+  private long getMaxVersion(IndexCommit commit) throws IOException {
+    try (DirectoryReader reader = DirectoryReader.open(commit)) {
+      IndexSearcher searcher = new IndexSearcher(reader);
+      VersionInfo vinfo = core.getUpdateHandler().getUpdateLog().getVersionInfo();
+      return Math.abs(vinfo.getMaxVersionFromIndex(searcher));
+    }
   }
 
   /**

@@ -23,15 +23,13 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -222,7 +220,7 @@ public class VersionInfo {
     }
   }
 
-  public Long getMaxVersionFromIndex(SolrIndexSearcher searcher) throws IOException {
+  public Long getMaxVersionFromIndex(IndexSearcher searcher) throws IOException {
 
     String versionFieldName = versionField.getName();
 
@@ -231,7 +229,8 @@ public class VersionInfo {
 
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
-      Terms versionTerms = searcher.getLeafReader().terms(versionFieldName);
+      LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
+      Terms versionTerms = leafReader.terms(versionFieldName);
       Long max = (versionTerms != null) ? NumericUtils.getMaxLong(versionTerms) : null;
       if (max != null) {
         maxVersionInIndex = max.longValue();

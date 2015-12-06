@@ -53,6 +53,7 @@ public class CdcrTransactionLog extends TransactionLog {
     super(tlogFile, globalStrings);
 
     // The starting version number will be used to seek more efficiently tlogs
+    // and to filter out tlog files during replication (in ReplicationHandler#getTlogFileList)
     String filename = tlogFile.getName();
     startVersion = Math.abs(Long.parseLong(filename.substring(filename.lastIndexOf('.') + 1)));
 
