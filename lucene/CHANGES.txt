@@ -141,6 +141,9 @@ Other
 * LUCENE-6921: Fix SPIClassIterator#isParentClassLoader to don't
   require extra permissions.  (Uwe Schindler)
 
+* LUCENE-6923: Fix RamUsageEstimator to access private fields inside
+  AccessController block for computing size. (Robert Muir)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
