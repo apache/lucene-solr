@@ -17,12 +17,36 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
+
 /**
  * Reusable geo-spatial distance utility methods.
  *
  * @lucene.experimental
  */
 public class GeoDistanceUtils {
+
+  /**
+   * Compute the great-circle distance using original haversine implementation published by Sinnot in:
+   * R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159
+   *
+   * NOTE: this differs from {@link org.apache.lucene.util.SloppyMath#haversin} in that it uses the semi-major axis
+   * of the earth instead of an approximation based on the average latitude of the two points (which can introduce an
+   * additional error up to .337%, or ~67.6 km at the equator)
+   */
+  public static double haversin(double lat1, double lon1, double lat2, double lon2) {
+    double dLat = TO_RADIANS * (lat2 - lat1);
+    double dLon = TO_RADIANS * (lon2 - lon1);
+    lat1 = TO_RADIANS * (lat1);
+    lat2 = TO_RADIANS * (lat2);
+
+    final double sinDLatO2 = SloppyMath.sin(dLat / 2);
+    final double sinDLonO2 = SloppyMath.sin(dLon / 2);
+
+    double a = sinDLatO2*sinDLatO2 + sinDLonO2 * sinDLonO2 * SloppyMath.cos(lat1) * SloppyMath.cos(lat2);
+    double c = 2 * SloppyMath.asin(Math.sqrt(a));
+    return (GeoProjectionUtils.SEMIMAJOR_AXIS * c);
+  }
 
   /**
    * Compute the distance between two geo-points using vincenty distance formula
@@ -84,6 +108,20 @@ public class GeoDistanceUtils {
         * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2SigmaM * cos2SigmaM)));
 
     return (GeoProjectionUtils.SEMIMINOR_AXIS * A * (sigma - deltaSigma));
+  }
+
+  /**
+   * Computes distance between two points in a cartesian (x, y, {z - optional}) coordinate system
+   */
+  public static double linearDistance(double[] pt1, double[] pt2) {
+    assert pt1 != null && pt2 != null && pt1.length == pt2.length && pt1.length > 1;
+    final double d0 = pt1[0] - pt2[0];
+    final double d1 = pt1[1] - pt2[1];
+    if (pt1.length == 3) {
+      final double d2 = pt1[2] - pt2[2];
+      return Math.sqrt(d0*d0 + d1*d1 + d2*d2);
+    }
+    return Math.sqrt(d0*d0 + d1*d1);
   }
 
   /**
@@ -152,9 +190,9 @@ public class GeoDistanceUtils {
   /** Returns the maximum distance/radius (in meters) from the point 'center' before overlapping */
   public static double maxRadialDistanceMeters(final double centerLon, final double centerLat) {
     if (Math.abs(centerLat) == GeoUtils.MAX_LAT_INCL) {
-      return SloppyMath.haversin(centerLat, centerLon, 0, centerLon)*1000.0;
+      return GeoDistanceUtils.haversin(centerLat, centerLon, 0, centerLon);
     }
-    return SloppyMath.haversin(centerLat, centerLon, centerLat, (GeoUtils.MAX_LON_INCL + centerLon) % 360)*1000.0;
+    return GeoDistanceUtils.haversin(centerLat, centerLon, centerLat, (GeoUtils.MAX_LON_INCL + centerLon) % 360);
   }
 
   /**

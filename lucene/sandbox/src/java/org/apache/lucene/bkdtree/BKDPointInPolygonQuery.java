@@ -31,6 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -129,16 +130,16 @@ public class BKDPointInPolygonQuery extends Query {
                                          new BKDTreeReader.LatLonFilter() {
                                            @Override
                                            public boolean accept(double lat, double lon) {
-                                             return GeoUtils.pointInPolygon(polyLons, polyLats, lat, lon);
+                                             return GeoRelationUtils.pointInPolygon(polyLons, polyLats, lat, lon);
                                            }
 
                                            @Override
                                            public BKDTreeReader.Relation compare(double cellLatMin, double cellLatMax, double cellLonMin, double cellLonMax) {
-                                             if (GeoUtils.rectWithinPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
+                                             if (GeoRelationUtils.rectWithinPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
                                                                          polyLons, polyLats,
                                                                          minLon, minLat, maxLon, maxLat)) {
                                                return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
-                                             } else if (GeoUtils.rectCrossesPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
+                                             } else if (GeoRelationUtils.rectCrossesPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
                                                                                  polyLons, polyLats,
                                                                                  minLon, minLat, maxLon, maxLat)) {
                                                return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;

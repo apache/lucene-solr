@@ -24,6 +24,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.GeoRect;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
@@ -147,13 +148,13 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectCrossesPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+      return GeoRelationUtils.rectCrossesPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
           GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
     }
 
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectWithinPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+      return GeoRelationUtils.rectWithinPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
           GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
     }
 
@@ -168,11 +169,11 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
      * {@link org.apache.lucene.search.GeoPointTermsEnum#accept} method is called to match
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
-     * {@link org.apache.lucene.util.GeoUtils#pointInPolygon} method.
+     * {@link org.apache.lucene.util.GeoRelationUtils#pointInPolygon} method.
      */
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return GeoUtils.pointInPolygon(x, y, lat, lon);
+      return GeoRelationUtils.pointInPolygon(x, y, lat, lon);
     }
   }
 
