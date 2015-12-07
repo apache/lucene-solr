@@ -1,5 +1,14 @@
 package org.apache.lucene.search.join;
 
+import java.io.IOException;
+import java.util.Locale;
+
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesType;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,12 +30,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-
-import java.io.IOException;
-import java.util.Locale;
+import org.apache.lucene.search.join.DocValuesTermsCollector.Function;
 
 /**
  * Utility for query time joining.
@@ -67,34 +75,94 @@ public final class JoinUtil {
    * @throws IOException If I/O related errors occur
    */
   public static Query createJoinQuery(String fromField,
-                                      boolean multipleValuesPerDocument,
-                                      String toField,
-                                      Query fromQuery,
-                                      IndexSearcher fromSearcher,
-                                      ScoreMode scoreMode) throws IOException {
+      boolean multipleValuesPerDocument,
+      String toField,
+      Query fromQuery,
+      IndexSearcher fromSearcher,
+      ScoreMode scoreMode) throws IOException {
+    
+    final GenericTermsCollector termsWithScoreCollector;
+     
+    if (multipleValuesPerDocument) {
+      Function<SortedSetDocValues> mvFunction = DocValuesTermsCollector.sortedSetDocValues(fromField);
+      termsWithScoreCollector = GenericTermsCollector.createCollectorMV(mvFunction, scoreMode);
+    } else {
+      Function<BinaryDocValues> svFunction = DocValuesTermsCollector.binaryDocValues(fromField);
+      termsWithScoreCollector =  GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
+    }
+    
+    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode,
+        termsWithScoreCollector);
+    
+  }
+  
+  /**
+   * Method for query time joining for numeric fields. It supports multi- and single- values longs and ints. 
+   * All considerations from {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher, ScoreMode)} are applicable here too,
+   * though memory consumption might be higher.
+   * <p>
+   *
+   * @param fromField                 The from field to join from
+   * @param multipleValuesPerDocument Whether the from field has multiple terms per document
+   *                                  when true fromField might be {@link DocValuesType#SORTED_NUMERIC},
+   *                                  otherwise fromField should be {@link DocValuesType#NUMERIC}
+   * @param toField                   The to field to join to, should be {@link IntField} or {@link LongField}
+   * @param numericType               either {@link NumericType#INT} or {@link NumericType#LONG}, it should correspond to fromField and toField types
+   * @param fromQuery                 The query to match documents on the from side
+   * @param fromSearcher              The searcher that executed the specified fromQuery
+   * @param scoreMode                 Instructs how scores from the fromQuery are mapped to the returned query
+   * @return a {@link Query} instance that can be used to join documents based on the
+   *         terms in the from and to field
+   * @throws IOException If I/O related errors occur
+   */
+  
+  public static Query createJoinQuery(String fromField,
+      boolean multipleValuesPerDocument,
+      String toField, NumericType numericType,
+      Query fromQuery,
+      IndexSearcher fromSearcher,
+      ScoreMode scoreMode) throws IOException {
+    
+    final GenericTermsCollector termsCollector;
+     
+    if (multipleValuesPerDocument) {
+      Function<SortedSetDocValues> mvFunction = DocValuesTermsCollector.sortedNumericAsSortedSetDocValues(fromField,numericType);
+      termsCollector = GenericTermsCollector.createCollectorMV(mvFunction, scoreMode);
+    } else {
+      Function<BinaryDocValues> svFunction = DocValuesTermsCollector.numericAsBinaryDocValues(fromField,numericType);
+      termsCollector =  GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
+    }
+    
+    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode,
+        termsCollector);
+    
+  }
+  
+  private static Query createJoinQuery(boolean multipleValuesPerDocument, String toField, Query fromQuery,
+      IndexSearcher fromSearcher, ScoreMode scoreMode, final GenericTermsCollector collector)
+          throws IOException {
+    
+    fromSearcher.search(fromQuery, collector);
+    
     switch (scoreMode) {
       case None:
-        TermsCollector termsCollector = TermsCollector.create(fromField, multipleValuesPerDocument);
-        fromSearcher.search(fromQuery, termsCollector);
-        return new TermsQuery(toField, fromQuery, termsCollector.getCollectorTerms());
+        return new TermsQuery(toField, fromQuery, collector.getCollectedTerms());
       case Total:
       case Max:
       case Min:
       case Avg:
-        TermsWithScoreCollector termsWithScoreCollector =
-            TermsWithScoreCollector.create(fromField, multipleValuesPerDocument, scoreMode);
-        fromSearcher.search(fromQuery, termsWithScoreCollector);
         return new TermsIncludingScoreQuery(
             toField,
             multipleValuesPerDocument,
-            termsWithScoreCollector.getCollectedTerms(),
-            termsWithScoreCollector.getScoresPerTerm(),
+            collector.getCollectedTerms(),
+            collector.getScoresPerTerm(),
             fromQuery
         );
       default:
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
     }
   }
+
 
   /**
    * Delegates to {@link #createJoinQuery(String, Query, Query, IndexSearcher, ScoreMode, MultiDocValues.OrdinalMap, int, int)},

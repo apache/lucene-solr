@@ -108,6 +108,12 @@ Changes in Runtime Behavior
 
 ======================= Lucene 5.5.0 =======================
 
+New Features
+
+* LUCENE-5868: JoinUtil.createJoinQuery(..,NumericType,..) query-time join 
+  for LONG and INT fields with NUMERIC and SORTED_NUMERIC doc values.
+  (Alexey Zelin via Mikhail Khludnev) 
+
 API Changes
 
 * LUCENE-6900: Grouping sortWithinGroup variables used to allow null to mean

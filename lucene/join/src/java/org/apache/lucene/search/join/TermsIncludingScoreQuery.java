@@ -18,6 +18,7 @@ package org.apache.lucene.search.join;
  */
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Locale;
 import java.util.Set;
 
@@ -37,6 +38,7 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.NumericUtils;
 
 class TermsIncludingScoreQuery extends Query {
 
@@ -268,5 +270,23 @@ class TermsIncludingScoreQuery extends Query {
       }
     }
   }
-
+  
+  void dump(PrintStream out){
+    out.println(field+":");
+    final BytesRef ref = new BytesRef();
+    for (int i = 0; i < terms.size(); i++) {
+      terms.get(ords[i], ref);
+      out.print(ref+" "+ref.utf8ToString()+" ");
+      try {
+        out.print(Long.toHexString(NumericUtils.prefixCodedToLong(ref))+"L");
+      } catch (Exception e) {
+        try {
+          out.print(Integer.toHexString(NumericUtils.prefixCodedToInt(ref))+"i");
+        } catch (Exception ee) {
+        }
+      }
+      out.println(" score="+scores[ords[i]]);
+      out.println("");
+    }
+  }
 }
