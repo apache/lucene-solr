@@ -84,7 +84,12 @@ def getHREFs(urlString):
   # Deref any redirects
   while True:
     url = urllib.parse.urlparse(urlString)
-    h = http.client.HTTPConnection(url.netloc)
+    if url.scheme == "http":
+      h = http.client.HTTPConnection(url.netloc)
+    elif url.scheme == "https":
+      h = http.client.HTTPSConnection(url.netloc)
+    else:
+      raise RuntimeError("Unknown protocol: %s" % url.scheme)
     h.request('GET', url.path)
     r = h.getresponse()
     newLoc = r.getheader('location')
