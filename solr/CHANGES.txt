@@ -244,6 +244,11 @@ Other Changes
 * SOLR-8359: Restrict child classes from using parent logger's state 
   (Jason Gerlowski, Mike Drob, Anshum Gupta)
 
+* SOLR-8131: All example config sets now explicitly use the ManagedIndexSchemaFactory
+  instead of ClassicIndexSchemaFactory. This means that the Schema APIs ( /<collection>/schema )
+  are enabled by default and the schema is mutable. The schema file will be called managed-schema
+  (Uwe Schindler, shalin, Varun Thacker)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
