@@ -249,6 +249,9 @@ Other Changes
   are enabled by default and the schema is mutable. The schema file will be called managed-schema
   (Uwe Schindler, shalin, Varun Thacker)
 
+* SOLR-8381: Cleanup data_driven managed-schema and solrconfig.xml files. Commented out copyFields are removed
+  and solrconfig.xml doesn't refer to field which are not defined.
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
