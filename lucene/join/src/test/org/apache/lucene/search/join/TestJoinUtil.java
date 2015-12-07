@@ -19,6 +19,7 @@ package org.apache.lucene.search.join;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -37,8 +39,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -850,10 +856,18 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         final Query joinQuery;
-        if (from) {
-          joinQuery = JoinUtil.createJoinQuery("from", multipleValuesPerDocument, "to", actualQuery, indexSearcher, scoreMode);
-        } else {
-          joinQuery = JoinUtil.createJoinQuery("to", multipleValuesPerDocument, "from", actualQuery, indexSearcher, scoreMode);
+        {
+          // single val can be handled by multiple-vals 
+          final boolean muliValsQuery = multipleValuesPerDocument || random().nextBoolean();
+          final String fromField = from ? "from":"to"; 
+          final String toField = from ? "to":"from"; 
+          
+          if (random().nextBoolean()) { // numbers
+            final NumericType numType = random().nextBoolean() ? NumericType.INT: NumericType.LONG ;
+            joinQuery = JoinUtil.createJoinQuery(fromField+numType, muliValsQuery, toField+numType, numType, actualQuery, indexSearcher, scoreMode);
+          } else {
+            joinQuery = JoinUtil.createJoinQuery(fromField, muliValsQuery, toField, actualQuery, indexSearcher, scoreMode);
+          }
         }
         if (VERBOSE) {
           System.out.println("joinQuery=" + joinQuery);
@@ -897,13 +911,13 @@ public class TestJoinUtil extends LuceneTestCase {
       return;
     }
 
-    assertEquals(expectedTopDocs.getMaxScore(), actualTopDocs.getMaxScore(), 0.0f);
     if (VERBOSE) {
       for (int i = 0; i < expectedTopDocs.scoreDocs.length; i++) {
         System.out.printf(Locale.ENGLISH, "Expected doc: %d | Actual doc: %d\n", expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
         System.out.printf(Locale.ENGLISH, "Expected score: %f | Actual score: %f\n", expectedTopDocs.scoreDocs[i].score, actualTopDocs.scoreDocs[i].score);
       }
     }
+    assertEquals(expectedTopDocs.getMaxScore(), actualTopDocs.getMaxScore(), 0.0f);
 
     for (int i = 0; i < expectedTopDocs.scoreDocs.length; i++) {
       assertEquals(expectedTopDocs.scoreDocs[i].doc, actualTopDocs.scoreDocs[i].doc);
@@ -919,46 +933,61 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     Directory dir = newDirectory();
+    final Random random = random();
     RandomIndexWriter w = new RandomIndexWriter(
-        random(),
+        random,
         dir,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+        newIndexWriterConfig(new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
     );
 
     IndexIterationContext context = new IndexIterationContext();
-    int numRandomValues = nDocs / RandomInts.randomIntBetween(random(), 2, 10);
+    int numRandomValues = nDocs / RandomInts.randomIntBetween(random, 1, 4);
     context.randomUniqueValues = new String[numRandomValues];
     Set<String> trackSet = new HashSet<>();
     context.randomFrom = new boolean[numRandomValues];
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
       do {
-//        uniqueRandomValue = TestUtil.randomRealisticUnicodeString(random());
-        uniqueRandomValue = TestUtil.randomSimpleString(random());
+        // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier 
+        final int nextInt = random.nextInt(Integer.MAX_VALUE);
+        uniqueRandomValue = String.format(Locale.ROOT, "%08x", nextInt);
+        assert nextInt == Integer.parseUnsignedInt(uniqueRandomValue,16);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
+     
       // Generate unique values and empty strings aren't allowed.
       trackSet.add(uniqueRandomValue);
-      context.randomFrom[i] = random().nextBoolean();
+      
+      context.randomFrom[i] = random.nextBoolean();
       context.randomUniqueValues[i] = uniqueRandomValue;
+      
     }
 
+    List<String> randomUniqueValuesReplica = new ArrayList<>(Arrays.asList(context.randomUniqueValues));
+        
     RandomDoc[] docs = new RandomDoc[nDocs];
     for (int i = 0; i < nDocs; i++) {
       String id = Integer.toString(i);
-      int randomI = random().nextInt(context.randomUniqueValues.length);
+      int randomI = random.nextInt(context.randomUniqueValues.length);
       String value = context.randomUniqueValues[randomI];
       Document document = new Document();
-      document.add(newTextField(random(), "id", id, Field.Store.YES));
-      document.add(newTextField(random(), "value", value, Field.Store.NO));
+      document.add(newTextField(random, "id", id, Field.Store.YES));
+      document.add(newTextField(random, "value", value, Field.Store.NO));
 
       boolean from = context.randomFrom[randomI];
-      int numberOfLinkValues = multipleValuesPerDocument ? 2 + random().nextInt(10) : 1;
+      int numberOfLinkValues = multipleValuesPerDocument ? Math.min(2 + random.nextInt(10), context.randomUniqueValues.length) : 1;
       docs[i] = new RandomDoc(id, numberOfLinkValues, value, from);
       if (globalOrdinalJoin) {
         document.add(newStringField("type", from ? "from" : "to", Field.Store.NO));
       }
-      for (int j = 0; j < numberOfLinkValues; j++) {
-        String linkValue = context.randomUniqueValues[random().nextInt(context.randomUniqueValues.length)];
+      final List<String> subValues;
+      {
+      int start = randomUniqueValuesReplica.size()==numberOfLinkValues? 0 : random.nextInt(randomUniqueValuesReplica.size()-numberOfLinkValues);
+      subValues = randomUniqueValuesReplica.subList(start, start+numberOfLinkValues);
+      Collections.shuffle(subValues, random);
+      }
+      for (String linkValue : subValues) {
+        
+        assert !docs[i].linkValues.contains(linkValue);
         docs[i].linkValues.add(linkValue);
         if (from) {
           if (!context.fromDocuments.containsKey(linkValue)) {
@@ -970,15 +999,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.fromDocuments.get(linkValue).add(docs[i]);
           context.randomValueFromDocs.get(value).add(docs[i]);
-          document.add(newTextField(random(), "from", linkValue, Field.Store.NO));
-          if (multipleValuesPerDocument) {
-            document.add(new SortedSetDocValuesField("from", new BytesRef(linkValue)));
-          } else {
-            document.add(new SortedDocValuesField("from", new BytesRef(linkValue)));
-          }
-          if (globalOrdinalJoin) {
-            document.add(new SortedDocValuesField("join_field", new BytesRef(linkValue)));
-          }
+          addLinkFields(random, document,  "from", linkValue, multipleValuesPerDocument, globalOrdinalJoin);
+          
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<RandomDoc>());
@@ -989,20 +1011,12 @@ public class TestJoinUtil extends LuceneTestCase {
 
           context.toDocuments.get(linkValue).add(docs[i]);
           context.randomValueToDocs.get(value).add(docs[i]);
-          document.add(newTextField(random(), "to", linkValue, Field.Store.NO));
-          if (multipleValuesPerDocument) {
-            document.add(new SortedSetDocValuesField("to", new BytesRef(linkValue)));
-          } else {
-            document.add(new SortedDocValuesField("to", new BytesRef(linkValue)));
-          }
-          if (globalOrdinalJoin) {
-            document.add(new SortedDocValuesField("join_field", new BytesRef(linkValue)));
-          }
+          addLinkFields(random, document,  "to", linkValue, multipleValuesPerDocument, globalOrdinalJoin);
         }
       }
 
       w.addDocument(document);
-      if (random().nextInt(10) == 4) {
+      if (random.nextInt(10) == 4) {
         w.commit();
       }
       if (VERBOSE) {
@@ -1010,7 +1024,7 @@ public class TestJoinUtil extends LuceneTestCase {
       }
     }
 
-    if (random().nextBoolean()) {
+    if (random.nextBoolean()) {
       w.forceMerge(1);
     }
     w.close();
@@ -1183,6 +1197,30 @@ public class TestJoinUtil extends LuceneTestCase {
     context.searcher = searcher;
     context.dir = dir;
     return context;
+  }
+
+  private void addLinkFields(final Random random, Document document, final String fieldName, String linkValue,
+      boolean multipleValuesPerDocument, boolean globalOrdinalJoin) {
+    document.add(newTextField(random, fieldName, linkValue, Field.Store.NO));
+
+    final int linkInt = Integer.parseUnsignedInt(linkValue,16);
+    document.add(new IntField(fieldName+NumericType.INT, linkInt, Field.Store.NO));
+
+    final long linkLong = linkInt<<32 | linkInt;
+    document.add(new LongField(fieldName+NumericType.LONG, linkLong, Field.Store.NO));
+
+    if (multipleValuesPerDocument) {
+      document.add(new SortedSetDocValuesField(fieldName, new BytesRef(linkValue)));
+      document.add(new SortedNumericDocValuesField(fieldName+NumericType.INT, linkInt));
+      document.add(new SortedNumericDocValuesField(fieldName+NumericType.LONG, linkLong));
+    } else {
+      document.add(new SortedDocValuesField(fieldName, new BytesRef(linkValue)));
+      document.add(new NumericDocValuesField(fieldName+NumericType.INT, linkInt));
+      document.add(new NumericDocValuesField(fieldName+NumericType.LONG, linkLong));
+    }
+    if (globalOrdinalJoin) {
+      document.add(new SortedDocValuesField("join_field", new BytesRef(linkValue)));
+    }
   }
 
   private TopDocs createExpectedTopDocs(String queryValue,
