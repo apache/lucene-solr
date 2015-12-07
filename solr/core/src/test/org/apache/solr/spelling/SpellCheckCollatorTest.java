@@ -48,7 +48,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
     assertU(adoc("id", "0", 
-                 "lowerfilt", "faith hope and love", 
+                 "lowerfilt", "faith hope and love to", 
                  "teststop", "metanoia"));
     assertU(adoc("id", "1", 
                  "lowerfilt", "faith hope and loaves",
@@ -93,6 +93,38 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "16", 
                  "teststop", "metanoia"));
     assertU(commit());
+  }
+  
+  @Test
+  public void testCollationWithRangeQuery() throws Exception
+  {
+    SolrCore core = h.getCore();
+    SearchComponent speller = core.getSearchComponent("spellcheck");
+    assertTrue("speller is null and it shouldn't be", speller != null);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();   
+    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+    params.add(SpellingParams.SPELLCHECK_BUILD, "true");
+    params.add(SpellingParams.SPELLCHECK_COUNT, "10");   
+    params.add(SpellingParams.SPELLCHECK_COLLATE, "true"); 
+    params.add(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "10"); 
+    params.add(CommonParams.Q, "id:[1 TO 10] AND lowerfilt:lovw");
+    {
+      SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      rsp.add("responseHeader", new SimpleOrderedMap());
+      SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+      handler.handleRequest(req, rsp);
+      req.close();
+      NamedList values = rsp.getValues();
+      NamedList spellCheck = (NamedList) values.get("spellcheck");
+      NamedList collationHolder = (NamedList) spellCheck.get("collations");
+      List<String> collations = collationHolder.getAll("collation");
+      assertTrue(collations.size()==1); 
+      String collation = collations.iterator().next();    
+      System.out.println(collation);
+      assertTrue("Incorrect collation: " + collation,"id:[1 TO 10] AND lowerfilt:love".equals(collation));
+    }
   }
 
   @Test
