@@ -51,8 +51,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   public static final String DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME = "managed-schema";
   public static final String MANAGED_SCHEMA_RESOURCE_NAME = "managedSchemaResourceName";
 
-  private boolean isMutable;
-  private String managedSchemaResourceName;
+  private boolean isMutable = true;
+  private String managedSchemaResourceName = DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
   public String getManagedSchemaResourceName() { return managedSchemaResourceName; }
   private SolrConfig config;
   private SolrResourceLoader loader;
@@ -69,7 +69,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   @Override
   public void init(NamedList args) {
     SolrParams params = SolrParams.toSolrParams(args);
-    isMutable = params.getBool("mutable", false);
+    isMutable = params.getBool("mutable", true);
     args.remove("mutable");
     managedSchemaResourceName = params.get(MANAGED_SCHEMA_RESOURCE_NAME, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
     args.remove(MANAGED_SCHEMA_RESOURCE_NAME);

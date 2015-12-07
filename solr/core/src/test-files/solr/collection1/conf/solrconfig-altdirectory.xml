@@ -23,4 +23,5 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
   <directoryFactory name="DirectoryFactory" class="org.apache.solr.core.AlternateDirectoryTest$TestFSDirectoryFactory"></directoryFactory>
   <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.AlternateDirectoryTest$TestIndexReaderFactory"></indexReaderFactory >
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 </config>

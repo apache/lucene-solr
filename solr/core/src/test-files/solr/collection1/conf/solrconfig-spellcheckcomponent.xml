@@ -32,6 +32,7 @@
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->

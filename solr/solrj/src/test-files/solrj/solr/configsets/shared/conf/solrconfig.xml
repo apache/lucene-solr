@@ -27,6 +27,7 @@
   </indexConfig>
   <dataDir>${tempDir}/data/${l10n:}-${version:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>

@@ -57,6 +57,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema-test.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field-unique-key.xml"), tmpConfDir);
@@ -123,6 +124,19 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     FileUtils.moveFile(upgradedOriginalSchemaFile, nonManagedSchemaFile);
     initCore("solrconfig-basic.xml", "schema-minimal.xml", tmpSolrHome.getPath());
     assertSchemaResource(collection, "schema-minimal.xml");
+  }
+
+  public void testDefaultSchemaFactory() throws Exception {
+    deleteCore();
+    initCore("solrconfig-managed-schema-test.xml", "schema-minimal.xml", tmpSolrHome.getPath());
+
+    final CoreContainer cores = h.getCoreContainer();
+    final CoreAdminHandler admin = new CoreAdminHandler(cores);
+    SolrQueryRequest request = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.STATUS.toString());
+    SolrQueryResponse response = new SolrQueryResponse();
+    admin.handleRequestBody(request, response);
+    assertNull("Exception on create", response.getException());
+    assertSchemaResource(collection, "managed-schema");
   }
   
   private void assertSchemaResource(String collection, String expectedSchemaResource) throws Exception {

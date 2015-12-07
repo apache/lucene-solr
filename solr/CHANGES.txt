@@ -68,6 +68,10 @@ Upgrading from Solr 5.x
     'defaultSimFromFieldType' configuration option may be used to specify any default of your choosing.
     See SOLR-8261 + SOLR-8329 for more details.
 
+* If your solrconfig.xml file doesn't explicitly mention the schemaFactory to use then Solr will choose
+  the ManagedIndexSchemaFactory by default. This means that the Schema APIs ( /<collection>/schema )
+  are enabled by default and the schema is mutable. The schema file will be called managed-schema.
+
 Detailed Change List
 ----------------------
 
@@ -161,6 +165,9 @@ Other Changes
   (Kevin Risden, Joel Bernstein)
 
 * SOLR-7339: Upgrade Jetty to v9.3.6.v20151106. (Gregg Donovan, shalin)
+
+* SOLR-8131: Make ManagedIndexSchemaFactory the default schemaFactory when luceneMatchVersion >= 6
+  (Uwe Schindler, shalin, Varun Thacker)
 
 ======================= 5.5.0 =======================
 

@@ -28,6 +28,8 @@
 
   <updateHandler class="solr.DirectUpdateHandler2"/>
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
   <query>
     <maxBooleanClauses>1024</maxBooleanClauses>
     <useFilterForSortedQuery>true</useFilterForSortedQuery>

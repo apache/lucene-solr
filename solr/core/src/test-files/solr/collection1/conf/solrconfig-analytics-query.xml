@@ -47,6 +47,8 @@
     <double name="maxWriteMBPerSecRead">4000000</double>
   </directoryFactory>
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>

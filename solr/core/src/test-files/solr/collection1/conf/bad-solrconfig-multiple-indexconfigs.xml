@@ -30,4 +30,6 @@
   </indexConfig>
   <!-- END BAD -->
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
 </config>

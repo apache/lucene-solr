@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -17,21 +16,12 @@
  limitations under the License.
 -->
 
+<!-- a basic solrconfig that tests when no schema factory is defined then ManagedSchemaFactory will be the default.
+     DO NOT ADD THINGS TO THIS CONFIG! -->
 <config>
-
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-
+  <dataDir>${solr.data.dir:}</dataDir>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-  <directoryFactory name="DirectoryFactory" class="NRTCachingDirectoryFactory"/>
-
-  <!-- BEGIN: BAD -->
-  <indexConfig>
-    <nrtMode>false</nrtMode>
-  </indexConfig>
-  <!-- END: BAD -->
-
-  <schemaFactory class="ClassicIndexSchemaFactory"/>
-
-
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <requestHandler name="standard" class="solr.StandardRequestHandler" />
 </config>

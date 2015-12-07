@@ -31,6 +31,8 @@
     <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:false}</str>
   </directoryFactory>
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
   <dataDir>${solr.data.dir:}</dataDir>
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>

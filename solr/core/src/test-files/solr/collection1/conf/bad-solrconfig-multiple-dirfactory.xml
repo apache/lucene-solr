@@ -29,6 +29,6 @@
   <directoryFactory name="DirectoryFactory" class="NRTCachingDirectoryFactory"/>
   <!-- END: BAD -->
 
-
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
 </config>

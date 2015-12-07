@@ -22,6 +22,7 @@
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   <xi:include href="foobar-missing.xml" xmlns:xi="http://www.w3.org/2001/XInclude">
     <xi:fallback>
       <xi:include href="solrconfig-reqHandler.incl" xmlns:xi="http://www.w3.org/2001/XInclude"/>

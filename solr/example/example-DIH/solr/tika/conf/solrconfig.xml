@@ -146,28 +146,6 @@
   -->
   <codecFactory class="solr.SchemaCodecFactory"/>
 
-  <!-- To enable dynamic schema REST APIs, use the following for <schemaFactory>:
-  
-       <schemaFactory class="ManagedIndexSchemaFactory">
-         <bool name="mutable">true</bool>
-         <str name="managedSchemaResourceName">managed-schema</str>
-       </schemaFactory>
-       
-       When ManagedIndexSchemaFactory is specified, Solr will load the schema from
-       the resource named in 'managedSchemaResourceName', rather than from schema.xml.
-       Note that the managed schema resource CANNOT be named schema.xml.  If the managed
-       schema does not exist, Solr will create it after reading schema.xml, then rename
-       'schema.xml' to 'schema.xml.bak'. 
-       
-       Do NOT hand edit the managed schema - external modifications will be ignored and
-       overwritten as a result of schema modification REST API calls.
-
-       When ManagedIndexSchemaFactory is specified with mutable = true, schema
-       modification REST API calls will be allowed; otherwise, error responses will be
-       sent back for these requests. 
-  -->
-  <schemaFactory class="ClassicIndexSchemaFactory"/>
-
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
        Most example settings here show the default value, but are commented
