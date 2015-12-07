@@ -104,6 +104,8 @@ public class SpellingQueryConverter extends QueryConverter  {
     if (original == null) { // this can happen with q.alt = and no query
       return Collections.emptyList();
     }
+    boolean mightContainRangeQuery = (original.indexOf('[') != -1 || original.indexOf('{') != -1)
+        && (original.indexOf(']') != -1 || original.indexOf('}') != -1);
     Collection<Token> result = new ArrayList<>();
     Matcher matcher = QUERY_REGEX.matcher(original);
     String nextWord = null;
@@ -123,7 +125,10 @@ public class SpellingQueryConverter extends QueryConverter  {
       if(matcher.find()) {
         nextWord = matcher.group(0);
         nextStartIndex = matcher.start();
-      }      
+      }  
+      if(mightContainRangeQuery && "TO".equals(word)) {
+        continue;
+      }
       if("AND".equals(word) || "OR".equals(word) || "NOT".equals(word)) {
         lastBooleanOp = word;        
         continue;
