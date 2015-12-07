@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
@@ -45,6 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
+    assumeFalse("This test fails with Java 9 (https://issues.apache.org/jira/browse/PDFBOX-3155)", Constants.JRE_IS_MINIMUM_JAVA9);
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").getAbsolutePath());
   }
 
