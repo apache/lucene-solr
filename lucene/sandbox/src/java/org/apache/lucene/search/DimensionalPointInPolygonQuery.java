@@ -27,6 +27,7 @@ import org.apache.lucene.index.DimensionalValues.Relation;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.bkd.BKDUtil;
 
@@ -125,7 +126,7 @@ public class DimensionalPointInPolygonQuery extends Query {
                              assert packedValue.length == 8;
                              double lat = DimensionalLatLonField.decodeLat(BKDUtil.bytesToInt(packedValue, 0));
                              double lon = DimensionalLatLonField.decodeLon(BKDUtil.bytesToInt(packedValue, 1));
-                             if (GeoUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
+                             if (GeoRelationUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
                                hitCount[0]++;
                                result.add(docID);
                              }
@@ -141,11 +142,11 @@ public class DimensionalPointInPolygonQuery extends Query {
                              if (cellMinLat <= minLat && cellMaxLat >= maxLat && cellMinLon <= minLon && cellMaxLon >= maxLon) {
                                // Cell fully encloses the query
                                return Relation.CELL_CROSSES_QUERY;
-                             } else  if (GeoUtils.rectWithinPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
+                             } else  if (GeoRelationUtils.rectWithinPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
                                                                  polyLons, polyLats,
                                                                  minLon, minLat, maxLon, maxLat)) {
                                return Relation.CELL_INSIDE_QUERY;
-                             } else if (GeoUtils.rectCrossesPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
+                             } else if (GeoRelationUtils.rectCrossesPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
                                                                  polyLons, polyLats,
                                                                  minLon, minLat, maxLon, maxLat)) {
                                return Relation.CELL_CROSSES_QUERY;

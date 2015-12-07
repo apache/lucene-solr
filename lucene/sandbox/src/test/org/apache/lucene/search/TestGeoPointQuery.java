@@ -28,6 +28,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BaseGeoPointTestCase;
 import org.apache.lucene.util.GeoRect;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
@@ -171,11 +172,11 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     }
 
     if (rect.minLon < rect.maxLon) {
-      return GeoUtils.bboxContains(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
+      return GeoRelationUtils.pointInRect(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
     } else {
       // Rect crosses dateline:
-      return GeoUtils.bboxContains(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
-          || GeoUtils.bboxContains(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
+      return GeoRelationUtils.pointInRect(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
+          || GeoRelationUtils.pointInRect(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
     }
   }
 
@@ -221,7 +222,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   public void testRectCrossesCircle() throws Exception {
-    assertTrue(GeoUtils.rectCrossesCircle(-180, -90, 180, 0.0, 0.667, 0.0, 88000.0));
+    assertTrue(GeoRelationUtils.rectCrossesCircle(-180, -90, 180, 0.0, 0.667, 0.0, 88000.0));
   }
 
   private TopDocs geoDistanceRangeQuery(double lon, double lat, double minRadius, double maxRadius, int limit)
@@ -261,9 +262,9 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     double yMax = 1;//5;
 
     // test cell crossing poly
-    assertTrue(GeoUtils.rectCrossesPoly(xMin, yMin, xMax, yMax, px, py, xMinA, yMinA, xMaxA, yMaxA));
-    assertFalse(GeoUtils.rectCrossesPoly(-5, 0,  0.000001, 5, px, py, xMin, yMin, xMax, yMax));
-    assertTrue(GeoUtils.rectWithinPoly(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
+    assertTrue(GeoRelationUtils.rectCrossesPoly(xMin, yMin, xMax, yMax, px, py, xMinA, yMinA, xMaxA, yMaxA));
+    assertFalse(GeoRelationUtils.rectCrossesPoly(-5, 0,  0.000001, 5, px, py, xMin, yMin, xMax, yMax));
+    assertTrue(GeoRelationUtils.rectWithinPoly(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
   }
 
   public void testBBoxCrossDateline() throws Exception {

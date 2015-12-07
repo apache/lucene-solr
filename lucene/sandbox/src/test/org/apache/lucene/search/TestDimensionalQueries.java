@@ -21,6 +21,7 @@ import org.apache.lucene.document.DimensionalLatLonField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BaseGeoPointTestCase;
+import org.apache.lucene.util.GeoDistanceUtils;
 import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.SloppyMath;
 
@@ -96,15 +97,15 @@ public class TestDimensionalQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Boolean circleContainsPoint(double centerLat, double centerLon, double radiusMeters, double pointLat, double pointLon) {
-    double distanceKM = SloppyMath.haversin(centerLat, centerLon, pointLat, pointLon);
-    boolean result = distanceKM*1000.0 <= radiusMeters;
+    double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, pointLat, pointLon);
+    boolean result = distanceMeters <= radiusMeters;
     //System.out.println("  shouldMatch?  centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " result=" + result + " distanceMeters=" + (distanceKM * 1000));
     return result;
   }
 
   @Override
   protected Boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
-    final double d = SloppyMath.haversin(centerLat, centerLon, pointLat, pointLon)*1000.0;
+    final double d = GeoDistanceUtils.haversin(centerLat, centerLon, pointLat, pointLon);
     return d >= minRadiusMeters && d <= radiusMeters;
   }
 

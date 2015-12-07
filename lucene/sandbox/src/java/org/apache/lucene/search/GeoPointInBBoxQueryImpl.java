@@ -23,6 +23,7 @@ import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.ToStringUtils;
@@ -83,7 +84,7 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
      */
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectCrosses(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+      return GeoRelationUtils.rectCrosses(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
     }
 
     /**
@@ -91,7 +92,7 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
      */
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectWithin(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+      return GeoRelationUtils.rectWithin(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
     }
 
     @Override
@@ -101,7 +102,7 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
 
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return GeoUtils.bboxContains(lon, lat, minLon, minLat, maxLon, maxLat);
+      return GeoRelationUtils.pointInRect(lon, lat, minLon, minLat, maxLon, maxLat);
     }
   }
 

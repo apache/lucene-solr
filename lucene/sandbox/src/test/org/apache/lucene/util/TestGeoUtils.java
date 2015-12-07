@@ -312,7 +312,7 @@ public class TestGeoUtils extends LuceneTestCase {
         // Leaf cell: brute force check all docs that fall within this cell:
         for(int docID=0;docID<docLons.length;docID++) {
           if (cell.contains(docLons[docID], docLats[docID])) {
-            double distanceMeters = SloppyMath.haversin(centerLat, centerLon, docLats[docID], docLons[docID]) * 1000.0;
+            double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, docLats[docID], docLons[docID]);
             if (distanceMeters <= radiusMeters) {
               if (VERBOSE) {
                 log.println("    check doc=" + docID + ": match!");
@@ -327,7 +327,7 @@ public class TestGeoUtils extends LuceneTestCase {
         }
       } else {
 
-        if (GeoUtils.rectWithinCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat, centerLon, centerLat, radiusMeters)) {
+        if (GeoRelationUtils.rectWithinCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat, centerLon, centerLat, radiusMeters)) {
           // Query circle fully contains this cell, just addAll:
           if (VERBOSE) {
             log.println("    circle fully contains cell: now addAll");
@@ -341,13 +341,13 @@ public class TestGeoUtils extends LuceneTestCase {
             }
           }
           continue;
-        } else if (GeoUtils.rectWithin(root.minLon, root.minLat, root.maxLon, root.maxLat,
+        } else if (GeoRelationUtils.rectWithin(root.minLon, root.minLat, root.maxLon, root.maxLat,
                                        cell.minLon, cell.minLat, cell.maxLon, cell.maxLat)) {
           // Fall through below to "recurse"
           if (VERBOSE) {
             log.println("    cell fully contains circle: keep splitting");
           }
-        } else if (GeoUtils.rectCrossesCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat,
+        } else if (GeoRelationUtils.rectCrossesCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat,
                                               centerLon, centerLat, radiusMeters)) {
           // Fall through below to "recurse"
           if (VERBOSE) {
@@ -415,15 +415,11 @@ public class TestGeoUtils extends LuceneTestCase {
   }
 
   /** Tests consistency of GeoUtils.rectWithinCircle, .rectCrossesCircle, .rectWithin and SloppyMath.haversine distance check */
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6846")
   public void testGeoRelations() throws Exception {
 
     int numDocs = atLeast(1000);
     
-    // boolean useSmallRanges = random().nextBoolean();
-
-    // TODO: the GeoUtils APIs have bugs if you use large distances:
-    boolean useSmallRanges = true;
+    boolean useSmallRanges = random().nextBoolean();
 
     if (VERBOSE) {
       System.out.println("TEST: " + numDocs + " docs useSmallRanges=" + useSmallRanges);
@@ -475,22 +471,29 @@ public class TestGeoUtils extends LuceneTestCase {
 
       if (bbox.maxLon < bbox.minLon) {
         // Crosses dateline
-        log.println("  circle crosses dateline; first right query");
+        log.println("  circle crosses dateline; first left query");
+        double unwrappedLon = centerLon;
+        if (unwrappedLon > bbox.maxLon) {
+          // unwrap left
+          unwrappedLon += -360.0D;
+        }
         findMatches(hits, log,
                     new Cell(null,
                              -180, bbox.minLat,
                              bbox.maxLon, bbox.maxLat,
                              0),
-                    centerLon, centerLat, radiusMeters,
-                    docLons, docLats);
-        log.println("  circle crosses dateline; now left query");
+                    unwrappedLon, centerLat, radiusMeters, docLons, docLats);
+        log.println("  circle crosses dateline; now right query");
+        if (unwrappedLon < bbox.maxLon) {
+          // unwrap right
+          unwrappedLon += 360.0D;
+        }
         findMatches(hits, log,
                     new Cell(null,
                              bbox.minLon, bbox.minLat,
                              180, bbox.maxLat,
                              0),
-                    centerLon, centerLat, radiusMeters,
-                    docLons, docLats);
+                    unwrappedLon, centerLat, radiusMeters, docLons, docLats);
       } else {
         // Start with the root cell that fully contains the shape:
         findMatches(hits, log,
@@ -510,15 +513,15 @@ public class TestGeoUtils extends LuceneTestCase {
 
       // Done matching, now verify:
       for(int docID=0;docID<numDocs;docID++) {
-        double distanceMeters = SloppyMath.haversin(centerLat, centerLon, docLats[docID], docLons[docID]) * 1000.0;
+        double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, docLats[docID], docLons[docID]);
         boolean expected = distanceMeters <= radiusMeters;
 
         boolean actual = hits.contains(docID);
         if (actual != expected) {
           if (actual) {
-            log.println("doc=" + docID + " matched but should not");
+            log.println("doc=" + docID + " matched but should not on iteration " + iter);
           } else {
-            log.println("doc=" + docID + " did not match but should");
+            log.println("doc=" + docID + " did not match but should on iteration " + iter);
           }
           log.println("  lon=" + docLons[docID] + " lat=" + docLats[docID] + " distanceMeters=" + distanceMeters + " vs radiusMeters=" + radiusMeters);
           failCount++;

@@ -24,6 +24,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.GeoRect;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
@@ -77,12 +78,14 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat, centerLon, query.centerLat, query.radiusMeters);
+      return GeoRelationUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat,
+          centerLon, query.centerLat, query.radiusMeters, true);
     }
 
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat, centerLon, query.centerLat, query.radiusMeters);
+      return GeoRelationUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat,
+          centerLon, query.centerLat, query.radiusMeters, true);
     }
 
     @Override

@@ -26,6 +26,7 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.NumericUtils;
 
@@ -139,14 +140,14 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
    * Primary driver for cells intersecting shape boundaries
    */
   protected boolean cellIntersectsMBR(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+    return GeoRelationUtils.rectIntersects(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 
   /**
    * Return whether quad-cell contains the bounding box of this shape
    */
   protected boolean cellContains(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoUtils.rectWithin(this.minLon, this.minLat, this.maxLon, this.maxLat, minLon, minLat, maxLon, maxLat);
+    return GeoRelationUtils.rectWithin(this.minLon, this.minLat, this.maxLon, this.maxLat, minLon, minLat, maxLon, maxLat);
   }
 
   public boolean boundaryTerm() {
