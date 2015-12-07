@@ -146,6 +146,10 @@ Other
 * LUCENE-6923: Fix RamUsageEstimator to access private fields inside
   AccessController block for computing size. (Robert Muir)
 
+* LUCENE-6907: make TestParser extendable, rename test/.../xml/
+  NumericRangeQueryQuery.xml to NumericRangeQuery.xml
+  (Christine Poerschke)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
