@@ -129,6 +129,7 @@
     <property name="validate.baseDir" location="."/>
     <groovy taskname="source-patterns" classpathref="rat.classpath"><![CDATA[
       import org.apache.tools.ant.BuildException;
+      import org.apache.tools.ant.Project;
       import org.apache.rat.Defaults;
       import org.apache.rat.document.impl.FileDocument;
       import org.apache.rat.api.MetaData;
@@ -158,7 +159,7 @@
       def found = 0;
       def violations = new TreeSet();
       def reportViolation = { f, name ->
-        task.log(name + ': ' + f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'));
+        task.log(name + ': ' + f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'), Project.MSG_ERR);
         violations.add(name);
         found++;
       }
@@ -187,6 +188,7 @@
           exclude(name: 'build.xml') // ourselves :-)
         }
       }.each{ f ->
+        task.log('Scanning file: ' + f, Project.MSG_VERBOSE);
         def text = f.getText('UTF-8');
         invalidPatterns.each{ pattern,name ->
           if (pattern.matcher(text).find()) {
@@ -573,7 +575,7 @@ File | Project Structure | Platform Settings | SDKs):
         int baseLen = basedir.toString().length();
 
         // do some fake check, to verify if this is valid SVN working copy. If this fails ignore checks but log some useful message.
-        task.log('Initializing working copy...');
+        task.log('Initializing working copy...', Project.MSG_INFO);
         try {
           wcClient.doInfo(basedir, SVNRevision.WORKING);
         } catch (SVNException ex) {
@@ -597,7 +599,7 @@ File | Project Structure | Platform Settings | SDKs):
 
         Set missingProps = new TreeSet(), withKeywords = new TreeSet(), unversioned = new TreeSet(), changed = new TreeSet();
 
-        task.log('Getting all versioned and unversioned files...');
+        task.log('Getting all versioned and unversioned files...', Project.MSG_INFO);
         statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, {
           status ->
           SVNStatusType nodeStatus = status.getNodeStatus();
@@ -612,12 +614,12 @@ File | Project Structure | Platform Settings | SDKs):
           }
         } as ISVNStatusHandler, null);
 
-        task.log('Filtering files with existing svn:eol-style...');
+        task.log('Filtering files with existing svn:eol-style...', Project.MSG_INFO);
         wcClient.doGetProperty(basedir, 'svn:eol-style', SVNRevision.WORKING, SVNRevision.WORKING, true, {
           file, prop -> missingProps.remove(convertRelative(file));
         } as ISVNPropertyHandler);
         
-        task.log('Filtering files with binary svn:mime-type...');
+        task.log('Filtering files with binary svn:mime-type...', Project.MSG_INFO);
         wcClient.doGetProperty(basedir, 'svn:mime-type', SVNRevision.WORKING, SVNRevision.WORKING, true, {
           file, prop ->
           prop = SVNPropertyValue.getPropertyAsString(prop.getValue());
@@ -626,7 +628,7 @@ File | Project Structure | Platform Settings | SDKs):
           }
         } as ISVNPropertyHandler);
         
-        task.log('Scanning for files with svn:keywords property...');
+        task.log('Scanning for files with svn:keywords property...', Project.MSG_INFO);
         wcClient.doGetProperty(basedir, 'svn:keywords', SVNRevision.WORKING, SVNRevision.WORKING, true, {
           file, prop -> withKeywords.add(convertRelative(file));
         } as ISVNPropertyHandler);
