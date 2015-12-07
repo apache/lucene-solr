@@ -64,8 +64,8 @@ import org.slf4j.LoggerFactory;
  */
 public class TransactionLog {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  final boolean debug = log.isDebugEnabled();
-  final boolean trace = log.isTraceEnabled();
+  private static boolean debug = log.isDebugEnabled();
+  private static boolean trace = log.isTraceEnabled();
 
   public final static String END_MESSAGE="SOLR_TLOG_END";
 

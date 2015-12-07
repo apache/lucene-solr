@@ -59,6 +59,8 @@ import org.slf4j.LoggerFactory;
  */
 public class HdfsTransactionLog extends TransactionLog {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
+  private static boolean trace = log.isTraceEnabled();
 
 
   Path tlogFile;
