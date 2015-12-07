@@ -49,7 +49,8 @@ import java.util.List;
 
 public class TestParser extends LuceneTestCase {
 
-  private static CoreParser builder;
+  private static Analyzer analyzer;
+  private static CoreParser coreParser;
   private static Directory dir;
   private static IndexReader reader;
   private static IndexSearcher searcher;
@@ -57,9 +58,9 @@ public class TestParser extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
+    analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     //initialize the parser
-    builder = new CorePlusExtensionsParser("contents", analyzer);
+    coreParser = new CorePlusExtensionsParser("contents", analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
         TestParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
@@ -91,7 +92,8 @@ public class TestParser extends LuceneTestCase {
     reader = null;
     searcher = null;
     dir = null;
-    builder = null;
+    coreParser = null;
+    analyzer = null;
   }
 
   public void testSimpleXML() throws ParserException, IOException {
@@ -213,16 +215,24 @@ public class TestParser extends LuceneTestCase {
     dumpResults("NumericRangeFilter", q, 5);
   }
 
-  public void testNumericRangeQueryQueryXML() throws ParserException, IOException {
-    Query q = parse("NumericRangeQueryQuery.xml");
+  public void testNumericRangeQueryXML() throws ParserException, IOException {
+    Query q = parse("NumericRangeQuery.xml");
     dumpResults("NumericRangeQuery", q, 5);
   }
 
   //================= Helper methods ===================================
 
+  protected Analyzer analyzer() {
+    return analyzer;
+  }
+
+  protected CoreParser coreParser() {
+    return coreParser;
+  }
+
   private Query parse(String xmlFileName) throws ParserException, IOException {
     InputStream xmlStream = TestParser.class.getResourceAsStream(xmlFileName);
-    Query result = builder.parse(xmlStream);
+    Query result = coreParser().parse(xmlStream);
     xmlStream.close();
     return result;
   }
