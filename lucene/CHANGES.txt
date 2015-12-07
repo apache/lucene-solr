@@ -134,6 +134,8 @@ Bug Fixes
 
 Other
 
+* LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
+
 * LUCENE-6920: Improve custom function checks in expressions module
   to use MethodHandles and work without extra security privileges.
   (Uwe Schindler, Robert Muir)
