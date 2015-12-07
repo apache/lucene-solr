@@ -48,6 +48,7 @@ public class CdcrTransactionLog extends TransactionLog {
   long startVersion; // (absolute) version of the first element of this transaction log
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
 
   CdcrTransactionLog(File tlogFile, Collection<String> globalStrings) {
     super(tlogFile, globalStrings);

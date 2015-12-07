@@ -52,6 +52,7 @@ public class HdfsUpdateLog extends UpdateLog {
   private Integer tlogDfsReplication;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
   
   // used internally by tests to track total count of failed tran log loads in init
   public static AtomicLong INIT_FAILED_LOGS_COUNT = new AtomicLong();
@@ -348,6 +349,12 @@ public class HdfsUpdateLog extends UpdateLog {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  @Override
+  public void preSoftCommit(CommitUpdateCommand cmd) {
+    debug = log.isDebugEnabled();
+    super.preSoftCommit(cmd);
   }
   
   public String[] getLogList(Path tlogDir) throws FileNotFoundException, IOException {

@@ -234,6 +234,9 @@ Other Changes
 
 * SOLR-8313: SimpleQueryParser doesn't use MultiTermAnalysis for Fuzzy Queries (Tom Hill via Erick Erickson)
 
+* SOLR-8359: Restrict child classes from using parent logger's state 
+  (Jason Gerlowski, Mike Drob, Anshum Gupta)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

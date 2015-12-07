@@ -59,7 +59,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 /** @lucene.experimental */
 public class PeerSync  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public boolean debug = log.isDebugEnabled();
+  private static boolean debug = log.isDebugEnabled();
 
   private List<String> replicas;
   private int nUpdates;
