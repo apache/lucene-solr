@@ -250,7 +250,7 @@ Other Changes
   (Uwe Schindler, shalin, Varun Thacker)
 
 * SOLR-8381: Cleanup data_driven managed-schema and solrconfig.xml files. Commented out copyFields are removed
-  and solrconfig.xml doesn't refer to field which are not defined.
+  and solrconfig.xml doesn't refer to field which are not defined. (Varun Thacker)
 
 ==================  5.4.0 ==================
 
