@@ -85,7 +85,7 @@ To add documents to the index, use bin/post.  For example:
 
 For more information about Solr examples please read...
 
- * example/solr/README.txt
+ * example/README.txt
    For more information about the "Solr Home" and Solr specific configuration
  * http://lucene.apache.org/solr/quickstart.html
    For a Quick Start guide
