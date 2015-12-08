@@ -1548,7 +1548,7 @@ public final class ZkController {
     if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String coreNodeName = cloudDesc.getCoreNodeName();
-      assert coreNodeName != null;
+      assert coreNodeName != null : "SolrCore: " + cd.getName() + " has no coreNodeName";
       if (cloudDesc.getShardId() == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "No shard id for :" + cd);
       }
