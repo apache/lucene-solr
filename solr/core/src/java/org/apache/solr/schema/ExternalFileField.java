@@ -99,7 +99,7 @@ public class ExternalFileField extends FieldType implements SchemaAware {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return getFileFloatSource(field, parser.getReq().getCore().getDataDir());
+    return getFileFloatSource(field);
   }
 
   /**

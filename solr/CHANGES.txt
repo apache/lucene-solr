@@ -257,6 +257,8 @@ Other Changes
 * SOLR-7774: revise BasicDistributedZkTest.test logic w.r.t. 'commitWithin did not work on some nodes'
   (Christine Poerschke)
 
+* SOLR-8360: simplify ExternalFileField.getValueSource implementation (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
