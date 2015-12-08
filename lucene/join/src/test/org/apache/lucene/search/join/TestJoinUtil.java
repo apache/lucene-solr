@@ -951,7 +951,7 @@ public class TestJoinUtil extends LuceneTestCase {
         // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier 
         final int nextInt = random.nextInt(Integer.MAX_VALUE);
         uniqueRandomValue = String.format(Locale.ROOT, "%08x", nextInt);
-        assert nextInt == Integer.parseUnsignedInt(uniqueRandomValue,16);
+        assert nextInt == Integer.parseInt(uniqueRandomValue,16);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
      
       // Generate unique values and empty strings aren't allowed.
@@ -1203,7 +1203,7 @@ public class TestJoinUtil extends LuceneTestCase {
       boolean multipleValuesPerDocument, boolean globalOrdinalJoin) {
     document.add(newTextField(random, fieldName, linkValue, Field.Store.NO));
 
-    final int linkInt = Integer.parseUnsignedInt(linkValue,16);
+    final int linkInt = Integer.parseInt(linkValue,16);
     document.add(new IntField(fieldName+NumericType.INT, linkInt, Field.Store.NO));
 
     final long linkLong = linkInt<<32 | linkInt;
