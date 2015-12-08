@@ -1845,6 +1845,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       iwc = new IndexWriterConfig(new MockAnalyzer(random()));
       try {
         iw = new IndexWriter(dir, iwc);
+      } catch (AssertionError ex) {
+        // This is fine: we tripped IW's assert that all files it's about to fsync do exist:
+        assertTrue(ex.getMessage().matches("file .* does not exist; files=\\[.*\\]"));
       } catch (CorruptIndexException ex) {
         // Exceptions are fine - we are running out of file handlers here
         continue;
