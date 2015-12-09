@@ -228,6 +228,8 @@ Bug Fixes
 * SOLR-8373: KerberosPlugin: Using multiple nodes on same machine leads clients to
   fetch TGT for every request (Ishan Chattopadhyaya via noble)
 
+* SOLR-8367: Fix the LeaderInitiatedRecovery 'all replicas participate' fail-safe.
+  (Mark Miller, Mike Drob)
 
 Other Changes
 ----------------------
