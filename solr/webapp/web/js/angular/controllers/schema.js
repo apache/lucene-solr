@@ -85,7 +85,7 @@ solrAdminApp.controller('SchemaController',
                 });
             });
             Config.get({core: $routeParams.core}, function(data) {
-                $scope.isSchemaUpdatable = data.config.schemaFactory.class == "ManagedIndexSchemaFactory";
+                $scope.isSchemaUpdatable = (data.config.hasOwnProperty('schemaFactory') == false || data.config.schemaFactory.class == "ManagedIndexSchemaFactory");
             });
         };
         $scope.refresh();

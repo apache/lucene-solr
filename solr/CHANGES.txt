@@ -114,6 +114,12 @@ New Features
 
 * SOLR-7669: Add SelectStream and Tuple Operations to the Streaming API and Streaming Expressions (Dennis Gove)
 
+Bug Fixes
+----------------------
+* SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
+  explicitly specified since the default is ManagedIndexSchemaFactory. (Erick Erickson, Upayavira, Varun Thacker)
+
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
