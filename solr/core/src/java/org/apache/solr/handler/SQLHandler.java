@@ -227,7 +227,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           .withFunctionName("count", CountMetric.class);
 
       parallelStream.setStreamFactory(factory);
-      parallelStream.setObjectSerialize(false);
       tupleStream = parallelStream;
     }
 
@@ -358,7 +357,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           .withFunctionName("unique", UniqueStream.class);
 
       parallelStream.setStreamFactory(factory);
-      parallelStream.setObjectSerialize(false);
       tupleStream = parallelStream;
     }
 

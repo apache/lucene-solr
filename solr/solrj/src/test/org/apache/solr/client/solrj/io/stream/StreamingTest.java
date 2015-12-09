@@ -119,7 +119,8 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
                     .withFunctionName("top", RankStream.class)
                     .withFunctionName("group", ReducerStream.class)
                     .withFunctionName("count", RecordCountStream.class)
-                    ;
+                    .withFunctionName("rollup", RollupStream.class)
+                    .withFunctionName("parallel", ParallelStream.class);
   }
 
   private void testUniqueStream() throws Exception {
@@ -191,6 +192,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", stream, 2, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
 
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 20); // Each tuple will be double counted.
@@ -199,9 +201,6 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     commit();
 
   }
-
-
-
 
   private void testParallelUniqueStream() throws Exception {
 
@@ -224,6 +223,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", params);
     UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", ustream, 2, new FieldComparator("a_f",ComparatorOrder.ASCENDING));
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,1,3,4,6);
@@ -290,6 +290,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", params);
     RankStream rstream = new RankStream(stream, 11, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 10);
@@ -457,6 +458,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     ReducerStream rstream = new ReducerStream(stream, new FieldEqualitor("a_s"));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
 
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
@@ -481,6 +483,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     rstream = new ReducerStream(stream, new FieldEqualitor("a_s"));
     pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_s",ComparatorOrder.DESCENDING));
 
+    attachStreamFactory(pstream);
     tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
@@ -1396,6 +1399,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     RollupStream rollupStream = new RollupStream(stream, buckets, metrics);
     ParallelStream parallelStream = new ParallelStream(zkHost, "collection1", rollupStream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+    attachStreamFactory(parallelStream);
     List<Tuple> tuples = getTuples(parallelStream);
 
     assert(tuples.size() == 3);
@@ -1498,6 +1502,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     ReducerStream rstream = new ReducerStream(stream, new FieldEqualitor("a_s"));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
 
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 0);
     del("*:*");
@@ -1642,6 +1647,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", mstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 9);
@@ -1656,6 +1662,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
     pstream = new ParallelStream(zkHost, "collection1", mstream, 2, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+    attachStreamFactory(pstream);
     tuples = getTuples(pstream);
 
     assert(tuples.size() == 8);
@@ -1691,23 +1698,14 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream streamB = new CloudSolrStream(zkHost, "collection1", paramsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
-    RecordCountStream cstream = new RecordCountStream(mstream);
-    ParallelStream pstream = new ParallelStream(zkHost, "collection1", cstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
+    ParallelStream pstream = new ParallelStream(zkHost, "collection1", mstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
+    
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 9);
     Map<String, Tuple> eofTuples = pstream.getEofTuples();
     assert(eofTuples.size() == 2); // There should be an EOF Tuple for each worker.
-
-    long totalCount = 0;
-
-    Iterator<Tuple> it = eofTuples.values().iterator();
-    while(it.hasNext()) {
-      Tuple t = it.next();
-      totalCount += t.getLong("count");
-    }
-
-    assert(tuples.size() == totalCount);
 
     del("*:*");
     commit();
@@ -1896,5 +1894,11 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);
+  }
+  
+  private void attachStreamFactory(TupleStream tupleStream) {
+    StreamContext streamContext = new StreamContext();
+    streamContext.setStreamFactory(streamFactory);
+    tupleStream.setStreamContext(streamContext);
   }
 }

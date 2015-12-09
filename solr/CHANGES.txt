@@ -178,6 +178,10 @@ Other Changes
 * SOLR-8131: Make ManagedIndexSchemaFactory the default schemaFactory when luceneMatchVersion >= 6
   (Uwe Schindler, shalin, Varun Thacker)
 
+* SOLR-8266: Remove Java Serialization from the Streaming API. The /stream handler now only accepts
+  Streaming Expressions. (Jason Gerlowski, Joel Bernstein)
+
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

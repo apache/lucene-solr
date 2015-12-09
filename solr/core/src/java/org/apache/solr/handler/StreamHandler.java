@@ -145,20 +145,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     SolrParams params = req.getParams();
     params = adjustParams(params);
     req.setParams(params);
-    boolean objectSerialize = params.getBool("objectSerialize", false);
     TupleStream tupleStream = null;
 
     try {
-      if (objectSerialize) {
-        String encodedStream = params.get("stream");
-        encodedStream = URLDecoder.decode(encodedStream, "UTF-8");
-        byte[] bytes = Base64.base64ToByteArray(encodedStream);
-        ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
-        ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
-        tupleStream = (TupleStream) objectInputStream.readObject();
-      } else {
-        tupleStream = this.streamFactory.constructStream(params.get("stream"));
-      }
+      tupleStream = this.streamFactory.constructStream(params.get("stream"));
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(logger, e);
