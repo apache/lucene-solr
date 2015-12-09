@@ -272,6 +272,13 @@ Other Changes
 
 * SOLR-8360: simplify ExternalFileField.getValueSource implementation (Christine Poerschke)
 
+* SOLR-8387: All example configs shipped with Solr explicitly use ManagedIndexSchemaFactory, the schema file will
+  be called managed-schema instead of schema.xml . It is not advised to use hand edit the managed-schema. You should
+  use the schema APIs instead ( /<collection>/schema ) . If you do not want this behaviour in the example configs,
+  before you start solr rename managed-schema to schema.xml and change the schemaFactory in solrconfig.xml file
+  to explicitly use ClassicIndexSchemaFactory instead : <schemaFactory class="ClassicIndexSchemaFactory"/>
+  (Varun Thacker)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
