@@ -29,8 +29,10 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +59,18 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
   HttpClientConfigurer kerberosConfigurer = new Krb5HttpClientConfigurer();
   Filter kerberosFilter = new KerberosFilter();
   
-  final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
-  final String COOKIE_DOMAIN_PARAM = "solr.kerberos.cookie.domain";
-  final String COOKIE_PATH_PARAM = "solr.kerberos.cookie.path";
-  final String PRINCIPAL_PARAM = "solr.kerberos.principal";
-  final String KEYTAB_PARAM = "solr.kerberos.keytab";
-  final String TOKEN_VALID_PARAM = "solr.kerberos.token.valid";
+  public static final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
+  public static final String COOKIE_DOMAIN_PARAM = "solr.kerberos.cookie.domain";
+  public static final String COOKIE_PATH_PARAM = "solr.kerberos.cookie.path";
+  public static final String PRINCIPAL_PARAM = "solr.kerberos.principal";
+  public static final String KEYTAB_PARAM = "solr.kerberos.keytab";
+  public static final String TOKEN_VALID_PARAM = "solr.kerberos.token.valid";
+  public static final String COOKIE_PORT_AWARE_PARAM = "solr.kerberos.cookie.portaware";
+  private final CoreContainer coreContainer;
+
+  public KerberosPlugin(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+  }
 
   @Override
   public void init(Map<String, Object> pluginConfig) {
@@ -71,11 +79,27 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
       params.put("type", "kerberos");
       putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
       putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
-      putParam(params, "cookie.domain", COOKIE_DOMAIN_PARAM, null);
       putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
       putParam(params, "kerberos.principal", PRINCIPAL_PARAM, null);
       putParam(params, "kerberos.keytab", KEYTAB_PARAM, null);
 
+      // Special handling for the "cookie.domain" based on whether port should be
+      // appended to the domain. Useful for situations where multiple solr nodes are
+      // on the same host.
+      String usePortStr = System.getProperty(COOKIE_PORT_AWARE_PARAM, null);
+      boolean needPortAwareCookies = (usePortStr == null) ? false: Boolean.parseBoolean(usePortStr);
+
+      if (!needPortAwareCookies || !coreContainer.isZooKeeperAware()) {
+        putParam(params, "cookie.domain", COOKIE_DOMAIN_PARAM, null);
+      } else { // we need port aware cookies and we are in SolrCloud mode.
+        String host = System.getProperty(COOKIE_DOMAIN_PARAM, null);
+        if (host==null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required parameter '"+COOKIE_DOMAIN_PARAM+"'.");
+        }
+        int port = coreContainer.getZkController().getHostPort();
+        params.put("cookie.domain", host + ":" + port);
+      }
+      
       log.info("Params: "+params);
 
       FilterConfig conf = new FilterConfig() {
