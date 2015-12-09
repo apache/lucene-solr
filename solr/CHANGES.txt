@@ -69,8 +69,11 @@ Upgrading from Solr 5.x
     See SOLR-8261 + SOLR-8329 for more details.
 
 * If your solrconfig.xml file doesn't explicitly mention the schemaFactory to use then Solr will choose
-  the ManagedIndexSchemaFactory by default. This means that the Schema APIs ( /<collection>/schema )
-  are enabled by default and the schema is mutable. The schema file will be called managed-schema.
+  the ManagedIndexSchemaFactory by default. Previously it would have chosen ClassicIndexSchemaFactory.
+  This means that the Schema APIs ( /<collection>/schema ) are enabled and the schema is mutable.
+  When Solr starts your schema.xml file will be renamed to managed-schema. If you want to retain the old behaviour
+  then please ensure that the solrconfig.xml explicitly uses the ClassicIndexSchemaFactory :
+  <schemaFactory class="ClassicIndexSchemaFactory"/> or your luceneMatchVersion in the solrconfig.xml is less than 6.0
 
 Detailed Change List
 ----------------------
