@@ -188,13 +188,13 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
     echo "    ./solr start -p 8984"
     echo ""
-    echo "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to ZooKeeper, with 1g max heap size and remote Java debug options enabled):"
+    echo "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):"
     echo ""
     echo "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\""
     echo ""
@@ -208,7 +208,7 @@ function print_usage() {
     echo "  -f            Start Solr in foreground; default starts Solr in the background"
     echo "                  and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper"
+    echo "  -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied, an embedded Zookeeper"
     echo "                  instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983"
     echo ""
     echo "  -h <host>     Specify the hostname for this Solr instance"
@@ -220,8 +220,8 @@ function print_usage() {
     echo ""
     echo "  -d <dir>      Specify the Solr server directory; defaults to server"
     echo ""
-    echo "  -z <zkHost>   ZooKeeper connection string; only used when running in SolrCloud mode using -c"
-    echo "                   To launch an embedded ZooKeeper instance, don't pass this parameter."
+    echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
+    echo "                   To launch an embedded Zookeeper instance, don't pass this parameter."
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
@@ -229,7 +229,7 @@ function print_usage() {
     echo "  -s <dir>      Sets the solr.solr.home system property; Solr will create core directories under"
     echo "                  this directory. This allows you to run multiple Solr instances on the same host"
     echo "                  while reusing the same server directory set using the -d parameter. If set, the"
-    echo "                  specified directory should contain a solr.xml file, unless solr.xml exists in ZooKeeper."
+    echo "                  specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
     echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
     echo "                  on which example is run. The default value is server/solr."
     echo ""
@@ -266,7 +266,7 @@ function print_usage() {
     echo ""
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
-    echo "  -z <zkHost>      ZooKeeper connection string; default is localhost:9983"
+    echo "  -z <zkHost>      Zookeeper connection string; default is localhost:9983"
     echo ""
   elif [ "$CMD" == "status" ]; then
     echo ""
@@ -294,12 +294,12 @@ function print_usage() {
     echo ""
     echo "  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
     echo "  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
-    echo "  delete the configuration directory from ZooKeeper so long as it is not being used by another collection."
+    echo "  delete the configuration directory from Zookeeper so long as it is not being used by another collection."
     echo "  You can override this behavior by passing -deleteConfig false when running this command."
     echo ""
     echo "  -c <name>               Name of the core / collection to delete"
     echo ""
-    echo "  -deleteConfig <boolean> Delete the configuration directory from ZooKeeper; default is true"
+    echo "  -deleteConfig <boolean> Delete the configuration directory from Zookeeper; default is true"
     echo ""
     echo "  -p <port>               Port of a local Solr instance where you want to delete the core/collection"
     echo "                            If not specified, the script will search the local system for a running"
@@ -345,14 +345,14 @@ function print_usage() {
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
     echo "      one of the built-in configurations, such as: bin/solr create_collection -c mycoll -d /tmp/myconfig"
     echo ""
-    echo "      By default the script will upload the specified confdir directory into ZooKeeper using the same"
+    echo "      By default the script will upload the specified confdir directory into Zookeeper using the same"
     echo "      name as the collection (-c) option. Alternatively, if you want to reuse an existing directory"
-    echo "      or create a confdir in ZooKeeper that can be shared by multiple collections, use the -n option"
+    echo "      or create a confdir in Zookeeper that can be shared by multiple collections, use the -n option"
     echo ""
-    echo "  -n <configName>         Name the configuration directory in ZooKeeper; by default, the configuration"
-    echo "                            will be uploaded to ZooKeeper using the collection name (-c), but if you want"
+    echo "  -n <configName>         Name the configuration directory in Zookeeper; by default, the configuration"
+    echo "                            will be uploaded to Zookeeper using the collection name (-c), but if you want"
     echo "                            to use an existing directory or override the name of the configuration in"
-    echo "                            ZooKeeper, then use the -c option."
+    echo "                            Zookeeper, then use the -c option."
     echo ""
     echo "  -shards <#>             Number of shards to split the collection into; default is 1"
     echo ""
@@ -361,6 +361,26 @@ function print_usage() {
     echo "  -p <port>               Port of a local Solr instance where you want to create the new collection"
     echo "                            If not specified, the script will search the local system for a running"
     echo "                            Solr instance and will use the port of the first server it finds."
+    echo ""
+  elif [ "$CMD" == "zk" ]; then
+    echo "Usage: solr zk [-upconfig|-downconfig] [-d confdir] [-n configName] [-z zkHost]"
+    echo ""
+    echo "     -upconfig to move a configset from the local machine to Zookeeper."
+    echo ""
+    echo "     -downconfig to move a configset from Zookeeper to the local machine."
+    echo ""
+    echo "     -n configName    Name of the configset in Zookeeper that will be the destinatino of"
+    echo "                       'upconfig' and the source for 'downconfig'."
+    echo ""
+    echo "     -d confdir       The local directory the configuration will be uploaded from for"
+    echo "                      'upconfig' or downloaded to for 'downconfig'. For 'upconfig', this"
+    echo "                      can be one of the example configsets, basic_configs, data_driven_schema_configs or"
+    echo "                      sample_techproducts_configs or an arbitrary directory."
+    echo ""
+    echo "     -z zkHost        Zookeeper connection string."
+    echo ""
+    echo "  NOTE: Solr must have been started least once (or have it running) before using this command."
+    echo "        This initialized Zookeeper for Solr"
     echo ""
   fi
 } # end print_usage
@@ -694,7 +714,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     exit 1
   fi
 
-  # If not defined, use the collection name for the name of the configuration in ZooKeeper
+  # If not defined, use the collection name for the name of the configuration in Zookeeper
   if [ -z "$CREATE_CONFNAME" ]; then
     CREATE_CONFNAME="$CREATE_NAME"
   fi
@@ -784,7 +804,7 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
     exit 1
   fi
 
-  # If not defined, use the collection name for the name of the configuration in ZooKeeper
+  # If not defined, use the collection name for the name of the configuration in Zookeeper
   if [ -z "$DELETE_CONFIG" ]; then
     DELETE_CONFIG=true
   fi
@@ -807,6 +827,97 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
 
   run_tool delete -name "$DELETE_NAME" -deleteConfig "$DELETE_CONFIG" \
     -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$DELETE_PORT/solr"
+  exit $?
+fi
+
+# Upload or download a configset to Zookeeper
+if [[ "$SCRIPT_CMD" == "zk" ]]; then
+
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -z|-zkhost)          
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "ZooKeepeer connection string is required when using the $1 option!"
+                exit 1
+              fi
+              ZK_HOST="$2"
+              shift 2
+          ;;
+          -n|-confname)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
+                exit 1
+              fi
+              CONFIGSET_CONFNAME="$2"
+              shift 2
+          ;;
+          -d|-confdir)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
+                exit 1
+              fi
+              CONFIGSET_CONFDIR="$2"
+              shift 2
+          ;;
+          -upconfig)
+              ZK_OP="upconfig"
+              shift 1
+          ;;
+          -downconfig)
+              ZK_OP="downconfig"
+              shift 1
+          ;;
+          -help|-usage|-h)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              if [ "$1" != "" ]; then
+                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
+                exit 1
+              else
+                break # out-of-args, stop looping
+              fi
+          ;;
+      esac
+    done
+  fi
+
+  if [ -z "$ZK_OP" ]; then
+    echo "Zookeeper operation (one of '-upconfig' or  '-downconfig') is required!"
+    print_usage "$SCRIPT_CMD"
+    exit 1
+  fi
+
+  if [ -z "$ZK_HOST" ]; then
+    echo "Zookeeper address (-z) argument is required!"
+    print_usage "$SCRIPT_CMD"
+    exit 1
+  fi
+
+  if [ -z "$CONFIGSET_CONFDIR" ]; then
+    echo "Local directory of the configset (-d) argument is required!"
+    print_usage "$SCRIPT_CMD"
+    exit 1
+  fi
+
+  if [ -z "$CONFIGSET_CONFNAME" ]; then
+    echo "Configset name on Zookeeper (-n) argument is required!"
+    print_usage "$SCRIPT_CMD"
+    exit 1
+  fi
+
+  if [ "$ZK_OP" == "upconfig" ]; then
+    run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets"
+  else
+    run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST"
+  fi
+
   exit $?
 fi
 
@@ -900,7 +1011,7 @@ if [ $# -gt 0 ]; then
         ;;
         -z|-zkhost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
+              print_usage "$SCRIPT_CMD" "Zookeeper connection string is required when using the $1 option!"
               exit 1
             fi
             ZK_HOST="$2"
@@ -1174,7 +1285,7 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
     if $verbose ; then
-      echo "Configuring SolrCloud to launch an embedded ZooKeeper using -DzkRun"
+      echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
     fi
 
     CLOUD_MODE_OPTS+=('-DzkRun')
