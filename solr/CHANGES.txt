@@ -208,6 +208,9 @@ New Features
 * SOLR-7928: Improve CheckIndex to work against HdfsDirectory
   (Mike Drob, Gregory Chanan)
 
+* SOLR-8378: Add upconfig and downconfig commands to the bin/solr script
+  (Erick Erickson)
+
 Bug Fixes
 ----------------------
 

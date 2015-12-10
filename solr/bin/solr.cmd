@@ -134,6 +134,12 @@ IF "%1"=="delete" (
   SHIFT
   goto parse_delete_args
 )
+IF "%1"=="zk" (
+  set SCRIPT_CMD=zk
+  SHIFT
+  goto parse_zk_args
+)
+
 goto parse_args
 
 :usage
@@ -152,18 +158,19 @@ IF "%SCRIPT_CMD%"=="create" goto create_usage
 IF "%SCRIPT_CMD%"=="create_core" goto create_core_usage
 IF "%SCRIPT_CMD%"=="create_collection" goto create_collection_usage
 IF "%SCRIPT_CMD%"=="delete" goto delete_usage
+IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 goto done
 
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, upconfig, downconfig
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
 @echo     solr start -p 8984
 @echo.
-@echo   SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to ZooKeeper, with 1g max heap size and remote Java debug options enabled):
+@echo   SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):
 @echo.
 @echo     solr start -c -m 1g -z localhost:2181 -a "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044"
 @echo.
@@ -179,7 +186,7 @@ goto done
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper
+@echo   -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied, an embedded Zookeeper
 @echo                   instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983
 @echo.
 @echo   -h host       Specify the hostname for this Solr instance
@@ -188,8 +195,8 @@ goto done
 @echo.
 @echo   -d dir        Specify the Solr server directory; defaults to example
 @echo.
-@echo   -z zkHost     ZooKeeper connection string; only used when running in SolrCloud mode using -c
-@echo                   To launch an embedded ZooKeeper instance, don't pass this parameter.
+@echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
+@echo                   To launch an embedded Zookeeper instance, don't pass this parameter.
 @echo.
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
@@ -197,7 +204,7 @@ goto done
 @echo   -s dir        Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
 @echo                   while reusing the same server directory set using the -d parameter. If set, the
-@echo                   specified directory should contain a solr.xml file, unless solr.xml exists in ZooKeeper.
+@echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 @echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
 @echo                   on which example is run. The default value is server/solr.
 @echo.
@@ -236,7 +243,7 @@ goto done
 @echo.
 @echo   -c collection  Collection to run healthcheck against.
 @echo.
-@echo   -z zkHost      ZooKeeper connection string; default is localhost:9983
+@echo   -z zkHost      Zookeeper connection string; default is localhost:9983
 @echo.
 goto done
 
@@ -262,12 +269,12 @@ echo Usage: solr delete [-c name] [-deleteConfig boolean] [-p port]
 echo.
 echo  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud
 echo  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also
-echo  delete the configuration directory from ZooKeeper so long as it is not being used by another collection.
+echo  delete the configuration directory from Zookeeper so long as it is not being used by another collection.
 echo  You can override this behavior by passing -deleteConfig false when running this command.
 echo.
 echo   -c name     Name of core to create
 echo.
-echo   -deleteConfig boolean Delete the configuration directory from ZooKeeper; default is true
+echo   -deleteConfig boolean Delete the configuration directory from Zookeeper; default is true
 echo.
 echo   -p port     Port of a local Solr instance where you want to create the new core
 echo                 If not specified, the script will search the local system for a running
@@ -317,14 +324,14 @@ echo.
 echo       Alternatively, you can pass the path to your own configuration directory instead of using
 echo       one of the built-in configurations, such as: bin\solr create_collection -c mycoll -d c:/tmp/myconfig
 echo.
-echo       By default the script will upload the specified confdir directory into ZooKeeper using the same
+echo       By default the script will upload the specified confdir directory into Zookeeper using the same
 echo         name as the collection (-c) option. Alternatively, if you want to reuse an existing directory
-echo         or create a confdir in ZooKeeper that can be shared by multiple collections, use the -n option
+echo         or create a confdir in Zookeeper that can be shared by multiple collections, use the -n option
 echo.
-echo   -n configName         Name the configuration directory in ZooKeeper; by default, the configuration
-echo                             will be uploaded to ZooKeeper using the collection name (-c), but if you want
+echo   -n configName         Name the configuration directory in Zookeeper; by default, the configuration
+echo                             will be uploaded to Zookeeper using the collection name (-c), but if you want
 echo                             to use an existing directory or override the name of the configuration in
-echo                              ZooKeeper, then use the -c option.
+echo                              Zookeeper, then use the -c option.
 echo.
 echo   -shards #             Number of shards to split the collection into
 echo.
@@ -335,6 +342,30 @@ echo                           If not specified, the script will search the loca
 echo                           Solr instance and will use the port of the first server it finds.
 echo.
 goto done
+
+:zk_usage
+echo.
+echo Usage: solr zk [-downconfig or -upconfig] [-d confdir] [-n configName] [-z zkHost]
+echo.
+echo      -upconfig to move a configset from the local machine to Zookeeper
+echo.
+echo      -downconfig to move a configset from Zookeeper to the local machine
+echo.
+echo      -n configName    Name of the configset in Zookeeper that will be the destination of
+echo                        'upconfig' and the source for 'downconfig'.
+echo.
+echo      -d confdir       The local directory the configuration will be uploaded from for
+echo                       'upconfig' or downloaded to for 'downconfig'. For 'upconfig', this
+echo                       can be one of the example configsets, basic_configs, data_driven_schema_configs or
+echo                       sample_techproducts_configs or an arbitrary directory.
+echo.
+echo      -z zkHost        Zookeeper connection string.
+echo.
+echo   NOTE: Solr must have been started least once (or have it running) before using this command.
+echo         This initialized Zookeeper for Solr
+echo.
+goto done
+
 
 REM Really basic command-line arg parsing
 :parse_args
@@ -540,13 +571,13 @@ goto parse_args
 
 set "arg=%~2"
 IF "%arg%"=="" (
-  set SCRIPT_ERROR=ZooKeeper connection string is required!
+  set SCRIPT_ERROR=Zookeeper connection string is required!
   goto invalid_cmd_line
 )
 
 set firstChar=%arg:~0,1%
 IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=Expected ZooKeeper connection string but found %2 instead!
+  set SCRIPT_ERROR=Expected Zookeeper connection string but found %2 instead!
   goto invalid_cmd_line
 )
 
@@ -783,7 +814,7 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
-    IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded ZooKeeper using -DzkRun
+    IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
   )
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
@@ -1143,6 +1174,81 @@ org.apache.solr.util.SolrCLI delete -name !DELETE_NAME! -deleteConfig !DELETE_CO
 
 goto done
 
+:parse_zk_args
+IF [%1]==[] goto run_zk
+IF "%1"=="-upconfig" goto set_zk_op_up
+IF "%1"=="-downconfig" goto set_zk_op_down
+IF "%1"=="-n" goto set_config_name
+IF "%1"=="-configname" goto set_config_name
+IF "%1"=="-d" goto set_configdir
+IF "%1"=="-confdir" goto set_configdir
+IF "%1"=="-z" goto set_config_zk
+IF "%1"=="/?" goto usage
+IF "%1"=="-h" goto zk_usage
+IF "%1"=="-help" goto zk_usage
+goto run_zk
+
+:set_zk_op_up
+set ZK_OP=upconfig
+SHIFT
+goto parse_zk_args
+
+:set_zk_op_down
+set ZK_OP=downconfig
+SHIFT
+goto parse_zk_args
+
+:set_config_name
+set CONFIGSET_NAME=%~2
+SHIFT
+SHIFT
+goto parse_zk_args
+
+:set_configdir
+set CONFIGSET_DIR=%~2
+SHIFT
+SHIFT
+goto parse_zk_args
+
+:set_config_zk
+set CONFIGSET_ZK=%~2
+SHIFT
+SHIFT
+goto parse_zk_args
+
+
+:run_zk
+IF "!ZK_OP!"=="" (
+  set "SCRIPT_ERROR=One of '-upconfig' or '-downconfig' is required for %SCRIPT_CMD%"
+  goto invalid_cmd_line
+)
+
+IF "!CONFIGSET_NAME!"=="" (
+  set "SCRIPT_ERROR=Name (-n) is a required parameter for %SCRIPT_CMD%"
+  goto invalid_cmd_line
+)
+
+if "!CONFIGSET_DIR!"=="" (
+  set "SCRIPT_ERROR=Name (-d) is a required parameter for %SCRIPT_CMD%"
+  goto err
+)
+
+if "!CONFIGSET_ZK!"=="" (
+  set "SCRIPT_ERROR=Name (-z) is a required parameter for %SCRIPT_CMD%"
+  goto err
+)
+
+IF "!ZK_OP!"=="upconfig" (
+   "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+   org.apache.solr.util.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !CONFIGSET_ZK! -configsetsDir "%SOLR_TIP%/server/solr/configsets"
+) ELSE (
+   "%JAVA%" %SOLR_SSL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+   org.apache.solr.util.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !CONFIGSET_ZK!
+)
+
+goto done
 
 :invalid_cmd_line
 @echo.
@@ -1168,6 +1274,8 @@ IF "%FIRST_ARG%"=="start" (
   goto create_core_usage
 ) ELSE IF "%FIRST_ARG%"=="create_collection" (
   goto create_collection_usage
+) ELSE IF "%FIRST_ARG%"=="zk" (
+  goto zk_usage
 ) ELSE (
   goto script_usage
 )
