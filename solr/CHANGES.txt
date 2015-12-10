@@ -285,6 +285,8 @@ Other Changes
   to explicitly use ClassicIndexSchemaFactory instead : <schemaFactory class="ClassicIndexSchemaFactory"/>
   (Varun Thacker)
 
+* SOLR-8305: replace LatLonType.getValueSource's QParser use (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

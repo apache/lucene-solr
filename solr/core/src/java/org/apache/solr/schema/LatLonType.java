@@ -219,7 +219,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     ArrayList<ValueSource> vs = new ArrayList<>(2);
     for (int i = 0; i < 2; i++) {
-      SchemaField sub = subField(field, i, parser.getReq().getSchema());
+      SchemaField sub = subField(field, i, schema);
       vs.add(sub.getType().getValueSource(sub, parser));
     }
     return new LatLonValueSource(field, vs);
