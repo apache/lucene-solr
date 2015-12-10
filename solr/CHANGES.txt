@@ -290,6 +290,9 @@ Other Changes
 
 * SOLR-8305: replace LatLonType.getValueSource's QParser use (Christine Poerschke)
 
+* SOLR-8388: factor out response/TestSolrQueryResponse.java from servlet/ResponseHeaderTest.java
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
