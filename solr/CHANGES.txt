@@ -234,6 +234,9 @@ Bug Fixes
 * SOLR-8367: Fix the LeaderInitiatedRecovery 'all replicas participate' fail-safe.
   (Mark Miller, Mike Drob)
 
+* SOLR-8401: Windows start script fails when executed from a different drive.
+  (Nicolas Gavalda via Erick Erickson)
+
 Other Changes
 ----------------------
 

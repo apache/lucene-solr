@@ -902,7 +902,7 @@ IF NOT "%SOLR_SSL_OPTS%"=="" (
 
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:%SOLR_SERVER_DIR%\resources\log4j.properties"
 
-cd "%SOLR_SERVER_DIR%"
+cd /d "%SOLR_SERVER_DIR%"
 
 IF NOT EXIST "!SOLR_LOGS_DIR!" (
   mkdir "!SOLR_LOGS_DIR!"
