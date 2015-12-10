@@ -22,21 +22,20 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.LongBitSet;
 
 import java.io.IOException;
 
 abstract class BaseGlobalOrdinalScorer extends Scorer {
 
   final SortedDocValues values;
-  final Scorer approximationScorer;
+  final DocIdSetIterator approximation;
 
   float score;
 
-  public BaseGlobalOrdinalScorer(Weight weight, SortedDocValues values, Scorer approximationScorer) {
+  public BaseGlobalOrdinalScorer(Weight weight, SortedDocValues values, DocIdSetIterator approximationScorer) {
     super(weight);
     this.values = values;
-    this.approximationScorer = approximationScorer;
+    this.approximation = approximationScorer;
   }
 
   @Override
@@ -46,43 +45,17 @@ abstract class BaseGlobalOrdinalScorer extends Scorer {
 
   @Override
   public int docID() {
-    return approximationScorer.docID();
+    return approximation.docID();
   }
 
   @Override
-  public int nextDoc() throws IOException {
-    return advance(approximationScorer.docID() + 1);
+  public DocIdSetIterator iterator() {
+    return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
   }
 
   @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
-    final DocIdSetIterator approximation = new DocIdSetIterator() {
-      @Override
-      public int docID() {
-        return approximationScorer.docID();
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        return approximationScorer.nextDoc();
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        return approximationScorer.advance(target);
-      }
-
-      @Override
-      public long cost() {
-        return approximationScorer.cost();
-      }
-    };
+  public TwoPhaseIterator twoPhaseIterator() {
     return createTwoPhaseIterator(approximation);
-  }
-
-  @Override
-  public long cost() {
-    return approximationScorer.cost();
   }
 
   @Override

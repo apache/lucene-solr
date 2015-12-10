@@ -132,7 +132,7 @@ public final class SpanNotQuery extends SpanQuery {
       TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
       DocIdSetIterator excludeApproximation = excludeTwoPhase == null ? null : excludeTwoPhase.approximation();
 
-      return new FilterSpans(includeSpans, getSimScorer(context)) {
+      return new FilterSpans(includeSpans) {
         // last document we have checked matches() against for the exclusion, and failed
         // when using approximations, so we don't call it again, and pass thru all inclusions.
         int lastApproxDoc = -1;

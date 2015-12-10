@@ -446,23 +446,34 @@ public class TestQueryRescorer extends LuceneTestCase {
             }
 
             @Override
-            public long cost() {
-              return 1;
-            }
+            public DocIdSetIterator iterator() {
+              return new DocIdSetIterator() {
 
-            @Override
-            public int nextDoc() {
-              docID++;
-              if (docID >= context.reader().maxDoc()) {
-                return NO_MORE_DOCS;
-              }
-              return docID;
-            }
+                @Override
+                public int docID() {
+                  return docID;
+                }
 
-            @Override
-            public int advance(int target) {
-              docID = target;
-              return docID;
+                @Override
+                public long cost() {
+                  return 1;
+                }
+
+                @Override
+                public int nextDoc() {
+                  docID++;
+                  if (docID >= context.reader().maxDoc()) {
+                    return NO_MORE_DOCS;
+                  }
+                  return docID;
+                }
+
+                @Override
+                public int advance(int target) {
+                  docID = target;
+                  return docID;
+                }
+              };
             }
 
             @Override

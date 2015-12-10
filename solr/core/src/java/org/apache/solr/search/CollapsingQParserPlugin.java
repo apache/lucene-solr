@@ -447,20 +447,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return 0;
     }
 
-    public int advance(int i) {
-      return -1;
-    }
-
-    public int nextDoc() {
-      return 0;
-    }
-
     public int docID() {
       return docId;
     }
 
-    public long cost() {
-      return 0;
+    @Override
+    public DocIdSetIterator iterator() {
+      throw new UnsupportedOperationException();
     }
   }
 

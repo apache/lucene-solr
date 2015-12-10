@@ -169,20 +169,20 @@ public final class SpanOrQuery extends SpanQuery {
         return new ScoringWrapperSpans(subSpans.get(0), getSimScorer(context));
       }
 
-      DisiPriorityQueue<Spans> byDocQueue = new DisiPriorityQueue<>(subSpans.size());
+      DisiPriorityQueue byDocQueue = new DisiPriorityQueue(subSpans.size());
       for (Spans spans : subSpans) {
-        byDocQueue.add(new DisiWrapper<>(spans));
+        byDocQueue.add(new DisiWrapper(spans));
       }
 
       SpanPositionQueue byPositionQueue = new SpanPositionQueue(subSpans.size()); // when empty use -1
 
-      return new Spans(this, getSimScorer(context)) {
+      return new Spans() {
         Spans topPositionSpans = null;
 
         @Override
         public int nextDoc() throws IOException {
           topPositionSpans = null;
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+          DisiWrapper topDocSpans = byDocQueue.top();
           int currentDoc = topDocSpans.doc;
           do {
             topDocSpans.doc = topDocSpans.iterator.nextDoc();
@@ -194,7 +194,7 @@ public final class SpanOrQuery extends SpanQuery {
         @Override
         public int advance(int target) throws IOException {
           topPositionSpans = null;
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+          DisiWrapper topDocSpans = byDocQueue.top();
           do {
             topDocSpans.doc = topDocSpans.iterator.advance(target);
             topDocSpans = byDocQueue.updateTop();
@@ -204,7 +204,7 @@ public final class SpanOrQuery extends SpanQuery {
 
         @Override
         public int docID() {
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+          DisiWrapper topDocSpans = byDocQueue.top();
           return topDocSpans.doc;
         }
 
@@ -213,7 +213,7 @@ public final class SpanOrQuery extends SpanQuery {
           float sumMatchCost = 0; // See also DisjunctionScorer.asTwoPhaseIterator()
           long sumApproxCost = 0;
 
-          for (DisiWrapper<Spans> w : byDocQueue) {
+          for (DisiWrapper w : byDocQueue) {
             if (w.twoPhaseView != null) {
               long costWeight = (w.cost <= 1) ? 1 : w.cost;
               sumMatchCost += w.twoPhaseView.matchCost() * costWeight;
@@ -228,7 +228,7 @@ public final class SpanOrQuery extends SpanQuery {
 
           final float matchCost = sumMatchCost / sumApproxCost;
 
-          return new TwoPhaseIterator(new DisjunctionDISIApproximation<Spans>(byDocQueue)) {
+          return new TwoPhaseIterator(new DisjunctionDISIApproximation(byDocQueue)) {
             @Override
             public boolean matches() throws IOException {
               return twoPhaseCurrentDocMatches();
@@ -246,9 +246,9 @@ public final class SpanOrQuery extends SpanQuery {
         void computePositionsCost() {
           float sumPositionsCost = 0;
           long sumCost = 0;
-          for (DisiWrapper<Spans> w : byDocQueue) {
+          for (DisiWrapper w : byDocQueue) {
             long costWeight = (w.cost <= 1) ? 1 : w.cost;
-            sumPositionsCost += w.iterator.positionsCost() * costWeight;
+            sumPositionsCost += w.spans.positionsCost() * costWeight;
             sumCost += costWeight;
           }
           positionsCost = sumPositionsCost / sumCost;
@@ -265,7 +265,7 @@ public final class SpanOrQuery extends SpanQuery {
         int lastDocTwoPhaseMatched = -1;
 
         boolean twoPhaseCurrentDocMatches() throws IOException {
-          DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
+          DisiWrapper listAtCurrentDoc = byDocQueue.topList();
           // remove the head of the list as long as it does not match
           final int currentDoc = listAtCurrentDoc.doc;
           while (listAtCurrentDoc.twoPhaseView != null) {
@@ -289,9 +289,9 @@ public final class SpanOrQuery extends SpanQuery {
         void fillPositionQueue() throws IOException { // called at first nextStartPosition
           assert byPositionQueue.size() == 0;
           // add all matching Spans at current doc to byPositionQueue
-          DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
+          DisiWrapper listAtCurrentDoc = byDocQueue.topList();
           while (listAtCurrentDoc != null) {
-            Spans spansAtDoc = listAtCurrentDoc.iterator;
+            Spans spansAtDoc = listAtCurrentDoc.spans;
             if (lastDocTwoPhaseMatched == listAtCurrentDoc.doc) { // matched by DisjunctionDisiApproximation
               if (listAtCurrentDoc.twoPhaseView != null) { // matched by approximation
                 if (listAtCurrentDoc.lastApproxNonMatchDoc == listAtCurrentDoc.doc) { // matches() returned false

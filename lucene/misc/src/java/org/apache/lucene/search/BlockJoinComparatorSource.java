@@ -122,11 +122,11 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
         IndexSearcher searcher = new IndexSearcher(ReaderUtil.getTopLevelContext(context));
         searcher.setQueryCache(null);
         final Weight weight = searcher.createNormalizedWeight(parentsFilter, false);
-        final DocIdSetIterator parents = weight.scorer(context);
+        final Scorer parents = weight.scorer(context);
         if (parents == null) {
           throw new IllegalStateException("LeafReader " + context.reader() + " contains no parents!");
         }
-        parentBits = BitSet.of(parents, context.reader().maxDoc());
+        parentBits = BitSet.of(parents.iterator(), context.reader().maxDoc());
         parentLeafComparators = new LeafFieldComparator[parentComparators.length];
         for (int i = 0; i < parentComparators.length; i++) {
           parentLeafComparators[i] = parentComparators[i].getLeafComparator(context);

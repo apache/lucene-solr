@@ -17,15 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.spans.Spans;
+
 /**
  * Wrapper used in {@link DisiPriorityQueue}.
  * @lucene.internal
  */
-public class DisiWrapper<Iter extends DocIdSetIterator> {
-  public final Iter iterator;
+public class DisiWrapper {
+  public final DocIdSetIterator iterator;
+  public final Scorer scorer;
   public final long cost;
   public int doc; // the current doc, used for comparison
-  public DisiWrapper<Iter> next; // reference to a next element, see #topList
+  public DisiWrapper next; // reference to a next element, see #topList
 
   // An approximation of the iterator, or the iterator itself if it does not
   // support two-phase iteration
@@ -33,15 +36,34 @@ public class DisiWrapper<Iter extends DocIdSetIterator> {
   // A two-phase view of the iterator, or null if the iterator does not support
   // two-phase iteration
   public final TwoPhaseIterator twoPhaseView;
-  
+
+  // FOR SPANS
+  public final Spans spans;
   public int lastApproxMatchDoc; // last doc of approximation that did match
   public int lastApproxNonMatchDoc; // last doc of approximation that did not match
 
-  public DisiWrapper(Iter iterator) {
-    this.iterator = iterator;
+  public DisiWrapper(Scorer scorer) {
+    this.scorer = scorer;
+    this.spans = null;
+    this.iterator = scorer.iterator();
     this.cost = iterator.cost();
     this.doc = -1;
-    this.twoPhaseView = TwoPhaseIterator.asTwoPhaseIterator(iterator);
+    this.twoPhaseView = scorer.twoPhaseIterator();
+      
+    if (twoPhaseView != null) {
+      approximation = twoPhaseView.approximation();
+    } else {
+      approximation = iterator;
+    }
+  }
+
+  public DisiWrapper(Spans spans) {
+    this.scorer = null;
+    this.spans = spans;
+    this.iterator = spans;
+    this.cost = iterator.cost();
+    this.doc = -1;
+    this.twoPhaseView = spans.asTwoPhaseIterator();
       
     if (twoPhaseView != null) {
       approximation = twoPhaseView.approximation();

@@ -156,10 +156,11 @@ public final class LongRange extends Range {
           if (fastMatchWeight == null) {
             approximation = DocIdSetIterator.all(maxDoc);
           } else {
-            approximation = fastMatchWeight.scorer(context);
-            if (approximation == null) {
+            Scorer s = fastMatchWeight.scorer(context);
+            if (s == null) {
               return null;
             }
+            approximation = s.iterator();
           }
 
           final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);

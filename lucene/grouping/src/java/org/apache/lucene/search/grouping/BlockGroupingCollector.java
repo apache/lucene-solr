@@ -478,7 +478,12 @@ public class BlockGroupingCollector extends SimpleCollector {
     subDocUpto = 0;
     docBase = readerContext.docBase;
     //System.out.println("setNextReader base=" + docBase + " r=" + readerContext.reader);
-    lastDocPerGroupBits = lastDocPerGroup.scorer(readerContext);
+    Scorer s = lastDocPerGroup.scorer(readerContext);
+    if (s == null) {
+      lastDocPerGroupBits = null;
+    } else {
+      lastDocPerGroupBits = s.iterator();
+    }
     groupEndDocID = -1;
 
     currentReaderContext = readerContext;

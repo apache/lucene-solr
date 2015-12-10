@@ -128,17 +128,19 @@ public class TestExpressionValueSource extends LuceneTestCase {
     
     // everything
     ValueSourceScorer scorer = values.getRangeScorer(leaf.reader(), "4", "40", true, true);
-    assertEquals(-1, scorer.docID());
-    assertEquals(0, scorer.nextDoc());
-    assertEquals(1, scorer.nextDoc());
-    assertEquals(2, scorer.nextDoc());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.nextDoc());
+    DocIdSetIterator iter = scorer.iterator();
+    assertEquals(-1, iter.docID());
+    assertEquals(0, iter.nextDoc());
+    assertEquals(1, iter.nextDoc());
+    assertEquals(2, iter.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, iter.nextDoc());
 
     // just the first doc
     scorer = values.getRangeScorer(leaf.reader(), "4", "40", false, false);
+    iter = scorer.iterator();
     assertEquals(-1, scorer.docID());
-    assertEquals(0, scorer.nextDoc());
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.nextDoc());
+    assertEquals(0, iter.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, iter.nextDoc());
   }
   
   public void testEquals() throws Exception {

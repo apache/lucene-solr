@@ -57,7 +57,7 @@ public class AssertingScorer extends Scorer {
     // we cannot assert that state == ITERATING because of CachingScorerWrapper
     switch (docID()) {
     case -1:
-    case NO_MORE_DOCS:
+    case DocIdSetIterator.NO_MORE_DOCS:
       return false;
     default:
       return state != IteratorState.APPROXIMATING; // Matches must be confirmed before calling freq() or score()
@@ -95,47 +95,63 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
-  public int nextDoc() throws IOException {
-    assert state != IteratorState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
-    int nextDoc = in.nextDoc();
-    assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc + " " + in;
-    if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
-      state = IteratorState.FINISHED;
-    } else {
-      state = IteratorState.ITERATING;
-    }
-    assert in.docID() == nextDoc;
-    return doc = nextDoc;
-  }
-
-  @Override
-  public int advance(int target) throws IOException {
-    assert state != IteratorState.FINISHED : "advance() called after NO_MORE_DOCS";
-    assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
-    int advanced = in.advance(target);
-    assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
-    if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
-      state = IteratorState.FINISHED;
-    } else {
-      state = IteratorState.ITERATING;
-    }
-    assert in.docID() == advanced;
-    return doc = advanced;
-  }
-
-  @Override
-  public long cost() {
-    return in.cost();
-  }
-
-  @Override
   public String toString() {
     return "AssertingScorer(" + in + ")";
   }
 
   @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
-    final TwoPhaseIterator in = this.in.asTwoPhaseIterator();
+  public DocIdSetIterator iterator() {
+    final DocIdSetIterator in = this.in.iterator();
+    assert in != null;
+    return new DocIdSetIterator() {
+      
+      @Override
+      public int docID() {
+        assert AssertingScorer.this.in.docID() == in.docID();
+        return in.docID();
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        assert state != IteratorState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
+        int nextDoc = in.nextDoc();
+        assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc + " " + in;
+        if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
+          state = IteratorState.FINISHED;
+        } else {
+          state = IteratorState.ITERATING;
+        }
+        assert in.docID() == nextDoc;
+        assert AssertingScorer.this.in.docID() == in.docID();
+        return doc = nextDoc;
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        assert state != IteratorState.FINISHED : "advance() called after NO_MORE_DOCS";
+        assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
+        int advanced = in.advance(target);
+        assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
+        if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
+          state = IteratorState.FINISHED;
+        } else {
+          state = IteratorState.ITERATING;
+        }
+        assert in.docID() == advanced;
+        assert AssertingScorer.this.in.docID() == in.docID();
+        return doc = advanced;
+      }
+
+      @Override
+      public long cost() {
+        return in.cost();
+      }
+    };
+  }
+
+  @Override
+  public TwoPhaseIterator twoPhaseIterator() {
+    final TwoPhaseIterator in = this.in.twoPhaseIterator();
     if (in == null) {
       return null;
     }
@@ -189,7 +205,7 @@ public class AssertingScorer extends Scorer {
         assert state == IteratorState.APPROXIMATING;
         final boolean matches = in.matches();
         if (matches) {
-          assert AssertingScorer.this.in.docID() == inApproximation.docID() : "Approximation and scorer don't advance synchronously";
+          assert AssertingScorer.this.in.iterator().docID() == inApproximation.docID() : "Approximation and scorer don't advance synchronously";
           doc = inApproximation.docID();
           state = IteratorState.ITERATING;
         }

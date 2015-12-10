@@ -180,8 +180,6 @@ class TermsIncludingScoreQuery extends Query {
     final float[] scores;
     final long cost;
 
-    int currentDoc = -1;
-
     SVInOrderScorer(Weight weight, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
       super(weight);
       FixedBitSet matchingDocs = new FixedBitSet(maxDoc);
@@ -210,7 +208,7 @@ class TermsIncludingScoreQuery extends Query {
 
     @Override
     public float score() throws IOException {
-      return scores[currentDoc];
+      return scores[docID()];
     }
 
     @Override
@@ -220,23 +218,14 @@ class TermsIncludingScoreQuery extends Query {
 
     @Override
     public int docID() {
-      return currentDoc;
+      return matchingDocsIterator.docID();
     }
 
     @Override
-    public int nextDoc() throws IOException {
-      return currentDoc = matchingDocsIterator.nextDoc();
+    public DocIdSetIterator iterator() {
+      return matchingDocsIterator;
     }
 
-    @Override
-    public int advance(int target) throws IOException {
-      return currentDoc = matchingDocsIterator.advance(target);
-    }
-
-    @Override
-    public long cost() {
-      return cost;
-    }
   }
 
   // This scorer deals with the fact that a document can have more than one score from multiple related documents.

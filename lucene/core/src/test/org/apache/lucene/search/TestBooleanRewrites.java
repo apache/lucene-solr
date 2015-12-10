@@ -91,7 +91,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
     query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
     final Weight weight = searcher.createNormalizedWeight(query2.build(), true);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
-    assertEquals(0, scorer.nextDoc());
+    assertEquals(0, scorer.iterator().nextDoc());
     assertTrue(scorer.getClass().getName(), scorer instanceof FilterScorer);
     assertEquals(0f, scorer.score(), 0f);
 

@@ -150,7 +150,7 @@ public class GraphQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       // currently no ranking for graph queries. 
       final Scorer cs = scorer(context);
-      final boolean exists = (cs != null && cs.advance(doc) == doc);
+      final boolean exists = (cs != null && cs.iterator().advance(doc) == doc);
       if (exists) {
         List<Explanation> subs = new ArrayList<Explanation>();
         return Explanation.match(1.0F, "Graph Match", subs);
@@ -331,12 +331,12 @@ public class GraphQuery extends Query {
       // no dynamic scoring now.  
       return score;
     }
-    
+
     @Override
-    public int nextDoc() throws IOException {
-      return iter.nextDoc();
+    public DocIdSetIterator iterator() {
+      return iter;
     }
-    
+
     @Override
     public int docID() {
       // current position of the doc iterator.
@@ -344,19 +344,8 @@ public class GraphQuery extends Query {
     }
     
     @Override
-    public int advance(int target) throws IOException {
-      return iter.advance(target);
-    }
-    
-    @Override
     public int freq() throws IOException {
       return 1;
-    }
-    
-    @Override
-    public long cost() {
-      // TODO: potentially very expensive!  what's a good value for this?
-      return 0;
     }
   }
   

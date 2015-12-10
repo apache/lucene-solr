@@ -43,19 +43,29 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
 
     @Override public int docID() { return idx; }
 
-    @Override public int nextDoc() {
-      return ++idx != scores.length ? idx : NO_MORE_DOCS;
-    }
-    
-    @Override public int advance(int target) {
-      idx = target;
-      return idx < scores.length ? idx : NO_MORE_DOCS;
-    }
-
     @Override
-    public long cost() {
-      return scores.length;
-    } 
+    public DocIdSetIterator iterator() {
+      return new DocIdSetIterator() {
+        @Override
+        public int docID() {
+          return idx;
+        }
+
+        @Override public int nextDoc() {
+          return ++idx != scores.length ? idx : NO_MORE_DOCS;
+        }
+        
+        @Override public int advance(int target) {
+          idx = target;
+          return idx < scores.length ? idx : NO_MORE_DOCS;
+        }
+
+        @Override
+        public long cost() {
+          return scores.length;
+        } 
+      };
+    }
   }
 
   // The scores must have positive as well as negative values
@@ -90,7 +100,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     Collector c = new PositiveScoresOnlyCollector(tdc);
     LeafCollector ac = c.getLeafCollector(ir.leaves().get(0));
     ac.setScorer(s);
-    while (s.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+    while (s.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       ac.collect(0);
     }
     TopDocs td = tdc.topDocs();

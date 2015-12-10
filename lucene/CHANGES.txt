@@ -123,6 +123,10 @@ API Changes
 * LUCENE-6900: Grouping sortWithinGroup variables used to allow null to mean
   Sort.RELEVANCE.  Null is no longer permitted.  (David Smiley)
 
+* LUCENE-6919: The Scorer class has been refactored to expose an iterator
+  instead of extending DocIdSetIterator. asTwoPhaseIterator() has been renamed
+  to twoPhaseIterator() for consistency. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-6889: BooleanQuery.rewrite now performs some query optimization, in

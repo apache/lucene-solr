@@ -29,37 +29,32 @@ class ConjunctionScorer extends Scorer {
   final Scorer[] scorers;
   final float coord;
 
-  ConjunctionScorer(Weight weight, List<? extends DocIdSetIterator> required, List<Scorer> scorers) {
+  ConjunctionScorer(Weight weight, List<Scorer> required, List<Scorer> scorers) {
     this(weight, required, scorers, 1f);
   }
 
   /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
-  ConjunctionScorer(Weight weight, List<? extends DocIdSetIterator> required, List<Scorer> scorers, float coord) {
+  ConjunctionScorer(Weight weight, List<Scorer> required, List<Scorer> scorers, float coord) {
     super(weight);
     assert required.containsAll(scorers);
     this.coord = coord;
-    this.disi = ConjunctionDISI.intersect(required);
+    this.disi = ConjunctionDISI.intersectScorers(required);
     this.scorers = scorers.toArray(new Scorer[scorers.size()]);
   }
 
   @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator twoPhaseIterator() {
     return disi.asTwoPhaseIterator();
   }
 
   @Override
-  public int advance(int target) throws IOException {
-    return disi.advance(target);
+  public DocIdSetIterator iterator() {
+    return disi;
   }
 
   @Override
   public int docID() {
     return disi.docID();
-  }
-
-  @Override
-  public int nextDoc() throws IOException {
-    return disi.nextDoc();
   }
 
   @Override
@@ -74,11 +69,6 @@ class ConjunctionScorer extends Scorer {
   @Override
   public int freq() {
     return scorers.length;
-  }
-
-  @Override
-  public long cost() {
-    return disi.cost();
   }
 
   @Override

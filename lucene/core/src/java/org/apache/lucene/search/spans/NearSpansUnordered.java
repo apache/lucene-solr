@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -38,9 +37,9 @@ public class NearSpansUnordered extends ConjunctionSpans {
 
   private SpanPositionQueue spanPositionQueue;
 
-  public NearSpansUnordered(SpanWeight weight, int allowedSlop, List<Spans> subSpans, Similarity.SimScorer simScorer)
+  public NearSpansUnordered(int allowedSlop, List<Spans> subSpans)
   throws IOException {
-    super(subSpans, weight, simScorer);
+    super(subSpans);
 
     this.subSpanCells = new ArrayList<>(subSpans.size());
     for (Spans subSpan : subSpans) { // sub spans in query order
@@ -77,7 +76,6 @@ public class NearSpansUnordered extends ConjunctionSpans {
     final Spans in;
 
     public SpansCell(Spans spans) {
-      super((SpanWeight) NearSpansUnordered.this.weight, NearSpansUnordered.this.docScorer);
       this.in = spans;
     }
 
@@ -267,13 +265,4 @@ public class NearSpansUnordered extends ConjunctionSpans {
     }
   }
 
-  @Override
-  public String toString() {
-    if (minPositionCell() != null) {
-      return getClass().getName() + "("+weight.getQuery().toString()+")@"+
-        (docID()+":"+startPosition()+"-"+endPosition());
-    } else {
-      return getClass().getName() + "("+weight.getQuery().toString()+")@ ?START?";
-    }
-  }
 }

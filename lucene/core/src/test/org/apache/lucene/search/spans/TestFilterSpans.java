@@ -18,8 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -29,13 +27,9 @@ public class TestFilterSpans extends LuceneTestCase {
   @Test
   public void testOverrides() throws Exception {
     // verify that all methods of Spans are overridden by FilterSpans,
-    // except those under the 'exclude' list
-    Set<Method> exclude = new HashSet<>();
-    exclude.add(FilterSpans.class.getMethod("freq"));
-    exclude.add(FilterSpans.class.getMethod("score"));
     for (Method m : FilterSpans.class.getMethods()) {
       if (m.getDeclaringClass() == Spans.class) {
-        assertTrue("method " + m.getName() + " not overridden!", exclude.contains(m));
+        fail("method " + m.getName() + " not overridden!");
       }
     }
   }

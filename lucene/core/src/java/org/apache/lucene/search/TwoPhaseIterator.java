@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Returned by {@link Scorer#asTwoPhaseIterator()}
+ * Returned by {@link Scorer#twoPhaseIterator()}
  * to expose an approximation of a {@link DocIdSetIterator}.
  * When the {@link #approximation()}'s
  * {@link DocIdSetIterator#nextDoc()} or {@link DocIdSetIterator#advance(int)}
@@ -97,15 +97,5 @@ public abstract class TwoPhaseIterator {
    *  The returned value must be positive.
    */
   public abstract float matchCost();
-
-  /**
-   * Returns a {@link TwoPhaseIterator} for this {@link DocIdSetIterator}
-   * when available, otherwise returns null.
-   */
-  public static TwoPhaseIterator asTwoPhaseIterator(DocIdSetIterator iter) {
-    return (iter instanceof Scorer)
-            ? ((Scorer) iter).asTwoPhaseIterator()
-            : null;
-  }
 
 }

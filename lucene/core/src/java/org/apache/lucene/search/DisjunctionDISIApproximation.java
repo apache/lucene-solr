@@ -23,16 +23,15 @@ import java.io.IOException;
  * the provided iterators.
  * @lucene.internal
  */
-public class DisjunctionDISIApproximation<Iter extends DocIdSetIterator>
-extends DocIdSetIterator {
+public class DisjunctionDISIApproximation extends DocIdSetIterator {
 
-  final DisiPriorityQueue<Iter> subIterators;
+  final DisiPriorityQueue subIterators;
   final long cost;
 
-  public DisjunctionDISIApproximation(DisiPriorityQueue<Iter> subIterators) {
+  public DisjunctionDISIApproximation(DisiPriorityQueue subIterators) {
     this.subIterators = subIterators;
     long cost = 0;
-    for (DisiWrapper<Iter> w : subIterators) {
+    for (DisiWrapper w : subIterators) {
       cost += w.cost;
     }
     this.cost = cost;
@@ -50,7 +49,7 @@ extends DocIdSetIterator {
 
   @Override
   public int nextDoc() throws IOException {
-    DisiWrapper<Iter> top = subIterators.top();
+    DisiWrapper top = subIterators.top();
     final int doc = top.doc;
     do {
       top.doc = top.approximation.nextDoc();
@@ -62,7 +61,7 @@ extends DocIdSetIterator {
 
   @Override
   public int advance(int target) throws IOException {
-    DisiWrapper<Iter> top = subIterators.top();
+    DisiWrapper top = subIterators.top();
     do {
       top.doc = top.approximation.advance(target);
       top = subIterators.updateTop();

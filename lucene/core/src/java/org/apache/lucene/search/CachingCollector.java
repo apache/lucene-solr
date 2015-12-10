@@ -62,22 +62,20 @@ public abstract class CachingCollector extends FilterCollector {
     private CachedScorer() { super(null); }
 
     @Override
+    public DocIdSetIterator iterator() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public final float score() { return score; }
 
     @Override
-    public final int advance(int target) { throw new UnsupportedOperationException(); }
-
-    @Override
-    public final int docID() { return doc; }
+    public int docID() {
+      return doc;
+    }
 
     @Override
     public final int freq() { throw new UnsupportedOperationException(); }
-
-    @Override
-    public final int nextDoc() { throw new UnsupportedOperationException(); }
-
-    @Override
-    public long cost() { return 1; }
 
   }
 

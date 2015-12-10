@@ -118,7 +118,7 @@ public class SpanTermQuery extends SpanQuery {
 
       final PostingsEnum postings = termsEnum.postings(null, requiredPostings.getRequiredPostings());
       float positionsCost = termPositionsCost(termsEnum) * PHRASE_TO_SPAN_TERM_POSITIONS_COST;
-      return new TermSpans(this, getSimScorer(context), postings, term, positionsCost);
+      return new TermSpans(getSimScorer(context), postings, term, positionsCost);
     }
   }
 

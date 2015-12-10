@@ -23,9 +23,6 @@ import java.util.Collections;
 
 /** A Scorer for queries with a required subscorer
  * and an excluding (prohibited) sub {@link Scorer}.
- * <br>
- * This <code>Scorer</code> implements {@link Scorer#advance(int)},
- * and it uses the advance() on the given scorers.
  */
 class ReqExclScorer extends Scorer {
 
@@ -44,23 +41,18 @@ class ReqExclScorer extends Scorer {
   public ReqExclScorer(Scorer reqScorer, Scorer exclScorer) {
     super(reqScorer.weight);
     this.reqScorer = reqScorer;
-    reqTwoPhaseIterator = reqScorer.asTwoPhaseIterator();
+    reqTwoPhaseIterator = reqScorer.twoPhaseIterator();
     if (reqTwoPhaseIterator == null) {
-      reqApproximation = reqScorer;
+      reqApproximation = reqScorer.iterator();
     } else {
       reqApproximation = reqTwoPhaseIterator.approximation();
     }
-    exclTwoPhaseIterator = exclScorer.asTwoPhaseIterator();
+    exclTwoPhaseIterator = exclScorer.twoPhaseIterator();
     if (exclTwoPhaseIterator == null) {
-      exclApproximation = exclScorer;
+      exclApproximation = exclScorer.iterator();
     } else {
       exclApproximation = exclTwoPhaseIterator.approximation();
     }
-  }
-
-  @Override
-  public int nextDoc() throws IOException {
-    return toNonExcluded(reqApproximation.nextDoc());
   }
 
   /** Confirms whether or not the given {@link TwoPhaseIterator}
@@ -85,35 +77,57 @@ class ReqExclScorer extends Scorer {
     return matches(reqTwoPhaseIterator);
   }
 
-  /** Advance to the next non-excluded doc. */
-  private int toNonExcluded(int doc) throws IOException {
-    int exclDoc = exclApproximation.docID();
-    for (;; doc = reqApproximation.nextDoc()) {
-      if (doc == NO_MORE_DOCS) {
-        return NO_MORE_DOCS;
+  @Override
+  public DocIdSetIterator iterator() {
+    return new DocIdSetIterator() {
+
+      /** Advance to the next non-excluded doc. */
+      private int toNonExcluded(int doc) throws IOException {
+        int exclDoc = exclApproximation.docID();
+        for (;; doc = reqApproximation.nextDoc()) {
+          if (doc == NO_MORE_DOCS) {
+            return NO_MORE_DOCS;
+          }
+          if (exclDoc < doc) {
+            exclDoc = exclApproximation.advance(doc);
+          }
+          if (matches(doc, exclDoc, reqTwoPhaseIterator, exclTwoPhaseIterator)) {
+            return doc;
+          }
+        }
       }
-      if (exclDoc < doc) {
-        exclDoc = exclApproximation.advance(doc);
+
+      @Override
+      public int nextDoc() throws IOException {
+        return toNonExcluded(reqApproximation.nextDoc());
       }
-      if (matches(doc, exclDoc, reqTwoPhaseIterator, exclTwoPhaseIterator)) {
-        return doc;
+
+      @Override
+      public int advance(int target) throws IOException {
+        return toNonExcluded(reqApproximation.advance(target));
       }
-    }
+
+      @Override
+      public int docID() {
+        return reqApproximation.docID();
+      }
+
+      @Override
+      public long cost() {
+        return reqApproximation.cost();
+      }
+
+    };
   }
 
   @Override
   public int docID() {
-    return reqScorer.docID();
+    return reqApproximation.docID();
   }
 
   @Override
   public int freq() throws IOException {
     return reqScorer.freq();
-  }
-
-  @Override
-  public long cost() {
-    return reqScorer.cost();
   }
 
   @Override
@@ -127,12 +141,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public int advance(int target) throws IOException {
-    return toNonExcluded(reqApproximation.advance(target));
-  }
-
-  @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator twoPhaseIterator() {
     if (reqTwoPhaseIterator == null) {
       return null;
     }

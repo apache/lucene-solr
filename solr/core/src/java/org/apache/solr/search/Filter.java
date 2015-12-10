@@ -106,7 +106,7 @@ public abstract class Filter extends Query {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         final Scorer scorer = scorer(context);
-        final boolean match = (scorer != null && scorer.advance(doc) == doc);
+        final boolean match = (scorer != null && scorer.iterator().advance(doc) == doc);
         if (match) {
           assert scorer.score() == 0f;
           return Explanation.match(0f, "Match on id " + doc);

@@ -162,7 +162,7 @@ public final class SynonymQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context);
       if (scorer != null) {
-        int newDoc = scorer.advance(doc);
+        int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           final float freq;
           if (scorer instanceof SynonymScorer) {
@@ -229,15 +229,15 @@ public final class SynonymQuery extends Query {
     }
 
     @Override
-    protected float score(DisiWrapper<Scorer> topList) throws IOException {
+    protected float score(DisiWrapper topList) throws IOException {
       return similarity.score(topList.doc, tf(topList));
     }
     
     /** combines TF of all subs. */
-    final int tf(DisiWrapper<Scorer> topList) throws IOException {
+    final int tf(DisiWrapper topList) throws IOException {
       int tf = 0;
-      for (DisiWrapper<Scorer> w = topList; w != null; w = w.next) {
-        tf += w.iterator.freq();
+      for (DisiWrapper w = topList; w != null; w = w.next) {
+        tf += w.scorer.freq();
       }
       return tf;
     }

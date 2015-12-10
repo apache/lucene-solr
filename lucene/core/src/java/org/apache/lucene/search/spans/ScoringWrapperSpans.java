@@ -35,7 +35,6 @@ public class ScoringWrapperSpans extends Spans {
    * @param simScorer  the SimScorer to use for scoring
    */
   public ScoringWrapperSpans(Spans spans, Similarity.SimScorer simScorer) {
-    super((SpanWeight) spans.getWeight(), simScorer);
     this.in = spans;
   }
 

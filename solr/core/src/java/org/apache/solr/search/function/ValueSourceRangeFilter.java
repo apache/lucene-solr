@@ -22,6 +22,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.search.BitsFilteredDocIdSet;
 import org.apache.solr.search.SolrFilter;
@@ -78,7 +79,8 @@ public class ValueSourceRangeFilter extends SolrFilter {
      return BitsFilteredDocIdSet.wrap(new DocIdSet() {
        @Override
        public DocIdSetIterator iterator() throws IOException {
-         return valueSource.getValues(context, readerContext).getRangeScorer(readerContext.reader(), lowerVal, upperVal, includeLower, includeUpper);
+         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(readerContext.reader(), lowerVal, upperVal, includeLower, includeUpper);
+         return scorer == null ? null : scorer.iterator();
        }
        @Override
        public Bits bits() {

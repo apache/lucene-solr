@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.ConjunctionDISI;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * Common super class for multiple sub spans required in a document.
@@ -34,13 +33,12 @@ abstract class ConjunctionSpans extends Spans {
   boolean atFirstInCurrentDoc; // a first start position is available in current doc for nextStartPosition
   boolean oneExhaustedInCurrentDoc; // one subspans exhausted in current doc
 
-  ConjunctionSpans(List<Spans> subSpans, SpanWeight weight, Similarity.SimScorer docScorer) {
-    super(weight, docScorer);
+  ConjunctionSpans(List<Spans> subSpans) {
     if (subSpans.size() < 2) {
       throw new IllegalArgumentException("Less than 2 subSpans.size():" + subSpans.size());
     }
     this.subSpans = subSpans.toArray(new Spans[subSpans.size()]);
-    this.conjunction = ConjunctionDISI.intersect(subSpans);
+    this.conjunction = ConjunctionDISI.intersectSpans(subSpans);
     this.atFirstInCurrentDoc = true; // ensure for doc -1 that start/end positions are -1
   }
 

@@ -140,7 +140,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     } while (parentDocs.get(target + 1));
 
     try {
-      scorer.advance(target);
+      scorer.iterator().advance(target);
       fail();
     } catch (IllegalStateException expected) {
       assertTrue(expected.getMessage() != null && expected.getMessage().contains(ToChildBlockJoinQuery.INVALID_QUERY_MESSAGE));
