@@ -294,16 +294,20 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       lt.minimumWaitBetweenActions();
       lt.markAttemptingAction();
       
-      log.info("Running the leader process for shard " + shardId);
+      
+      int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
+      
+      log.info("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
       // clear the leader in clusterstate
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
       Overseer.getInQueue(zkClient).offer(Utils.toJSON(m));
-      
-      int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
+
       boolean allReplicasInLine = false;
       if (!weAreReplacement) {
         allReplicasInLine = waitForReplicasToComeUp(leaderVoteWait);
+      } else {
+        allReplicasInLine = areAllReplicasParticipating();
       }
       
       if (isClosed) {
@@ -406,6 +410,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             publishActiveIfRegisteredAndNotActive(core);
           }
           log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
+          
+          // we made it as leader - send any recovery requests we need to
+          syncStrategy.requestRecoveries();
 
         } catch (Exception e) {
           isLeader = false;
@@ -598,6 +605,39 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       slices = zkController.getClusterState().getSlice(collection, shardId);
       cnt++;
     }
+    return false;
+  }
+  
+  // returns true if all replicas are found to be up, false if not
+  private boolean areAllReplicasParticipating() throws InterruptedException {
+    final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
+    Slice slices = zkController.getClusterState().getSlice(collection, shardId);
+    
+    if (slices != null) {
+      int found = 0;
+      try {
+        found = zkClient.getChildren(shardsElectZkPath, null, true).size();
+      } catch (KeeperException e) {
+        if (e instanceof KeeperException.SessionExpiredException) {
+          // if the session has expired, then another election will be launched, so
+          // quit here
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "ZK session expired - cancelling election for " + collection + " " + shardId);
+        }
+        SolrException.log(log, "Error checking for the number of election participants", e);
+      }
+      
+      if (found >= slices.getReplicasMap().size()) {
+        log.info("All replicas are ready to participate in election.");
+        return true;
+      }
+      
+    } else {
+      log.warn("Shard not found: " + shardId + " for collection " + collection);
+      
+      return false;
+    }
+    
     return false;
   }
 
