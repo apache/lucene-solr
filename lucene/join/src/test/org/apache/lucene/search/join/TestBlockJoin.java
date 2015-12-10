@@ -65,6 +65,7 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.RandomApproximationQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -1119,8 +1120,8 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q, true);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0));
-    assertEquals(1, disi.advance(1));
+    Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
+    assertEquals(1, sc.iterator().advance(1));
     r.close();
     dir.close();
   }
@@ -1153,8 +1154,8 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q, true);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0));
-    assertEquals(2, disi.advance(0));
+    Scorer sc = weight.scorer(s.getIndexReader().leaves().get(0));
+    assertEquals(2, sc.iterator().advance(0));
     r.close();
     dir.close();
   }
@@ -1631,12 +1632,12 @@ public class TestBlockJoin extends LuceneTestCase {
     ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentFilter);
 
     Weight weight = s.createNormalizedWeight(parentJoinQuery, random().nextBoolean());
-    DocIdSetIterator advancingScorer = weight.scorer(s.getIndexReader().leaves().get(0));
-    DocIdSetIterator nextDocScorer = weight.scorer(s.getIndexReader().leaves().get(0));
+    Scorer advancingScorer = weight.scorer(s.getIndexReader().leaves().get(0));
+    Scorer nextDocScorer = weight.scorer(s.getIndexReader().leaves().get(0));
 
-    final int firstKid = nextDocScorer.nextDoc();
+    final int firstKid = nextDocScorer.iterator().nextDoc();
     assertTrue("firstKid not found", DocIdSetIterator.NO_MORE_DOCS != firstKid);
-    assertEquals(firstKid, advancingScorer.advance(0));
+    assertEquals(firstKid, advancingScorer.iterator().advance(0));
     
     r.close();
     dir.close();

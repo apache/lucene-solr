@@ -29,11 +29,6 @@ final class FakeScorer extends Scorer {
   public FakeScorer() {
     super(null);
   }
-    
-  @Override
-  public int advance(int target) {
-    throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
-  }
 
   @Override
   public int docID() {
@@ -44,11 +39,6 @@ final class FakeScorer extends Scorer {
   public int freq() {
     return freq;
   }
-
-  @Override
-  public int nextDoc() {
-    throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
-  }
     
   @Override
   public float score() {
@@ -56,8 +46,8 @@ final class FakeScorer extends Scorer {
   }
 
   @Override
-  public long cost() {
-    return 1;
+  public DocIdSetIterator iterator() {
+    throw new UnsupportedOperationException();
   }
 
   @Override

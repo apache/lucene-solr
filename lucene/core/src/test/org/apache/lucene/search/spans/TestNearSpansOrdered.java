@@ -194,7 +194,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
     LeafReaderContext leave = topReaderContext.leaves().get(0);
     Scorer s = w.scorer(leave);
-    assertEquals(1, s.advance(1));
+    assertEquals(1, s.iterator().advance(1));
   }
 
   public void testOverlappedOrderedSpan() throws Exception {

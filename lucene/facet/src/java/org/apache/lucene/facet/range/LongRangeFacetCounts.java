@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
 /** {@link Facets} implementation that computes counts for
@@ -86,10 +87,11 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
         final IndexSearcher searcher = new IndexSearcher(topLevelContext);
         searcher.setQueryCache(null);
         final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, false);
-        fastMatchDocs = fastMatchWeight.scorer(hits.context);
-        if (fastMatchDocs == null) {
+        Scorer s = fastMatchWeight.scorer(hits.context);
+        if (s == null) {
           continue;
         }
+        fastMatchDocs = s.iterator();
       } else {
         fastMatchDocs = null;
       }

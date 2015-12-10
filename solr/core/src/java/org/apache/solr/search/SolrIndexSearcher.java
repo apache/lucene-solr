@@ -2511,7 +2511,7 @@ class FilterImpl extends Filter {
       for (Weight w : weights) {
         Scorer scorer = w.scorer(context);
         if (scorer == null) return null;
-        iterators.add(scorer);
+        iterators.add(scorer.iterator());
       }
       if (iterators.size()==0) return null;
       if (iterators.size()==1) return iterators.get(0);

@@ -39,9 +39,8 @@ public class TermSpans extends Spans {
   protected boolean readPayload;
   private final float positionsCost;
 
-  public TermSpans(SpanWeight weight, Similarity.SimScorer scorer,
+  public TermSpans(Similarity.SimScorer scorer,
                     PostingsEnum postings, Term term, float positionsCost) {
-    super(weight, scorer);
     this.postings = Objects.requireNonNull(postings);
     this.term = Objects.requireNonNull(term);
     this.doc = -1;

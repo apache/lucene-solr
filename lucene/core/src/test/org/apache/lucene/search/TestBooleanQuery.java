@@ -372,7 +372,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
       // First pass: just use .nextDoc() to gather all hits
       final List<ScoreDoc> hits = new ArrayList<>();
-      while(scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      while(scorer.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         hits.add(new ScoreDoc(scorer.docID(), scorer.score()));
       }
 
@@ -399,12 +399,12 @@ public class TestBooleanQuery extends LuceneTestCase {
           if (left == 1 || random().nextBoolean()) {
             // next
             nextUpto = 1+upto;
-            nextDoc = scorer.nextDoc();
+            nextDoc = scorer.iterator().nextDoc();
           } else {
             // advance
             int inc = TestUtil.nextInt(random(), 1, left - 1);
             nextUpto = inc + upto;
-            nextDoc = scorer.advance(hits.get(nextUpto).doc);
+            nextDoc = scorer.iterator().advance(hits.get(nextUpto).doc);
           }
 
           if (nextUpto == hits.size()) {
@@ -673,7 +673,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertTrue(scorer instanceof ConjunctionScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -702,7 +702,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof DisjunctionScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -733,7 +733,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertTrue(scorer instanceof BoostedScorer || scorer instanceof ExactPhraseScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -762,7 +762,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqExclScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -791,7 +791,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), true);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqOptSumScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();

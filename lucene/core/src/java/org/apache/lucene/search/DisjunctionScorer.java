@@ -28,21 +28,21 @@ import java.util.List;
 abstract class DisjunctionScorer extends Scorer {
 
   private final boolean needsScores;
-  private final DisiPriorityQueue<Scorer> subScorers;
+  private final DisiPriorityQueue subScorers;
   private final long cost;
 
   /** Linked list of scorers which are on the current doc */
-  private DisiWrapper<Scorer> topScorers;
+  private DisiWrapper topScorers;
 
   protected DisjunctionScorer(Weight weight, List<Scorer> subScorers, boolean needsScores) {
     super(weight);
     if (subScorers.size() <= 1) {
       throw new IllegalArgumentException("There must be at least 2 subScorers");
     }
-    this.subScorers = new DisiPriorityQueue<Scorer>(subScorers.size());
+    this.subScorers = new DisiPriorityQueue(subScorers.size());
     long cost = 0;
     for (Scorer scorer : subScorers) {
-      final DisiWrapper<Scorer> w = new DisiWrapper<>(scorer);
+      final DisiWrapper w = new DisiWrapper(scorer);
       cost += w.cost;
       this.subScorers.add(w);
     }
@@ -51,13 +51,55 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
+  public DocIdSetIterator iterator() {
+    return new DocIdSetIterator() {
+
+      @Override
+      public int docID() {
+        return subScorers.top().doc;
+      }
+
+      @Override
+      public final int nextDoc() throws IOException {
+        topScorers = null;
+        DisiWrapper top = subScorers.top();
+        final int doc = top.doc;
+        do {
+          top.doc = top.iterator.nextDoc();
+          top = subScorers.updateTop();
+        } while (top.doc == doc);
+
+        return top.doc;
+      }
+
+      @Override
+      public final int advance(int target) throws IOException {
+        topScorers = null;
+        DisiWrapper top = subScorers.top();
+        do {
+          top.doc = top.iterator.advance(target);
+          top = subScorers.updateTop();
+        } while (top.doc < target);
+
+        return top.doc;
+      }
+
+      @Override
+      public final long cost() {
+        return cost;
+      }
+
+    };
+  }
+
+  @Override
+  public TwoPhaseIterator twoPhaseIterator() {
     float sumMatchCost = 0;
     long sumApproxCost = 0;
 
     // Compute matchCost as the avarage over the matchCost of the subScorers.
     // This is weighted by the cost, which is an expected number of matching documents.
-    for (DisiWrapper<Scorer> w : subScorers) {
+    for (DisiWrapper w : subScorers) {
       if (w.twoPhaseView != null) {
         long costWeight = (w.cost <= 1) ? 1 : w.cost;
         sumMatchCost += w.twoPhaseView.matchCost() * costWeight;
@@ -74,11 +116,11 @@ abstract class DisjunctionScorer extends Scorer {
     // note it is important to share the same pq as this scorer so that
     // rebalancing the pq through the approximation will also rebalance
     // the pq in this scorer.
-    return new TwoPhaseIterator(new DisjunctionDISIApproximation<Scorer>(subScorers)) {
+    return new TwoPhaseIterator(new DisjunctionDISIApproximation(subScorers)) {
 
       @Override
       public boolean matches() throws IOException {
-        DisiWrapper<Scorer> topScorers = subScorers.topList();
+        DisiWrapper topScorers = subScorers.topList();
         // remove the head of the list as long as it does not match
         while (topScorers.twoPhaseView != null && ! topScorers.twoPhaseView.matches()) {
           topScorers = topScorers.next;
@@ -90,8 +132,8 @@ abstract class DisjunctionScorer extends Scorer {
         if (needsScores) {
           // if scores or freqs are needed, we also need to remove scorers
           // from the top list that do not actually match
-          DisiWrapper<Scorer> previous = topScorers;
-          for (DisiWrapper<Scorer> w = topScorers.next; w != null; w = w.next) {
+          DisiWrapper previous = topScorers;
+          for (DisiWrapper w = topScorers.next; w != null; w = w.next) {
             if (w.twoPhaseView != null && ! w.twoPhaseView.matches()) {
               // w does not match, remove it
               previous.next = w.next;
@@ -120,38 +162,8 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   @Override
-  public final long cost() {
-    return cost;
-  }
-
-  @Override
   public final int docID() {
    return subScorers.top().doc;
-  }
-
-  @Override
-  public final int nextDoc() throws IOException {
-    topScorers = null;
-    DisiWrapper<Scorer> top = subScorers.top();
-    final int doc = top.doc;
-    do {
-      top.doc = top.iterator.nextDoc();
-      top = subScorers.updateTop();
-    } while (top.doc == doc);
-
-    return top.doc;
-  }
-
-  @Override
-  public final int advance(int target) throws IOException {
-    topScorers = null;
-    DisiWrapper<Scorer> top = subScorers.top();
-    do {
-      top.doc = top.iterator.advance(target);
-      top = subScorers.updateTop();
-    } while (top.doc < target);
-
-    return top.doc;
   }
 
   @Override
@@ -160,7 +172,7 @@ abstract class DisjunctionScorer extends Scorer {
       topScorers = subScorers.topList();
     }
     int freq = 1;
-    for (DisiWrapper<Scorer> w = topScorers.next; w != null; w = w.next) {
+    for (DisiWrapper w = topScorers.next; w != null; w = w.next) {
       freq += 1;
     }
     return freq;
@@ -175,13 +187,13 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   /** Compute the score for the given linked list of scorers. */
-  protected abstract float score(DisiWrapper<Scorer> topList) throws IOException;
+  protected abstract float score(DisiWrapper topList) throws IOException;
 
   @Override
   public final Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>();
-    for (DisiWrapper<Scorer> scorer : subScorers) {
-      children.add(new ChildScorer(scorer.iterator, "SHOULD"));
+    for (DisiWrapper scorer : subScorers) {
+      children.add(new ChildScorer(scorer.scorer, "SHOULD"));
     }
     return children;
   }

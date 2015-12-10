@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.similarities.Similarity;
 
 /** 
  * Wraps a Spans with additional asserts
@@ -68,8 +67,7 @@ class AssertingSpans extends Spans {
   
   State state = State.DOC_START;
   
-  AssertingSpans(Spans in, Similarity.SimScorer docScorer) {
-    super((SpanWeight)in.getWeight(), docScorer);
+  AssertingSpans(Spans in) {
     this.in = in;
   }
   
@@ -196,12 +194,6 @@ class AssertingSpans extends Spans {
     assert ! Float.isNaN(cost) : "positionsCost() should not be NaN";
     assert cost > 0 : "positionsCost() must be positive";
     return cost;
-  }
-
-  @Override
-  protected float scoreCurrentDoc() throws IOException {
-    assert in.docScorer != null : in.getClass() + " has no docScorer!";
-    return in.scoreCurrentDoc();
   }
 
   @Override

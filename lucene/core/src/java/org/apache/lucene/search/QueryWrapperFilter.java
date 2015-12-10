@@ -66,7 +66,8 @@ public class QueryWrapperFilter extends Filter {
     DocIdSet set = new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
-        return weight.scorer(privateContext);
+        Scorer s = weight.scorer(privateContext);
+        return s == null ? null : s.iterator();
       }
 
       @Override

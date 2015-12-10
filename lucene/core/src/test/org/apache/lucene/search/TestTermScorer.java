@@ -144,13 +144,13 @@ public class TestTermScorer extends LuceneTestCase {
     LeafReaderContext context = (LeafReaderContext) indexSearcher.getTopReaderContext();
     Scorer ts = weight.scorer(context);
     assertTrue("next did not return a doc",
-        ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+        ts.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertTrue("score is not correct", ts.score() == 1.6931472f);
     assertTrue("next did not return a doc",
-        ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+        ts.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertTrue("score is not correct", ts.score() == 1.6931472f);
     assertTrue("next returned a doc and it should not have",
-        ts.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        ts.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
   }
   
   public void testAdvance() throws Exception {
@@ -162,7 +162,7 @@ public class TestTermScorer extends LuceneTestCase {
     assertTrue(indexSearcher.getTopReaderContext() instanceof LeafReaderContext);
     LeafReaderContext context = (LeafReaderContext) indexSearcher.getTopReaderContext();
     Scorer ts = weight.scorer(context);
-    assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue("Didn't skip", ts.iterator().advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     // The next doc should be doc 5
     assertTrue("doc should be number 5", ts.docID() == 5);
   }
@@ -199,7 +199,7 @@ public class TestTermScorer extends LuceneTestCase {
     
     Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
     try {
-      weight.scorer(forbiddenNorms.getContext()).nextDoc();
+      weight.scorer(forbiddenNorms.getContext()).iterator().nextDoc();
       fail("Should load norms");
     } catch (AssertionError e) {
       // ok
@@ -207,6 +207,6 @@ public class TestTermScorer extends LuceneTestCase {
     
     weight = indexSearcher.createNormalizedWeight(termQuery, false);
     // should not fail this time since norms are not necessary
-    weight.scorer(forbiddenNorms.getContext()).nextDoc();
+    weight.scorer(forbiddenNorms.getContext()).iterator().nextDoc();
   }
 }

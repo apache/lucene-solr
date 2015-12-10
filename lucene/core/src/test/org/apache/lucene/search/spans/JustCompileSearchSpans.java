@@ -34,10 +34,6 @@ final class JustCompileSearchSpans {
 
   static final class JustCompileSpans extends Spans {
 
-    JustCompileSpans() {
-      super(null, null);
-    }
-
     @Override
     public int docID() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);

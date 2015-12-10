@@ -265,12 +265,12 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
     Query q1 = DocValuesRangeQuery.newLongRange("dv1", 0L, 100L, random().nextBoolean(), random().nextBoolean());
     Weight w = searcher.createNormalizedWeight(q1, true);
     Scorer s = w.scorer(ctx);
-    assertNotNull(s.asTwoPhaseIterator());
+    assertNotNull(s.twoPhaseIterator());
 
     Query q2 = DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(0L), toSortableBytes(100L), random().nextBoolean(), random().nextBoolean());
     w = searcher.createNormalizedWeight(q2, true);
     s = w.scorer(ctx);
-    assertNotNull(s.asTwoPhaseIterator());
+    assertNotNull(s.twoPhaseIterator());
 
     reader.close();
     dir.close();

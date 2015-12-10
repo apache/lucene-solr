@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -269,18 +270,7 @@ final class Sorter {
       return doc;
     }
 
-    @Override
-    public int nextDoc() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long cost() {
+    public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
     }
 

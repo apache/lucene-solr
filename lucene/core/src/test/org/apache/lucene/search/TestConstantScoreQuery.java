@@ -237,7 +237,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
     final Weight weight = searcher.createNormalizedWeight(q, true);
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();

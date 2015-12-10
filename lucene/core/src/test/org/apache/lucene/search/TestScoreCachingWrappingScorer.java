@@ -49,18 +49,25 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
 
     @Override public int docID() { return doc; }
 
-    @Override public int nextDoc() {
-      return ++doc < scores.length ? doc : NO_MORE_DOCS;
-    }
-    
-    @Override public int advance(int target) {
-      doc = target;
-      return doc < scores.length ? doc : NO_MORE_DOCS;
-    }
-
     @Override
-    public long cost() {
-      return scores.length;
+    public DocIdSetIterator iterator() {
+      return new DocIdSetIterator() {
+        @Override public int docID() { return doc; }
+
+        @Override public int nextDoc() {
+          return ++doc < scores.length ? doc : NO_MORE_DOCS;
+        }
+        
+        @Override public int advance(int target) {
+          doc = target;
+          return doc < scores.length ? doc : NO_MORE_DOCS;
+        }
+
+        @Override
+        public long cost() {
+          return scores.length;
+        }
+      };
     }
   }
   
@@ -116,7 +123,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     
     // We need to iterate on the scorer so that its doc() advances.
     int doc;
-    while ((doc = s.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+    while ((doc = s.iterator().nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       scc.collect(doc);
     }
     

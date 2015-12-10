@@ -229,8 +229,8 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
 
       // all NearSpans require at least two subSpans
-      return (!inOrder) ? new NearSpansUnordered(this, slop, subSpans, getSimScorer(context))
-          : new NearSpansOrdered(this, slop, subSpans, getSimScorer(context));
+      return (!inOrder) ? new NearSpansUnordered(slop, subSpans)
+          : new NearSpansOrdered(slop, subSpans);
     }
 
     @Override
@@ -339,7 +339,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     final int width;
 
     GapSpans(int width) {
-      super(null, null);
       this.width = width;
     }
 

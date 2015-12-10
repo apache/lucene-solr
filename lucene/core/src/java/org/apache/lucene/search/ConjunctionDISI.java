@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.CollectionUtil;
 
 /** A conjunction of DocIdSetIterators.
@@ -32,16 +33,16 @@ import org.apache.lucene.util.CollectionUtil;
  */
 public class ConjunctionDISI extends DocIdSetIterator {
 
-  /** Create a conjunction over the provided iterators, taking advantage of
-   *  {@link TwoPhaseIterator}. */
-  public static ConjunctionDISI intersect(List<? extends DocIdSetIterator> iterators) {
-    if (iterators.size() < 2) {
+  /** Create a conjunction over the provided {@link Scorer}s, taking advantage
+   *  of {@link TwoPhaseIterator}. */
+  public static ConjunctionDISI intersectScorers(List<Scorer> scorers) {
+    if (scorers.size() < 2) {
       throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
     }
     final List<DocIdSetIterator> allIterators = new ArrayList<>();
     final List<TwoPhaseIterator> twoPhaseIterators = new ArrayList<>();
-    for (DocIdSetIterator iter : iterators) {
-      addIterator(iter, allIterators, twoPhaseIterators);
+    for (Scorer scorer : scorers) {
+      addScorer(scorer, allIterators, twoPhaseIterators);
     }
 
     if (twoPhaseIterators.isEmpty()) {
@@ -51,12 +52,66 @@ public class ConjunctionDISI extends DocIdSetIterator {
     }
   }
 
-  /** Adds the iterator, possibly splitting up into two phases or collapsing if it is another conjunction */
+  /** Create a conjunction over the provided DocIdSetIterators. */
+  public static ConjunctionDISI intersectIterators(List<DocIdSetIterator> iterators) {
+    if (iterators.size() < 2) {
+      throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
+    }
+    final List<DocIdSetIterator> allIterators = new ArrayList<>();
+    final List<TwoPhaseIterator> twoPhaseIterators = new ArrayList<>();
+    for (DocIdSetIterator iterator : iterators) {
+      addIterator(iterator, allIterators, twoPhaseIterators);
+    }
+
+    if (twoPhaseIterators.isEmpty()) {
+      return new ConjunctionDISI(allIterators);
+    } else {
+      return new TwoPhase(allIterators, twoPhaseIterators);
+    }
+  }
+
+  /** Create a conjunction over the provided {@link Scorer}s, taking advantage
+   *  of {@link TwoPhaseIterator}. */
+  public static ConjunctionDISI intersectSpans(List<Spans> spanList) {
+    if (spanList.size() < 2) {
+      throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
+    }
+    final List<DocIdSetIterator> allIterators = new ArrayList<>();
+    final List<TwoPhaseIterator> twoPhaseIterators = new ArrayList<>();
+    for (Spans spans : spanList) {
+      addSpans(spans, allIterators, twoPhaseIterators);
+    }
+
+    if (twoPhaseIterators.isEmpty()) {
+      return new ConjunctionDISI(allIterators);
+    } else {
+      return new TwoPhase(allIterators, twoPhaseIterators);
+    }
+  }
+
+  /** Adds the scorer, possibly splitting up into two phases or collapsing if it is another conjunction */
+  private static void addScorer(Scorer scorer, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
+    TwoPhaseIterator twoPhaseIter = scorer.twoPhaseIterator();
+    if (twoPhaseIter != null) {
+      addTwoPhaseIterator(twoPhaseIter, allIterators, twoPhaseIterators);
+    } else { // no approximation support, use the iterator as-is
+      addIterator(scorer.iterator(), allIterators, twoPhaseIterators);
+    }
+  }
+
+  /** Adds the Spans. */
+  private static void addSpans(Spans spans, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
+    TwoPhaseIterator twoPhaseIter = spans.asTwoPhaseIterator();
+    if (twoPhaseIter != null) {
+      addTwoPhaseIterator(twoPhaseIter, allIterators, twoPhaseIterators);
+    } else { // no approximation support, use the iterator as-is
+      addIterator(spans, allIterators, twoPhaseIterators);
+    }
+  }
+
   private static void addIterator(DocIdSetIterator disi, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
     // Check for exactly this class for collapsing. Subclasses can do their own optimizations.
-    if (disi.getClass() == ConjunctionScorer.class) {
-      addIterator(((ConjunctionScorer) disi).disi, allIterators, twoPhaseIterators);
-    } else if (disi.getClass() == ConjunctionDISI.class || disi.getClass() == TwoPhase.class) {
+    if (disi.getClass() == ConjunctionDISI.class || disi.getClass() == TwoPhase.class) {
       ConjunctionDISI conjunction = (ConjunctionDISI) disi;
       // subconjuctions have already split themselves into two phase iterators and others, so we can take those
       // iterators as they are and move them up to this conjunction
@@ -67,14 +122,13 @@ public class ConjunctionDISI extends DocIdSetIterator {
         Collections.addAll(twoPhaseIterators, twoPhase.twoPhaseView.twoPhaseIterators);
       }
     } else {
-      TwoPhaseIterator twoPhaseIter = TwoPhaseIterator.asTwoPhaseIterator(disi);
-      if (twoPhaseIter != null) {
-        allIterators.add(twoPhaseIter.approximation());
-        twoPhaseIterators.add(twoPhaseIter);
-      } else { // no approximation support, use the iterator as-is
-        allIterators.add(disi);
-      }
+      allIterators.add(disi);
     }
+  }
+
+  private static void addTwoPhaseIterator(TwoPhaseIterator twoPhaseIter, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
+    addIterator(twoPhaseIter.approximation(), allIterators, twoPhaseIterators);
+    twoPhaseIterators.add(twoPhaseIter);
   }
 
   final DocIdSetIterator lead;

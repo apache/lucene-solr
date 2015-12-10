@@ -344,6 +344,7 @@ public class QueryUtils {
         s.search(q, new SimpleCollector() {
           private Scorer sc;
           private Scorer scorer;
+          private DocIdSetIterator iterator;
           private int leafPtr;
 
           @Override
@@ -360,13 +361,14 @@ public class QueryUtils {
                 Weight w = s.createNormalizedWeight(q, true);
                 LeafReaderContext context = readerContextArray.get(leafPtr);
                 scorer = w.scorer(context);
+                iterator = scorer.iterator();
               }
               
               int op = order[(opidx[0]++) % order.length];
               // System.out.println(op==skip_op ?
               // "skip("+(sdoc[0]+1)+")":"next()");
-              boolean more = op == skip_op ? scorer.advance(scorer.docID() + 1) != DocIdSetIterator.NO_MORE_DOCS
-                  : scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
+              boolean more = op == skip_op ? iterator.advance(scorer.docID() + 1) != DocIdSetIterator.NO_MORE_DOCS
+                  : iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
               int scorerDoc = scorer.docID();
               float scorerScore = scorer.score();
               float scorerScore2 = scorer.score();
@@ -425,9 +427,10 @@ public class QueryUtils {
               LeafReaderContext ctx = (LeafReaderContext)indexSearcher.getTopReaderContext();
               Scorer scorer = w.scorer(ctx);
               if (scorer != null) {
+                DocIdSetIterator iterator = scorer.iterator();
                 boolean more = false;
                 final Bits liveDocs = context.reader().getLiveDocs();
-                for (int d = scorer.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = scorer.nextDoc()) {
+                for (int d = iterator.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = iterator.nextDoc()) {
                   if (liveDocs == null || liveDocs.get(d)) {
                     more = true;
                     break;
@@ -454,9 +457,10 @@ public class QueryUtils {
           LeafReaderContext ctx = previousReader.getContext();
           Scorer scorer = w.scorer(ctx);
           if (scorer != null) {
+            DocIdSetIterator iterator = scorer.iterator();
             boolean more = false;
             final Bits liveDocs = lastReader[0].getLiveDocs();
-            for (int d = scorer.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = scorer.nextDoc()) {
+            for (int d = iterator.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = iterator.nextDoc()) {
               if (liveDocs == null || liveDocs.get(d)) {
                 more = true;
                 break;
@@ -490,7 +494,7 @@ public class QueryUtils {
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = s.createNormalizedWeight(q, true);
             Scorer scorer = w.scorer(context.get(leafPtr));
-            Assert.assertTrue("query collected "+doc+" but advance("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
+            Assert.assertTrue("query collected "+doc+" but advance("+i+") says no more docs!",scorer.iterator().advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but advance("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float advanceScore = scorer.score();
             Assert.assertEquals("unstable advance("+i+") score!",advanceScore,scorer.score(),maxDiff); 
@@ -524,9 +528,10 @@ public class QueryUtils {
           Weight w = indexSearcher.createNormalizedWeight(q, true);
           Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());
           if (scorer != null) {
+            DocIdSetIterator iterator = scorer.iterator();
             boolean more = false;
             final Bits liveDocs = context.reader().getLiveDocs();
-            for (int d = scorer.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = scorer.nextDoc()) {
+            for (int d = iterator.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = iterator.nextDoc()) {
               if (liveDocs == null || liveDocs.get(d)) {
                 more = true;
                 break;
@@ -551,9 +556,10 @@ public class QueryUtils {
       Weight w = indexSearcher.createNormalizedWeight(q, true);
       Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());
       if (scorer != null) {
+        DocIdSetIterator iterator = scorer.iterator();
         boolean more = false;
         final Bits liveDocs = lastReader[0].getLiveDocs();
-        for (int d = scorer.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = scorer.nextDoc()) {
+        for (int d = iterator.advance(lastDoc[0] + 1); d != DocIdSetIterator.NO_MORE_DOCS; d = iterator.nextDoc()) {
           if (liveDocs == null || liveDocs.get(d)) {
             more = true;
             break;
@@ -574,15 +580,16 @@ public class QueryUtils {
         continue;
       } else if (bulkScorer == null) {
         // ensure scorer is exhausted (it just didnt return null)
-        assert scorer.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
+        assert scorer.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
         continue;
       }
+      final DocIdSetIterator iterator = scorer.iterator();
       int upTo = 0;
       while (true) {
         final int min = upTo + r.nextInt(5);
         final int max = min + 1 + r.nextInt(r.nextBoolean() ? 10 : 5000);
         if (scorer.docID() < min) {
-          scorer.advance(min);
+          iterator.advance(min);
         }
         final int next = bulkScorer.score(new LeafCollector() {
           Scorer scorer2;
@@ -596,7 +603,7 @@ public class QueryUtils {
             assert doc < max;
             Assert.assertEquals(scorer.docID(), doc);
             Assert.assertEquals(scorer.score(), scorer2.score(), 0.01f);
-            scorer.nextDoc();
+            iterator.nextDoc();
           }
         }, null, min, max);
         assert max <= next;

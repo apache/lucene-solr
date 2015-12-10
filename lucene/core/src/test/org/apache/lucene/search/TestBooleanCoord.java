@@ -824,7 +824,7 @@ public class TestBooleanCoord extends LuceneTestCase {
     Weight weight = searcher.createNormalizedWeight(query, true);
     Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer.docID() == -1 || scorer.docID() == DocIdSetIterator.NO_MORE_DOCS);
-    assertEquals(0, scorer.nextDoc());
+    assertEquals(0, scorer.iterator().nextDoc());
     assertEquals(expected, scorer.score(), 0.0001f);
 
     // test bulk scorer

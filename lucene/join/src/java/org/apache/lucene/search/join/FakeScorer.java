@@ -19,6 +19,7 @@ package org.apache.lucene.search.join;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 
 class FakeScorer extends Scorer {
@@ -37,17 +38,7 @@ class FakeScorer extends Scorer {
   }
 
   @Override
-  public int nextDoc() throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int advance(int target) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public long cost() {
+  public DocIdSetIterator iterator() {
     throw new UnsupportedOperationException();
   }
 

@@ -55,39 +55,15 @@ final class TermScorer extends Scorer {
     return postingsEnum.freq();
   }
 
-  /**
-   * Advances to the next document matching the query. <br>
-   *
-   * @return the document matching the query or NO_MORE_DOCS if there are no more documents.
-   */
   @Override
-  public int nextDoc() throws IOException {
-    return postingsEnum.nextDoc();
+  public DocIdSetIterator iterator() {
+    return postingsEnum;
   }
 
   @Override
   public float score() throws IOException {
-    assert docID() != NO_MORE_DOCS;
+    assert docID() != DocIdSetIterator.NO_MORE_DOCS;
     return docScorer.score(postingsEnum.docID(), postingsEnum.freq());
-  }
-
-  /**
-   * Advances to the first match beyond the current whose document number is
-   * greater than or equal to a given target. <br>
-   * The implementation uses {@link org.apache.lucene.index.PostingsEnum#advance(int)}.
-   *
-   * @param target
-   *          The target document number.
-   * @return the matching document or NO_MORE_DOCS if none exist.
-   */
-  @Override
-  public int advance(int target) throws IOException {
-    return postingsEnum.advance(target);
-  }
-
-  @Override
-  public long cost() {
-    return postingsEnum.cost();
   }
 
   /** Returns a string representation of this <code>TermScorer</code>. */

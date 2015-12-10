@@ -116,9 +116,9 @@ public class BoostingQuery extends Query {
           if (contextScorer == null) {
             return matchScorer;
           }
-          final TwoPhaseIterator contextTwoPhase = contextScorer.asTwoPhaseIterator();
+          final TwoPhaseIterator contextTwoPhase = contextScorer.twoPhaseIterator();
           final DocIdSetIterator contextApproximation = contextTwoPhase == null
-              ? contextScorer
+              ? contextScorer.iterator()
               : contextTwoPhase.approximation();
           return new FilterScorer(matchScorer) {
             @Override

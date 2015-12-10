@@ -46,11 +46,11 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
   }
 
   @Override
-  protected float score(DisiWrapper<Scorer> topList) throws IOException {
+  protected float score(DisiWrapper topList) throws IOException {
     float scoreSum = 0;
     float scoreMax = 0;
-    for (DisiWrapper<Scorer> w = topList; w != null; w = w.next) {
-      final float subScore = w.iterator.score();
+    for (DisiWrapper w = topList; w != null; w = w.next) {
+      final float subScore = w.scorer.score();
       scoreSum += subScore;
       if (subScore > scoreMax) {
         scoreMax = subScore;

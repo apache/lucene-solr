@@ -303,12 +303,12 @@ public class TestSpans extends LuceneTestCase {
         searcher.setSimilarity(oldSim);
       }
       if (i == subIndex) {
-        assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue("first doc", spanScorer.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
         assertEquals("first doc number", spanScorer.docID() + ctx.docBase, 11);
         float score = spanScorer.score();
         assertTrue("first doc score should be zero, " + score, score == 0.0f);
       } else {
-        assertTrue("no second doc", spanScorer == null || spanScorer.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue("no second doc", spanScorer == null || spanScorer.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
       }
     }
   }

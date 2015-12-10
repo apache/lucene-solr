@@ -19,8 +19,9 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
 /** Iterates through combinations of start/end positions per-doc.
@@ -28,23 +29,9 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
  *  These are enumerated in order, by increasing document number, within that by
  *  increasing start position and finally by increasing end position.
  */
-public abstract class Spans extends Scorer {
+public abstract class Spans extends DocIdSetIterator {
 
   public static final int NO_MORE_POSITIONS = Integer.MAX_VALUE;
-
-  protected final Similarity.SimScorer docScorer;
-
-  protected Spans(SpanWeight weight, SimScorer docScorer) {
-    super(weight);
-    this.docScorer = docScorer;
-  }
-
-  /** accumulated sloppy freq (computed in setFreqCurrentDoc) */
-  protected float freq;
-  /** number of matches (computed in setFreqCurrentDoc) */
-  protected int numMatches;
-
-  private int lastScoredDoc = -1; // last doc we called setFreqCurrentDoc() for
 
   /**
    * Returns the next start position for the current doc.
@@ -97,6 +84,16 @@ public abstract class Spans extends Scorer {
    */
   public abstract float positionsCost();
 
+  /**
+   * Optional method: Return a {@link TwoPhaseIterator} view of this
+   * {@link Scorer}. A return value of {@code null} indicates that
+   * two-phase iteration is not supported.
+   * @see Scorer#twoPhaseIterator()
+   */
+  public TwoPhaseIterator asTwoPhaseIterator() {
+    return null;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -110,58 +107,6 @@ public abstract class Spans extends Scorer {
   }
 
   /**
-   * Ensure setFreqCurrentDoc is called, if not already called for the current doc.
-   */
-  private void ensureFreq() throws IOException {
-    int currentDoc = docID();
-    if (lastScoredDoc != currentDoc) {
-      setFreqCurrentDoc();
-      lastScoredDoc = currentDoc;
-    }
-  }
-
-  /**
-   * Sets {@link #freq} and {@link #numMatches} for the current document.
-   * <p>
-   * This will be called at most once per document.
-   */
-  protected final void setFreqCurrentDoc() throws IOException {
-    freq = 0.0f;
-    numMatches = 0;
-
-    doStartCurrentDoc();
-
-    assert startPosition() == -1 : "incorrect initial start position, " + this.toString();
-    assert endPosition() == -1 : "incorrect initial end position, " + this.toString();
-    int prevStartPos = -1;
-    int prevEndPos = -1;
-
-    int startPos = nextStartPosition();
-    assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, " + this.toString();
-    do {
-      assert startPos >= prevStartPos;
-      int endPos = endPosition();
-      assert endPos != Spans.NO_MORE_POSITIONS;
-      // This assertion can fail for Or spans on the same term:
-      // assert (startPos != prevStartPos) || (endPos > prevEndPos) : "non increased endPos="+endPos;
-      assert (startPos != prevStartPos) || (endPos >= prevEndPos) : "decreased endPos="+endPos;
-      numMatches++;
-      if (docScorer == null) {  // scores not required, break out here
-        freq = 1;
-        return;
-      }
-      freq += docScorer.computeSlopFactor(width());
-      doCurrentSpans();
-      prevStartPos = startPos;
-      prevEndPos = endPos;
-      startPos = nextStartPosition();
-    } while (startPos != Spans.NO_MORE_POSITIONS);
-
-    assert startPosition() == Spans.NO_MORE_POSITIONS : "incorrect final start position, " + this.toString();
-    assert endPosition() == Spans.NO_MORE_POSITIONS : "incorrect final end position, " + this.toString();
-  }
-
-  /**
    * Called before the current doc's frequency is calculated
    */
   protected void doStartCurrentDoc() throws IOException {}
@@ -170,33 +115,5 @@ public abstract class Spans extends Scorer {
    * Called each time the scorer's SpanScorer is advanced during frequency calculation
    */
   protected void doCurrentSpans() throws IOException {}
-
-  /**
-   * Score the current doc. The default implementation scores the doc
-   * with the similarity using the slop-adjusted {@link #freq}.
-   */
-  protected float scoreCurrentDoc() throws IOException {
-    assert docScorer != null : getClass() + " has a null docScorer!";
-    return docScorer.score(docID(), freq);
-  }
-
-  @Override
-  public final float score() throws IOException {
-    ensureFreq();
-    return scoreCurrentDoc();
-  }
-
-  @Override
-  public final int freq() throws IOException {
-    ensureFreq();
-    return numMatches;
-  }
-
-  /** Returns the intermediate "sloppy freq" adjusted for edit distance
-   *  @lucene.internal */
-  public final float sloppyFreq() throws IOException {
-    ensureFreq();
-    return freq;
-  }
 
 }

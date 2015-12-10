@@ -285,9 +285,9 @@ public class FilteredQuery extends Query {
           if (s == null) {
             match = false;
           } else {
-            final TwoPhaseIterator twoPhase = s.asTwoPhaseIterator();
+            final TwoPhaseIterator twoPhase = s.twoPhaseIterator();
             if (twoPhase == null) {
-              match = s.advance(doc) == doc;
+              match = s.iterator().advance(doc) == doc;
             } else {
               match = twoPhase.approximation().advance(doc) == doc && twoPhase.matches();
             }

@@ -132,7 +132,7 @@ public class CachingWrapperQuery extends Query implements Accountable, Cloneable
           if (scorer == null) {
             docIdSet = DocIdSet.EMPTY;
           } else {
-            docIdSet = cacheImpl(scorer, context.reader());
+            docIdSet = cacheImpl(scorer.iterator(), context.reader());
           }
           cache.put(key, docIdSet);
         } else {

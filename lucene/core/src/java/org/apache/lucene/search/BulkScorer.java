@@ -84,7 +84,7 @@ public abstract class BulkScorer {
   public abstract int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException;
 
   /**
-   * Same as {@link Scorer#cost()} for bulk scorers.
+   * Same as {@link DocIdSetIterator#cost()} for bulk scorers.
    */
   public abstract long cost();
 }

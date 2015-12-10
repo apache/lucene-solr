@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -95,7 +96,7 @@ public class FunctionQuery extends Query {
     final FunctionWeight weight;
     final int maxDoc;
     final float qWeight;
-    int doc=-1;
+    final DocIdSetIterator iterator;
     final FunctionValues vals;
 
     public AllScorer(LeafReaderContext context, FunctionWeight w, float qWeight) throws IOException {
@@ -104,45 +105,28 @@ public class FunctionQuery extends Query {
       this.qWeight = qWeight;
       this.reader = context.reader();
       this.maxDoc = reader.maxDoc();
+      iterator = DocIdSetIterator.all(context.reader().maxDoc());
       vals = func.getValues(weight.context, context);
     }
 
     @Override
+    public DocIdSetIterator iterator() {
+      return iterator;
+    }
+
+    @Override
     public int docID() {
-      return doc;
-    }
-
-    // instead of matching all docs, we could also embed a query.
-    // the score could either ignore the subscore, or boost it.
-    // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)
-    // Boost:        foo:myTerm^floatline("myFloatField",1.0,0.0f)
-    @Override
-    public int nextDoc() throws IOException {
-      ++doc;
-      if (doc>=maxDoc) {
-        return doc=NO_MORE_DOCS;
-      }
-      return doc;
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return slowAdvance(target);
+      return iterator.docID();
     }
 
     @Override
     public float score() throws IOException {
-      float score = qWeight * vals.floatVal(doc);
+      float score = qWeight * vals.floatVal(docID());
 
       // Current Lucene priority queues can't handle NaN and -Infinity, so
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
       // and NaN since comparisons with NaN are always false.
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
-    }
-
-    @Override
-    public long cost() {
-      return maxDoc;
     }
 
     @Override

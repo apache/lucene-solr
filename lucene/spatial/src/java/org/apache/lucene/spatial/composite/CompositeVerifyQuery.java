@@ -106,7 +106,7 @@ public class CompositeVerifyQuery extends Query {
 
         final FunctionValues predFuncValues = predicateValueSource.getValues(valueSourceContext, context);
 
-        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(indexQueryScorer) {
+        final TwoPhaseIterator twoPhaseIterator = new TwoPhaseIterator(indexQueryScorer.iterator()) {
           @Override
           public boolean matches() throws IOException {
             return predFuncValues.boolVal(indexQueryScorer.docID());

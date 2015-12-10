@@ -136,9 +136,9 @@ final class GlobalOrdinalsQuery extends Query {
         return null;
       }
       if (globalOrds != null) {
-        return new OrdinalMapScorer(this, score(), foundOrds, values, approximationScorer, globalOrds.getGlobalOrds(context.ord));
+        return new OrdinalMapScorer(this, score(), foundOrds, values, approximationScorer.iterator(), globalOrds.getGlobalOrds(context.ord));
       } {
-        return new SegmentOrdinalScorer(this, score(), foundOrds, values, approximationScorer);
+        return new SegmentOrdinalScorer(this, score(), foundOrds, values, approximationScorer.iterator());
       }
     }
 
@@ -149,25 +149,11 @@ final class GlobalOrdinalsQuery extends Query {
     final LongBitSet foundOrds;
     final LongValues segmentOrdToGlobalOrdLookup;
 
-    public OrdinalMapScorer(Weight weight, float score, LongBitSet foundOrds, SortedDocValues values, Scorer approximationScorer, LongValues segmentOrdToGlobalOrdLookup) {
+    public OrdinalMapScorer(Weight weight, float score, LongBitSet foundOrds, SortedDocValues values, DocIdSetIterator approximationScorer, LongValues segmentOrdToGlobalOrdLookup) {
       super(weight, values, approximationScorer);
       this.score = score;
       this.foundOrds = foundOrds;
       this.segmentOrdToGlobalOrdLookup = segmentOrdToGlobalOrdLookup;
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      for (int docID = approximationScorer.advance(target); docID < NO_MORE_DOCS; docID = approximationScorer.nextDoc()) {
-        final long segmentOrd = values.getOrd(docID);
-        if (segmentOrd != -1) {
-          final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
-          if (foundOrds.get(globalOrd)) {
-            return docID;
-          }
-        }
-      }
-      return NO_MORE_DOCS;
     }
 
     @Override
@@ -176,7 +162,7 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          final long segmentOrd = values.getOrd(approximationScorer.docID());
+          final long segmentOrd = values.getOrd(approximation.docID());
           if (segmentOrd != -1) {
             final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
             if (foundOrds.get(globalOrd)) {
@@ -198,23 +184,10 @@ final class GlobalOrdinalsQuery extends Query {
 
     final LongBitSet foundOrds;
 
-    public SegmentOrdinalScorer(Weight weight, float score, LongBitSet foundOrds, SortedDocValues values, Scorer approximationScorer) {
+    public SegmentOrdinalScorer(Weight weight, float score, LongBitSet foundOrds, SortedDocValues values, DocIdSetIterator approximationScorer) {
       super(weight, values, approximationScorer);
       this.score = score;
       this.foundOrds = foundOrds;
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      for (int docID = approximationScorer.advance(target); docID < NO_MORE_DOCS; docID = approximationScorer.nextDoc()) {
-        final long segmentOrd = values.getOrd(docID);
-        if (segmentOrd != -1) {
-          if (foundOrds.get(segmentOrd)) {
-            return docID;
-          }
-        }
-      }
-      return NO_MORE_DOCS;
     }
 
     @Override
@@ -223,7 +196,7 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          final long segmentOrd = values.getOrd(approximationScorer.docID());
+          final long segmentOrd = values.getOrd(approximation.docID());
           if (segmentOrd != -1) {
             if (foundOrds.get(segmentOrd)) {
               return true;

@@ -206,17 +206,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public long cost() {
+    public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

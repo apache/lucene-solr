@@ -72,7 +72,7 @@ public final class SpanWithinQuery extends SpanContainQuery {
       Spans big = containerContained.get(0);
       Spans little = containerContained.get(1);
 
-      return new ContainSpans(this, getSimScorer(context), big, little, little) {
+      return new ContainSpans(big, little, little) {
 
         @Override
         boolean twoPhaseCurrentDocMatches() throws IOException {

@@ -293,7 +293,7 @@ public class CustomScoreQuery extends Query implements Cloneable {
       int doc = docID();
       if (doc > valSrcDocID) {
         for (Scorer valSrcScorer : valSrcScorers) {
-          valSrcScorer.advance(doc);
+          valSrcScorer.iterator().advance(doc);
         }
         valSrcDocID = doc;
       }

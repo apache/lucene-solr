@@ -27,11 +27,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
@@ -90,7 +91,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
       final PayloadChecker collector = new PayloadChecker();
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
-      return (matchSpans == null) ? null : new FilterSpans(matchSpans, getSimScorer(context)) {
+      return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
         protected AcceptStatus accept(Spans candidate) throws IOException {
           collector.reset();
@@ -101,7 +102,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public SpanScorer scorer(LeafReaderContext context) throws IOException {
       if (field == null)
         return null;
 
@@ -110,7 +111,12 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
       }
 
-      return getSpans(context, Postings.PAYLOADS);
+      final Spans spans = getSpans(context, Postings.PAYLOADS);
+      if (spans == null) {
+        return null;
+      }
+      final Similarity.SimScorer docScorer = getSimScorer(context);
+      return new SpanScorer(this, spans, docScorer);
     }
   }
 
