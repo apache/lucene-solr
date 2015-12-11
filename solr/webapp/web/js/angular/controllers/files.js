@@ -71,7 +71,12 @@ solrAdminApp.controller('FilesController',
             process("", $scope.tree);
 
             if ($scope.file && $scope.file != '' && $scope.file.split('').pop()!='/') {
-                var extension = $scope.file.match( /\.(\w+)$/)[1] || '';
+                var extension;
+                if ($scope.file == "managed-schema") {
+                  extension = contentTypeMap['xml'];
+                } else {
+                  extension = $scope.file.match( /\.(\w+)$/)[1] || '';
+                }
                 var contentType = (contentTypeMap[extension] || 'text/plain' ) + ';charset=utf-8';
 
                 Files.get({core: $routeParams.core, file: $scope.file, contentType: contentType}, function(data) {
