@@ -19,7 +19,7 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.bkd.BKDUtil;
+import org.apache.lucene.util.NumericUtils;
 
 /** Add this to a document to index lat/lon point dimensionally */
 public final class DimensionalLatLonField extends Field {
@@ -46,8 +46,8 @@ public final class DimensionalLatLonField extends Field {
       throw new IllegalArgumentException("invalid lon (" + lon + "): must be -180 to 180");
     }
     byte[] bytes = new byte[8];
-    BKDUtil.intToBytes(encodeLat(lat), bytes, 0);
-    BKDUtil.intToBytes(encodeLon(lon), bytes, 1);
+    NumericUtils.intToBytes(encodeLat(lat), bytes, 0);
+    NumericUtils.intToBytes(encodeLon(lon), bytes, 1);
     fieldsData = new BytesRef(bytes);
   }
 

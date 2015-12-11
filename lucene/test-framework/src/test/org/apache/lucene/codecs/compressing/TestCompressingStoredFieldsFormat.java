@@ -22,11 +22,10 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.DimensionalIntField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 import org.apache.lucene.index.CodecReader;
@@ -39,7 +38,6 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -71,7 +69,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     IndexWriter iw = new IndexWriter(dir, iwConf);
 
     final Document validDoc = new Document();
-    validDoc.add(new IntField("id", 0, Store.YES));
+    validDoc.add(new DimensionalIntField("id", 0));
+    validDoc.add(new StoredField("id", 0));
     iw.addDocument(validDoc);
     iw.commit();
     

@@ -46,7 +46,7 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
     assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
-    assertTrue(q instanceof NumericRangeQuery);
+    assertTrue(q instanceof LegacyNumericRangeQuery);
   }
 
   @Test

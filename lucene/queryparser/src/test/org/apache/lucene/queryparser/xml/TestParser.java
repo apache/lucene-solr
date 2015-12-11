@@ -23,8 +23,7 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -37,7 +36,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 
 import java.io.BufferedReader;
@@ -45,7 +43,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 
 public class TestParser extends LuceneTestCase {
@@ -75,7 +72,7 @@ public class TestParser extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("date", date, Field.Store.YES));
       doc.add(newTextField("contents", content, Field.Store.YES));
-      doc.add(new IntField("date2", Integer.valueOf(date), Field.Store.NO));
+      doc.add(new LegacyIntField("date2", Integer.valueOf(date), Field.Store.NO));
       writer.addDocument(doc);
       line = d.readLine();
     }
@@ -184,8 +181,8 @@ public class TestParser extends LuceneTestCase {
   }
 
   public void testNumericRangeQueryXML() throws ParserException, IOException {
-    Query q = parse("NumericRangeQuery.xml");
-    dumpResults("NumericRangeQuery", q, 5);
+    Query q = parse("LegacyNumericRangeQuery.xml");
+    dumpResults("LegacyNumericRangeQuery", q, 5);
   }
 
   //================= Helper methods ===================================

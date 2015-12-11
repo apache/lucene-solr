@@ -2,6 +2,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.DimensionalBinaryField;
+import org.apache.lucene.document.DimensionalDoubleField;
+import org.apache.lucene.document.DimensionalFloatField;
+import org.apache.lucene.document.DimensionalIntField;
+import org.apache.lucene.document.DimensionalLongField;
+import org.apache.lucene.util.bkd.BKDWriter;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,10 +26,18 @@ import java.io.IOException;
  * limitations under the License.
  */
 
-/** Allows recursively visiting indexed dimensional values
+/** Allows recursively visiting dimensional values indexed with {@link DimensionalIntField},
+ *  {@link DimensionalFloatField}, {@link DimensionalLongField}, {@link DimensionalDoubleField}
+ *  or {@link DimensionalBinaryField}.
  *
  *  @lucene.experimental */
 public abstract class DimensionalValues {
+
+  /** Maximum number of bytes for each dimension */
+  public static final int MAX_NUM_BYTES = 16;
+
+  /** Maximum number of dimensions */
+  public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
 
   /** Defautl constructor */
   protected DimensionalValues() {

@@ -30,7 +30,7 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 
@@ -83,7 +83,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
               assert !exists(doc) : "zero bytes for doc, but exists is true";
               return 0D;
             }
-            return  NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(bytes));
+            return  LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(bytes));
           }
 
           @Override
@@ -108,7 +108,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
                 //mval.value = mval.exists ? doubleVal(doc) : 0.0D;
                 BytesRef bytes = view.get(doc);
                 mval.exists = (0 == bytes.length);
-                mval.value = mval.exists ? NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(bytes)) : 0D;
+                mval.value = mval.exists ? LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(bytes)) : 0D;
               }
             };
           }

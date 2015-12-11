@@ -36,12 +36,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyDoubleField;
+import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 
@@ -119,8 +119,8 @@ public class DocMaker implements Closeable {
         fields.put(ID_FIELD, new StringField(ID_FIELD, "", Field.Store.YES));
         fields.put(NAME_FIELD, new Field(NAME_FIELD, "", ft));
 
-        numericFields.put(DATE_MSEC_FIELD, new LongField(DATE_MSEC_FIELD, 0L, Field.Store.NO));
-        numericFields.put(TIME_SEC_FIELD, new IntField(TIME_SEC_FIELD, 0, Field.Store.NO));
+        numericFields.put(DATE_MSEC_FIELD, new LegacyLongField(DATE_MSEC_FIELD, 0L, Field.Store.NO));
+        numericFields.put(TIME_SEC_FIELD, new LegacyIntField(TIME_SEC_FIELD, 0, Field.Store.NO));
         
         doc = new Document();
       } else {
@@ -148,7 +148,7 @@ public class DocMaker implements Closeable {
       return f;
     }
 
-    Field getNumericField(String name, NumericType type) {
+    Field getNumericField(String name, LegacyNumericType type) {
       Field f;
       if (reuseFields) {
         f = numericFields.get(name);
@@ -159,16 +159,16 @@ public class DocMaker implements Closeable {
       if (f == null) {
         switch(type) {
         case INT:
-          f = new IntField(name, 0, Field.Store.NO);
+          f = new LegacyIntField(name, 0, Field.Store.NO);
           break;
         case LONG:
-          f = new LongField(name, 0L, Field.Store.NO);
+          f = new LegacyLongField(name, 0L, Field.Store.NO);
           break;
         case FLOAT:
-          f = new FloatField(name, 0.0F, Field.Store.NO);
+          f = new LegacyFloatField(name, 0.0F, Field.Store.NO);
           break;
         case DOUBLE:
-          f = new DoubleField(name, 0.0, Field.Store.NO);
+          f = new LegacyDoubleField(name, 0.0, Field.Store.NO);
           break;
         default:
           throw new AssertionError("Cannot get here");
@@ -278,14 +278,14 @@ public class DocMaker implements Closeable {
       date = new Date();
     }
 
-    Field dateField = ds.getNumericField(DATE_MSEC_FIELD, NumericType.LONG);
+    Field dateField = ds.getNumericField(DATE_MSEC_FIELD, FieldType.LegacyNumericType.LONG);
     dateField.setLongValue(date.getTime());
     doc.add(dateField);
 
     util.cal.setTime(date);
     final int sec = util.cal.get(Calendar.HOUR_OF_DAY)*3600 + util.cal.get(Calendar.MINUTE)*60 + util.cal.get(Calendar.SECOND);
 
-    Field timeSecField = ds.getNumericField(TIME_SEC_FIELD, NumericType.INT);
+    Field timeSecField = ds.getNumericField(TIME_SEC_FIELD, LegacyNumericType.INT);
     timeSecField.setIntValue(sec);
     doc.add(timeSecField);
     

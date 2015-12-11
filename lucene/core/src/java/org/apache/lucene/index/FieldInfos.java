@@ -337,6 +337,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
 
     synchronized void setDimensions(int number, String name, int dimensionCount, int dimensionNumBytes) {
+      if (dimensionNumBytes > DimensionalValues.MAX_NUM_BYTES) {
+        throw new IllegalArgumentException("dimension numBytes must be <= DimensionalValues.MAX_NUM_BYTES (= " + DimensionalValues.MAX_NUM_BYTES + "); got " + dimensionNumBytes + " for field=\"" + name + "\"");
+      }
+      if (dimensionCount > DimensionalValues.MAX_DIMENSIONS) {
+        throw new IllegalArgumentException("dimensionCount must be <= DimensionalValues.MAX_DIMENSIONS (= " + DimensionalValues.MAX_DIMENSIONS + "); got " + dimensionCount + " for field=\"" + name + "\"");
+      }
       verifyConsistentDimensions(number, name, dimensionCount, dimensionNumBytes);
       dimensions.put(name, new FieldDimensions(dimensionCount, dimensionNumBytes));
     }

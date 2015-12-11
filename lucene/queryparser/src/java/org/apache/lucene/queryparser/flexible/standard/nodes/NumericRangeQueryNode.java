@@ -17,10 +17,10 @@ package org.apache.lucene.queryparser.flexible.standard.nodes;
  * the License.
  */
 
-import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
-import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 
@@ -53,16 +53,16 @@ public class NumericRangeQueryNode extends
     setBounds(lower, upper, lowerInclusive, upperInclusive, numericConfig);
   }
   
-  private static NumericType getNumericDataType(Number number) throws QueryNodeException {
+  private static LegacyNumericType getNumericDataType(Number number) throws QueryNodeException {
     
     if (number instanceof Long) {
-      return NumericType.LONG;
+      return FieldType.LegacyNumericType.LONG;
     } else if (number instanceof Integer) {
-      return NumericType.INT;
+      return FieldType.LegacyNumericType.INT;
     } else if (number instanceof Double) {
-      return NumericType.DOUBLE;
+      return LegacyNumericType.DOUBLE;
     } else if (number instanceof Float) {
-      return NumericType.FLOAT;
+      return FieldType.LegacyNumericType.FLOAT;
     } else {
       throw new QueryNodeException(
           new MessageImpl(
@@ -90,7 +90,7 @@ public class NumericRangeQueryNode extends
       throw new IllegalArgumentException("numericConfig cannot be null!");
     }
     
-    NumericType lowerNumberType, upperNumberType;
+    LegacyNumericType lowerNumberType, upperNumberType;
     
     if (lower != null && lower.getValue() != null) {
       lowerNumberType = getNumericDataType(lower.getValue());

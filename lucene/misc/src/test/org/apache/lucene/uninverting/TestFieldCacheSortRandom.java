@@ -31,7 +31,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -119,7 +119,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
         docValues.add(null);
       }
 
-      doc.add(new IntField("id", numDocs, Field.Store.YES));
+      doc.add(new LegacyIntField("id", numDocs, Field.Store.YES));
       writer.addDocument(doc);
       numDocs++;
 

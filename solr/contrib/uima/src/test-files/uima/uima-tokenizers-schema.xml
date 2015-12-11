@@ -108,7 +108,7 @@
       Numeric field types that index each value at various levels of
       precision to accelerate range queries when the number of values
       between the range endpoints is large. See the javadoc for
-      NumericRangeQuery for internal implementation details. Smaller
+      LegacyNumericRangeQuery for internal implementation details. Smaller
       precisionStep values (specified in bits) will lead to more tokens
       indexed per value, slightly larger index size, and faster range
       queries. A precisionStep of 0 disables indexing at different

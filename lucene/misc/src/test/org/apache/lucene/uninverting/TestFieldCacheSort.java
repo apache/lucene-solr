@@ -24,11 +24,11 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyFloatField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -450,13 +450,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new IntField("value", 300000, Field.Store.YES));
+    doc.add(new LegacyIntField("value", 300000, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", -1, Field.Store.YES));
+    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", 4, Field.Store.YES));
+    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
@@ -483,10 +483,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", -1, Field.Store.YES));
+    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", 4, Field.Store.YES));
+    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
@@ -513,10 +513,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", -1, Field.Store.YES));
+    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", 4, Field.Store.YES));
+    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
@@ -543,13 +543,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new IntField("value", 300000, Field.Store.YES));
+    doc.add(new LegacyIntField("value", 300000, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", -1, Field.Store.YES));
+    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new IntField("value", 4, Field.Store.YES));
+    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.INTEGER));
@@ -574,13 +574,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new LongField("value", 3000000000L, Field.Store.YES));
+    doc.add(new LegacyLongField("value", 3000000000L, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", -1, Field.Store.YES));
+    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", 4, Field.Store.YES));
+    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
@@ -607,10 +607,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", -1, Field.Store.YES));
+    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", 4, Field.Store.YES));
+    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
@@ -637,10 +637,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", -1, Field.Store.YES));
+    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", 4, Field.Store.YES));
+    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
@@ -667,13 +667,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new LongField("value", 3000000000L, Field.Store.YES));
+    doc.add(new LegacyLongField("value", 3000000000L, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", -1, Field.Store.YES));
+    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LongField("value", 4, Field.Store.YES));
+    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.LONG));
@@ -698,13 +698,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new FloatField("value", 30.1f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", 30.1f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
@@ -731,10 +731,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
@@ -761,10 +761,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
@@ -791,13 +791,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new FloatField("value", 30.1f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", 30.1f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
+    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.FLOAT));
@@ -822,16 +822,16 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new DoubleField("value", 30.1, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 30.1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
@@ -857,10 +857,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new DoubleField("value", +0d, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", +0d, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", -0d, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", -0d, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
@@ -892,13 +892,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
@@ -926,13 +926,13 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
@@ -960,16 +960,16 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new DoubleField("value", 30.1, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 30.1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
+    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
                      Collections.singletonMap("value", Type.DOUBLE));
@@ -1050,7 +1050,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     for(int seg=0;seg<2;seg++) {
       for(int docIDX=0;docIDX<10;docIDX++) {
         Document doc = new Document();
-        doc.add(new IntField("id", docIDX, Field.Store.YES));
+        doc.add(new LegacyIntField("id", docIDX, Field.Store.YES));
         StringBuilder sb = new StringBuilder();
         for(int i=0;i<id;i++) {
           sb.append(' ');

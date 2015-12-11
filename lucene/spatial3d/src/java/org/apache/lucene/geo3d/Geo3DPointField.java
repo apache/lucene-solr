@@ -20,8 +20,8 @@ package org.apache.lucene.geo3d;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.bkd.BKDUtil;
 
 /** Add this to a document to index lat/lon or x/y/z point, indexed as a dimensional value.
  *  Multiple values are allowed: just add multiple Geo3DPointField to the document with the
@@ -61,9 +61,9 @@ public final class Geo3DPointField extends Field {
 
   private void fillFieldsData(double planetMax, double x, double y, double z) {
     byte[] bytes = new byte[12];
-    BKDUtil.intToBytes(Geo3DUtil.encodeValue(planetMax, x), bytes, 0);
-    BKDUtil.intToBytes(Geo3DUtil.encodeValue(planetMax, y), bytes, 1);
-    BKDUtil.intToBytes(Geo3DUtil.encodeValue(planetMax, z), bytes, 2);
+    NumericUtils.intToBytes(Geo3DUtil.encodeValue(planetMax, x), bytes, 0);
+    NumericUtils.intToBytes(Geo3DUtil.encodeValue(planetMax, y), bytes, 1);
+    NumericUtils.intToBytes(Geo3DUtil.encodeValue(planetMax, z), bytes, 2);
     fieldsData = new BytesRef(bytes);
   }
 }

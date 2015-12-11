@@ -19,9 +19,9 @@ package org.apache.lucene.geo3d;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
 import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -31,7 +31,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.bkd.BKDUtil;
+import org.apache.lucene.util.NumericUtils;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
@@ -106,9 +106,9 @@ public class PointInGeo3DShapeQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 12;
-                             double x = Geo3DUtil.decodeValueCenter(planetMax, BKDUtil.bytesToInt(packedValue, 0));
-                             double y = Geo3DUtil.decodeValueCenter(planetMax, BKDUtil.bytesToInt(packedValue, 1));
-                             double z = Geo3DUtil.decodeValueCenter(planetMax, BKDUtil.bytesToInt(packedValue, 2));
+                             double x = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 0));
+                             double y = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 1));
+                             double z = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 2));
                              if (shape.isWithin(x, y, z)) {
                                result.add(docID);
                                hitCount[0]++;
@@ -121,12 +121,12 @@ public class PointInGeo3DShapeQuery extends Query {
                              // here are inclusive, we need to extend the bounds to the largest un-quantized values that
                              // could quantize into these bounds.  The encoding (Geo3DUtil.encodeValue) does
                              // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
-                             double xMin = Geo3DUtil.decodeValueMin(planetMax, BKDUtil.bytesToInt(minPackedValue, 0));
-                             double xMax = Geo3DUtil.decodeValueMax(planetMax, BKDUtil.bytesToInt(maxPackedValue, 0));
-                             double yMin = Geo3DUtil.decodeValueMin(planetMax, BKDUtil.bytesToInt(minPackedValue, 1));
-                             double yMax = Geo3DUtil.decodeValueMax(planetMax, BKDUtil.bytesToInt(maxPackedValue, 1));
-                             double zMin = Geo3DUtil.decodeValueMin(planetMax, BKDUtil.bytesToInt(minPackedValue, 2));
-                             double zMax = Geo3DUtil.decodeValueMax(planetMax, BKDUtil.bytesToInt(maxPackedValue, 2));
+                             double xMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 0));
+                             double xMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 0));
+                             double yMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 1));
+                             double yMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 1));
+                             double zMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 2));
+                             double zMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 2));
 
                              //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
                              assert xMin <= xMax;

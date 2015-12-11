@@ -86,6 +86,9 @@ API Changes
   IndexOutput.getName returns its name (Dawid Weiss, Robert Muir, Mike
   McCandless)
 
+* LUCENE-6917: Deprecate and rename NumericXXX classes to
+  LegacyNumericXXX in favor of dimensional values (Mike McCandless)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing dimensional values in 

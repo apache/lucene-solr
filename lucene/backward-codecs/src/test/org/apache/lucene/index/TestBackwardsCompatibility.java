@@ -43,8 +43,8 @@ import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -54,7 +54,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -68,9 +68,9 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
@@ -939,8 +939,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", customType2));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", customType2));
     // add numeric fields, to test if flex preserves encoding
-    doc.add(new IntField("trieInt", id, Field.Store.NO));
-    doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
+    doc.add(new LegacyIntField("trieInt", id, Field.Store.NO));
+    doc.add(new LegacyLongField("trieLong", (long) id, Field.Store.NO));
     // add docvalues fields
     doc.add(new NumericDocValuesField("dvByte", (byte) id));
     byte bytes[] = new byte[] {
@@ -1103,36 +1103,36 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexSearcher searcher = newSearcher(reader);
       
       for (int id=10; id<15; id++) {
-        ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", NumericUtils.PRECISION_STEP_DEFAULT_32, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
+        ScoreDoc[] hits = searcher.search(LegacyNumericRangeQuery.newIntRange("trieInt", LegacyNumericUtils.PRECISION_STEP_DEFAULT_32, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
         StoredDocument d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.get("id"));
         
-        hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", NumericUtils.PRECISION_STEP_DEFAULT, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
+        hits = searcher.search(LegacyNumericRangeQuery.newLongRange("trieLong", LegacyNumericUtils.PRECISION_STEP_DEFAULT, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
         d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.get("id"));
       }
       
       // check that also lower-precision fields are ok
-      ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", NumericUtils.PRECISION_STEP_DEFAULT_32, Integer.MIN_VALUE, Integer.MAX_VALUE, false, false), 100).scoreDocs;
+      ScoreDoc[] hits = searcher.search(LegacyNumericRangeQuery.newIntRange("trieInt", LegacyNumericUtils.PRECISION_STEP_DEFAULT_32, Integer.MIN_VALUE, Integer.MAX_VALUE, false, false), 100).scoreDocs;
       assertEquals("wrong number of hits", 34, hits.length);
       
-      hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", NumericUtils.PRECISION_STEP_DEFAULT, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
+      hits = searcher.search(LegacyNumericRangeQuery.newLongRange("trieLong", LegacyNumericUtils.PRECISION_STEP_DEFAULT, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding of terms
       Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "trieInt");
-      TermsEnum termsEnum = NumericUtils.filterPrefixCodedInts(terms.iterator());
+      TermsEnum termsEnum = LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
       while (termsEnum.next() != null) {
-        int val = NumericUtils.prefixCodedToInt(termsEnum.term());
+        int val = LegacyNumericUtils.prefixCodedToInt(termsEnum.term());
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
       terms = MultiFields.getTerms(searcher.getIndexReader(), "trieLong");
-      termsEnum = NumericUtils.filterPrefixCodedLongs(terms.iterator());
+      termsEnum = LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
       while (termsEnum.next() != null) {
-        long val = NumericUtils.prefixCodedToLong(termsEnum.term());
+        long val = LegacyNumericUtils.prefixCodedToLong(termsEnum.term());
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
       

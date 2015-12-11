@@ -26,6 +26,6 @@
     <TermQuery>bank</TermQuery>
   </Clause>
   <Clause occurs="must">
-    <NumericRangeQuery fieldName="date2" lowerTerm="19870409" upperTerm="19870412"/>
+    <LegacyNumericRangeQuery fieldName="date2" lowerTerm="19870409" upperTerm="19870412"/>
   </Clause>
 </BooleanQuery>

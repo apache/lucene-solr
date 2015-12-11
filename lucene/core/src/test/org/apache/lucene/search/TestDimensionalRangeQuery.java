@@ -33,11 +33,13 @@ import org.apache.lucene.codecs.DimensionalWriter;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.lucene60.Lucene60DimensionalReader;
 import org.apache.lucene.codecs.lucene60.Lucene60DimensionalWriter;
-import org.apache.lucene.document.DimensionalField;
+import org.apache.lucene.document.DimensionalBinaryField;
+import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
@@ -52,8 +54,8 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.bkd.BKDUtil;
 import org.junit.BeforeClass;
 
 public class TestDimensionalRangeQuery extends LuceneTestCase {
@@ -149,8 +151,8 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     for(int i=0;i<10000;i++) {
       long v = random().nextLong();
       byte[] tmp = new byte[8];
-      BKDUtil.longToBytes(v, tmp, 0);
-      long v2 = BKDUtil.bytesToLong(tmp, 0);
+      NumericUtils.longToBytes(v, tmp, 0);
+      long v2 = NumericUtils.bytesToLong(tmp, 0);
       assertEquals("got bytes=" + Arrays.toString(tmp), v, v2);
     }
   }
@@ -221,10 +223,10 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
       }
 
       if (missing.get(id) == false) {
-        doc.add(new DimensionalField("sn_value", values[id]));
+        doc.add(new DimensionalLongField("sn_value", values[id]));
         byte[] bytes = new byte[8];
-        BKDUtil.longToBytes(values[id], bytes, 0);
-        doc.add(new DimensionalField("ss_value", bytes));
+        NumericUtils.longToBytes(values[id], bytes, 0);
+        doc.add(new DimensionalBinaryField("ss_value", bytes));
       }
     }
 
@@ -287,33 +289,33 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
                 System.out.println("\n" + Thread.currentThread().getName() + ": TEST: iter=" + iter + " value=" + lower + " (inclusive?=" + includeLower + ") TO " + upper + " (inclusive?=" + includeUpper + ")");
                 byte[] tmp = new byte[8];
                 if (lower != null) {
-                  BKDUtil.longToBytes(lower, tmp, 0);
+                  NumericUtils.longToBytes(lower, tmp, 0);
                   System.out.println("  lower bytes=" + Arrays.toString(tmp));
                 }
                 if (upper != null) {
-                  BKDUtil.longToBytes(upper, tmp, 0);
+                  NumericUtils.longToBytes(upper, tmp, 0);
                   System.out.println("  upper bytes=" + Arrays.toString(tmp));
                 }
               }
 
               if (random().nextBoolean()) {
-                query = new DimensionalRangeQuery("sn_value", lower, includeLower, upper, includeUpper);
+                query = DimensionalRangeQuery.new1DLongRange("sn_value", lower, includeLower, upper, includeUpper);
               } else {
                 byte[] lowerBytes;
                 if (lower == null) {
                   lowerBytes = null;
                 } else {
                   lowerBytes = new byte[8];
-                  BKDUtil.longToBytes(lower, lowerBytes, 0);
+                  NumericUtils.longToBytes(lower, lowerBytes, 0);
                 }
                 byte[] upperBytes;
                 if (upper == null) {
                   upperBytes = null;
                 } else {
                   upperBytes = new byte[8];
-                  BKDUtil.longToBytes(upper, upperBytes, 0);
+                  NumericUtils.longToBytes(upper, upperBytes, 0);
                 }
-                query = new DimensionalRangeQuery("ss_value", lowerBytes, includeLower, upperBytes, includeUpper);
+                query = DimensionalRangeQuery.new1DBinaryRange("ss_value", lowerBytes, includeLower, upperBytes, includeUpper);
               }
 
               if (VERBOSE) {
@@ -382,8 +384,8 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
 
   private void doTestRandomBinary(int count) throws Exception {
     int numValues = TestUtil.nextInt(random(), count, count*2);
-    int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
-    int numDims = TestUtil.nextInt(random(), 1, 5);
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, DimensionalValues.MAX_NUM_BYTES);
+    int numDims = TestUtil.nextInt(random(), 1, DimensionalValues.MAX_DIMENSIONS);
 
     int sameValuePct = random().nextInt(100);
 
@@ -485,7 +487,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
       }
 
       if (missing.get(id) == false) {
-        doc.add(new DimensionalField("value", docValues[ord]));
+        doc.add(new DimensionalBinaryField("value", docValues[ord]));
         if (VERBOSE) {
           System.out.println("id=" + id);
           for(int dim=0;dim<numDims;dim++) {
@@ -558,7 +560,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
                   // open-ended on the upper bound
                 }
 
-                if (lower[dim] != null && upper[dim] != null && BKDUtil.compare(bytesPerDim, lower[dim], 0, upper[dim], 0) > 0) {
+                if (lower[dim] != null && upper[dim] != null && NumericUtils.compare(bytesPerDim, lower[dim], 0, upper[dim], 0) > 0) {
                   byte[] x = lower[dim];
                   lower[dim] = upper[dim];
                   upper[dim] = x;
@@ -677,7 +679,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
       if (lower[dim] == null) {
         cmp = 1;
       } else {
-        cmp = BKDUtil.compare(bytesPerDim, value[dim], 0, lower[dim], 0);
+        cmp = NumericUtils.compare(bytesPerDim, value[dim], 0, lower[dim], 0);
       }
 
       if (cmp < 0 || (cmp == 0 && includeLower[dim] == false)) {
@@ -688,7 +690,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
       if (upper[dim] == null) {
         cmp = -1;
       } else {
-        cmp = BKDUtil.compare(bytesPerDim, value[dim], 0, upper[dim], 0);
+        cmp = NumericUtils.compare(bytesPerDim, value[dim], 0, upper[dim], 0);
       }
 
       if (cmp > 0 || (cmp == 0 && includeUpper[dim] == false)) {
@@ -718,20 +720,20 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalField("value", Long.MIN_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MIN_VALUE));
     w.addDocument(doc);
 
     doc = new Document();
-    doc.add(new DimensionalField("value", Long.MAX_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MAX_VALUE));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
 
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(1, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, true, 0L, true)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value", 0L, true, Long.MAX_VALUE, true)));
-    assertEquals(2, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, 0L, true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DLongRange("value", 0L, true, Long.MAX_VALUE, true)));
+    assertEquals(2, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -757,61 +759,61 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalField("value", toUTF8("abc")));
+    doc.add(new DimensionalBinaryField("value", toUTF8("abc")));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(new DimensionalField("value", toUTF8("def")));
+    doc.add(new DimensionalBinaryField("value", toUTF8("def")));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
 
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(1, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8("aaa"),
-                                                      true,
-                                                      toUTF8("bbb"),
-                                                      true)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8("c", 3),
-                                                      true,
-                                                      toUTF8("e", 3),
-                                                      true)));
-    assertEquals(2, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8("a", 3),
-                                                      true,
-                                                      toUTF8("z", 3),
-                                                      true)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value",
-                                                      null,
-                                                      true,
-                                                      toUTF8("abc"),
-                                                      true)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8("a", 3),
-                                                      true,
-                                                      toUTF8("abc"),
-                                                      true)));
-    assertEquals(0, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8("a", 3),
-                                                      true,
-                                                      toUTF8("abc"),
-                                                      false)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8("def"),
-                                                      true,
-                                                      null,
-                                                      false)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8(("def")),
-                                                      true,
-                                                      toUTF8("z", 3),
-                                                      true)));
-    assertEquals(0, s.count(new DimensionalRangeQuery("value",
-                                                      toUTF8("def"),
-                                                      false,
-                                                      toUTF8("z", 3),
-                                                      true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8("aaa"),
+                                                                   true,
+                                                                   toUTF8("bbb"),
+                                                                   true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8("c", 3),
+                                                                   true,
+                                                                   toUTF8("e", 3),
+                                                                   true)));
+    assertEquals(2, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8("a", 3),
+                                                                   true,
+                                                                   toUTF8("z", 3),
+                                                                   true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   null,
+                                                                   true,
+                                                                   toUTF8("abc"),
+                                                                   true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8("a", 3),
+                                                                   true,
+                                                                   toUTF8("abc"),
+                                                                   true)));
+    assertEquals(0, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8("a", 3),
+                                                                   true,
+                                                                   toUTF8("abc"),
+                                                                   false)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8("def"),
+                                                                   true,
+                                                                   null,
+                                                                   false)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8(("def")),
+                                                                   true,
+                                                                   toUTF8("z", 3),
+                                                                   true)));
+    assertEquals(0, s.count(DimensionalRangeQuery.new1DBinaryRange("value",
+                                                                   toUTF8("def"),
+                                                                   false,
+                                                                   toUTF8("z", 3),
+                                                                   true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -822,22 +824,22 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalField("value", Long.MIN_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MIN_VALUE));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(new DimensionalField("value", Long.MAX_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MAX_VALUE));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
 
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(2, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
-    assertEquals(0, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
+    assertEquals(2, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
+    assertEquals(0, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
 
-    assertEquals(2, s.count(new DimensionalRangeQuery("value", (byte[]) null, true, null, true)));
+    assertEquals(2, s.count(DimensionalRangeQuery.new1DBinaryRange("value", (byte[]) null, true, null, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -848,10 +850,10 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalField("value", Long.MIN_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MIN_VALUE));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(new DimensionalField("value", Long.MAX_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MAX_VALUE));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -859,12 +861,12 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
-    assertEquals(2, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
-    assertEquals(1, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
-    assertEquals(0, s.count(new DimensionalRangeQuery("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
+    assertEquals(2, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
+    assertEquals(1, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
+    assertEquals(0, s.count(DimensionalRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
 
-    assertEquals(2, s.count(new DimensionalRangeQuery("value", (Long) null, true, null, true)));
+    assertEquals(2, s.count(DimensionalRangeQuery.new1DLongRange("value", (Long) null, true, null, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -875,18 +877,18 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalField("value", toUTF8("a")));
+    doc.add(new DimensionalBinaryField("value", toUTF8("a")));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(new DimensionalField("value", toUTF8("z")));
+    doc.add(new DimensionalBinaryField("value", toUTF8("z")));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(0, s.count(new DimensionalRangeQuery("value", toUTF8("m"), true, toUTF8("n"), false)));
+    assertEquals(0, s.count(DimensionalRangeQuery.new1DBinaryRange("value", toUTF8("m"), true, toUTF8("n"), false)));
 
-    assertEquals(2, s.count(new DimensionalRangeQuery("value", (byte[]) null, true, null, true)));
+    assertEquals(2, s.count(DimensionalRangeQuery.new1DBinaryRange("value", (byte[]) null, true, null, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -906,7 +908,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
 
     IndexSearcher s = new IndexSearcher(r);
-    assertEquals(0, s.count(new DimensionalRangeQuery("value", 17L, true, 13L, false)));
+    assertEquals(0, s.count(DimensionalRangeQuery.new1DLongRange("value", 17L, true, 13L, false)));
 
     IOUtils.close(r, w, dir);
   }
@@ -921,7 +923,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(0, s.count(new DimensionalRangeQuery("value", 17L, true, 13L, false)));
+    assertEquals(0, s.count(DimensionalRangeQuery.new1DLongRange("value", 17L, true, 13L, false)));
 
     IOUtils.close(r, w, dir);
   }
@@ -932,7 +934,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalField("value", Long.MIN_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MIN_VALUE));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -955,7 +957,7 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalField("value", Long.MIN_VALUE));
+    doc.add(new DimensionalLongField("value", Long.MIN_VALUE));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();

@@ -160,22 +160,22 @@
  *     and an upper
  *     {@link org.apache.lucene.index.Term Term}
  *     according to {@link org.apache.lucene.util.BytesRef#compareTo BytesRef.compareTo()}. It is not intended
- *     for numerical ranges; use {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery} instead.
+ *     for numerical ranges; use {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery} instead.
  * 
  *     For example, one could find all documents
  *     that have terms beginning with the letters <tt>a</tt> through <tt>c</tt>.
  * 
  * <h3>
- *     {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery}
+ *     {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery}
  * </h3>
  * 
  * <p>The
- *     {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery}
+ *     {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery}
  *     matches all documents that occur in a numeric range.
- *     For NumericRangeQuery to work, you must index the values
- *     using a one of the numeric fields ({@link org.apache.lucene.document.IntField IntField},
- *     {@link org.apache.lucene.document.LongField LongField}, {@link org.apache.lucene.document.FloatField FloatField},
- *     or {@link org.apache.lucene.document.DoubleField DoubleField}).
+ *     For DimensionalRangeQuery to work, you must index the values
+ *     using a one of the numeric fields ({@link org.apache.lucene.document.DimensionalIntField DimensionalIntField},
+ *     {@link org.apache.lucene.document.DimensionalLongField DimensionalLongField}, {@link org.apache.lucene.document.DimensionalFloatField DimensionalFloatField},
+ *     or {@link org.apache.lucene.document.DimensionalDoubleField DimensionalDoubleField}).
  * 
  * <h3>
  *     {@link org.apache.lucene.search.PrefixQuery PrefixQuery},

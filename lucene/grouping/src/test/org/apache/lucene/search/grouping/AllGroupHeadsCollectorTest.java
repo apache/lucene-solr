@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
@@ -237,9 +236,6 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Field content = newTextField("content", "", Field.Store.NO);
       doc.add(content);
       docNoGroup.add(content);
-      IntField id = new IntField("id", 0, Field.Store.NO);
-      doc.add(id);
-      docNoGroup.add(id);
       NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
       doc.add(idDV);
       docNoGroup.add(idDV);
@@ -275,7 +271,6 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         sort2.setBytesValue(groupDoc.sort2);
         sort3.setBytesValue(groupDoc.sort3);
         content.setStringValue(groupDoc.content);
-        id.setIntValue(groupDoc.id);
         idDV.setLongValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);

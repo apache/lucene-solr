@@ -20,15 +20,15 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.document.DimensionalLatLonField;
-import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
 import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.bkd.BKDUtil;
+import org.apache.lucene.util.NumericUtils;
 
 /** Finds all previously indexed points that fall within the specified boundings box.
  *
@@ -98,8 +98,8 @@ public class DimensionalPointInRectQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 8;
-                             double lat = DimensionalLatLonField.decodeLat(BKDUtil.bytesToInt(packedValue, 0));
-                             double lon = DimensionalLatLonField.decodeLon(BKDUtil.bytesToInt(packedValue, 1));
+                             double lat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
+                             double lon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(packedValue, 1));
                              if (lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon) {
                                hitCount[0]++;
                                result.add(docID);
@@ -108,10 +108,10 @@ public class DimensionalPointInRectQuery extends Query {
 
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             double cellMinLat = DimensionalLatLonField.decodeLat(BKDUtil.bytesToInt(minPackedValue, 0));
-                             double cellMinLon = DimensionalLatLonField.decodeLon(BKDUtil.bytesToInt(minPackedValue, 1));
-                             double cellMaxLat = DimensionalLatLonField.decodeLat(BKDUtil.bytesToInt(maxPackedValue, 0));
-                             double cellMaxLon = DimensionalLatLonField.decodeLon(BKDUtil.bytesToInt(maxPackedValue, 1));
+                             double cellMinLat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
+                             double cellMinLon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(minPackedValue, 1));
+                             double cellMaxLat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
+                             double cellMaxLon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(maxPackedValue, 1));
 
                              if (minLat <= cellMinLat && maxLat >= cellMaxLat && minLon <= cellMinLon && maxLon >= cellMaxLon) {
                                return Relation.CELL_INSIDE_QUERY;

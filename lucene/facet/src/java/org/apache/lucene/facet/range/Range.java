@@ -19,7 +19,7 @@ package org.apache.lucene.facet.range;
 
 import org.apache.lucene.facet.DrillDownQuery; // javadocs
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.DimensionalRangeQuery; // javadocs
 import org.apache.lucene.search.Query;
 
 /** Base class for a single labeled range.
@@ -46,7 +46,7 @@ public abstract class Range {
    *  or when intersected with another query that can lead the
    *  iteration.  If the {@link ValueSource} is static, e.g. an
    *  indexed numeric field, then it may be more efficient to use
-   *  {@link NumericRangeQuery}. The provided fastMatchQuery,
+   *  {@link DimensionalRangeQuery}. The provided fastMatchQuery,
    *  if non-null, will first be consulted, and only if
    *  that is set for each document will the range then be
    *  checked. */
@@ -60,7 +60,7 @@ public abstract class Range {
    *  or when intersected with another query that can lead the
    *  iteration.  If the {@link ValueSource} is static, e.g. an
    *  indexed numeric field, then it may be more efficient to
-   *  use {@link NumericRangeQuery}. */
+   *  use {@link DimensionalRangeQuery}. */
   public Query getQuery(ValueSource valueSource) {
     return getQuery(null, valueSource);
   }

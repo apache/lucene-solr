@@ -32,7 +32,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.IndexSchema;
@@ -231,7 +231,7 @@ public class VersionInfo {
     if (versionField.indexed()) {
       LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
       Terms versionTerms = leafReader.terms(versionFieldName);
-      Long max = (versionTerms != null) ? NumericUtils.getMaxLong(versionTerms) : null;
+      Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
       if (max != null) {
         maxVersionInIndex = max.longValue();
         log.info("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);

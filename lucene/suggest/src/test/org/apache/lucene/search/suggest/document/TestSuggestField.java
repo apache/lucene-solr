@@ -34,9 +34,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60Codec;
+import org.apache.lucene.document.DimensionalIntField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -44,7 +45,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.suggest.BitsProducer;
@@ -304,7 +305,8 @@ public class TestSuggestField extends LuceneTestCase {
     for (int i = 1; i <= num; i++) {
       Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
-      document.add(new IntField("weight_fld", i, Field.Store.YES));
+      document.add(new StoredField("weight_fld", i));
+      document.add(new DimensionalIntField("weight_fld", i));
       iw.addDocument(document);
 
       if (usually()) {
@@ -312,7 +314,7 @@ public class TestSuggestField extends LuceneTestCase {
       }
     }
 
-    iw.deleteDocuments(NumericRangeQuery.newIntRange("weight_fld", 2, null, true, false));
+    iw.deleteDocuments(DimensionalRangeQuery.new1DIntRange("weight_fld", 2, true, null, false));
 
     DirectoryReader reader = DirectoryReader.open(iw, true);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
@@ -404,7 +406,7 @@ public class TestSuggestField extends LuceneTestCase {
         document.add(new SuggestField("suggest_field", "abc_" + i, i));
         entries.add(new Entry("abc_" + i, i));
       }
-      document.add(new IntField("weight_fld", i, Field.Store.YES));
+      document.add(new StoredField("weight_fld", i));
       iw.addDocument(document);
       if (usually()) {
         iw.commit();
@@ -430,7 +432,7 @@ public class TestSuggestField extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, num));
-      document.add(new IntField("int_field", i, Field.Store.YES));
+      document.add(new StoredField("int_field", i));
       iw.addDocument(document);
 
       if (random().nextBoolean()) {

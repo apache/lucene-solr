@@ -30,10 +30,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.DimensionalField;
+import org.apache.lucene.document.DimensionalBinaryField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -54,8 +54,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.bkd.BKDUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -174,8 +174,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
     doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
     byte[] bytes = new byte[4];
-    BKDUtil.intToBytes(id, bytes, 0);
-    doc.add(new DimensionalField(DIMENSIONAL_FIELD, bytes));
+    NumericUtils.intToBytes(id, bytes, 0);
+    doc.add(new DimensionalBinaryField(DIMENSIONAL_FIELD, bytes));
     return doc;
   }
 
@@ -390,7 +390,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
 
                        @Override
                        public void visit(int docID, byte[] packedValues) {
-                         assertEquals(sortedValues[docID].intValue(), BKDUtil.bytesToInt(packedValues, 0));
+                         assertEquals(sortedValues[docID].intValue(), NumericUtils.bytesToInt(packedValues, 0));
                        }
 
                        @Override

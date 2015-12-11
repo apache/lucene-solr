@@ -17,19 +17,19 @@ package org.apache.lucene.queryparser.xml.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.w3c.dom.Element;
 
 /**
- * Creates a {@link NumericRangeQuery}. The table below specifies the required
+ * Creates a {@link org.apache.lucene.search.LegacyNumericRangeQuery}. The table below specifies the required
  * attributes and the defaults if optional attributes are omitted. For more
  * detail on what each of the attributes actually do, consult the documentation
- * for {@link NumericRangeQuery}:
+ * for {@link org.apache.lucene.search.LegacyNumericRangeQuery}:
  * <table summary="supported attributes">
  * <tr>
  * <th>Attribute name</th>
@@ -85,7 +85,7 @@ import org.w3c.dom.Element;
  * supplied <tt>lowerTerm</tt> or <tt>upperTerm</tt> into the numeric type
  * specified by <tt>type</tt>.
  */
-public class NumericRangeQueryBuilder implements QueryBuilder {
+public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
 
   @Override
   public Query getQuery(Element e) throws ParserException {
@@ -94,26 +94,26 @@ public class NumericRangeQueryBuilder implements QueryBuilder {
     String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
     boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
     boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
-    int precisionStep = DOMUtils.getAttribute(e, "precisionStep", NumericUtils.PRECISION_STEP_DEFAULT);
+    int precisionStep = DOMUtils.getAttribute(e, "precisionStep", LegacyNumericUtils.PRECISION_STEP_DEFAULT);
 
     String type = DOMUtils.getAttribute(e, "type", "int");
     try {
       Query filter;
       if (type.equalsIgnoreCase("int")) {
-        filter = NumericRangeQuery.newIntRange(field, precisionStep, Integer
-            .valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
+        filter = LegacyNumericRangeQuery.newIntRange(field, precisionStep, Integer
+                .valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
             upperInclusive);
       } else if (type.equalsIgnoreCase("long")) {
-        filter = NumericRangeQuery.newLongRange(field, precisionStep, Long
-            .valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
+        filter = LegacyNumericRangeQuery.newLongRange(field, precisionStep, Long
+                .valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
             upperInclusive);
       } else if (type.equalsIgnoreCase("double")) {
-        filter = NumericRangeQuery.newDoubleRange(field, precisionStep, Double
-            .valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
+        filter = LegacyNumericRangeQuery.newDoubleRange(field, precisionStep, Double
+                .valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
             upperInclusive);
       } else if (type.equalsIgnoreCase("float")) {
-        filter = NumericRangeQuery.newFloatRange(field, precisionStep, Float
-            .valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
+        filter = LegacyNumericRangeQuery.newFloatRange(field, precisionStep, Float
+                .valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
             upperInclusive);
       } else {
         throw new ParserException("type attribute must be one of: [long, int, double, float]");

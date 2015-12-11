@@ -38,7 +38,7 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 class TermsIncludingScoreQuery extends Query {
 
@@ -267,10 +267,10 @@ class TermsIncludingScoreQuery extends Query {
       terms.get(ords[i], ref);
       out.print(ref+" "+ref.utf8ToString()+" ");
       try {
-        out.print(Long.toHexString(NumericUtils.prefixCodedToLong(ref))+"L");
+        out.print(Long.toHexString(LegacyNumericUtils.prefixCodedToLong(ref))+"L");
       } catch (Exception e) {
         try {
-          out.print(Integer.toHexString(NumericUtils.prefixCodedToInt(ref))+"i");
+          out.print(Integer.toHexString(LegacyNumericUtils.prefixCodedToInt(ref))+"i");
         } catch (Exception ee) {
         }
       }

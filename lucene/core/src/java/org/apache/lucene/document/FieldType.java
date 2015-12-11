@@ -21,8 +21,7 @@ import org.apache.lucene.analysis.Analyzer; // javadocs
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.search.NumericRangeQuery; // javadocs
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
  * Describes the properties of a field.
@@ -32,7 +31,7 @@ public class FieldType implements IndexableFieldType  {
   /** Data type of the numeric value
    * @since 3.2
    */
-  public enum NumericType {
+  public enum LegacyNumericType {
     /** 32-bit integer numeric type */
     INT, 
     /** 64-bit long numeric type */
@@ -51,9 +50,9 @@ public class FieldType implements IndexableFieldType  {
   private boolean storeTermVectorPayloads;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.NONE;
-  private NumericType numericType;
+  private LegacyNumericType numericType;
   private boolean frozen;
-  private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
+  private int numericPrecisionStep = LegacyNumericUtils.PRECISION_STEP_DEFAULT;
   private DocValuesType docValuesType = DocValuesType.NONE;
   private int dimensionCount;
   private int dimensionNumBytes;
@@ -301,20 +300,20 @@ public class FieldType implements IndexableFieldType  {
    *         future modifications.
    * @see #numericType()
    */
-  public void setNumericType(NumericType type) {
+  public void setNumericType(LegacyNumericType type) {
     checkIfFrozen();
     numericType = type;
   }
 
   /** 
-   * NumericType: if non-null then the field's value will be indexed
-   * numerically so that {@link NumericRangeQuery} can be used at 
+   * LegacyNumericType: if non-null then the field's value will be indexed
+   * numerically so that {@link org.apache.lucene.search.LegacyNumericRangeQuery} can be used at
    * search time. 
    * <p>
    * The default is <code>null</code> (no numeric type) 
-   * @see #setNumericType(NumericType)
+   * @see #setNumericType(org.apache.lucene.document.FieldType.LegacyNumericType)
    */
-  public NumericType numericType() {
+  public LegacyNumericType numericType() {
     return numericType;
   }
 
@@ -339,7 +338,7 @@ public class FieldType implements IndexableFieldType  {
    * <p>
    * This has no effect if {@link #numericType()} returns null.
    * <p>
-   * The default is {@link NumericUtils#PRECISION_STEP_DEFAULT}
+   * The default is {@link org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
    * @see #setNumericPrecisionStep(int)
    */
   public int numericPrecisionStep() {

@@ -26,6 +26,7 @@ import org.apache.lucene.index.DimensionalValues.Relation;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
@@ -163,7 +164,7 @@ public class BKDReader implements Accountable {
         // With only 1D, all values should always be in sorted order
         if (lastPackedValue == null) {
           lastPackedValue = Arrays.copyOf(packedValue, packedValue.length);
-        } else if (BKDUtil.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0) > 0) {
+        } else if (NumericUtils.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0) > 0) {
           throw new RuntimeException("value=" + new BytesRef(packedValue) + " for docID=" + docID + " dim=0" + " sorts before last value=" + new BytesRef(lastPackedValue));
         } else {
           System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);

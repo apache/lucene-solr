@@ -20,7 +20,7 @@ package org.apache.lucene.document;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,7 +60,7 @@ public class TestFieldType extends LuceneTestCase {
     assertFalse(ft7.equals(ft));
     
     FieldType ft8 = new FieldType();
-    ft8.setNumericType(NumericType.DOUBLE);
+    ft8.setNumericType(LegacyNumericType.DOUBLE);
     assertFalse(ft8.equals(ft));
     
     FieldType ft9 = new FieldType();

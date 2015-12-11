@@ -22,21 +22,21 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Random;
 
-public class TestNumericUtils extends LuceneTestCase {
+public class TestLegacyNumericUtils extends LuceneTestCase {
 
   public void testLongConversionAndOrdering() throws Exception {
     // generate a series of encoded longs, each numerical one bigger than the one before
     BytesRefBuilder last = new BytesRefBuilder();
     BytesRefBuilder act = new BytesRefBuilder();
     for (long l=-100000L; l<100000L; l++) {
-      NumericUtils.longToPrefixCodedBytes(l, 0, act);
+      LegacyNumericUtils.longToPrefixCodedBytes(l, 0, act);
       if (last!=null) {
         // test if smaller
         assertTrue("actual bigger than last (BytesRef)", last.get().compareTo(act.get()) < 0 );
         assertTrue("actual bigger than last (as String)", last.get().utf8ToString().compareTo(act.get().utf8ToString()) < 0 );
       }
       // test is back and forward conversion works
-      assertEquals("forward and back conversion should generate same long", l, NumericUtils.prefixCodedToLong(act.get()));
+      assertEquals("forward and back conversion should generate same long", l, LegacyNumericUtils.prefixCodedToLong(act.get()));
       // next step
       last.copyBytes(act);
     }
@@ -47,14 +47,14 @@ public class TestNumericUtils extends LuceneTestCase {
     BytesRefBuilder act = new BytesRefBuilder();
     BytesRefBuilder last = new BytesRefBuilder();
     for (int i=-100000; i<100000; i++) {
-      NumericUtils.intToPrefixCodedBytes(i, 0, act);
+      LegacyNumericUtils.intToPrefixCodedBytes(i, 0, act);
       if (last!=null) {
         // test if smaller
         assertTrue("actual bigger than last (BytesRef)", last.get().compareTo(act.get()) < 0 );
         assertTrue("actual bigger than last (as String)", last.get().utf8ToString().compareTo(act.get().utf8ToString()) < 0 );
       }
       // test is back and forward conversion works
-      assertEquals("forward and back conversion should generate same int", i, NumericUtils.prefixCodedToInt(act.get()));
+      assertEquals("forward and back conversion should generate same int", i, LegacyNumericUtils.prefixCodedToInt(act.get()));
       // next step
       last.copyBytes(act.get());
     }
@@ -69,14 +69,14 @@ public class TestNumericUtils extends LuceneTestCase {
     
     for (int i=0; i<vals.length; i++) {
       prefixVals[i] = new BytesRefBuilder();
-      NumericUtils.longToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
+      LegacyNumericUtils.longToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
       
       // check forward and back conversion
-      assertEquals( "forward and back conversion should generate same long", vals[i], NumericUtils.prefixCodedToLong(prefixVals[i].get()) );
+      assertEquals( "forward and back conversion should generate same long", vals[i], LegacyNumericUtils.prefixCodedToLong(prefixVals[i].get()) );
 
       // test if decoding values as int fails correctly
       try {
-        NumericUtils.prefixCodedToInt(prefixVals[i].get());
+        LegacyNumericUtils.prefixCodedToInt(prefixVals[i].get());
         fail("decoding a prefix coded long value as int should fail");
       } catch (NumberFormatException e) {
         // worked
@@ -92,8 +92,8 @@ public class TestNumericUtils extends LuceneTestCase {
     final BytesRefBuilder ref = new BytesRefBuilder();
     for (int i=0; i<vals.length; i++) {
       for (int j=0; j<64; j++) {
-        NumericUtils.longToPrefixCodedBytes(vals[i], j, ref);
-        long prefixVal=NumericUtils.prefixCodedToLong(ref.get());
+        LegacyNumericUtils.longToPrefixCodedBytes(vals[i], j, ref);
+        long prefixVal= LegacyNumericUtils.prefixCodedToLong(ref.get());
         long mask=(1L << j) - 1L;
         assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );
       }
@@ -109,14 +109,14 @@ public class TestNumericUtils extends LuceneTestCase {
     
     for (int i=0; i<vals.length; i++) {
       prefixVals[i] = new BytesRefBuilder();
-      NumericUtils.intToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
+      LegacyNumericUtils.intToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
       
       // check forward and back conversion
-      assertEquals( "forward and back conversion should generate same int", vals[i], NumericUtils.prefixCodedToInt(prefixVals[i].get()) );
+      assertEquals( "forward and back conversion should generate same int", vals[i], LegacyNumericUtils.prefixCodedToInt(prefixVals[i].get()) );
       
       // test if decoding values as long fails correctly
       try {
-        NumericUtils.prefixCodedToLong(prefixVals[i].get());
+        LegacyNumericUtils.prefixCodedToLong(prefixVals[i].get());
         fail("decoding a prefix coded int value as long should fail");
       } catch (NumberFormatException e) {
         // worked
@@ -132,8 +132,8 @@ public class TestNumericUtils extends LuceneTestCase {
     final BytesRefBuilder ref = new BytesRefBuilder();
     for (int i=0; i<vals.length; i++) {
       for (int j=0; j<32; j++) {
-        NumericUtils.intToPrefixCodedBytes(vals[i], j, ref);
-        int prefixVal=NumericUtils.prefixCodedToInt(ref.get());
+        LegacyNumericUtils.intToPrefixCodedBytes(vals[i], j, ref);
+        int prefixVal= LegacyNumericUtils.prefixCodedToInt(ref.get());
         int mask=(1 << j) - 1;
         assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );
       }
@@ -149,8 +149,8 @@ public class TestNumericUtils extends LuceneTestCase {
     
     // check forward and back conversion
     for (int i=0; i<vals.length; i++) {
-      longVals[i]=NumericUtils.doubleToSortableLong(vals[i]);
-      assertTrue( "forward and back conversion should generate same double", Double.compare(vals[i], NumericUtils.sortableLongToDouble(longVals[i]))==0 );
+      longVals[i]= LegacyNumericUtils.doubleToSortableLong(vals[i]);
+      assertTrue( "forward and back conversion should generate same double", Double.compare(vals[i], LegacyNumericUtils.sortableLongToDouble(longVals[i]))==0 );
     }
     
     // check sort order (prefixVals should be ascending)
@@ -168,10 +168,10 @@ public class TestNumericUtils extends LuceneTestCase {
   };
 
   public void testSortableDoubleNaN() {
-    final long plusInf = NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
+    final long plusInf = LegacyNumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
     for (double nan : DOUBLE_NANs) {
       assertTrue(Double.isNaN(nan));
-      final long sortable = NumericUtils.doubleToSortableLong(nan);
+      final long sortable = LegacyNumericUtils.doubleToSortableLong(nan);
       assertTrue("Double not sorted correctly: " + nan + ", long repr: " 
           + sortable + ", positive inf.: " + plusInf, sortable > plusInf);
     }
@@ -186,8 +186,8 @@ public class TestNumericUtils extends LuceneTestCase {
     
     // check forward and back conversion
     for (int i=0; i<vals.length; i++) {
-      intVals[i]=NumericUtils.floatToSortableInt(vals[i]);
-      assertTrue( "forward and back conversion should generate same double", Float.compare(vals[i], NumericUtils.sortableIntToFloat(intVals[i]))==0 );
+      intVals[i]= LegacyNumericUtils.floatToSortableInt(vals[i]);
+      assertTrue( "forward and back conversion should generate same double", Float.compare(vals[i], LegacyNumericUtils.sortableIntToFloat(intVals[i]))==0 );
     }
     
     // check sort order (prefixVals should be ascending)
@@ -205,10 +205,10 @@ public class TestNumericUtils extends LuceneTestCase {
   };
 
   public void testSortableFloatNaN() {
-    final int plusInf = NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);
+    final int plusInf = LegacyNumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);
     for (float nan : FLOAT_NANs) {
       assertTrue(Float.isNaN(nan));
-      final int sortable = NumericUtils.floatToSortableInt(nan);
+      final int sortable = LegacyNumericUtils.floatToSortableInt(nan);
       assertTrue("Float not sorted correctly: " + nan + ", int repr: " 
           + sortable + ", positive inf.: " + plusInf, sortable > plusInf);
     }
@@ -225,12 +225,12 @@ public class TestNumericUtils extends LuceneTestCase {
     final Iterator<Long> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
     final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();
 
-    NumericUtils.splitLongRange(new NumericUtils.LongRangeBuilder() {
+    LegacyNumericUtils.splitLongRange(new LegacyNumericUtils.LongRangeBuilder() {
       @Override
       public void addRange(long min, long max, int shift) {
-        assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
-        if (useBitSet) for (long l=min; l<=max; l++) {
-          assertFalse("ranges should not overlap", bits.getAndSet(l-lower) );
+        assertTrue("min, max should be inside bounds", min >= lower && min <= upper && max >= lower && max <= upper);
+        if (useBitSet) for (long l = min; l <= max; l++) {
+          assertFalse("ranges should not overlap", bits.getAndSet(l - lower));
           // extra exit condition to prevent overflow on MAX_VALUE
           if (l == max) break;
         }
@@ -240,9 +240,9 @@ public class TestNumericUtils extends LuceneTestCase {
         min ^= 0x8000000000000000L;
         max ^= 0x8000000000000000L;
         //System.out.println("0x"+Long.toHexString(min>>>shift)+"L,0x"+Long.toHexString(max>>>shift)+"L)/*shift="+shift+"*/,");
-        assertEquals( "shift", neededShifts.next().intValue(), shift);
-        assertEquals( "inner min bound", neededBounds.next().longValue(), min>>>shift);
-        assertEquals( "inner max bound", neededBounds.next().longValue(), max>>>shift);
+        assertEquals("shift", neededShifts.next().intValue(), shift);
+        assertEquals("inner min bound", neededBounds.next().longValue(), min >>> shift);
+        assertEquals("inner max bound", neededBounds.next().longValue(), max >>> shift);
       }
     }, precisionStep, lower, upper);
     
@@ -253,7 +253,7 @@ public class TestNumericUtils extends LuceneTestCase {
     }
   }
   
-  /** LUCENE-2541: NumericRangeQuery errors with endpoints near long min and max values */
+  /** LUCENE-2541: LegacyNumericRangeQuery errors with endpoints near long min and max values */
   public void testLongExtremeValues() throws Exception {
     // upper end extremes
     assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 1, true, Arrays.asList(
@@ -465,12 +465,12 @@ public class TestNumericUtils extends LuceneTestCase {
     final Iterator<Integer> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
     final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();
     
-    NumericUtils.splitIntRange(new NumericUtils.IntRangeBuilder() {
+    LegacyNumericUtils.splitIntRange(new LegacyNumericUtils.IntRangeBuilder() {
       @Override
       public void addRange(int min, int max, int shift) {
-        assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
-        if (useBitSet) for (int i=min; i<=max; i++) {
-          assertFalse("ranges should not overlap", bits.getAndSet(i-lower) );
+        assertTrue("min, max should be inside bounds", min >= lower && min <= upper && max >= lower && max <= upper);
+        if (useBitSet) for (int i = min; i <= max; i++) {
+          assertFalse("ranges should not overlap", bits.getAndSet(i - lower));
           // extra exit condition to prevent overflow on MAX_VALUE
           if (i == max) break;
         }
@@ -480,9 +480,9 @@ public class TestNumericUtils extends LuceneTestCase {
         min ^= 0x80000000;
         max ^= 0x80000000;
         //System.out.println("0x"+Integer.toHexString(min>>>shift)+",0x"+Integer.toHexString(max>>>shift)+")/*shift="+shift+"*/,");
-        assertEquals( "shift", neededShifts.next().intValue(), shift);
-        assertEquals( "inner min bound", neededBounds.next().intValue(), min>>>shift);
-        assertEquals( "inner max bound", neededBounds.next().intValue(), max>>>shift);
+        assertEquals("shift", neededShifts.next().intValue(), shift);
+        assertEquals("inner min bound", neededBounds.next().intValue(), min >>> shift);
+        assertEquals("inner max bound", neededBounds.next().intValue(), max >>> shift);
       }
     }, precisionStep, lower, upper);
     

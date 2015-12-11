@@ -25,8 +25,8 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 
 /** Simple tests for SortedNumericSortField */
 public class TestSortedNumericSortField extends LuceneTestCase {
@@ -223,12 +223,12 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.floatToSortableInt(-3f)));
+    doc.add(new SortedNumericDocValuesField("value", LegacyNumericUtils.floatToSortableInt(-3f)));
     doc.add(newStringField("id", "2", Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.floatToSortableInt(-5f)));
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.floatToSortableInt(7f)));
+    doc.add(new SortedNumericDocValuesField("value", LegacyNumericUtils.floatToSortableInt(-5f)));
+    doc.add(new SortedNumericDocValuesField("value", LegacyNumericUtils.floatToSortableInt(7f)));
     doc.add(newStringField("id", "1", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
@@ -251,12 +251,12 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.doubleToSortableLong(-3d)));
+    doc.add(new SortedNumericDocValuesField("value", LegacyNumericUtils.doubleToSortableLong(-3d)));
     doc.add(newStringField("id", "2", Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.doubleToSortableLong(-5d)));
-    doc.add(new SortedNumericDocValuesField("value", NumericUtils.doubleToSortableLong(7d)));
+    doc.add(new SortedNumericDocValuesField("value", LegacyNumericUtils.doubleToSortableLong(-5d)));
+    doc.add(new SortedNumericDocValuesField("value", LegacyNumericUtils.doubleToSortableLong(7d)));
     doc.add(newStringField("id", "1", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();

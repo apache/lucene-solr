@@ -49,7 +49,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.BytesRef;
@@ -612,7 +611,7 @@ public abstract class FieldType extends FieldProperties {
 
   /** Return the numeric type of this field, or null if this field is not a
    *  numeric field. */
-  public org.apache.lucene.document.FieldType.NumericType getNumericType() {
+  public org.apache.lucene.document.FieldType.LegacyNumericType getNumericType() {
     return null;
   }
 

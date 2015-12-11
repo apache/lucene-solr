@@ -24,7 +24,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -458,7 +458,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public long bitsToSortableBits(long bits) {
-      return NumericUtils.sortableDoubleBits(bits);
+      return LegacyNumericUtils.sortableDoubleBits(bits);
     }
 
     public FloatCalc(final SchemaField f) { super(f); }
@@ -479,7 +479,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public long bitsToSortableBits(long bits) {
-      return NumericUtils.sortableDoubleBits(bits);
+      return LegacyNumericUtils.sortableDoubleBits(bits);
     }
 
     public DoubleCalc(final SchemaField f) { super(f); }

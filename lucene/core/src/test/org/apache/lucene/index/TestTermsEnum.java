@@ -23,7 +23,6 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -158,7 +157,6 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
     Document doc = new Document();
-    doc.add(new IntField("id", id, Field.Store.YES));
     doc.add(new NumericDocValuesField("id", id));
     if (VERBOSE) {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);

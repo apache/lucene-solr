@@ -18,15 +18,13 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.bkd.BKDUtil;
 
-/** A field that is indexed dimensionally such that finding
- *  all documents within an N-dimensional at search time is
+/** A binary field that is indexed dimensionally such that finding
+ *  all documents within an N-dimensional shape or range at search time is
  *  efficient.  Muliple values for the same field in one documents
  *  is allowed. */
 
-public final class DimensionalField extends Field {
+public final class DimensionalBinaryField extends Field {
 
   private static FieldType getType(byte[][] point) {
     if (point == null) {
@@ -91,22 +89,6 @@ public final class DimensionalField extends Field {
     return new BytesRef(packed);
   }
 
-  private static BytesRef pack(long... point) {
-    if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
-    }
-    if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
-    }
-    byte[] packed = new byte[point.length * RamUsageEstimator.NUM_BYTES_LONG];
-    
-    for(int dim=0;dim<point.length;dim++) {
-      BKDUtil.longToBytes(point[dim], packed, dim);
-    }
-
-    return new BytesRef(packed);
-  }
-
   /** General purpose API: creates a new DimensionalField, indexing the
    *  provided N-dimensional binary point.
    *
@@ -114,23 +96,12 @@ public final class DimensionalField extends Field {
    *  @param point byte[][] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
-  public DimensionalField(String name, byte[]... point) {
+  public DimensionalBinaryField(String name, byte[]... point) {
     super(name, pack(point), getType(point));
   }
 
-  /** General purpose API: creates a new DimensionalField, indexing the
-   *  provided N-dimensional long point.
-   *
-   *  @param name field name
-   *  @param point long[] value
-   *  @throws IllegalArgumentException if the field name or value is null.
-   */
-  public DimensionalField(String name, long... point) {
-    super(name, pack(point), getType(point.length, RamUsageEstimator.NUM_BYTES_LONG));
-  }
-
   /** Expert API */
-  public DimensionalField(String name, byte[] packedPoint, FieldType type) {
+  public DimensionalBinaryField(String name, byte[] packedPoint, FieldType type) {
     super(name, packedPoint, type);
     if (packedPoint.length != type.dimensionCount() * type.dimensionNumBytes()) {
       throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.dimensionCount()=" + type.dimensionCount() + " and type.dimensionNumBytes()=" + type.dimensionNumBytes());

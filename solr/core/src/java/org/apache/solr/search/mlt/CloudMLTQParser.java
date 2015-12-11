@@ -24,7 +24,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -195,8 +195,8 @@ public class CloudMLTQParser extends QParser {
 
   private Term createNumericTerm(String field, String uniqueValue) {
     BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
-    bytesRefBuilder.grow(NumericUtils.BUF_SIZE_INT);
-    NumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);
+    bytesRefBuilder.grow(LegacyNumericUtils.BUF_SIZE_INT);
+    LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);
     return new Term(field, bytesRefBuilder.toBytesRef());
   }
 

@@ -54,7 +54,7 @@ public final class GeoPointField extends Field {
     TYPE_NOT_STORED.setOmitNorms(true);
     TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
     TYPE_NOT_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-    TYPE_NOT_STORED.setNumericType(FieldType.NumericType.LONG);
+    TYPE_NOT_STORED.setNumericType(FieldType.LegacyNumericType.LONG);
     TYPE_NOT_STORED.setNumericPrecisionStep(PRECISION_STEP);
     TYPE_NOT_STORED.freeze();
   }
@@ -69,7 +69,7 @@ public final class GeoPointField extends Field {
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
     TYPE_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-    TYPE_STORED.setNumericType(FieldType.NumericType.LONG);
+    TYPE_STORED.setNumericType(FieldType.LegacyNumericType.LONG);
     TYPE_STORED.setNumericPrecisionStep(PRECISION_STEP);
     TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();
@@ -95,13 +95,13 @@ public final class GeoPointField extends Field {
    *  @param lon longitude double value [-180.0 : 180.0]
    *  @param lat latitude double value [-90.0 : 90.0]
    *  @param type customized field type: must have {@link FieldType#numericType()}
-   *         of {@link FieldType.NumericType#LONG}.
+   *         of {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG}.
    *  @throws IllegalArgumentException if the field name or type is null, or
    *          if the field type does not have a LONG numericType()
    */
   public GeoPointField(String name, double lon, double lat, FieldType type) {
     super(name, type);
-    if (type.numericType() != FieldType.NumericType.LONG) {
+    if (type.numericType() != FieldType.LegacyNumericType.LONG) {
       throw new IllegalArgumentException("type.numericType() must be LONG but got " + type.numericType());
     }
     if (type.docValuesType() != DocValuesType.SORTED_NUMERIC) {

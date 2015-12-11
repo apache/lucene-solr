@@ -5,8 +5,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LegacyFloatField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
@@ -143,11 +143,11 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
     d.add(f);
 
-    f = new IntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
+    f = new LegacyIntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
     d.add(f);
     d.add(new NumericDocValuesField(INT_FIELD, scoreAndID));
 
-    f = new FloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
+    f = new LegacyFloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
     d.add(f);
     d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
 

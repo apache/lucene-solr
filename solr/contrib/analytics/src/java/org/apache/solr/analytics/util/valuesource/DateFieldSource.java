@@ -29,7 +29,7 @@ import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.solr.util.DateFormatUtil;
@@ -45,7 +45,7 @@ public class DateFieldSource extends LongFieldSource {
   }
 
   public long externalToLong(String extVal) {
-    return NumericUtils.prefixCodedToLong(new BytesRef(extVal));
+    return LegacyNumericUtils.prefixCodedToLong(new BytesRef(extVal));
   }
 
   public Object longToObject(long val) {

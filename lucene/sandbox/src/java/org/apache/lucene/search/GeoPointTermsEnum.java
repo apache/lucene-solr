@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
  * computes all ranges along a space-filling curve that represents
@@ -235,7 +235,7 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
      */
     private void fillBytesRef(BytesRefBuilder result) {
       assert result != null;
-      NumericUtils.longToPrefixCoded(start, shift, result);
+      LegacyNumericUtils.longToPrefixCoded(start, shift, result);
     }
 
     @Override

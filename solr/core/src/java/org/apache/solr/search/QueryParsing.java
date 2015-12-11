@@ -23,7 +23,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -293,8 +293,8 @@ public class QueryParsing {
       }
 
       out.append(q.includesUpper() ? ']' : '}');
-    } else if (query instanceof NumericRangeQuery) {
-      NumericRangeQuery q = (NumericRangeQuery) query;
+    } else if (query instanceof LegacyNumericRangeQuery) {
+      LegacyNumericRangeQuery q = (LegacyNumericRangeQuery) query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
       out.append(q.includesMin() ? '[' : '{');

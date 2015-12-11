@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.document.DimensionalField;
+import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -97,7 +97,7 @@ import org.apache.lucene.store.IndexOutput;
  *       are updates stored by {@link DocValuesFormat}.</li>
  *   <li>Attributes: a key-value map of codec-private attributes.</li>
  *   <li>DimensionCount, DimensionNumBytes: these are non-zero only if the field is
- *       indexed dimensionally using {@link DimensionalField}</li>
+ *       indexed dimensionally, e.g. using {@link DimensionalLongField}</li>
  * </ul>
  *
  * @lucene.experimental

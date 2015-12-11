@@ -33,7 +33,7 @@ import org.apache.lucene.util.BytesRef;
  * A range query that works on top of the doc values APIs. Such queries are
  * usually slow since they do not use an inverted index. However, in the
  * dense case where most documents match this query, it <b>might</b> be as
- * fast or faster than a regular {@link NumericRangeQuery}.
+ * fast or faster than a regular {@link DimensionalRangeQuery}.
  *
  * <p>
  * <b>NOTE</b>: be very careful using this query: it is

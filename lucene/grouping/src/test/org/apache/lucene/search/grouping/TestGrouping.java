@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -597,7 +596,6 @@ public class TestGrouping extends LuceneTestCase {
         doc.add(new SortedDocValuesField("sort1", BytesRef.deepCopyOf(groupValue.sort1)));
         doc.add(newStringField("sort2", groupValue.sort2.utf8ToString(), Field.Store.NO));
         doc.add(new SortedDocValuesField("sort2", BytesRef.deepCopyOf(groupValue.sort2)));
-        doc.add(new IntField("id", groupValue.id, Field.Store.NO));
         doc.add(new NumericDocValuesField("id", groupValue.id));
         doc.add(newTextField("content", groupValue.content, Field.Store.NO));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
@@ -712,11 +710,8 @@ public class TestGrouping extends LuceneTestCase {
       Field content = newTextField("content", "", Field.Store.NO);
       doc.add(content);
       docNoGroup.add(content);
-      IntField id = new IntField("id", 0, Field.Store.NO);
-      doc.add(id);
       NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
       doc.add(idDV);
-      docNoGroup.add(id);
       docNoGroup.add(idDV);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for(int i=0;i<numDocs;i++) {
@@ -751,7 +746,6 @@ public class TestGrouping extends LuceneTestCase {
         sort1.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort1));
         sort2.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort2));
         content.setStringValue(groupDoc.content);
-        id.setIntValue(groupDoc.id);
         idDV.setLongValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);

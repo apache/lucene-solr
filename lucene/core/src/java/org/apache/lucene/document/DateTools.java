@@ -17,17 +17,16 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.NumericRangeQuery; // for javadocs
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.NumericUtils;        // for javadocs
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+
+import org.apache.lucene.search.DimensionalRangeQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.TermRangeQuery;
 
 /**
  * Provides support for converting dates to strings and vice-versa.
@@ -40,13 +39,12 @@ import java.util.TimeZone;
  * {@link TermRangeQuery} and {@link PrefixQuery} will require more memory and become slower.
  * 
  * <P>
- * Another approach is {@link NumericUtils}, which provides
- * a sortable binary representation (prefix encoded) of numeric values, which
- * date/time are.
+ * Another approach is {@link DimensionalLongField}, which indexes the
+ * values in sorted order.
  * For indexing a {@link Date} or {@link Calendar}, just get the unix timestamp as
  * <code>long</code> using {@link Date#getTime} or {@link Calendar#getTimeInMillis} and
- * index this as a numeric value with {@link LongField}
- * and use {@link NumericRangeQuery} to query it.
+ * index this as a numeric value with {@link DimensionalLongField}
+ * and use {@link DimensionalRangeQuery} to query it.
  */
 public class DateTools {
   

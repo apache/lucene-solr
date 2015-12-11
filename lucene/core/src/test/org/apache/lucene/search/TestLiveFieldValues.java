@@ -30,7 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -109,7 +109,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
                   String id = String.format(Locale.ROOT, "%d_%04x", threadID, threadRandom.nextInt(idCount));
                   Integer field = threadRandom.nextInt(Integer.MAX_VALUE);
                   doc.add(newStringField("id", new BytesRef(id), Field.Store.YES));
-                  doc.add(new IntField("field", field.intValue(), Field.Store.YES));
+                  doc.add(new StoredField("field", field.intValue()));
                   w.updateDocument(new Term("id", id), doc);
                   rt.add(id, field);
                   if (values.put(id, field) == null) {

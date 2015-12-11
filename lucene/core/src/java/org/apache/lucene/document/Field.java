@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.analysis.LegacyNumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -36,8 +35,8 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Expert: directly create a field for a document.  Most
  * users should use one of the sugar subclasses: {@link
- * IntField}, {@link LongField}, {@link FloatField}, {@link
- * DoubleField}, {@link BinaryDocValuesField}, {@link
+ * LegacyIntField}, {@link LegacyLongField}, {@link LegacyFloatField}, {@link
+ * LegacyDoubleField}, {@link BinaryDocValuesField}, {@link
  * NumericDocValuesField}, {@link SortedDocValuesField}, {@link
  * StringField}, {@link TextField}, {@link StoredField}.
  *
@@ -504,14 +503,14 @@ public class Field implements IndexableField, StorableField {
       return null;
     }
 
-    final NumericType numericType = fieldType().numericType();
+    final FieldType.LegacyNumericType numericType = fieldType().numericType();
     if (numericType != null) {
-      if (!(reuse instanceof NumericTokenStream && ((NumericTokenStream)reuse).getPrecisionStep() == type.numericPrecisionStep())) {
+      if (!(reuse instanceof LegacyNumericTokenStream && ((LegacyNumericTokenStream)reuse).getPrecisionStep() == type.numericPrecisionStep())) {
         // lazy init the TokenStream as it is heavy to instantiate
         // (attributes,...) if not needed (stored field loading)
-        reuse = new NumericTokenStream(type.numericPrecisionStep());
+        reuse = new LegacyNumericTokenStream(type.numericPrecisionStep());
       }
-      final NumericTokenStream nts = (NumericTokenStream) reuse;
+      final LegacyNumericTokenStream nts = (LegacyNumericTokenStream) reuse;
       // initialize value in TokenStream
       final Number val = (Number) fieldsData;
       switch (numericType) {

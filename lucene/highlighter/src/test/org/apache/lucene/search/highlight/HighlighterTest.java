@@ -17,8 +17,6 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +28,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -44,10 +45,10 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.DimensionalIntField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -59,14 +60,15 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.queries.CustomScoreQuery;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PhraseQuery.Builder;
 import org.apache.lucene.search.PrefixQuery;
@@ -82,7 +84,6 @@ import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
-import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -558,9 +559,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         numHighlights == 5);
   }
   
-  public void testNumericRangeQuery() throws Exception {
+  public void testDimensionalRangeQuery() throws Exception {
     // doesn't currently highlight, but make sure it doesn't cause exception either
-    query = NumericRangeQuery.newIntRange(NUMERIC_FIELD_NAME, 2, 6, true, true);
+    query = DimensionalRangeQuery.new1DIntRange(NUMERIC_FIELD_NAME, 2, true, 6, true);
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
@@ -2051,22 +2052,22 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     // a few tests need other docs...:
     Document doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 1, Field.Store.NO));
+    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 1));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 1));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 3, Field.Store.NO));
+    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 3));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 3));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 5, Field.Store.NO));
+    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 5));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 5));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new IntField(NUMERIC_FIELD_NAME, 7, Field.Store.NO));
+    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 7));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
     writer.addDocument(doc);
 

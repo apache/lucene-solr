@@ -171,8 +171,14 @@ public final class FieldInfo {
     if (count <= 0) {
       throw new IllegalArgumentException("dimension count must be >= 0; got " + count + " for field=\"" + name + "\"");
     }
+    if (count > DimensionalValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("dimension count must be < DimensionalValues.MAX_DIMENSIONS (= " + DimensionalValues.MAX_DIMENSIONS + "); got " + count + " for field=\"" + name + "\"");
+    }
     if (numBytes <= 0) {
       throw new IllegalArgumentException("dimension numBytes must be >= 0; got " + numBytes + " for field=\"" + name + "\"");
+    }
+    if (numBytes > DimensionalValues.MAX_NUM_BYTES) {
+      throw new IllegalArgumentException("dimension numBytes must be <= DimensionalValues.MAX_NUM_BYTES (= " + DimensionalValues.MAX_NUM_BYTES + "); got " + numBytes + " for field=\"" + name + "\"");
     }
     if (dimensionCount != 0 && dimensionCount != count) {
       throw new IllegalArgumentException("cannot change dimension count from " + dimensionCount + " to " + count + " for field=\"" + name + "\"");

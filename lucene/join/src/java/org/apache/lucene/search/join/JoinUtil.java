@@ -3,9 +3,7 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 
@@ -106,8 +104,8 @@ public final class JoinUtil {
    * @param multipleValuesPerDocument Whether the from field has multiple terms per document
    *                                  when true fromField might be {@link DocValuesType#SORTED_NUMERIC},
    *                                  otherwise fromField should be {@link DocValuesType#NUMERIC}
-   * @param toField                   The to field to join to, should be {@link IntField} or {@link LongField}
-   * @param numericType               either {@link NumericType#INT} or {@link NumericType#LONG}, it should correspond to fromField and toField types
+   * @param toField                   The to field to join to, should be {@link org.apache.lucene.document.LegacyIntField} or {@link org.apache.lucene.document.LegacyLongField}
+   * @param numericType               either {@link org.apache.lucene.document.FieldType.LegacyNumericType#INT} or {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG}, it should correspond to fromField and toField types
    * @param fromQuery                 The query to match documents on the from side
    * @param fromSearcher              The searcher that executed the specified fromQuery
    * @param scoreMode                 Instructs how scores from the fromQuery are mapped to the returned query
@@ -118,7 +116,7 @@ public final class JoinUtil {
   
   public static Query createJoinQuery(String fromField,
       boolean multipleValuesPerDocument,
-      String toField, NumericType numericType,
+      String toField, LegacyNumericType numericType,
       Query fromQuery,
       IndexSearcher fromSearcher,
       ScoreMode scoreMode) throws IOException {

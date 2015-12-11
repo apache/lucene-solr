@@ -21,7 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.GeoUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
- * {@link org.apache.lucene.search.NumericRangeQuery} and is implemented using a
+ * {@link LegacyNumericRangeQuery} and is implemented using a
  * two phase approach. First, candidate terms are queried using a numeric
  * range based on the morton codes of the min and max lat/lon pairs. Terms
  * passing this initial filter are passed to a final check that verifies whether

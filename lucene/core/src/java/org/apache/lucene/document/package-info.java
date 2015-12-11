@@ -34,10 +34,9 @@
  *   How this is done is completely up to you.  That being said, there are many tools available in other projects that can make
  *   the process of taking a file and converting it into a Lucene {@link org.apache.lucene.document.Document}.
  * </p>
- * <p>The {@link org.apache.lucene.document.DateTools} is a utility class to make dates and times searchable
- * (remember, Lucene only searches text). {@link org.apache.lucene.document.IntField}, {@link org.apache.lucene.document.LongField},
- * {@link org.apache.lucene.document.FloatField} and {@link org.apache.lucene.document.DoubleField} are a special helper class
- * to simplify indexing of numeric values (and also dates) for fast range range queries with {@link org.apache.lucene.search.NumericRangeQuery}
- * (using a special sortable string representation of numeric values).</p>
+ * <p>The {@link org.apache.lucene.document.DateTools} is a utility class to make dates and times searchable. {@link
+ * org.apache.lucene.document.DimensionalIntField}, {@link org.apache.lucene.document.DimensionalLongField},
+ * {@link org.apache.lucene.document.DimensionalFloatField} and {@link org.apache.lucene.document.DimensionalDoubleField} enable indexing
+ * of numeric values (and also dates) for fast range queries using {@link org.apache.lucene.search.DimensionalRangeQuery}</p>
  */
 package org.apache.lucene.document;

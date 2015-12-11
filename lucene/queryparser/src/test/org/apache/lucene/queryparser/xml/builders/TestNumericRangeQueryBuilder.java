@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.xml.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -36,9 +36,9 @@ import java.nio.charset.StandardCharsets;
 public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
   public void testGetFilterHandleNumericParseErrorStrict() throws Exception {
-    NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+    LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<NumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
+    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
     Document doc = getDocumentFromString(xml);
     try {
       filterBuilder.getQuery(doc.getDocumentElement());
@@ -50,26 +50,26 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterInt() throws Exception {
-    NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+    LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<NumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10'/>";
+    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10'/>";
     Document doc = getDocumentFromString(xml);
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeQuery<?>);
+    assertTrue(filter instanceof LegacyNumericRangeQuery<?>);
 
-    NumericRangeQuery<Integer> numRangeFilter = (NumericRangeQuery<Integer>) filter;
+    LegacyNumericRangeQuery<Integer> numRangeFilter = (LegacyNumericRangeQuery<Integer>) filter;
     assertEquals(Integer.valueOf(-1), numRangeFilter.getMin());
     assertEquals(Integer.valueOf(10), numRangeFilter.getMax());
     assertEquals("AGE", numRangeFilter.getField());
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<NumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
+    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeQuery<?>);
+    assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);
 
-    NumericRangeQuery<Integer> numRangeFilter2 = (NumericRangeQuery) filter2;
+    LegacyNumericRangeQuery<Integer> numRangeFilter2 = (LegacyNumericRangeQuery) filter2;
     assertEquals(Integer.valueOf(-1), numRangeFilter2.getMin());
     assertEquals(Integer.valueOf(10), numRangeFilter2.getMax());
     assertEquals("AGE", numRangeFilter2.getField());
@@ -79,25 +79,25 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterLong() throws Exception {
-    NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+    LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<NumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
+    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
     Document doc = getDocumentFromString(xml);
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeQuery<?>);
-    NumericRangeQuery<Long> numRangeFilter = (NumericRangeQuery) filter;
+    assertTrue(filter instanceof LegacyNumericRangeQuery<?>);
+    LegacyNumericRangeQuery<Long> numRangeFilter = (LegacyNumericRangeQuery) filter;
     assertEquals(Long.valueOf(-2321L), numRangeFilter.getMin());
     assertEquals(Long.valueOf(60000000L), numRangeFilter.getMax());
     assertEquals("AGE", numRangeFilter.getField());
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<NumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
+    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeQuery<?>);
+    assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);
 
-    NumericRangeQuery<Long> numRangeFilter2 = (NumericRangeQuery) filter2;
+    LegacyNumericRangeQuery<Long> numRangeFilter2 = (LegacyNumericRangeQuery) filter2;
     assertEquals(Long.valueOf(-2321L), numRangeFilter2.getMin());
     assertEquals(Long.valueOf(60000000L), numRangeFilter2.getMax());
     assertEquals("AGE", numRangeFilter2.getField());
@@ -107,27 +107,27 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterDouble() throws Exception {
-    NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+    LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<NumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
+    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
     Document doc = getDocumentFromString(xml);
 
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeQuery<?>);
+    assertTrue(filter instanceof LegacyNumericRangeQuery<?>);
 
-    NumericRangeQuery<Double> numRangeFilter = (NumericRangeQuery) filter;
+    LegacyNumericRangeQuery<Double> numRangeFilter = (LegacyNumericRangeQuery) filter;
     assertEquals(Double.valueOf(-23.21d), numRangeFilter.getMin());
     assertEquals(Double.valueOf(60000.00023d), numRangeFilter.getMax());
     assertEquals("AGE", numRangeFilter.getField());
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<NumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
+    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeQuery<?>);
+    assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);
 
-    NumericRangeQuery<Double> numRangeFilter2 = (NumericRangeQuery) filter2;
+    LegacyNumericRangeQuery<Double> numRangeFilter2 = (LegacyNumericRangeQuery) filter2;
     assertEquals(Double.valueOf(-23.21d), numRangeFilter2.getMin());
     assertEquals(Double.valueOf(60000.00023d), numRangeFilter2.getMax());
     assertEquals("AGE", numRangeFilter2.getField());
@@ -137,28 +137,28 @@ public class TestNumericRangeQueryBuilder extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   public void testGetFilterFloat() throws Exception {
-    NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+    LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<NumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
+    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
     Document doc = getDocumentFromString(xml);
 
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-    assertTrue(filter instanceof NumericRangeQuery<?>);
+    assertTrue(filter instanceof LegacyNumericRangeQuery<?>);
 
-    NumericRangeQuery<Float> numRangeFilter = (NumericRangeQuery) filter;
+    LegacyNumericRangeQuery<Float> numRangeFilter = (LegacyNumericRangeQuery) filter;
     assertEquals(Float.valueOf(-2.321432f), numRangeFilter.getMin());
     assertEquals(Float.valueOf(32432.23f), numRangeFilter.getMax());
     assertEquals("AGE", numRangeFilter.getField());
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<NumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
+    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
     Document doc2 = getDocumentFromString(xml2);
 
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-    assertTrue(filter2 instanceof NumericRangeQuery<?>);
+    assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);
 
-    NumericRangeQuery<Float> numRangeFilter2 = (NumericRangeQuery) filter2;
+    LegacyNumericRangeQuery<Float> numRangeFilter2 = (LegacyNumericRangeQuery) filter2;
     assertEquals(Float.valueOf(-2.321432f), numRangeFilter2.getMin());
     assertEquals(Float.valueOf(32432.23f), numRangeFilter2.getMax());
     assertEquals("AGE", numRangeFilter2.getField());

@@ -17,64 +17,52 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.NumericTokenStream; // javadocs
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.search.NumericRangeQuery; // javadocs
-import org.apache.lucene.util.NumericUtils;
+
 
 /**
  * <p>
- * Field that indexes <code>long</code> values
+ * Field that indexes <code>double</code> values
  * for efficient range filtering and sorting. Here's an example usage:
  * 
  * <pre class="prettyprint">
- * document.add(new LongField(name, 6L, Field.Store.NO));
+ * document.add(new LegacyDoubleField(name, 6.0, Field.Store.NO));
  * </pre>
  * 
- * For optimal performance, re-use the <code>LongField</code> and
+ * For optimal performance, re-use the <code>LegacyDoubleField</code> and
  * {@link Document} instance for more than one document:
  * 
  * <pre class="prettyprint">
- *  LongField field = new LongField(name, 0L, Field.Store.NO);
+ *  LegacyDoubleField field = new LegacyDoubleField(name, 0.0, Field.Store.NO);
  *  Document document = new Document();
  *  document.add(field);
  * 
  *  for(all documents) {
  *    ...
- *    field.setLongValue(value)
+ *    field.setDoubleValue(value)
  *    writer.addDocument(document);
  *    ...
  *  }
  * </pre>
  *
- * See also {@link IntField}, {@link FloatField}, {@link
- * DoubleField}.
- *
- * Any type that can be converted to long can also be
- * indexed.  For example, date/time values represented by a
- * {@link java.util.Date} can be translated into a long
- * value using the {@link java.util.Date#getTime} method.  If you
- * don't need millisecond precision, you can quantize the
- * value, either by dividing the result of
- * {@link java.util.Date#getTime} or using the separate getters
- * (for year, month, etc.) to construct an <code>int</code> or
- * <code>long</code> value.
+ * See also {@link LegacyIntField}, {@link LegacyLongField}, {@link
+ * LegacyFloatField}.
  *
  * <p>To perform range querying or filtering against a
- * <code>LongField</code>, use {@link NumericRangeQuery}.
+ * <code>LegacyDoubleField</code>, use {@link org.apache.lucene.search.LegacyNumericRangeQuery}.
  * To sort according to a
- * <code>LongField</code>, use the normal numeric sort types, eg
- * {@link org.apache.lucene.search.SortField.Type#LONG}. <code>LongField</code> 
- * values can also be loaded directly from {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.
+ * <code>LegacyDoubleField</code>, use the normal numeric sort types, eg
+ * {@link org.apache.lucene.search.SortField.Type#DOUBLE}. <code>LegacyDoubleField</code>
+ * values can also be loaded directly from {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.</p>
  *
- * <p>You may add the same field name as an <code>LongField</code> to
+ * <p>You may add the same field name as an <code>LegacyDoubleField</code> to
  * the same document more than once.  Range querying and
  * filtering will be the logical OR of all values; so a range query
  * will hit all documents that have at least one value in
  * the range. However sort behavior is not defined.  If you need to sort,
- * you should separately index a single-valued <code>LongField</code>.
+ * you should separately index a single-valued <code>LegacyDoubleField</code>.</p>
  *
- * <p>A <code>LongField</code> will consume somewhat more disk space
+ * <p>A <code>LegacyDoubleField</code> will consume somewhat more disk space
  * in the index than an ordinary single-valued field.
  * However, for a typical index that includes substantial
  * textual content per document, this increase will likely
@@ -95,7 +83,7 @@ import org.apache.lucene.util.NumericUtils;
  * FieldType#setNumericPrecisionStep} method if you'd
  * like to change the value.  Note that you must also
  * specify a congruent value when creating {@link
- * NumericRangeQuery}.
+ * org.apache.lucene.search.LegacyNumericRangeQuery}.
  * For low cardinality fields larger precision steps are good.
  * If the cardinality is &lt; 100, it is fair
  * to use {@link Integer#MAX_VALUE}, which produces one
@@ -103,27 +91,30 @@ import org.apache.lucene.util.NumericUtils;
  *
  * <p>For more information on the internals of numeric trie
  * indexing, including the <a
- * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
- * configuration, see {@link NumericRangeQuery}. The format of
- * indexed values is described in {@link NumericUtils}.
+ * href="../search/LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
+ * configuration, see {@link org.apache.lucene.search.LegacyNumericRangeQuery}. The format of
+ * indexed values is described in {@link org.apache.lucene.util.LegacyNumericUtils}.
  *
  * <p>If you only need to sort by numeric value, and never
  * run range querying/filtering, you can index using a
  * <code>precisionStep</code> of {@link Integer#MAX_VALUE}.
- * This will minimize disk space consumed.
+ * This will minimize disk space consumed. </p>
  *
  * <p>More advanced users can instead use {@link
- * NumericTokenStream} directly, when indexing numbers. This
+ * org.apache.lucene.analysis.LegacyNumericTokenStream} directly, when indexing numbers. This
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
+ *
+ * @deprecated Please use {@link DimensionalDoubleField} instead
  *
  * @since 2.9
  */
 
-public final class LongField extends Field {
+@Deprecated
+public final class LegacyDoubleField extends Field {
   
   /** 
-   * Type for a LongField that is not stored:
+   * Type for a LegacyDoubleField that is not stored:
    * normalization factors, frequencies, and positions are omitted.
    */
   public static final FieldType TYPE_NOT_STORED = new FieldType();
@@ -131,12 +122,12 @@ public final class LongField extends Field {
     TYPE_NOT_STORED.setTokenized(true);
     TYPE_NOT_STORED.setOmitNorms(true);
     TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
-    TYPE_NOT_STORED.setNumericType(FieldType.NumericType.LONG);
+    TYPE_NOT_STORED.setNumericType(FieldType.LegacyNumericType.DOUBLE);
     TYPE_NOT_STORED.freeze();
   }
 
   /** 
-   * Type for a stored LongField:
+   * Type for a stored LegacyDoubleField:
    * normalization factors, frequencies, and positions are omitted.
    */
   public static final FieldType TYPE_STORED = new FieldType();
@@ -144,38 +135,38 @@ public final class LongField extends Field {
     TYPE_STORED.setTokenized(true);
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
-    TYPE_STORED.setNumericType(FieldType.NumericType.LONG);
+    TYPE_STORED.setNumericType(FieldType.LegacyNumericType.DOUBLE);
     TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();
   }
 
-  /** Creates a stored or un-stored LongField with the provided value
+  /** Creates a stored or un-stored LegacyDoubleField with the provided value
    *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (16). 
+   *  org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT} (16).
    *  @param name field name
-   *  @param value 64-bit long value
+   *  @param value 64-bit double value
    *  @param stored Store.YES if the content should also be stored
-   *  @throws IllegalArgumentException if the field name is null.
+   *  @throws IllegalArgumentException if the field name is null. 
    */
-  public LongField(String name, long value, Store stored) {
+  public LegacyDoubleField(String name, double value, Store stored) {
     super(name, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
-    fieldsData = Long.valueOf(value);
+    fieldsData = Double.valueOf(value);
   }
   
   /** Expert: allows you to customize the {@link
    *  FieldType}. 
    *  @param name field name
-   *  @param value 64-bit long value
+   *  @param value 64-bit double value
    *  @param type customized field type: must have {@link FieldType#numericType()}
-   *         of {@link FieldType.NumericType#LONG}.
+   *         of {@link org.apache.lucene.document.FieldType.LegacyNumericType#DOUBLE}.
    *  @throws IllegalArgumentException if the field name or type is null, or
-   *          if the field type does not have a LONG numericType()
+   *          if the field type does not have a DOUBLE numericType()
    */
-  public LongField(String name, long value, FieldType type) {
+  public LegacyDoubleField(String name, double value, FieldType type) {
     super(name, type);
-    if (type.numericType() != FieldType.NumericType.LONG) {
-      throw new IllegalArgumentException("type.numericType() must be LONG but got " + type.numericType());
+    if (type.numericType() != FieldType.LegacyNumericType.DOUBLE) {
+      throw new IllegalArgumentException("type.numericType() must be DOUBLE but got " + type.numericType());
     }
-    fieldsData = Long.valueOf(value);
+    fieldsData = Double.valueOf(value);
   }
 }

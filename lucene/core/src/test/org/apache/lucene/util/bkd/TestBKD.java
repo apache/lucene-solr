@@ -34,6 +34,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestBKD extends LuceneTestCase {
@@ -43,7 +44,7 @@ public class TestBKD extends LuceneTestCase {
       BKDWriter w = new BKDWriter(dir, "tmp", 1, 4, 2, 1.0f);
       byte[] scratch = new byte[4];
       for(int docID=0;docID<100;docID++) {
-        BKDUtil.intToBytes(docID, scratch, 0);
+        NumericUtils.intToBytes(docID, scratch, 0);
         w.add(scratch, docID);
       }
 
@@ -72,7 +73,7 @@ public class TestBKD extends LuceneTestCase {
 
             @Override
             public void visit(int docID, byte[] packedValue) {
-              int x = BKDUtil.bytesToInt(packedValue, 0);
+              int x = NumericUtils.bytesToInt(packedValue, 0);
               if (VERBOSE) {
                 System.out.println("visit docID=" + docID + " x=" + x);
               }
@@ -83,8 +84,8 @@ public class TestBKD extends LuceneTestCase {
 
             @Override
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
-              int min = BKDUtil.bytesToInt(minPacked, 0);
-              int max = BKDUtil.bytesToInt(maxPacked, 0);
+              int min = NumericUtils.bytesToInt(minPacked, 0);
+              int max = NumericUtils.bytesToInt(maxPacked, 0);
               assert max >= min;
               if (VERBOSE) {
                 System.out.println("compare: min=" + min + " max=" + max + " vs queryMin=" + queryMin + " queryMax=" + queryMax);
@@ -129,7 +130,7 @@ public class TestBKD extends LuceneTestCase {
         }
         for(int dim=0;dim<numDims;dim++) {
           values[dim] = random().nextInt();
-          BKDUtil.intToBytes(values[dim], scratch, dim);
+          NumericUtils.intToBytes(values[dim], scratch, dim);
           if (VERBOSE) {
             System.out.println("    " + dim + " -> " + values[dim]);
           }
@@ -178,7 +179,7 @@ public class TestBKD extends LuceneTestCase {
             public void visit(int docID, byte[] packedValue) {
               //System.out.println("visit check docID=" + docID);
               for(int dim=0;dim<numDims;dim++) {
-                int x = BKDUtil.bytesToInt(packedValue, dim);
+                int x = NumericUtils.bytesToInt(packedValue, dim);
                 if (x < queryMin[dim] || x > queryMax[dim]) {
                   //System.out.println("  no");
                   return;
@@ -193,8 +194,8 @@ public class TestBKD extends LuceneTestCase {
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numDims;dim++) {
-                int min = BKDUtil.bytesToInt(minPacked, dim);
-                int max = BKDUtil.bytesToInt(maxPacked, dim);
+                int min = NumericUtils.bytesToInt(minPacked, dim);
+                int max = NumericUtils.bytesToInt(maxPacked, dim);
                 assert max >= min;
 
                 if (max < queryMin[dim] || min > queryMax[dim]) {
@@ -250,7 +251,7 @@ public class TestBKD extends LuceneTestCase {
         }
         for(int dim=0;dim<numDims;dim++) {
           values[dim] = randomBigInt(numBytesPerDim);
-          BKDUtil.bigIntToBytes(values[dim], scratch, dim, numBytesPerDim);
+          NumericUtils.bigIntToBytes(values[dim], scratch, dim, numBytesPerDim);
           if (VERBOSE) {
             System.out.println("    " + dim + " -> " + values[dim]);
           }
@@ -299,7 +300,7 @@ public class TestBKD extends LuceneTestCase {
             public void visit(int docID, byte[] packedValue) {
               //System.out.println("visit check docID=" + docID);
               for(int dim=0;dim<numDims;dim++) {
-                BigInteger x = BKDUtil.bytesToBigInt(packedValue, dim, numBytesPerDim);
+                BigInteger x = NumericUtils.bytesToBigInt(packedValue, dim, numBytesPerDim);
                 if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
                   //System.out.println("  no");
                   return;
@@ -314,8 +315,8 @@ public class TestBKD extends LuceneTestCase {
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numDims;dim++) {
-                BigInteger min = BKDUtil.bytesToBigInt(minPacked, dim, numBytesPerDim);
-                BigInteger max = BKDUtil.bytesToBigInt(maxPacked, dim, numBytesPerDim);
+                BigInteger min = NumericUtils.bytesToBigInt(minPacked, dim, numBytesPerDim);
+                BigInteger max = NumericUtils.bytesToBigInt(maxPacked, dim, numBytesPerDim);
                 assert max.compareTo(min) >= 0;
 
                 if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
@@ -518,7 +519,7 @@ public class TestBKD extends LuceneTestCase {
     verify(docValuesArray, docIDsArray, numDims, numBytesPerDim);
   }
 
-  public void testBKDUtilAdd() throws Exception {
+  public void testNumericUtilsAdd() throws Exception {
     int iters = atLeast(10000);
     int numBytes = TestUtil.nextInt(random(), 1, 100);
     for(int iter=0;iter<iters;iter++) {
@@ -536,26 +537,26 @@ public class TestBKD extends LuceneTestCase {
       System.arraycopy(v2RawBytes, 0, v2Bytes, v2Bytes.length-v2RawBytes.length, v2RawBytes.length);
 
       byte[] result = new byte[numBytes];
-      BKDUtil.add(numBytes, 0, v1Bytes, v2Bytes, result);
+      NumericUtils.add(numBytes, 0, v1Bytes, v2Bytes, result);
 
       BigInteger sum = v1.add(v2);
       assertTrue("sum=" + sum + " v1=" + v1 + " v2=" + v2 + " but result=" + new BigInteger(1, result), sum.equals(new BigInteger(1, result)));
     }
   }
 
-  public void testIllegalBKDUtilAdd() throws Exception {
+  public void testIllegalNumericUtilsAdd() throws Exception {
     byte[] bytes = new byte[4];
     Arrays.fill(bytes, (byte) 0xff);
     byte[] one = new byte[4];
     one[3] = 1;
     try {
-      BKDUtil.add(4, 0, bytes, one, new byte[4]);
+      NumericUtils.add(4, 0, bytes, one, new byte[4]);
     } catch (IllegalArgumentException iae) {
       assertEquals("a + b overflows bytesPerDim=4", iae.getMessage());
     }
   }
   
-  public void testBKDUtilSubtract() throws Exception {
+  public void testNumericUtilsSubtract() throws Exception {
     int iters = atLeast(10000);
     int numBytes = TestUtil.nextInt(random(), 1, 100);
     for(int iter=0;iter<iters;iter++) {
@@ -579,7 +580,7 @@ public class TestBKD extends LuceneTestCase {
       System.arraycopy(v2RawBytes, 0, v2Bytes, v2Bytes.length-v2RawBytes.length, v2RawBytes.length);
 
       byte[] result = new byte[numBytes];
-      BKDUtil.subtract(numBytes, 0, v1Bytes, v2Bytes, result);
+      NumericUtils.subtract(numBytes, 0, v1Bytes, v2Bytes, result);
 
       BigInteger diff = v1.subtract(v2);
 
@@ -587,13 +588,13 @@ public class TestBKD extends LuceneTestCase {
     }
   }
 
-  public void testIllegalBKDUtilSubtract() throws Exception {
+  public void testIllegalNumericUtilsSubtract() throws Exception {
     byte[] v1 = new byte[4];
     v1[3] = (byte) 0xf0;
     byte[] v2 = new byte[4];
     v2[3] = (byte) 0xf1;
     try {
-      BKDUtil.subtract(4, 0, v1, v2, new byte[4]);
+      NumericUtils.subtract(4, 0, v1, v2, new byte[4]);
     } catch (IllegalArgumentException iae) {
       assertEquals("a < b", iae.getMessage());
     }
@@ -722,7 +723,7 @@ public class TestBKD extends LuceneTestCase {
           random().nextBytes(queryMin[dim]);
           queryMax[dim] = new byte[numBytesPerDim];
           random().nextBytes(queryMax[dim]);
-          if (BKDUtil.compare(numBytesPerDim, queryMin[dim], 0, queryMax[dim], 0) > 0) {
+          if (NumericUtils.compare(numBytesPerDim, queryMin[dim], 0, queryMax[dim], 0) > 0) {
             byte[] x = queryMin[dim];
             queryMin[dim] = queryMax[dim];
             queryMax[dim] = x;
@@ -741,8 +742,8 @@ public class TestBKD extends LuceneTestCase {
             public void visit(int docID, byte[] packedValue) {
               //System.out.println("visit check docID=" + docID);
               for(int dim=0;dim<numDims;dim++) {
-                if (BKDUtil.compare(numBytesPerDim, packedValue, dim, queryMin[dim], 0) < 0 ||
-                    BKDUtil.compare(numBytesPerDim, packedValue, dim, queryMax[dim], 0) > 0) {
+                if (NumericUtils.compare(numBytesPerDim, packedValue, dim, queryMin[dim], 0) < 0 ||
+                    NumericUtils.compare(numBytesPerDim, packedValue, dim, queryMax[dim], 0) > 0) {
                   //System.out.println("  no");
                   return;
                 }
@@ -756,11 +757,11 @@ public class TestBKD extends LuceneTestCase {
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numDims;dim++) {
-                if (BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMin[dim], 0) < 0 ||
-                    BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMax[dim], 0) > 0) {
+                if (NumericUtils.compare(numBytesPerDim, maxPacked, dim, queryMin[dim], 0) < 0 ||
+                    NumericUtils.compare(numBytesPerDim, minPacked, dim, queryMax[dim], 0) > 0) {
                   return Relation.CELL_OUTSIDE_QUERY;
-                } else if (BKDUtil.compare(numBytesPerDim, minPacked, dim, queryMin[dim], 0) < 0 ||
-                           BKDUtil.compare(numBytesPerDim, maxPacked, dim, queryMax[dim], 0) > 0) {
+                } else if (NumericUtils.compare(numBytesPerDim, minPacked, dim, queryMin[dim], 0) < 0 ||
+                           NumericUtils.compare(numBytesPerDim, maxPacked, dim, queryMax[dim], 0) > 0) {
                   crosses = true;
                 }
               }
@@ -778,8 +779,8 @@ public class TestBKD extends LuceneTestCase {
           boolean matches = true;
           for(int dim=0;dim<numDims;dim++) {
             byte[] x = docValues[ord][dim];
-            if (BKDUtil.compare(numBytesPerDim, x, 0, queryMin[dim], 0) < 0 ||
-                BKDUtil.compare(numBytesPerDim, x, 0, queryMax[dim], 0) > 0) {
+            if (NumericUtils.compare(numBytesPerDim, x, 0, queryMin[dim], 0) < 0 ||
+                NumericUtils.compare(numBytesPerDim, x, 0, queryMax[dim], 0) > 0) {
               matches = false;
               break;
             }

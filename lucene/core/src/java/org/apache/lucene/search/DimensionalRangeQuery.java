@@ -21,7 +21,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.apache.lucene.document.DimensionalField;
+import org.apache.lucene.document.DimensionalBinaryField;
+import org.apache.lucene.document.DimensionalDoubleField;
+import org.apache.lucene.document.DimensionalFloatField;
+import org.apache.lucene.document.DimensionalIntField;
+import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
 import org.apache.lucene.index.DimensionalValues.Relation;
@@ -29,12 +33,13 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.bkd.BKDUtil;
 
-/** Searches for ranges in fields previously indexed using {@link DimensionalField}.  In
- *  a 1D field this is a simple range query; in a multi-dimensional field it's a box shape. */
+/** Searches for ranges in fields previously indexed using dimensional
+ *  fields, e.g. {@link DimensionalLongField}.  In a 1D field this is
+ *  a simple range query; in a multi-dimensional field it's a box shape. */
 
 public class DimensionalRangeQuery extends Query {
   final String field;
@@ -91,14 +96,29 @@ public class DimensionalRangeQuery extends Query {
     }
   }
 
-  /** Sugar constructor: use in the 1D case when you indexed 1D long values using {@link DimensionalField} */
-  public DimensionalRangeQuery(String field, Long lowerValue, boolean lowerInclusive, Long upperValue, boolean upperInclusive) {
-    this(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  /** Use in the 1D case when you indexed 1D int values using {@link DimensionalIntField} */
+  public static DimensionalRangeQuery new1DIntRange(String field, Integer lowerValue, boolean lowerInclusive, Integer upperValue, boolean upperInclusive) {
+    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
   }
 
-  /** Sugar constructor: use in the 1D case when you indexed binary values using {@link DimensionalField} */
-  public DimensionalRangeQuery(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
-    this(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
+  /** Use in the 1D case when you indexed 1D long values using {@link DimensionalLongField} */
+  public static DimensionalRangeQuery new1DLongRange(String field, Long lowerValue, boolean lowerInclusive, Long upperValue, boolean upperInclusive) {
+    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  }
+
+  /** Use in the 1D case when you indexed 1D float values using {@link DimensionalFloatField} */
+  public static DimensionalRangeQuery new1DFloatRange(String field, Float lowerValue, boolean lowerInclusive, Float upperValue, boolean upperInclusive) {
+    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  }
+
+  /** Use in the 1D case when you indexed 1D double values using {@link DimensionalDoubleField} */
+  public static DimensionalRangeQuery new1DDoubleRange(String field, Double lowerValue, boolean lowerInclusive, Double upperValue, boolean upperInclusive) {
+    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  }
+
+  /** Use in the 1D case when you indexed binary values using {@link DimensionalBinaryField} */
+  public static DimensionalRangeQuery new1DBinaryRange(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
+    return new DimensionalRangeQuery(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
   }
 
   private static byte[][] pack(Long value) {
@@ -107,7 +127,37 @@ public class DimensionalRangeQuery extends Query {
       return new byte[1][];
     }
     byte[][] result = new byte[][] {new byte[RamUsageEstimator.NUM_BYTES_LONG]};
-    BKDUtil.longToBytes(value, result[0], 0);
+    NumericUtils.longToBytes(value, result[0], 0);
+    return result;
+  }
+
+  private static byte[][] pack(Double value) {
+    if (value == null) {
+      // OK: open ended range
+      return new byte[1][];
+    }
+    byte[][] result = new byte[][] {new byte[RamUsageEstimator.NUM_BYTES_LONG]};
+    NumericUtils.longToBytesDirect(NumericUtils.doubleToSortableLong(value), result[0], 0);
+    return result;
+  }
+
+  private static byte[][] pack(Integer value) {
+    if (value == null) {
+      // OK: open ended range
+      return new byte[1][];
+    }
+    byte[][] result = new byte[][] {new byte[RamUsageEstimator.NUM_BYTES_INT]};
+    NumericUtils.intToBytes(value, result[0], 0);
+    return result;
+  }
+
+  private static byte[][] pack(Float value) {
+    if (value == null) {
+      // OK: open ended range
+      return new byte[1][];
+    }
+    byte[][] result = new byte[][] {new byte[RamUsageEstimator.NUM_BYTES_INT]};
+    NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(value), result[0], 0);
     return result;
   }
 
@@ -158,7 +208,7 @@ public class DimensionalRangeQuery extends Query {
                 return null;
               } else {
                 byte[] value = new byte[bytesPerDim];
-                BKDUtil.add(bytesPerDim, 0, lowerPoint[dim], one, value);
+                NumericUtils.add(bytesPerDim, 0, lowerPoint[dim], one, value);
                 System.arraycopy(value, 0, packedLowerIncl, dim*bytesPerDim, bytesPerDim);
               }
             } else {
@@ -174,7 +224,7 @@ public class DimensionalRangeQuery extends Query {
                 return null;
               } else {
                 byte[] value = new byte[bytesPerDim];
-                BKDUtil.subtract(bytesPerDim, 0, upperPoint[dim], one, value);
+                NumericUtils.subtract(bytesPerDim, 0, upperPoint[dim], one, value);
                 System.arraycopy(value, 0, packedUpperIncl, dim*bytesPerDim, bytesPerDim);
               }
             } else {

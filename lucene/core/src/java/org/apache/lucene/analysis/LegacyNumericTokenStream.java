@@ -23,26 +23,22 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.document.DoubleField; // for javadocs
-import org.apache.lucene.document.FloatField; // for javadocs
-import org.apache.lucene.document.IntField; // for javadocs
-import org.apache.lucene.document.LongField; // for javadocs
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
  * <b>Expert:</b> This class provides a {@link TokenStream}
  * for indexing numeric values that can be used by {@link
- * NumericRangeQuery}.
+ * org.apache.lucene.search.LegacyNumericRangeQuery}.
  *
- * <p>Note that for simple usage, {@link IntField}, {@link
- * LongField}, {@link FloatField} or {@link DoubleField} is
+ * <p>Note that for simple usage, {@link org.apache.lucene.document.LegacyIntField}, {@link
+ * org.apache.lucene.document.LegacyLongField}, {@link org.apache.lucene.document.LegacyFloatField} or {@link org.apache.lucene.document.LegacyDoubleField} is
  * recommended.  These fields disable norms and
  * term freqs, as they are not usually needed during
  * searching.  If you need to change these settings, you
@@ -54,7 +50,7 @@ import org.apache.lucene.util.NumericUtils;
  *  FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
  *  fieldType.setOmitNorms(true);
  *  fieldType.setIndexOptions(IndexOptions.DOCS_ONLY);
- *  Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value), fieldType);
+ *  Field field = new Field(name, new LegacyNumericTokenStream(precisionStep).setIntValue(value), fieldType);
  *  document.add(field);
  * </pre>
  *
@@ -62,7 +58,7 @@ import org.apache.lucene.util.NumericUtils;
  * for more than one document:
  *
  * <pre class="prettyprint">
- *  NumericTokenStream stream = new NumericTokenStream(precisionStep);
+ *  LegacyNumericTokenStream stream = new LegacyNumericTokenStream(precisionStep);
  *  FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
  *  fieldType.setOmitNorms(true);
  *  fieldType.setIndexOptions(IndexOptions.DOCS_ONLY);
@@ -82,17 +78,20 @@ import org.apache.lucene.util.NumericUtils;
 
  * <p><b>NOTE</b>: as token streams are only consumed once
  * the document is added to the index, if you index more
- * than one numeric field, use a separate <code>NumericTokenStream</code>
+ * than one numeric field, use a separate <code>LegacyNumericTokenStream</code>
  * instance for each.</p>
  *
- * <p>See {@link NumericRangeQuery} for more details on the
+ * <p>See {@link org.apache.lucene.search.LegacyNumericRangeQuery} for more details on the
  * <a
- * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
+ * href="../search/LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
  * parameter as well as how numeric fields work under the hood.</p>
+ *
+ * @deprecated Please switch to {@link DimensionalValues} instead
  *
  * @since 2.9
  */
-public final class NumericTokenStream extends TokenStream {
+@Deprecated
+public final class LegacyNumericTokenStream extends TokenStream {
 
   /** The full precision token gets this token type assigned. */
   public static final String TOKEN_TYPE_FULL_PREC  = "fullPrecNumeric";
@@ -104,7 +103,7 @@ public final class NumericTokenStream extends TokenStream {
    * @lucene.experimental
    * @since 4.0
    */
-  public interface NumericTermAttribute extends Attribute {
+  public interface LegacyNumericTermAttribute extends Attribute {
     /** Returns current shift value, undefined before first token */
     int getShift();
     /** Returns current token's raw value as {@code long} with all {@link #getShift} applied, undefined before first token */
@@ -136,16 +135,16 @@ public final class NumericTokenStream extends TokenStream {
     @Override
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
       if (CharTermAttribute.class.isAssignableFrom(attClass))
-        throw new IllegalArgumentException("NumericTokenStream does not support CharTermAttribute.");
+        throw new IllegalArgumentException("LegacyNumericTokenStream does not support CharTermAttribute.");
       return delegate.createAttributeInstance(attClass);
     }
   }
 
-  /** Implementation of {@link NumericTermAttribute}.
+  /** Implementation of {@link org.apache.lucene.analysis.LegacyNumericTokenStream.LegacyNumericTermAttribute}.
    * @lucene.internal
    * @since 4.0
    */
-  public static final class NumericTermAttributeImpl extends AttributeImpl implements NumericTermAttribute,TermToBytesRefAttribute {
+  public static final class LegacyNumericTermAttributeImpl extends AttributeImpl implements LegacyNumericTermAttribute,TermToBytesRefAttribute {
     private long value = 0L;
     private int valueSize = 0, shift = 0, precisionStep = 0;
     private BytesRefBuilder bytes = new BytesRefBuilder();
@@ -154,15 +153,15 @@ public final class NumericTokenStream extends TokenStream {
      * Creates, but does not yet initialize this attribute instance
      * @see #init(long, int, int, int)
      */
-    public NumericTermAttributeImpl() {}
+    public LegacyNumericTermAttributeImpl() {}
 
     @Override
     public BytesRef getBytesRef() {
       assert valueSize == 64 || valueSize == 32;
       if (valueSize == 64) {
-        NumericUtils.longToPrefixCoded(value, shift, bytes);
+        LegacyNumericUtils.longToPrefixCoded(value, shift, bytes);
       } else {
-        NumericUtils.intToPrefixCoded((int) value, shift, bytes);
+        LegacyNumericUtils.intToPrefixCoded((int) value, shift, bytes);
       }
       return bytes.get();
     }
@@ -198,20 +197,20 @@ public final class NumericTokenStream extends TokenStream {
     @Override
     public void reflectWith(AttributeReflector reflector) {
       reflector.reflect(TermToBytesRefAttribute.class, "bytes", getBytesRef());
-      reflector.reflect(NumericTermAttribute.class, "shift", shift);
-      reflector.reflect(NumericTermAttribute.class, "rawValue", getRawValue());
-      reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);
+      reflector.reflect(LegacyNumericTermAttribute.class, "shift", shift);
+      reflector.reflect(LegacyNumericTermAttribute.class, "rawValue", getRawValue());
+      reflector.reflect(LegacyNumericTermAttribute.class, "valueSize", valueSize);
     }
   
     @Override
     public void copyTo(AttributeImpl target) {
-      final NumericTermAttribute a = (NumericTermAttribute) target;
+      final LegacyNumericTermAttribute a = (LegacyNumericTermAttribute) target;
       a.init(value, valueSize, precisionStep, shift);
     }
     
     @Override
-    public NumericTermAttributeImpl clone() {
-      NumericTermAttributeImpl t = (NumericTermAttributeImpl)super.clone();
+    public LegacyNumericTermAttributeImpl clone() {
+      LegacyNumericTermAttributeImpl t = (LegacyNumericTermAttributeImpl)super.clone();
       // Do a deep clone
       t.bytes = new BytesRefBuilder();
       t.bytes.copyBytes(getBytesRef());
@@ -228,7 +227,7 @@ public final class NumericTokenStream extends TokenStream {
       if (this == obj) return true;
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
-      NumericTermAttributeImpl other = (NumericTermAttributeImpl) obj;
+      LegacyNumericTermAttributeImpl other = (LegacyNumericTermAttributeImpl) obj;
       if (precisionStep != other.precisionStep) return false;
       if (shift != other.shift) return false;
       if (value != other.value) return false;
@@ -239,11 +238,11 @@ public final class NumericTokenStream extends TokenStream {
   
   /**
    * Creates a token stream for numeric values using the default <code>precisionStep</code>
-   * {@link NumericUtils#PRECISION_STEP_DEFAULT} (16). The stream is not yet initialized,
+   * {@link org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT} (16). The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */
-  public NumericTokenStream() {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, NumericUtils.PRECISION_STEP_DEFAULT);
+  public LegacyNumericTokenStream() {
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, LegacyNumericUtils.PRECISION_STEP_DEFAULT);
   }
   
   /**
@@ -251,7 +250,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>precisionStep</code>. The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */
-  public NumericTokenStream(final int precisionStep) {
+  public LegacyNumericTokenStream(final int precisionStep) {
     this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, precisionStep);
   }
 
@@ -262,7 +261,7 @@ public final class NumericTokenStream extends TokenStream {
    * The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */
-  public NumericTokenStream(AttributeFactory factory, final int precisionStep) {
+  public LegacyNumericTokenStream(AttributeFactory factory, final int precisionStep) {
     super(new NumericAttributeFactory(factory));
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
@@ -274,9 +273,9 @@ public final class NumericTokenStream extends TokenStream {
    * Initializes the token stream with the supplied <code>long</code> value.
    * @param value the value, for which this TokenStream should enumerate tokens.
    * @return this instance, because of this you can use it the following way:
-   * <code>new Field(name, new NumericTokenStream(precisionStep).setLongValue(value))</code>
+   * <code>new Field(name, new LegacyNumericTokenStream(precisionStep).setLongValue(value))</code>
    */
-  public NumericTokenStream setLongValue(final long value) {
+  public LegacyNumericTokenStream setLongValue(final long value) {
     numericAtt.init(value, valSize = 64, precisionStep, -precisionStep);
     return this;
   }
@@ -285,9 +284,9 @@ public final class NumericTokenStream extends TokenStream {
    * Initializes the token stream with the supplied <code>int</code> value.
    * @param value the value, for which this TokenStream should enumerate tokens.
    * @return this instance, because of this you can use it the following way:
-   * <code>new Field(name, new NumericTokenStream(precisionStep).setIntValue(value))</code>
+   * <code>new Field(name, new LegacyNumericTokenStream(precisionStep).setIntValue(value))</code>
    */
-  public NumericTokenStream setIntValue(final int value) {
+  public LegacyNumericTokenStream setIntValue(final int value) {
     numericAtt.init(value, valSize = 32, precisionStep, -precisionStep);
     return this;
   }
@@ -296,10 +295,10 @@ public final class NumericTokenStream extends TokenStream {
    * Initializes the token stream with the supplied <code>double</code> value.
    * @param value the value, for which this TokenStream should enumerate tokens.
    * @return this instance, because of this you can use it the following way:
-   * <code>new Field(name, new NumericTokenStream(precisionStep).setDoubleValue(value))</code>
+   * <code>new Field(name, new LegacyNumericTokenStream(precisionStep).setDoubleValue(value))</code>
    */
-  public NumericTokenStream setDoubleValue(final double value) {
-    numericAtt.init(NumericUtils.doubleToSortableLong(value), valSize = 64, precisionStep, -precisionStep);
+  public LegacyNumericTokenStream setDoubleValue(final double value) {
+    numericAtt.init(LegacyNumericUtils.doubleToSortableLong(value), valSize = 64, precisionStep, -precisionStep);
     return this;
   }
   
@@ -307,10 +306,10 @@ public final class NumericTokenStream extends TokenStream {
    * Initializes the token stream with the supplied <code>float</code> value.
    * @param value the value, for which this TokenStream should enumerate tokens.
    * @return this instance, because of this you can use it the following way:
-   * <code>new Field(name, new NumericTokenStream(precisionStep).setFloatValue(value))</code>
+   * <code>new Field(name, new LegacyNumericTokenStream(precisionStep).setFloatValue(value))</code>
    */
-  public NumericTokenStream setFloatValue(final float value) {
-    numericAtt.init(NumericUtils.floatToSortableInt(value), valSize = 32, precisionStep, -precisionStep);
+  public LegacyNumericTokenStream setFloatValue(final float value) {
+    numericAtt.init(LegacyNumericUtils.floatToSortableInt(value), valSize = 32, precisionStep, -precisionStep);
     return this;
   }
   
@@ -347,7 +346,7 @@ public final class NumericTokenStream extends TokenStream {
   }
   
   // members
-  private final NumericTermAttribute numericAtt = addAttribute(NumericTermAttribute.class);
+  private final LegacyNumericTermAttribute numericAtt = addAttribute(LegacyNumericTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   

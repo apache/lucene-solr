@@ -26,7 +26,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
@@ -169,8 +169,8 @@ public class SimpleMLTQParser extends QParser {
 
   private Term createNumericTerm(String field, String uniqueValue) {
     BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
-    bytesRefBuilder.grow(NumericUtils.BUF_SIZE_INT);
-    NumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);
+    bytesRefBuilder.grow(LegacyNumericUtils.BUF_SIZE_INT);
+    LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);
     return new Term(field, bytesRefBuilder);
   }
 

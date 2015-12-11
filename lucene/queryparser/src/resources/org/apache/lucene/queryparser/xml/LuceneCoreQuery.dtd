@@ -288,7 +288,7 @@ Passes content directly through to the standard LuceneQuery parser see "Lucene Q
 	@example 
 	        <em>Search for documents about people who are aged 20-25</em>
 	        %	          
-            <NumericRangeQuery fieldName="age" lowerTerm="20" upperTerm="25" />
+            <LegacyNumericRangeQuery fieldName="age" lowerTerm="20" upperTerm="25" />
 	         %
 	-->
 <!ELEMENT NumericRangeQuery EMPTY>

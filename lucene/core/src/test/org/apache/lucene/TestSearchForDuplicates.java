@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -98,7 +98,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
         d.add(newTextField(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES));
-        d.add(new IntField(ID_FIELD, j, Field.Store.YES));
+        d.add(new StoredField(ID_FIELD, j));
         d.add(new NumericDocValuesField(ID_FIELD, j));
         writer.addDocument(d);
       }
