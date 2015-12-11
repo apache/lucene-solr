@@ -664,7 +664,7 @@ public class HttpSolrCall {
     handler.handleRequest(solrReq, solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
     if (log.isInfoEnabled() && solrResp.getToLog().size() > 0) {
-      log.info(solrResp.getToLogAsString("[admin] "));
+      log.info(solrResp.getToLogAsString("[admin]"));
     }
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard");

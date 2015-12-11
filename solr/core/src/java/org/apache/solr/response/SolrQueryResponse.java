@@ -199,12 +199,15 @@ public class SolrQueryResponse {
   public String getToLogAsString(String logid) {
     StringBuilder sb = new StringBuilder(logid);
     for (int i=0; i<toLog.size(); i++) {
+      if (sb.length() > 0) {
+        sb.append(' ');
+      }
       String name = toLog.getName(i);
       Object val = toLog.getVal(i);
       if (name != null) {
         sb.append(name).append('=');
       }
-      sb.append(val).append(' ');
+      sb.append(val);
     }
     return sb.toString();
   }

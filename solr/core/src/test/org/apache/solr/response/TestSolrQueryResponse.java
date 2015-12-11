@@ -17,17 +17,52 @@ package org.apache.solr.response;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map.Entry;
-
-
 public class TestSolrQueryResponse extends LuceneTestCase {
   
+  @Test
+  public void testToLog() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    assertEquals("toLog initially not empty", 0, response.getToLog().size());
+    assertEquals("logid_only", response.getToLogAsString("logid_only"));
+    // initially empty, then add something
+    response.addToLog("key1", "value1");
+    {
+      final Iterator<Map.Entry<String,Object>> it = response.getToLog().iterator();
+      assertTrue(it.hasNext());
+      final Map.Entry<String,Object> entry1 = it.next();
+      assertEquals("key1", entry1.getKey());
+      assertEquals("value1", entry1.getValue());
+      assertFalse(it.hasNext());
+    }
+    assertEquals("key1=value1", response.getToLogAsString(""));
+    assertEquals("abc123 key1=value1", response.getToLogAsString("abc123"));
+    // and then add something else
+    response.addToLog("key2", "value2");
+    {
+      final Iterator<Map.Entry<String,Object>> it = response.getToLog().iterator();
+      assertTrue(it.hasNext());
+      final Map.Entry<String,Object> entry1 = it.next();
+      assertEquals("key1", entry1.getKey());
+      assertEquals("value1", entry1.getValue());
+      assertTrue(it.hasNext());
+      final Map.Entry<String,Object> entry2 = it.next();
+      assertEquals("key2", entry2.getKey());
+      assertEquals("value2", entry2.getValue());
+      assertFalse(it.hasNext());
+    }
+    assertEquals("key1=value1 key2=value2", response.getToLogAsString(""));
+    assertEquals("xyz789 key1=value1 key2=value2", response.getToLogAsString("xyz789"));
+  }
+
   @Test
   public void testAddHttpHeader() {
     SolrQueryResponse response = new SolrQueryResponse();
