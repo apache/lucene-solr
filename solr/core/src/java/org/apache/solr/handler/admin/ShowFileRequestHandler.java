@@ -275,19 +275,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       }
       return true;
     }
-
-    // Make sure that if the schema is managed, we don't allow editing. Don't really want to put
-    // this in the init since we're not entirely sure when the managed schema will get initialized relative to this
-    // handler.
-    SolrCore core = req.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    if (schema instanceof ManagedIndexSchema) {
-      String managed = schema.getResourceName();
-
-      if (fname.equalsIgnoreCase(managed)) {
-        return true;
-      }
-    }
     return false;
   }
 

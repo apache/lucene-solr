@@ -239,6 +239,9 @@ Bug Fixes
 * SOLR-8401: Windows start script fails when executed from a different drive.
   (Nicolas Gavalda via Erick Erickson)
 
+* SOLR-6992: Fix "Files" UI to show the managed-schema file as well.
+  (Shawn Heisey, Varun Thacker)
+
 Other Changes
 ----------------------
 
