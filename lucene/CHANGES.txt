@@ -164,6 +164,9 @@ Other
   NumericRangeQueryQuery.xml to NumericRangeQuery.xml
   (Christine Poerschke)
 
+* LUCENE-6925: add ForceMergePolicy class in test-framework
+  (Christine Poerschke)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features

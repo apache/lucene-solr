@@ -304,6 +304,8 @@ Other Changes
 * SOLR-8383: SolrCore.java + QParserPlugin.java container initialCapacity tweaks
   (Christine Poerschke, Mike Drob)
 
+* LUCENE-6925: add RandomForceMergePolicy class in test-framework (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
