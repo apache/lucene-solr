@@ -1,5 +1,8 @@
 package org.apache.lucene.util;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,10 +30,12 @@ package org.apache.lucene.util;
  * <code>maxSize+1</code> if instantiated via the
  * {@link #PriorityQueue(int,boolean)} constructor with <code>prepopulate</code>
  * set to <code>true</code>.
- * 
+ *
+ * <b>NOTE</b>: Iteration order is not specified.
+ *
  * @lucene.internal
  */
-public abstract class PriorityQueue<T> {
+public abstract class PriorityQueue<T> implements Iterable<T> {
   private int size = 0;
   private final int maxSize;
   private final T[] heap;
@@ -58,7 +63,7 @@ public abstract class PriorityQueue<T> {
     @SuppressWarnings("unchecked") final T[] h = (T[]) new Object[heapSize];
     this.heap = h;
     this.maxSize = maxSize;
-    
+
     if (prepopulate) {
       // If sentinel objects are supported, populate the queue with them
       T sentinel = getSentinelObject();
@@ -80,41 +85,41 @@ public abstract class PriorityQueue<T> {
 
   /**
    * This method can be overridden by extending classes to return a sentinel
-   * object which will be used by the {@link PriorityQueue#PriorityQueue(int,boolean)} 
+   * object which will be used by the {@link PriorityQueue#PriorityQueue(int,boolean)}
    * constructor to fill the queue, so that the code which uses that queue can always
    * assume it's full and only change the top without attempting to insert any new
    * object.<br>
-   * 
+   *
    * Those sentinel values should always compare worse than any non-sentinel
    * value (i.e., {@link #lessThan} should always favor the
    * non-sentinel values).<br>
-   * 
+   *
    * By default, this method returns null, which means the queue will not be
    * filled with sentinel values. Otherwise, the value returned will be used to
    * pre-populate the queue. Adds sentinel values to the queue.<br>
-   * 
+   *
    * If this method is extended to return a non-null value, then the following
    * usage pattern is recommended:
-   * 
+   *
    * <pre class="prettyprint">
    * // extends getSentinelObject() to return a non-null value.
    * PriorityQueue&lt;MyObject&gt; pq = new MyQueue&lt;MyObject&gt;(numHits);
    * // save the 'top' element, which is guaranteed to not be null.
    * MyObject pqTop = pq.top();
    * &lt;...&gt;
-   * // now in order to add a new element, which is 'better' than top (after 
+   * // now in order to add a new element, which is 'better' than top (after
    * // you've verified it is better), it is as simple as:
    * pqTop.change().
    * pqTop = pq.updateTop();
    * </pre>
-   * 
+   *
    * <b>NOTE:</b> if this method returns a non-null value, it will be called by
-   * the {@link PriorityQueue#PriorityQueue(int,boolean)} constructor 
+   * the {@link PriorityQueue#PriorityQueue(int,boolean)} constructor
    * {@link #size()} times, relying on a new object to be returned and will not
    * check if it's null again. Therefore you should ensure any call to this
    * method creates a new instance and behaves consistently, e.g., it cannot
    * return null if it previously returned non-null.
-   * 
+   *
    * @return the sentinel object to use to pre-populate the queue, or null if
    *         sentinel objects are not supported.
    */
@@ -126,7 +131,7 @@ public abstract class PriorityQueue<T> {
    * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
    * more objects than maxSize from initialize an
    * {@link ArrayIndexOutOfBoundsException} is thrown.
-   * 
+   *
    * @return the new 'top' element in the queue.
    */
   public final T add(T element) {
@@ -182,24 +187,24 @@ public abstract class PriorityQueue<T> {
       return null;
     }
   }
-  
+
   /**
    * Should be called when the Object at top changes values. Still log(n) worst
    * case, but it's at least twice as fast to
-   * 
+   *
    * <pre class="prettyprint">
    * pq.top().change();
    * pq.updateTop();
    * </pre>
-   * 
+   *
    * instead of
-   * 
+   *
    * <pre class="prettyprint">
    * o = pq.pop();
    * o.change();
    * pq.push(o);
    * </pre>
-   * 
+   *
    * @return the new 'top' element.
    */
   public final T updateTop() {
@@ -263,7 +268,7 @@ public abstract class PriorityQueue<T> {
     heap[i] = node;            // install saved node
     return i != origPos;
   }
-  
+
   private final void downHeap(int i) {
     T node = heap[i];          // save top node
     int j = i << 1;            // find smaller child
@@ -288,5 +293,27 @@ public abstract class PriorityQueue<T> {
    */
   protected final Object[] getHeapArray() {
     return (Object[]) heap;
+  }
+
+  @Override
+  public Iterator<T> iterator() {
+    return new Iterator<T>() {
+
+      int i = 1;
+
+      @Override
+      public boolean hasNext() {
+        return i <= size;
+      }
+
+      @Override
+      public T next() {
+        if (hasNext() == false) {
+          throw new NoSuchElementException();
+        }
+        return heap[i++];
+      }
+
+    };
   }
 }

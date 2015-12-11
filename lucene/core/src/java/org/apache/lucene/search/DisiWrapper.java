@@ -27,6 +27,7 @@ public class DisiWrapper {
   public final DocIdSetIterator iterator;
   public final Scorer scorer;
   public final long cost;
+  public final float matchCost; // the match cost for two-phase iterators, 0 otherwise
   public int doc; // the current doc, used for comparison
   public DisiWrapper next; // reference to a next element, see #topList
 
@@ -52,8 +53,10 @@ public class DisiWrapper {
       
     if (twoPhaseView != null) {
       approximation = twoPhaseView.approximation();
+      matchCost = twoPhaseView.matchCost();
     } else {
       approximation = iterator;
+      matchCost = 0f;
     }
   }
 
@@ -67,8 +70,10 @@ public class DisiWrapper {
       
     if (twoPhaseView != null) {
       approximation = twoPhaseView.approximation();
+      matchCost = twoPhaseView.matchCost();
     } else {
       approximation = iterator;
+      matchCost = 0f;
     }
     this.lastApproxNonMatchDoc = -2;
     this.lastApproxMatchDoc = -2;

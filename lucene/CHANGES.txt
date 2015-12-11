@@ -136,6 +136,10 @@ Optimizations
 * LUCENE-6912: Grouping's Collectors now calculate a response to needsScores()
   instead of always 'true'. (David Smiley)
 
+* LUCENE-6815: DisjunctionScorer now advances two-phased iterators lazily,
+  stopping to evaluate them as soon as a single one matches. The other iterators
+  will be confirmed lazily when computing score() or freq(). (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least

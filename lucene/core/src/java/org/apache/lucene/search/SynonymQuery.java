@@ -167,7 +167,7 @@ public final class SynonymQuery extends Query {
           final float freq;
           if (scorer instanceof SynonymScorer) {
             SynonymScorer synScorer = (SynonymScorer) scorer;
-            freq = synScorer.tf(synScorer.subScorers.topList());
+            freq = synScorer.tf(synScorer.getSubMatches());
           } else {
             assert scorer instanceof TermScorer;
             freq = scorer.freq();
