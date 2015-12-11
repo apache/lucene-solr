@@ -2160,7 +2160,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(QueryResponseWriter.class, this);
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
-    HashMap<String, QueryResponseWriter> m= new HashMap<>();
+    HashMap<String, QueryResponseWriter> m= new HashMap<>(14, 1);
     m.put("xml", new XMLResponseWriter());
     m.put("standard", m.get("xml"));
     m.put(CommonParams.JSON, new JSONResponseWriter());
@@ -2234,14 +2234,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<TransformerFactory> transformerFactories = new PluginBag<>(TransformerFactory.class, this);
 
   <T> Map<String, T> createInstances(Map<String, Class<? extends T>> map) {
-    Map<String, T> result = new LinkedHashMap<>();
+    Map<String, T> result = new LinkedHashMap<>(map.size(), 1);
     for (Map.Entry<String, Class<? extends T>> e : map.entrySet()) {
       try {
         Object o = getResourceLoader().newInstance(e.getValue().getName(), e.getValue());
         result.put(e.getKey(), (T) o);
       } catch (Exception exp) {
         //should never happen
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unbale to instantiate class", exp);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to instantiate class", exp);
       }
     }
     return result;
@@ -2284,7 +2284,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    */
   public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
     if(pluginInfos.isEmpty()) return Collections.emptyList();
-    List<T> result = new ArrayList<>();
+    List<T> result = new ArrayList<>(pluginInfos.size());
     for (PluginInfo info : pluginInfos) result.add(createInitInstance(info,type, type.getSimpleName(), defClassName));
     return result;
   }
@@ -2431,7 +2431,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   @Override
   public NamedList getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<>();
+    NamedList<Object> lst = new SimpleOrderedMap<>(8);
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", startTime);
     lst.add("refCount", getOpenCount());
