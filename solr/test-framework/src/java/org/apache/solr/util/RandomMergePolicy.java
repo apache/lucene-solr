@@ -31,12 +31,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link MergePolicy} with a no-arg constructor that proxies to a 
- * wrapped instance retrieved from {@link LuceneTestCase#newMergePolicy}.
+ * A {@link MergePolicy} with a no-arg constructor that proxies to an
+ * instance retrieved from {@link LuceneTestCase#newMergePolicy}.
  * Solr tests utilizing the Lucene randomized test framework can refer 
  * to this class in solrconfig.xml to get a fully randomized merge policy.
  */
-public final class RandomMergePolicy extends MergePolicy {
+public class RandomMergePolicy extends MergePolicy {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -49,7 +49,7 @@ public final class RandomMergePolicy extends MergePolicy {
     this(LuceneTestCase.newMergePolicy());
   }
 
-  private RandomMergePolicy(MergePolicy inner) {
+  protected RandomMergePolicy(MergePolicy inner) {
     super(inner.getNoCFSRatio(), 
           (long) (inner.getMaxCFSSegmentSizeMB() * 1024 * 1024));
     this.inner = inner;
