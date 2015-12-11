@@ -314,6 +314,11 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
         return heap[i++];
       }
 
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
     };
   }
 }
