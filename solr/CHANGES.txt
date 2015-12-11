@@ -301,6 +301,9 @@ Other Changes
 * SOLR-8388: factor out response/TestSolrQueryResponse.java from servlet/ResponseHeaderTest.java
   (Christine Poerschke)
 
+* SOLR-8383: SolrCore.java + QParserPlugin.java container initialCapacity tweaks
+  (Christine Poerschke, Mike Drob)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
