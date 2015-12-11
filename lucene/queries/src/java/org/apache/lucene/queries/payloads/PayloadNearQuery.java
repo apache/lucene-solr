@@ -31,7 +31,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -42,7 +41,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -142,7 +140,7 @@ public class PayloadNearQuery extends SpanNearQuery {
         && function.equals(other.function);
   }
 
-  public class PayloadNearSpanWeight extends SpanNearWeight {
+  private class PayloadNearSpanWeight extends SpanNearWeight {
 
     public PayloadNearSpanWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms)
         throws IOException {
@@ -259,7 +257,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     }
   }
 
-  public class PayloadNearSpanScorer extends SpanScorer {
+  private class PayloadNearSpanScorer extends SpanScorer {
 
     PayloadSpans spans;
 
