@@ -119,12 +119,12 @@ public class Tuple implements Cloneable {
     return this.fields;
   }
 
-  public List<Map> getMaps() {
-    return (List<Map>)this.fields.get("_MAPS_");
+  public List<Map> getMaps(Object key) {
+    return (List<Map>)this.fields.get(key);
   }
 
-  public void setMaps(List<Map> maps) {
-    this.fields.put("_MAPS_", maps);
+  public void setMaps(Object key, List<Map> maps) {
+    this.fields.put(key, maps);
   }
 
   public Map<String,Map> getMetrics() {

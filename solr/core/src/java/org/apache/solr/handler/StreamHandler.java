@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
@@ -101,7 +102,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("merge", MergeStream.class)
       .withFunctionName("unique", UniqueStream.class)
       .withFunctionName("top", RankStream.class)
-      .withFunctionName("group", ReducerStream.class)
+      .withFunctionName("group", GroupOperation.class)
+         .withFunctionName("reduce", ReducerStream.class)
       .withFunctionName("parallel", ParallelStream.class)
       .withFunctionName("rollup", RollupStream.class)
       .withFunctionName("stats", StatsStream.class)

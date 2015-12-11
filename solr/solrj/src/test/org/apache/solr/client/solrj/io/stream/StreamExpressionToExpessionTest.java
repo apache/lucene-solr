@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -44,8 +45,9 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("merge", MergeStream.class)
                     .withFunctionName("unique", UniqueStream.class)
                     .withFunctionName("top", RankStream.class)
-                    .withFunctionName("group", ReducerStream.class)
-                    .withFunctionName("stats", StatsStream.class)
+                    .withFunctionName("reduce", ReducerStream.class)
+                    .withFunctionName("group", GroupOperation.class)
+                     .withFunctionName("stats", StatsStream.class)
                     .withFunctionName("count", CountMetric.class)
                     .withFunctionName("sum", SumMetric.class)
                     .withFunctionName("min", MinMetric.class)
@@ -153,11 +155,11 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     String expressionString;
     
     // Basic test
-    stream = new ReducerStream(StreamExpressionParser.parse("group("
+    stream = new ReducerStream(StreamExpressionParser.parse("reduce("
                                                   + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc, a_f asc\"),"
-                                                  + "by=\"a_s\")"), factory);
+                                                  + "by=\"a_s\", group(sort=\"a_i desc\", n=\"5\"))"), factory);
     expressionString = stream.toExpression(factory).toString();
-    assertTrue(expressionString.contains("group(search(collection1"));
+    assertTrue(expressionString.contains("reduce(search(collection1"));
     assertTrue(expressionString.contains("by=a_s"));
   }
   

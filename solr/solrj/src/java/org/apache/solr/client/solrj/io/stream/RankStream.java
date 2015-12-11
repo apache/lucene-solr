@@ -161,8 +161,8 @@ public class RankStream extends TupleStream implements Expressible {
           topList.addLast(tuple);
           break;
         } else {
-          Tuple peek = top.peek();
           if(top.size() >= size) {
+            Tuple peek = top.peek();
             if(comp.compare(tuple, peek) < 0) {
               top.poll();
               top.add(tuple);

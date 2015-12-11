@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
@@ -159,8 +160,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,2,1,3,4);
-    assertLong(tuples.get(0),"a_i", 0);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
+    assertLong(tuples.get(0), "a_i", 0);
 
     // Basic w/aliases
     expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\")");
@@ -168,9 +169,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,2,1,3,4);
-    assertLong(tuples.get(0),"alias.a_i", 0);
-    assertString(tuples.get(0),"name", "hello0");    
+    assertOrder(tuples, 0, 2, 1, 3, 4);
+    assertLong(tuples.get(0), "alias.a_i", 0);
+    assertString(tuples.get(0), "name", "hello0");
 
     // Basic filtered test
     expression = StreamExpressionParser.parse("search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
@@ -178,8 +179,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
-    assertLong(tuples.get(1),"a_i", 3);
+    assertOrder(tuples, 0, 3, 4);
+    assertLong(tuples.get(1), "a_i", 3);
     
     del("*:*");
     commit();
@@ -216,7 +217,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,2,1,3,4);
     assertLong(tuples.get(0),"alias.a_i", 0);
-    assertString(tuples.get(0),"name", "hello0");    
+    assertString(tuples.get(0), "name", "hello0");
 
     // Basic filtered test
     expression = StreamExpressionParser.parse("search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", zkHost=" + zkServer.getZkAddress() + ", sort=\"a_f asc, a_i asc\")");
@@ -225,7 +226,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     assert(tuples.size() == 3);
     assertOrder(tuples, 0,3,4);
-    assertLong(tuples.get(1),"a_i", 3);
+    assertLong(tuples.get(1), "a_i", 3);
     
     del("*:*");
     commit();
@@ -453,54 +454,57 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     List<Map> maps0, maps1, maps2;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withFunctionName("search", CloudSolrStream.class)
-      .withFunctionName("unique", UniqueStream.class)
-      .withFunctionName("top", RankStream.class)
-      .withFunctionName("group", ReducerStream.class);
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("reduce", ReducerStream.class)
+        .withFunctionName("group", GroupOperation.class);
 
     // basic
-    expression = StreamExpressionParser.parse("group("
-                                              + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
-                                              + "by=\"a_s\")");
-    stream = new ReducerStream(expression, factory);
+    expression = StreamExpressionParser.parse("reduce("
+        + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
+        + "by=\"a_s\","
+        + "group(sort=\"a_f desc\", n=\"4\"))");
+
+    stream = factory.constructStream(expression);
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     t0 = tuples.get(0);
-    maps0 = t0.getMaps();
-    assertMaps(maps0, 0, 2,1, 9);
+    maps0 = t0.getMaps("group");
+    assertMaps(maps0, 9, 1, 2, 0);
 
     t1 = tuples.get(1);
-    maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
+
 
     t2 = tuples.get(2);
-    maps2 = t2.getMaps();
-    assertMaps(maps2, 4, 6);
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 6, 4);
     
     // basic w/spaces
-    expression = StreamExpressionParser.parse("group("
-                                              + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
-                                              + "by=\"a_s\")");
-    stream = new ReducerStream(expression, factory);
+    expression = StreamExpressionParser.parse("reduce("
+                                              +       "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
+                                              +       "by=\"a_s\"," +
+                                                      "group(sort=\"a_i asc\", n=\"2\"))");
+    stream = factory.constructStream(expression);
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     t0 = tuples.get(0);
-    maps0 = t0.getMaps();
-    assertMaps(maps0, 0, 2,1, 9);
+    maps0 = t0.getMaps("group");
+    assert(maps0.size() == 2);
+
+    assertMaps(maps0, 0, 1);
 
     t1 = tuples.get(1);
-    maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 3, 5);
 
     t2 = tuples.get(2);
-    maps2 = t2.getMaps();
+    maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
 
     del("*:*");
@@ -748,54 +752,58 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     String zkHost = zkServer.getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
-        .withFunctionName("unique", UniqueStream.class)
-        .withFunctionName("top", RankStream.class)
-        .withFunctionName("group", ReducerStream.class)
+        .withFunctionName("group", GroupOperation.class)
+        .withFunctionName("reduce", ReducerStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1," +
+                                                                                    "reduce(" +
+                                                                                              "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), " +
+                                                                                              "by=\"a_s\"," +
+                                                                                              "group(sort=\"a_i asc\", n=\"5\")), " +
+                                                                                    "workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
 
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     Tuple t0 = tuples.get(0);
-    List<Map> maps0 = t0.getMaps();
-    assertMaps(maps0, 0, 2, 1, 9);
+    List<Map> maps0 = t0.getMaps("group");
+    assertMaps(maps0, 0, 1, 2, 9);
 
     Tuple t1 = tuples.get(1);
-    List<Map> maps1 = t1.getMaps();
+    List<Map> maps1 = t1.getMaps("group");
     assertMaps(maps1, 3, 5, 7, 8);
 
     Tuple t2 = tuples.get(2);
-    List<Map> maps2 = t2.getMaps();
+    List<Map> maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
 
-    //Test Descending with Ascending subsort
 
-    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s desc\")");
+    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, " +
+                                                                      "reduce(" +
+                                                                              "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), " +
+                                                                              "by=\"a_s\", " +
+                                                                              "group(sort=\"a_i desc\", n=\"5\")),"+
+                                                                      "workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s desc\")");
 
     tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 4,3,0);
 
     t0 = tuples.get(0);
-    maps0 = t0.getMaps();
-    assertMaps(maps0, 4, 6);
+    maps0 = t0.getMaps("group");
+    assertMaps(maps0, 6, 4);
 
 
     t1 = tuples.get(1);
-    maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
 
 
     t2 = tuples.get(2);
-    maps2 = t2.getMaps();
-    assertMaps(maps2, 0, 2, 1, 9);
-
-
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 9, 2, 1, 0);
 
     del("*:*");
     commit();
@@ -1246,7 +1254,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
     
@@ -1262,9 +1270,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     // Basic desc
     expression = StreamExpressionParser.parse("outerHashJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-                                                + "on=\"join1_i, join2_s\")");
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "on=\"join1_i, join2_s\")");
     stream = new OuterHashJoinStream(expression, factory);
     tuples = getTuples(stream);    
     assert(tuples.size() == 10);
@@ -1272,9 +1280,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("outerHashJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-                                                + "on=\"ident_s\")");
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "on=\"ident_s\")");
     stream = new OuterHashJoinStream(expression, factory);
     tuples = getTuples(stream);    
     assert(tuples.size() == 8);
@@ -1406,7 +1414,22 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
-  
+
+  protected boolean assertMapOrder(List<Tuple> tuples, int... ids) throws Exception {
+    int i = 0;
+    for(int val : ids) {
+      Tuple t = tuples.get(i);
+      List<Map> tip = t.getMaps("group");
+      int id = (int)tip.get(0).get("id");
+      if(id != val) {
+        throw new Exception("Found value:"+id+" expecting:"+val);
+      }
+      ++i;
+    }
+    return true;
+  }
+
+
   protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
@@ -1479,6 +1502,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
+
 
   @Override
   protected void indexr(Object... fields) throws Exception {
