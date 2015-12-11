@@ -306,6 +306,8 @@ Other Changes
 
 * LUCENE-6925: add RandomForceMergePolicy class in test-framework (Christine Poerschke)
 
+* SOLR-8404: tweak SolrQueryResponse.getToLogAsString, add TestSolrQueryResponse.testToLog (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

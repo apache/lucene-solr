@@ -1244,7 +1244,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
 
     public void setRspObject(SolrQueryResponse rspObject) {
-      this.rspInfo = rspObject.getToLogAsString("TaskId: " + this.taskId + " ");
+      this.rspInfo = rspObject.getToLogAsString("TaskId: " + this.taskId);
     }
 
     public void setRspObjectFromException(Exception e) {
