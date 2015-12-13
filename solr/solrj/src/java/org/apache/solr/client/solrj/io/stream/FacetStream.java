@@ -20,15 +20,26 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Collections;
+import java.util.Map.Entry;
+
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -40,14 +51,14 @@ import org.apache.solr.common.util.NamedList;
  *  RollupStream which uses Map/Reduce to perform aggregations.
  **/
 
-public class FacetStream extends TupleStream  {
+public class FacetStream extends TupleStream implements Expressible  {
 
   private static final long serialVersionUID = 1;
 
   private Bucket[] buckets;
   private Metric[] metrics;
-  private int limit;
-  private FieldComparator[] sorts;
+  private int bucketSizeLimit;
+  private FieldComparator[] bucketSorts;
   private List<Tuple> tuples = new ArrayList();
   private int index;
   private String zkHost;
@@ -61,25 +72,199 @@ public class FacetStream extends TupleStream  {
                      Map<String, String> props,
                      Bucket[] buckets,
                      Metric[] metrics,
-                     FieldComparator[] sorts,
-                     int limit) throws IOException {
+                     FieldComparator[] bucketSorts,
+                     int bucketSizeLimit) throws IOException {
+    init(collection, props, buckets, bucketSorts, metrics, bucketSizeLimit, zkHost);
+  }
+  
+  public FacetStream(StreamExpression expression, StreamFactory factory) throws IOException{   
+    // grab all parameters out
+    String collectionName = factory.getValueOperand(expression, 0);
+    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    StreamExpressionNamedParameter bucketExpression = factory.getNamedOperand(expression, "buckets");
+    StreamExpressionNamedParameter bucketSortExpression = factory.getNamedOperand(expression, "bucketSorts");
+    List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
+    StreamExpressionNamedParameter limitExpression = factory.getNamedOperand(expression, "bucketSizeLimit");
+    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    
+    // Validate there are no unknown parameters
+    if(expression.getParameters().size() != 1 + namedParams.size() + metricExpressions.size()){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
+    }
+    
+    // Collection Name
+    if(null == collectionName){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    }
+        
+    // Named parameters - passed directly to solr as solrparams
+    if(0 == namedParams.size()){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
+    }
+    
+    // pull out known named params
+    Map<String,String> params = new HashMap<String,String>();
+    for(StreamExpressionNamedParameter namedParam : namedParams){
+      if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("buckets") && !namedParam.getName().equals("bucketSorts") && !namedParam.getName().equals("limit")){
+        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
+      }
+    }
+
+    // buckets, required - comma separated
+    Bucket[] buckets = null;
+    if(null != bucketExpression){
+      if(bucketExpression.getParameter() instanceof StreamExpressionValue){
+        String[] keys = ((StreamExpressionValue)bucketExpression.getParameter()).getValue().split(",");
+        if(0 != keys.length){
+          buckets = new Bucket[keys.length];
+          for(int idx = 0; idx < keys.length; ++idx){
+            buckets[idx] = new Bucket(keys[idx].trim());
+          }
+        }
+      }
+    }
+    if(null == buckets){      
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one bucket expected. eg. 'buckets=\"name\"'",expression,collectionName));
+    }
+    
+    // bucketSorts, required
+    FieldComparator[] bucketSorts = null;
+    if(null != bucketSortExpression){
+      if(bucketSortExpression.getParameter() instanceof StreamExpressionValue){
+        bucketSorts = parseBucketSorts(((StreamExpressionValue)bucketSortExpression.getParameter()).getValue());
+      }
+    }
+    if(null == bucketSorts || 0 == bucketSorts.length){      
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one bucket sort expected. eg. 'bucketSorts=\"name asc\"'",expression,collectionName));
+    }
+    
+    // Construct the metrics
+    Metric[] metrics = new Metric[metricExpressions.size()];
+    for(int idx = 0; idx < metricExpressions.size(); ++idx){
+      metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
+    }
+    if(0 == metrics.length){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one metric expected.",expression,collectionName));
+    }
+    
+    if(null == limitExpression || null == limitExpression.getParameter() || !(limitExpression.getParameter() instanceof StreamExpressionValue)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single 'limit' parameter of type positive integer but didn't find one",expression));
+    }
+    String limitStr = ((StreamExpressionValue)limitExpression.getParameter()).getValue();
+    int limitInt = 0;
+    try{
+      limitInt = Integer.parseInt(limitStr);
+      if(limitInt <= 0){
+        throw new IOException(String.format(Locale.ROOT,"invalid expression %s - limit '%s' must be greater than 0.",expression, limitStr));
+      }
+    }
+    catch(NumberFormatException e){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - limit '%s' is not a valid integer.",expression, limitStr));
+    }
+    
+    // zkHost, optional - if not provided then will look into factory list to get
+    String zkHost = null;
+    if(null == zkHostExpression){
+      zkHost = factory.getCollectionZkHost(collectionName);
+    }
+    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
+      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
+    }
+    if(null == zkHost){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    }
+    
+    // We've got all the required items
+    init(collectionName, params, buckets, bucketSorts, metrics, limitInt, zkHost);
+  }
+
+  private FieldComparator[] parseBucketSorts(String bucketSortString) throws IOException {
+
+    String[] sorts = bucketSortString.split(",");
+    FieldComparator[] comps = new FieldComparator[sorts.length];
+    for(int i=0; i<sorts.length; i++) {
+      String s = sorts[i];
+
+      String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+      
+      if(2 != spec.length){
+        throw new IOException(String.format(Locale.ROOT,"invalid expression - bad bucketSort '%s'. Expected form 'field order'",bucketSortString));
+      }
+      String fieldName = spec[0].trim();
+      String order = spec[1].trim();
+            
+      comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
+    }
+
+    return comps;
+  }
+  
+  private void init(String collection, Map<String, String> props, Bucket[] buckets, FieldComparator[] bucketSorts, Metric[] metrics, int bucketSizeLimit, String zkHost) throws IOException {
     this.zkHost  = zkHost;
     this.props   = props;
     this.buckets = buckets;
     this.metrics = metrics;
-    this.limit   = limit;
+    this.bucketSizeLimit   = bucketSizeLimit;
     this.collection = collection;
-    this.sorts = sorts;
+    this.bucketSorts = bucketSorts;
     
     // In a facet world it only makes sense to have the same field name in all of the sorters
     // Because FieldComparator allows for left and right field names we will need to validate
     // that they are the same
-    for(FieldComparator sort : sorts){
+    for(FieldComparator sort : bucketSorts){
       if(sort.hasDifferentFieldNames()){
         throw new IOException("Invalid FacetStream - all sorts must be constructed with a single field name.");
       }
     }
   }
+  
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {    
+    // function name
+    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+    
+    // collection
+    expression.addParameter(collection);
+    
+    // parameters
+    for(Entry<String,String> param : props.entrySet()){
+      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+    }
+    
+    // buckets
+    {
+      StringBuilder builder = new StringBuilder();
+      for(Bucket bucket : buckets){
+        if(0 != builder.length()){ builder.append(","); }
+        builder.append(bucket.toString());
+      }
+      expression.addParameter(new StreamExpressionNamedParameter("buckets", builder.toString()));
+    }
+    
+    // bucketSorts
+    {
+      StringBuilder builder = new StringBuilder();
+      for(FieldComparator sort : bucketSorts){
+        if(0 != builder.length()){ builder.append(","); }
+        builder.append(sort.toExpression(factory));
+      }
+      expression.addParameter(new StreamExpressionNamedParameter("bucketSorts", builder.toString()));
+    }
+    
+    // metrics
+    for(Metric metric : metrics){
+      expression.addParameter(metric.toExpression(factory));
+    }
+    
+    // limit
+    expression.addParameter(new StreamExpressionNamedParameter("bucketSizeLimit", Integer.toString(bucketSizeLimit)));
+        
+    // zkHost
+    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+        
+    return expression;   
+  }
+
 
   public void setStreamContext(StreamContext context) {
     cache = context.getSolrClientCache();
@@ -97,8 +282,8 @@ public class FacetStream extends TupleStream  {
       cloudSolrClient = new CloudSolrClient(zkHost);
     }
 
-    FieldComparator[] adjustedSorts = adjustSorts(buckets, sorts);
-    String json = getJsonFacetString(buckets, metrics, adjustedSorts, limit);
+    FieldComparator[] adjustedSorts = adjustSorts(buckets, bucketSorts);
+    String json = getJsonFacetString(buckets, metrics, adjustedSorts, bucketSizeLimit);
 
     ModifiableSolrParams params = getParams(this.props);
     params.add("json.facet", json);
@@ -121,7 +306,7 @@ public class FacetStream extends TupleStream  {
   }
 
   public Tuple read() throws IOException {
-    if(index < tuples.size() && index < limit) {
+    if(index < tuples.size() && index < bucketSizeLimit) {
       Tuple tuple = tuples.get(index);
       ++index;
       return tuple;
@@ -286,10 +471,10 @@ public class FacetStream extends TupleStream  {
 
   @Override
   public StreamComparator getStreamSort() {
-    if(sorts.length > 1) {
-      return new MultipleFieldComparator(sorts);
+    if(bucketSorts.length > 1) {
+      return new MultipleFieldComparator(bucketSorts);
     } else {
-      return sorts[0];
+      return bucketSorts[0];
     }
   }
 }

@@ -47,7 +47,8 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("top", RankStream.class)
                     .withFunctionName("reduce", ReducerStream.class)
                     .withFunctionName("group", GroupOperation.class)
-                     .withFunctionName("stats", StatsStream.class)
+                    .withFunctionName("stats", StatsStream.class)
+                    .withFunctionName("facet", FacetStream.class)
                     .withFunctionName("count", CountMetric.class)
                     .withFunctionName("sum", SumMetric.class)
                     .withFunctionName("min", MinMetric.class)
@@ -161,6 +162,42 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     expressionString = stream.toExpression(factory).toString();
     assertTrue(expressionString.contains("reduce(search(collection1"));
     assertTrue(expressionString.contains("by=a_s"));
+  }
+  
+  @Test
+  public void testFacetStream() throws Exception {
+
+    FacetStream stream;
+    String expressionString;
+    
+    // Basic test
+    stream = new FacetStream(StreamExpressionParser.parse("facet("
+                                                        +   "collection1, "
+                                                        +   "q=\"*:*\", "
+                                                        +   "buckets=\"a_s\", "
+                                                        +   "bucketSorts=\"sum(a_i) asc\", "
+                                                        +   "bucketSizeLimit=100, "
+                                                        +   "sum(a_i), sum(a_f), "
+                                                        +   "min(a_i), min(a_f), "
+                                                        +   "max(a_i), max(a_f), "
+                                                        +   "avg(a_i), avg(a_f), "
+                                                        +   "count(*)"
+                                                        + ")"), factory);
+    expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("facet(collection1"));
+    assertTrue(expressionString.contains("q=\"*:*\""));
+    assertTrue(expressionString.contains("buckets=a_s"));
+    assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
+    assertTrue(expressionString.contains("bucketSizeLimit=100"));
+    assertTrue(expressionString.contains("sum(a_i)"));
+    assertTrue(expressionString.contains("sum(a_f)"));
+    assertTrue(expressionString.contains("min(a_i)"));
+    assertTrue(expressionString.contains("min(a_f)"));
+    assertTrue(expressionString.contains("max(a_i)"));
+    assertTrue(expressionString.contains("max(a_f)"));
+    assertTrue(expressionString.contains("avg(a_i)"));
+    assertTrue(expressionString.contains("avg(a_f)"));
+    assertTrue(expressionString.contains("count(*)"));
   }
   
   @Test

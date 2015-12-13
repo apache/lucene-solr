@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
 import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
 import org.apache.solr.client.solrj.io.stream.HashJoinStream;
@@ -111,6 +112,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class) 
       .withFunctionName("hashJoin", HashJoinStream.class)
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
+      .withFunctionName("facet", FacetStream.class)
      
       // metrics
       .withFunctionName("min", MinMetric.class)

@@ -116,6 +116,8 @@ New Features
 
 * SOLR-8337: Add ReduceOperation and wire it into the ReducerStream (Joel Bernstein)
 
+* SOLR-7904: Add StreamExpression Support to FacetStream (Dennis Gove)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
