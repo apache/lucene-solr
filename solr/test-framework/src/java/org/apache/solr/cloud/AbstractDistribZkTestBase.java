@@ -224,9 +224,12 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     while(maxIterations-->0) {
       Slice slice = reader.getClusterState().getSlice(collection, shard);
       if(slice!=null) {
-        coreState = slice.getReplicasMap().get(coreNodeName).getState();
-        if(coreState == expectedState) {
-          return;
+        Replica replica = slice.getReplicasMap().get(coreNodeName);
+        if (replica != null) {
+          coreState = replica.getState();
+          if(coreState == expectedState) {
+            return;
+          }
         }
       }
       Thread.sleep(50);
