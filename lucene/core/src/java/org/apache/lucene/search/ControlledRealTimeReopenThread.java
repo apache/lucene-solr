@@ -181,7 +181,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
         if (maxMS < 0) {
           wait();
         } else {
-          long msLeft = (startMS + maxMS) - (System.nanoTime())/1000000;
+          long msLeft = (startMS + maxMS) - System.nanoTime()/1000000;
           if (msLeft <= 0) {
             return false;
           } else {
@@ -247,5 +247,10 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
         throw new RuntimeException(ioe);
       }
     }
+  }
+
+  /** Returns which {@code generation} the current searcher is guaranteed to include. */
+  public long getSearchingGen() {
+    return searchingGen;
   }
 }
