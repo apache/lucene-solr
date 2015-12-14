@@ -26,6 +26,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -38,6 +40,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -72,15 +75,51 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     }
   }
 
+  private void checkCoreNamePresenceAndSliceCount(String collectionName, String coreName,
+      boolean shouldBePresent, int expectedSliceCount) throws Exception {
+    final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
+    Boolean isPresent = null; // null meaning "don't know"
+    while (null == isPresent || shouldBePresent != isPresent.booleanValue()) {
+      final Collection<Slice> slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(collectionName);
+      if (timeout.hasTimedOut()) {
+        printLayout();
+        fail("checkCoreNamePresenceAndSliceCount failed:"
+            +" collection="+collectionName+" CoreName="+coreName
+            +" shouldBePresent="+shouldBePresent+" isPresent="+isPresent
+            +" expectedSliceCount="+expectedSliceCount+" actualSliceCount="+slices.size());
+      }
+      if (expectedSliceCount == (slices == null ? 0 : slices.size())) {
+        isPresent = false;
+        if (slices != null) {
+          for (Slice slice : slices) {
+            for (Replica replica : slice.getReplicas()) {
+              if (coreName.equals(replica.get("core"))) {
+                isPresent = true;
+              }
+            }
+          }
+        }
+      }
+      Thread.sleep(1000);
+    }
+  }
+
   private void testUnloadShardAndCollection() throws Exception{
+
+    final int numShards = 2;
+
+    final String collection = "test_unload_shard_and_collection";
+
+    final String coreName1 = collection+"_1";
+    final String coreName2 = collection+"_2";
+
     // create one leader and one replica
     Create createCmd = new Create();
-    createCmd.setCoreName("test_unload_shard_and_collection_1");
-    String collection = "test_unload_shard_and_collection";
+    createCmd.setCoreName(coreName1);
     createCmd.setCollection(collection);
     String coreDataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(getDataDir(coreDataDir));
-    createCmd.setNumShards(2);
+    createCmd.setNumShards(numShards);
     
     SolrClient client = clients.get(0);
     String url1 = getBaseUrl(client);
@@ -91,8 +130,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       adminClient.request(createCmd);
 
       createCmd = new Create();
-      createCmd.setCoreName("test_unload_shard_and_collection_2");
-      collection = "test_unload_shard_and_collection";
+      createCmd.setCoreName(coreName2);
       createCmd.setCollection(collection);
       coreDataDir = createTempDir().toFile().getAbsolutePath();
       createCmd.setDataDir(getDataDir(coreDataDir));
@@ -102,28 +140,23 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       // does not mean they are active and up yet :*
       waitForRecoveriesToFinish(collection, false);
 
+      final boolean unloadInOrder = random().nextBoolean();
+      final String unloadCmdCoreName1 = (unloadInOrder ? coreName1 : coreName2);
+      final String unloadCmdCoreName2 = (unloadInOrder ? coreName2 : coreName1);
+
       // now unload one of the two
       Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName("test_unload_shard_and_collection_2");
+      unloadCmd.setCoreName(unloadCmdCoreName1);
       adminClient.request(unloadCmd);
 
       // there should be only one shard
-      int slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(collection).size();
-      final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
-      while (slices != 1) {
-        if (timeout.hasTimedOut()) {
-          printLayout();
-          fail("Expected to find only one slice in " + collection);
-        }
-
-        Thread.sleep(1000);
-        slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(collection).size();
-      }
+      checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName1, false /* shouldBePresent */, numShards-1 /* expectedSliceCount */);
 
       // now unload one of the other
       unloadCmd = new Unload(false);
-      unloadCmd.setCoreName("test_unload_shard_and_collection_1");
+      unloadCmd.setCoreName(unloadCmdCoreName2);
       adminClient.request(unloadCmd);
+      checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName2, false /* shouldBePresent */, numShards-2 /* expectedSliceCount */);
     }
 
     //printLayout();

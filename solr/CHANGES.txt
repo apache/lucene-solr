@@ -310,6 +310,8 @@ Other Changes
 
 * SOLR-8404: tweak SolrQueryResponse.getToLogAsString, add TestSolrQueryResponse.testToLog (Christine Poerschke)
 
+* SOLR-8352: randomise unload order in UnloadDistributedZkTest.testUnloadShardAndCollection (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
