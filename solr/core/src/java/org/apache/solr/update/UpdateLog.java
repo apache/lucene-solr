@@ -1111,13 +1111,19 @@ public class UpdateLog implements PluginInfoInitialized {
     // it checks the state first
     // assert state == State.ACTIVE;
 
-    recoveryInfo = new RecoveryInfo();
-
     // block all updates to eliminate race conditions
-    // reading state and acting on it in the update processor
+    // reading state and acting on it in the distributed update processor
     versionInfo.blockUpdates();
     try {
-      if (state != State.ACTIVE) return;
+      if (state == State.BUFFERING) {
+        log.info("Restarting buffering. previous=" + recoveryInfo);
+      } else if (state != State.ACTIVE) {
+        // we don't currently have support for handling other states
+        log.warn("Unexpected state for bufferUpdates: " + state + ", Ignoring request.");
+        return;
+      }
+
+      recoveryInfo = new RecoveryInfo();
 
       if (log.isInfoEnabled()) {
         log.info("Starting to buffer updates. " + this);

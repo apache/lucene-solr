@@ -488,6 +488,110 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testBufferedMultipleCalls() throws Exception {
+
+    DirectUpdateHandler2.commitOnClose = false;
+    final Semaphore logReplay = new Semaphore(0);
+    final Semaphore logReplayFinish = new Semaphore(0);
+
+    UpdateLog.testing_logReplayHook = new Runnable() {
+      @Override
+      public void run() {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+
+    UpdateLog.testing_logReplayFinishHook = new Runnable() {
+      @Override
+      public void run() {
+        logReplayFinish.release();
+      }
+    };
+
+
+    SolrQueryRequest req = req();
+    UpdateHandler uhandler = req.getCore().getUpdateHandler();
+    UpdateLog ulog = uhandler.getUpdateLog();
+    Future<UpdateLog.RecoveryInfo> rinfoFuture;
+
+    try {
+      clearIndex();
+      assertU(commit());
+      assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
+
+      ulog.bufferUpdates();
+      assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+
+      // simulate updates from a leader
+      updateJ(jsonAdd(sdoc("id","c1", "_version_","101")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","c2", "_version_","102")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","c3", "_version_","103")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+      // call bufferUpdates again (this currently happens when recovery fails)... we should get a new starting point
+      ulog.bufferUpdates();
+      assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+
+      updateJ(jsonAdd(sdoc("id", "c4", "_version_","104")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id", "c5", "_version_","105")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+      logReplay.release(1000);
+      rinfoFuture = ulog.applyBufferedUpdates();
+      UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
+      assertEquals(2, rinfo.adds);
+
+      assertJQ(req("qt","/get", "getVersions","2")
+          ,"=={'versions':[105,104]}"
+      );
+
+      // this time add some docs first before buffering starts (so tlog won't be at pos 0)
+      updateJ(jsonAdd(sdoc("id","c100", "_version_","200")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","c101", "_version_","201")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+      ulog.bufferUpdates();
+      updateJ(jsonAdd(sdoc("id","c103", "_version_","203")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","c104", "_version_","204")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+      // call bufferUpdates again (this currently happens when recovery fails)... we should get a new starting point
+      ulog.bufferUpdates();
+      updateJ(jsonAdd(sdoc("id","c105", "_version_","205")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","c106", "_version_","206")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+      rinfoFuture = ulog.applyBufferedUpdates();
+      rinfo = rinfoFuture.get();
+      assertEquals(2, rinfo.adds);
+
+      assertJQ(req("q", "*:*", "sort","_version_ asc", "fl","id,_version_")
+          , "/response/docs==["
+              + "{'id':'c4','_version_':104}"
+              + ",{'id':'c5','_version_':105}"
+              + ",{'id':'c100','_version_':200}"
+              + ",{'id':'c101','_version_':201}"
+              + ",{'id':'c105','_version_':205}"
+              + ",{'id':'c106','_version_':206}"
+              +"]"
+      );
+
+      // The updates that were buffered (but never applied) still appear in recent versions!
+      // This is good for some uses, but may not be good for others.
+      assertJQ(req("qt","/get", "getVersions","11")
+          ,"=={'versions':[206,205,204,203,201,200,105,104,103,102,101]}"
+      );
+
+      assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+
+      req().close();
+    }
+
+  }
 
 
   // we need to make sure that the log is informed of a core reload
