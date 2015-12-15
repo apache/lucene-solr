@@ -463,17 +463,17 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
           "    update :{" +
           "      path:'/update/*'}," +
           "    read :{" +
-          "      path:['/select', '/get']}," +
+          "      path:['/select', '/get','/browse','/tvrh','/terms','/clustering','/elevate', '/export','/spell','/clustering']}," +
           "    config-edit:{" +
           "      method:POST," +
           "      path:'/config/*'}}");
 
   static {
-    ((Map) well_known_permissions.get("collection-admin-edit")).put(Predicate.class.getName(), getPredicate(true));
-    ((Map) well_known_permissions.get("collection-admin-read")).put(Predicate.class.getName(), getPredicate(false));
+    ((Map) well_known_permissions.get("collection-admin-edit")).put(Predicate.class.getName(), getCollectionActionPredicate(true));
+    ((Map) well_known_permissions.get("collection-admin-read")).put(Predicate.class.getName(), getCollectionActionPredicate(false));
   }
 
-  private static Predicate<AuthorizationContext> getPredicate(final boolean isEdit) {
+  private static Predicate<AuthorizationContext> getCollectionActionPredicate(final boolean isEdit) {
     return new Predicate<AuthorizationContext>() {
       @Override
       public boolean test(AuthorizationContext context) {
