@@ -78,6 +78,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "59", "HTMLstandardtok", "大亚"));
     assertU(adoc("id", "60", "HTMLstandardtok", "大亚湾"));
     assertU(adoc("id", "61", "text_sw", "bazaaa")); // synonyms in an expansion group
+    assertU(adoc("id", "62", "text_sw", "oil stocks"));
+    assertU(adoc("id", "63", "text_sw", "gold stocks"));
+    assertU(adoc("id", "64", "text_sw", "stocks gold stockade"));
+    assertU(adoc("id", "65", "text_sw", "snake oil"));
     assertU(commit());
   }
 
@@ -683,7 +687,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "s0", "phrase_sw", "foo bar a b c", "boost_d", "1.0"));    
     assertU(adoc("id", "s1", "phrase_sw", "foo a bar b c", "boost_d", "2.0"));    
     assertU(adoc("id", "s2", "phrase_sw", "foo a b bar c", "boost_d", "3.0"));    
-    assertU(adoc("id", "s3", "phrase_sw", "foo a b c bar", "boost_d", "4.0"));
+    assertU(adoc("id", "s3", "phrase_sw", "foo a b c bar", "boost_d", "4.0"));    
     assertU(commit());
 
     assertQ("default order assumption wrong",
@@ -695,7 +699,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//doc[1]/str[@name='id'][.='s3']",
         "//doc[2]/str[@name='id'][.='s2']",
         "//doc[3]/str[@name='id'][.='s1']",
-        "//doc[4]/str[@name='id'][.='s0']");
+        "//doc[4]/str[@name='id'][.='s0']"); 
 
     assertQ("pf not working",
         req("q", "foo bar",
@@ -705,37 +709,37 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "fl", "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s0']");
-
+    
     assertQ("pf2 not working",
-        req("q",   "foo bar",
+        req("q",   "foo bar", 
             "qf",  "phrase_sw",
             "pf2", "phrase_sw^10",
             "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s0']");
+        "//doc[1]/str[@name='id'][.='s0']"); 
 
     assertQ("pf3 not working",
-        req("q",   "a b bar",
+        req("q",   "a b bar", 
             "qf",  "phrase_sw",
             "pf3", "phrase_sw^10",
             "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s2']");
+        "//doc[1]/str[@name='id'][.='s2']"); 
 
     assertQ("ps not working for pf2",
-        req("q",   "bar foo",
+        req("q",   "bar foo", 
             "qf",  "phrase_sw",
             "pf2", "phrase_sw^10",
             "ps",  "2",
             "bf",  "boost_d",
             "fl",  "score,*",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s0']");
+        "//doc[1]/str[@name='id'][.='s0']"); 
 
     assertQ("ps not working for pf3",
-        req("q",   "a bar foo",
+        req("q",   "a bar foo", 
             "qf",  "phrase_sw",
             "pf3", "phrase_sw^10",
             "ps",  "3",
@@ -743,8 +747,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "fl",  "score,*",
             "debugQuery",  "true",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='s1']");
-
+        "//doc[1]/str[@name='id'][.='s1']"); 
+    
     assertQ("ps/ps2/ps3 with default slop overrides not working",
         req("q", "zzzz xxxx cccc vvvv",
             "qf", "phrase_sw",
@@ -998,11 +1002,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "defType", "edismax")
         , "*[count(//doc)=2]");
     assertQ("test cjk (conjunction)",
-        req("q", "大亚湾 OR bogus",
+        req("q", "大亚湾 OR bogus", // +(((((standardtok:大 standardtok:亚 standardtok:湾)~3)) (standardtok:bogus))~2)
             "qf", "standardtok",
             "mm", "100%",
             "defType", "edismax")
-        , "*[count(//doc)=1]");
+        , "//*[@numFound='0']");
   }
   
   /**
@@ -1018,7 +1022,137 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "defType", "edismax")
         , "*[count(//doc)=1]");
   }
+
+  /**
+   * Test that the default operator and MM are interacting appropriately when both provided
+   */
+  public void testDefaultOperatorWithMm() throws Exception {
+    // Text we are searching
+    // "line up and fly directly at the enemy death cannons, clogging them with wreckage!"
+    assertQ("test default operator with mm (AND + 0% => 0 hits)",
+        req("q", "(line notfound) OR notfound",
+            "qf", "text",
+            "q.op", "AND",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=0]");
+    assertQ("test default operator with mm (OR + 0% => 1 hit)",
+        req("q", "line notfound OR notfound",
+            "qf", "text",
+            "q.op", "OR",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    assertQ("test default operator with mm (OR + 100% => 0 hits)",
+        req("q", "line notfound OR notfound",
+            "qf", "text",
+            "q.op", "OR",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=0]");
+    assertQ("test default operator with mm (OR + 35% => 1 hit)",
+        req("q", "line notfound notfound2 OR notfound",
+            "qf", "text",
+            "q.op", "OR",
+            "mm", "35%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    assertQ("test default operator with mm (OR + 75% => 0 hits)",
+        req("q", "line notfound notfound2 OR notfound3",
+            "qf", "text",
+            "q.op", "OR",
+            "mm", "75%",
+            "defType", "edismax")
+        , "*[count(//doc)=0]");
+    assertQ("test default operator with mm (AND + 0% => 1 hit)",
+        req("q", "(line enemy) OR notfound",
+            "qf", "text",
+            "q.op", "AND",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    assertQ("test default operator with mm (AND + 50% => 1 hit)",
+        req("q", "(line enemy) OR (line notfound) OR (death cannons) OR (death notfound)",
+            "qf", "text",
+            "q.op", "AND",
+            "mm", "50%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    assertQ("test default operator with mm (AND + 75% => 0 hits)",
+        req("q", "(line enemy) OR (line notfound) OR (death cannons) OR (death notfound)",
+            "qf", "text",
+            "q.op", "AND",
+            "mm", "75%",
+            "defType", "edismax")
+        , "*[count(//doc)=0]");
+  }
   
+  /**
+   * Test that minShouldMatch applies to Optional terms only
+   */
+  public void testMinShouldMatchOptional() throws Exception {
+    assertQ("test minShouldMatch (top level optional terms only)",
+        req("q", "stocks oil gold", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold))~1)
+            "qf", "text_sw",
+            "mm", "50%",
+            "defType", "edismax")
+        , "*[count(//doc)=4]");
+    
+    assertQ("test minShouldMatch (top level optional and negative terms mm=50%)",
+        req("q", "stocks oil gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~1)
+            "qf", "text_sw",
+            "mm", "50%",
+            "defType", "edismax")
+        , "*[count(//doc)=3]");
+
+    assertQ("test minShouldMatch (top level optional and negative terms mm=100%)",
+        req("q", "stocks gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~2)
+            "qf", "text_sw",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+
+    assertQ("test minShouldMatch (top level required terms only)",
+        req("q", "stocks AND oil", // +(+(text_sw:stock) +(text_sw:oil))
+            "qf", "text_sw",
+            "mm", "50%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+
+    assertQ("test minShouldMatch (top level optional and required terms)",
+        req("q", "oil gold +stocks", // +(((text_sw:oil) (text_sw:gold) +(text_sw:stock))~1)
+            "qf", "text_sw",
+            "mm", "50%",
+            "defType", "edismax")
+        , "*[count(//doc)=3]");
+
+    assertQ("test minShouldMatch (top level optional with explicit OR and parens)",
+        req("q", "(snake OR stocks) oil",
+            "qf", "text_sw",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=2]");
+
+    // The results for these two appear odd, but are correct as per BooleanQuery processing.
+    // See: http://searchhub.org/2011/12/28/why-not-and-or-and-not/
+    // Non-parenthesis OR/AND precedence is not true to abstract boolean logic in solr when q.op = AND
+    //   and when q.op = OR all three clauses are top-level and optional so mm takes over
+    assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
+        req("q", "snake OR stocks oil",
+            "qf", "text_sw",
+            "q.op", "OR",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=0]");
+    assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
+        req("q", "snake OR stocks oil",
+            "qf", "text_sw",
+            "q.op", "AND",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=0]");
+  }
+
   public void testEdismaxSimpleExtension() throws SyntaxError {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "foo bar");
