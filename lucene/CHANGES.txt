@@ -307,6 +307,10 @@ Optimizations
 * LUCENE-6909: Remove unnecessary synchronized from
   FacetsConfig.getDimConfig for better concurrency (Sanne Grinovero
   via Mike McCandless)
+  
+* SOLR-7730: Speed up SlowCompositeReaderWrapper.getSortedSetDocValues() by
+  avoiding merging FieldInfos just to check doc value type.
+  (Paul Vasilyev, Yuriy Pakhomov, Mikhail Khludnev, yonik)
 
 Bug Fixes
 
@@ -912,11 +916,7 @@ Optimizations
 * LUCENE-6621: Removed two unused variables in analysis/stempel/src/java/org/
   egothor/stemmer/Compile.java
   (Rishabh Patel via Christine Poerschke)
-
-* SOLR-7730: Speed up SlowCompositeReaderWrapper.getSortedSetDocValues() by
-  avoiding merging FieldInfos just to check doc value type.
-  (Paul Vasilyev, Yuriy Pakhomov, Mikhail Khludnev, yonik)
-
+    
 Build
 
 * LUCENE-6518: Don't report false thread leaks from IBM J9
