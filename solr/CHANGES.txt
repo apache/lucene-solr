@@ -247,6 +247,14 @@ Bug Fixes
 * SOLR-2469: MM ignored in edismax queries with operators.
   (Greg Pendlebury, Jan Høydahl et. al. via Erick Erickson)
 
+* SOLR-8372: Canceled recovery can rarely lead to inconsistent shards:
+  If a replica is recovering via index replication, and that recovery fails
+  (for example if the leader goes down), and then some more updates are received
+  (there could be a few left to be processed from the leader that just went down),
+  and then that replica is brought down, it will think it is up-to-date when
+  restarted. (shalin, Mark Miller, yonik)
+
+
 Other Changes
 ----------------------
 

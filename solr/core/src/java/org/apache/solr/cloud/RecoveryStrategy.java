@@ -457,11 +457,19 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       } finally {
         if (!replayed) {
+          // dropBufferedUpdate()s currently only supports returning to ACTIVE state, which risks additional updates
+          // being added w/o UpdateLog.FLAG_GAP, hence losing the info on restart that we are not up-to-date.
+          // For now, ulog will simply remain in BUFFERING state, and an additional call to bufferUpdates() will
+          // reset our starting point for playback.
+          log.info("Replay not started, or was not successful... still buffering updates.");
+
+          /** this prev code is retained in case we want to switch strategies.
           try {
             ulog.dropBufferedUpdates();
           } catch (Exception e) {
             SolrException.log(log, "", e);
           }
+          **/
         }
         if (successfulRecovery) {
           log.info("Registering as Active after recovery.");
