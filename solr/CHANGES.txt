@@ -318,6 +318,8 @@ Other Changes
 
 * SOLR-8414: AbstractDistribZkTestBase.verifyReplicaStatus could throw NPE (Christine Poerschke)
 
+* SOLR-8410: Add all read paths to 'read' permission in RuleBasedAuthorizationPlugin (noble)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
