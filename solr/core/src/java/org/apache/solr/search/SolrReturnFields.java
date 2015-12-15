@@ -447,4 +447,18 @@ public class SolrReturnFields extends ReturnFields {
   {
     return transformer;
   }
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder("SolrReturnFields=(");
+    sb.append("globs="); sb.append(globs);
+    sb.append(",fields="); sb.append(fields);
+    sb.append(",okFieldNames="); sb.append(okFieldNames);
+    sb.append(",reqFieldNames="); sb.append(reqFieldNames);
+    sb.append(",transformer="); sb.append(transformer);
+    sb.append(",wantsScore="); sb.append(_wantsScore);
+    sb.append(",wantsAllFields="); sb.append(_wantsAllFields);
+    sb.append(')');
+    return sb.toString();
+  }
 }
