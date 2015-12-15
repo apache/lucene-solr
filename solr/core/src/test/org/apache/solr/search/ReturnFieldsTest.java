@@ -100,13 +100,20 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertEquals(rf1ToString, rf1.toString());
 
     final ReturnFields rf2 = new SolrReturnFields(
-        req("fl", "id "+SolrReturnFields.SCORE+" test"));
-    final String rf2ToString = "SolrReturnFields=(globs=[]"
-        +",fields=[score, test, id]"
-        +",okFieldNames=[null, score, test, id]"
-        +",reqFieldNames=[id, score, test]"
+        req("fl", SolrReturnFields.SCORE));
+    final String rf2ToStringA = "SolrReturnFields=(globs=[]"
+        +",fields=["+SolrReturnFields.SCORE+"]"
+        +",okFieldNames=[null, "+SolrReturnFields.SCORE+"]"
+        +",reqFieldNames=["+SolrReturnFields.SCORE+"]"
         +",transformer=score,wantsScore=true,wantsAllFields=false)";
-    assertEquals(rf2ToString, rf2.toString());
+    final String rf2ToStringB = "SolrReturnFields=(globs=[]"
+        +",fields=["+SolrReturnFields.SCORE+"]"
+        +",okFieldNames=["+SolrReturnFields.SCORE+", null]"
+        +",reqFieldNames=["+SolrReturnFields.SCORE+"]"
+        +",transformer=score,wantsScore=true,wantsAllFields=false)";
+    assertTrue(
+        rf2ToStringA.equals(rf2.toString()) ||
+        rf2ToStringB.equals(rf2.toString()));
   }
 
   @Test
