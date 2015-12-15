@@ -64,11 +64,6 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     sliceCount = 4;
   }
 
-  @BeforeClass
-  public static void initSysProperties() {
-    System.setProperty("managed.schema.mutable", "true");
-  }
-
   @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-schemaless.xml";

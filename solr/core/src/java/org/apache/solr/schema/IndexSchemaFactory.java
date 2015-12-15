@@ -67,7 +67,8 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
       factory.init(info.initArgs);
     } else {
       if (config.luceneMatchVersion.onOrAfter(Version.LUCENE_6_0_0)) {
-        factory = new ManagedIndexSchemaFactory();
+        // ManagedIndexSchemaFactory is SolrCoreAware so we must create using the resource loader
+        factory = config.getResourceLoader().newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);
       } else {
         factory = new ClassicIndexSchemaFactory();
       }
