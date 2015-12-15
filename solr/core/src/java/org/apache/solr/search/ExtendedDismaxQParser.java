@@ -338,10 +338,10 @@ public class ExtendedDismaxQParser extends QParser {
     if(query == null) {
       return null;
     }
+
     // For correct lucene queries, turn off mm processing if there
     // were explicit operators (except for AND).
-    boolean doMinMatched = doMinMatched(clauses, config.lowercaseOperators);
-    if (doMinMatched && query instanceof BooleanQuery) {
+    if (query instanceof BooleanQuery) {
       query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, config.minShouldMatch, config.mmAutoRelax);
     }
     return query;
@@ -391,27 +391,6 @@ public class ExtendedDismaxQParser extends QParser {
       sb.append(' ');
     }
     return sb.toString();
-  }
-  
-  /**
-   * Returns false if at least one of the clauses is an explicit operator (except for AND)
-   */
-  private boolean doMinMatched(List<Clause> clauses, boolean lowercaseOperators) {
-    for (Clause clause : clauses) {
-      if (clause.must == '+') return false;
-      if (clause.must == '-') return false;
-      if (clause.isBareWord()) {
-        String s = clause.val;
-        if ("OR".equals(s)) {
-          return false;
-        } else if ("NOT".equals(s)) {
-          return false;
-        } else if (lowercaseOperators && "or".equals(s)) {
-          return false;
-        }
-      }
-    }
-    return true;
   }
   
   /**
@@ -1001,8 +980,11 @@ public class ExtendedDismaxQParser extends QParser {
     
     public ExtendedSolrQueryParser(QParser parser, String defaultField) {
       super(parser, defaultField);
-      // don't trust that our parent class won't ever change its default
-      setDefaultOperator(QueryParser.Operator.OR);
+      // Respect the q.op parameter before mm will be applied later
+      SolrParams defaultParams = SolrParams.wrapDefaults(parser.getLocalParams(), parser.getParams());
+      QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(
+          parser.getReq().getSchema(), defaultParams.get(QueryParsing.OP));
+      setDefaultOperator(defaultOp);
     }
     
     public void setRemoveStopFilter(boolean remove) {

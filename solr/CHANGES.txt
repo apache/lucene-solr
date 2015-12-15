@@ -244,6 +244,9 @@ Bug Fixes
 * SOLR-6992: Fix "Files" UI to show the managed-schema file as well.
   (Shawn Heisey, Varun Thacker)
 
+* SOLR-2469: MM ignored in edismax queries with operators.
+  (Greg Pendlebury, Jan Høydahl et. al. via Erick Erickson)
+
 Other Changes
 ----------------------
 
