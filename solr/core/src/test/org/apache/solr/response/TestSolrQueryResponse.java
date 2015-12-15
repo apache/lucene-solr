@@ -17,17 +17,52 @@ package org.apache.solr.response;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.lang.ArithmeticException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 import org.junit.Test;
 
 public class TestSolrQueryResponse extends LuceneTestCase {
   
+  @Test
+  public void testName() throws Exception {
+    assertEquals("SolrQueryResponse.NAME value changed", "response", SolrQueryResponse.NAME);
+  }
+
+  @Test
+  public void testValues() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    assertEquals("values initially not empty", 0, response.getValues().size());
+    // initially empty, then add something
+    final NamedList<Object> newValue = new SimpleOrderedMap<>();
+    newValue.add("key1", "value1");
+    response.setAllValues(newValue);
+    assertEquals("values new value", newValue, response.getValues());
+    response.add("key2", "value2");
+    {
+      final Iterator<Map.Entry<String,Object>> it = response.getValues().iterator();
+      assertTrue(it.hasNext());
+      final Map.Entry<String,Object> entry1 = it.next();
+      assertEquals("key1", entry1.getKey());
+      assertEquals("value1", entry1.getValue());
+      assertTrue(it.hasNext());
+      final Map.Entry<String,Object> entry2 = it.next();
+      assertEquals("key2", entry2.getKey());
+      assertEquals("value2", entry2.getValue());
+      assertFalse(it.hasNext());
+    }
+  }
+
   @Test
   public void testToLog() throws Exception {
     final SolrQueryResponse response = new SolrQueryResponse();
@@ -61,6 +96,17 @@ public class TestSolrQueryResponse extends LuceneTestCase {
     }
     assertEquals("key1=value1 key2=value2", response.getToLogAsString(""));
     assertEquals("xyz789 key1=value1 key2=value2", response.getToLogAsString("xyz789"));
+  }
+
+  @Test
+  public void testReturnFields() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    final ReturnFields defaultReturnFields = new SolrReturnFields();
+    assertEquals("returnFields initial value", defaultReturnFields.toString(), response.getReturnFields().toString());
+    final SolrReturnFields newValue = new SolrReturnFields((random().nextBoolean()
+        ? SolrReturnFields.SCORE : "value"), null);
+    response.setReturnFields(newValue);
+    assertEquals("returnFields new value", newValue.toString(), response.getReturnFields().toString());
   }
 
   @Test
@@ -191,4 +237,23 @@ public class TestSolrQueryResponse extends LuceneTestCase {
     assertEquals("key2", response.httpHeaders().next().getKey());
   }
   
+  @Test
+  public void testException() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    assertEquals("exception initial value", null, response.getException());
+    final Exception newValue = (random().nextBoolean()
+        ? (random().nextBoolean() ? new ArithmeticException() : new IOException()) : null);
+    response.setException(newValue);
+    assertEquals("exception new value", newValue, response.getException());
+  }
+
+  @Test
+  public void testHttpCaching() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    assertEquals("httpCaching initial value", true, response.isHttpCaching());
+    final boolean newValue = random().nextBoolean();
+    response.setHttpCaching(newValue);
+    assertEquals("httpCaching new value", newValue, response.isHttpCaching());
+  }
+
 }

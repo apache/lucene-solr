@@ -304,6 +304,7 @@ Other Changes
 * SOLR-8305: replace LatLonType.getValueSource's QParser use (Christine Poerschke)
 
 * SOLR-8388: factor out response/TestSolrQueryResponse.java from servlet/ResponseHeaderTest.java
+  more TestSolrQueryResponse.java tests; add SolrReturnFields.toString method, ReturnFieldsTest.testToString test;
   (Christine Poerschke)
 
 * SOLR-8383: SolrCore.java + QParserPlugin.java container initialCapacity tweaks

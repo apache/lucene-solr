@@ -23,6 +23,7 @@ import org.apache.solr.response.transform.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.lang.reflect.Method;
 import java.util.Locale;
 import java.util.Random;
 
@@ -79,6 +80,33 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         ,"*//doc[1]/str[1][.='1'] "
         ,"*//doc[1]/str[2][.='1'] "
         );
+  }
+
+  @Test
+  public void testToString() {
+    for (Method m : SolrReturnFields.class.getMethods()) {
+      if (m.getName().equals("toString")) {
+        assertTrue(m + " is not overridden ! ", m.getDeclaringClass() == SolrReturnFields.class);
+        break;
+      }
+    }
+
+    final ReturnFields rf1 = new SolrReturnFields();
+    final String rf1ToString = "SolrReturnFields=(globs=[]"
+        +",fields=[]"
+        +",okFieldNames=[]"
+        +",reqFieldNames=null"
+        +",transformer=null,wantsScore=false,wantsAllFields=true)";
+    assertEquals(rf1ToString, rf1.toString());
+
+    final ReturnFields rf2 = new SolrReturnFields(
+        req("fl", "id "+SolrReturnFields.SCORE+" test"));
+    final String rf2ToString = "SolrReturnFields=(globs=[]"
+        +",fields=[score, test, id]"
+        +",okFieldNames=[null, score, test, id]"
+        +",reqFieldNames=[id, score, test]"
+        +",transformer=score,wantsScore=true,wantsAllFields=false)";
+    assertEquals(rf2ToString, rf2.toString());
   }
 
   @Test
