@@ -18,6 +18,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
+import org.apache.lucene.index.DimensionalValues; // javadocs
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
@@ -30,7 +31,10 @@ public class FieldType implements IndexableFieldType  {
 
   /** Data type of the numeric value
    * @since 3.2
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
+  @Deprecated
   public enum LegacyNumericType {
     /** 32-bit integer numeric type */
     INT, 
@@ -299,7 +303,10 @@ public class FieldType implements IndexableFieldType  {
    * @throws IllegalStateException if this FieldType is frozen against
    *         future modifications.
    * @see #numericType()
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
+  @Deprecated
   public void setNumericType(LegacyNumericType type) {
     checkIfFrozen();
     numericType = type;
@@ -312,7 +319,10 @@ public class FieldType implements IndexableFieldType  {
    * <p>
    * The default is <code>null</code> (no numeric type) 
    * @see #setNumericType(org.apache.lucene.document.FieldType.LegacyNumericType)
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
+  @Deprecated
   public LegacyNumericType numericType() {
     return numericType;
   }
@@ -324,7 +334,10 @@ public class FieldType implements IndexableFieldType  {
    * @throws IllegalStateException if this FieldType is frozen against
    *         future modifications.
    * @see #numericPrecisionStep()
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
+  @Deprecated
   public void setNumericPrecisionStep(int precisionStep) {
     checkIfFrozen();
     if (precisionStep < 1) {
@@ -340,7 +353,10 @@ public class FieldType implements IndexableFieldType  {
    * <p>
    * The default is {@link org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
    * @see #setNumericPrecisionStep(int)
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
+  @Deprecated
   public int numericPrecisionStep() {
     return numericPrecisionStep;
   }
