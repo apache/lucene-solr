@@ -27,13 +27,6 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler" />
 
-  <requestHandler name="/export" class="solr.SearchHandler">
-    <lst name="invariants">
-    <str name="rq">{!xport}</str>
-    <str name="wt">xsort</str>
-    <str name="distrib">false</str>
-  </lst>
-
   <query>
 
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
@@ -48,10 +41,5 @@
                    autowarmCount="0"/>
   </query>
 
-
-  <arr name="components">
-      <str>query</str>
-    </arr>
-  </requestHandler>
 
 </config>

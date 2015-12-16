@@ -94,7 +94,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
       exception = new IOException(new SyntaxError("No sort criteria was provided."));
     }
 
-    if(sort.needsScores()) {
+    if(sort != null && sort.needsScores()) {
       exception = new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
     }
 
@@ -109,16 +109,18 @@ public class SortingResponseWriter implements QueryResponseWriter {
     SolrParams params = req.getParams();
     String fl = params.get("fl");
 
+    String[] fields = null;
+
     if(fl == null) {
       exception = new IOException(new SyntaxError("export field list (fl) must be specified."));
-    }
+    } else  {
+      fields = fl.split(",");
 
-    String[] fields = fl.split(",");
-
-    for(int i=0;i<fields.length; i++) {
-      if(fl.trim().equals("score")) {
-        exception =  new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
-        break;
+      for(int i=0;i<fields.length; i++) {
+        if(fl.trim().equals("score")) {
+          exception =  new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
+          break;
+        }
       }
     }
 

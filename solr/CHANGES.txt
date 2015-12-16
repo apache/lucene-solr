@@ -191,6 +191,8 @@ Other Changes
 * SOLR-8266: Remove Java Serialization from the Streaming API. The /stream handler now only accepts
   Streaming Expressions. (Jason Gerlowski, Joel Bernstein)
 
+* SOLR-8426: Enable /export, /stream and /sql handlers by default and remove them from example configs.  (shalin)
+
 
 ======================= 5.5.0 =======================
 
