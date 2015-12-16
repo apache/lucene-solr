@@ -328,8 +328,6 @@ Other Changes
 
 * SOLR-8410: Add all read paths to 'read' permission in RuleBasedAuthorizationPlugin (noble)
 
-* SOLR-8427: Removed duplicate definition of /export from solrconfig.xml in data driven configset. (shalin)
-
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
