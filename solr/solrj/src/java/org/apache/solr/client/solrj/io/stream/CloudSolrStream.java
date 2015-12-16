@@ -361,11 +361,13 @@ public class CloudSolrStream extends TupleStream implements Expressible {
    *  Closes the CloudSolrStream
    **/
   public void close() throws IOException {
-    for(TupleStream solrStream : solrStreams) {
-      solrStream.close();
+    if(solrStreams != null) {
+      for (TupleStream solrStream : solrStreams) {
+        solrStream.close();
+      }
     }
 
-    if(cache == null) {
+    if(cache == null && cloudSolrClient != null) {
       cloudSolrClient.close();
     }
   }
