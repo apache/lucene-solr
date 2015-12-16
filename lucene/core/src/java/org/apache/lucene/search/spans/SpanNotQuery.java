@@ -194,11 +194,10 @@ public final class SpanNotQuery extends SpanQuery {
     SpanQuery rewrittenInclude = (SpanQuery) include.rewrite(reader);
     SpanQuery rewrittenExclude = (SpanQuery) exclude.rewrite(reader);
     if (rewrittenInclude != include || rewrittenExclude != exclude) {
-      return new SpanNotQuery(rewrittenInclude, rewrittenExclude);
+      return new SpanNotQuery(rewrittenInclude, rewrittenExclude, pre, post);
     }
     return super.rewrite(reader);
   }
-
     /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {

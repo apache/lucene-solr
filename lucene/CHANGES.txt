@@ -153,6 +153,9 @@ Bug Fixes
   (https://scan.coverity.com/projects/5620 CID 119973 and CID 120081)
   (Christine Poerschke, Coverity Scan (via Rishabh Patel))
 
+* LUCENE-6929: Fix SpanNotQuery rewriting to not drop the pre/post parameters.
+  (Tim Allison via Adrien Grand)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)

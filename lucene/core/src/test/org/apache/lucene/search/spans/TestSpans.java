@@ -17,21 +17,26 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
@@ -40,10 +45,13 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.IOException;
-import java.util.List;
-
-import static org.apache.lucene.search.spans.SpanTestUtil.*;
+import static org.apache.lucene.search.spans.SpanTestUtil.assertFinished;
+import static org.apache.lucene.search.spans.SpanTestUtil.assertNext;
+import static org.apache.lucene.search.spans.SpanTestUtil.spanNearOrderedQuery;
+import static org.apache.lucene.search.spans.SpanTestUtil.spanNearUnorderedQuery;
+import static org.apache.lucene.search.spans.SpanTestUtil.spanNotQuery;
+import static org.apache.lucene.search.spans.SpanTestUtil.spanOrQuery;
+import static org.apache.lucene.search.spans.SpanTestUtil.spanTermQuery;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -87,7 +95,10 @@ public class TestSpans extends LuceneTestCase {
     "u2 u1 xx u2",
     "u1 u2 xx u2",
     "t1 t2 t1 t3 t2 t3",
-    "s2 s1 s1 xx xx s2 xx s2 xx s1 xx xx xx xx xx s2 xx"
+    "s2 s1 s1 xx xx s2 xx s2 xx s1 xx xx xx xx xx s2 xx",
+    "r1 s11",
+    "r1 s21"
+
   };
   
   private void checkHits(Query query, int[] results) throws IOException {
@@ -375,7 +386,25 @@ public class TestSpans extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
+  public void testSpanNotWithMultiterm() throws Exception {
+    SpanQuery q = spanNotQuery(
+        spanTermQuery(field, "r1"),
+        new SpanMultiTermQueryWrapper<>(new PrefixQuery(new Term(field, "s1"))),3,3);
+    checkHits(q,  new int[] {14});
+
+    q = spanNotQuery(
+        spanTermQuery(field, "r1"),
+        new SpanMultiTermQueryWrapper<>(new FuzzyQuery(new Term(field, "s12"), 1, 2)),3,3);
+    checkHits(q,  new int[] {14});
+
+    q = spanNotQuery(
+        new SpanMultiTermQueryWrapper<>(new PrefixQuery(new Term(field, "r"))),
+        spanTermQuery(field, "s21"),3,3);
+    checkHits(q,  new int[] {13});
+
+
+  }
   
   public void testSpanNots() throws Throwable{
      assertEquals("SpanNotIncludeExcludeSame1", 0, spanCount("s2", "s2", 0, 0), 0);
