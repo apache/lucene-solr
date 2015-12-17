@@ -225,6 +225,9 @@ New Features
 
 * SOLR-8434: Add wildcard support to role, to match any role in RuleBasedAuthorizationPlugin (noble)
 
+* SOLR-4280: Allow specifying "spellcheck.maxResultsForSuggest" as a percentage of filter
+  query results (Markus Jelsma via James Dyer)
+
 
 Bug Fixes
 ----------------------
