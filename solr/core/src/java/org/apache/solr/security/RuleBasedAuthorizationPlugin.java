@@ -146,6 +146,8 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
         //this resource needs a principal but the request has come without
         //any credential.
         return MatchStatus.USER_REQUIRED;
+      } else if (permission.role.contains("*")) {
+        return MatchStatus.PERMITTED;
       }
 
       for (String role : permission.role) {
