@@ -373,6 +373,9 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
+    if (getSolrDispatchFilter() == null || getSolrDispatchFilter().getCores() == null) {
+      return null;
+    }
     return getSolrDispatchFilter().getCores();
   }
 

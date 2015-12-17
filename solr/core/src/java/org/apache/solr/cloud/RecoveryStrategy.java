@@ -351,14 +351,14 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
         
         if (isClosed()) {
-          log.info("Recovery was cancelled");
+          log.info("RecoveryStrategy has been closed");
           break;
         }
 
         sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName, slice);
         
         if (isClosed()) {
-          log.info("Recovery was cancelled");
+          log.info("RecoveryStrategy has been closed");
           break;
         }
         
@@ -420,7 +420,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
 
         if (isClosed()) {
-          log.info("Recovery was cancelled");
+          log.info("RecoveryStrategy has been closed");
           break;
         }
         
@@ -431,7 +431,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           replicate(zkController.getNodeName(), core, leaderprops);
 
           if (isClosed()) {
-            log.info("Recovery was cancelled");
+            log.info("RecoveryStrategy has been closed");
             break;
           }
 
@@ -439,7 +439,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           replayed = true;
           
           if (isClosed()) {
-            log.info("Recovery was cancelled");
+            log.info("RecoveryStrategy has been closed");
             break;
           }
 
@@ -494,6 +494,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         try {
 
           if (isClosed()) {
+            log.info("RecoveryStrategy has been closed");
             break;
           }
           
@@ -518,7 +519,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           double loopCount = Math.min(Math.pow(2, retries), 60);
           log.info("Wait {} seconds before trying to recover again ({})", loopCount, retries);
           for (int i = 0; i < loopCount; i++) {
-            if (isClosed()) break; // check if someone closed us
+            if (isClosed()) {
+              log.info("RecoveryStrategy has been closed");
+              break; // check if someone closed us
+            }
             Thread.sleep(STARTING_RECOVERY_DELAY);
           }
         } catch (InterruptedException e) {
@@ -537,7 +541,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       core.seedVersionBuckets();
     }
 
-    log.info("Finished recovery process.");
+    log.info("Finished recovery process, successful=", Boolean.toString(successfulRecovery));
 
     
   }

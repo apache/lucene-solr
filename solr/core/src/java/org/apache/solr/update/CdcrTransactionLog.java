@@ -194,7 +194,7 @@ public class CdcrTransactionLog extends TransactionLog {
   }
 
   @Override
-  protected void close() {
+  public void close() {
     try {
       if (debug) {
         log.debug("Closing tlog" + this);

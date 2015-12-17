@@ -54,6 +54,16 @@
       <str name="numRecordsToKeep">${solr.ulog.numRecordsToKeep:100}</str>
       <int name="tlogDfsReplication">${solr.ulog.tlogDfsReplication:2}</int>
     </updateLog>
+    
+      
+    <autoCommit> 
+      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime> 
+      <openSearcher>false</openSearcher> 
+    </autoCommit>
+
+    <autoSoftCommit> 
+      <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime> 
+    </autoSoftCommit>
   </updateHandler>
 
   <updateRequestProcessorChain name="dedupe">

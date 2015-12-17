@@ -21,24 +21,32 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.TestInjection;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
 @Nightly
+@SuppressObjectReleaseTracker(bugUrl="this is a purposely leaky test")
 public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private List<StoppableIndexingThread> threads;
+  
+  private volatile boolean stopExpire = false;
 
-  public RestartWhileUpdatingTest() {
+  public RestartWhileUpdatingTest() throws Exception {
     super();
     sliceCount = 1;
     fixShardCount(3);
     schemaString = "schema15.xml";      // we need a string id
+    useFactory("solr.StandardDirectoryFactory");
   }
   
   public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
@@ -50,6 +58,23 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
 
   protected RandVal[] getRandValues() {
     return randVals;
+  }
+  
+  @BeforeClass
+  public static void beforeRestartWhileUpdatingTest() {
+    System.setProperty("leaderVoteWait", "300000");
+    System.setProperty("solr.autoCommit.maxTime", "30000");
+    System.setProperty("solr.autoSoftCommit.maxTime", "3000");
+    TestInjection.nonGracefullClose = "true:60";
+    TestInjection.failReplicaRequests = "true:03";
+  }
+  
+  @AfterClass
+  public static void afterRestartWhileUpdatingTest() {
+    System.clearProperty("leaderVoteWait");
+    System.clearProperty("solr.autoCommit.maxTime");
+    System.clearProperty("solr.autoSoftCommit.maxTime");
+    TestInjection.reset();
   }
 
   @Test
@@ -66,7 +91,30 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     
     int numThreads = random().nextInt(4) + 1;
     
-    threads = new ArrayList<>(2);
+    threads = new ArrayList<>(numThreads);
+    
+    Thread expireThread = new Thread() {
+      public void run() {
+        while (!stopExpire) {
+          try {
+            Thread.sleep(random().nextInt(15000));
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        
+//          try {
+//            chaosMonkey.expireRandomSession();
+//          } catch (KeeperException e) {
+//            throw new RuntimeException(e);
+//          } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//          }
+        }
+      }
+    };
+
+//  Currently unused
+//  expireThread.start();
     
     StoppableIndexingThread indexThread;
     for (int i = 0; i < numThreads; i++) {
@@ -77,9 +125,11 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
 
     Thread.sleep(2000);
     
-    int restartTimes = random().nextInt(4) + 1;;
+    int restartTimes = 1;//random().nextInt(4) + 1;;
     for (int i = 0; i < restartTimes; i++) {
+      Thread.sleep(random().nextInt(300000));
       stopAndStartAllReplicas();
+      Thread.sleep(random().nextInt(30000));
     }
     
     Thread.sleep(2000);
@@ -87,12 +137,13 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     // stop indexing threads
     for (StoppableIndexingThread thread : threads) {
       thread.safeStop();
-      thread.safeStop();
     }
+    stopExpire = true;
+    expireThread.join();
     
     Thread.sleep(1000);
   
-    waitForThingsToLevelOut(120);
+    waitForThingsToLevelOut(320);
     
     Thread.sleep(2000);
     
@@ -107,8 +158,13 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
   }
 
   public void stopAndStartAllReplicas() throws Exception, InterruptedException {
-    chaosMonkey.stopAll(random().nextInt(2000));
+    chaosMonkey.stopAll(random().nextInt(1));
     
+    if (random().nextBoolean()) {
+      for (StoppableIndexingThread thread : threads) {
+        thread.safeStop();
+      }
+    }
     Thread.sleep(1000);
     
     chaosMonkey.startAll();

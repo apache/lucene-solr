@@ -38,7 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.FileUtils;
@@ -66,6 +65,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.IndexFetcher;
@@ -125,12 +125,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  */
 public final class SolrCore implements SolrInfoMBean, Closeable {
   public static final String version="1.0";
-
-  // These should *only* be used for debugging or monitoring purposes
-  public static final AtomicLong numOpens = new AtomicLong();
-  public static final AtomicLong numCloses = new AtomicLong();
-  public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore, Exception>());
-
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
@@ -714,6 +708,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       IndexSchema schema, NamedList configSetProperties,
       CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
       IndexDeletionPolicyWrapper delPolicy, SolrCore prev) {
+    
+    assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
+    
     checkNotNull(coreDescriptor, "coreDescriptor cannot be null");
     
     this.coreDescriptor = coreDescriptor;
@@ -852,13 +849,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     seedVersionBuckets();
 
     bufferUpdatesIfConstructing(coreDescriptor);
-    
-    // For debugging   
-//    numOpens.incrementAndGet();
-//    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
 
     this.ruleExpiryLock = new ReentrantLock();
     registerConfListener();
+    
+    assert ObjectReleaseTracker.track(this);
   }
 
   public void seedVersionBuckets() {
@@ -1227,6 +1222,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         throw (Error) e;
       }
     }
+    assert ObjectReleaseTracker.release(searcherExecutor);
 
     try {
       // Since we waited for the searcherExecutor to shut down,
@@ -1266,7 +1262,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     }
 
-
     if( closeHooks != null ) {
        for( CloseHook hook : closeHooks ) {
          try {
@@ -1279,10 +1274,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
          }
       }
     }
-
-    // For debugging 
-//    numCloses.incrementAndGet();
-//    openHandles.remove(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   /** Current core usage count. */

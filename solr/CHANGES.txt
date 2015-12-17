@@ -339,6 +339,9 @@ Other Changes
 
 * SOLR-8410: Add all read paths to 'read' permission in RuleBasedAuthorizationPlugin (noble)
 
+* SOLR-8279: Add a new test fault injection approach and a new SolrCloud test that stops and starts the cluster
+  while indexing data and with random faults. (Mark Miller)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
