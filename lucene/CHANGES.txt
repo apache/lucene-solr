@@ -143,6 +143,9 @@ Optimizations
   stopping to evaluate them as soon as a single one matches. The other iterators
   will be confirmed lazily when computing score() or freq(). (Adrien Grand)
 
+* LUCENE-6926: MUST_NOT clauses now use the match cost API to run the slow bits
+  last whenever possible. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least
