@@ -30,6 +30,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
+import org.apache.solr.security.AuthorizationContext.RequestType;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -54,7 +55,10 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       "      collection:mycoll," +
       "      path:'/update/*'," +
       "      role:[dev,admin]" +
-      "    },{name:read , role:dev }]}";
+      "    }," +
+      "{name:read , role:dev }," +
+      "{name:freeforall, path:'/foo', role:'*'}]}";
+
 
 
   public void testBasicPermissions() {
@@ -64,43 +68,49 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
     checkRules(makeMap("resource", "/update/json/docs",
         "httpMethod", "POST",
+        "userPrincipal", "unknownuser",
+        "collectionRequests", "freeforall" )
+        , STATUS_OK);
+
+    checkRules(makeMap("resource", "/update/json/docs",
+        "httpMethod", "POST",
         "userPrincipal", "tim",
-        "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
+        "collectionRequests", "mycoll")
         , STATUS_OK);
 
 
     checkRules(makeMap("resource", "/update/json/docs",
         "httpMethod", "POST",
-        "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
+        "collectionRequests", "mycoll" )
         , PROMPT_FOR_CREDENTIALS);
 
     checkRules(makeMap("resource", "/schema",
         "userPrincipal", "somebody",
-        "collectionRequests", singletonList(new CollectionRequest("mycoll")),
+        "collectionRequests", "mycoll",
         "httpMethod", "POST")
         , FORBIDDEN);
 
     checkRules(makeMap("resource", "/schema",
         "userPrincipal", "somebody",
-        "collectionRequests", singletonList(new CollectionRequest("mycoll")),
+        "collectionRequests", "mycoll",
         "httpMethod", "GET")
         , STATUS_OK);
 
     checkRules(makeMap("resource", "/schema/fields",
         "userPrincipal", "somebody",
-        "collectionRequests", singletonList(new CollectionRequest("mycoll")),
+        "collectionRequests", "mycoll",
         "httpMethod", "GET")
         , STATUS_OK);
 
     checkRules(makeMap("resource", "/schema",
         "userPrincipal", "somebody",
-        "collectionRequests", singletonList(new CollectionRequest("mycoll")),
+        "collectionRequests", "mycoll",
         "httpMethod", "POST" )
         , FORBIDDEN);
 
     checkRules(makeMap("resource", "/admin/collections",
         "userPrincipal", "tim",
-        "requestType", AuthorizationContext.RequestType.ADMIN,
+        "requestType", RequestType.ADMIN,
         "collectionRequests", null,
         "httpMethod", "GET",
         "params", new MapSolrParams(singletonMap("action", "LIST")))
@@ -108,7 +118,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
     checkRules(makeMap("resource", "/admin/collections",
         "userPrincipal", null,
-        "requestType", AuthorizationContext.RequestType.ADMIN,
+        "requestType", RequestType.ADMIN,
         "collectionRequests", null,
         "httpMethod", "GET",
         "params", new MapSolrParams(singletonMap("action", "LIST")))
@@ -116,14 +126,14 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
     checkRules(makeMap("resource", "/admin/collections",
         "userPrincipal", null,
-        "requestType", AuthorizationContext.RequestType.ADMIN,
+        "requestType", RequestType.ADMIN,
         "collectionRequests", null,
         "params", new MapSolrParams(singletonMap("action", "CREATE")))
         , PROMPT_FOR_CREDENTIALS);
 
     checkRules(makeMap("resource", "/admin/collections",
         "userPrincipal", null,
-        "requestType", AuthorizationContext.RequestType.ADMIN,
+        "requestType", RequestType.ADMIN,
         "collectionRequests", null,
         "params", new MapSolrParams(singletonMap("action", "RELOAD")))
         , PROMPT_FOR_CREDENTIALS);
@@ -131,14 +141,14 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
     checkRules(makeMap("resource", "/admin/collections",
         "userPrincipal", "somebody",
-        "requestType", AuthorizationContext.RequestType.ADMIN,
+        "requestType", RequestType.ADMIN,
         "collectionRequests", null,
         "params", new MapSolrParams(singletonMap("action", "CREATE")))
         , FORBIDDEN);
 
     checkRules(makeMap("resource", "/admin/collections",
         "userPrincipal", "tim",
-        "requestType", AuthorizationContext.RequestType.ADMIN,
+        "requestType", RequestType.ADMIN,
         "collectionRequests", null,
         "params", new MapSolrParams(singletonMap("action", "CREATE")))
         , STATUS_OK);
@@ -203,7 +213,11 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
     @Override
     public List<CollectionRequest> getCollectionRequests() {
-      return (List<CollectionRequest>) values.get("collectionRequests");
+      Object collectionRequests = values.get("collectionRequests");
+      if (collectionRequests instanceof String) {
+        return singletonList(new CollectionRequest((String)collectionRequests));
+      }
+      return (List<CollectionRequest>) collectionRequests;
     }
 
     @Override

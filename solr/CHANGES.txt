@@ -223,6 +223,9 @@ New Features
 * SOLR-8378: Add upconfig and downconfig commands to the bin/solr script
   (Erick Erickson)
 
+* SOLR-8434: Add wildcard support to role, to match any role in RuleBasedAuthorizationPlugin (noble)
+
+
 Bug Fixes
 ----------------------
 
