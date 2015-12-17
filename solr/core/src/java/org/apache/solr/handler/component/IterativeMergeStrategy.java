@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.component;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
@@ -36,11 +37,16 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.http.client.HttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
   protected ExecutorService executorService;
   protected static HttpClient httpClient;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   static {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -85,6 +91,9 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
     private ShardResponse originalShardResponse;
 
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
+      log.info("################ SHARD ADDRESSS ##############:" + originalShardResponse.getShardAddress());
+      log.info("############ HTTP Client #############:"+ httpClient.getClass());
+
       this.solrClient = new HttpSolrClient(originalShardResponse.getShardAddress(), httpClient);
       this.req = req;
       this.originalShardResponse = originalShardResponse;
