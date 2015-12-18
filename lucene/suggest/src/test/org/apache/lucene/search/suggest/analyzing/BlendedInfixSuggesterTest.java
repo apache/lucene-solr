@@ -20,12 +20,15 @@ package org.apache.lucene.search.suggest.analyzing;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup;
@@ -254,6 +257,72 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     duplicateCheck(inputDocuments, 2);
 
   }
+
+
+  public void testSuggesterCountForAllLookups() throws IOException {
+
+
+    Input keys[] = new Input[]{
+        new Input("lend me your ears", 1),
+        new Input("as you sow so shall you reap", 1),
+    };
+
+    Path tempDir = createTempDir("BlendedInfixSuggesterTest");
+    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+
+    // BlenderType.LINEAR is used by default (remove position*10%)
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a);
+    suggester.build(new InputArrayIterator(keys));
+
+
+    String term = "you";
+
+    List<Lookup.LookupResult> responses = suggester.lookup(term, false, 1);
+    assertEquals(1, responses.size());
+
+    responses = suggester.lookup(term, false, 2);
+    assertEquals(2, responses.size());
+
+
+    responses = suggester.lookup(term, 1, false, false);
+    assertEquals(1, responses.size());
+
+    responses = suggester.lookup(term, 2, false, false);
+    assertEquals(2, responses.size());
+
+
+    responses = suggester.lookup(term, (Map) null, 1, false, false);
+    assertEquals(1, responses.size());
+
+    responses = suggester.lookup(term, (Map) null, 2, false, false);
+    assertEquals(2, responses.size());
+
+
+    responses = suggester.lookup(term, (Set) null, 1, false, false);
+    assertEquals(1, responses.size());
+
+    responses = suggester.lookup(term, (Set) null, 2, false, false);
+    assertEquals(2, responses.size());
+
+
+    responses = suggester.lookup(term, null, false, 1);
+    assertEquals(1, responses.size());
+
+    responses = suggester.lookup(term, null, false, 2);
+    assertEquals(2, responses.size());
+
+
+    responses = suggester.lookup(term, (BooleanQuery) null, 1, false, false);
+    assertEquals(1, responses.size());
+
+    responses = suggester.lookup(term, (BooleanQuery) null, 2, false, false);
+    assertEquals(2, responses.size());
+
+
+    suggester.close();
+
+  }
+
 
   public void /*testT*/rying() throws IOException {
 
