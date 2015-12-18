@@ -276,6 +276,8 @@ Bug Fixes
 * SOLR-8419: TermVectorComponent for distributed search when distrib.singlePass could include term
   vectors for documents that matched the query yet weren't in the returned documents. (David Smiley)
 
+* SOLR-8015: HdfsLock may fail to close a FileSystem instance if it cannot immediately
+  obtain an index lock. (Mark Miller)
 
 Other Changes
 ----------------------
