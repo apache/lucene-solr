@@ -182,13 +182,6 @@ public class PeerSync  {
     try {
       log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
       
-      // TODO: does it ever make sense to allow sync when buffering or applying buffered? Someone might request that we
-      // do it...
-      if (!(ulog.getState() == UpdateLog.State.ACTIVE || ulog.getState() == UpdateLog.State.REPLAYING)) {
-        log.error(msg() + "ERROR, update log not in ACTIVE or REPLAY state. " + ulog);
-        // return false;
-      }
-      
       if (debug) {
         if (startingVersions != null) {
           log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
