@@ -159,8 +159,9 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
               }
             }
 
-            if (writer.getPointCount() > 0) {
-              indexFPs.put(fieldInfo.name, writer.merge(dataOut, docMaps, bkdReaders, docIDBases));
+            long fp = writer.merge(dataOut, docMaps, bkdReaders, docIDBases);
+            if (fp != -1) {
+              indexFPs.put(fieldInfo.name, fp);
             }
           }
         } else {

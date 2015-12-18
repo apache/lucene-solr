@@ -328,7 +328,8 @@ public class BKDWriter implements Closeable {
   }
 
   /** More efficient bulk-add for incoming {@link BKDReader}s.  This does a merge sort of the already
-   *  sorted values and currently only works when numDims==1. */
+   *  sorted values and currently only works when numDims==1.  This returns -1 if all documents containing
+   *  dimensional values were deleted. */
   public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<BKDReader> readers, List<Integer> docIDBases) throws IOException {
     if (numDims != 1) {
       throw new UnsupportedOperationException("numDims must be 1 but got " + numDims);
@@ -363,6 +364,10 @@ public class BKDWriter implements Closeable {
       if (reader.next()) {
         queue.add(reader);
       }
+    }
+
+    if (queue.size() == 0) {
+      return -1;
     }
 
     int leafCount = 0;
