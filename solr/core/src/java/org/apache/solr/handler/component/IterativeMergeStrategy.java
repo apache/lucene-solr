@@ -93,6 +93,10 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
       log.info("################ SHARD ADDRESSS ##############:" + originalShardResponse.getShardAddress());
       log.info("############ HTTP Client #############:"+ httpClient.getClass());
+      List<String> schemes = httpClient.getConnectionManager().getSchemeRegistry().getSchemeNames();
+      for(String scheme : schemes) {
+        log.info("############ Scheme #############:"+ scheme);
+      }
 
       this.solrClient = new HttpSolrClient(originalShardResponse.getShardAddress(), httpClient);
       this.req = req;
