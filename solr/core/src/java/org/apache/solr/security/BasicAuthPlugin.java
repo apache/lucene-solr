@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin {
-  private static final Logger log = LoggerFactory.getLogger(BasicAuthPlugin.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AuthenticationProvider zkAuthentication;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
   private boolean blockUnknown = false;
