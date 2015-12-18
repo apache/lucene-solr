@@ -67,6 +67,8 @@ import org.apache.solr.search.SolrReturnFields;
  */
 public class SolrQueryResponse {
   public static final String NAME = "response";
+  private static final String RESPONSE_HEADER_KEY = "responseHeader";
+  private static final String RESPONSE_KEY = "response";
 
   /**
    * Container for user defined values
@@ -171,11 +173,31 @@ public class SolrQueryResponse {
     return err;
   }
 
+  /** Set response header */
+  public void addResponseHeader(NamedList<Object> header) {
+    values.add(RESPONSE_HEADER_KEY, header);
+  }
+
+  /** Clear response header */
+  public void removeResponseHeader() {
+    values.remove(RESPONSE_HEADER_KEY);
+  }
+
   /** Response header to be logged */
   public NamedList<Object> getResponseHeader() {
     @SuppressWarnings("unchecked")
-    SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get("responseHeader");
+    SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get(RESPONSE_HEADER_KEY);
     return header;
+  }
+
+  /** Set response */
+  public void addResponse(Object response) {
+    values.add(RESPONSE_KEY, response);
+  }
+
+  /** Return response */
+  public Object getResponse() {
+    return values.get(RESPONSE_KEY);
   }
   
   /** Add a value to be logged.

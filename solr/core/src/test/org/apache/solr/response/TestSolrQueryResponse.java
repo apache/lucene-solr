@@ -64,6 +64,16 @@ public class TestSolrQueryResponse extends LuceneTestCase {
   }
 
   @Test
+  public void testResponse() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    assertEquals("response initial value", null, response.getResponse());
+    final Object newValue = (random().nextBoolean()
+        ? (random().nextBoolean() ? new String("answer") : new Integer(42)) : null);
+    response.addResponse(newValue);
+    assertEquals("response new value", newValue, response.getResponse());
+  }
+
+  @Test
   public void testToLog() throws Exception {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("toLog initially not empty", 0, response.getToLog().size());
@@ -245,6 +255,19 @@ public class TestSolrQueryResponse extends LuceneTestCase {
         ? (random().nextBoolean() ? new ArithmeticException() : new IOException()) : null);
     response.setException(newValue);
     assertEquals("exception new value", newValue, response.getException());
+  }
+
+  @Test
+  public void testResponseHeader() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    assertEquals("responseHeader initially present", null, response.getResponseHeader());
+    final NamedList<Object> newValue = new SimpleOrderedMap<>();
+    newValue.add("key1", "value1");
+    response.add("key2", "value2");
+    response.addResponseHeader(newValue);
+    assertEquals("responseHeader new value", newValue, response.getResponseHeader());
+    response.removeResponseHeader();
+    assertEquals("responseHeader removed value", null, response.getResponseHeader());
   }
 
   @Test
