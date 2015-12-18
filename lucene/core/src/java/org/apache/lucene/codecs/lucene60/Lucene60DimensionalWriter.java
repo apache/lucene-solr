@@ -105,7 +105,10 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
           }
         });
 
-      indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+      // We could have 0 points since all docs with dimensional fields may be deleted:
+      if (writer.getPointCount() > 0) {
+        indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+      }
     }
   }
 
@@ -156,7 +159,9 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
               }
             }
 
-            indexFPs.put(fieldInfo.name, writer.merge(dataOut, docMaps, bkdReaders, docIDBases));
+            if (writer.getPointCount() > 0) {
+              indexFPs.put(fieldInfo.name, writer.merge(dataOut, docMaps, bkdReaders, docIDBases));
+            }
           }
         } else {
           mergeOneField(mergeState, fieldInfo);

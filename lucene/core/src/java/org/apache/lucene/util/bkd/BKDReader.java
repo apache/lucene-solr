@@ -55,6 +55,7 @@ public class BKDReader implements Accountable {
 
     // Read index:
     int numLeaves = in.readVInt();
+    assert numLeaves > 0;
     leafNodeOffset = numLeaves;
 
     splitPackedValues = new byte[(1+bytesPerDim)*numLeaves];

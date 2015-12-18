@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.DimensionalFormat;
 import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.DimensionalWriter;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.Accountable;
@@ -101,10 +102,8 @@ public final class AssertingDimensionalFormat extends DimensionalFormat {
 
   static class AssertingDimensionalWriter extends DimensionalWriter {
     private final DimensionalWriter in;
-    private final SegmentWriteState writeState;
 
     AssertingDimensionalWriter(SegmentWriteState writeState, DimensionalWriter in) {
-      this.writeState = writeState;
       this.in = in;
     }
     
@@ -114,6 +113,11 @@ public final class AssertingDimensionalFormat extends DimensionalFormat {
         throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but dimensionalCount is 0");
       }
       in.writeField(fieldInfo, values);
+    }
+
+    @Override
+    public void merge(MergeState mergeState) throws IOException {
+      in.merge(mergeState);
     }
 
     @Override

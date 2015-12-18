@@ -39,8 +39,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -973,6 +975,43 @@ public class TestDimensionalRangeQuery extends LuceneTestCase {
     }
 
     IOUtils.close(r, w, dir);
+  }
+
+  public void testAllDimensionalDocsWereDeletedAndThenMergedAgain() throws Exception {
+    Directory dir = getDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    doc.add(new DimensionalLongField("value", 0L));
+    w.addDocument(doc);
+
+    // Add document that won't be deleted to avoid IW dropping
+    // segment below since it's 100% deleted:
+    w.addDocument(new Document());
+    w.commit();
+
+    // Need another segment so we invoke BKDWriter.merge
+    doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    doc.add(new DimensionalLongField("value", 0L));
+    w.addDocument(doc);
+    w.addDocument(new Document());
+
+    w.deleteDocuments(new Term("id", "0"));
+    w.forceMerge(1);
+
+    doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    doc.add(new DimensionalLongField("value", 0L));
+    w.addDocument(doc);
+    w.addDocument(new Document());
+
+    w.deleteDocuments(new Term("id", "0"));
+    w.forceMerge(1);
+
+    IOUtils.close(w, dir);
   }
 
   private static Directory noVirusChecker(Directory dir) {

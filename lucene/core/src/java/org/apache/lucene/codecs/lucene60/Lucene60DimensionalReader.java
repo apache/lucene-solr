@@ -95,7 +95,11 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
     }
 
     BKDReader reader = readers.get(fieldInfo.number);
-    assert reader != null;
+    if (reader == null) {
+      // Schema ghost corner case!  This field did index dimensional values in the past, but
+      // now all docs having this dimensional field were deleted in this segment:
+      return;
+    }
 
     reader.intersect(visitor);
   }

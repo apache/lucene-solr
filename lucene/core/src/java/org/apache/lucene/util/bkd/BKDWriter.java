@@ -216,6 +216,11 @@ public class BKDWriter implements Closeable {
     pointCount++;
   }
 
+  /** How many points have been added so far */
+  public long getPointCount() {
+    return pointCount;
+  }
+
   private static class MergeReader {
     final BKDReader bkd;
     final BKDReader.IntersectState state;
@@ -264,6 +269,7 @@ public class BKDWriter implements Closeable {
           }
           //System.out.println("  new block @ fp=" + state.in.getFilePointer());
           docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchDocIDs);
+          assert docsInBlock > 0;
           docBlockUpto = 0;
           for(int dim=0;dim<bkd.numDims;dim++) {
             int prefix = state.in.readVInt();
@@ -277,6 +283,7 @@ public class BKDWriter implements Closeable {
         }
 
         int oldDocID = state.scratchDocIDs[docBlockUpto++];
+
         int mappedDocID;
         if (docMap == null) {
           mappedDocID = oldDocID;
@@ -726,6 +733,10 @@ public class BKDWriter implements Closeable {
       offlinePointWriter.close();
     }
 
+    if (pointCount == 0) {
+      throw new IllegalStateException("must index at least one point");
+    }
+
     LongBitSet ordBitSet;
     if (numDims > 1) {
       ordBitSet = new LongBitSet(pointCount);
@@ -818,6 +829,7 @@ public class BKDWriter implements Closeable {
     out.writeVInt(maxPointsInLeafNode);
     out.writeVInt(bytesPerDim);
 
+    assert leafBlockFPs.length > 0;
     out.writeVInt(leafBlockFPs.length);
 
     // TODO: for 1D case, don't waste the first byte of each split value (it's always 0)
@@ -834,6 +846,7 @@ public class BKDWriter implements Closeable {
   }
 
   protected void writeLeafBlockDocs(IndexOutput out, int[] docIDs, int start, int count) throws IOException {
+    assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;
     out.writeVInt(count);
 
     for (int i=0;i<count;i++) {
@@ -1003,6 +1016,7 @@ public class BKDWriter implements Closeable {
       // Write docIDs first, as their own chunk, so that at intersect time we can add all docIDs w/o
       // loading the values:
       int count = Math.toIntExact(source.count);
+      assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
       writeLeafBlockDocs(out, heapSource.docIDs, Math.toIntExact(source.start), count);
 
       // TODO: we should delta compress / only write suffix bytes, like terms dict (the values will all be "close together" since we are at
