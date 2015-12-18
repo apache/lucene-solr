@@ -41,6 +41,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.RTimer;
 
 public class FacetModule extends SearchComponent {
 
@@ -81,7 +82,21 @@ public class FacetModule extends SearchComponent {
     }
 
     FacetProcessor fproc = facetState.facetRequest.createFacetProcessor(fcontext);
-    fproc.process();
+    if (rb.isDebug()) {
+      FacetDebugInfo fdebug = new FacetDebugInfo();
+      fcontext.setDebugInfo(fdebug);
+      fdebug.setReqDescription(facetState.facetRequest.getFacetDescription());
+      fdebug.setProcessor(fproc.getClass().getSimpleName());
+     
+      final RTimer timer = new RTimer();
+      fproc.process();
+      long timeElapsed = (long) timer.getTime();
+      fdebug.setElapse(timeElapsed);
+      rb.req.getContext().put("FacetDebugInfo", fdebug);
+    } else {
+      fproc.process();
+    }
+    
     rb.rsp.add("facets", fproc.getResponse());
   }
 

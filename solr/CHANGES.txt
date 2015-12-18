@@ -233,6 +233,9 @@ New Features
 
 * SOLR-8434: Add a flag 'blockUnknown' to BasicAuthPlugin to block unauthenticated requests (noble)
 
+* SOLR-8230: JSON Facet API: add "facet-info" into debug section of response when debugQuery=true
+  (Michael Sun, yonik)
+
 
 Bug Fixes
 ----------------------

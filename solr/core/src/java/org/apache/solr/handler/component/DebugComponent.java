@@ -40,6 +40,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.SolrPluginUtils;
 
 import static org.apache.solr.common.params.CommonParams.FQ;
@@ -108,6 +109,11 @@ public class DebugComponent extends SearchComponent
         info.addAll( stdinfo );
       }
 
+      FacetDebugInfo fdebug = (FacetDebugInfo)(rb.req.getContext().get("FacetDebugInfo"));
+      if (fdebug != null) {
+        info.add("facet-trace", fdebug.getFacetDebugInfo());
+      }
+      
       if (rb.req.getJSON() != null) {
         info.add(JSON, rb.req.getJSON());
       }
