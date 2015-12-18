@@ -152,7 +152,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     TupleStream tupleStream = null;
 
     try {
-      tupleStream = this.streamFactory.constructStream(params.get("stream"));
+      tupleStream = this.streamFactory.constructStream(params.get("expr"));
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(logger, e);

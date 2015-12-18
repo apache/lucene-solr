@@ -196,6 +196,8 @@ Other Changes
 
 * SOLR-8426: Enable /export, /stream and /sql handlers by default and remove them from example configs.  (shalin)
 
+* SOLR-8443: Change /stream handler http param from "stream" to "expr" (Joel Bernstein, Dennis Gove)
+
 
 ======================= 5.5.0 =======================
 

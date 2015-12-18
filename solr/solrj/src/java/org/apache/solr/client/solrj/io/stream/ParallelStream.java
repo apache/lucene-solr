@@ -257,7 +257,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
         params.put("distrib","false"); // We are the aggregator.
         params.put("numWorkers", workers);
         params.put("workerID", w);
-        params.put("stream", pushStream);
+        params.put("expr", pushStream);
         params.put("qt","/stream");
         Replica rep = shuffler.get(w);
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
