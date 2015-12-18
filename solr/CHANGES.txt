@@ -128,6 +128,9 @@ Bug Fixes
 
 * SOLR-8191: Guard against CloudSolrStream close method NullPointerException
   (Kevin Risden, Joel Bernstein)
+  
+* SOLR-8371: Try and prevent too many recovery requests from stacking up and clean up some faulty 
+  cancel recovery logic. (Mark Miller)
 
 
 Optimizations
