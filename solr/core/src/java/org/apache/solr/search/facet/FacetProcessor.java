@@ -42,6 +42,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.RTimer;
 
 public class FacetProcessor<FacetRequestT extends FacetRequest>  {
   protected SimpleOrderedMap<Object> response;
@@ -219,7 +220,23 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
       FacetProcessor subProcessor = sub.getValue().createFacetProcessor(subContext);
-      subProcessor.process();
+      if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
+        FacetDebugInfo fdebug = new FacetDebugInfo();
+        subContext.setDebugInfo(fdebug);
+        fcontext.getDebugInfo().addChild(fdebug);
+        
+        fdebug.setReqDescription(sub.getValue().getFacetDescription());
+        fdebug.setProcessor(subProcessor.getClass().getSimpleName());
+        if (subContext.filter != null) fdebug.setFilter(subContext.filter.toString());
+      
+        final RTimer timer = new RTimer();
+        subProcessor.process();
+        long timeElapsed = (long) timer.getTime();
+        fdebug.setElapse(timeElapsed);
+      } else {
+        subProcessor.process();
+      }
+
       response.add( sub.getKey(), subProcessor.getResponse() );
     }
   }

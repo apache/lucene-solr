@@ -49,6 +49,7 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -159,6 +160,14 @@ public class FacetField extends FacetRequest {
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
     return new FacetFieldMerger(this);
+  }
+  
+  @Override
+  public Map<String, Object> getFacetDescription() {
+    Map<String, Object> descr = new HashMap<String, Object>();
+    descr.put("field", field);
+    descr.put("limit", new Long(limit));
+    return descr;
   }
 }
 
