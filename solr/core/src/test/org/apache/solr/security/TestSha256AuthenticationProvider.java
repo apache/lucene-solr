@@ -24,6 +24,8 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.CommandOperation;
 
+import static java.util.Collections.singletonMap;
+
 public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
   public void testAuthenticate(){
     Sha256AuthenticationProvider zkAuthenticationProvider = new Sha256AuthenticationProvider();
@@ -32,7 +34,7 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     String pwd = "My#$Password";
     String user = "noble";
     Map latestConf = new LinkedHashMap<>();
-    Map<String, Object> params = Collections.singletonMap(user, pwd);
+    Map<String, Object> params = singletonMap(user, pwd);
     Map<String, Object> result = zkAuthenticationProvider.edit(latestConf,
         Collections.singletonList(new CommandOperation("set-user",params )));
     zkAuthenticationProvider = new Sha256AuthenticationProvider();
@@ -41,6 +43,25 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     assertTrue(zkAuthenticationProvider.authenticate(user, pwd));
     assertFalse(zkAuthenticationProvider.authenticate(user, "WrongPassword"));
     assertFalse(zkAuthenticationProvider.authenticate("unknownuser", "WrongPassword"));
+
+  }
+
+  public void testBasicAuthCommands(){
+    BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin();
+    basicAuthPlugin.init(Collections.emptyMap());
+
+    Map latestConf = new LinkedHashMap<>();
+
+    CommandOperation blockUnknown = new CommandOperation("set-property", singletonMap("blockUnknown", true));
+    basicAuthPlugin.edit(latestConf, Collections.singletonList(blockUnknown));
+    assertEquals(Boolean.TRUE,  latestConf.get("blockUnknown"));
+    basicAuthPlugin.init(latestConf);
+    assertTrue(basicAuthPlugin.getBlockUnknown());
+    blockUnknown = new CommandOperation("set-property", singletonMap("blockUnknown", false));
+    basicAuthPlugin.edit(latestConf, Collections.singletonList(blockUnknown));
+    assertEquals(Boolean.FALSE,  latestConf.get("blockUnknown"));
+    basicAuthPlugin.init(latestConf);
+    assertFalse(basicAuthPlugin.getBlockUnknown());
 
   }
 }

@@ -231,6 +231,8 @@ New Features
 * SOLR-4280: Allow specifying "spellcheck.maxResultsForSuggest" as a percentage of filter
   query results (Markus Jelsma via James Dyer)
 
+* SOLR-8434: Add a flag 'blockUnknown' to BasicAuthPlugin to block unauthenticated requests (noble)
+
 
 Bug Fixes
 ----------------------
