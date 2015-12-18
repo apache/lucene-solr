@@ -141,25 +141,25 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
   
   @Override
   public List<Lookup.LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) throws IOException {
-    // here we multiply the number of searched element by the defined factor
-    return super.lookup(key, contexts, onlyMorePopular, num * numFactor);
+    // Don't * numFactor here since we do it down below, once, in the call chain:
+    return super.lookup(key, contexts, onlyMorePopular, num);
   }
 
   @Override
   public List<Lookup.LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-    // here we multiply the number of searched element by the defined factor
-    return super.lookup(key, contexts, num * numFactor, allTermsRequired, doHighlight);
+    // Don't * numFactor here since we do it down below, once, in the call chain:
+    return super.lookup(key, contexts, num, allTermsRequired, doHighlight);
   }
 
   @Override
   public List<Lookup.LookupResult> lookup(CharSequence key, Map<BytesRef, BooleanClause.Occur> contextInfo, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-    // here we multiply the number of searched element by the defined factor
-    return super.lookup(key, contextInfo, num * numFactor, allTermsRequired, doHighlight);
+    // Don't * numFactor here since we do it down below, once, in the call chain:
+    return super.lookup(key, contextInfo, num, allTermsRequired, doHighlight);
   }
 
   @Override
   public List<Lookup.LookupResult> lookup(CharSequence key, BooleanQuery contextQuery, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-    // here we multiply the number of searched element by the defined factor
+    /** We need to do num * numFactor here only because it is the last call in the lookup chain*/
     return super.lookup(key, contextQuery, num * numFactor, allTermsRequired, doHighlight);
   }
   

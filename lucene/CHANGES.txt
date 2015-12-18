@@ -159,6 +159,9 @@ Bug Fixes
 * LUCENE-6929: Fix SpanNotQuery rewriting to not drop the pre/post parameters.
   (Tim Allison via Adrien Grand)
 
+* SOLR-7865: BlendedInfixSuggester was returning too many results
+  (Arcadius Ahouansou via Mike McCandless)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
