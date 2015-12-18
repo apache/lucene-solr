@@ -65,6 +65,9 @@ Bug Fixes
   and then that replica is brought down, it will think it is up-to-date when
   restarted. (shalin, Mark Miller, yonik)
 
+* SOLR-8419: TermVectorComponent for distributed search when distrib.singlePass could include term
+  vectors for documents that matched the query yet weren't in the returned documents. (David Smiley)
+
 
 Other Changes
 ----------------------
@@ -138,6 +141,9 @@ Other Changes
 * SOLR-8414: AbstractDistribZkTestBase.verifyReplicaStatus could throw NPE (Christine Poerschke)
 
 * SOLR-8410: Add all read paths to 'read' permission in RuleBasedAuthorizationPlugin (noble)
+
+* SOLR-8419: TermVectorComponent for distributed search now requires a uniqueKey in the schema.  Also, it no longer
+  returns "uniqueKeyField" in the response. (David Smiley)
 
 ==================  5.4.0 ==================
 
