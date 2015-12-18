@@ -89,17 +89,17 @@ public class HdfsLockFactory extends LockFactory {
       }
     }
 
-    return new HdfsLock(fs, lockFile);
+    return new HdfsLock(conf, lockFile);
   }
   
   private static final class HdfsLock extends Lock {
-    
-    private final FileSystem fs;
+
+    private final Configuration conf;
     private final Path lockFile;
     private volatile boolean closed;
     
-    HdfsLock(FileSystem fs, Path lockFile) {
-      this.fs = fs;
+    HdfsLock(Configuration conf, Path lockFile) {
+      this.conf = conf;
       this.lockFile = lockFile;
     }
     
@@ -108,6 +108,7 @@ public class HdfsLockFactory extends LockFactory {
       if (closed) {
         return;
       }
+      final FileSystem fs = FileSystem.get(lockFile.toUri(), conf);
       try {
         if (fs.exists(lockFile) && !fs.delete(lockFile, false)) {
           throw new LockReleaseFailedException("failed to delete: " + lockFile);
