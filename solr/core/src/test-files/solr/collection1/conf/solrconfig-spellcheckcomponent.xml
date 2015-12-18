@@ -19,7 +19,20 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <indexConfig>
+    <mergePolicy class="${solr.tests.mergePolicy:org.apache.solr.util.RandomMergePolicy}" />  
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+    <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+    <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+    <mergeScheduler class="${solr.tests.mergeScheduler}" />
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+    <lockType>${solr.tests.lockType:single}</lockType>
+    <query>
+      <useColdSearcher>false</useColdSearcher>
+      <maxWarmingSearchers>1</maxWarmingSearchers>
+    </query>
+  </indexConfig>
   <requestHandler name="standard"
      class="solr.StandardRequestHandler"></requestHandler>
 
