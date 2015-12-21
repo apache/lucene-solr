@@ -45,9 +45,6 @@ import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -70,13 +67,13 @@ import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -85,8 +82,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
@@ -96,10 +93,15 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 
 /**
@@ -1274,5 +1276,17 @@ public final class TestUtil {
       }
     }
     return ram;
+  }
+
+  public static boolean hasVirusChecker(Directory dir) {
+    dir = FilterDirectory.unwrap(dir);
+    if (dir instanceof FSDirectory) {
+      Path path = ((FSDirectory) dir).getDirectory();
+      System.out.println("HERE: " + path.toString());
+      // nocommit doesn't work?
+      return path.getFileSystem().toString().contains("VirusCheckingFS");
+    } else {
+      return false;
+    }
   }
 }

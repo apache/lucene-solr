@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /** Tests that &gt; 64k affixes actually works and doesnt overflow some internal int */
 public class Test64kAffixes extends LuceneTestCase {
@@ -54,9 +55,7 @@ public class Test64kAffixes extends LuceneTestCase {
     dictWriter.close();
     
     try (InputStream affStream = Files.newInputStream(affix); InputStream dictStream = Files.newInputStream(dict); Directory tempDir2 = newDirectory()) {
-      if (tempDir2 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) tempDir2).setEnableVirusScanner(false);
-      }
+      assumeFalse("test does direct file deletion", TestUtil.hasVirusChecker(tempDir2);
       Dictionary dictionary = new Dictionary(tempDir2, "dictionary", affStream, dictStream);
       Stemmer stemmer = new Stemmer(dictionary);
       // drinks should still stem to drink

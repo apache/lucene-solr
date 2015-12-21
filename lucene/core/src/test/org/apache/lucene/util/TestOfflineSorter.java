@@ -30,6 +30,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.OfflineSorter.BufferSize;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
@@ -37,6 +38,7 @@ import org.apache.lucene.util.OfflineSorter.SortInfo;
 /**
  * Tests for on-disk merge sorting.
  */
+@SuppressFileSystems("VirusCheckingFS")
 public class TestOfflineSorter extends LuceneTestCase {
   private Path tempDir;
 
@@ -54,30 +56,14 @@ public class TestOfflineSorter extends LuceneTestCase {
     super.tearDown();
   }
 
-  private static Directory newDirectoryNoVirusScanner() {
-    Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
-  private static Directory newFSDirectoryNoVirusScanner() {
-    Directory dir = newFSDirectory(createTempDir());
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
   public void testEmpty() throws Exception {
-    try (Directory dir = newDirectoryNoVirusScanner()) {
+    try (Directory dir = newDirectory()) {
         checkSort(dir, new OfflineSorter(dir, "foo"), new byte [][] {});
     }
   }
 
   public void testSingleLine() throws Exception {
-    try (Directory dir = newDirectoryNoVirusScanner()) {
+    try (Directory dir = newDirectory()) {
       checkSort(dir, new OfflineSorter(dir, "foo"), new byte [][] {
           "Single line only.".getBytes(StandardCharsets.UTF_8)
         });
@@ -86,7 +72,7 @@ public class TestOfflineSorter extends LuceneTestCase {
 
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
-    try (Directory dir = newDirectoryNoVirusScanner()) {
+    try (Directory dir = newDirectory()) {
       SortInfo info = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 2), 
           generateRandom((int)OfflineSorter.MB * 20));
       assertTrue(info.mergeRounds > 10);
@@ -95,7 +81,7 @@ public class TestOfflineSorter extends LuceneTestCase {
 
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
-    try (Directory dir = newDirectoryNoVirusScanner()) {
+    try (Directory dir = newDirectory()) {
       SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES),
                                     generateRandom((int)OfflineSorter.MB * 20));
       assertEquals(1, sortInfo.mergeRounds);
@@ -105,7 +91,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   @Nightly
   public void testLargerRandom() throws Exception {
     // Sort 100MB worth of data with 15mb buffer.
-    try (Directory dir = newFSDirectoryNoVirusScanner()) {
+    try (Directory dir = newFSDirectory(createTempDir())) {
       checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(16), OfflineSorter.MAX_TEMPFILES), 
                 generateRandom((int)OfflineSorter.MB * 100));
     }
@@ -223,7 +209,7 @@ public class TestOfflineSorter extends LuceneTestCase {
     Thread[] threads = new Thread[TestUtil.nextInt(random(), 4, 10)];
     final AtomicBoolean failed = new AtomicBoolean();
     final int iters = atLeast(1000);
-    try (Directory dir = newDirectoryNoVirusScanner()) {
+    try (Directory dir = newDirectory()) {
       for(int i=0;i<threads.length;i++) {
         final int threadID = i;
         threads[i] = new Thread() {

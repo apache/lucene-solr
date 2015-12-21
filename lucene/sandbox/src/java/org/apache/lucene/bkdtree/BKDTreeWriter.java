@@ -19,6 +19,7 @@ package org.apache.lucene.bkdtree;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -32,8 +33,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.LongBitSet;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
+import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO
@@ -343,7 +344,7 @@ class BKDTreeWriter {
         return writer;
       } finally {
         if (success) {
-          tempDir.deleteFile(sortedFileName);
+          tempDir.deleteFiles(Collections.singleton(sortedFileName));
         } else {
           IOUtils.deleteFilesIgnoringExceptions(tempDir, sortedFileName);
         }
@@ -415,7 +416,7 @@ class BKDTreeWriter {
         latSortedWriter.destroy();
         lonSortedWriter.destroy();
         if (tempInput != null) {
-          tempDir.deleteFile(tempInput.getName());
+          tempDir.deleteFiles(Collections.singleton(tempInput.getName()));
         }
       } else {
         try {

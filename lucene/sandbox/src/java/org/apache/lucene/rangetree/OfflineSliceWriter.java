@@ -65,7 +65,7 @@ final class OfflineSliceWriter implements SliceWriter {
 
   @Override
   public void destroy() throws IOException {
-    tempDir.deleteFile(tempFile.getName());
+    tempDir.deleteFiles(Collections.singleton(tempFile.getName()));
   }
 
   @Override

@@ -1183,7 +1183,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       in.close();
     }
     Set<String> files = new HashSet<String>(Arrays.asList(dir.listAll()));
-    // In case ExtraFS struck:
+    // In case ExtrasFS struck:
     files.remove("extra0");
     assertEquals(new HashSet<String>(names), files);
     dir.close();

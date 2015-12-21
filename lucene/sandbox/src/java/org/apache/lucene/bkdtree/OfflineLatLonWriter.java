@@ -18,6 +18,7 @@ package org.apache.lucene.bkdtree;
  */
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
@@ -66,7 +67,7 @@ final class OfflineLatLonWriter implements LatLonWriter {
 
   @Override
   public void destroy() throws IOException {
-    tempDir.deleteFile(out.getName());
+    tempDir.deleteFiles(Collections.singleton(out.getName()));
   }
 
   @Override

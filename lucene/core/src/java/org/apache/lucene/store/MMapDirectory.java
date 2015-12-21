@@ -234,6 +234,7 @@ public class MMapDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
+    ensureCanRead(name);
     Path path = directory.resolve(name);
     try (FileChannel c = FileChannel.open(path, StandardOpenOption.READ)) {
       final String resourceDescription = "MMapIndexInput(path=\"" + path.toString() + "\")";

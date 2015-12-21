@@ -39,10 +39,7 @@ public class TestRollingUpdates extends LuceneTestCase {
   public void testRollingUpdates() throws Exception {
     Random random = new Random(random().nextLong());
     final BaseDirectoryWrapper dir = newDirectory();
-    // test checks for no unref'ed files with the IW helper method, which isn't aware of "tried to delete files"
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
+    assumeFalse("test checks for no unref'ed files with the IW helper method, which isn't aware of 'tried to delete files'", TestUtil.hasVirusChecker(dir));
     
     final LineFileDocs docs = new LineFileDocs(random, true);
 

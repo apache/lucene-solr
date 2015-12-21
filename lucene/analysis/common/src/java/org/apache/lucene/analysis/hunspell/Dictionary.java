@@ -877,7 +877,7 @@ public class Dictionary {
       success = true;
     } finally {
       if (success) {
-        tempDir.deleteFile(unsorted.getName());
+        tempDir.deleteFiles(Collections.singleton(unsorted.getName()));
       } else {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, unsorted.getName());
       }
@@ -966,7 +966,7 @@ public class Dictionary {
       success2 = true;
     } finally {
       if (success2) {
-        tempDir.deleteFile(sorted);
+        tempDir.deleteFiles(Collections.singleton(sorted));
       } else {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, sorted);
       }

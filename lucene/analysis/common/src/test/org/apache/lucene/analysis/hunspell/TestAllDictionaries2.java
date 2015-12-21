@@ -189,9 +189,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
         try (InputStream dictionary = Files.newInputStream(dicEntry);
              InputStream affix = Files.newInputStream(affEntry);
              Directory tempDir = newDirectory()) {
-          if (tempDir instanceof MockDirectoryWrapper) {
-            ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
-          }
+          assumeFalse("test does direct file deletion", TestUtil.hasVirusChecker(tempDir);
           Dictionary dic = new Dictionary(tempDir, "dictionary", affix, dictionary);
           System.out.println(tests[i] + "\t" + RamUsageTester.humanSizeOf(dic) + "\t(" +
                              "words=" + RamUsageTester.humanSizeOf(dic.words) + ", " +
@@ -226,9 +224,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
           try (InputStream dictionary = Files.newInputStream(dicEntry);
                InputStream affix = Files.newInputStream(affEntry);
                Directory tempDir = newDirectory()) {
-            if (tempDir instanceof MockDirectoryWrapper) {
-              ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
-            }
+            assumeFalse("test does direct file deletion", TestUtil.hasVirusChecker(tempDir);
             new Dictionary(tempDir, "dictionary", affix, dictionary);
           } 
         }

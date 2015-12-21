@@ -216,9 +216,7 @@ public class TestAllDictionaries extends LuceneTestCase {
 
   private Directory getDirectory() {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
+    assumeFalse("test does direct file deletion", TestUtil.hasVirusChecker(dir);
     return dir;
   }
 }

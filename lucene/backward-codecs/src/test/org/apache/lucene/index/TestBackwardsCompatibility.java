@@ -1232,12 +1232,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("testUpgradeOldSingleSegmentIndexWithAdditions: index=" +name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
-      if (dir instanceof MockDirectoryWrapper) {
-        // we need to ensure we delete old commits for this test,
-        // otherwise IndexUpgrader gets angry
-        ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-      }
-
+      assumeFalse("we need to ensure we delete old commits for this test, otherwise IndexUpgrader gets angry", TestUtil.hasVirusChecker(dir);
       assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
 
       // create a bunch of dummy segments

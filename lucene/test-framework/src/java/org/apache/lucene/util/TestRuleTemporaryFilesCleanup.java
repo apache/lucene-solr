@@ -39,6 +39,7 @@ import org.apache.lucene.mockfile.HandleLimitFS;
 import org.apache.lucene.mockfile.LeakFS;
 import org.apache.lucene.mockfile.ShuffleFS;
 import org.apache.lucene.mockfile.VerboseFS;
+import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressFsync;
@@ -173,6 +174,11 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       }
       if (allowed(avoid, ExtrasFS.class)) {
         fs = new ExtrasFS(fs, random.nextInt(4) == 0, random.nextBoolean()).getFileSystem(null);
+      }
+      // nocommit
+      if (false && allowed(avoid, VirusCheckingFS.class) && (true || random.nextInt(10) == 1)) {
+        // 10% of the time we swap in virus checking (acts-like-windows) FS:
+        fs = new VirusCheckingFS(fs, random).getFileSystem(null);
       }
     }
     if (LuceneTestCase.VERBOSE) {

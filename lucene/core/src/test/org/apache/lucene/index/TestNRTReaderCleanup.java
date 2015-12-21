@@ -28,6 +28,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /** LUCENE-5574 */
 @SuppressFileSystems("WindowsFS") // the bug doesn't happen on windows.
@@ -41,11 +42,7 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
 
     MockDirectoryWrapper dir = newMockDirectory();
     
-    // don't act like windows either, or the test won't simulate the condition
-    dir.setEnableVirusScanner(false);
-
-    // Allow deletion of still open files:
-    dir.setNoDeleteOpenFile(false);
+    assumeFalse("don't act like windows either, or the test won't simulate the condition", TestUtil.hasVirusChecker(dir));
 
     // Allow writing to same file more than once:
     dir.setPreventDoubleWrite(false);

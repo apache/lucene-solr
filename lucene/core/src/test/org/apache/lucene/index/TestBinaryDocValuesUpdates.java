@@ -1094,10 +1094,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
   public void testDeleteUnusedUpdatesFiles() throws Exception {
     Directory dir = newDirectory();
-    // test explicitly needs files to always be actually deleted
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
+    // nocommit try removing these ... often the test will be OK since Directory now "pretends" file was actually deleted
+    assumeFalse("test requires files are actually deleted", TestUtil.hasVirusChecker(dir));
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     

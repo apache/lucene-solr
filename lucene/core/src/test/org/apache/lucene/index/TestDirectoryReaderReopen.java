@@ -46,8 +46,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-
-
 public class TestDirectoryReaderReopen extends LuceneTestCase {
   
   public void testReopen() throws Exception {
@@ -626,10 +624,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
   public void testOverDecRefDuringReopen() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // ensure we produce enough of our exceptions
-      dir.setEnableVirusScanner(false);
-    }
+    assumeFalse("ensure we produce enough of our exceptions", TestUtil.hasVirusChecker(dir));
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.getDefaultCodec());

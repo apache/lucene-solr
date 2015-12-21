@@ -48,6 +48,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 /** JUnit adaptation of an older test case DocTest. */
@@ -120,8 +121,7 @@ public class TestDoc extends LuceneTestCase {
       // We create unreferenced files (we don't even write
       // a segments file):
       ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-      // this test itself deletes files (has no retry mechanism)
-      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
+      assumeFalse("this test itself deletes files (has no retry mechanism)", TestUtil.hasVirusChecker(directory));
     }
 
     IndexWriter writer = new IndexWriter(
@@ -164,8 +164,7 @@ public class TestDoc extends LuceneTestCase {
       // We create unreferenced files (we don't even write
       // a segments file):
       ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-      // this test itself deletes files (has no retry mechanism)
-      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
+      assumeFalse("this test itself deletes files (has no retry mechanism)", TestUtil.hasVirusChecker(directory));
     }
 
     writer = new IndexWriter(

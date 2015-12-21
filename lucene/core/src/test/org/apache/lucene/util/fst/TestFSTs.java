@@ -66,10 +66,11 @@ import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
@@ -83,6 +84,7 @@ import static org.apache.lucene.util.fst.FSTTester.simpleRandomString;
 import static org.apache.lucene.util.fst.FSTTester.toIntsRef;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressFileSystems({ "VirusCheckingFS" })
 @Slow
 public class TestFSTs extends LuceneTestCase {
 
@@ -93,7 +95,6 @@ public class TestFSTs extends LuceneTestCase {
     super.setUp();
     dir = newMockDirectory();
     dir.setPreventDoubleWrite(false);
-    dir.setEnableVirusScanner(false);
   }
 
   @Override
