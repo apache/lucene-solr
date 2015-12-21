@@ -192,6 +192,21 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     return clauses;
   }
 
+  /** Return the collection of queries for the given {@link Occur}. */
+  Collection<Query> getClauses(Occur occur) {
+    if (mutable) {
+      List<Query> queries = new ArrayList<>();
+      for (BooleanClause clause : clauses) {
+        if (clause.getOccur() == occur) {
+          queries.add(clause.getQuery());
+        }
+      }
+      return Collections.unmodifiableList(queries);
+    } else {
+      return clauseSets.get(occur);
+    }
+  }
+
   /** Returns an iterator on the clauses in this query. It implements the {@link Iterable} interface to
    * make it possible to do:
    * <pre class="prettyprint">for (BooleanClause clause : booleanQuery) {}</pre>
