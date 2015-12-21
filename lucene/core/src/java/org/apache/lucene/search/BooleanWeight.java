@@ -191,25 +191,27 @@ final class BooleanWeight extends Weight {
    *  cannot be used. */
   // pkg-private for forcing use of BooleanScorer in tests
   BulkScorer booleanScorer(LeafReaderContext context) throws IOException {
+    if (query.getClauses(Occur.MUST).isEmpty() == false
+        || query.getClauses(Occur.FILTER).isEmpty() == false) {
+      // TODO: there are some cases where BooleanScorer
+      // would handle conjunctions faster than
+      // BooleanScorer2...
+      return null;
+    } else if (query.getClauses(Occur.MUST_NOT).isEmpty() == false) {
+      // TODO: there are some cases where BooleanScorer could do this faster
+      return null;
+    }
+
     List<BulkScorer> optional = new ArrayList<BulkScorer>();
     Iterator<BooleanClause> cIter = query.iterator();
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
+      if (c.getOccur() != Occur.SHOULD) {
+        throw new AssertionError();
+      }
       BulkScorer subScorer = w.bulkScorer(context);
-      
-      if (subScorer == null) {
-        if (c.isRequired()) {
-          return null;
-        }
-      } else if (c.isRequired()) {
-        // TODO: there are some cases where BooleanScorer
-        // would handle conjunctions faster than
-        // BooleanScorer2...
-        return null;
-      } else if (c.isProhibited()) {
-        // TODO: there are some cases where BooleanScorer could do this faster
-        return null;
-      } else {
+
+      if (subScorer != null) {
         optional.add(subScorer);
       }
     }

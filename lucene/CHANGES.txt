@@ -146,6 +146,9 @@ Optimizations
 * LUCENE-6926: MUST_NOT clauses now use the match cost API to run the slow bits
   last whenever possible. (Adrien Grand)
 
+* LUCENE-6944: BooleanWeight no longer creates sub-scorers if BS1 is not
+  applicable. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least
