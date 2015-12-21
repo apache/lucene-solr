@@ -18,14 +18,11 @@ package org.apache.solr.security;
  */
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.ImmutableMap;
-import jdk.nashorn.internal.ir.annotations.Immutable;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
