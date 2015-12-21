@@ -273,7 +273,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       SolrRequestInfo.clearRequestInfo();
     }
 
-    assertEquals(6, ((ResultContext) response.getValues().get("response")).getDocList().matches());
+    assertEquals(6, ((ResultContext) response.getResponse()).getDocList().matches());
     new BinaryResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
     out.close();
   }

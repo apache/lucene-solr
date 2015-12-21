@@ -345,7 +345,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-      DocList dl = ((ResultContext) rsp.getValues().get("response")).getDocList();
+      DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
       assertTrue("can't find the doc we just added", 1 == dl.size());
       int docid = dl.iterator().nextDoc();
 

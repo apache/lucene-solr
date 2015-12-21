@@ -104,9 +104,9 @@ public class XMLWriter extends TextResponseWriter {
     writer.write(XML_START2_NOSCHEMA);
 
     // dump response values
-    NamedList<?> lst = rsp.getValues();
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
-    if(omitHeader != null && omitHeader) lst.remove("responseHeader");
+    if(omitHeader != null && omitHeader) rsp.removeResponseHeader();
+    final NamedList<?> lst = rsp.getValues();
     int sz = lst.size();
     int start=0;
 

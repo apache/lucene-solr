@@ -368,7 +368,7 @@ Other Changes
 * SOLR-8419: TermVectorComponent for distributed search now requires a uniqueKey in the schema.  Also, it no longer
   returns "uniqueKeyField" in the response. (David Smiley)
 
-* SOLR-8317: add responseHeader and response accessors to SolrQueryResponse. (Christine Poerschke)
+* SOLR-8317: add & use responseHeader and response accessors to SolrQueryResponse. (Christine Poerschke)
 
 ==================  5.4.0 ==================
 

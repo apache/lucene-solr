@@ -52,7 +52,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     SolrRequestHandler handler = core.getRequestHandler("standard");
     SolrQueryResponse rsp;
     rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap<>());
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     NamedList<?> values = rsp.getValues();
@@ -70,7 +70,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     handler = core.getRequestHandler("docClustering");
 
     rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap<>());
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
     req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     values = rsp.getValues();

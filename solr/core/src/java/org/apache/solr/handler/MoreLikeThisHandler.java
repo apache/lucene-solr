@@ -212,7 +212,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         if (mltDocs == null) {
           mltDocs = new DocListAndSet(); // avoid NPE
         }
-        rsp.add("response", mltDocs.docList);
+        rsp.addResponse(mltDocs.docList);
 
 
         if (interesting != null) {

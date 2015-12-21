@@ -112,7 +112,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     {
       SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
       SolrQueryResponse rsp = new SolrQueryResponse();
-      rsp.add("responseHeader", new SimpleOrderedMap());
+      rsp.addResponseHeader(new SimpleOrderedMap());
       SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
       handler.handleRequest(req, rsp);
       req.close();
@@ -144,7 +144,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     {
       SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
       SolrQueryResponse rsp = new SolrQueryResponse();
-      rsp.add("responseHeader", new SimpleOrderedMap());
+      rsp.addResponseHeader(new SimpleOrderedMap());
       SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
       handler.handleRequest(req, rsp);
       req.close();
@@ -238,7 +238,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     //not want the collations to return us "lowerfilt:(+faith +hope +loaves)" as this only matches doc id#1.
     SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -273,7 +273,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     //because requrying against this Request Handler results in 0 hits.
     SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -288,7 +288,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     params.remove(SpellingParams.SPELLCHECK_BUILD);
     handler = core.getRequestHandler("spellCheckCompRH1");
     rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -320,7 +320,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     // return no results if tried.
     SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -337,7 +337,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     params.add(SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1");
     handler = core.getRequestHandler("spellCheckCompRH");
     rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -355,7 +355,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     params.add(SpellingParams.SPELLCHECK_MAX_COLLATIONS, "2");
     handler = core.getRequestHandler("spellCheckCompRH");
     rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -374,7 +374,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     params.add(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true");
     handler = core.getRequestHandler("spellCheckCompRH");
     rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -428,7 +428,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     //not want the collations to return us "lowerfilt:(+faith +hope +loaves)" as this only matches doc id#1.
     SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
@@ -585,7 +585,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     params.add(CommonParams.Q, "lowerfilt:(+fauth)");
     SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
+    rsp.addResponseHeader(new SimpleOrderedMap());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
