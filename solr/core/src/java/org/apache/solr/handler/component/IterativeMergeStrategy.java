@@ -27,6 +27,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -52,6 +53,8 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
+    HttpClientConfigurer configurer = HttpClientUtil.getConfigurer();
+    log.info("############### HttpClientConfigurer ##################:"+configurer.getClass());
     httpClient =  HttpClientUtil.createClient(params);
   }
 
