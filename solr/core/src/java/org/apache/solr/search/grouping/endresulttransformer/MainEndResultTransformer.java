@@ -57,7 +57,7 @@ public class MainEndResultTransformer implements EndResultTransformer {
       if (maxScore != Float.NEGATIVE_INFINITY) {
         docList.setMaxScore(maxScore);
       }
-      rb.rsp.add("response", docList);
+      rb.rsp.addResponse(docList);
     }
   }
 }

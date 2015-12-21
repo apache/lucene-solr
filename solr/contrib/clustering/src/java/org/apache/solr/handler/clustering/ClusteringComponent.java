@@ -273,7 +273,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       SearchClusteringEngine engine = searchClusteringEngines.get(name);
       if (engine != null) {
         checkAvailable(name, engine);
-        SolrDocumentList solrDocList = (SolrDocumentList) rb.rsp.getValues().get("response");
+        SolrDocumentList solrDocList = (SolrDocumentList) rb.rsp.getResponse();
         // TODO: Currently, docIds is set to null in distributed environment.
         // This causes CarrotParams.PRODUCE_SUMMARY doesn't work.
         // To work CarrotParams.PRODUCE_SUMMARY under distributed mode, we can choose either one of:

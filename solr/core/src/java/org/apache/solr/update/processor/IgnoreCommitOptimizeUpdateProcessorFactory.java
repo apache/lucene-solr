@@ -139,7 +139,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
           } else {
             responseHeader = new SimpleOrderedMap<Object>();
             responseHeader.add("msg", responseMsg);
-            rsp.add("responseHeader", responseHeader);
+            rsp.addResponseHeader(responseHeader);
           }
         }
       }

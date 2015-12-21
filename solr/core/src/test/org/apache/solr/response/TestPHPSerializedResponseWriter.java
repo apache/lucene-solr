@@ -96,7 +96,7 @@ public class TestPHPSerializedResponseWriter extends SolrTestCaseJ4 {
     SolrDocumentList sdl = new SolrDocumentList();
     sdl.add(d1);
     sdl.add(d2);
-    rsp.add("response", sdl); 
+    rsp.addResponse(sdl);
     
     w.write(buf, req, rsp);
     assertEquals("a:1:{s:8:\"response\";a:3:{s:8:\"numFound\";i:0;s:5:\"start\";i:0;s:4:\"docs\";a:2:{i:0;a:6:{s:2:\"id\";s:1:\"1\";s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;s:5:\"data4\";a:2:{s:7:\"data4.1\";s:7:\"hashmap\";s:7:\"data4.2\";s:5:\"hello\";}s:5:\"data5\";a:3:{i:0;s:7:\"data5.1\";i:1;s:7:\"data5.2\";i:2;s:7:\"data5.3\";}}i:1;a:1:{s:2:\"id\";s:1:\"2\";}}}}", 

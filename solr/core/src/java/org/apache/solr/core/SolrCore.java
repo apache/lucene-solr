@@ -2087,7 +2087,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public static void preDecorateResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header
     final NamedList<Object> responseHeader = new SimpleOrderedMap<>();
-    rsp.add("responseHeader", responseHeader);
+    rsp.addResponseHeader(responseHeader);
 
     // toLog is a local ref to the same NamedList used by the response
     NamedList<Object> toLog = rsp.getToLog();

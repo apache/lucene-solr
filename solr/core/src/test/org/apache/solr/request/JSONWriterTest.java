@@ -124,7 +124,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     list.setMaxScore(0.7f);
     list.add(solrDoc);
 
-    rsp.add("response", list);
+    rsp.addResponse(list);
 
     w.write(buf, req, rsp);
     String result = buf.toString();

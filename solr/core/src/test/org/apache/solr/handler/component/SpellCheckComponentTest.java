@@ -297,7 +297,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
         SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
         SolrQueryResponse rsp = new SolrQueryResponse();
-        rsp.add("responseHeader", new SimpleOrderedMap());
+        rsp.addResponseHeader(new SimpleOrderedMap());
         SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
         handler.handleRequest(req, rsp);
         req.close();
@@ -310,7 +310,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         params.remove(SpellingParams.SPELLCHECK_DICT);
         params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
         rsp = new SolrQueryResponse();
-        rsp.add("responseHeader", new SimpleOrderedMap());
+        rsp.addResponseHeader(new SimpleOrderedMap());
         req = new LocalSolrQueryRequest(core, params);
         handler.handleRequest(req, rsp);
         req.close();

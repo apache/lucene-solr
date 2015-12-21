@@ -219,7 +219,7 @@ public class RealTimeGetComponent extends SearchComponent
      rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
    } else {
      docList.setNumFound(docList.size());
-     rsp.add("response", docList);
+     rsp.addResponse(docList);
    }
 
   }
@@ -497,7 +497,7 @@ public class RealTimeGetComponent extends SearchComponent
       rb.rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
     } else {
       docList.setNumFound(docList.size());
-      rb.rsp.add("response", docList);
+      rb.rsp.addResponse(docList);
     }
   }
 

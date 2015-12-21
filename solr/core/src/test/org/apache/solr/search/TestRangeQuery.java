@@ -259,8 +259,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
         if (last != null) {
           // we only test if the same docs matched since some queries will include factors like idf, etc.
-          DocList rA = ((ResultContext)qr.getValues().get("response")).docs;
-          DocList rB = ((ResultContext)last.getValues().get("response")).docs;
+          DocList rA = ((ResultContext)qr.getResponse()).docs;
+          DocList rB = ((ResultContext)last.getResponse()).docs;
           sameDocs( rA, rB );
         }
         req.close();

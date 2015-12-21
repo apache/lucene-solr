@@ -143,7 +143,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     
     SolrQueryRequest req = req("q","*:*");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("response", sdl);
+    rsp.addResponse(sdl);
     QueryResponseWriter w = new CSVResponseWriter();
     
     rsp.setReturnFields( new SolrReturnFields("id,foo_s", req) );

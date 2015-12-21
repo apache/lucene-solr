@@ -70,7 +70,7 @@ public class ResponseLogComponent extends SearchComponent {
     IndexSchema schema = searcher.getSchema();
     if (schema.getUniqueKeyField() == null) return;
 
-    ResultContext rc = (ResultContext) rb.rsp.getValues().get("response");
+    ResultContext rc = (ResultContext) rb.rsp.getResponse();
     
     if (rc.docs.hasScores()) {
       processScores(rb, rc.docs, schema, searcher);

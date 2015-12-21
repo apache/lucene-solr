@@ -354,7 +354,7 @@ public class QueryComponent extends SearchComponent
       ResultContext ctx = new ResultContext();
       ctx.docs = rb.getResults().docList;
       ctx.query = null; // anything?
-      rsp.add("response", ctx);
+      rsp.addResponse(ctx);
       return;
     }
 
@@ -509,7 +509,7 @@ public class QueryComponent extends SearchComponent
           ResultContext ctx = new ResultContext();
           ctx.docs = grouping.mainResult;
           ctx.query = null; // TODO? add the query?
-          rsp.add("response", ctx);
+          rsp.addResponse(ctx);
           rsp.getToLog().add("hits", grouping.mainResult.matches());
         } else if (!grouping.getCommands().isEmpty()) { // Can never be empty since grouping.execute() checks for this.
           rsp.add("grouped", result.groupedResults);
@@ -528,7 +528,7 @@ public class QueryComponent extends SearchComponent
     ResultContext ctx = new ResultContext();
     ctx.docs = rb.getResults().docList;
     ctx.query = rb.getQuery();
-    rsp.add("response", ctx);
+    rsp.addResponse(ctx);
     rsp.getToLog().add("hits", rb.getResults().docList.matches());
 
     if ( ! rb.req.getParams().getBool(ShardParams.IS_SHARD,false) ) {
@@ -827,7 +827,7 @@ public class QueryComponent extends SearchComponent
       }
     }
 
-    rb.rsp.add("response", rb._responseDocs);
+    rb.rsp.addResponse(rb._responseDocs);
     if (null != rb.getNextCursorMark()) {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT,
                  rb.getNextCursorMark().getSerializedTotem());

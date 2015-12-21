@@ -290,11 +290,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
-        SolrDocumentList r = (SolrDocumentList) rb.rsp.getValues().get("response");
+        SolrDocumentList r = (SolrDocumentList) rb.rsp.getResponse();
         if(r == null)
           r = new SolrDocumentList();
         r.setNumFound(0);
-        rb.rsp.add("response", r);
+        rb.rsp.addResponse(r);
         if(rb.isDebug()) {
           NamedList debug = new NamedList();
           debug.add("explain", new NamedList());

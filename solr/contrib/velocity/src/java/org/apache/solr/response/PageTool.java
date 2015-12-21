@@ -43,7 +43,7 @@ public class PageTool {
       results_per_page = new Integer(rows);
     }
     //TODO: Handle group by results
-    Object docs = response.getValues().get("response");
+    Object docs = response.getResponse();
     if (docs != null) {
       if (docs instanceof DocSlice) {
         DocSlice doc_slice = (DocSlice) docs;
