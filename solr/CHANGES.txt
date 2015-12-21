@@ -289,6 +289,9 @@ Bug Fixes
 * SOLR-8422: When authentication enabled, requests fail if sent to a node that doesn't host
   the collection (noble)
 
+* SOLR-8059: &debug=results for distributed search when distrib.singlePass (sometimes activated
+  automatically) could result in an NPE. (David Smiley, Markus Jelsma)
+
 Other Changes
 ----------------------
 

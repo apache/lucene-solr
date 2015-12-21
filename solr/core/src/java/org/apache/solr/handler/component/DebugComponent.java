@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -230,13 +231,7 @@ public class DebugComponent extends SearchComponent
             hasGetDebugResponses = true;
             if (rb.isDebugResults()) {
               NamedList sexplain = (NamedList)sdebug.get("explain");
-              for (int i = 0; i < sexplain.size(); i++) {
-                String id = sexplain.getName(i);
-                // TODO: lookup won't work for non-string ids... String vs Float
-                ShardDoc sdoc = rb.resultIds.get(id);
-                int idx = sdoc.positionInResponse;
-                arr[idx] = new NamedList.NamedListEntry<>(id, sexplain.getVal(i));
-              }
+              SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
             }
           }
         }
@@ -295,7 +290,7 @@ public class DebugComponent extends SearchComponent
     return namedList;
   }
 
-  Object merge(Object source, Object dest, Set<String> exclude) {
+  protected Object merge(Object source, Object dest, Set<String> exclude) {
     if (source == null) return dest;
     if (dest == null) {
       if (source instanceof NamedList) {
@@ -306,6 +301,10 @@ public class DebugComponent extends SearchComponent
     } else {
 
       if (dest instanceof Collection) {
+        // merge as Set
+        if (!(dest instanceof Set)) {
+          dest = new LinkedHashSet<>((Collection<?>) dest);
+        }
         if (source instanceof Collection) {
           ((Collection)dest).addAll((Collection)source);
         } else {
@@ -337,7 +336,7 @@ public class DebugComponent extends SearchComponent
       NamedList<Object> dl = (NamedList<Object>)dest;
       for (int i=0; i<sl.size(); i++) {
         String skey = sl.getName(i);
-        if (exclude != null && exclude.contains(skey)) continue;
+        if (exclude.contains(skey)) continue;
         Object sval = sl.getVal(i);
         int didx = -1;
 
@@ -354,9 +353,9 @@ public class DebugComponent extends SearchComponent
         }
 
         if (didx == -1) {
-          tmp.add(skey, merge(sval, null, null));
+          tmp.add(skey, merge(sval, null, Collections.emptySet()));
         } else {
-          dl.setVal(didx, merge(sval, dl.getVal(didx), null));
+          dl.setVal(didx, merge(sval, dl.getVal(didx), Collections.emptySet()));
         }
       }
       dl.addAll(tmp);

@@ -457,14 +457,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           }
 
           // UniqueKey data
-          for (int i=0; i < nl.size(); i++) {
-            String key = nl.getName(i);
-            ShardDoc sdoc = rb.resultIds.get(key);
-            if (sdoc != null) {// can be null when rb.onePassDistributedQuery
-              int idx = sdoc.positionInResponse;
-              arr[idx] = new NamedList.NamedListEntry<>(key, nl.getVal(i));
-            }
-          }
+          SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(nl, rb.resultIds, arr);
         }
       }
       // remove nulls in case not all docs were able to be retrieved

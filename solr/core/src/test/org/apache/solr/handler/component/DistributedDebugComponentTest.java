@@ -346,11 +346,17 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   public void testCompareWithNonDistributedRequest() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
-    query.setQuery("id:1");
-    query.setFilterQueries("id:[0 TO 10]");
+    query.setQuery("id:1 OR id:2");
+    query.setFilterQueries("id:[0 TO 10]", "id:[0 TO 5]");
+    query.setRows(1);
+    query.setSort("id", SolrQuery.ORDER.asc); // thus only return id:1 since rows 1
     query.set("debug",  "true");
     query.set("distrib", "true");
-    query.setFields("id", "text");
+    query.setFields("id");
+    if (random().nextBoolean()) { // can affect rb.onePassDistributedQuery
+      query.addField("text");
+    }
+    query.set(ShardParams.DISTRIB_SINGLE_PASS, random().nextBoolean());
     query.set("shards", shard1 + "," + shard2);
     QueryResponse distribResponse = collection1.query(query);
     

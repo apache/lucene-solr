@@ -175,7 +175,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   public void finishStage(ResponseBuilder rb) {
     if (rb.doHighlights && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
 
-      Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
+      NamedList.NamedListEntry[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
 
       // TODO: make a generic routine to do automatic merging of id keyed data
       for (ShardRequest sreq : rb.finished) {
@@ -187,21 +187,12 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
             continue;
           }
           NamedList hl = (NamedList)srsp.getSolrResponse().getResponse().get("highlighting");
-          for (int i=0; i<hl.size(); i++) {
-            String id = hl.getName(i);
-            ShardDoc sdoc = rb.resultIds.get(id);
-            // sdoc maybe null
-            if (sdoc == null) {
-                continue;
-            }
-            int idx = sdoc.positionInResponse;
-            arr[idx] = new NamedList.NamedListEntry<>(id, hl.getVal(i));
-          }
+          SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(hl, rb.resultIds, arr);
         }
       }
 
       // remove nulls in case not all docs were able to be retrieved
-      rb.rsp.add("highlighting", SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<Object>()));      
+      rb.rsp.add("highlighting", SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<>()));
     }
   }
 
