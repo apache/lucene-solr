@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.ImmutableMap;
+import jdk.nashorn.internal.ir.annotations.Immutable;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
@@ -159,15 +161,40 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "userPrincipal", "joe")
         , FORBIDDEN);
 
+
+    Map rules = (Map) Utils.fromJSONString(permissions);
+    ((Map)rules.get("user-role")).put("cio","su");
+    ((List)rules.get("permissions")).add( makeMap("name", "all", "role", "su"));
+
+    checkRules(makeMap("resource", "/replication",
+        "httpMethod", "POST",
+        "userPrincipal", "tim",
+        "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
+        , FORBIDDEN, rules);
+
+    checkRules(makeMap("resource", "/replication",
+        "httpMethod", "POST",
+        "userPrincipal", "cio",
+        "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
+        , STATUS_OK, rules);
+
+    checkRules(makeMap("resource", "/admin/collections",
+        "userPrincipal", "tim",
+        "requestType", AuthorizationContext.RequestType.ADMIN,
+        "collectionRequests", null,
+        "params", new MapSolrParams(singletonMap("action", "CREATE")))
+        , STATUS_OK, rules);
+
   }
 
-
-
   private void checkRules(Map<String, Object> values, int expected) {
+    checkRules(values,expected,(Map) Utils.fromJSONString(permissions));
+  }
 
+  private void checkRules(Map<String, Object> values, int expected, Map<String ,Object> permissions) {
     AuthorizationContext context = new MockAuthorizationContext(values);
     RuleBasedAuthorizationPlugin plugin = new RuleBasedAuthorizationPlugin();
-    plugin.init((Map) Utils.fromJSONString(permissions));
+    plugin.init(permissions);
     AuthorizationResponse authResp = plugin.authorize(context);
     assertEquals(expected, authResp.statusCode);
   }

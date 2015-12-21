@@ -238,6 +238,8 @@ New Features
 * SOLR-8230: JSON Facet API: add "facet-info" into debug section of response when debugQuery=true
   (Michael Sun, yonik)
 
+* SOLR-8428: RuleBasedAuthorizationPlugin adds an 'all' permission (noble)
+
 
 Bug Fixes
 ----------------------

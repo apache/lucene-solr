@@ -90,7 +90,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   public AuthorizationResponse authorize(AuthorizationContext context) {
     List<AuthorizationContext.CollectionRequest> collectionRequests = context.getCollectionRequests();
     if (context.getRequestType() == AuthorizationContext.RequestType.ADMIN) {
-      MatchStatus flag = checkCollPerm(mapping.get(""), context);
+      MatchStatus flag = checkCollPerm(mapping.get(null), context);
       return flag.rsp;
     }
 
@@ -99,8 +99,8 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
       MatchStatus flag = checkCollPerm(mapping.get(collreq.collectionName), context);
       if (flag != MatchStatus.NO_PERMISSIONS_FOUND) return flag.rsp;
     }
-    //check global permissions.
-    MatchStatus flag = checkCollPerm(mapping.get(null), context);
+    //check wildcard (all=*) permissions.
+    MatchStatus flag = checkCollPerm(mapping.get("*"), context);
     return flag.rsp;
   }
 
@@ -212,7 +212,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
       if("collection".equals(key)){
         //for collection collection: null means a core admin/ collection admin request
         // otherwise it means a request where collection name is ignored
-        return m.containsKey(key) ?  singleton("") : singleton(null);
+        return m.containsKey(key) ? singleton(null) : singleton("*");
       }
       return null;
     }
@@ -469,7 +469,9 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
           "      path:['/select', '/get','/browse','/tvrh','/terms','/clustering','/elevate', '/export','/spell','/clustering']}," +
           "    config-edit:{" +
           "      method:POST," +
-          "      path:'/config/*'}}");
+              "      path:'/config/*'}," +
+              "    all:{collection:['*', null]}" +
+              "}");
 
   static {
     ((Map) well_known_permissions.get("collection-admin-edit")).put(Predicate.class.getName(), getCollectionActionPredicate(true));
