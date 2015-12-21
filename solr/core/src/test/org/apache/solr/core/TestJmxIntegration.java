@@ -22,6 +22,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -30,6 +32,7 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.Hashtable;
 import java.util.Map;
@@ -42,6 +45,8 @@ import java.util.Set;
  * @since solr 1.3
  */
 public class TestJmxIntegration extends AbstractSolrTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static MBeanServer mbeanServer = null;
 

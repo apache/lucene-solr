@@ -25,13 +25,10 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 public class InfoHandler extends RequestHandlerBase {
-  protected static Logger log = LoggerFactory.getLogger(InfoHandler.class);
   protected final CoreContainer coreContainer;
   
   private ThreadDumpHandler threadDumpHandler = new ThreadDumpHandler();

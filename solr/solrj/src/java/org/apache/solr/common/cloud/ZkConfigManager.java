@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,7 +37,7 @@ import java.util.Set;
  */
 public class ZkConfigManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(ZkConfigManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";

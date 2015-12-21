@@ -136,7 +136,7 @@ public class TermQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context);
       if (scorer != null) {
-        int newDoc = scorer.advance(doc);
+        int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
           SimScorer docScorer = similarity.simScorer(stats, context);

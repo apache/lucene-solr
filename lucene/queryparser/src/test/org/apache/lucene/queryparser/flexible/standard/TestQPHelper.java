@@ -538,7 +538,18 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("!term", null, "-term");
     assertQueryEquals("NOT term", null, "-term");
   }
-
+  
+  public void testNegationInParentheses() throws Exception {
+   assertQueryEquals("(-a)", null, "-a");
+   assertQueryEquals("(!a)", null, "-a");
+   assertQueryEquals("(NOT a)", null, "-a");
+   assertQueryEquals("a (!b)", null, "a (-b)");
+   assertQueryEquals("+a +(!b)", null, "+a +(-b)");
+   assertQueryEquals("a AND (!b)", null, "+a +(-b)");
+   assertQueryEquals("a (NOT b)", null, "a (-b)");
+   assertQueryEquals("a AND (NOT b)", null, "+a +(-b)");
+  }
+  
   public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "(term*)^2.0");

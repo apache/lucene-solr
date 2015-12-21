@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Currency;
 import java.util.HashMap;
@@ -82,7 +83,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   private String exchangeRateProviderClass;
   private String defaultCurrency;
   private ExchangeRateProvider provider;
-  public static Logger log = LoggerFactory.getLogger(CurrencyField.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * A wrapper arround <code>Currency.getInstance</code> that returns null
@@ -274,7 +275,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    */
   public RawCurrencyValueSource getValueSource(SchemaField field, 
                                                QParser parser) {
-    field.checkFieldCacheSource(parser);
+    field.checkFieldCacheSource();
     return new RawCurrencyValueSource(field, defaultCurrency, parser);
   }
 
@@ -670,7 +671,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
  * Configuration for currency. Provides currency exchange rates.
  */
 class FileExchangeRateProvider implements ExchangeRateProvider {
-  public static Logger log = LoggerFactory.getLogger(FileExchangeRateProvider.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final String PARAM_CURRENCY_CONFIG       = "currencyConfig";
 
   // Exchange rate map, maps Currency Code -> Currency Code -> Rate

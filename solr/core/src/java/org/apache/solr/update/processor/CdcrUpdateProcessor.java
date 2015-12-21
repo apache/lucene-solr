@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -26,6 +27,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -37,6 +40,8 @@ import org.apache.solr.update.UpdateCommand;
 public class CdcrUpdateProcessor extends DistributedUpdateProcessor {
 
   public static final String CDCR_UPDATE = "cdcr.update";
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public CdcrUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);

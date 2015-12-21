@@ -28,4 +28,6 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
 </config>

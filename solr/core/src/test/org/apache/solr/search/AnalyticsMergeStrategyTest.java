@@ -17,7 +17,9 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -29,7 +31,10 @@ import org.junit.Test;
  *
  * @see org.apache.solr.handler.component.QueryComponent
  */
+
+@SolrTestCaseJ4.SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-8433")
 public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
+
 
   public AnalyticsMergeStrategyTest() {
     stress = 0;
@@ -59,6 +64,12 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
 
     commit();
 
+    /*
+    *  The count qparser plugin is pointing to the TestAnalyticsQParserPlugin. This class defines a simple AnalyticsQuery and
+    *  has two merge strategies. If the iterate local param is true then an InterativeMergeStrategy is used.
+    */
+
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!count}");
@@ -66,12 +77,29 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     QueryResponse rsp = queryServer(params);
     assertCount(rsp, 11);
 
+    //Test IterativeMergeStrategy
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!count iterate=true}");
+    setDistributedParams(params);
+    rsp = queryServer(params);
+    assertCountOnly(rsp, 44);
+
     params = new ModifiableSolrParams();
     params.add("q", "id:(1 2 5 6)");
     params.add("fq", "{!count}");
     setDistributedParams(params);
     rsp = queryServer(params);
     assertCount(rsp, 4);
+  }
+
+  private void assertCountOnly(QueryResponse rsp, int count) throws Exception {
+    NamedList response = rsp.getResponse();
+    NamedList analytics = (NamedList)response.get("analytics");
+    Integer c = (Integer)analytics.get("mycount");
+    if(c.intValue() != count) {
+      throw new Exception("Count is not correct:"+count+":"+c.intValue());
+    }
   }
 
   private void assertCount(QueryResponse rsp, int count) throws Exception {

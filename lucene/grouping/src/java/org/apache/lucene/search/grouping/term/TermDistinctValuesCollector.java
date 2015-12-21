@@ -141,8 +141,4 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     }
   }
 
-  @Override
-  public boolean needsScores() {
-    return true; // TODO, maybe we don't?
-  }
 }

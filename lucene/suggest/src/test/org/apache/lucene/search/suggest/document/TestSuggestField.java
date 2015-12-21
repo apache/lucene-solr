@@ -17,6 +17,7 @@ package org.apache.lucene.search.suggest.document;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,12 +30,14 @@ import java.util.concurrent.CyclicBarrier;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene53.Lucene53Codec;
+import org.apache.lucene.codecs.lucene60.Lucene60Codec;
+import org.apache.lucene.document.DimensionalIntField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -42,12 +45,14 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.suggest.BitsProducer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -56,6 +61,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.lucene.analysis.BaseTokenStreamTestCase.assertTokenStreamContents;
 import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
 import static org.hamcrest.core.IsEqual.equalTo;
 
@@ -133,6 +139,27 @@ public class TestSuggestField extends LuceneTestCase {
     assertThat(lookupDocs.totalHits, equalTo(0));
     reader.close();
     iw.close();
+  }
+
+  @Test
+  public void testTokenStream() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    SuggestField suggestField = new SuggestField("field", "input", 1);
+    BytesRef surfaceForm = new BytesRef("input");
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    try (OutputStreamDataOutput output = new OutputStreamDataOutput(byteArrayOutputStream)) {
+      output.writeVInt(surfaceForm.length);
+      output.writeBytes(surfaceForm.bytes, surfaceForm.offset, surfaceForm.length);
+      output.writeVInt(1 + 1);
+      output.writeByte(SuggestField.TYPE);
+    }
+    BytesRef payload = new BytesRef(byteArrayOutputStream.toByteArray());
+    TokenStream stream = new CompletionTokenStreamTest.PayloadAttrToTypeAttrFilter(suggestField.tokenStream(analyzer, null));
+    assertTokenStreamContents(stream, new String[] {"input"}, null, null, new String[]{payload.utf8ToString()}, new int[]{1}, null, null);
+
+    CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(analyzer);
+    stream = new CompletionTokenStreamTest.PayloadAttrToTypeAttrFilter(suggestField.tokenStream(completionAnalyzer, null));
+    assertTokenStreamContents(stream, new String[] {"input"}, null, null, new String[]{payload.utf8ToString()}, new int[]{1}, null, null);
   }
 
   @Test
@@ -278,7 +305,8 @@ public class TestSuggestField extends LuceneTestCase {
     for (int i = 1; i <= num; i++) {
       Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
-      document.add(new IntField("weight_fld", i, Field.Store.YES));
+      document.add(new StoredField("weight_fld", i));
+      document.add(new DimensionalIntField("weight_fld", i));
       iw.addDocument(document);
 
       if (usually()) {
@@ -286,7 +314,7 @@ public class TestSuggestField extends LuceneTestCase {
       }
     }
 
-    iw.deleteDocuments(NumericRangeQuery.newIntRange("weight_fld", 2, null, true, false));
+    iw.deleteDocuments(DimensionalRangeQuery.new1DIntRange("weight_fld", 2, true, null, false));
 
     DirectoryReader reader = DirectoryReader.open(iw, true);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
@@ -378,7 +406,7 @@ public class TestSuggestField extends LuceneTestCase {
         document.add(new SuggestField("suggest_field", "abc_" + i, i));
         entries.add(new Entry("abc_" + i, i));
       }
-      document.add(new IntField("weight_fld", i, Field.Store.YES));
+      document.add(new StoredField("weight_fld", i));
       iw.addDocument(document);
       if (usually()) {
         iw.commit();
@@ -404,7 +432,7 @@ public class TestSuggestField extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, num));
-      document.add(new IntField("int_field", i, Field.Store.YES));
+      document.add(new StoredField("int_field", i));
       iw.addDocument(document);
 
       if (random().nextBoolean()) {
@@ -631,7 +659,7 @@ public class TestSuggestField extends LuceneTestCase {
   static IndexWriterConfig iwcWithSuggestField(Analyzer analyzer, final Set<String> suggestFields) {
     IndexWriterConfig iwc = newIndexWriterConfig(random(), analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
-    Codec filterCodec = new Lucene53Codec() {
+    Codec filterCodec = new Lucene60Codec() {
       PostingsFormat postingsFormat = new Completion50PostingsFormat();
 
       @Override

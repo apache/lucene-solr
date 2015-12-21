@@ -18,6 +18,7 @@ package org.apache.solr.rest;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RestManager {
   
-  public static final Logger log = LoggerFactory.getLogger(RestManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String SCHEMA_BASE_PATH = "/schema";
   public static final String MANAGED_ENDPOINT = "/managed";

@@ -17,6 +17,11 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import junit.framework.Assert;
 import org.apache.solr.core.SolrCore;
@@ -26,27 +31,17 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 
   @Rule
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  protected static Logger log = LoggerFactory.getLogger(TestEmbeddedSolrServer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected EmbeddedSolrServer getSolrCore1() {
     return new EmbeddedSolrServer(cores, "core1");
-  }
-
-  @Override
-  protected File getSolrXml() throws Exception {
-    return new File(SOLR_HOME, "solr.xml");
   }
 
   public void testGetCoreContainer() {

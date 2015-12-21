@@ -25,11 +25,11 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
@@ -86,6 +86,7 @@ class QueryDocValues extends FloatDocValues {
   final Query q;
 
   Scorer scorer;
+  DocIdSetIterator it;
   int scorerDoc; // the document the scorer is on
   boolean noMatches=false;
 
@@ -129,12 +130,13 @@ class QueryDocValues extends FloatDocValues {
           noMatches = true;
           return defVal;
         }
+        it = scorer.iterator();
         scorerDoc = -1;
       }
       lastDocRequested = doc;
 
       if (scorerDoc < doc) {
-        scorerDoc = scorer.advance(doc);
+        scorerDoc = it.advance(doc);
       }
 
       if (scorerDoc > doc) {
@@ -161,11 +163,12 @@ class QueryDocValues extends FloatDocValues {
           noMatches = true;
           return false;
         }
+        it = scorer.iterator();
       }
       lastDocRequested = doc;
 
       if (scorerDoc < doc) {
-        scorerDoc = scorer.advance(doc);
+        scorerDoc = it.advance(doc);
       }
 
       if (scorerDoc > doc) {
@@ -221,10 +224,11 @@ class QueryDocValues extends FloatDocValues {
             mval.exists = false;
             return;
           }
+          it = scorer.iterator();
           lastDocRequested = doc;
 
           if (scorerDoc < doc) {
-            scorerDoc = scorer.advance(doc);
+            scorerDoc = it.advance(doc);
           }
 
           if (scorerDoc > doc) {

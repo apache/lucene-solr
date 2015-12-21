@@ -173,6 +173,10 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
         false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
         collate, "true", maxCollationTries, "10", maxCollations, "1", collateExtended, "false",
         altTermCount, "5", maxResults, "10"));
+    query(buildRequest("lowerfilt:(\"rod fix\")", 
+        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
+        collate, "true", maxCollationTries, "10", maxCollations, "1", collateExtended, "false",
+        altTermCount, "5", maxResults, ".10", "fq", "id:[13 TO 22]"));
     
     //Test word-break spellchecker
     query(buildRequest("lowerfilt:(+quock +redfox +jum +ped)", 

@@ -20,7 +20,7 @@ package org.apache.lucene.uninverting;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -43,7 +43,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
     Document doc = new Document();
-    doc.add(new IntField("number", 17, Field.Store.NO));
+    doc.add(new LegacyIntField("number", 17, Field.Store.NO));
     writer.addDocument(doc);
     writer.commit();
   

@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
@@ -29,6 +30,7 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
  *  increasing start position and finally by increasing end position.
  */
 public abstract class Spans extends DocIdSetIterator {
+
   public static final int NO_MORE_POSITIONS = Integer.MAX_VALUE;
 
   /**
@@ -72,20 +74,21 @@ public abstract class Spans extends DocIdSetIterator {
   public abstract void collect(SpanCollector collector) throws IOException;
 
   /**
+   * Return an estimation of the cost of using the positions of
+   * this {@link Spans} for any single document, but only after
+   * {@link #asTwoPhaseIterator} returned {@code null}.
+   * Otherwise this method should not be called.
+   * The returned value is independent of the current document.
+   *
+   * @lucene.experimental
+   */
+  public abstract float positionsCost();
+
+  /**
    * Optional method: Return a {@link TwoPhaseIterator} view of this
-   * {@link Spans}. A return value of {@code null} indicates that
+   * {@link Scorer}. A return value of {@code null} indicates that
    * two-phase iteration is not supported.
-   *
-   * Note that the returned {@link TwoPhaseIterator}'s
-   * {@link TwoPhaseIterator#approximation() approximation} must
-   * advance documents synchronously with this iterator:
-   * advancing the approximation must
-   * advance this iterator and vice-versa.
-   *
-   * Implementing this method is typically useful on a {@link Spans}
-   * that has a high per-document overhead for confirming matches.
-   *
-   * The default implementation returns {@code null}.
+   * @see Scorer#twoPhaseIterator()
    */
   public TwoPhaseIterator asTwoPhaseIterator() {
     return null;
@@ -102,5 +105,15 @@ public abstract class Spans extends DocIdSetIterator {
     sb.append(")");
     return sb.toString();
   }
+
+  /**
+   * Called before the current doc's frequency is calculated
+   */
+  protected void doStartCurrentDoc() throws IOException {}
+
+  /**
+   * Called each time the scorer's SpanScorer is advanced during frequency calculation
+   */
+  protected void doCurrentSpans() throws IOException {}
 
 }

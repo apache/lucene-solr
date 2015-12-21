@@ -2,6 +2,7 @@ package org.apache.solr.cloud.hdfs;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class HdfsTestUtil {
-  private static Logger log = LoggerFactory.getLogger(HdfsTestUtil.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final String LOGICAL_HOSTNAME = "ha-nn-uri-%d";
 

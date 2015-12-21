@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -40,7 +40,7 @@ import org.noggit.ObjectBuilder;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-@Slow
+@Nightly
 public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
 
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)

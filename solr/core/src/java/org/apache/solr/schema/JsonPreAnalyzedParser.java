@@ -2,6 +2,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -50,7 +51,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public class JsonPreAnalyzedParser implements PreAnalyzedParser {
-  private static final Logger LOG = LoggerFactory.getLogger(JsonPreAnalyzedParser.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String VERSION = "1";
   

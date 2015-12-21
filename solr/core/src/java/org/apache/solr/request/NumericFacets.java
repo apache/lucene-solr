@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
@@ -134,7 +133,7 @@ final class NumericFacets {
     mincount = Math.max(mincount, 1);
     final SchemaField sf = searcher.getSchema().getField(fieldName);
     final FieldType ft = sf.getType();
-    final NumericType numericType = ft.getNumericType();
+    final org.apache.lucene.document.FieldType.LegacyNumericType numericType = ft.getNumericType();
     if (numericType == null) {
       throw new IllegalStateException();
     }

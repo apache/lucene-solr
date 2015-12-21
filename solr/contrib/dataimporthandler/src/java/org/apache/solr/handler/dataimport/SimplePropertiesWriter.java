@@ -17,8 +17,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -26,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.text.ParseException;
@@ -41,6 +40,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 /**
  * <p>
  *  Writes properties using {@link Properties#store} .
@@ -49,8 +50,7 @@ import org.slf4j.LoggerFactory;
  * </p> 
  */
 public class SimplePropertiesWriter extends DIHProperties {
-  private static final Logger log = LoggerFactory
-      .getLogger(SimplePropertiesWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   static final String LAST_INDEX_KEY = "last_index_time";
   
@@ -116,7 +116,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     } else {
       SolrCore core = dataImporter.getCore();
       if (core == null) {
-        configDir = SolrResourceLoader.locateSolrHome();
+        configDir = SolrResourceLoader.locateSolrHome().toString();
       } else {
         configDir = core.getResourceLoader().getConfigDir();
       }

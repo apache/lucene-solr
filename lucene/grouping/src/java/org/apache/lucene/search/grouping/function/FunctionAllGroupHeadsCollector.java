@@ -155,6 +155,6 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
 
   @Override
   public boolean needsScores() {
-    return true; // TODO, maybe we don't: e.g. return sortWithinGroup.needsScores()
+    return sortWithinGroup.needsScores();
   }
 }

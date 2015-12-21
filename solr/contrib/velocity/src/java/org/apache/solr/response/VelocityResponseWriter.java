@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,7 +84,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   private boolean solrResourceLoaderEnabled;
   private String initPropertiesFileName;  // used just to hold from init() to inform()
 
-  private static final Logger log = LoggerFactory.getLogger(VelocityResponseWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final SolrVelocityLogger velocityLogger = new SolrVelocityLogger(log);
   private Properties velocityInitProps = new Properties();
   private Map<String,String> customTools = new HashMap<String,String>();

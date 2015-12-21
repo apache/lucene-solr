@@ -19,10 +19,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.ToStringUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
@@ -59,12 +62,29 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
       super(tenum, minLon, minLat, maxLon, maxLat);
     }
 
+    @Override
+    protected short computeMaxShift() {
+      final short shiftFactor;
+
+      // compute diagonal radius
+      double midLon = (minLon + maxLon) * 0.5;
+      double midLat = (minLat + maxLat) * 0.5;
+
+      if (SloppyMath.haversin(minLat, minLon, midLat, midLon)*1000 > 1000000) {
+        shiftFactor = 5;
+      } else {
+        shiftFactor = 4;
+      }
+
+      return (short)(GeoPointField.PRECISION_STEP * shiftFactor);
+    }
+
     /**
      * Determine whether the quad-cell crosses the shape
      */
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectCrosses(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+      return GeoRelationUtils.rectCrosses(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
     }
 
     /**
@@ -72,7 +92,7 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
      */
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectWithin(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+      return GeoRelationUtils.rectWithin(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
     }
 
     @Override
@@ -82,7 +102,7 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
 
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return GeoUtils.bboxContains(lon, lat, minLon, minLat, maxLon, maxLat);
+      return GeoRelationUtils.pointInRect(lon, lat, minLon, minLat, maxLon, maxLat);
     }
   }
 

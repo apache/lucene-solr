@@ -240,7 +240,7 @@ public class SchemaTest extends RestTestBase {
         new SchemaRequest.GlobalSimilarity();
     SchemaResponse.GlobalSimilarityResponse globalSimilarityResponse = globalSimilarityRequest.process(getSolrClient());
     assertValidSchemaResponse(globalSimilarityResponse);
-    assertEquals("org.apache.solr.search.similarities.DefaultSimilarityFactory",
+    assertEquals("org.apache.solr.search.similarities.SchemaSimilarityFactory",
         globalSimilarityResponse.getSimilarity().get("class"));
   }
 

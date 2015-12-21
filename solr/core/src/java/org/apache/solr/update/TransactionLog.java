@@ -17,10 +17,12 @@
 
 package org.apache.solr.update;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -61,10 +63,10 @@ import org.slf4j.LoggerFactory;
  *  in them (since we know that if the request succeeds, all docs will be committed)
  *
  */
-public class TransactionLog {
-  public static Logger log = LoggerFactory.getLogger(TransactionLog.class);
-  final boolean debug = log.isDebugEnabled();
-  final boolean trace = log.isTraceEnabled();
+public class TransactionLog implements Closeable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
+  private static boolean trace = log.isTraceEnabled();
 
   public final static String END_MESSAGE="SOLR_TLOG_END";
 
@@ -536,7 +538,7 @@ public class TransactionLog {
     }
   }
 
-  protected void close() {
+  public void close() {
     try {
       if (debug) {
         log.debug("Closing tlog" + this);

@@ -41,14 +41,11 @@ import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestBlobHandler.getAsString;
 
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
-  static final Logger log =  LoggerFactory.getLogger(TestSolrConfigHandlerCloud.class);
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   private void setupHarnesses() {
@@ -146,7 +143,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     compareValues(result, "B val", asList("response", "params", "x", "b"));
 
     payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/dump', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
+        "'update-requesthandler' : { 'name' : '/dump', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
         "}";
 
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);

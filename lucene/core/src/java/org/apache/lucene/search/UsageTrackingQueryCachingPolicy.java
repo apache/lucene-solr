@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.FrequencyTrackingRingBuffer;
 
-
 /**
  * A {@link QueryCachingPolicy} that tracks usage statistics of recently-used
  * filters in order to decide on which filters are worth caching.
@@ -43,7 +42,8 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
     // already have the DocIdSetIterator#cost API) but the cost to build the
     // DocIdSet in the first place
     return query instanceof MultiTermQuery ||
-        query instanceof MultiTermQueryConstantScoreWrapper;
+        query instanceof MultiTermQueryConstantScoreWrapper ||
+        query instanceof DimensionalRangeQuery;
   }
 
   static boolean isCheap(Query query) {

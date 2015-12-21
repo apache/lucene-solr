@@ -17,18 +17,18 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** JUnit adaptation of an older test case SearchTest. */
 public class TestSearch extends LuceneTestCase {
@@ -125,7 +125,6 @@ public class TestSearch extends LuceneTestCase {
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
         d.add(newTextField("contents", docs[j], Field.Store.YES));
-        d.add(new IntField("id", j, Field.Store.NO));
         d.add(new NumericDocValuesField("id", j));
         writer.addDocument(d);
       }

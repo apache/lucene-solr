@@ -25,6 +25,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexOptions;
@@ -41,7 +43,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesRangeQuery;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
@@ -49,7 +51,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -66,7 +68,7 @@ import org.xml.sax.SAXException;
  */
 public class EnumField extends PrimitiveFieldType {
 
-  public static final Logger log = LoggerFactory.getLogger(EnumField.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Locale LOCALE = Locale.getDefault();
   protected static final String PARAM_ENUMS_CONFIG = "enumsConfig";
   protected static final String PARAM_ENUM_NAME = "enumName";
@@ -203,7 +205,7 @@ public class EnumField extends PrimitiveFieldType {
    */
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
-    field.checkFieldCacheSource(qparser);
+    field.checkFieldCacheSource();
     return new EnumFieldSource(field.getName(), enumIntToStringMap, enumStringToIntMap);
   }
 
@@ -234,8 +236,8 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public FieldType.NumericType getNumericType() {
-    return FieldType.NumericType.INT;
+  public FieldType.LegacyNumericType getNumericType() {
+    return FieldType.LegacyNumericType.INT;
   }
 
   /**
@@ -258,10 +260,10 @@ public class EnumField extends PrimitiveFieldType {
               max == null ? null : maxValue.longValue(),
               minInclusive, maxInclusive));
     } else {
-      query = NumericRangeQuery.newIntRange(field.getName(), DEFAULT_PRECISION_STEP,
-              min == null ? null : minValue,
-              max == null ? null : maxValue,
-              minInclusive, maxInclusive);
+      query = LegacyNumericRangeQuery.newIntRange(field.getName(), DEFAULT_PRECISION_STEP,
+          min == null ? null : minValue,
+          max == null ? null : maxValue,
+          minInclusive, maxInclusive);
     }
 
     return query;
@@ -297,7 +299,7 @@ public class EnumField extends PrimitiveFieldType {
       return;
 
     final Integer intValue = stringValueToIntValue(s);
-    NumericUtils.intToPrefixCoded(intValue, 0, result);
+    LegacyNumericUtils.intToPrefixCoded(intValue, 0, result);
   }
 
   /**
@@ -328,7 +330,7 @@ public class EnumField extends PrimitiveFieldType {
     if (indexedForm == null)
       return null;
     final BytesRef bytesRef = new BytesRef(indexedForm);
-    final Integer intValue = NumericUtils.prefixCodedToInt(bytesRef);
+    final Integer intValue = LegacyNumericUtils.prefixCodedToInt(bytesRef);
     return intValueToStringValue(intValue);
   }
 
@@ -337,7 +339,7 @@ public class EnumField extends PrimitiveFieldType {
    */
   @Override
   public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder output) {
-    final Integer intValue = NumericUtils.prefixCodedToInt(input);
+    final Integer intValue = LegacyNumericUtils.prefixCodedToInt(input);
     final String stringValue = intValueToStringValue(intValue);
     output.grow(stringValue.length());
     output.setLength(stringValue.length());
@@ -350,7 +352,7 @@ public class EnumField extends PrimitiveFieldType {
    */
   @Override
   public EnumFieldValue toObject(SchemaField sf, BytesRef term) {
-    final Integer intValue = NumericUtils.prefixCodedToInt(term);
+    final Integer intValue = LegacyNumericUtils.prefixCodedToInt(term);
     final String stringValue = intValueToStringValue(intValue);
     return new EnumFieldValue(intValue, stringValue);
   }
@@ -364,7 +366,7 @@ public class EnumField extends PrimitiveFieldType {
     if (val == null)
       return null;
     final BytesRefBuilder bytes = new BytesRefBuilder();
-    NumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
+    LegacyNumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
     return bytes.get().utf8ToString();
   }
 
@@ -397,11 +399,11 @@ public class EnumField extends PrimitiveFieldType {
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
     newType.setStoreTermVectorPayloads(field.storeTermPayloads());
-    newType.setNumericType(FieldType.NumericType.INT);
+    newType.setNumericType(FieldType.LegacyNumericType.INT);
     newType.setNumericPrecisionStep(DEFAULT_PRECISION_STEP);
 
     final org.apache.lucene.document.Field f;
-    f = new org.apache.lucene.document.IntField(field.getName(), intValue.intValue(), newType);
+    f = new LegacyIntField(field.getName(), intValue.intValue(), newType);
 
     f.setBoost(boost);
     return f;

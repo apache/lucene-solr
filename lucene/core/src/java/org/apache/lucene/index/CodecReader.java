@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -74,6 +75,12 @@ public abstract class CodecReader extends LeafReader implements Accountable {
    * @lucene.internal
    */
   public abstract FieldsProducer getPostingsReader();
+
+  /**
+   * Expert: retrieve underlying DimensionalReader
+   * @lucene.internal
+   */
+  public abstract DimensionalReader getDimensionalReader();
   
   @Override
   public final void document(int docID, StoredFieldVisitor visitor) throws IOException {
@@ -314,6 +321,11 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     if (getTermVectorsReader() != null) {
       ramBytesUsed += getTermVectorsReader().ramBytesUsed();
     }
+
+    // dimensional values
+    if (getDimensionalReader() != null) {
+      ramBytesUsed += getDimensionalReader().ramBytesUsed();
+    }
     
     return ramBytesUsed;
   }
@@ -321,7 +333,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   @Override
   public Collection<Accountable> getChildResources() {
     ensureOpen();
-    List<Accountable> resources = new ArrayList<>();
+    final List<Accountable> resources = new ArrayList<>(6);
     
     // terms/postings
     resources.add(Accountables.namedAccountable("postings", getPostingsReader()));
@@ -344,6 +356,11 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     // term vectors
     if (getTermVectorsReader() != null) {
       resources.add(Accountables.namedAccountable("term vectors", getTermVectorsReader()));
+    }
+
+    // dimensional values
+    if (getDimensionalReader() != null) {
+      resources.add(Accountables.namedAccountable("dimensional values", getDimensionalReader()));
     }
     
     return Collections.unmodifiableList(resources);

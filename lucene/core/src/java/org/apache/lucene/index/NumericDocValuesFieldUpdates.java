@@ -144,7 +144,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   public void merge(DocValuesFieldUpdates other) {
     assert other instanceof NumericDocValuesFieldUpdates;
     NumericDocValuesFieldUpdates otherUpdates = (NumericDocValuesFieldUpdates) other;
-    if (size  + otherUpdates.size > Integer.MAX_VALUE) {
+    if (otherUpdates.size > Integer.MAX_VALUE - size) {
       throw new IllegalStateException(
           "cannot support more than Integer.MAX_VALUE doc/value entries; size="
               + size + " other.size=" + otherUpdates.size);

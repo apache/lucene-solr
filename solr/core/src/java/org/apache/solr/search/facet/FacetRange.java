@@ -21,10 +21,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -33,8 +35,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.util.DateMathParser;
 
 public class FacetRange extends FacetRequest {
   String field;
@@ -56,6 +58,17 @@ public class FacetRange extends FacetRequest {
   public FacetMerger createFacetMerger(Object prototype) {
     return new FacetRangeMerger(this);
   }
+  
+  @Override
+  public Map<String, Object> getFacetDescription() {
+    Map<String, Object> descr = new HashMap<String, Object>();
+    descr.put("field", field);
+    descr.put("start", start);
+    descr.put("end", end);
+    descr.put("gap", gap);
+    return descr;
+  }
+  
 }
 
 
@@ -458,7 +471,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public long bitsToSortableBits(long bits) {
-      return NumericUtils.sortableDoubleBits(bits);
+      return LegacyNumericUtils.sortableDoubleBits(bits);
     }
 
     public FloatCalc(final SchemaField f) { super(f); }
@@ -479,7 +492,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public long bitsToSortableBits(long bits) {
-      return NumericUtils.sortableDoubleBits(bits);
+      return LegacyNumericUtils.sortableDoubleBits(bits);
     }
 
     public DoubleCalc(final SchemaField f) { super(f); }

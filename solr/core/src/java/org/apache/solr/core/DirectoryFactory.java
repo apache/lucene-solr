@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -52,7 +53,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   // hint about what the directory contains - default is index directory
   public enum DirContext {DEFAULT, META_DATA}
 
-  private static final Logger log = LoggerFactory.getLogger(DirectoryFactory.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /**
    * Indicates a Directory will no longer be used, and when its ref count
@@ -265,8 +266,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
 
   public String getDataHome(CoreDescriptor cd) throws IOException {
     // by default, we go off the instance directory
-    String instanceDir = new File(cd.getInstanceDir()).getAbsolutePath();
-    return normalize(SolrResourceLoader.normalizeDir(instanceDir) + cd.getDataDir());
+    return cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
   }
 
   /**

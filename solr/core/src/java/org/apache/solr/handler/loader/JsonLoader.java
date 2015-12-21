@@ -19,6 +19,7 @@ package org.apache.solr.handler.loader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -62,7 +63,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  * @since solr 4.0
  */
 public class JsonLoader extends ContentStreamLoader {
-  final static Logger log = LoggerFactory.getLogger(JsonLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String CHILD_DOC_KEY = "_childDocuments_";
 
   @Override

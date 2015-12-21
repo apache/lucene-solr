@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -469,18 +470,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
 
       @Override
-      public int nextDoc() throws IOException {
+      public DocIdSetIterator iterator() {
         throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public long cost() {
-        return 1;
       }
 
       @Override

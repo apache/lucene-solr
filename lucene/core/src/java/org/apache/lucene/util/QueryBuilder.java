@@ -274,7 +274,7 @@ public class QueryBuilder {
       throw new AssertionError();
     }
     
-    return newTermQuery(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
+    return newTermQuery(new Term(field, termAtt.getBytesRef()));
   }
   
   /** 
@@ -286,7 +286,7 @@ public class QueryBuilder {
     stream.reset();
     List<Term> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      terms.add(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
+      terms.add(new Term(field, termAtt.getBytesRef()));
     }
     
     return newSynonymQuery(terms.toArray(new Term[terms.size()]));
@@ -319,7 +319,7 @@ public class QueryBuilder {
         add(q, currentQuery, operator);
         currentQuery.clear();
       }
-      currentQuery.add(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
+      currentQuery.add(new Term(field, termAtt.getBytesRef()));
     }
     add(q, currentQuery, operator);
     
@@ -376,7 +376,7 @@ public class QueryBuilder {
         multiTerms.clear();
       }
       position += positionIncrement;
-      multiTerms.add(new Term(field, BytesRef.deepCopyOf(termAtt.getBytesRef())));
+      multiTerms.add(new Term(field, termAtt.getBytesRef()));
     }
     
     if (enablePositionIncrements) {

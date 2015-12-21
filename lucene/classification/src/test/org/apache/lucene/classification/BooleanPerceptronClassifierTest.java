@@ -79,7 +79,7 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     LeafReader leafReader = getRandomIndex(analyzer, 100);
     try {
       long trainStart = System.currentTimeMillis();
-      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, 0d, booleanFieldName, textFieldName);
+      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName);
       long trainEnd = System.currentTimeMillis();
       long trainTime = trainEnd - trainStart;
       assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
@@ -93,6 +93,9 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
       assertTrue("evaluation took more than 1m: " + evaluationTime / 1000 + "s", evaluationTime < 60000);
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue(5000 > avgClassificationTime);
+      // accuracy check disabled until LUCENE-6853 is fixed
+//      double accuracy = confusionMatrix.getAccuracy();
+//      assertTrue(accuracy > 0d);
     } finally {
       leafReader.close();
     }

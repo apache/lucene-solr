@@ -147,6 +147,8 @@ public abstract class Weight {
    *  @lucene.internal */
   protected static class DefaultBulkScorer extends BulkScorer {
     private final Scorer scorer;
+    private final DocIdSetIterator iterator;
+    private final TwoPhaseIterator twoPhase;
 
     /** Sole constructor. */
     public DefaultBulkScorer(Scorer scorer) {
@@ -154,30 +156,31 @@ public abstract class Weight {
         throw new NullPointerException();
       }
       this.scorer = scorer;
+      this.iterator = scorer.iterator();
+      this.twoPhase = scorer.twoPhaseIterator();
     }
 
     @Override
     public long cost() {
-      return scorer.cost();
+      return iterator.cost();
     }
 
     @Override
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
-      final TwoPhaseIterator twoPhase = scorer.asTwoPhaseIterator();
       if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
-        scoreAll(collector, scorer, twoPhase, acceptDocs);
+        scoreAll(collector, iterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         int doc = scorer.docID();
         if (doc < min) {
           if (twoPhase == null) {
-            doc = scorer.advance(min);
+            doc = iterator.advance(min);
           } else {
             doc = twoPhase.approximation().advance(min);
           }
         }
-        return scoreRange(collector, scorer, twoPhase, acceptDocs, doc, max);
+        return scoreRange(collector, iterator, twoPhase, acceptDocs, doc, max);
       }
     }
 
@@ -185,14 +188,14 @@ public abstract class Weight {
      *  separate this from {@link #scoreAll} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static int scoreRange(LeafCollector collector, Scorer scorer, TwoPhaseIterator twoPhase,
+    static int scoreRange(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase,
         Bits acceptDocs, int currentDoc, int end) throws IOException {
       if (twoPhase == null) {
         while (currentDoc < end) {
           if (acceptDocs == null || acceptDocs.get(currentDoc)) {
             collector.collect(currentDoc);
           }
-          currentDoc = scorer.nextDoc();
+          currentDoc = iterator.nextDoc();
         }
         return currentDoc;
       } else {
@@ -211,9 +214,9 @@ public abstract class Weight {
      *  separate this from {@link #scoreRange} to help out
      *  hotspot.
      *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static void scoreAll(LeafCollector collector, Scorer scorer, TwoPhaseIterator twoPhase, Bits acceptDocs) throws IOException {
+    static void scoreAll(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase, Bits acceptDocs) throws IOException {
       if (twoPhase == null) {
-        for (int doc = scorer.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = scorer.nextDoc()) {
+        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
           if (acceptDocs == null || acceptDocs.get(doc)) {
             collector.collect(doc);
           }

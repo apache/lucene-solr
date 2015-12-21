@@ -47,8 +47,9 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
     response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
     // This attribute is set by the SolrDispatchFilter
+    String admin = request.getRequestURI().substring(request.getContextPath().length());
     CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
-    InputStream in = getServletContext().getResourceAsStream("/admin.html");
+    InputStream in = getServletContext().getResourceAsStream(admin);
     if(in != null && cores != null) {
       try {
         response.setCharacterEncoding("UTF-8");

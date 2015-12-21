@@ -18,6 +18,7 @@ package org.apache.solr.store.hdfs;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HdfsDirectory extends BaseDirectory {
-  public static Logger LOG = LoggerFactory.getLogger(HdfsDirectory.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final int BUFFER_SIZE = 8192;
   
@@ -194,8 +195,7 @@ public class HdfsDirectory extends BaseDirectory {
   }
   
   static class HdfsIndexInput extends CustomBufferedIndexInput {
-    public static Logger LOG = LoggerFactory
-        .getLogger(HdfsIndexInput.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     
     private final Path path;
     private final FSDataInputStream inputStream;
@@ -266,5 +266,10 @@ public class HdfsDirectory extends BaseDirectory {
       return false;
     }
     return this.hdfsDirPath.equals(((HdfsDirectory) obj).hdfsDirPath);
+  }
+
+  @Override
+  public String toString() {
+    return this.getClass().getSimpleName() + "@" + hdfsDirPath + " lockFactory=" + lockFactory;
   }
 }

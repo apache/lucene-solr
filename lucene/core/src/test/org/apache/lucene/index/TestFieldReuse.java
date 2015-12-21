@@ -23,15 +23,15 @@ import java.util.Collections;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
-import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.analysis.NumericTokenStream.NumericTermAttribute;
+import org.apache.lucene.analysis.LegacyNumericTokenStream;
+import org.apache.lucene.analysis.LegacyNumericTokenStream.LegacyNumericTermAttribute;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /** test tokenstream reuse by DefaultIndexingChain */
 public class TestFieldReuse extends BaseTokenStreamTestCase {
@@ -59,7 +59,7 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
     
     // pass a bogus stream and ensure it's still ok
     stringField = new StringField("foo", "beer", Field.Store.NO);
-    TokenStream bogus = new NumericTokenStream();
+    TokenStream bogus = new LegacyNumericTokenStream();
     ts = stringField.tokenStream(null, bogus);
     assertNotSame(ts, bogus);
     assertTokenStreamContents(ts, 
@@ -70,32 +70,32 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
   }
   
   public void testNumericReuse() throws IOException {
-    IntField intField = new IntField("foo", 5, Field.Store.NO);
+    LegacyIntField legacyIntField = new LegacyIntField("foo", 5, Field.Store.NO);
     
     // passing null
-    TokenStream ts = intField.tokenStream(null, null);
-    assertTrue(ts instanceof NumericTokenStream);
-    assertEquals(NumericUtils.PRECISION_STEP_DEFAULT_32, ((NumericTokenStream)ts).getPrecisionStep());
+    TokenStream ts = legacyIntField.tokenStream(null, null);
+    assertTrue(ts instanceof LegacyNumericTokenStream);
+    assertEquals(LegacyNumericUtils.PRECISION_STEP_DEFAULT_32, ((LegacyNumericTokenStream)ts).getPrecisionStep());
     assertNumericContents(5, ts);
 
     // now reuse previous stream
-    intField = new IntField("foo", 20, Field.Store.NO);
-    TokenStream ts2 = intField.tokenStream(null, ts);
+    legacyIntField = new LegacyIntField("foo", 20, Field.Store.NO);
+    TokenStream ts2 = legacyIntField.tokenStream(null, ts);
     assertSame(ts, ts2);
     assertNumericContents(20, ts);
     
     // pass a bogus stream and ensure it's still ok
-    intField = new IntField("foo", 2343, Field.Store.NO);
+    legacyIntField = new LegacyIntField("foo", 2343, Field.Store.NO);
     TokenStream bogus = new CannedTokenStream(new Token("bogus", 0, 5));
-    ts = intField.tokenStream(null, bogus);
+    ts = legacyIntField.tokenStream(null, bogus);
     assertNotSame(bogus, ts);
     assertNumericContents(2343, ts);
     
     // pass another bogus stream (numeric, but different precision step!)
-    intField = new IntField("foo", 42, Field.Store.NO);
-    assert 3 != NumericUtils.PRECISION_STEP_DEFAULT;
-    bogus = new NumericTokenStream(3);
-    ts = intField.tokenStream(null, bogus);
+    legacyIntField = new LegacyIntField("foo", 42, Field.Store.NO);
+    assert 3 != LegacyNumericUtils.PRECISION_STEP_DEFAULT;
+    bogus = new LegacyNumericTokenStream(3);
+    ts = legacyIntField.tokenStream(null, bogus);
     assertNotSame(bogus, ts);
     assertNumericContents(42, ts);
   }
@@ -161,8 +161,8 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
   }
   
   private void assertNumericContents(int value, TokenStream ts) throws IOException {
-    assertTrue(ts instanceof NumericTokenStream);
-    NumericTermAttribute numericAtt = ts.getAttribute(NumericTermAttribute.class);
+    assertTrue(ts instanceof LegacyNumericTokenStream);
+    LegacyNumericTermAttribute numericAtt = ts.getAttribute(LegacyNumericTermAttribute.class);
     ts.reset();
     boolean seen = false;
     while (ts.incrementToken()) {

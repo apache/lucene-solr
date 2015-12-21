@@ -151,7 +151,7 @@ public final class SpanBoostQuery extends SpanQuery {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public SpanScorer scorer(LeafReaderContext context) throws IOException {
         return weight.scorer(context);
       }
 

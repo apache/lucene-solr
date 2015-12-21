@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
@@ -134,9 +135,9 @@ public class PKIndexSplitter {
       final int maxDoc = in.maxDoc();
       final FixedBitSet bits = new FixedBitSet(maxDoc);
       // ignore livedocs here, as we filter them later:
-      final DocIdSetIterator preserveIt = preserveWeight.scorer(context);
-      if (preserveIt != null) {
-        bits.or(preserveIt);
+      final Scorer preverveScorer = preserveWeight.scorer(context);
+      if (preverveScorer != null) {
+        bits.or(preverveScorer.iterator());
       }
       if (negateFilter) {
         bits.flip(0, maxDoc);

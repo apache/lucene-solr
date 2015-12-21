@@ -18,6 +18,9 @@ package org.apache.lucene.util;
  */
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 public class TestPriorityQueue extends LuceneTestCase {
@@ -188,4 +191,65 @@ public class TestPriorityQueue extends LuceneTestCase {
     }
   }
 
+  public void testIterator() {
+    IntegerQueue queue = new IntegerQueue(3);
+    
+    Iterator<Integer> it = queue.iterator();
+    assertFalse(it.hasNext());
+    try {
+      it.next();
+      fail();
+    } catch (NoSuchElementException e) {
+      // ok
+    }
+
+    queue.add(1);
+    it = queue.iterator();
+    assertTrue(it.hasNext());
+    assertEquals(Integer.valueOf(1), it.next());
+    assertFalse(it.hasNext());
+    try {
+      it.next();
+      fail();
+    } catch (NoSuchElementException e) {
+      // ok
+    }
+
+    queue.add(2);
+    it = queue.iterator();
+    assertTrue(it.hasNext());
+    assertEquals(Integer.valueOf(1), it.next());
+    assertTrue(it.hasNext());
+    assertEquals(Integer.valueOf(2), it.next());
+    assertFalse(it.hasNext());
+    try {
+      it.next();
+      fail();
+    } catch (NoSuchElementException e) {
+      // ok
+    }
+  }
+
+  public void testIteratorRandom() {
+    final int maxSize = TestUtil.nextInt(random(), 1, 20);
+    IntegerQueue queue = new IntegerQueue(maxSize);
+    final int iters = atLeast(100);
+    final List<Integer> expected = new ArrayList<>();
+    for (int iter = 0; iter < iters; ++iter) {
+      if (queue.size() == 0 || (queue.size() < maxSize && random().nextBoolean())) {
+        final Integer value = new Integer(random().nextInt(10));
+        queue.add(value);
+        expected.add(value);
+      } else {
+        expected.remove(queue.pop());
+      }
+      List<Integer> actual = new ArrayList<>();
+      for (Integer value : queue) {
+        actual.add(value);
+      }
+      CollectionUtil.introSort(expected);
+      CollectionUtil.introSort(actual);
+      assertEquals(expected, actual);
+    }
+  }
 }

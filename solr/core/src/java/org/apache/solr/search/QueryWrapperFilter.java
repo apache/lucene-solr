@@ -26,8 +26,8 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
@@ -35,7 +35,7 @@ import org.apache.lucene.util.Bits;
  * Constrains search results to only match those which also match a provided
  * query.  
  *
- * <p> This could be used, for example, with a {@link NumericRangeQuery} on a suitably
+ * <p> This could be used, for example, with a {@link org.apache.lucene.search.LegacyNumericRangeQuery} on a suitably
  * formatted date field to implement date filtering.  One could re-use a single
  * CachingWrapperFilter(QueryWrapperFilter) that matches, e.g., only documents modified 
  * within the last week.  This would only need to be reconstructed once per day.
@@ -71,7 +71,8 @@ public class QueryWrapperFilter extends Filter {
     DocIdSet set = new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
-        return weight.scorer(privateContext);
+        Scorer scorer = weight.scorer(privateContext);
+        return scorer == null ? null : scorer.iterator();
       }
 
       @Override

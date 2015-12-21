@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,7 +43,7 @@ import java.util.Locale;
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
 public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedListInitializedPlugin {
-  public static Logger log = LoggerFactory.getLogger(SolrCore.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String maxCommitAge = null;
   private int maxCommitsToKeep = 1;

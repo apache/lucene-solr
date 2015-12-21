@@ -17,6 +17,29 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
@@ -27,6 +50,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.BaseHolder;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -40,28 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * Run solr using jetty
  * 
@@ -69,7 +71,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class JettySolrRunner {
 
-  private static final Logger logger = LoggerFactory.getLogger(JettySolrRunner.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   Server server;
 
@@ -350,11 +352,31 @@ public class JettySolrRunner {
 
     // for some reason, there must be a servlet for this to get applied
     root.addServlet(Servlet404.class, "/*");
+    GzipHandler gzipHandler = new GzipHandler();
+    gzipHandler.setHandler(root);
 
+    gzipHandler.setMinGzipSize(2048);
+    gzipHandler.setCheckGzExists(false);
+    gzipHandler.setCompressionLevel(-1);
+    gzipHandler.setExcludedAgentPatterns(".*MSIE.6\\.0.*");
+    gzipHandler.setIncludedMethods("GET");
+
+    server.setHandler(gzipHandler);
   }
 
-  public FilterHolder getDispatchFilter() {
-    return dispatchFilter;
+  /**
+   * @return the {@link SolrDispatchFilter} for this node
+   */
+  public SolrDispatchFilter getSolrDispatchFilter() { return (SolrDispatchFilter) dispatchFilter.getFilter(); }
+
+  /**
+   * @return the {@link CoreContainer} for this node
+   */
+  public CoreContainer getCoreContainer() {
+    if (getSolrDispatchFilter() == null || getSolrDispatchFilter().getCores() == null) {
+      return null;
+    }
+    return getSolrDispatchFilter().getCores();
   }
 
   public boolean isRunning() {
@@ -492,7 +514,7 @@ public class JettySolrRunner {
         throw new IllegalStateException("Jetty Connector is not open: " + 
                                         c.getLocalPort());
       }
-      protocol = c.getDefaultProtocol().equals("SSL-http/1.1")  ? "https" : "http";
+      protocol = c.getDefaultProtocol().startsWith("SSL")  ? "https" : "http";
       return new URL(protocol, c.getHost(), c.getLocalPort(), config.context);
 
     } catch (MalformedURLException e) {

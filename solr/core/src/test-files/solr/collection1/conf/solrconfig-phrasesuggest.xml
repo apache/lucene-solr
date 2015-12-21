@@ -23,6 +23,7 @@
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
   
   <!-- WFSTLookup suggest component -->

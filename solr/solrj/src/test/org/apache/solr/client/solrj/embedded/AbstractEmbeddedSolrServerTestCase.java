@@ -18,20 +18,17 @@ package org.apache.solr.client.solrj.embedded;
  */
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.junit.After;
 import org.junit.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 {
 
-  protected static Logger log = LoggerFactory.getLogger(AbstractEmbeddedSolrServerTestCase.class);
-
-  protected static final File SOLR_HOME = SolrTestCaseJ4.getFile("solrj/solr/shared");
+  protected static final Path SOLR_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
 
   protected CoreContainer cores = null;
   protected File tempDir;
@@ -41,9 +38,9 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   public void setUp() throws Exception {
     super.setUp();
 
-    System.setProperty("solr.solr.home", SOLR_HOME.getAbsolutePath());
-    System.setProperty("configSetBase", SolrTestCaseJ4.getFile("solrj/solr/configsets").getAbsolutePath());
-    System.out.println("Solr home: " + SOLR_HOME.getAbsolutePath());
+    System.setProperty("solr.solr.home", SOLR_HOME.toString());
+    System.setProperty("configSetBase", SOLR_HOME.resolve("../configsets").normalize().toString());
+    System.out.println("Solr home: " + SOLR_HOME.toString());
 
     //The index is always stored within a temporary directory
     tempDir = createTempDir().toFile();
@@ -54,11 +51,13 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     System.setProperty("dataDir2", dataDir2.getAbsolutePath());
     System.setProperty("tempDir", tempDir.getAbsolutePath());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
-    cores = CoreContainer.createAndLoad(SOLR_HOME.getAbsolutePath(), getSolrXml());
+    cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
     //cores.setPersistent(false);
   }
   
-  protected abstract File getSolrXml() throws Exception;
+  protected Path getSolrXml() throws Exception {
+    return SOLR_HOME.resolve("solr.xml");
+  }
 
   @Override
   @After

@@ -26,31 +26,28 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.Header;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicHeader;
-import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin {
-  protected static final Logger log = LoggerFactory.getLogger(BasicAuthPlugin.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AuthenticationProvider zkAuthentication;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
+  private boolean blockUnknown = false;
 
   public boolean authenticate(String username, String pwd) {
     return zkAuthentication.authenticate(username, pwd);
@@ -58,11 +55,31 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   @Override
   public void init(Map<String, Object> pluginConfig) {
+    Object o = pluginConfig.get(BLOCK_UNKNOWN);
+    if (o != null) {
+      try {
+        blockUnknown = Boolean.parseBoolean(o.toString());
+      } catch (Exception e) {
+        log.error(e.getMessage());
+      }
+    }
     zkAuthentication = getAuthenticationProvider(pluginConfig);
   }
 
   @Override
   public Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands) {
+    for (CommandOperation command : commands) {
+      if (command.name.equals("set-property")) {
+        for (Map.Entry<String, Object> e : command.getDataMap().entrySet()) {
+          if (PROPS.contains(e.getKey())) {
+            latestConf.put(e.getKey(), e.getValue());
+          } else {
+            command.addError("Unknown property " + e.getKey());
+          }
+        }
+      }
+    }
+    if (!CommandOperation.captureErrors(commands).isEmpty()) return null;
     if (zkAuthentication instanceof ConfigEditablePlugin) {
       ConfigEditablePlugin editablePlugin = (ConfigEditablePlugin) zkAuthentication;
       return editablePlugin.edit(latestConf, commands);
@@ -123,8 +140,12 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         }
       }
     } else {
-      request.setAttribute(AuthenticationPlugin.class.getName(), zkAuthentication.getPromptHeaders());
-      filterChain.doFilter(request, response);
+      if (blockUnknown) {
+        authenticationFailure(response, "require authentication");
+      } else {
+        request.setAttribute(AuthenticationPlugin.class.getName(), zkAuthentication.getPromptHeaders());
+        filterChain.doFilter(request, response);
+      }
     }
   }
 
@@ -145,6 +166,13 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
     Map<String, String> getPromptHeaders();
   }
+
+  public boolean getBlockUnknown(){
+    return blockUnknown;
+  }
+
+  public static final String BLOCK_UNKNOWN = "blockUnknown";
+  private static final Set<String> PROPS = ImmutableSet.of(BLOCK_UNKNOWN);
 
 
 }

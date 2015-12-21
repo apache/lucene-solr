@@ -163,8 +163,13 @@ sammy.get
           var endpoint = file_endpoint + '?file=' + selected_file;
 
           var content_type_map = { xml : 'text/xml', html : 'text/html', js : 'text/javascript', json : 'application/json', 'css' : 'text/css' };
-          var file_ext = selected_file.match( /\.(\w+)$/  );
-          endpoint += '&contentType=' + ( content_type_map[ file_ext[1] || '' ] || 'text/plain' ) + ';charset=utf-8';
+          if (selected_file == 'managed-schema') {
+            endpoint += '&contentType=' + 'text/xml' + ';charset=utf-8';
+          } else {
+            var file_ext = selected_file.match( /\.(\w+)$/  );
+            endpoint += '&contentType=' + ( content_type_map[ file_ext[1] || '' ] || 'text/plain' ) + ';charset=utf-8';
+          }
+
 
           var public_url = window.location.protocol + '//' + window.location.host + endpoint;
 

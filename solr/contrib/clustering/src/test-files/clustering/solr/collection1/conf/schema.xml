@@ -80,7 +80,7 @@
     <!--
      Numeric field types that index each value at various levels of precision
      to accelerate range queries when the number of values between the range
-     endpoints is large. See the javadoc for NumericRangeQuery for internal
+     endpoints is large. See the javadoc for LegacyNumericRangeQuery for internal
      implementation details.
 
      Smaller precisionStep values (specified in bits) will lead to more tokens
@@ -331,20 +331,5 @@
    <copyField source="title" dest="text"/>
    <copyField source="body" dest="text"/>
   <copyField source="snippet" dest="text"/>
-
- <!-- Similarity is the scoring routine for each document vs. a query.
-      A custom similarity may be specified here, but the default is fine
-      for most applications.  -->
- <!-- <similarity class="org.apache.lucene.search.DefaultSimilarity"/> -->
- <!-- ... OR ...
-      Specify a SimilarityFactory class name implementation
-      allowing parameters to be used.
- -->
- <!--
- <similarity class="com.example.solr.CustomSimilarityFactory">
-   <str name="paramkey">param value</str>
- </similarity>
- -->
-
 
 </schema>

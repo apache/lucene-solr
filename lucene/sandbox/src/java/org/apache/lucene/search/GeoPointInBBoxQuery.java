@@ -18,9 +18,10 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.GeoUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
- * {@link org.apache.lucene.search.NumericRangeQuery} and is implemented using a
+ * {@link LegacyNumericRangeQuery} and is implemented using a
  * two phase approach. First, candidate terms are queried using a numeric
  * range based on the morton codes of the min and max lat/lon pairs. Terms
  * passing this initial filter are passed to a final check that verifies whether
@@ -55,6 +56,13 @@ public class GeoPointInBBoxQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) {
+    // short-circuit to match all if specifying the whole map
+    if (minLon == GeoUtils.MIN_LON_INCL && maxLon == GeoUtils.MAX_LON_INCL
+        && minLat == GeoUtils.MIN_LAT_INCL && maxLat == GeoUtils.MAX_LAT_INCL) {
+      // FieldValueQuery is valid since DocValues are *required* for GeoPointField
+      return new FieldValueQuery(field);
+    }
+
     if (maxLon < minLon) {
       BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 

@@ -34,10 +34,10 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.lucene.document.DimensionalIntField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -186,7 +186,7 @@ public class LineFileDocs implements Closeable {
       id = new StringField("docid", "", Field.Store.YES);
       doc.add(id);
 
-      idNum = new IntField("docid_int", 0, Field.Store.NO);
+      idNum = new DimensionalIntField("docid_int", 0);
       doc.add(idNum);
 
       date = new StringField("date", "", Field.Store.YES);

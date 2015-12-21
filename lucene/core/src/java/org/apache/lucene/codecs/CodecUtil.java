@@ -135,9 +135,9 @@ public final class CodecUtil {
     out.writeBytes(id, 0, id.length);
     BytesRef suffixBytes = new BytesRef(suffix);
     if (suffixBytes.length != suffix.length() || suffixBytes.length >= 256) {
-      throw new IllegalArgumentException("codec must be simple ASCII, less than 256 characters in length [got " + suffix + "]");
+      throw new IllegalArgumentException("suffix must be simple ASCII, less than 256 characters in length [got " + suffix + "]");
     }
-    out.writeByte((byte)suffixBytes.length);
+    out.writeByte((byte) suffixBytes.length);
     out.writeBytes(suffixBytes.bytes, suffixBytes.offset, suffixBytes.length);
   }
 

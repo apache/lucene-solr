@@ -304,7 +304,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   }
 
   /**
-   * Reads a long in a variable-length format.  Reads between one and
+   * Reads a long in a variable-length format.  Reads between one andCorePropLo
    * nine bytes. Small values typically take fewer bytes.
    */
   static long readTLong(DataInput in) throws IOException {
@@ -595,6 +595,9 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
           readField(doc.in, visitor, fieldInfo, bits);
           break;
         case NO:
+          if (fieldIDX == doc.numStoredFields - 1) {// don't skipField on last field value; treat like STOP
+            return;
+          }
           skipField(doc.in, bits);
           break;
         case STOP:

@@ -25,7 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
@@ -334,7 +334,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         new BytesRef(""));
     Field weeksAtNumberOneField = new FloatDocValuesField("weeksAtNumberOne",
         0.0F);
-    Field weeksStoredField = new FloatField("weeks", 0.0F, Store.YES);
+    Field weeksStoredField = new LegacyFloatField("weeks", 0.0F, Store.YES);
     Field idField = newStringField("id", "", Field.Store.YES);
     Field songField = newTextField("song", "", Field.Store.NO);
     Field storedArtistField = newTextField("artistName", "", Field.Store.NO);

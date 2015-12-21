@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
-  private static final Logger LOG = LoggerFactory.getLogger(BinaryResponseWriter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {

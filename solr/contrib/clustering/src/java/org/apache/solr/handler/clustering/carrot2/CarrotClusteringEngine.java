@@ -18,6 +18,7 @@ package org.apache.solr.handler.clustering.carrot2;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -82,7 +83,7 @@ import com.google.common.collect.Sets;
  * @lucene.experimental
  */
 public class CarrotClusteringEngine extends SearchClusteringEngine {
-  transient static Logger log = LoggerFactory.getLogger(CarrotClusteringEngine.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * The subdirectory in Solr config dir to read customized Carrot2 resources from.

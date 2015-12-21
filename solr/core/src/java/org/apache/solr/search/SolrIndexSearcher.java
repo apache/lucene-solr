@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -36,13 +37,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LegacyFloatField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.LazyDocument;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -107,7 +108,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public static final AtomicLong numCloses = new AtomicLong();
 
 
-  static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCore core;
   private final IndexSchema schema;
 
@@ -634,34 +635,34 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void intField(FieldInfo fieldInfo, int value) {
-      FieldType ft = new FieldType(IntField.TYPE_NOT_STORED);
+      FieldType ft = new FieldType(LegacyIntField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexOptions(fieldInfo.getIndexOptions());
-      doc.add(new IntField(fieldInfo.name, value, ft));
+      doc.add(new LegacyIntField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void longField(FieldInfo fieldInfo, long value) {
-      FieldType ft = new FieldType(LongField.TYPE_NOT_STORED);
+      FieldType ft = new FieldType(LegacyLongField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexOptions(fieldInfo.getIndexOptions());
-      doc.add(new LongField(fieldInfo.name, value, ft));
+      doc.add(new LegacyLongField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void floatField(FieldInfo fieldInfo, float value) {
-      FieldType ft = new FieldType(FloatField.TYPE_NOT_STORED);
+      FieldType ft = new FieldType(LegacyFloatField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexOptions(fieldInfo.getIndexOptions());
-      doc.add(new FloatField(fieldInfo.name, value, ft));
+      doc.add(new LegacyFloatField(fieldInfo.name, value, ft));
     }
 
     @Override
     public void doubleField(FieldInfo fieldInfo, double value) {
-      FieldType ft = new FieldType(DoubleField.TYPE_NOT_STORED);
+      FieldType ft = new FieldType(LegacyDoubleField.TYPE_NOT_STORED);
       ft.setStored(true);
       ft.setIndexOptions(fieldInfo.getIndexOptions());
-      doc.add(new DoubleField(fieldInfo.name, value, ft));
+      doc.add(new LegacyDoubleField(fieldInfo.name, value, ft));
     }
   }
 
@@ -1194,7 +1195,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     TermQuery key = null;
 
     if (useCache) {
-      key = new TermQuery(new Term(deState.fieldName, BytesRef.deepCopyOf(deState.termsEnum.term())));
+      key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
       DocSet result = filterCache.get(key);
       if (result != null) return result;
     }
@@ -2534,7 +2535,7 @@ class FilterImpl extends Filter {
       for (Weight w : weights) {
         Scorer scorer = w.scorer(context);
         if (scorer == null) return null;
-        iterators.add(scorer);
+        iterators.add(scorer.iterator());
       }
       if (iterators.size()==0) return null;
       if (iterators.size()==1) return iterators.get(0);

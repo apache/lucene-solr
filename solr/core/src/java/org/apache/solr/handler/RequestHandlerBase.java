@@ -35,7 +35,10 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.stats.Snapshot;
 import org.apache.solr.util.stats.Timer;
 import org.apache.solr.util.stats.TimerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -59,6 +62,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private final Timer requestTimes = new Timer();
 
   private final long handlerStart;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
 
@@ -166,10 +171,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
           // TODO: should we allow this to be counted as an error (numErrors++)?
 
         } else {
-          SolrException.log(SolrCore.log,e);
+          SolrException.log(log, e);
         }
       } else {
-        SolrException.log(SolrCore.log,e);
+        SolrException.log(log, e);
         if (e instanceof SyntaxError) {
           e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }

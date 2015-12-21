@@ -36,7 +36,7 @@ public class FunctionQParser extends QParser {
   public static final int FLAG_DEFAULT = FLAG_CONSUME_DELIMITER;
 
   /** @lucene.internal */
-  public QueryParsing.StrParser sp;
+  public StrParser sp;
   boolean parseMultipleSources = true;
   boolean parseToEnd = true;
 
@@ -49,7 +49,7 @@ public class FunctionQParser extends QParser {
   public void setString(String s) {
     super.setString(s);
     if (s != null) {
-      sp = new QueryParsing.StrParser( s );
+      sp = new StrParser( s );
     }
   }
 
@@ -331,7 +331,7 @@ public class FunctionQParser extends QParser {
       ch = val.length()==0 ? '\0' : val.charAt(0);
 
       if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
-        QueryParsing.StrParser sp = new QueryParsing.StrParser(val);
+        StrParser sp = new StrParser(val);
         Number num = sp.getNumber();
         if (num instanceof Long) {
           valueSource = new LongConstValueSource(num.longValue());
@@ -342,7 +342,7 @@ public class FunctionQParser extends QParser {
           valueSource = new ConstValueSource(num.floatValue());
         }
       } else if (ch == '"' || ch == '\'') {
-        QueryParsing.StrParser sp = new QueryParsing.StrParser(val);
+        StrParser sp = new StrParser(val);
         val = sp.getQuotedString();
         valueSource = new LiteralValueSource(val);
       } else {

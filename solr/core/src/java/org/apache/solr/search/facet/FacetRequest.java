@@ -17,33 +17,19 @@ package org.apache.solr.search.facet;
  * limitations under the License.
  */
 
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumSet;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.FunctionQParserPlugin;
@@ -89,9 +75,22 @@ public abstract class FacetRequest {
     subFacets.put(key, facetRequest);
   }
 
+  @Override
+  public String toString() {
+    Map<String, Object> descr = getFacetDescription();
+    String s = "facet request: { ";
+    for (String key : descr.keySet()) {
+      s += key + ":" + descr.get(key) + ",";
+    }
+    s += "}";
+    return s;
+  }
+  
   public abstract FacetProcessor createFacetProcessor(FacetContext fcontext);
 
   public abstract FacetMerger createFacetMerger(Object prototype);
+  
+  public abstract Map<String, Object> getFacetDescription();
 }
 
 
@@ -106,7 +105,16 @@ class FacetContext {
   DocSet base;
   FacetContext parent;
   int flags;
-
+  FacetDebugInfo debugInfo;
+  
+  public void setDebugInfo(FacetDebugInfo debugInfo) {
+    this.debugInfo = debugInfo;
+  }
+  
+  public FacetDebugInfo getDebugInfo() {
+    return debugInfo;
+  }
+  
   public boolean isShard() {
     return (flags & IS_SHARD) != 0;
   }
@@ -295,7 +303,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
 
       Map<String,Object> domainMap = (Map<String,Object>) m.get("domain");
       if (domainMap != null) {
-        excludeTags = getStringList(m, "excludeTags");
+        excludeTags = getStringList(domainMap, "excludeTags");
         if (excludeTags != null) {
           getDomain().excludeTags = excludeTags;
         }
@@ -523,6 +531,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.field = getField(m);
       facet.offset = getLong(m, "offset", facet.offset);
       facet.limit = getLong(m, "limit", facet.limit);
+      if (facet.limit == 0) facet.offset = 0;  // normalize.  an offset with a limit of non-zero isn't useful.
       facet.mincount = getLong(m, "mincount", facet.mincount);
       facet.missing = getBoolean(m, "missing", facet.missing);
       facet.numBuckets = getBoolean(m, "numBuckets", facet.numBuckets);
@@ -530,6 +539,8 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.allBuckets = getBoolean(m, "allBuckets", facet.allBuckets);
       facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
       facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
+
+      facet.perSeg = (Boolean)m.get("perSeg");
 
       // facet.sort may depend on a facet stat...
       // should we be parsing / validating this here, or in the execution environment?
@@ -560,6 +571,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
         facet.sortVariable = sortStr.substring(0, sortStr.length()-" desc".length());
         facet.sortDirection = FacetField.SortDirection.desc;
       } else {
+        facet.sortVariable = sortStr;
         facet.sortDirection = "index".equals(facet.sortVariable) ? FacetField.SortDirection.asc : FacetField.SortDirection.desc;  // default direction for "index" is ascending
       }
     } else {

@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
@@ -91,7 +92,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * </ul>
  */
 public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
-  public final static Logger log = LoggerFactory.getLogger(DocBasedVersionConstraintsProcessorFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private boolean ignoreOldUpdates = false;
   private String versionField = null;

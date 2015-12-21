@@ -17,28 +17,14 @@
 
 package org.apache.solr.schema;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.regex.Pattern;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
+import java.io.Writer;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -53,10 +39,10 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
-import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
@@ -65,7 +51,8 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.similarities.DefaultSimilarityFactory;
+import org.apache.solr.search.similarities.ClassicSimilarityFactory;
+import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -122,7 +109,7 @@ public class IndexSchema {
   private static final String TEXT_FUNCTION = "text()";
   private static final String XPATH_OR = " | ";
 
-  final static Logger log = LoggerFactory.getLogger(IndexSchema.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrConfig solrConfig;
   protected String resourceName;
   protected String name;
@@ -448,9 +435,6 @@ public class IndexSchema {
   }
 
   protected void readSchema(InputSource is) {
-    String resourcePath = CloudUtil.unifiedResourcePath(loader) + resourceName;
-    log.info("Reading Solr Schema from " + resourcePath);
-
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
@@ -497,10 +481,11 @@ public class IndexSchema {
       Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
-        similarityFactory = new DefaultSimilarityFactory();
-        final NamedList similarityParams = new NamedList();
-        Version luceneVersion = getDefaultLuceneMatchVersion();
-        similarityFactory.init(SolrParams.toSolrParams(similarityParams));
+        final boolean modernSim = getDefaultLuceneMatchVersion().onOrAfter(Version.LUCENE_6_0_0);
+        final Class simClass = modernSim ? SchemaSimilarityFactory.class : ClassicSimilarityFactory.class;
+        // use the loader to ensure proper SolrCoreAware handling
+        similarityFactory = loader.newInstance(simClass.getName(), SimilarityFactory.class);
+        similarityFactory.init(new ModifiableSolrParams());
       } else {
         isExplicitSimilarity = true;
       }
@@ -592,13 +577,12 @@ public class IndexSchema {
       postReadInform();
 
     } catch (SolrException e) {
-      throw new SolrException(ErrorCode.getErrorCode(e.code()), e.getMessage() + ". Schema file is " +
-          resourcePath, e);
+      throw new SolrException(ErrorCode.getErrorCode(e.code()),
+          "Can't load schema " + loader.resourceLocation(resourceName) + ": " + e.getMessage(), e);
     } catch(Exception e) {
       // unexpected exception...
       throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Schema Parsing Failed: " + e.getMessage() + ". Schema file is " + resourcePath,
-          e);
+          "Can't load schema " + loader.resourceLocation(resourceName) + ": " + e.getMessage(), e);
     }
 
     // create the field analyzers

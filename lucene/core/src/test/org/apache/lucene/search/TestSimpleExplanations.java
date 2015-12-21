@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+
 import org.apache.lucene.index.Term;
 
 /**
@@ -98,89 +100,99 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   /* DisjunctionMaxQuery */
   
   public void testDMQ1() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.0f);
-    q.add(new TermQuery(new Term(FIELD, "w1")));
-    q.add(new TermQuery(new Term(FIELD, "w5")));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            new TermQuery(new Term(FIELD, "w1")),
+            new TermQuery(new Term(FIELD, "w5"))),
+        0.0f);
     qtest(q, new int[] { 0,1,2,3 });
   }
   public void testDMQ2() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-    q.add(new TermQuery(new Term(FIELD, "w1")));
-    q.add(new TermQuery(new Term(FIELD, "w5")));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            new TermQuery(new Term(FIELD, "w1")),
+            new TermQuery(new Term(FIELD, "w5"))),
+        0.5f);
     qtest(q, new int[] { 0,1,2,3 });
   }
   public void testDMQ3() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-    q.add(new TermQuery(new Term(FIELD, "QQ")));
-    q.add(new TermQuery(new Term(FIELD, "w5")));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            new TermQuery(new Term(FIELD, "QQ")),
+            new TermQuery(new Term(FIELD, "w5"))),
+        0.5f);
     qtest(q, new int[] { 0 });
   }
   public void testDMQ4() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-    q.add(new TermQuery(new Term(FIELD, "QQ")));
-    q.add(new TermQuery(new Term(FIELD, "xx")));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            new TermQuery(new Term(FIELD, "QQ")),
+            new TermQuery(new Term(FIELD, "xx"))),
+        0.5f);
     qtest(q, new int[] { 2,3 });
   }
   public void testDMQ5() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
     booleanQuery.add(new TermQuery(new Term(FIELD, "QQ")), BooleanClause.Occur.MUST_NOT);
 
-    q.add(booleanQuery.build());
-    q.add(new TermQuery(new Term(FIELD, "xx")));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            booleanQuery.build(),
+            new TermQuery(new Term(FIELD, "xx"))),
+        0.5f);
     qtest(q, new int[] { 2,3 });
   }
   public void testDMQ6() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.MUST_NOT);
     booleanQuery.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.SHOULD);
 
-    q.add(booleanQuery.build());
-    q.add(new TermQuery(new Term(FIELD, "xx")));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            booleanQuery.build(),
+            new TermQuery(new Term(FIELD, "xx"))),
+        0.5f);
     qtest(q, new int[] { 0,1,2,3 });
   }
   public void testDMQ7() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.MUST_NOT);
     booleanQuery.add(new TermQuery(new Term(FIELD, "w3")), BooleanClause.Occur.SHOULD);
 
-    q.add(booleanQuery.build());
-    q.add(new TermQuery(new Term(FIELD, "w2")));
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            booleanQuery.build(),
+            new TermQuery(new Term(FIELD, "w2"))),
+        0.5f);
     qtest(q, new int[] { 0,1,2,3 });
   }
   public void testDMQ8() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
 
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
     booleanQuery.add(new BoostQuery(boostedQuery, 100), BooleanClause.Occur.SHOULD);
-    q.add(booleanQuery.build());
 
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
-    q.add(new BoostQuery(xxBoostedQuery, 100000));
-    
+
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(booleanQuery.build(), new BoostQuery(xxBoostedQuery, 100000)),
+        0.5f);
     qtest(q, new int[] { 0,2,3 });
   }
   public void testDMQ9() throws Exception {
-    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
 
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
     booleanQuery.add(new BoostQuery(boostedQuery, 100), BooleanClause.Occur.SHOULD);
-    q.add(booleanQuery.build());
 
     TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
-    q.add(new BoostQuery(xxBoostedQuery, 0));
+
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(booleanQuery.build(), new BoostQuery(xxBoostedQuery, 0)),
+        0.5f);
 
     qtest(q, new int[] { 0,2,3 });
   }

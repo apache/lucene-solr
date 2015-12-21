@@ -16,8 +16,15 @@ package org.apache.solr.search.mlt;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -31,8 +38,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,8 +56,6 @@ public class CloudMLTQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
-  private static Logger log = LoggerFactory
-      .getLogger(CloudMLTQParser.class);
   public Query parse() {
     String id = localParams.get(QueryParsing.V);
     // Do a Real Time Get for the document
@@ -62,6 +66,8 @@ public class CloudMLTQParser extends QParser {
           "document with id [" + id + "]");
     }
     
+    String[] qf = localParams.getParams("qf");
+    Map<String,Float> boostFields = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
     
     if(localParams.getInt("mintf") != null)
@@ -85,11 +91,14 @@ public class CloudMLTQParser extends QParser {
       mlt.setMaxDocFreq(localParams.getInt("maxdf"));
     }
 
+    if(localParams.get("boost") != null) {
+      mlt.setBoost(localParams.getBool("boost"));
+      boostFields = SolrPluginUtils.parseFieldBoosts(qf);
+    }
+
     mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
-    String[] qf = localParams.getParams("qf");
     Map<String, Collection<Object>> filteredDocument = new HashMap();
-
     ArrayList<String> fieldNames = new ArrayList();
 
     if (qf != null) {
@@ -127,7 +136,35 @@ public class CloudMLTQParser extends QParser {
     }
 
     try {
-      return mlt.like(filteredDocument);
+      Query rawMLTQuery = mlt.like(filteredDocument);
+      BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
+
+      if (boostFields.size() > 0) {
+        BooleanQuery.Builder newQ = new BooleanQuery.Builder();
+        newQ.setDisableCoord(boostedMLTQuery.isCoordDisabled());
+        newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
+
+        for (BooleanClause clause : boostedMLTQuery) {
+          Query q = clause.getQuery();
+          Float b = boostFields.get(((TermQuery) q).getTerm().field());
+
+          if (b != null) {
+            q = new BoostQuery(q, b);
+          }
+
+          newQ.add(q, clause.getOccur());
+        }
+
+        boostedMLTQuery = newQ.build();
+      }
+
+      // exclude current document from results
+      BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
+      realMLTQuery.setDisableCoord(true);
+      realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
+      realMLTQuery.add(createIdQuery("id", id), BooleanClause.Occur.MUST_NOT);
+
+      return realMLTQuery.build();
     } catch (IOException e) {
       e.printStackTrace();
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad Request");
@@ -148,6 +185,19 @@ public class CloudMLTQParser extends QParser {
     NamedList response = rsp.getValues();
 
     return (SolrDocument) response.get("doc");
+  }
+
+  private Query createIdQuery(String defaultField, String uniqueValue) {
+    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumericType() != null
+        ? createNumericTerm(defaultField, uniqueValue)
+        : new Term(defaultField, uniqueValue));
+  }
+
+  private Term createNumericTerm(String field, String uniqueValue) {
+    BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
+    bytesRefBuilder.grow(LegacyNumericUtils.BUF_SIZE_INT);
+    LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(uniqueValue), 0, bytesRefBuilder);
+    return new Term(field, bytesRefBuilder.toBytesRef());
   }
 
 }

@@ -26,4 +26,6 @@
     <infoStream>true</infoStream>
     <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
   </indexConfig>
+
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 </config>

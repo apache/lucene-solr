@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.Date;
@@ -44,7 +45,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     SolrConfig config = new SolrConfig
-        (new SolrResourceLoader(testInstanceDir), testConfHome + "solrconfig.xml", null);
+        (new SolrResourceLoader(Paths.get(testInstanceDir)), testConfHome + "solrconfig.xml", null);
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema.xml", config);
     f = new TrieDateField();
     f.init(schema, Collections.<String,String>emptyMap());

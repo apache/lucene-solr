@@ -88,9 +88,9 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
@@ -169,7 +169,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     Sort sort = null;
 
     if (sortParam != null) {
-      sort = QueryParsing.parseSortSpec(sortParam, rb.req).getSort();
+      sort = SortSpecParsing.parseSortSpec(sortParam, rb.req).getSort();
     }
 
     Query query;
@@ -740,7 +740,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               fieldInfo.getIndexOptions(),
               DocValuesType.NONE,
               fieldInfo.getDocValuesGen(),
-              fieldInfo.attributes());
+              fieldInfo.attributes(),
+              0, 0);
           newInfos.add(f);
 
         } else {

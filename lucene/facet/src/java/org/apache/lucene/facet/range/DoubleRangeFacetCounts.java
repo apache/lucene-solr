@@ -36,8 +36,9 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /** {@link Facets} implementation that computes counts for
  *  dynamic double ranges from a provided {@link
@@ -88,8 +89,8 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
     for(int i=0;i<ranges.length;i++) {
       DoubleRange range = ranges[i];
       longRanges[i] =  new LongRange(range.label,
-                                     NumericUtils.doubleToSortableLong(range.minIncl), true,
-                                     NumericUtils.doubleToSortableLong(range.maxIncl), true);
+                                     LegacyNumericUtils.doubleToSortableLong(range.minIncl), true,
+                                     LegacyNumericUtils.doubleToSortableLong(range.maxIncl), true);
     }
 
     LongRangeCounter counter = new LongRangeCounter(longRanges);
@@ -105,10 +106,11 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
         final IndexSearcher searcher = new IndexSearcher(topLevelContext);
         searcher.setQueryCache(null);
         final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, false);
-        fastMatchDocs = fastMatchWeight.scorer(hits.context);
-        if (fastMatchDocs == null) {
+        Scorer s = fastMatchWeight.scorer(hits.context);
+        if (s == null) {
           continue;
         }
+        fastMatchDocs = s.iterator();
       } else {
         fastMatchDocs = null;
       }
@@ -129,7 +131,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
         }
         // Skip missing docs:
         if (fv.exists(doc)) {
-          counter.add(NumericUtils.doubleToSortableLong(fv.doubleVal(doc)));
+          counter.add(LegacyNumericUtils.doubleToSortableLong(fv.doubleVal(doc)));
         } else {
           missingCount++;
         }

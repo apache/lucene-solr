@@ -62,22 +62,20 @@ public abstract class CachingCollector extends FilterCollector {
     private CachedScorer() { super(null); }
 
     @Override
+    public DocIdSetIterator iterator() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public final float score() { return score; }
 
     @Override
-    public final int advance(int target) { throw new UnsupportedOperationException(); }
-
-    @Override
-    public final int docID() { return doc; }
+    public int docID() {
+      return doc;
+    }
 
     @Override
     public final int freq() { throw new UnsupportedOperationException(); }
-
-    @Override
-    public final int nextDoc() { throw new UnsupportedOperationException(); }
-
-    @Override
-    public long cost() { return 1; }
 
   }
 
@@ -98,6 +96,9 @@ public abstract class CachingCollector extends FilterCollector {
     protected NoScoreCachingLeafCollector wrap(LeafCollector in, int maxDocsToCache) {
       return new NoScoreCachingLeafCollector(in, maxDocsToCache);
     }
+
+    // note: do *not* override needScore to say false. Just because we aren't caching the score doesn't mean the
+    //   wrapped collector doesn't need it to do its job.
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       postCollection();
@@ -177,6 +178,13 @@ public abstract class CachingCollector extends FilterCollector {
       scores.add(coll.cachedScores());
     }
 
+    /** Ensure the scores are collected so they can be replayed, even if the wrapped collector doesn't need them. */
+    @Override
+    public boolean needsScores() {
+      return true;
+    }
+
+    @Override
     protected void collect(LeafCollector collector, int i) throws IOException {
       final int[] docs = this.docs.get(i);
       final float[] scores = this.scores.get(i);
@@ -189,7 +197,6 @@ public abstract class CachingCollector extends FilterCollector {
         collector.collect(scorer.doc);
       }
     }
-
   }
 
   private class NoScoreCachingLeafCollector extends FilterLeafCollector {

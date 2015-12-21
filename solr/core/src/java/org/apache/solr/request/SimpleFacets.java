@@ -73,8 +73,6 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -101,8 +99,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class SimpleFacets {
   
-  private final static Logger log = LoggerFactory.getLogger(SimpleFacets.class);
-
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
   /** Configuration params behavior should be driven by */

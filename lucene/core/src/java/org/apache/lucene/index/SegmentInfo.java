@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -267,6 +268,9 @@ public final class SegmentInfo {
       m.reset(file);
       if (!m.matches()) {
         throw new IllegalArgumentException("invalid codec filename '" + file + "', must match: " + IndexFileNames.CODEC_FILE_PATTERN.pattern());
+      }
+      if (file.toLowerCase(Locale.ROOT).endsWith(".tmp")) {
+        throw new IllegalArgumentException("invalid codec filename '" + file + "', cannot end with .tmp extension");
       }
     }
   }

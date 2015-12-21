@@ -203,7 +203,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     query = parser.parse();
     assertNotNull("Query is null", query);
     assertTrue(query.getClass() + " is not an instanceof "
-            + NumericRangeQuery.class,
-            query instanceof NumericRangeQuery);
+            + LegacyNumericRangeQuery.class,
+            query instanceof LegacyNumericRangeQuery);
     req.close();
   }*/

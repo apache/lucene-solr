@@ -22,10 +22,11 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <schemaFactory class="ManagedIndexSchemaFactory">
-    <bool name="mutable">${managed.schema.mutable}</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
-  </schemaFactory>
+  <!-- This is intentionally commented out, see SOLR-8131 -->
+  <!--<schemaFactory class="ManagedIndexSchemaFactory">-->
+    <!--<bool name="mutable">${managed.schema.mutable}</bool>-->
+    <!--<str name="managedSchemaResourceName">managed-schema</str>-->
+  <!--</schemaFactory>-->
 
   <codecFactory class="solr.SchemaCodecFactory"/>
 

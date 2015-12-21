@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ import java.util.regex.Pattern;
  * @see Pattern
  */
 public class RegexTransformer extends Transformer {
-  private static final Logger LOG = LoggerFactory.getLogger(RegexTransformer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   @SuppressWarnings("unchecked")

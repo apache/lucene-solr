@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * and for initializing them as specified by SolrConfig
  */
 public class SuggestComponent extends SearchComponent implements SolrCoreAware, SuggesterParams, Accountable {
-  private static final Logger LOG = LoggerFactory.getLogger(SuggestComponent.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** Name used to identify whether the user query concerns this component */
   public static final String COMPONENT_NAME = "suggest";
@@ -523,7 +524,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       try {
         suggester.build(core, newSearcher);
       } catch (Exception e) {
-        log.error("Exception in building suggester index for: " + suggester.getName(), e);
+        LOG.error("Exception in building suggester index for: " + suggester.getName(), e);
       }
     }
 

@@ -23,6 +23,7 @@ function($scope, $routeParams, Collections, Constants) {
     Collections.status({}, function(data) {
       $scope.selectedCollection = data.cluster.collections[$routeParams.core];
       $scope.selectedCollection.name = $routeParams.core;
+      $scope.rootUrl = Constants.ROOT_URL;
     });
   };
 

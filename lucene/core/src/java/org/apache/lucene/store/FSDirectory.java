@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.Constants;
@@ -125,10 +126,14 @@ public abstract class FSDirectory extends BaseDirectory {
 
   protected final Path directory; // The underlying filesystem directory
 
+
   /** Files we previously tried to delete, but hit exception (on Windows) last time we tried.
    *  These files are in "pending delete" state, where we refuse to openInput or createOutput
    *  them, nor include them in .listAll. */
   protected final Set<String> pendingDeletes = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+
+  /** Used to generate temp file names in {@link #createTempOutput}. */
+  private final AtomicLong nextTempFileCounter = new AtomicLong();
 
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * The directory is created at the named location if it does not yet exist.
@@ -251,9 +256,10 @@ public abstract class FSDirectory extends BaseDirectory {
   public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
     ensureOpen();
     while (true) {
-      String name = prefix + tempFileRandom.nextInt(Integer.MAX_VALUE) + "." + suffix;
       try {
-        return new FSIndexOutput(name, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+        String name = IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(nextTempFileCounter.getAndIncrement(), Character.MAX_RADIX), "tmp");
+        return new FSIndexOutput(name,
+                                 StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
       } catch (FileAlreadyExistsException faee) {
         // Retry with next random name
       }
@@ -273,10 +279,7 @@ public abstract class FSDirectory extends BaseDirectory {
   protected void ensureCanRead(String name) throws IOException {
     deletePendingFiles();
     if (pendingDeletes.contains(name)) {
-      throw new IOException("file \"" + name + "\" is pending delete and cannot be overwritten");
-    }
-    if (pendingDeletes.contains(name)) {
-      throw new IOException("file \"" + name + "\" is pending delete and cannot be opened");
+      throw new NoSuchFileException("file \"" + name + "\" is pending delete and cannot be overwritten");
     }
   }
 
@@ -341,9 +344,9 @@ public abstract class FSDirectory extends BaseDirectory {
       // it should only happen on filesystems that can do this, so really we should
       // move this logic to WindowsDirectory or something
 
-      // nocommit can/should we do if (Constants.WINDOWS) here, else throw the exc?
+      // TODO: can/should we do if (Constants.WINDOWS) here, else throw the exc?
       // but what about a Linux box with a CIFS mount?
-      System.out.println("FS.deleteFile failed (" + ioe + "): will retry later");
+      //System.out.println("FS.deleteFile failed (" + ioe + "): will retry later");
       pendingDeletes.add(name);
       return false;
     }

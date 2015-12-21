@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
@@ -94,7 +95,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  */
 @Slow
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
-  static Logger log = LoggerFactory.getLogger(AbstractFullDistribZkTestBase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeFullSolrCloudTest() {
@@ -1200,8 +1201,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     log.info("Turning on auto soft commit: " + time);
     for (List<CloudJettyRunner> jettyList : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jettyList) {
-        CoreContainer cores = ((SolrDispatchFilter) jetty.jetty
-            .getDispatchFilter().getFilter()).getCores();
+        CoreContainer cores = jetty.jetty.getCoreContainer();
         for (SolrCore core : cores.getCores()) {
           ((DirectUpdateHandler2) core.getUpdateHandler())
               .getSoftCommitTracker().setTimeUpperBound(time);

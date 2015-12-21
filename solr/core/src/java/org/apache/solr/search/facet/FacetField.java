@@ -26,34 +26,28 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.HashDocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
@@ -73,6 +67,9 @@ public class FacetField extends FacetRequest {
   FacetMethod method;
   int cacheDf;  // 0 means "default", -1 means "never cache"
 
+  // experimental - force perSeg collection when using dv method, currently for testing purposes only.
+  Boolean perSeg;
+
   // TODO: put this somewhere more generic?
   public static enum SortDirection {
     asc(-1) ,
@@ -90,18 +87,21 @@ public class FacetField extends FacetRequest {
   }
 
   public static enum FacetMethod {
+    DV,  // DocValues
+    UIF, // UnInvertedField
     ENUM,
     STREAM,
-    FIELDCACHE,
     SMART,
     ;
 
     public static FacetMethod fromString(String method) {
       if (method == null || method.length()==0) return null;
-      if ("enum".equals(method)) {
+      if ("dv".equals(method)) {
+        return DV;
+      } else if ("uif".equals(method)) {
+        return UIF;
+      } else if ("enum".equals(method)) {
         return ENUM;
-      } else if ("fc".equals(method) || "fieldcache".equals(method)) {
-        return FIELDCACHE;
       } else if ("smart".equals(method)) {
         return SMART;
       } else if ("stream".equals(method)) {
@@ -124,7 +124,7 @@ public class FacetField extends FacetRequest {
       return new FacetFieldProcessorStream(fcontext, this, sf);
     }
 
-    org.apache.lucene.document.FieldType.NumericType ntype = ft.getNumericType();
+    org.apache.lucene.document.FieldType.LegacyNumericType ntype = ft.getNumericType();
 
     if (sf.hasDocValues() && ntype==null) {
       // single and multi-valued string docValues
@@ -137,19 +137,30 @@ public class FacetField extends FacetRequest {
         return new FacetFieldProcessorNumeric(fcontext, this, sf);
       } else {
         // single valued string...
-//        return new FacetFieldProcessorDV(fcontext, this, sf);
         return new FacetFieldProcessorDV(fcontext, this, sf);
-        // what about FacetFieldProcessorFC?
       }
     }
 
-    // Multi-valued field cache (UIF)
+    // multivalued but field doesn't have docValues
+    if (method == FacetMethod.DV) {
+      return new FacetFieldProcessorDV(fcontext, this, sf);
+    }
+
+    // Top-level multi-valued field cache (UIF)
     return new FacetFieldProcessorUIF(fcontext, this, sf);
   }
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
     return new FacetFieldMerger(this);
+  }
+  
+  @Override
+  public Map<String, Object> getFacetDescription() {
+    Map<String, Object> descr = new HashMap<String, Object>();
+    descr.put("field", field);
+    descr.put("limit", new Long(limit));
+    return descr;
   }
 }
 
@@ -271,7 +282,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       return;
     }
 
-    // create the deffered aggs up front for use by allBuckets
+    // create the deferred aggs up front for use by allBuckets
     createOtherAccs(numDocs, 1);
   }
 
@@ -450,6 +461,20 @@ class SpecialSlotAcc extends SlotAcc {
   }
 
   @Override
+  public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    // collectAcc and otherAccs will normally have setNextReader called directly on them.
+    // This, however, will be used when collect(DocSet,slot) variant is used on this Acc.
+    if (collectAcc != null) {
+      collectAcc.setNextReader(readerContext);
+    }
+    if (otherAccs != null) {
+      for (SlotAcc otherAcc : otherAccs) {
+        otherAcc.setNextReader(readerContext);
+      }
+    }
+  }
+
+  @Override
   public int compare(int slotA, int slotB) {
     throw new UnsupportedOperationException();
   }
@@ -561,7 +586,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
     // add a modest amount of over-request if this is a shard request
     int lim = freq.limit >= 0 ? (fcontext.isShard() ? (int)(freq.limit*1.1+4) : (int)freq.limit) : Integer.MAX_VALUE;
 
-    int maxsize = (int)(freq.limit > 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
+    int maxsize = (int)(freq.limit >= 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
     maxsize = Math.min(maxsize, nTerms);
 
     final int sortMul = freq.sortDirection.getMultiplier();
@@ -596,7 +621,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
           bottom.slot = i;
           bottom = queue.updateTop();
         }
-      } else {
+      } else if (lim > 0) {
         // queue not full
         Slot s = new Slot();
         s.slot = i;
@@ -653,7 +678,7 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
       bucket.add("val", val);
 
-      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), BytesRef.deepCopyOf(br))) : null;
+      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), br)) : null;
       fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
 
       bucketList.add(bucket);
@@ -670,158 +695,6 @@ abstract class FacetFieldProcessorFCBase extends FacetFieldProcessor {
 
 
 }
-
-
-class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
-  static boolean unwrap_singleValued_multiDv = true;  // only set to false for test coverage
-
-  boolean multiValuedField;
-  SortedSetDocValues si;  // only used for term lookups (for both single and multi-valued)
-  MultiDocValues.OrdinalMap ordinalMap = null; // maps per-segment ords to global ords
-
-
-  public FacetFieldProcessorDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
-    super(fcontext, freq, sf);
-    multiValuedField = sf.multiValued() || sf.getType().multiValuedFieldCache();
-  }
-
-  protected BytesRef lookupOrd(int ord) throws IOException {
-    return si.lookupOrd(ord);
-  }
-
-  protected void findStartAndEndOrds() throws IOException {
-    if (multiValuedField) {
-      si = FieldUtil.getSortedSetDocValues(fcontext.qcontext, sf, null);
-      if (si instanceof MultiDocValues.MultiSortedSetDocValues) {
-        ordinalMap = ((MultiDocValues.MultiSortedSetDocValues)si).mapping;
-      }
-    } else {
-      SortedDocValues single = FieldUtil.getSortedDocValues(fcontext.qcontext, sf, null);
-      si = DocValues.singleton(single);  // multi-valued view
-      if (single instanceof MultiDocValues.MultiSortedDocValues) {
-        ordinalMap = ((MultiDocValues.MultiSortedDocValues)single).mapping;
-      }
-    }
-
-    if (si.getValueCount() >= Integer.MAX_VALUE) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field has too many unique values. field=" + sf + " nterms= " + si.getValueCount());
-    }
-
-    if (prefixRef != null) {
-      startTermIndex = (int)si.lookupTerm(prefixRef.get());
-      if (startTermIndex < 0) startTermIndex = -startTermIndex - 1;
-      prefixRef.append(UnicodeUtil.BIG_TERM);
-      endTermIndex = (int)si.lookupTerm(prefixRef.get());
-      assert endTermIndex < 0;
-      endTermIndex = -endTermIndex - 1;
-    } else {
-      startTermIndex = 0;
-      endTermIndex = (int)si.getValueCount();
-    }
-
-    nTerms = endTermIndex - startTermIndex;
-  }
-
-  @Override
-  protected void collectDocs() throws IOException {
-    if (nTerms <= 0 || fcontext.base.size() < effectiveMincount) { // TODO: what about allBuckets? missing bucket?
-      return;
-    }
-
-    final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
-    Filter filter = fcontext.base.getTopFilter();
-
-    for (int subIdx = 0; subIdx < leaves.size(); subIdx++) {
-      LeafReaderContext subCtx = leaves.get(subIdx);
-
-      setNextReaderFirstPhase(subCtx);
-
-      DocIdSet dis = filter.getDocIdSet(subCtx, null); // solr docsets already exclude any deleted docs
-      DocIdSetIterator disi = dis.iterator();
-
-      SortedDocValues singleDv = null;
-      SortedSetDocValues multiDv = null;
-      if (multiValuedField) {
-        // TODO: get sub from multi?
-        multiDv = subCtx.reader().getSortedSetDocValues(sf.getName());
-        if (multiDv == null) {
-          multiDv = DocValues.emptySortedSet();
-        }
-        // some codecs may optimize SortedSet storage for single-valued fields
-        // this will be null if this is not a wrapped single valued docvalues.
-        if (unwrap_singleValued_multiDv) {
-          singleDv = DocValues.unwrapSingleton(multiDv);
-        }
-      } else {
-        singleDv = subCtx.reader().getSortedDocValues(sf.getName());
-        if (singleDv == null) {
-          singleDv = DocValues.emptySorted();
-        }
-      }
-
-      LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
-
-      if (singleDv != null) {
-        collectDocs(singleDv, disi, toGlobal);
-      } else {
-        collectDocs(multiDv, disi, toGlobal);
-      }
-    }
-
-  }
-
-  protected void collectDocs(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
-    int doc;
-    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      int segOrd = singleDv.getOrd(doc);
-      if (segOrd < 0) continue;
-      collect(doc, segOrd, toGlobal);
-    }
-  }
-
-  protected void collectDocs(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
-    int doc;
-    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      multiDv.setDocument(doc);
-      for(;;) {
-        int segOrd = (int)multiDv.nextOrd();
-        if (segOrd < 0) break;
-        collect(doc, segOrd, toGlobal);
-      }
-    }
-  }
-
-  private void collect(int doc, int segOrd, LongValues toGlobal) throws IOException {
-    int ord = (toGlobal != null && segOrd >= 0) ? (int)toGlobal.get(segOrd) : segOrd;
-
-    int arrIdx = ord - startTermIndex;
-    if (arrIdx >= 0 && arrIdx < nTerms) {
-      countAcc.incrementCount(arrIdx, 1);
-      if (collectAcc != null) {
-        collectAcc.collect(doc, arrIdx);
-      }
-      if (allBucketsAcc != null) {
-        allBucketsAcc.collect(doc, arrIdx);
-      }
-    }
-  }
-
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -917,9 +790,10 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
 
     setup();
     response = new SimpleOrderedMap<>();
-    response.add( "buckets", new Iterator() {
+    response.add("buckets", new Iterator() {
       boolean retrieveNext = true;
       Object val;
+
       @Override
       public boolean hasNext() {
         if (retrieveNext) {
@@ -1158,15 +1032,14 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
 
         // OK, we have a good bucket to return... first get bucket value before moving to next term
         Object bucketVal = sf.getType().toObject(sf, term);
-        BytesRef termCopy = BytesRef.deepCopyOf(term);
+        TermQuery bucketQuery = hasSubFacets ? new TermQuery(new Term(freq.field, term)) : null;
         term = termsEnum.next();
 
         SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
         bucket.add("val", bucketVal);
         addStats(bucket, 0);
         if (hasSubFacets) {
-          TermQuery filter = new TermQuery(new Term(freq.field, termCopy));
-          processSubs(bucket, filter, termSet);
+          processSubs(bucket, bucketQuery, termSet);
         }
 
         // TODO... termSet needs to stick around for streaming sub-facets?

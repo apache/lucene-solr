@@ -236,18 +236,8 @@ public class TestTopFieldCollector extends LuceneTestCase {
                     }
 
                     @Override
-                    public int nextDoc() throws IOException {
-                      return scorer.nextDoc();
-                    }
-
-                    @Override
-                    public int advance(int target) throws IOException {
-                      return scorer.advance(target);
-                    }
-
-                    @Override
-                    public long cost() {
-                      return scorer.cost();
+                    public DocIdSetIterator iterator() {
+                      return scorer.iterator();
                     }
                     
                   };

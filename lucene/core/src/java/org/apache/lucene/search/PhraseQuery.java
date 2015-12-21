@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -44,7 +46,11 @@ import org.apache.lucene.util.BytesRef;
  * 
  * <p>This query may be combined with other terms or queries with a {@link BooleanQuery}.
  *
- * <b>NOTE</b>: Leading holes don't have any particular meaning for this query
+ * <p><b>NOTE</b>:
+ * All terms in the phrase must match, even those at the same position. If you
+ * have terms at the same position, perhaps synonyms, you probably want {@link MultiPhraseQuery}
+ * instead which only requires one term at a position to match.
+ * <br >Also, Leading holes don't have any particular meaning for this query
  * and will be ignored. For instance this query:
  * <pre class="prettyprint">
  * PhraseQuery.Builder builder = new PhraseQuery.Builder();
@@ -95,13 +101,14 @@ public class PhraseQuery extends Query {
 
     /**
      * Adds a term to the end of the query phrase.
-     * The relative position of the term within the phrase is specified explicitly.
-     * This allows e.g. phrases with more than one term at the same position
-     * or phrases with gaps (e.g. in connection with stopwords).
-     * 
+     * The relative position of the term within the phrase is specified explicitly, but must be greater than
+     * or equal to that of the previously added term.
+     * A greater position allows phrases with gaps (e.g. in connection with stopwords).
+     * If the position is equal, you most likely should be using
+     * {@link MultiPhraseQuery} instead which only requires one term at each position to match; this class requires
+     * all of them.
      */
     public Builder add(Term term, int position) {
-      term = new Term(term.field(), BytesRef.deepCopyOf(term.bytes())); // be defensive
       if (position < 0) {
         throw new IllegalArgumentException("Positions must be >= 0, got " + position);
       }
@@ -186,7 +193,7 @@ public class PhraseQuery extends Query {
   private static Term[] toTerms(String field, BytesRef... termBytes) {
     Term[] terms = new Term[termBytes.length];
     for (int i = 0; i < terms.length; ++i) {
-      terms[i] = new Term(field, BytesRef.deepCopyOf(termBytes[i]));
+      terms[i] = new Term(field, termBytes[i]);
     }
     return terms;
   }
@@ -264,7 +271,7 @@ public class PhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (terms.length == 0) {
-      return new MatchNoDocsQuery();
+      return   new MatchNoDocsQuery();
     } else if (terms.length == 1) {
       return new TermQuery(terms[0]);
     } else if (positions[0] != 0) {
@@ -406,6 +413,7 @@ public class PhraseQuery extends Query {
 
       // Reuse single TermsEnum below:
       final TermsEnum te = fieldTerms.iterator();
+      float totalMatchCost = 0;
       
       for (int i = 0; i < terms.length; i++) {
         final Term t = terms[i];
@@ -417,6 +425,7 @@ public class PhraseQuery extends Query {
         te.seekExact(t.bytes(), state);
         PostingsEnum postingsEnum = te.postings(null, PostingsEnum.POSITIONS);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
+        totalMatchCost += termPositionsCost(te);
       }
 
       // sort by increasing docFreq order
@@ -425,9 +434,13 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {  // optimize exact case
-        return new ExactPhraseScorer(this, postingsFreqs, similarity.simScorer(stats, context), needsScores);
+        return new ExactPhraseScorer(this, postingsFreqs,
+                                      similarity.simScorer(stats, context),
+                                      needsScores, totalMatchCost);
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.simScorer(stats, context), needsScores);
+        return new SloppyPhraseScorer(this, postingsFreqs, slop,
+                                        similarity.simScorer(stats, context),
+                                        needsScores, totalMatchCost);
       }
     }
     
@@ -440,7 +453,7 @@ public class PhraseQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context);
       if (scorer != null) {
-        int newDoc = scorer.advance(doc);
+        int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = slop == 0 ? scorer.freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
           SimScorer docScorer = similarity.simScorer(stats, context);
@@ -456,6 +469,42 @@ public class PhraseQuery extends Query {
       return Explanation.noMatch("no matching term");
     }
   }
+
+  /** A guess of
+   * the average number of simple operations for the initial seek and buffer refill
+   * per document for the positions of a term.
+   * See also {@link Lucene50PostingsReader.BlockPostingsEnum#nextPosition()}.
+   * <p>
+   * Aside: Instead of being constant this could depend among others on
+   * {@link Lucene50PostingsFormat#BLOCK_SIZE},
+   * {@link TermsEnum#docFreq()},
+   * {@link TermsEnum#totalTermFreq()},
+   * {@link DocIdSetIterator#cost()} (expected number of matching docs),
+   * {@link LeafReader#maxDoc()} (total number of docs in the segment),
+   * and the seek time and block size of the device storing the index.
+   */
+  private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
+
+  /** Number of simple operations in {@link Lucene50PostingsReader.BlockPostingsEnum#nextPosition()}
+   *  when no seek or buffer refill is done.
+   */
+  private static final int TERM_OPS_PER_POS = 7;
+
+  /** Returns an expected cost in simple operations
+   *  of processing the occurrences of a term
+   *  in a document that contains the term.
+   *  This is for use by {@link TwoPhaseIterator#matchCost} implementations.
+   *  <br>This may be inaccurate when {@link TermsEnum#totalTermFreq()} is not available.
+   *  @param termsEnum The term is the term at which this TermsEnum is positioned.
+   */
+  static float termPositionsCost(TermsEnum termsEnum) throws IOException {
+    int docFreq = termsEnum.docFreq();
+    assert docFreq > 0;
+    long totalTermFreq = termsEnum.totalTermFreq(); // -1 when not available
+    float expOccurrencesInMatchingDoc = (totalTermFreq < docFreq) ? 1 : (totalTermFreq / (float) docFreq);
+    return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
+  }
+
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {

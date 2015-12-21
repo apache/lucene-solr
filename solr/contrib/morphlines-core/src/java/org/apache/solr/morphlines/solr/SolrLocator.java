@@ -16,6 +16,12 @@
  */
 package org.apache.solr.morphlines.solr;
 
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Paths;
+
 import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
@@ -39,10 +45,6 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
-
 /**
  * Set of configuration parameters that identify the location and schema of a Solr server or
  * SolrCloud; Based on this information this class can return the schema and a corresponding
@@ -58,7 +60,7 @@ public class SolrLocator {
   private String solrHomeDir;
   private int batchSize = 1000;
   
-  private static final Logger LOG = LoggerFactory.getLogger(SolrLocator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected SolrLocator(MorphlineContext context) {
     Preconditions.checkNotNull(context);
@@ -149,7 +151,7 @@ public class SolrLocator {
       
       LOG.debug("SolrLocator loading IndexSchema from dir {}", mySolrHomeDir);
       try {
-        SolrResourceLoader loader = new SolrResourceLoader(mySolrHomeDir);
+        SolrResourceLoader loader = new SolrResourceLoader(Paths.get(mySolrHomeDir));
         SolrConfig solrConfig = new SolrConfig(loader, "solrconfig.xml", null);
         InputSource is = new InputSource(loader.openSchema("schema.xml"));
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName("schema.xml"));

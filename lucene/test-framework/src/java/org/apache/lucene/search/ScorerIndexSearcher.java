@@ -51,10 +51,11 @@ public class ScorerIndexSearcher extends IndexSearcher {
       // Scorer.getChildren
       Scorer scorer = weight.scorer(ctx);
       if (scorer != null) {
+        final DocIdSetIterator iterator = scorer.iterator();
         final LeafCollector leafCollector = collector.getLeafCollector(ctx);
         leafCollector.setScorer(scorer);
         final Bits liveDocs = ctx.reader().getLiveDocs();
-        for (int doc = scorer.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = scorer.nextDoc()) {
+        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
           if (liveDocs == null || liveDocs.get(doc)) {
             leafCollector.collect(doc);
           }

@@ -339,12 +339,16 @@
     We want to detect here only a limited set of versions and placed in normalized form in ${build.java.runtime},
     every other version is normalized to "unknown":
     - To define a target to be only run on a specific version, add <equals/> condition to one of the supplied versions.
-    - To explicitely exclude specific versions (and unknown ones), add a condition to disallow "unknown" and some versions like "1.9"!
+    - To explicitely exclude specific versions (and unknown ones), add a condition to disallow "unknown" and some versions like "1.9"/"9"!
+    - For Java 9, be sure to exclude both in custom checks: "9" and "1.9"
+    
+    TODO: Find a better solution in Ant without scripting to check supported Java versions!
    -->
   <condition property="build.java.runtime" value="${-cleaned.specification.version}" else="unknown">
     <or>
       <equals arg1="${-cleaned.specification.version}" arg2="1.8"/>
       <equals arg1="${-cleaned.specification.version}" arg2="1.9"/>
+      <equals arg1="${-cleaned.specification.version}" arg2="9"/>
     </or>
   </condition>
   

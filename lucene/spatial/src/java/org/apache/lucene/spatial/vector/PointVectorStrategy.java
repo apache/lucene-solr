@@ -22,7 +22,7 @@ import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.queries.function.FunctionRangeQuery;
@@ -30,7 +30,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -39,7 +39,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 
 /**
  * Simple {@link SpatialStrategy} which represents Points in two numeric {@link
- * DoubleField}s.  The Strategy's best feature is decent distance sort.
+ * org.apache.lucene.document.LegacyDoubleField}s.  The Strategy's best feature is decent distance sort.
  *
  * <p>
  * <b>Characteristics:</b>
@@ -58,7 +58,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
  * <p>
  * <b>Implementation:</b>
  * <p>
- * This is a simple Strategy.  Search works with {@link NumericRangeQuery}s on
+ * This is a simple Strategy.  Search works with {@link org.apache.lucene.search.LegacyNumericRangeQuery}s on
  * an x and y pair of fields.  A Circle query does the same bbox query but adds a
  * ValueSource filter on
  * {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
@@ -109,11 +109,11 @@ public class PointVectorStrategy extends SpatialStrategy {
 
   /** @see #createIndexableFields(com.spatial4j.core.shape.Shape) */
   public Field[] createIndexableFields(Point point) {
-    FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
+    FieldType doubleFieldType = new FieldType(LegacyDoubleField.TYPE_NOT_STORED);
     doubleFieldType.setNumericPrecisionStep(precisionStep);
     Field[] f = new Field[2];
-    f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
-    f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
+    f[0] = new LegacyDoubleField(fieldNameX, point.getX(), doubleFieldType);
+    f[1] = new LegacyDoubleField(fieldNameY, point.getY(), doubleFieldType);
     return f;
   }
 
@@ -166,8 +166,8 @@ public class PointVectorStrategy extends SpatialStrategy {
     return bq.build();
   }
 
-  private NumericRangeQuery<Double> rangeQuery(String fieldName, Double min, Double max) {
-    return NumericRangeQuery.newDoubleRange(
+  private LegacyNumericRangeQuery<Double> rangeQuery(String fieldName, Double min, Double max) {
+    return LegacyNumericRangeQuery.newDoubleRange(
         fieldName,
         precisionStep,
         min,

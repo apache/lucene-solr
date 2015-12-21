@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class CloudUtil {
-  protected static Logger log = LoggerFactory.getLogger(CloudUtil.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   
   /**
@@ -72,12 +73,11 @@ public class CloudUtil {
               cc.unload(desc.getName());
             }
             
-            File instanceDir = new File(desc.getInstanceDir());
             try {
-              FileUtils.deleteDirectory(instanceDir);
+              FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
             } catch (IOException e) {
               SolrException.log(log, "Failed to delete instance dir for core:"
-                  + desc.getName() + " dir:" + instanceDir.getAbsolutePath());
+                  + desc.getName() + " dir:" + desc.getInstanceDir());
             }
             log.error("", new SolrException(ErrorCode.SERVER_ERROR,
                 "Will not load SolrCore " + desc.getName()
@@ -102,7 +102,7 @@ public class CloudUtil {
   public static String unifiedResourcePath(SolrResourceLoader loader) {
     return (loader instanceof ZkSolrResourceLoader) ?
             ((ZkSolrResourceLoader) loader).getConfigSetZkPath() + "/" :
-            loader.getConfigDir();
+            loader.getConfigDir() + File.separator;
   }
 
   /**Read the list of public keys from ZK

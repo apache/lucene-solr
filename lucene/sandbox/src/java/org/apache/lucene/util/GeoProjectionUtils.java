@@ -17,6 +17,10 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.SloppyMath.PIO2;
+import static org.apache.lucene.util.SloppyMath.TO_DEGREES;
+import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
+
 /**
  * Reusable geo-spatial projection utility methods.
  *
@@ -24,13 +28,18 @@ package org.apache.lucene.util;
  */
 public class GeoProjectionUtils {
   // WGS84 earth-ellipsoid major (a) minor (b) radius, (f) flattening and eccentricity (e)
-  static final double SEMIMAJOR_AXIS = 6_378_137; // [m]
-  static final double FLATTENING = 1.0/298.257223563;
-  static final double SEMIMINOR_AXIS = SEMIMAJOR_AXIS * (1.0 - FLATTENING); //6_356_752.31420; // [m]
-  static final double ECCENTRICITY = StrictMath.sqrt((2.0 - FLATTENING) * FLATTENING);
-  static final double PI_OVER_2 = StrictMath.PI / 2.0D;
+  public static final double SEMIMAJOR_AXIS = 6_378_137; // [m]
+  public static final double FLATTENING = 1.0/298.257223563;
+  public static final double SEMIMINOR_AXIS = SEMIMAJOR_AXIS * (1.0 - FLATTENING); //6_356_752.31420; // [m]
+  public static final double ECCENTRICITY = StrictMath.sqrt((2.0 - FLATTENING) * FLATTENING);
   static final double SEMIMAJOR_AXIS2 = SEMIMAJOR_AXIS * SEMIMAJOR_AXIS;
   static final double SEMIMINOR_AXIS2 = SEMIMINOR_AXIS * SEMIMINOR_AXIS;
+  public static final double MIN_LON_RADIANS = TO_RADIANS * GeoUtils.MIN_LON_INCL;
+  public static final double MIN_LAT_RADIANS = TO_RADIANS * GeoUtils.MIN_LAT_INCL;
+  public static final double MAX_LON_RADIANS = TO_RADIANS * GeoUtils.MAX_LON_INCL;
+  public static final double MAX_LAT_RADIANS = TO_RADIANS * GeoUtils.MAX_LAT_INCL;
+  private static final double E2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMAJOR_AXIS2);
+  private static final double EP2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMINOR_AXIS2);
 
   /**
    * Converts from geocentric earth-centered earth-fixed to geodesic lat/lon/alt
@@ -43,8 +52,6 @@ public class GeoProjectionUtils {
   public static final double[] ecfToLLA(final double x, final double y, final double z, double[] lla) {
     boolean atPole = false;
     final double ad_c = 1.0026000D;
-    final double e2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMAJOR_AXIS2);
-    final double ep2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMINOR_AXIS2);
     final double cos67P5 = 0.38268343236508977D;
 
     if (lla == null) {
@@ -55,18 +62,18 @@ public class GeoProjectionUtils {
       lla[0] = StrictMath.atan2(y,x);
     } else {
       if (y > 0) {
-        lla[0] = PI_OVER_2;
+        lla[0] = PIO2;
       } else if (y < 0) {
-        lla[0] = -PI_OVER_2;
+        lla[0] = -PIO2;
       } else {
         atPole = true;
         lla[0] = 0.0D;
         if (z > 0.0) {
-          lla[1] = PI_OVER_2;
+          lla[1] = PIO2;
         } else if (z < 0.0) {
-          lla[1] = -PI_OVER_2;
+          lla[1] = -PIO2;
         } else {
-          lla[1] = PI_OVER_2;
+          lla[1] = PIO2;
           lla[2] = -SEMIMINOR_AXIS;
           return lla;
         }
@@ -80,25 +87,25 @@ public class GeoProjectionUtils {
     final double sinB0 = t0 / s0;
     final double cosB0 = w / s0;
     final double sin3B0 = sinB0 * sinB0 * sinB0;
-    final double t1 = z + SEMIMINOR_AXIS * ep2 * sin3B0;
-    final double sum = w - SEMIMAJOR_AXIS * e2 * cosB0 * cosB0 * cosB0;
+    final double t1 = z + SEMIMINOR_AXIS * EP2 * sin3B0;
+    final double sum = w - SEMIMAJOR_AXIS * E2 * cosB0 * cosB0 * cosB0;
     final double s1 = StrictMath.sqrt(t1 * t1 + sum * sum);
     final double sinP1 = t1 / s1;
     final double cosP1 = sum / s1;
-    final double rn = SEMIMAJOR_AXIS / StrictMath.sqrt(1.0D - e2 * sinP1 * sinP1);
+    final double rn = SEMIMAJOR_AXIS / StrictMath.sqrt(1.0D - E2 * sinP1 * sinP1);
 
     if (cosP1 >= cos67P5) {
       lla[2] = w / cosP1 - rn;
     } else if (cosP1 <= -cos67P5) {
       lla[2] = w / -cosP1 - rn;
     } else {
-      lla[2] = z / sinP1 + rn * (e2 - 1.0);
+      lla[2] = z / sinP1 + rn * (E2 - 1.0);
     }
     if (!atPole) {
       lla[1] = StrictMath.atan(sinP1/cosP1);
     }
-    lla[0] = StrictMath.toDegrees(lla[0]);
-    lla[1] = StrictMath.toDegrees(lla[1]);
+    lla[0] = TO_DEGREES * lla[0];
+    lla[1] = TO_DEGREES * lla[1];
 
     return lla;
   }
@@ -112,33 +119,32 @@ public class GeoProjectionUtils {
    * @return either a new ecef array or the reusable ecf parameter
    */
   public static final double[] llaToECF(double lon, double lat, double alt, double[] ecf) {
-    lon = StrictMath.toRadians(lon);
-    lat = StrictMath.toRadians(lat);
+    lon = TO_RADIANS * lon;
+    lat = TO_RADIANS * lat;
 
-    final double sl = StrictMath.sin(lat);
+    final double sl = SloppyMath.sin(lat);
     final double s2 = sl*sl;
-    final double cl = StrictMath.cos(lat);
-    final double ge2 = (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2)/(SEMIMAJOR_AXIS2);
+    final double cl = SloppyMath.cos(lat);
 
     if (ecf == null) {
       ecf = new double[3];
     }
 
-    if (lat < -PI_OVER_2 && lat > -1.001D * PI_OVER_2) {
-      lat = -PI_OVER_2;
-    } else if (lat > PI_OVER_2 && lat < 1.001D * PI_OVER_2) {
-      lat = PI_OVER_2;
+    if (lat < -PIO2 && lat > -1.001D * PIO2) {
+      lat = -PIO2;
+    } else if (lat > PIO2 && lat < 1.001D * PIO2) {
+      lat = PIO2;
     }
-    assert (lat >= -PI_OVER_2) || (lat <= PI_OVER_2);
+    assert (lat >= -PIO2) || (lat <= PIO2);
 
     if (lon > StrictMath.PI) {
       lon -= (2*StrictMath.PI);
     }
 
-    final double rn = SEMIMAJOR_AXIS / StrictMath.sqrt(1.0D - ge2 * s2);
-    ecf[0] = (rn+alt) * cl * StrictMath.cos(lon);
-    ecf[1] = (rn+alt) * cl * StrictMath.sin(lon);
-    ecf[2] = ((rn*(1.0-ge2))+alt)*sl;
+    final double rn = SEMIMAJOR_AXIS / StrictMath.sqrt(1.0D - E2 * s2);
+    ecf[0] = (rn+alt) * cl * SloppyMath.cos(lon);
+    ecf[1] = (rn+alt) * cl * SloppyMath.sin(lon);
+    ecf[2] = ((rn*(1.0-E2))+alt)*sl;
 
     return ecf;
   }
@@ -268,13 +274,13 @@ public class GeoProjectionUtils {
       phiMatrix = new double[3][3];
     }
 
-    originLon = StrictMath.toRadians(originLon);
-    originLat = StrictMath.toRadians(originLat);
+    originLon = TO_RADIANS * originLon;
+    originLat = TO_RADIANS * originLat;
 
-    final double sLon = StrictMath.sin(originLon);
-    final double cLon = StrictMath.cos(originLon);
-    final double sLat = StrictMath.sin(originLat);
-    final double cLat = StrictMath.cos(originLat);
+    final double sLon = SloppyMath.sin(originLon);
+    final double cLon = SloppyMath.cos(originLon);
+    final double sLat = SloppyMath.sin(originLat);
+    final double cLat = SloppyMath.cos(originLat);
 
     phiMatrix[0][0] = -sLon;
     phiMatrix[0][1] = cLon;
@@ -302,13 +308,13 @@ public class GeoProjectionUtils {
       phiMatrix = new double[3][3];
     }
 
-    originLon = StrictMath.toRadians(originLon);
-    originLat = StrictMath.toRadians(originLat);
+    originLon = TO_RADIANS * originLon;
+    originLat = TO_RADIANS * originLat;
 
-    final double sLat = StrictMath.sin(originLat);
-    final double cLat = StrictMath.cos(originLat);
-    final double sLon = StrictMath.sin(originLon);
-    final double cLon = StrictMath.cos(originLon);
+    final double sLat = SloppyMath.sin(originLat);
+    final double cLat = SloppyMath.cos(originLat);
+    final double sLon = SloppyMath.sin(originLon);
+    final double cLon = SloppyMath.cos(originLon);
 
     phiMatrix[0][0] = -sLon;
     phiMatrix[1][0] = cLon;
@@ -333,22 +339,22 @@ public class GeoProjectionUtils {
    * @param pt resulting point
    * @return the point along a bearing at a given distance in meters
    */
-  public static final double[] pointFromLonLatBearing(double lon, double lat, double bearing, double dist, double[] pt) {
+  public static final double[] pointFromLonLatBearingVincenty(double lon, double lat, double bearing, double dist, double[] pt) {
 
     if (pt == null) {
       pt = new double[2];
     }
 
-    final double alpha1 = StrictMath.toRadians(bearing);
-    final double cosA1 = StrictMath.cos(alpha1);
-    final double sinA1 = StrictMath.sin(alpha1);
-    final double tanU1 = (1-FLATTENING) * StrictMath.tan(StrictMath.toRadians(lat));
+    final double alpha1 = TO_RADIANS * bearing;
+    final double cosA1 = SloppyMath.cos(alpha1);
+    final double sinA1 = SloppyMath.sin(alpha1);
+    final double tanU1 = (1-FLATTENING) * SloppyMath.tan(TO_RADIANS * lat);
     final double cosU1 = 1 / StrictMath.sqrt((1+tanU1*tanU1));
     final double sinU1 = tanU1*cosU1;
     final double sig1 = StrictMath.atan2(tanU1, cosA1);
     final double sinAlpha = cosU1 * sinA1;
     final double cosSqAlpha = 1 - sinAlpha*sinAlpha;
-    final double uSq = cosSqAlpha * (SEMIMAJOR_AXIS2 - SEMIMINOR_AXIS2) / SEMIMINOR_AXIS2;
+    final double uSq = cosSqAlpha * EP2;
     final double A = 1 + uSq/16384D*(4096D + uSq * (-768D + uSq * (320D - 175D*uSq)));
     final double B = uSq/1024D * (256D + uSq * (-128D + uSq * (74D - 47D * uSq)));
 
@@ -357,9 +363,9 @@ public class GeoProjectionUtils {
     double sinSigma, cosSigma, cos2SigmaM, deltaSigma;
 
     do {
-      cos2SigmaM = StrictMath.cos(2*sig1 + sigma);
-      sinSigma = StrictMath.sin(sigma);
-      cosSigma = StrictMath.cos(sigma);
+      cos2SigmaM = SloppyMath.cos(2*sig1 + sigma);
+      sinSigma = SloppyMath.sin(sigma);
+      cosSigma = SloppyMath.cos(sigma);
 
       deltaSigma = B * sinSigma * (cos2SigmaM + (B/4D) * (cosSigma*(-1+2*cos2SigmaM*cos2SigmaM)-
           (B/6) * cos2SigmaM*(-3+4*sinSigma*sinSigma)*(-3+4*cos2SigmaM*cos2SigmaM)));
@@ -375,9 +381,42 @@ public class GeoProjectionUtils {
 
     final double lam = lambda - (1-c) * FLATTENING * sinAlpha *
         (sigma + c * sinSigma * (cos2SigmaM + c * cosSigma * (-1 + 2* cos2SigmaM*cos2SigmaM)));
-    pt[0] = lon + StrictMath.toDegrees(lam);
-    pt[1] = StrictMath.toDegrees(lat2);
+    pt[0] = GeoUtils.normalizeLon(lon + TO_DEGREES * lam);
+    pt[1] = GeoUtils.normalizeLat(TO_DEGREES * lat2);
 
     return pt;
   }
+
+  /**
+   * Finds a point along a bearing from a given lon,lat geolocation using great circle arc
+   *
+   * @param lon origin longitude in degrees
+   * @param lat origin latitude in degrees
+   * @param bearing azimuthal bearing in degrees
+   * @param dist distance in meters
+   * @param pt resulting point
+   * @return the point along a bearing at a given distance in meters
+   */
+  public static final double[] pointFromLonLatBearingGreatCircle(double lon, double lat, double bearing, double dist, double[] pt) {
+
+    if (pt == null) {
+      pt = new double[2];
+    }
+
+    lon *= TO_RADIANS;
+    lat *= TO_RADIANS;
+    bearing *= TO_RADIANS;
+
+    final double cLat = SloppyMath.cos(lat);
+    final double sLat = SloppyMath.sin(lat);
+    final double sinDoR = SloppyMath.sin(dist / GeoProjectionUtils.SEMIMAJOR_AXIS);
+    final double cosDoR = SloppyMath.cos(dist / GeoProjectionUtils.SEMIMAJOR_AXIS);
+
+    pt[1] = SloppyMath.asin(sLat*cosDoR + cLat * sinDoR * SloppyMath.cos(bearing));
+    pt[0] = TO_DEGREES * (lon + Math.atan2(SloppyMath.sin(bearing) * sinDoR * cLat, cosDoR - sLat * SloppyMath.sin(pt[1])));
+    pt[1] *= TO_DEGREES;
+
+    return pt;
+  }
+
 }

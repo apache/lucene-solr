@@ -152,7 +152,7 @@ public class SolrReturnFields extends ReturnFields {
   }
 
   // like getId, but also accepts dashes for legacy fields
-  public static String getFieldName(QueryParsing.StrParser sp) {
+  public static String getFieldName(StrParser sp) {
     sp.eatws();
     int id_start = sp.pos;
     char ch;
@@ -176,7 +176,7 @@ public class SolrReturnFields extends ReturnFields {
       return;
     }
     try {
-      QueryParsing.StrParser sp = new QueryParsing.StrParser(fl);
+      StrParser sp = new StrParser(fl);
 
       for(;;) {
         sp.opt(',');
@@ -446,5 +446,19 @@ public class SolrReturnFields extends ReturnFields {
   public DocTransformer getTransformer()
   {
     return transformer;
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder("SolrReturnFields=(");
+    sb.append("globs="); sb.append(globs);
+    sb.append(",fields="); sb.append(fields);
+    sb.append(",okFieldNames="); sb.append(okFieldNames);
+    sb.append(",reqFieldNames="); sb.append(reqFieldNames);
+    sb.append(",transformer="); sb.append(transformer);
+    sb.append(",wantsScore="); sb.append(_wantsScore);
+    sb.append(",wantsAllFields="); sb.append(_wantsAllFields);
+    sb.append(')');
+    return sb.toString();
   }
 }

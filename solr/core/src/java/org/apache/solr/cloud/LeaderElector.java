@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -56,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public  class LeaderElector {
-  private static Logger log = LoggerFactory.getLogger(LeaderElector.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   static final String ELECTION_NODE = "/election";
   

@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -85,6 +87,7 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
@@ -120,7 +123,7 @@ import org.slf4j.LoggerFactory;
 public class QueryComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "query";
-  private static final Logger LOG = LoggerFactory.getLogger(QueryComponent.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
@@ -257,7 +260,7 @@ public class QueryComponent extends SearchComponent
     // groupSort defaults to sort
     String groupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(QueryParsing.parseSortSpec(groupSortStr, req).getSort());
+    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(groupSortStr, req).getSort());
     if (sortWithinGroup == null) {
       sortWithinGroup = Sort.RELEVANCE;
     }
@@ -1365,18 +1368,8 @@ public class QueryComponent extends SearchComponent
     }
 
     @Override
-    public int nextDoc() throws IOException {
+    public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long cost() {
-      return 1;
     }
 
     @Override

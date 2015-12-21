@@ -239,8 +239,43 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       assertEquals("Expecting " + expectedRid + " but found " + rid, expectedRid, rid);
     }
     //The request ID is added to the debug/track section
-    assertEquals(rid, ((NamedList<Object>)rb.getDebugInfo().get("track")).get(CommonParams.REQUEST_ID));
+    assertEquals(rid, ((NamedList<Object>) rb.getDebugInfo().get("track")).get(CommonParams.REQUEST_ID));
     //RID must be added to the toLog, so that it's included in the main request log
     assertEquals(rid, resp.getToLog().get(CommonParams.REQUEST_ID));
+  }
+
+  //
+  // NOTE: String representations are not meant to be exact or backward compatible.
+  // For example, foo:bar^3, foo:bar^3.0 and (foo:bar)^3 are equivalent.  Use your
+  // judgement when modifying these tests.
+  //
+  @Test
+  public void testQueryToString() throws Exception {
+
+    // test that both boosts are represented in a double-boost scenario
+    assertQ(req("debugQuery", "true", "indent","true", "rows","0", "q", "(foo_s:aaa^3)^4"),
+        "//str[@name='parsedquery'][.='foo_s:aaa^3.0^4.0']"
+    );
+
+    // test to see that extra parens are avoided
+    assertQ(req("debugQuery", "true", "indent","true", "rows","0", "q", "+foo_s:aaa^3 -bar_s:bbb^0"),
+        "//str[@name='parsedquery'][.='+foo_s:aaa^3.0 -bar_s:bbb^0.0']"
+    );
+
+    // test that parens are added when needed
+    assertQ(req("debugQuery", "true", "indent", "true", "rows", "0", "q", "foo_s:aaa (bar_s:bbb baz_s:ccc)"),
+        "//str[@name='parsedquery'][.='foo_s:aaa (bar_s:bbb baz_s:ccc)']"
+    );
+
+    // test boosts on subqueries
+    assertQ(req("debugQuery", "true", "indent", "true", "rows", "0", "q", "foo_s:aaa^3 (bar_s:bbb baz_s:ccc)^4"),
+        "//str[@name='parsedquery'][.='foo_s:aaa^3.0 (bar_s:bbb baz_s:ccc)^4.0']"
+    );
+
+    // test constant score query boost exists
+    assertQ(req("debugQuery", "true", "indent", "true", "rows", "0", "q", "foo_s:aaa^=3"),
+        "//str[@name='parsedquery'][contains(.,'3.0')]"
+    );
+
   }
 }

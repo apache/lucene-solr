@@ -17,20 +17,21 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.nio.file.Path;
+import java.util.Properties;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-
-import java.util.Properties;
 
 
 public class NodeConfig {
 
   private final String nodeName;
 
-  private final String coreRootDirectory;
+  private final Path coreRootDirectory;
 
-  private final String configSetBaseDirectory;
+  private final Path configSetBaseDirectory;
 
   private final String sharedLibDirectory;
 
@@ -58,7 +59,7 @@ public class NodeConfig {
 
   private final String managementPath;
 
-  private NodeConfig(String nodeName, String coreRootDirectory, String configSetBaseDirectory, String sharedLibDirectory,
+  private NodeConfig(String nodeName, Path coreRootDirectory, Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
                      String coreAdminHandlerClass, String collectionsAdminHandlerClass,
                      String infoHandlerClass, String configSetsHandlerClass,
@@ -94,7 +95,7 @@ public class NodeConfig {
     return nodeName;
   }
 
-  public String getCoreRootDirectory() {
+  public Path getCoreRootDirectory() {
     return coreRootDirectory;
   }
 
@@ -158,7 +159,7 @@ public class NodeConfig {
     return managementPath;
   }
 
-  public String getConfigSetBaseDirectory() {
+  public Path getConfigSetBaseDirectory() {
     return configSetBaseDirectory;
   }
 
@@ -187,8 +188,8 @@ public class NodeConfig {
 
   public static class NodeConfigBuilder {
 
-    private String coreRootDirectory = "";
-    private String configSetBaseDirectory = "configsets";
+    private Path coreRootDirectory;
+    private Path configSetBaseDirectory;
     private String sharedLibDirectory = "lib";
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
@@ -219,16 +220,17 @@ public class NodeConfig {
     public NodeConfigBuilder(String nodeName, SolrResourceLoader loader) {
       this.nodeName = nodeName;
       this.loader = loader;
-      this.coreRootDirectory = loader.getInstanceDir();
+      this.coreRootDirectory = loader.getInstancePath();
+      this.configSetBaseDirectory = loader.getInstancePath().resolve("configsets");
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
-      this.coreRootDirectory = loader.resolve(coreRootDirectory);
+      this.coreRootDirectory = loader.getInstancePath().resolve(coreRootDirectory);
       return this;
     }
 
     public NodeConfigBuilder setConfigSetBaseDirectory(String configSetBaseDirectory) {
-      this.configSetBaseDirectory = configSetBaseDirectory;
+      this.configSetBaseDirectory = loader.getInstancePath().resolve(configSetBaseDirectory);
       return this;
     }
 

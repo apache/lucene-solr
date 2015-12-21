@@ -124,7 +124,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
     try {
       long trainStart = System.currentTimeMillis();
       KNearestNeighborClassifier kNearestNeighborClassifier = new KNearestNeighborClassifier(leafReader, null,
-          analyzer, null, 1, 2, 2, categoryFieldName, textFieldName);
+          analyzer, null, 1, 1, 1, categoryFieldName, textFieldName);
       long trainEnd = System.currentTimeMillis();
       long trainTime = trainEnd - trainStart;
       assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
@@ -138,6 +138,8 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
       assertTrue("evaluation took more than 2m: " + evaluationTime / 1000 + "s", evaluationTime < 120000);
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue(5000 > avgClassificationTime);
+      double accuracy = confusionMatrix.getAccuracy();
+      assertTrue(accuracy > 0d);
     } finally {
       leafReader.close();
     }

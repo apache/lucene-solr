@@ -16,16 +16,16 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.solr.SolrTestCaseJ4;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests currency field type.
@@ -48,7 +48,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     mockParams.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, 
                    "open-exchange-rates.json");  
     oerp = new OpenExchangeRatesOrgProvider();
-    loader = new SolrResourceLoader("solr/collection1");
+    loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
   }
   
   @Test

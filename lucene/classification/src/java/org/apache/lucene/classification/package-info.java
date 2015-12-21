@@ -16,8 +16,8 @@
  */
 
 /**
- * Uses already seen data (the indexed documents) to classify new documents.
- * <p>
+ * Uses already seen data (the indexed documents) to classify an input ( can be simple text or a structured document).
+ *
  * Currently contains a (simplistic) Naive Bayes classifier, a k-Nearest
  * Neighbor classifier and a Perceptron based classifier.
  */

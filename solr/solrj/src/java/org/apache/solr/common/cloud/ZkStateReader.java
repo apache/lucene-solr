@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,7 +56,7 @@ import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements Closeable {
-  private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String BASE_URL_PROP = "base_url";
   public static final String NODE_NAME_PROP = "node_name";

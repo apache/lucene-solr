@@ -62,7 +62,7 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
-    field.checkFieldCacheSource(qparser);
+    field.checkFieldCacheSource();
     return new BoolFieldSource(field.name);
   }
 

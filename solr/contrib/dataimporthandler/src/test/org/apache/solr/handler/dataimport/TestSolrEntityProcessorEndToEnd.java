@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ import java.util.Map.Entry;
  */
 public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTestCase {
   
-  private static Logger LOG = LoggerFactory.getLogger(TestSolrEntityProcessorEndToEnd.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";

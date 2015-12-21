@@ -34,8 +34,8 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
@@ -44,6 +44,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -63,12 +64,12 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
@@ -283,13 +284,7 @@ public class MemoryIndex {
     if (analyzer == null)
       throw new IllegalArgumentException("analyzer must not be null");
     
-    TokenStream stream;
-    try {
-      stream = analyzer.tokenStream(fieldName, text);
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
-
+    TokenStream stream = analyzer.tokenStream(fieldName, text);
     addField(fieldName, stream, 1.0f, analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
   }
 
@@ -442,9 +437,8 @@ public class MemoryIndex {
         sumTotalTermFreq = info.sumTotalTermFreq;
       } else {
         fieldInfo = new FieldInfo(fieldName, fields.size(), true, false, this.storePayloads,
-            this.storeOffsets
-                ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
-            DocValuesType.NONE, -1, Collections.emptyMap());
+                                  this.storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
+                                  DocValuesType.NONE, -1, Collections.emptyMap(), 0, 0);
         sliceArray = new SliceByteStartArray(BytesRefHash.DEFAULT_CAPACITY);
         terms = new BytesRefHash(byteBlockPool, BytesRefHash.DEFAULT_CAPACITY, sliceArray);
       }
@@ -816,6 +810,11 @@ public class MemoryIndex {
 
     @Override
     public Bits getDocsWithField(String field) throws IOException {
+      return null;
+    }
+
+    @Override
+    public DimensionalValues getDimensionalValues() {
       return null;
     }
 

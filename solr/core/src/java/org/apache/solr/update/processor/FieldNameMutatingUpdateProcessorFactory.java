@@ -32,8 +32,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -49,7 +47,6 @@ import org.slf4j.LoggerFactory;
  */
 
 public class FieldNameMutatingUpdateProcessorFactory  extends UpdateRequestProcessorFactory{
-  public static final Logger log = LoggerFactory.getLogger(FieldNameMutatingUpdateProcessorFactory.class);
 
   private String sourcePattern, replacement;
   private Pattern pattern;

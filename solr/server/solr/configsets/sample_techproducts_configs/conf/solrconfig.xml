@@ -130,28 +130,6 @@
   -->
   <codecFactory class="solr.SchemaCodecFactory"/>
 
-  <!-- To enable dynamic schema REST APIs, use the following for <schemaFactory>:
-  
-       <schemaFactory class="ManagedIndexSchemaFactory">
-         <bool name="mutable">true</bool>
-         <str name="managedSchemaResourceName">managed-schema</str>
-       </schemaFactory>
-       
-       When ManagedIndexSchemaFactory is specified, Solr will load the schema from
-       the resource named in 'managedSchemaResourceName', rather than from schema.xml.
-       Note that the managed schema resource CANNOT be named schema.xml.  If the managed
-       schema does not exist, Solr will create it after reading schema.xml, then rename
-       'schema.xml' to 'schema.xml.bak'. 
-       
-       Do NOT hand edit the managed schema - external modifications will be ignored and
-       overwritten as a result of schema modification REST API calls.
-
-       When ManagedIndexSchemaFactory is specified with mutable = true, schema
-       modification REST API calls will be allowed; otherwise, error responses will be
-       sent back for these requests. 
-  -->
-  <schemaFactory class="ClassicIndexSchemaFactory"/>
-
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
        Most example settings here show the default value, but are commented
@@ -878,48 +856,7 @@
      </lst>
   </requestHandler>
 
-
-
-  <!--
-    The export request handler is used to export full sorted result sets.
-    Do not change these defaults.
-  -->
-
-  <requestHandler name="/export" class="solr.SearchHandler">
-    <lst name="invariants">
-      <str name="rq">{!xport}</str>
-      <str name="wt">xsort</str>
-      <str name="distrib">false</str>
-    </lst>
-
-    <arr name="components">
-      <str>query</str>
-    </arr>
-  </requestHandler>
-
-
-  <!--
-  Distributed Stream processing.
-  -->
-
-  <requestHandler name="/stream" class="solr.StreamHandler">
-    <lst name="invariants">
-      <str name="wt">json</str>
-      <str name="distrib">false</str>
-    </lst>
-  </requestHandler>
-
-
-  <requestHandler name="/sql" class="solr.SQLHandler">
-    <lst name="invariants">
-      <str name="wt">json</str>
-      <str name="distrib">false</str>
-    </lst>
-  </requestHandler>
-
-
-
-  <!-- A Robust Example 
+  <!-- A Robust Example
        
        This example SearchHandler declaration shows off usage of the
        SearchHandler with many defaults declared

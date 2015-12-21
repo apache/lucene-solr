@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class SolrClientDocumentLoader implements DocumentLoader {
   private final int batchSize;
   private final List<SolrInputDocument> batch = new ArrayList();
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SolrClientDocumentLoader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public SolrClientDocumentLoader(SolrClient client, int batchSize) {
     if (client == null) {

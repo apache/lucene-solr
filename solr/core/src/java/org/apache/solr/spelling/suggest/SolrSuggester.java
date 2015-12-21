@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +57,7 @@ import static org.apache.solr.spelling.suggest.fst.AnalyzingInfixLookupFactory.C
  * {@link Dictionary}
  * */
 public class SolrSuggester implements Accountable {
-  private static final Logger LOG = LoggerFactory.getLogger(SolrSuggester.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** Name used when an unnamed suggester config is passed */
   public static final String DEFAULT_DICT_NAME = "default";

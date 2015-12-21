@@ -60,6 +60,7 @@
   -->
 
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <!--
     Used to specify an alternate directory to hold all index data other

@@ -50,22 +50,65 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ * <p>
+ * Additional expert user parameters nBestCost and nBestExamples can be
+ * used to include additional searchable tokens that those most likely
+ * according to the statistical model. A typical use-case for this is to
+ * improve recall and make segmentation more resilient to mistakes.
+ * The feature can also be used to get a decompounding effect.
+ * <p>
+ * The nBestCost parameter specifies an additional Viterbi cost, and
+ * when used, JapaneseTokenizer will include all tokens in Viterbi paths
+ * that are within the nBestCost value of the best path.
+ * <p>
+ * Finding a good value for nBestCost can be difficult to do by hand. The
+ * nBestExamples parameter can be used to find an nBestCost value based on
+ * examples with desired segmentation outcomes.
+ * <p>
+ * For example, a value of /箱根山-箱根/成田空港-成田/ indicates that in
+ * the texts, 箱根山 (Mt. Hakone) and 成田空港 (Narita Airport) we'd like
+ * a cost that gives is us 箱根 (Hakone) and 成田 (Narita). Notice that
+ * costs are estimated for each example individually, and the maximum
+ * nBestCost found across all examples is used.
+ * <p>
+ * If both nBestCost and nBestExamples is used in a configuration,
+ * the largest value of the two is used.
+ * <p>
+ * Parameters nBestCost and nBestExamples work with all tokenizer
+ * modes, but it makes the most sense to use them with NORMAL mode.
  */
 public class JapaneseTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
   private static final String MODE = "mode";
-  
+
   private static final String USER_DICT_PATH = "userDictionary";
-  
+
   private static final String USER_DICT_ENCODING = "userDictionaryEncoding";
 
   private static final String DISCARD_PUNCTUATION = "discardPunctuation"; // Expert option
 
+  private static final String NBEST_COST = "nBestCost";
+
+  private static final String NBEST_EXAMPLES = "nBestExamples";
+
   private UserDictionary userDictionary;
 
   private final Mode mode;
-  private final boolean discardPunctuation;  
+  private final boolean discardPunctuation;
   private final String userDictionaryPath;
   private final String userDictionaryEncoding;
+
+  /* Example string for NBEST output.
+   * its form as:
+   *   nbestExamples := [ / ] example [ / example ]... [ / ]
+   *   example := TEXT - TOKEN
+   *   TEXT := input text
+   *   TOKEN := token should be in nbest result
+   * Ex. /箱根山-箱根/成田空港-成田/
+   * When the result tokens are "箱根山", "成田空港" in NORMAL mode,
+   * /箱根山-箱根/成田空港-成田/ requests "箱根" and "成田" to be in the result in NBEST output.
+   */
+  private final String nbestExamples;
+  private int nbestCost = -1;
 
   /** Creates a new JapaneseTokenizerFactory */
   public JapaneseTokenizerFactory(Map<String,String> args) {
@@ -74,11 +117,13 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
     userDictionaryPath = args.remove(USER_DICT_PATH);
     userDictionaryEncoding = args.remove(USER_DICT_ENCODING);
     discardPunctuation = getBoolean(args, DISCARD_PUNCTUATION, true);
+    nbestCost = getInt(args, NBEST_COST, 0);
+    nbestExamples = args.remove(NBEST_EXAMPLES);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (userDictionaryPath != null) {
@@ -96,9 +141,14 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
       userDictionary = null;
     }
   }
-  
+
   @Override
   public JapaneseTokenizer create(AttributeFactory factory) {
-    return new JapaneseTokenizer(factory, userDictionary, discardPunctuation, mode);
+    JapaneseTokenizer t = new JapaneseTokenizer(factory, userDictionary, discardPunctuation, mode);
+    if (nbestExamples != null) {
+      nbestCost = Math.max(nbestCost, t.calcNBestCost(nbestExamples));
+    }
+    t.setNBestCost(nbestCost);
+    return t;
   }
 }

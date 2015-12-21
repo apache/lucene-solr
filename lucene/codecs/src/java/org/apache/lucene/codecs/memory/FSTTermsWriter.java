@@ -120,7 +120,7 @@ import org.apache.lucene.util.fst.Util;
  */
 
 public class FSTTermsWriter extends FieldsConsumer {
-  static final String TERMS_EXTENSION = "tmp";
+  static final String TERMS_EXTENSION = "tfp";
   static final String TERMS_CODEC_NAME = "FSTTerms";
   public static final int TERMS_VERSION_START = 2;
   public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;

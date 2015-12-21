@@ -25,8 +25,6 @@ import org.apache.lucene.index.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.common.params.SolrParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -36,8 +34,6 @@ public class ExportQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xport";
 
-  Logger logger = LoggerFactory.getLogger(ExportQParserPlugin.class);
-  
   public void init(NamedList namedList) {
   }
   

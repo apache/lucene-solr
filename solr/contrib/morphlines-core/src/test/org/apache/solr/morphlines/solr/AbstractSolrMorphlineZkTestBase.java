@@ -17,13 +17,16 @@
 
 package org.apache.solr.morphlines.solr;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Locale;
+
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ListMultimap;
 import com.typesafe.config.Config;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -38,12 +41,6 @@ import org.kitesdk.morphline.base.Compiler;
 import org.kitesdk.morphline.base.FaultTolerance;
 import org.kitesdk.morphline.base.Notifications;
 import org.kitesdk.morphline.stdlib.PipeBuilder;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Properties;
 
 public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistribZkTestBase {
   private static File solrHomeDirectory;
@@ -144,32 +141,6 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
       record.getFields().replaceValues(key, doc.getFieldValues(key));        
     }
     return record;
-  }
-  
-  @Override
-  public JettySolrRunner createJetty(File solrHome, String dataDir,
-      String shardList, String solrConfigOverride, String schemaOverride)
-      throws Exception {
-
-    writeCoreProperties(solrHome.toPath(), DEFAULT_TEST_CORENAME);
-
-    Properties props = new Properties();
-    if (solrConfigOverride != null)
-      props.setProperty("solrconfig", solrConfigOverride);
-    if (schemaOverride != null)
-      props.setProperty("schema", schemaOverride);
-    if (shardList != null)
-      props.setProperty("shards", shardList);
-
-    String collection = System.getProperty("collection");
-    if (collection == null)
-      collection = "collection1";
-    props.setProperty("collection", collection);
-
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), props, buildJettyConfig(context));
-    jetty.start();
-    
-    return jetty;
   }
   
   private void putConfig(SolrZkClient zkClient, String name) throws Exception {

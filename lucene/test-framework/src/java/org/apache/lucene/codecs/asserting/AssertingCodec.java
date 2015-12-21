@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.asserting;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.DimensionalFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
@@ -53,6 +54,7 @@ public class AssertingCodec extends FilterCodec {
   private final LiveDocsFormat liveDocs = new AssertingLiveDocsFormat();
   private final PostingsFormat defaultFormat = new AssertingPostingsFormat();
   private final DocValuesFormat defaultDVFormat = new AssertingDocValuesFormat();
+  private final DimensionalFormat dimensionalFormat = new AssertingDimensionalFormat();
 
   public AssertingCodec() {
     super("Asserting", TestUtil.getDefaultCodec());
@@ -86,6 +88,11 @@ public class AssertingCodec extends FilterCodec {
   @Override
   public LiveDocsFormat liveDocsFormat() {
     return liveDocs;
+  }
+
+  @Override
+  public DimensionalFormat dimensionalFormat() {
+    return dimensionalFormat;
   }
 
   @Override

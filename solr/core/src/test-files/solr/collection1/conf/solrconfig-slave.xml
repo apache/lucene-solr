@@ -20,6 +20,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   <dataDir>${solr.data.dir:}</dataDir>
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -41,11 +42,11 @@
   </requestHandler>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
-  <lst name="slave">
-    <str name="masterUrl">http://127.0.0.1:TEST_PORT/solr/collection1</str>
-    <str name="pollInterval">00:00:01</str>
-        <str name="compression">COMPRESSION</str>
-     </lst>
+    <lst name="slave">
+      <str name="masterUrl">http://127.0.0.1:TEST_PORT/solr/collection1</str>
+      <str name="pollInterval">00:00:01</str>
+      <str name="compression">COMPRESSION</str>
+    </lst>
   </requestHandler>
 
   <!-- enable streaming for testing... -->

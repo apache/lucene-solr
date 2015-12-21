@@ -25,4 +25,6 @@
 
   <requestHandler name="my_error_handler" class="solr.ThrowErrorOnInitRequestHandler"></requestHandler>
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
 </config>

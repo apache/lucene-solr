@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -103,7 +103,7 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
 
     Document doc = new Document();
-    Field field = new IntField("value", 0, Field.Store.YES);
+    Field field = new LegacyIntField("value", 0, Field.Store.YES);
     Field dvField = new NumericDocValuesField("value", 0);
     doc.add(field);
     doc.add(dvField);

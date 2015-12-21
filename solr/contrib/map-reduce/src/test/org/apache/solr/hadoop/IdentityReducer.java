@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -26,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class IdentityReducer extends Reducer<Text, NullWritable, Text, NullWritable> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(IdentityReducer.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected void reduce(Text key, Iterable<NullWritable> values, Context context) throws IOException, InterruptedException {

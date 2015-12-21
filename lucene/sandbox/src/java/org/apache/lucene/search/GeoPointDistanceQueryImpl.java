@@ -19,9 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.GeoRect;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
@@ -31,10 +34,13 @@ import org.apache.lucene.util.SloppyMath;
  */
 final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointDistanceQuery query;
+  private final double centerLon;
 
-  GeoPointDistanceQueryImpl(final String field, final GeoPointDistanceQuery q, final GeoBoundingBox bbox) {
+  GeoPointDistanceQueryImpl(final String field, final GeoPointDistanceQuery q, final double centerLonUnwrapped,
+                            final GeoRect bbox) {
     super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     query = q;
+    centerLon = centerLonUnwrapped;
   }
 
   @Override @SuppressWarnings("unchecked")
@@ -53,14 +59,33 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
       super(tenum, minLon, minLat, maxLon, maxLat);
     }
 
+    /**
+     * Computes the maximum shift for the given pointDistanceQuery. This prevents unnecessary depth traversal
+     * given the size of the distance query.
+     */
+    @Override
+    protected short computeMaxShift() {
+      final short shiftFactor;
+
+      if (query.radiusMeters > 1000000) {
+        shiftFactor = 5;
+      } else {
+        shiftFactor = 4;
+      }
+
+      return (short)(GeoPointField.PRECISION_STEP * shiftFactor);
+    }
+
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radius);
+      return GeoRelationUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat,
+          centerLon, query.centerLat, query.radiusMeters, true);
     }
 
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat, query.centerLon, query.centerLat, query.radius);
+      return GeoRelationUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat,
+          centerLon, query.centerLat, query.radiusMeters, true);
     }
 
     @Override
@@ -77,7 +102,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
      */
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return (SloppyMath.haversin(query.centerLat, query.centerLon, lat, lon) * 1000.0 <= query.radius);
+      return (SloppyMath.haversin(query.centerLat, centerLon, lat, lon) * 1000.0 <= query.radiusMeters);
     }
   }
 
@@ -99,5 +124,9 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     int result = super.hashCode();
     result = 31 * result + query.hashCode();
     return result;
+  }
+
+  public double getRadiusMeters() {
+    return query.getRadiusMeters();
   }
 }

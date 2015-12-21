@@ -17,10 +17,12 @@
 
 package org.apache.solr.update;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,9 +76,9 @@ public class UpdateLog implements PluginInfoInitialized {
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
   public static String TLOG_NAME="tlog";
 
-  public static Logger log = LoggerFactory.getLogger(UpdateLog.class);
-  public boolean debug = log.isDebugEnabled();
-  public boolean trace = log.isTraceEnabled();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
+  private static boolean trace = log.isTraceEnabled();
 
   // TODO: hack
   public FileSystem getFs() {
@@ -311,19 +313,18 @@ public class UpdateLog implements PluginInfoInitialized {
     }
 
     // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
-    UpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
-    try {
+    try (RecentUpdates startingUpdates = getRecentUpdates()) {
       startingVersions = startingUpdates.getVersions(numRecordsToKeep);
       startingOperation = startingUpdates.getLatestOperation();
 
       // populate recent deletes list (since we can't get that info from the index)
-      for (int i=startingUpdates.deleteList.size()-1; i>=0; i--) {
+      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
         DeleteUpdate du = startingUpdates.deleteList.get(i);
-        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1,du.version));
+        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
       }
 
       // populate recent deleteByQuery commands
-      for (int i=startingUpdates.deleteByQueryList.size()-1; i>=0; i--) {
+      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
         Update update = startingUpdates.deleteByQueryList.get(i);
         List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
         long version = (Long) dbq.get(1);
@@ -331,8 +332,6 @@ public class UpdateLog implements PluginInfoInitialized {
         trackDeleteByQuery(q, version);
       }
 
-    } finally {
-      startingUpdates.close();
     }
 
   }
@@ -930,16 +929,32 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
-  public class RecentUpdates {
-    Deque<TransactionLog> logList;    // newest first
+  public class RecentUpdates implements Closeable {
+
+    final Deque<TransactionLog> logList;    // newest first
     List<List<Update>> updateList;
     HashMap<Long, Update> updates;
     List<Update> deleteByQueryList;
     List<DeleteUpdate> deleteList;
     int latestOperation;
 
+    public RecentUpdates(Deque<TransactionLog> logList) {
+      this.logList = logList;
+      boolean success = false;
+      try {
+        update();
+        success = true;
+      } finally {
+        // defensive: if some unknown exception is thrown,
+        // make sure we close so that the tlogs are decref'd
+        if (!success) {
+          close();
+        }
+      }
+    }
+
     public List<Long> getVersions(int n) {
-      List<Long> ret = new ArrayList(n);
+      List<Long> ret = new ArrayList<>(n);
 
       for (List<Update> singleList : updateList) {
         for (Update ptr : singleList) {
@@ -1054,6 +1069,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
     }
 
+    @Override
     public void close() {
       for (TransactionLog log : logList) {
         log.decref();
@@ -1090,23 +1106,8 @@ public class UpdateLog implements PluginInfoInitialized {
 
     // TODO: what if I hand out a list of updates, then do an update, then hand out another list (and
     // one of the updates I originally handed out fell off the list).  Over-request?
+    return new RecentUpdates(logList);
 
-    boolean success = false;
-    RecentUpdates recentUpdates = null;
-    try {
-      recentUpdates = new RecentUpdates();
-      recentUpdates.logList = logList;
-      recentUpdates.update();
-      success = true;
-    } finally {
-      // defensive: if some unknown exception is thrown,
-      // make sure we close so that the tlogs are decref'd
-      if (!success && recentUpdates != null) {
-        recentUpdates.close();
-      }
-    }
-
-    return recentUpdates;
   }
 
   public void bufferUpdates() {
@@ -1114,13 +1115,19 @@ public class UpdateLog implements PluginInfoInitialized {
     // it checks the state first
     // assert state == State.ACTIVE;
 
-    recoveryInfo = new RecoveryInfo();
-
     // block all updates to eliminate race conditions
-    // reading state and acting on it in the update processor
+    // reading state and acting on it in the distributed update processor
     versionInfo.blockUpdates();
     try {
-      if (state != State.ACTIVE) return;
+      if (state == State.BUFFERING) {
+        log.info("Restarting buffering. previous=" + recoveryInfo);
+      } else if (state != State.ACTIVE) {
+        // we don't currently have support for handling other states
+        log.warn("Unexpected state for bufferUpdates: " + state + ", Ignoring request.");
+        return;
+      }
+
+      recoveryInfo = new RecoveryInfo();
 
       if (log.isInfoEnabled()) {
         log.info("Starting to buffer updates. " + this);
@@ -1574,9 +1581,7 @@ public class UpdateLog implements PluginInfoInitialized {
     Long highestVersion = null;
     final RTimer timer = new RTimer();
 
-    RecentUpdates recentUpdates = null;
-    try {
-      recentUpdates = getRecentUpdates();
+    try (RecentUpdates recentUpdates = getRecentUpdates()) {
       long maxVersionFromRecent = recentUpdates.getMaxRecentVersion();
       long maxVersionFromIndex = versions.getMaxVersionFromIndex(newSearcher);
 
@@ -1592,9 +1597,6 @@ public class UpdateLog implements PluginInfoInitialized {
       highestVersion = maxVersion;
     } catch (IOException ioExc) {
       log.warn("Failed to determine the max value of the version field due to: "+ioExc, ioExc);
-    } finally {
-      if (recentUpdates != null)
-        recentUpdates.close();
     }
 
     log.info("Took {}ms to seed version buckets with highest version {}",

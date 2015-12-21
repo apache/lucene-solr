@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashSet;
@@ -96,8 +97,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
   protected Set<String> hiddenFiles;
 
-  protected static final Logger log = LoggerFactory
-      .getLogger(ShowFileRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   public ShowFileRequestHandler()
@@ -274,19 +274,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase
         rsp.setException(new SolrException(SolrException.ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
       }
       return true;
-    }
-
-    // Make sure that if the schema is managed, we don't allow editing. Don't really want to put
-    // this in the init since we're not entirely sure when the managed schema will get initialized relative to this
-    // handler.
-    SolrCore core = req.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    if (schema instanceof ManagedIndexSchema) {
-      String managed = schema.getResourceName();
-
-      if (fname.equalsIgnoreCase(managed)) {
-        return true;
-      }
     }
     return false;
   }

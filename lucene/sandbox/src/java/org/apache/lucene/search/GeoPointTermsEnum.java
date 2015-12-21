@@ -26,8 +26,9 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
  * computes all ranges along a space-filling curve that represents
@@ -48,9 +49,7 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   private final List<Range> rangeBounds = new LinkedList<>();
 
   // detail level should be a factor of PRECISION_STEP limiting the depth of recursion (and number of ranges)
-  // in this case a factor of 4 brings the detail level to ~0.002/0.001 degrees lon/lat respectively (or ~222m/111m)
-  private static final short MAX_SHIFT = GeoPointField.PRECISION_STEP * 4;
-  protected static final short DETAIL_LEVEL = ((GeoUtils.BITS<<1)-MAX_SHIFT)/2;
+  protected final short DETAIL_LEVEL;
 
   GeoPointTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
                     final double maxLon, final double maxLat) {
@@ -61,8 +60,10 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
     this.minLat = GeoUtils.mortonUnhashLat(rectMinHash);
     this.maxLon = GeoUtils.mortonUnhashLon(rectMaxHash);
     this.maxLat = GeoUtils.mortonUnhashLat(rectMaxHash);
+    DETAIL_LEVEL = (short)(((GeoUtils.BITS<<1)-computeMaxShift())/2);
 
     computeRange(0L, (short) (((GeoUtils.BITS) << 1) - 1));
+    assert rangeBounds.isEmpty() == false;
     Collections.sort(rangeBounds);
   }
 
@@ -103,10 +104,21 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
     // if cell is within and a factor of the precision step, or it crosses the edge of the shape add the range
     final boolean within = res % GeoPointField.PRECISION_STEP == 0 && cellWithin(minLon, minLat, maxLon, maxLat);
     if (within || (level == DETAIL_LEVEL && cellIntersectsShape(minLon, minLat, maxLon, maxLat))) {
-      rangeBounds.add(new Range(start, res, !within));
+      final short nextRes = (short)(res-1);
+      if (nextRes % GeoPointField.PRECISION_STEP == 0) {
+        rangeBounds.add(new Range(start, nextRes, !within));
+        rangeBounds.add(new Range(start|(1L<<nextRes), nextRes, !within));
+      } else {
+        rangeBounds.add(new Range(start, res, !within));
+      }
     } else if (level < DETAIL_LEVEL && cellIntersectsMBR(minLon, minLat, maxLon, maxLat)) {
       computeRange(start, (short) (res - 1));
     }
+  }
+
+  protected short computeMaxShift() {
+    // in this case a factor of 4 brings the detail level to ~0.002/0.001 degrees lon/lat respectively (or ~222m/111m)
+    return GeoPointField.PRECISION_STEP * 4;
   }
 
   /**
@@ -128,14 +140,14 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
    * Primary driver for cells intersecting shape boundaries
    */
   protected boolean cellIntersectsMBR(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoUtils.rectIntersects(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
+    return GeoRelationUtils.rectIntersects(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 
   /**
    * Return whether quad-cell contains the bounding box of this shape
    */
   protected boolean cellContains(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoUtils.rectWithin(this.minLon, this.minLat, this.maxLon, this.maxLat, minLon, minLat, maxLon, maxLat);
+    return GeoRelationUtils.rectWithin(this.minLon, this.minLat, this.maxLon, this.maxLat, minLon, minLat, maxLon, maxLat);
   }
 
   public boolean boundaryTerm() {
@@ -223,7 +235,7 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
      */
     private void fillBytesRef(BytesRefBuilder result) {
       assert result != null;
-      NumericUtils.longToPrefixCoded(start, shift, result);
+      LegacyNumericUtils.longToPrefixCoded(start, shift, result);
     }
 
     @Override

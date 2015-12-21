@@ -1,5 +1,7 @@
 package org.apache.solr.spelling.suggest.jaspell;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * <b>Note:</b> This Suggester is not very RAM efficient.
  */
 public class JaspellLookupFactory extends LookupFactory {
-  private static final Logger LOG = LoggerFactory.getLogger(JaspellLookup.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String FILENAME = "jaspell.dat";
 
   @Override

@@ -20,11 +20,11 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyFloatField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -59,10 +59,10 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     float theFloat = Float.MAX_VALUE;
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(new LongField("theLong", theLong--, Field.Store.NO));
-      doc.add(new DoubleField("theDouble", theDouble--, Field.Store.NO));
-      doc.add(new IntField("theInt", theInt--, Field.Store.NO));
-      doc.add(new FloatField("theFloat", theFloat--, Field.Store.NO));
+      doc.add(new LegacyLongField("theLong", theLong--, Field.Store.NO));
+      doc.add(new LegacyDoubleField("theDouble", theDouble--, Field.Store.NO));
+      doc.add(new LegacyIntField("theInt", theInt--, Field.Store.NO));
+      doc.add(new LegacyFloatField("theFloat", theFloat--, Field.Store.NO));
       if (0 == i % 3) {
         wA.addDocument(doc);
       } else {

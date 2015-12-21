@@ -20,7 +20,7 @@ package org.apache.lucene.document;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,7 +60,7 @@ public class TestFieldType extends LuceneTestCase {
     assertFalse(ft7.equals(ft));
     
     FieldType ft8 = new FieldType();
-    ft8.setNumericType(NumericType.DOUBLE);
+    ft8.setNumericType(LegacyNumericType.DOUBLE);
     assertFalse(ft8.equals(ft));
     
     FieldType ft9 = new FieldType();
@@ -89,8 +89,13 @@ public class TestFieldType extends LuceneTestCase {
       if ((method.getModifiers() & Modifier.PUBLIC) != 0 && method.getName().startsWith("set")) {
         final Class<?>[] parameterTypes = method.getParameterTypes();
         final Object[] args = new Object[parameterTypes.length];
-        for (int i = 0; i < args.length; ++i) {
-          args[i] = randomValue(parameterTypes[i]);
+        if (method.getName().equals("setDimensions")) {
+          args[0] = 1 + random().nextInt(15);
+          args[1] = 1 + random().nextInt(100);
+        } else {
+          for (int i = 0; i < args.length; ++i) {
+            args[i] = randomValue(parameterTypes[i]);
+          }
         }
         method.invoke(ft, args);
       }

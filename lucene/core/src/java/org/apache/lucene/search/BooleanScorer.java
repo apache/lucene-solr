@@ -83,11 +83,11 @@ final class BooleanScorer extends BulkScorer {
     }
 
     void advance(int min) throws IOException {
-      score(null, min, min);
+      score(orCollector, null, min, min);
     }
 
-    void score(Bits acceptDocs, int min, int max) throws IOException {
-      next = scorer.score(orCollector, acceptDocs, min, max);
+    void score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+      next = scorer.score(collector, acceptDocs, min, max);
     }
   }
 
@@ -179,6 +179,9 @@ final class BooleanScorer extends BulkScorer {
     if (minShouldMatch < 1 || minShouldMatch > scorers.size()) {
       throw new IllegalArgumentException("minShouldMatch should be within 1..num_scorers. Got " + minShouldMatch);
     }
+    if (scorers.size() <= 1) {
+      throw new IllegalArgumentException("This scorer can only be used with two scorers or more, got " + scorers.size());
+    }
     for (int i = 0; i < buckets.length; i++) {
       buckets[i] = new Bucket();
     }
@@ -237,12 +240,12 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
-  private void scoreWindow(LeafCollector collector, Bits acceptDocs, int base, int min, int max,
-      BulkScorerAndDoc[] scorers, int numScorers) throws IOException {
+  private void scoreWindowIntoBitSetAndReplay(LeafCollector collector, Bits acceptDocs,
+      int base, int min, int max, BulkScorerAndDoc[] scorers, int numScorers) throws IOException {
     for (int i = 0; i < numScorers; ++i) {
       final BulkScorerAndDoc scorer = scorers[i];
       assert scorer.next < max;
-      scorer.score(acceptDocs, min, max);
+      scorer.score(orCollector, acceptDocs, min, max);
     }
 
     scoreMatches(collector, base);
@@ -270,14 +273,7 @@ final class BooleanScorer extends BulkScorer {
     return headTop;
   }
 
-  private void scoreWindow(LeafCollector collector, Bits acceptDocs, int windowBase, int windowMin, int windowMax) throws IOException {
-    // Fill 'leads' with all scorers from 'head' that are in the right window
-    leads[0] = head.pop();
-    int maxFreq = 1;
-    while (head.size() > 0 && head.top().next < windowMax) {
-      leads[maxFreq++] = head.pop();
-    }
-
+  private void scoreWindowMultipleScorers(LeafCollector collector, Bits acceptDocs, int windowBase, int windowMin, int windowMax, int maxFreq) throws IOException {
     while (maxFreq < minShouldMatch && maxFreq + tail.size() >= minShouldMatch) {
       // a match is still possible
       final BulkScorerAndDoc candidate = tail.pop();
@@ -296,7 +292,7 @@ final class BooleanScorer extends BulkScorer {
       }
       tail.clear();
 
-      scoreWindow(collector, acceptDocs, windowBase, windowMin, windowMax, leads, maxFreq);
+      scoreWindowIntoBitSetAndReplay(collector, acceptDocs, windowBase, windowMin, windowMax, leads, maxFreq);
     }
 
     // Push back scorers into head and tail
@@ -308,21 +304,64 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
+  private void scoreWindowSingleScorer(BulkScorerAndDoc bulkScorer, LeafCollector collector,
+      Bits acceptDocs, int windowMin, int windowMax, int max) throws IOException {
+    assert tail.size() == 0;
+    final int nextWindowBase = head.top().next & ~MASK;
+    final int end = Math.max(windowMax, Math.min(max, nextWindowBase));
+    
+    bulkScorer.score(collector, acceptDocs, windowMin, end);
+    
+    // reset the scorer that should be used for the general case
+    collector.setScorer(fakeScorer);
+  }
+
+  private BulkScorerAndDoc scoreWindow(BulkScorerAndDoc top, LeafCollector collector,
+      LeafCollector singleClauseCollector, Bits acceptDocs, int min, int max) throws IOException {
+    final int windowBase = top.next & ~MASK; // find the window that the next match belongs to
+    final int windowMin = Math.max(min, windowBase);
+    final int windowMax = Math.min(max, windowBase + SIZE);
+
+    // Fill 'leads' with all scorers from 'head' that are in the right window
+    leads[0] = head.pop();
+    int maxFreq = 1;
+    while (head.size() > 0 && head.top().next < windowMax) {
+      leads[maxFreq++] = head.pop();
+    }
+
+    if (minShouldMatch == 1 && maxFreq == 1) {
+      // special case: only one scorer can match in the current window,
+      // we can collect directly
+      final BulkScorerAndDoc bulkScorer = leads[0];
+      scoreWindowSingleScorer(bulkScorer, singleClauseCollector, acceptDocs, windowMin, windowMax, max);
+      return head.add(bulkScorer);
+    } else {
+      // general case, collect through a bit set first and then replay
+      scoreWindowMultipleScorers(collector, acceptDocs, windowBase, windowMin, windowMax, maxFreq);
+      return head.top();
+    }
+  }
+
   @Override
   public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
     fakeScorer.doc = -1;
     collector.setScorer(fakeScorer);
 
+    final LeafCollector singleClauseCollector;
+    if (coordFactors[1] == 1f) {
+      singleClauseCollector = collector;
+    } else {
+      singleClauseCollector = new FilterLeafCollector(collector) {
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(new BooleanTopLevelScorers.BoostedScorer(scorer, coordFactors[1]));
+        }
+      };
+    }
+
     BulkScorerAndDoc top = advance(min);
     while (top.next < max) {
-
-      final int windowBase = top.next & ~MASK; // find the window that the next match belongs to
-      final int windowMin = Math.max(min, windowBase);
-      final int windowMax = Math.min(max, windowBase + SIZE);
-
-      // general case
-      scoreWindow(collector, acceptDocs, windowBase, windowMin, windowMax);
-      top = head.top();
+      top = scoreWindow(top, collector, singleClauseCollector, acceptDocs, min, max);
     }
 
     return top.next;

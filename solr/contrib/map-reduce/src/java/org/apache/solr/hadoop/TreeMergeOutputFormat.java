@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +51,7 @@ import com.google.common.base.Preconditions;
  * See {@link IndexMergeTool}.
  */
 public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> {
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @Override
   public RecordWriter getRecordWriter(TaskAttemptContext context) throws IOException {
     Utils.getLogConfigFile(context.getConfiguration());
@@ -69,7 +70,7 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
     private final HeartBeater heartBeater;
     private final TaskAttemptContext context;
     
-    private static final Logger LOG = LoggerFactory.getLogger(TreeMergeRecordWriter.class);
+    private static final Logger LOG = log;
 
     public TreeMergeRecordWriter(TaskAttemptContext context, Path workDir) {
       this.workDir = new Path(workDir, "data/index");

@@ -21,8 +21,6 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.codecs.Codec;
 
-// TODO: put all files under codec and remove all the static extensions here
-
 /**
  * This class contains useful constants representing filenames and extensions
  * used by lucene, as well as convenience methods for querying whether a file

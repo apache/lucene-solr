@@ -85,19 +85,20 @@ public class ContextSuggestField extends SuggestField {
 
   @Override
   protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
-    for (CharSequence context : contexts()) {
+    final Iterable<CharSequence> contexts = contexts();
+    for (CharSequence context : contexts) {
       validate(context);
     }
-    PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts());
     CompletionTokenStream completionTokenStream;
     if (stream instanceof CompletionTokenStream) {
       completionTokenStream = (CompletionTokenStream) stream;
+      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(completionTokenStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
       completionTokenStream = new CompletionTokenStream(prefixTokenFilter,
           completionTokenStream.preserveSep,
           completionTokenStream.preservePositionIncrements,
           completionTokenStream.maxGraphExpansions);
     } else {
-      completionTokenStream = new CompletionTokenStream(prefixTokenFilter);
+      completionTokenStream = new CompletionTokenStream(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
     }
     return completionTokenStream;
   }

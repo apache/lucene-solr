@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
 import org.apache.solr.common.SolrInputField;
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public abstract class FieldValueMutatingUpdateProcessor 
   extends FieldMutatingUpdateProcessor {
 
-  private static final Logger log = LoggerFactory.getLogger(FieldValueMutatingUpdateProcessor.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   
   public static final Object DELETE_VALUE_SINGLETON = new Object() {

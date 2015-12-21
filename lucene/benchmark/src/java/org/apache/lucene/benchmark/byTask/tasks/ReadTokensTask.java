@@ -27,11 +27,10 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.document.LegacyFloatField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyDoubleField;
+import org.apache.lucene.document.LegacyLongField;
 
 /**
  * Simple task to test performance of tokenizers.  It just
@@ -74,10 +73,10 @@ public class ReadTokensTask extends PerfTask {
     int tokenCount = 0;
     for(final Field field : fields) {
       if (!field.fieldType().tokenized() ||
-          field instanceof IntField ||
-          field instanceof LongField ||
-          field instanceof FloatField ||
-          field instanceof DoubleField) {
+          field instanceof LegacyIntField ||
+          field instanceof LegacyLongField ||
+          field instanceof LegacyFloatField ||
+          field instanceof LegacyDoubleField) {
         continue;
       }
       

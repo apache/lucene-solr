@@ -1839,6 +1839,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       iwc = new IndexWriterConfig(new MockAnalyzer(random()));
       try {
         iw = new IndexWriter(dir, iwc);
+      } catch (AssertionError ex) {
+        // This is fine: we tripped IW's assert that all files it's about to fsync do exist:
+        assertTrue(ex.getMessage().matches("file .* does not exist; files=\\[.*\\]"));
       } catch (CorruptIndexException ex) {
         // Exceptions are fine - we are running out of file handlers here
         continue;
@@ -2318,6 +2321,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       });
 
     IndexWriterConfig iwc = newIndexWriterConfig();
+    MergePolicy mp = iwc.getMergePolicy();
+    if (mp instanceof TieredMergePolicy) {
+      TieredMergePolicy tmp = (TieredMergePolicy) mp;
+      if (tmp.getMaxMergedSegmentMB() < 0.2) {
+        tmp.setMaxMergedSegmentMB(0.2);
+      }
+    }
     MergeScheduler ms = iwc.getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
       ((ConcurrentMergeScheduler) ms).setSuppressExceptions();

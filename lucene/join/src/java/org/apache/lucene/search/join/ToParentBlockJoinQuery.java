@@ -163,7 +163,7 @@ public class ToParentBlockJoinQuery extends Query {
         return null;
       }
 
-      final int firstChildDoc = childScorer.nextDoc();
+      final int firstChildDoc = childScorer.iterator().nextDoc();
       if (firstChildDoc == DocIdSetIterator.NO_MORE_DOCS) {
         // No matches
         return null;
@@ -184,7 +184,7 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context);
-      if (scorer != null && scorer.advance(doc) == doc) {
+      if (scorer != null && scorer.iterator().advance(doc) == doc) {
         return scorer.explain(context.docBase);
       }
       return Explanation.noMatch("Not a match");
@@ -250,86 +250,142 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public int nextDoc() throws IOException {
-      //System.out.println("Q.nextDoc() nextChildDoc=" + nextChildDoc);
-      if (nextChildDoc == NO_MORE_DOCS) {
-        //System.out.println("  end");
-        return parentDoc = NO_MORE_DOCS;
-      }
+    public DocIdSetIterator iterator() {
+      return new DocIdSetIterator() {
+        final DocIdSetIterator childIt = childScorer.iterator();
 
-      // Gather all children sharing the same parent as
-      // nextChildDoc
-
-      parentDoc = parentBits.nextSetBit(nextChildDoc);
-
-      // Parent & child docs are supposed to be
-      // orthogonal:
-      if (nextChildDoc == parentDoc) {
-        throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-      }
-
-      //System.out.println("  parentDoc=" + parentDoc);
-      assert parentDoc != DocIdSetIterator.NO_MORE_DOCS;
-
-      float totalScore = 0;
-      float maxScore = Float.NEGATIVE_INFINITY;
-      float minScore = Float.POSITIVE_INFINITY;
-
-      childDocUpto = 0;
-      parentFreq = 0;
-      do {
-
-        //System.out.println("  c=" + nextChildDoc);
-        if (pendingChildDocs != null && pendingChildDocs.length == childDocUpto) {
-          pendingChildDocs = ArrayUtil.grow(pendingChildDocs);
-        }
-        if (pendingChildScores != null && scoreMode != ScoreMode.None && pendingChildScores.length == childDocUpto) {
-          pendingChildScores = ArrayUtil.grow(pendingChildScores);
-        }
-        if (pendingChildDocs != null) {
-          pendingChildDocs[childDocUpto] = nextChildDoc;
-        }
-        if (scoreMode != ScoreMode.None) {
-          // TODO: specialize this into dedicated classes per-scoreMode
-          final float childScore = childScorer.score();
-          final int childFreq = childScorer.freq();
-          if (pendingChildScores != null) {
-            pendingChildScores[childDocUpto] = childScore;
+        @Override
+        public int nextDoc() throws IOException {
+          //System.out.println("Q.nextDoc() nextChildDoc=" + nextChildDoc);
+          if (nextChildDoc == NO_MORE_DOCS) {
+            //System.out.println("  end");
+            return parentDoc = NO_MORE_DOCS;
           }
-          maxScore = Math.max(childScore, maxScore);
-          minScore = Math.min(childScore, minScore);
-          totalScore += childScore;
-          parentFreq += childFreq;
+
+          // Gather all children sharing the same parent as
+          // nextChildDoc
+
+          parentDoc = parentBits.nextSetBit(nextChildDoc);
+
+          // Parent & child docs are supposed to be
+          // orthogonal:
+          if (nextChildDoc == parentDoc) {
+            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
+          }
+
+          //System.out.println("  parentDoc=" + parentDoc);
+          assert parentDoc != DocIdSetIterator.NO_MORE_DOCS;
+
+          float totalScore = 0;
+          float maxScore = Float.NEGATIVE_INFINITY;
+          float minScore = Float.POSITIVE_INFINITY;
+
+          childDocUpto = 0;
+          parentFreq = 0;
+          do {
+
+            //System.out.println("  c=" + nextChildDoc);
+            if (pendingChildDocs != null && pendingChildDocs.length == childDocUpto) {
+              pendingChildDocs = ArrayUtil.grow(pendingChildDocs);
+            }
+            if (pendingChildScores != null && scoreMode != ScoreMode.None && pendingChildScores.length == childDocUpto) {
+              pendingChildScores = ArrayUtil.grow(pendingChildScores);
+            }
+            if (pendingChildDocs != null) {
+              pendingChildDocs[childDocUpto] = nextChildDoc;
+            }
+            if (scoreMode != ScoreMode.None) {
+              // TODO: specialize this into dedicated classes per-scoreMode
+              final float childScore = childScorer.score();
+              final int childFreq = childScorer.freq();
+              if (pendingChildScores != null) {
+                pendingChildScores[childDocUpto] = childScore;
+              }
+              maxScore = Math.max(childScore, maxScore);
+              minScore = Math.min(childScore, minScore);
+              totalScore += childScore;
+              parentFreq += childFreq;
+            }
+            childDocUpto++;
+            nextChildDoc = childIt.nextDoc();
+          } while (nextChildDoc < parentDoc);
+
+          // Parent & child docs are supposed to be
+          // orthogonal:
+          if (nextChildDoc == parentDoc) {
+            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
+          }
+
+          switch(scoreMode) {
+          case Avg:
+            parentScore = totalScore / childDocUpto;
+            break;
+          case Max:
+            parentScore = maxScore;
+            break;
+          case Min:
+            parentScore = minScore;
+            break;
+          case Total:
+            parentScore = totalScore;
+            break;
+          case None:
+            break;
+          }
+
+          //System.out.println("  return parentDoc=" + parentDoc + " childDocUpto=" + childDocUpto);
+          return parentDoc;
         }
-        childDocUpto++;
-        nextChildDoc = childScorer.nextDoc();
-      } while (nextChildDoc < parentDoc);
 
-      // Parent & child docs are supposed to be
-      // orthogonal:
-      if (nextChildDoc == parentDoc) {
-        throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-      }
+        @Override
+        public int advance(int parentTarget) throws IOException {
 
-      switch(scoreMode) {
-      case Avg:
-        parentScore = totalScore / childDocUpto;
-        break;
-      case Max:
-        parentScore = maxScore;
-        break;
-      case Min:
-        parentScore = minScore;
-        break;
-      case Total:
-        parentScore = totalScore;
-        break;
-      case None:
-        break;
-      }
+          //System.out.println("Q.advance parentTarget=" + parentTarget);
+          if (parentTarget == NO_MORE_DOCS) {
+            return parentDoc = NO_MORE_DOCS;
+          }
 
-      //System.out.println("  return parentDoc=" + parentDoc + " childDocUpto=" + childDocUpto);
-      return parentDoc;
+          if (parentTarget == 0) {
+            // Callers should only be passing in a docID from
+            // the parent space, so this means this parent
+            // has no children (it got docID 0), so it cannot
+            // possibly match.  We must handle this case
+            // separately otherwise we pass invalid -1 to
+            // prevSetBit below:
+            return nextDoc();
+          }
+
+          prevParentDoc = parentBits.prevSetBit(parentTarget-1);
+
+          //System.out.println("  rolled back to prevParentDoc=" + prevParentDoc + " vs parentDoc=" + parentDoc);
+          assert prevParentDoc >= parentDoc;
+          if (prevParentDoc > nextChildDoc) {
+            nextChildDoc = childIt.advance(prevParentDoc);
+            // System.out.println("  childScorer advanced to child docID=" + nextChildDoc);
+          //} else {
+            //System.out.println("  skip childScorer advance");
+          }
+
+          // Parent & child docs are supposed to be orthogonal:
+          if (nextChildDoc == prevParentDoc) {
+            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
+          }
+
+          final int nd = nextDoc();
+          //System.out.println("  return nextParentDoc=" + nd);
+          return nd;
+        }
+
+        @Override
+        public int docID() {
+          return parentDoc;
+        }
+
+        @Override
+        public long cost() {
+          return childIt.cost();
+        }
+      };
     }
 
     @Override
@@ -347,55 +403,11 @@ public class ToParentBlockJoinQuery extends Query {
       return parentFreq;
     }
 
-    @Override
-    public int advance(int parentTarget) throws IOException {
-
-      //System.out.println("Q.advance parentTarget=" + parentTarget);
-      if (parentTarget == NO_MORE_DOCS) {
-        return parentDoc = NO_MORE_DOCS;
-      }
-
-      if (parentTarget == 0) {
-        // Callers should only be passing in a docID from
-        // the parent space, so this means this parent
-        // has no children (it got docID 0), so it cannot
-        // possibly match.  We must handle this case
-        // separately otherwise we pass invalid -1 to
-        // prevSetBit below:
-        return nextDoc();
-      }
-
-      prevParentDoc = parentBits.prevSetBit(parentTarget-1);
-
-      //System.out.println("  rolled back to prevParentDoc=" + prevParentDoc + " vs parentDoc=" + parentDoc);
-      assert prevParentDoc >= parentDoc;
-      if (prevParentDoc > nextChildDoc) {
-        nextChildDoc = childScorer.advance(prevParentDoc);
-        // System.out.println("  childScorer advanced to child docID=" + nextChildDoc);
-      //} else {
-        //System.out.println("  skip childScorer advance");
-      }
-
-      // Parent & child docs are supposed to be orthogonal:
-      if (nextChildDoc == prevParentDoc) {
-        throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-      }
-
-      final int nd = nextDoc();
-      //System.out.println("  return nextParentDoc=" + nd);
-      return nd;
-    }
-
     public Explanation explain(int docBase) throws IOException {
       int start = docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
       int end = docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
       return Explanation.match(score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
       );
-    }
-
-    @Override
-    public long cost() {
-      return childScorer.cost();
     }
 
     /**

@@ -24,11 +24,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,6 +88,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -128,7 +133,7 @@ public class IndexFetcher {
 
   public static final String INDEX_PROPERTIES = "index.properties";
 
-  private static final Logger LOG = LoggerFactory.getLogger(IndexFetcher.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String masterUrl;
 
@@ -284,6 +289,7 @@ public class IndexFetcher {
     Directory indexDir = null;
     String indexDirPath;
     boolean deleteTmpIdxDir = true;
+    File tmpTlogDir = null;
 
     if (!solrCore.getSolrCoreState().getLastReplicateIndexSuccess()) {
       // if the last replication was not a success, we force a full replication
@@ -379,6 +385,11 @@ public class IndexFetcher {
 
       tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
 
+      // tmp dir for tlog files
+      if (tlogFilesToDownload != null) {
+        tmpTlogDir = new File(solrCore.getUpdateHandler().getUpdateLog().getLogDir(), "tlog." + timestamp);
+      }
+
       // cindex dir...
       indexDirPath = solrCore.getIndexDir();
       indexDir = solrCore.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -430,15 +441,19 @@ public class IndexFetcher {
         boolean reloadCore = false;
 
         try {
-          LOG.info("Starting download to " + tmpIndexDir + " fullCopy="
-              + isFullCopyNeeded);
+          LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 
-          downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, latestGeneration);
+          long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, latestGeneration);
           if (tlogFilesToDownload != null) {
-            downloadTlogFiles(timestamp, latestGeneration);
+            bytesDownloaded += downloadTlogFiles(tmpTlogDir, latestGeneration);
+            reloadCore = true; // reload update log
           }
-          LOG.info("Total time taken for download: {} secs", getReplicationTimeElapsed());
+          final long timeTakenSeconds = getReplicationTimeElapsed();
+          final Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? new Long(bytesDownloaded/timeTakenSeconds) : null);
+          LOG.info("Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
+              isFullCopyNeeded, bytesDownloaded, timeTakenSeconds, bytesDownloadedPerSecond, tmpIndexDir);
+
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
@@ -448,6 +463,10 @@ public class IndexFetcher {
               deleteTmpIdxDir = false;
             } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            }
+            if (tlogFilesToDownload != null) {
+              // move tlog files and refresh ulog only if we successfully installed a new index
+              successfulInstall &= moveTlogFiles(tmpTlogDir);
             }
             if (successfulInstall) {
               if (isFullCopyNeeded) {
@@ -473,6 +492,10 @@ public class IndexFetcher {
             } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
             }
+            if (tlogFilesToDownload != null) {
+              // move tlog files and refresh ulog only if we successfully installed a new index
+              successfulInstall &= moveTlogFiles(tmpTlogDir);
+            }
             if (successfulInstall) {
               logReplicationTimeAndConfFiles(modifiedConfFiles,
                   successfulInstall);
@@ -486,7 +509,7 @@ public class IndexFetcher {
 
         // we must reload the core after we open the IW back up
        if (successfulInstall && (reloadCore || forceCoreReload)) {
-          LOG.info("Reloading SolrCore {}", solrCore.getName());
+         LOG.info("Reloading SolrCore {}", solrCore.getName());
           reloadCore();
         }
 
@@ -508,7 +531,7 @@ public class IndexFetcher {
         }
 
         if (!isFullCopyNeeded && !forceReplication && !successfulInstall) {
-          cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, successfulInstall);
+          cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, tmpTlogDir, successfulInstall);
           cleanupDone = true;
           // we try with a full copy of the index
           LOG.warn(
@@ -531,13 +554,13 @@ public class IndexFetcher {
       }
     } finally {
       if (!cleanupDone) {
-        cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, successfulInstall);
+        cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, tmpTlogDir, successfulInstall);
       }
     }
   }
 
   private void cleanup(final SolrCore core, Directory tmpIndexDir,
-      Directory indexDir, boolean deleteTmpIdxDir, boolean successfulInstall) throws IOException {
+      Directory indexDir, boolean deleteTmpIdxDir, File tmpTlogDir, boolean successfulInstall) throws IOException {
     try {
       if (!successfulInstall) {
         try {
@@ -549,7 +572,7 @@ public class IndexFetcher {
 
       core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
 
-      filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
+      filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = tlogFilesToDownload = tlogFilesDownloaded = null;
       markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
@@ -573,6 +596,10 @@ public class IndexFetcher {
 
       if (indexDir != null) {
         core.getDirectoryFactory().release(indexDir);
+      }
+
+      if (tmpTlogDir != null) {
+        delTree(tmpTlogDir);
       }
     }
   }
@@ -789,34 +816,28 @@ public class IndexFetcher {
     }
   }
 
-  private void downloadTlogFiles(String timestamp, long latestGeneration) throws Exception {
-    UpdateLog ulog = solrCore.getUpdateHandler().getUpdateLog();
-
+  /**
+   * Download all the tlog files to the temp tlog directory.
+   */
+  private long downloadTlogFiles(File tmpTlogDir, long latestGeneration) throws Exception {
     LOG.info("Starting download of tlog files from master: " + tlogFilesToDownload);
-    tlogFilesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
-    File tmpTlogDir = new File(ulog.getLogDir(), "tlog." + getDateAsStr(new Date()));
-    try {
-      boolean status = tmpTlogDir.mkdirs();
-      if (!status) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Failed to create temporary tlog folder: " + tmpTlogDir.getName());
-      }
-      for (Map<String, Object> file : tlogFilesToDownload) {
-        String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-        localFileFetcher = new LocalFsFileFetcher(tmpTlogDir, file, saveAs, TLOG_FILE, latestGeneration);
-        currentFile = file;
-        localFileFetcher.fetchFile();
-        tlogFilesDownloaded.add(new HashMap<>(file));
-      }
-      // this is called before copying the files to the original conf dir
-      // so that if there is an exception avoid corrupting the original files.
-      terminateAndWaitFsyncService();
-      ((CdcrUpdateLog) ulog).reset(); // reset the update log before copying the new tlog directory
-      copyTmpTlogFiles2Tlog(tmpTlogDir, timestamp);
-      ulog.init(solrCore.getUpdateHandler(), solrCore); // re-initialise the update log with the new directory
-    } finally {
-      delTree(tmpTlogDir);
+    tlogFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
+    long bytesDownloaded = 0;
+
+    boolean status = tmpTlogDir.mkdirs();
+    if (!status) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to create temporary tlog folder: " + tmpTlogDir.getName());
     }
+    for (Map<String, Object> file : tlogFilesToDownload) {
+      String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
+      localFileFetcher = new LocalFsFileFetcher(tmpTlogDir, file, saveAs, TLOG_FILE, latestGeneration);
+      currentFile = file;
+      localFileFetcher.fetchFile();
+      bytesDownloaded += localFileFetcher.getBytesDownloaded();
+      tlogFilesDownloaded.add(new HashMap<>(file));
+    }
+    return bytesDownloaded;
   }
 
   /**
@@ -826,12 +847,15 @@ public class IndexFetcher {
    * @param tmpIndexDir              the directory to which files need to be downloadeed to
    * @param indexDir                 the indexDir to be merged to
    * @param latestGeneration         the version number
+   *
+   * @return number of bytes downloaded
    */
-  private void downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir, long latestGeneration)
+  private long downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir, long latestGeneration)
       throws Exception {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
+    long bytesDownloaded = 0;
     for (Map<String,Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       long size = (Long) file.get(SIZE);
@@ -842,12 +866,14 @@ public class IndexFetcher {
             (String) file.get(NAME), FILE, latestGeneration);
         currentFile = file;
         dirFileFetcher.fetchFile();
+        bytesDownloaded += dirFileFetcher.getBytesDownloaded();
         filesDownloaded.add(new HashMap<>(file));
       } else {
         LOG.info("Skipping download for " + file.get(NAME)
             + " because it already exists");
       }
     }
+    return bytesDownloaded;
   }
   
   private boolean filesToAlwaysDownloadIfNoChecksums(String filename,
@@ -1021,6 +1047,50 @@ public class IndexFetcher {
   }
 
   /**
+   * <p>
+   *   Copy all the tlog files from the temp tlog dir to the actual tlog dir, and reset
+   *   the {@link UpdateLog}. The copy will try to preserve the original tlog directory
+   *   if the copy fails.
+   * </p>
+   * <p>
+   *   This assumes that the tlog files transferred from the leader are in synch with the
+   *   index files transferred from the leader. The reset of the update log relies on the version
+   *   of the latest operations found in the tlog files. If the tlogs are ahead of the latest commit
+   *   point, it will not copy all the needed buffered updates for the replay and it will miss
+   *   some operations.
+   * </p>
+   */
+  private boolean moveTlogFiles(File tmpTlogDir) {
+    UpdateLog ulog = solrCore.getUpdateHandler().getUpdateLog();
+
+    VersionInfo vinfo = ulog.getVersionInfo();
+    vinfo.blockUpdates(); // block updates until the new update log is initialised
+    try {
+      // reset the update log before copying the new tlog directory
+      CdcrUpdateLog.BufferedUpdates bufferedUpdates = ((CdcrUpdateLog) ulog).resetForRecovery();
+      // try to move the temp tlog files to the tlog directory
+      if (!copyTmpTlogFiles2Tlog(tmpTlogDir)) return false;
+      // reinitialise the update log and copy the buffered updates
+      if (bufferedUpdates.tlog != null) {
+        // map file path to its new backup location
+        File parentDir = FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getLogDir()).getParent().toFile();
+        File backupTlogDir = new File(parentDir, tmpTlogDir.getName());
+        bufferedUpdates.tlog = new File(backupTlogDir, bufferedUpdates.tlog.getName());
+      }
+      // init the update log with the new set of tlog files, and copy the buffered updates
+      ((CdcrUpdateLog) ulog).initForRecovery(bufferedUpdates.tlog, bufferedUpdates.offset);
+    }
+    catch (Exception e) {
+      LOG.error("Unable to copy tlog files", e);
+      return false;
+    }
+    finally {
+      vinfo.unblockUpdates();
+    }
+    return true;
+  }
+
+  /**
    * Make file list
    */
   private List<File> makeTmpConfDirFileList(File dir, List<File> fileList) {
@@ -1074,27 +1144,40 @@ public class IndexFetcher {
   }
 
   /**
-   * The tlog files are copied from the tmp dir to the tlog dir by renaming the directory if possible.
-   * A backup of the old file is maintained.
+   * The tlog files are moved from the tmp dir to the tlog dir as an atomic filesystem operation.
+   * A backup of the old directory is maintained. If the directory move fails, it will try to revert back the original
+   * tlog directory.
    */
-  private void copyTmpTlogFiles2Tlog(File tmpTlogDir, String timestamp) {
-    File tlogDir = new File(solrCore.getUpdateHandler().getUpdateLog().getLogDir());
-    File backupTlogDir = new File(tlogDir.getParent(), UpdateLog.TLOG_NAME + "." + timestamp);
+  private boolean copyTmpTlogFiles2Tlog(File tmpTlogDir) {
+    Path tlogDir = FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getLogDir());
+    Path backupTlogDir = FileSystems.getDefault().getPath(tlogDir.getParent().toAbsolutePath().toString(), tmpTlogDir.getName());
 
     try {
-      org.apache.commons.io.FileUtils.moveDirectory(tlogDir, backupTlogDir);
+      Files.move(tlogDir, backupTlogDir, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Unable to rename: " + tlogDir + " to: " + backupTlogDir, e);
+      SolrException.log(LOG, "Unable to rename: " + tlogDir + " to: " + backupTlogDir, e);
+      return false;
     }
 
+    Path src = FileSystems.getDefault().getPath(backupTlogDir.toAbsolutePath().toString(), tmpTlogDir.getName());
     try {
-      tmpTlogDir = new File(backupTlogDir, tmpTlogDir.getName());
-      org.apache.commons.io.FileUtils.moveDirectory(tmpTlogDir, tlogDir);
+      Files.move(src, tlogDir, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Unable to rename: " + tmpTlogDir + " to: " + tlogDir, e);
+      SolrException.log(LOG, "Unable to rename: " + src + " to: " + tlogDir, e);
+
+      // In case of error, try to revert back the original tlog directory
+      try {
+        Files.move(backupTlogDir, tlogDir, StandardCopyOption.ATOMIC_MOVE);
+      } catch (IOException e2) {
+        // bad, we were not able to revert back the original tlog directory
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unable to rename: " + backupTlogDir + " to: " + tlogDir);
+      }
+
+      return false;
     }
+
+    return true;
   }
 
   private String getDateAsStr(Date d) {

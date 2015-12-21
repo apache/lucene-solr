@@ -22,16 +22,21 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -149,6 +154,45 @@ public class SolrCLI {
     }
 
     protected abstract void runImpl(CommandLine cli) throws Exception;
+
+    // It's a little awkward putting this in ToolBase, but to re-use it in upconfig and create, _and_ have access
+    // to the (possibly) redirected "stdout", it needs to go here unless we reorganize things a bit.
+    protected void upconfig(CloudSolrClient cloudSolrClient, CommandLine cli, String confname, String configSet) throws IOException {
+
+      File configSetDir = null;
+      // we try to be flexible and allow the user to specify a configuration directory instead of a configset name
+      File possibleConfigDir = new File(configSet);
+      if (possibleConfigDir.isDirectory()) {
+        configSetDir = possibleConfigDir;
+      } else {
+        File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
+        if (!configsetsDir.isDirectory())
+          throw new FileNotFoundException(configsetsDir.getAbsolutePath() + " not found!");
+
+        // upload the configset if it exists
+        configSetDir = new File(configsetsDir, configSet);
+        if (!configSetDir.isDirectory()) {
+          throw new FileNotFoundException("Specified config " + configSet +
+              " not found in " + configsetsDir.getAbsolutePath());
+        }
+      }
+
+      File confDir = new File(configSetDir, "conf");
+      if (!confDir.isDirectory()) {
+        // config dir should contain a conf sub-directory but if not and there's a solrconfig.xml, then use it
+        if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
+          confDir = configSetDir;
+        } else {
+          throw new IllegalArgumentException("Specified configuration directory " + configSetDir.getAbsolutePath() +
+              " is invalid;\nit should contain either conf sub-directory or solrconfig.xml");
+        }
+      }
+
+      //
+      echo("Uploading " + confDir.getAbsolutePath() +
+          " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost());
+      cloudSolrClient.uploadConfig(confDir.toPath(), confname);
+    }
   }
   
   /**
@@ -185,7 +229,7 @@ public class SolrCLI {
         throws Exception;
   }
   
-  public static Logger log = LoggerFactory.getLogger(SolrCLI.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";  
   public static final String ZK_HOST = "localhost:9983";
   
@@ -222,7 +266,7 @@ public class SolrCLI {
     if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
       System.err.println("Invalid command-line args! Must pass the name of a tool to run.\n"
           + "Supported tools:\n");
-      displayToolOptions(System.err);
+      displayToolOptions();
       exit(1);
     }
 
@@ -326,6 +370,10 @@ public class SolrCLI {
       return new ConfigTool();
     else if ("run_example".equals(toolType))
       return new RunExampleTool();
+    else if ("upconfig".equals(toolType))
+      return new ConfigSetUploadTool();
+    else if ("downconfig".equals(toolType))
+      return new ConfigSetDownloadTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -339,7 +387,7 @@ public class SolrCLI {
     throw new IllegalArgumentException(toolType + " not supported!");
   }
   
-  private static void displayToolOptions(PrintStream out) throws Exception {
+  private static void displayToolOptions() throws Exception {
     HelpFormatter formatter = new HelpFormatter();
     formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
     formatter.printHelp("status", getToolOptions(new StatusTool()));
@@ -350,6 +398,8 @@ public class SolrCLI {
     formatter.printHelp("delete", getToolOptions(new DeleteTool()));
     formatter.printHelp("config", getToolOptions(new ConfigTool()));
     formatter.printHelp("run_example", getToolOptions(new RunExampleTool()));
+    formatter.printHelp("upconfig", getToolOptions(new ConfigSetUploadTool()));
+    formatter.printHelp("downconfig", getToolOptions(new ConfigSetDownloadTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -1392,40 +1442,7 @@ public class SolrCLI {
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory "+confname);
       } else {
-        String configSet = cli.getOptionValue("confdir", DEFAULT_CONFIG_SET);
-        File configSetDir = null;
-        // we try to be flexible and allow the user to specify a configuration directory instead of a configset name
-        File possibleConfigDir = new File(configSet);
-        if (possibleConfigDir.isDirectory()) {
-          configSetDir = possibleConfigDir;
-        } else {
-          File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
-          if (!configsetsDir.isDirectory())
-            throw new FileNotFoundException(configsetsDir.getAbsolutePath()+" not found!");
-
-          // upload the configset if it exists
-          configSetDir = new File(configsetsDir, configSet);
-          if (!configSetDir.isDirectory()) {
-            throw new FileNotFoundException("Specified config " + configSet +
-                " not found in " + configsetsDir.getAbsolutePath());
-          }
-        }
-
-        File confDir = new File(configSetDir, "conf");
-        if (!confDir.isDirectory()) {
-          // config dir should contain a conf sub-directory but if not and there's a solrconfig.xml, then use it
-          if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
-            confDir = configSetDir;
-          } else {
-            throw new IllegalArgumentException("Specified configuration directory "+configSetDir.getAbsolutePath()+
-                " is invalid;\nit should contain either conf sub-directory or solrconfig.xml");
-          }
-        }
-
-        // test to see if that config exists in ZK
-        echo("Uploading "+confDir.getAbsolutePath()+
-            " for config "+confname+" to ZooKeeper at "+cloudSolrClient.getZkHost());
-        cloudSolrClient.uploadConfig(confDir.toPath(), confname);
+        upconfig(cloudSolrClient, cli, confname, cli.getOptionValue("confdir", DEFAULT_CONFIG_SET));
       }
 
       // since creating a collection is a heavy-weight operation, check for existence first
@@ -1573,7 +1590,7 @@ public class SolrCLI {
             throw new IllegalArgumentException("\n"+configSetDir.getAbsolutePath()+" doesn't contain a conf subdirectory or solrconfig.xml\n");
           }
         }
-        echo("\nSetup new core instance directory:\n" + coreInstanceDir.getAbsolutePath());
+        echo("\nCopying configuration to new core instance directory:\n" + coreInstanceDir.getAbsolutePath());
       }
 
       String createCoreUrl =
@@ -1585,12 +1602,17 @@ public class SolrCLI {
 
       echo("\nCreating new core '" + coreName + "' using command:\n" + createCoreUrl + "\n");
 
-      Map<String,Object> json = getJson(createCoreUrl);
-
-      CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(json);
-      echo(arr.toString());
-      echo("\n");
+      try {
+        Map<String,Object> json = getJson(createCoreUrl);
+        CharArr arr = new CharArr();
+        new JSONWriter(arr, 2).write(json);
+        echo(arr.toString());
+        echo("\n");
+      } catch (Exception e) {
+        /* create-core failed, cleanup the copied configset before propagating the error. */
+        FileUtils.deleteDirectory(coreInstanceDir);
+        throw e;
+      }
     }
   } // end CreateCoreTool class
 
@@ -1632,6 +1654,139 @@ public class SolrCLI {
     }
 
   } // end CreateTool class
+
+  public static class ConfigSetUploadTool extends ToolBase {
+
+    public ConfigSetUploadTool() {
+      this(System.out);
+    }
+
+    public ConfigSetUploadTool(PrintStream stdout) {
+      super(stdout);
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("confname") // Comes out in help message
+              .hasArg() // Has one sub-argument
+              .isRequired(true) // confname argument must be present
+              .withDescription("Configset name on Zookeeper")
+              .create("confname"), // passed as -confname value
+          OptionBuilder
+              .withArgName("confdir")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Local directory with configs")
+              .create("confdir"),
+          OptionBuilder
+              .withArgName("configsetsDir")
+              .hasArg()
+              .isRequired()
+              .withDescription("Parent directory of example configsets")
+              .create("configsetsDir"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+
+    public String getName() {
+      return "upconfig";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+      String zkHost = getZkHost(cli);
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("solrUrl") +
+            " is running in standalone server mode, upconfig can only be used when running in SolrCloud mode.\n");
+      }
+
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+        echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+        cloudSolrClient.connect();
+        upconfig(cloudSolrClient, cli, cli.getOptionValue("confname"), cli.getOptionValue("confdir"));
+      }
+    }
+  }
+
+  public static class ConfigSetDownloadTool extends ToolBase {
+
+    public ConfigSetDownloadTool() {
+      this(System.out);
+    }
+
+    public ConfigSetDownloadTool(PrintStream stdout) {
+      super(stdout);
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("confname")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Configset name on Zookeeper")
+              .create("confname"),
+          OptionBuilder
+              .withArgName("confdir")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Local directory with configs")
+              .create("confdir"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+    public String getName() {
+      return "downconfig";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+
+      String zkHost = getZkHost(cli);
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("solrUrl") +
+            " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
+      }
+
+
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+        echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+        cloudSolrClient.connect();
+        downconfig(cloudSolrClient, cli.getOptionValue("confname"), cli.getOptionValue("confdir"));
+      }
+    }
+
+    protected void downconfig(CloudSolrClient cloudSolrClient, String confname, String confdir) throws IOException {
+
+      Path configSetPath = Paths.get(confdir);
+      // we try to be nice about having the "conf" in the directory, and we create it if it's not there.
+      if (configSetPath.endsWith("/conf") == false) {
+        configSetPath = Paths.get(configSetPath.toString(), "conf");
+      }
+      if (Files.exists(configSetPath) == false) {
+        Files.createDirectories(configSetPath);
+      }
+
+      // Try to download the configset
+      echo("Downloading configset " + confname + " from ZooKeeper at " + cloudSolrClient.getZkHost() +
+          " to directory " + configSetPath.toAbsolutePath());
+      cloudSolrClient.downloadConfig(confname, configSetPath);
+    }
+
+  } // End ConfigSetDownloadTool class
 
   public static class DeleteTool extends ToolBase {
 
@@ -2480,13 +2635,13 @@ public class SolrCLI {
 
         echo("Please choose a configuration for the "+collectionName+" collection, available options are:");
         cloudConfig =
-            prompt(readInput, "basic_configs, data_driven_schema_configs, or sample_techproducts_configs ["+cloudConfig+"] ", cloudConfig);
+            prompt(readInput, "basic_configs, data_driven_schema_configs, sample_techproducts_configs, or managed_schema_configs ["+cloudConfig+"] ", cloudConfig);
 
         // validate the cloudConfig name
         while (!isValidConfig(configsetsDir, cloudConfig)) {
           echo(cloudConfig+" is not a valid configuration directory! Please choose a configuration for the "+collectionName+" collection, available options are:");
           cloudConfig =
-              prompt(readInput, "basic_configs, data_driven_schema_configs, or sample_techproducts_configs ["+cloudConfig+"] ", cloudConfig);
+              prompt(readInput, "basic_configs, data_driven_schema_configs, sample_techproducts_configs, or managed_schema_configs ["+cloudConfig+"] ", cloudConfig);
         }
       } else {
         // must verify if default collection exists

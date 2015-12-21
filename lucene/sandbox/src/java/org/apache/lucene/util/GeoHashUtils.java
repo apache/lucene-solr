@@ -64,6 +64,25 @@ public class GeoHashUtils {
   }
 
   /**
+   * Encode an existing geohash long to the provided precision
+   */
+  public static long longEncode(long geohash, int level) {
+    final short precision = (short)(geohash & 15);
+    if (precision == level) {
+      return geohash;
+    } else if (precision > level) {
+      return ((geohash >>> (((precision - level) * 5) + 4)) << 4) | level;
+    }
+    return ((geohash >>> 4) << (((level - precision) * 5) + 4) | level);
+  }
+
+  public static long fromMorton(long morton, int level) {
+    long mFlipped = BitUtil.flipFlop(morton);
+    mFlipped >>>= (((GeoHashUtils.PRECISION - level) * 5) + MORTON_OFFSET);
+    return (mFlipped << 4) | level;
+  }
+
+  /**
    * Encode to a geohash string from the geohash based long format
    */
   public static final String stringEncode(long geoHashLong) {
@@ -71,7 +90,7 @@ public class GeoHashUtils {
     geoHashLong >>>= 4;
     char[] chars = new char[level];
     do {
-      chars[--level] = BASE_32[(int)(geoHashLong&31L)];
+      chars[--level] = BASE_32[(int) (geoHashLong&31L)];
       geoHashLong>>>=5;
     } while(level > 0);
 
@@ -89,19 +108,10 @@ public class GeoHashUtils {
    * Encode to a level specific geohash string from full resolution longitude, latitude
    */
   public static final String stringEncode(final double lon, final double lat, final int level) {
-    // bit twiddle to geohash (since geohash is a swapped (lon/lat) encoding)
-    final long hashedVal = BitUtil.flipFlop(GeoUtils.mortonHash(lon, lat));
+    // convert to geohashlong
+    final long ghLong = fromMorton(GeoUtils.mortonHash(lon, lat), level);
+    return stringEncode(ghLong);
 
-    StringBuilder geoHash = new StringBuilder();
-    short precision = 0;
-    final short msf = (GeoUtils.BITS<<1)-5;
-    long mask = 31L<<msf;
-    do {
-      geoHash.append(BASE_32[(int)((mask & hashedVal)>>>(msf-(precision*5)))]);
-      // next 5 bits
-      mask >>>= 5;
-    } while (++precision < level);
-    return geoHash.toString();
   }
 
   /**
@@ -151,7 +161,7 @@ public class GeoHashUtils {
     final int level = (int)(geoHashLong&15);
     final short odd = (short)(level & 1);
 
-    return BitUtil.flipFlop((geoHashLong >>> 4) << odd) << (((12 - level) * 5) + (MORTON_OFFSET - odd));
+    return BitUtil.flipFlop(((geoHashLong >>> 4) << odd) << (((12 - level) * 5) + (MORTON_OFFSET - odd)));
   }
 
   private static final char encode(int x, int y) {

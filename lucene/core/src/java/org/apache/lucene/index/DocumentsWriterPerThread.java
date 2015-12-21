@@ -415,6 +415,8 @@ class DocumentsWriterPerThread {
       return null;
     }
 
+    long t0 = System.nanoTime();
+
     if (infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
     }
@@ -458,6 +460,9 @@ class DocumentsWriterPerThread {
       FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
                                              segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
       sealFlushedSegment(fs);
+      if (infoStream.isEnabled("DWPT")) {
+        infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0)/1000000.0) + " msec");
+      }
 
       return fs;
     } catch (Throwable th) {

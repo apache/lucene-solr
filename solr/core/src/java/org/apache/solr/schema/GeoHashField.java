@@ -89,7 +89,7 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    field.checkFieldCacheSource(parser);
+    field.checkFieldCacheSource();
     return new StrFieldSource(field.name);
   }
 

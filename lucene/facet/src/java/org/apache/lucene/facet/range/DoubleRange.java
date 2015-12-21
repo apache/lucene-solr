@@ -33,7 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /** Represents a range over double values.
  *
@@ -63,7 +63,7 @@ public final class DoubleRange extends Range {
     this.maxInclusive = maxInclusive;
 
     // TODO: if DoubleDocValuesField used
-    // NumericUtils.doubleToSortableLong format (instead of
+    // LegacyNumericUtils.doubleToSortableLong format (instead of
     // Double.doubleToRawLongBits) we could do comparisons
     // in long space 
 
@@ -97,8 +97,8 @@ public final class DoubleRange extends Range {
 
   LongRange toLongRange() {
     return new LongRange(label,
-                         NumericUtils.doubleToSortableLong(minIncl), true,
-                         NumericUtils.doubleToSortableLong(maxIncl), true);
+                         LegacyNumericUtils.doubleToSortableLong(minIncl), true,
+                         LegacyNumericUtils.doubleToSortableLong(maxIncl), true);
   }
 
   @Override
@@ -164,10 +164,11 @@ public final class DoubleRange extends Range {
           if (fastMatchWeight == null) {
             approximation = DocIdSetIterator.all(maxDoc);
           } else {
-            approximation = fastMatchWeight.scorer(context);
-            if (approximation == null) {
+            Scorer s = fastMatchWeight.scorer(context);
+            if (s == null) {
               return null;
             }
+            approximation = s.iterator();
           }
 
           final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);
@@ -175,6 +176,11 @@ public final class DoubleRange extends Range {
             @Override
             public boolean matches() throws IOException {
               return range.accept(values.doubleVal(approximation.docID()));
+            }
+
+            @Override
+            public float matchCost() {
+              return 100; // TODO: use cost of range.accept()
             }
           };
           return new ConstantScoreScorer(this, score(), twoPhase);

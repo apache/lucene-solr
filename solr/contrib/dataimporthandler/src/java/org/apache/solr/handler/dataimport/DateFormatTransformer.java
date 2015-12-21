@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -39,8 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DateFormatTransformer extends Transformer {
   private Map<String, SimpleDateFormat> fmtCache = new HashMap<>();
-  private static final Logger LOG = LoggerFactory
-          .getLogger(DateFormatTransformer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   @SuppressWarnings("unchecked")

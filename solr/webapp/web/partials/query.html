@@ -251,13 +251,13 @@ limitations under the License.
         <div class="fieldset" ng-show="isFacet">
 
         <label for="facet_query">facet.query</label>
-        <textarea ng-model="facet.query" name="facet.query" id="facet_query"></textarea>
+        <textarea ng-model="facet['facet.query']" name="facet.query" id="facet_query"></textarea>
 
         <label for="facet_field">facet.field</label>
-        <input type="text" ng-model="facet.field" name="facet.field" id="facet_field">
+        <input type="text" ng-model="facet['facet.field']" name="facet.field" id="facet_field">
 
         <label for="facet_prefix">facet.prefix</label>
-        <input type="text" ng-model="facet.prefix" name="facet.prefix" id="facet_prefix">
+        <input type="text" ng-model="facet['facet.prefix']" name="facet.prefix" id="facet_prefix">
 
         </div>
       </fieldset>
@@ -293,47 +293,47 @@ limitations under the License.
         <div class="fieldset" ng-show="isSpellcheck">
 
         <label for="spellcheck_build" class="checkbox">
-          <input type="checkbox" ng-model="spellcheck.build" name="spellcheck.build" id="spellcheck_build" value="true">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.build']" name="spellcheck.build" id="spellcheck_build" value="true">
           spellcheck.build
         </label>
 
         <label for="spellcheck_reload" class="checkbox">
-          <input type="checkbox" ng-model="spellcheck.reload" name="spellcheck.reload" id="spellcheck_reload" value="true">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.reload']" name="spellcheck.reload" id="spellcheck_reload" value="true">
           spellcheck.reload
         </label>
 
         <label for="spellcheck_q">spellcheck.q</label>
-        <input type="text" ng-model="spellcheck.q" name="spellcheck.q" id="spellcheck_q">
+        <input type="text" ng-model="spellcheck['spellcheck.q']" name="spellcheck.q" id="spellcheck_q">
 
         <label for="spellcheck_dictionary">spellcheck.dictionary</label>
-        <input type="text" ng-model="spellcheck.dictionary" name="spellcheck.dictionary" id="spellcheck_dictionary">
+        <input type="text" ng-model="spellcheck['spellcheck.dictionary']" name="spellcheck.dictionary" id="spellcheck_dictionary">
 
         <label for="spellcheck_count">spellcheck.count</label>
-        <input type="text" ng-model="spellcheck.count" name="spellcheck.count" id="spellcheck_count">
+        <input type="text" ng-model="spellcheck['spellcheck.count']" name="spellcheck.count" id="spellcheck_count">
 
         <label for="spellcheck_onlyMorePopular" class="checkbox">
-          <input type="checkbox" ng-model="spellcheck.onlyMorePopular" name="spellcheck.onlyMorePopular" id="spellcheck_onlyMorePopular" value="true">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.onlyMorePopular']" name="spellcheck.onlyMorePopular" id="spellcheck_onlyMorePopular" value="true">
           spellcheck.onlyMorePopular
         </label>
 
         <label for="spellcheck_extendedResults" class="checkbox">
-          <input type="checkbox" ng-model="spellcheck.extendedResults" name="spellcheck.extendedResults" id="spellcheck_extendedResults" value="true">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.extendedResults']" name="spellcheck.extendedResults" id="spellcheck_extendedResults" value="true">
           spellcheck.extendedResults
         </label>
 
         <label for="spellcheck_collate" class="checkbox">
-          <input type="checkbox" ng-model="spellcheck.collate" name="spellcheck.collate" id="spellcheck_collate" value="true">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.collate']" name="spellcheck.collate" id="spellcheck_collate" value="true">
           spellcheck.collate
         </label>
 
         <label for="spellcheck_maxCollations">spellcheck.maxCollations</label>
-        <input type="text" ng-model="spellcheck.maxCollations" name="spellcheck.maxCollations" id="spellcheck_maxCollations">
+        <input type="text" ng-model="spellcheck['spellcheck.maxCollations']" name="spellcheck.maxCollations" id="spellcheck_maxCollations">
 
         <label for="spellcheck_maxCollationTries">spellcheck.maxCollationTries</label>
-        <input type="text" ng-model="spellcheck.maxCollationTries" name="spellcheck.maxCollationTries" id="spellcheck_maxCollationTries">
+        <input type="text" ng-model="spellcheck['spellcheck.maxCollationTries']" name="spellcheck.maxCollationTries" id="spellcheck_maxCollationTries">
 
         <label for="spellcheck_accuracy">spellcheck.accuracy</label>
-        <input type="text" ng-model="spellcheck.accuracy" name="spellcheck.accuracy" id="spellcheck_accuracy">
+        <input type="text" ng-model="spellcheck['spellcheck.accuracy']" name="spellcheck.accuracy" id="spellcheck_accuracy">
        </div>
 
       </fieldset>

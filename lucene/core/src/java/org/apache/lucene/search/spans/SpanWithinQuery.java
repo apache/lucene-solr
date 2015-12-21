@@ -17,14 +17,14 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.IndexSearcher;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
 
 /** Keep matches that are contained within another Spans. */
 public final class SpanWithinQuery extends SpanContainQuery {

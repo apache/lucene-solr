@@ -28,8 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
  * pluggable comparison function makes the rebalancing quite slow.
  * @lucene.internal
  */
-public final class DisiPriorityQueue<Iter extends DocIdSetIterator>
-implements Iterable<DisiWrapper<Iter>> {
+public final class DisiPriorityQueue implements Iterable<DisiWrapper> {
 
   static int leftNode(int node) {
     return ((node + 1) << 1) - 1;
@@ -43,10 +42,9 @@ implements Iterable<DisiWrapper<Iter>> {
     return ((node + 1) >>> 1) - 1;
   }
 
-  private final DisiWrapper<Iter>[] heap;
+  private final DisiWrapper[] heap;
   private int size;
 
-  @SuppressWarnings({"unchecked","rawtypes"})
   public DisiPriorityQueue(int maxSize) {
     heap = new DisiWrapper[maxSize];
     size = 0;
@@ -56,15 +54,15 @@ implements Iterable<DisiWrapper<Iter>> {
     return size;
   }
 
-  public DisiWrapper<Iter> top() {
+  public DisiWrapper top() {
     return heap[0];
   }
 
   /** Get the list of scorers which are on the current doc. */
-  public DisiWrapper<Iter> topList() {
-    final DisiWrapper<Iter>[] heap = this.heap;
+  public DisiWrapper topList() {
+    final DisiWrapper[] heap = this.heap;
     final int size = this.size;
-    DisiWrapper<Iter> list = heap[0];
+    DisiWrapper list = heap[0];
     list.next = null;
     if (size >= 3) {
       list = topList(list, heap, size, 1);
@@ -76,14 +74,14 @@ implements Iterable<DisiWrapper<Iter>> {
   }
 
   // prepend w1 (iterator) to w2 (list)
-  private DisiWrapper<Iter> prepend(DisiWrapper<Iter> w1, DisiWrapper<Iter> w2) {
+  private DisiWrapper prepend(DisiWrapper w1, DisiWrapper w2) {
     w1.next = w2;
     return w1;
   }
 
-  private DisiWrapper<Iter> topList(DisiWrapper<Iter> list, DisiWrapper<Iter>[] heap,
+  private DisiWrapper topList(DisiWrapper list, DisiWrapper[] heap,
                                     int size, int i) {
-    final DisiWrapper<Iter> w = heap[i];
+    final DisiWrapper w = heap[i];
     if (w.doc == list.doc) {
       list = prepend(w, list);
       final int left = leftNode(i);
@@ -98,8 +96,8 @@ implements Iterable<DisiWrapper<Iter>> {
     return list;
   }
 
-  public DisiWrapper<Iter> add(DisiWrapper<Iter> entry) {
-    final DisiWrapper<Iter>[] heap = this.heap;
+  public DisiWrapper add(DisiWrapper entry) {
+    final DisiWrapper[] heap = this.heap;
     final int size = this.size;
     heap[size] = entry;
     upHeap(size);
@@ -107,9 +105,9 @@ implements Iterable<DisiWrapper<Iter>> {
     return heap[0];
   }
 
-  public DisiWrapper<Iter> pop() {
-    final DisiWrapper<Iter>[] heap = this.heap;
-    final DisiWrapper<Iter> result = heap[0];
+  public DisiWrapper pop() {
+    final DisiWrapper[] heap = this.heap;
+    final DisiWrapper result = heap[0];
     final int i = --size;
     heap[0] = heap[i];
     heap[i] = null;
@@ -117,18 +115,18 @@ implements Iterable<DisiWrapper<Iter>> {
     return result;
   }
 
-  public DisiWrapper<Iter> updateTop() {
+  public DisiWrapper updateTop() {
     downHeap(size);
     return heap[0];
   }
 
-  DisiWrapper<Iter> updateTop(DisiWrapper<Iter> topReplacement) {
+  DisiWrapper updateTop(DisiWrapper topReplacement) {
     heap[0] = topReplacement;
     return updateTop();
   }
 
   void upHeap(int i) {
-    final DisiWrapper<Iter> node = heap[i];
+    final DisiWrapper node = heap[i];
     final int nodeDoc = node.doc;
     int j = parentNode(i);
     while (j >= 0 && nodeDoc < heap[j].doc) {
@@ -141,7 +139,7 @@ implements Iterable<DisiWrapper<Iter>> {
 
   void downHeap(int size) {
     int i = 0;
-    final DisiWrapper<Iter> node = heap[0];
+    final DisiWrapper node = heap[0];
     int j = leftNode(i);
     if (j < size) {
       int k = rightNode(j);
@@ -164,7 +162,7 @@ implements Iterable<DisiWrapper<Iter>> {
   }
 
   @Override
-  public Iterator<DisiWrapper<Iter>> iterator() {
+  public Iterator<DisiWrapper> iterator() {
     return Arrays.asList(heap).subList(0, size).iterator();
   }
 

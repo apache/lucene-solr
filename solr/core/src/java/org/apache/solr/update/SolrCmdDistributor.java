@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,7 +53,7 @@ import java.util.concurrent.Future;
 
 public class SolrCmdDistributor {
   private static final int MAX_RETRIES_ON_FORWARD = 25;
-  public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private StreamingSolrClients clients;
   

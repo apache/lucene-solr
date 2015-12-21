@@ -1,5 +1,7 @@
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +20,7 @@ package org.apache.solr.update.processor;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,7 +39,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.LeaderInitiatedRecoveryThread;
 import org.apache.solr.cloud.DistributedQueue;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
@@ -83,21 +85,21 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
+import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
+  
   public static final String DISTRIB_FROM_SHARD = "distrib.from.shard";
   public static final String DISTRIB_FROM_COLLECTION = "distrib.from.collection";
   public static final String DISTRIB_FROM_PARENT = "distrib.from.parent";
   public static final String DISTRIB_FROM = "distrib.from";
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
-  public final static Logger log = LoggerFactory.getLogger(DistributedUpdateProcessor.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
@@ -346,6 +348,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // locally we think we are leader but the request says it came FROMLEADER
           // that could indicate a problem, let the full logic below figure it out
         } else {
+
+          assert TestInjection.injectFailReplicaRequests();
+          
           isLeader = false;     // we actually might be the leader, but we don't want leader-logic for these types of updates anyway.
           forwardToLeader = false;
           return nodes;
@@ -527,7 +532,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 int hash = compositeIdRouter.sliceHash(id, doc, null, coll);
                 for (DocRouter.Range range : ranges) {
                   if (range.includes(hash)) {
-                    if (nodes == null) nodes = new ArrayList<>();
                     DocCollection targetColl = cstate.getCollection(rule.getTargetCollectionName());
                     Collection<Slice> activeSlices = targetColl.getRouter().getSearchSlicesSingle(id, null, targetColl);
                     if (activeSlices == null || activeSlices.isEmpty()) {
@@ -535,6 +539,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                           "No active slices serving " + id + " found for target collection: " + rule.getTargetCollectionName());
                     }
                     Replica targetLeader = cstate.getLeader(rule.getTargetCollectionName(), activeSlices.iterator().next().getName());
+                    if (nodes == null) nodes = new ArrayList<>(1);
                     nodes.add(new StdNode(new ZkCoreNodeProps(targetLeader)));
                     break;
                   }
@@ -721,7 +726,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           cmdDistrib.distribAdd(cmd, Collections.singletonList(subShardLeader), params, true);
         }
       }
-      List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getHashableId(), cmd.getSolrInputDocument());
+      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getHashableId(), cmd.getSolrInputDocument());
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -756,7 +761,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
       if (addsResponse == null) {
-        addsResponse = new NamedList<String>();
+        addsResponse = new NamedList<String>(1);
         rsp.add("adds",addsResponse);
       }
       if (scratch == null) scratch = new CharsRefBuilder();
@@ -844,10 +849,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // before we go setting other replicas to down, make sure we're still the leader!
         String leaderCoreNodeName = null;
         Exception getLeaderExc = null;
+        Replica leaderProps = null;
         try {
-          Replica leader = zkController.getZkStateReader().getLeader(collection, shardId);
-          if (leader != null) {
-            leaderCoreNodeName = leader.getName();
+            leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
+          if (leaderProps != null) {
+            leaderCoreNodeName = leaderProps.getName();
           }
         } catch (Exception exc) {
           getLeaderExc = exc;
@@ -875,7 +881,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           continue;
         }
 
-        if (cloudDesc.getCoreNodeName().equals(leaderCoreNodeName) && foundErrorNodeInReplicaList) {
+        if (leaderCoreNodeName != null && cloudDesc.getCoreNodeName().equals(leaderCoreNodeName) // we are still same leader
+            && foundErrorNodeInReplicaList // we found an error for one of replicas
+            && !stdNode.getNodeProps().getCoreUrl().equals(leaderProps.getCoreUrl())) { // we do not want to put ourself into LIR
           try {
             // if false, then the node is probably not "live" anymore
             // and we do not need to send a recovery message
@@ -900,9 +908,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             log.warn("Core "+cloudDesc.getCoreNodeName()+" belonging to "+collection+" "+
                 shardId+", does not have error'd node " + stdNode.getNodeProps().getCoreUrl() + " as a replica. " +
                 "No request recovery command will be sent!");
-          } else  {
-            log.warn("Core "+cloudDesc.getCoreNodeName()+" is no longer the leader for "+collection+" "+
-                shardId+", no request recovery command will be sent!");
+          } else {
+            log.warn("Core " + cloudDesc.getCoreNodeName() + " is no longer the leader for " + collection + " "
+                + shardId + " or we tried to put ourself into LIR, no request recovery command will be sent!");
           }
         }
       }
@@ -1151,7 +1159,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         cmdDistrib.distribDelete(cmd, subShardLeaders, params, true);
       }
 
-      List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getId(), null);
+      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getId(), null);
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -1183,7 +1191,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && cmd.getIndexedId() != null && idField != null) {
       if (deleteResponse == null) {
-        deleteResponse = new NamedList<String>();
+        deleteResponse = new NamedList<String>(1);
         rsp.add("deletes",deleteResponse);
       }
       if (scratch == null) scratch = new CharsRefBuilder();
@@ -1323,7 +1331,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
               .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN);
           if (replicaProps != null) {
-            List<Node> myReplicas = new ArrayList<>();
+            final List<Node> myReplicas = new ArrayList<>(replicaProps.size());
             for (ZkCoreNodeProps replicaProp : replicaProps) {
               myReplicas.add(new StdNode(replicaProp, collection, myShardId));
             }
@@ -1341,7 +1349,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if (subShardLeaders != null)  {
           cmdDistrib.distribDelete(cmd, subShardLeaders, params, true);
         }
-        List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, null, null);
+        final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, null, null);
         if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
           params = new ModifiableSolrParams(filterParams(req.getParams()));
           params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -1365,7 +1373,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (returnVersions && rsp != null) {
       if (deleteByQueryResponse == null) {
-        deleteByQueryResponse = new NamedList<String>();
+        deleteByQueryResponse = new NamedList<String>(1);
         rsp.add("deleteByQuery",deleteByQueryResponse);
       }
       deleteByQueryResponse.add(cmd.getQuery(), cmd.getVersion());
@@ -1443,6 +1451,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void zkCheck() {
+
+    // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
+    // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
+    // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards) to test.
+    if (req.getCore().getCoreDescriptor().getCoreContainer().isShutDown()) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutting down.");
+    }
+
     if ((updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
       // for log reply or peer sync, we don't need to be connected to ZK
       return;
@@ -1629,12 +1645,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> getCollectionUrls(SolrQueryRequest req, String collection) {
     ClusterState clusterState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getClusterState();
-    List<Node> urls = new ArrayList<>();
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + clusterState);
     }
+    final List<Node> urls = new ArrayList<>(slices.size());
     for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
       Slice replicas = slices.get(sliceEntry.getKey());
 
@@ -1647,7 +1663,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
-    if (urls.size() == 0) {
+    if (urls.isEmpty()) {
       return null;
     }
     return urls;

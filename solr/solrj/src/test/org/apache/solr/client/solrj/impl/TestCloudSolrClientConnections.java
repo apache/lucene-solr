@@ -17,6 +17,9 @@ package org.apache.solr.client.solrj.impl;
  * limitations under the License.
  */
 
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -24,19 +27,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.junit.Test;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
-
 public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
   @Test
   public void testCloudClientCanConnectAfterClusterComesUp() throws Exception {
 
     // Start by creating a cluster with no jetties
-
-    File solrXml = getFile("solrj").toPath().resolve("solr/solr.xml").toFile();
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
 
       CloudSolrClient client = cluster.getSolrClient();
@@ -66,10 +63,9 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
   @Test
   public void testCloudClientUploads() throws Exception {
 
-    File solrXml = getFile("solrj").toPath().resolve("solr/solr.xml").toFile();
     Path configPath = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
 
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
       CloudSolrClient client = cluster.getSolrClient();
       try {

@@ -83,4 +83,24 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='payload'][.='star']"
     );
   }
+
+  public void testSuggestCount() {
+
+    assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "1", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_reciprocal"),
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/int[@name='numFound'][.='1']"
+    );
+
+    assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "2", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_reciprocal"),
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/int[@name='numFound'][.='2']"
+    );
+
+    assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "3", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_reciprocal"),
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/int[@name='numFound'][.='3']"
+    );
+
+    assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "20", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_reciprocal"),
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/int[@name='numFound'][.='3']"
+    );
+  }
+
 }

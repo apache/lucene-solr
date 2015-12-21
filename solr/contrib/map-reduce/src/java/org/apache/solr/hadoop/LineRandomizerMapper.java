@@ -17,6 +17,7 @@
 package org.apache.solr.hadoop;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Random;
 
 import org.apache.hadoop.io.LongWritable;
@@ -38,7 +39,7 @@ public class LineRandomizerMapper extends Mapper<LongWritable, Text, LongWritabl
 
   private Random random;
   
-  private static final Logger LOGGER = LoggerFactory.getLogger(LineRandomizerMapper.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {

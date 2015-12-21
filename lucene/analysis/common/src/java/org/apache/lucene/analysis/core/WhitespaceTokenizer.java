@@ -22,8 +22,11 @@ import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
- * A WhitespaceTokenizer is a tokenizer that divides text at whitespace.
+ * A tokenizer that divides text at whitespace characters as defined by
+ * {@link Character#isWhitespace(int)}.  Note: That definition explicitly excludes the non-breaking space.
  * Adjacent sequences of non-Whitespace characters form tokens.
+ *
+ * @see UnicodeWhitespaceTokenizer
  */
 public final class WhitespaceTokenizer extends CharTokenizer {
   

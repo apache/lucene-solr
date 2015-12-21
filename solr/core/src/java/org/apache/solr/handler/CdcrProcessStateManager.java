@@ -1,5 +1,7 @@
 package org.apache.solr.handler;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -51,7 +53,7 @@ class CdcrProcessStateManager extends CdcrStateManager {
    */
   static CdcrParams.ProcessState DEFAULT_STATE = CdcrParams.ProcessState.STOPPED;
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrProcessStateManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrProcessStateManager(final SolrCore core) {
     this.core = core;
@@ -116,12 +118,14 @@ class CdcrProcessStateManager extends CdcrStateManager {
     SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
     try {
       if (!zkClient.exists(this.getZnodePath(), true)) {
-        if (!zkClient.exists(this.getZnodeBase(), true)) {
-          zkClient.makePath(this.getZnodeBase(), CreateMode.PERSISTENT, true);
+        if (!zkClient.exists(this.getZnodeBase(), true)) { // Should be a no-op if the node exists
+          zkClient.makePath(this.getZnodeBase(), null, CreateMode.PERSISTENT, null, false, true);
         }
         zkClient.create(this.getZnodePath(), DEFAULT_STATE.getBytes(), CreateMode.PERSISTENT, true);
         log.info("Created znode {}", this.getZnodePath());
       }
+    } catch (KeeperException.NodeExistsException ne) {
+      // Someone got in first and created the node.
     } catch (KeeperException | InterruptedException e) {
       log.warn("Failed to create CDCR process state node", e);
     }

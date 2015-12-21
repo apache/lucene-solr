@@ -36,7 +36,7 @@ import java.util.Map;
  * <li>It's OK for a keyField value to point to multiple documents (no uniqueness requirement)</li>
  * </ul>
  * <code>valType</code> is a reference to another fieldType to define the value type of this field
- * (must currently be TrieFloatField or FloatField (valType="pfloat|float|tfloat") if used).
+ * (must currently be TrieFloatField or LegacyFloatField (valType="pfloat|float|tfloat") if used).
  * This parameter has never been implemented. As of Solr 3.6/4.0 it is optional and can be omitted.
  *
  * The format of the external file is simply newline separated keyFieldValue=floatValue.
@@ -99,7 +99,7 @@ public class ExternalFileField extends FieldType implements SchemaAware {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return getFileFloatSource(field, parser.getReq().getCore().getDataDir());
+    return getFileFloatSource(field);
   }
 
   /**

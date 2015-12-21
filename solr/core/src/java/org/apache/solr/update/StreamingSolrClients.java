@@ -30,6 +30,7 @@ import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +41,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 public class StreamingSolrClients {
-  public static Logger log = LoggerFactory.getLogger(StreamingSolrClients.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private HttpClient httpClient;
   
@@ -67,6 +68,9 @@ public class StreamingSolrClients {
     String url = getFullUrl(req.node.getUrl());
     ConcurrentUpdateSolrClient client = solrClients.get(url);
     if (client == null) {
+      // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
+      // on a greater scale since the current behavior is to only increase the number of connections/Runners when
+      // the queue is more than half full.
       client = new ConcurrentUpdateSolrClient(url, httpClient, 100, 1, updateExecutor, true) {
         @Override
         public void handleError(Throwable ex) {

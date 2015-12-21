@@ -33,8 +33,10 @@ package org.apache.lucene.util;
 public class SloppyMath {
   
   /**
-   * Returns the distance in kilometers between two points
-   * specified in decimal degrees (latitude/longitude).
+   * Returns the Haversine distance in kilometers between two points
+   * specified in decimal degrees (latitude/longitude).  This works correctly
+   * even if the dateline is between the two points.
+   *
    * @param lat1 Latitude of the first point.
    * @param lon1 Longitude of the first point.
    * @param lat2 Latitude of the second point.
@@ -85,7 +87,41 @@ public class SloppyMath {
     double indexSin = sinTab[index];
     return indexCos + delta * (-indexSin + delta * (-indexCos * ONE_DIV_F2 + delta * (indexSin * ONE_DIV_F3 + delta * indexCos * ONE_DIV_F4)));
   }
-  
+
+  /**
+   * Returns the trigonometric sine of an angle converted as a cos operation.
+   * <p>
+   * Error is around 1E-15.
+   * <p>
+   * Special cases:
+   * <ul>
+   *  <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
+   * </ul>
+   * @param a an angle, in radians.
+   * @return the sine of the argument.
+   * @see Math#cos(double)
+   */
+  public static double sin(double a) {
+    return cos(a - PIO2);
+  }
+
+  /**
+   * Returns the trigonometric tangent of an angle converted in terms of a sin/cos operation.
+   * <p>
+   * Error is around 1E-15.
+   * <p>
+   * Special cases:
+   * <ul>
+   *  <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
+   * </ul>
+   * @param a an angle, in radians.
+   * @return the tangent of the argument.
+   * @see Math#sin(double) aand Math#cos(double)
+   */
+  public static double tan(double a) {
+    return sin(a) / cos(a);
+  }
+
   /**
    * Returns the arc sine of a value.
    * <p>
@@ -144,13 +180,15 @@ public class SloppyMath {
   }
 
   // haversin
-  private static final double TO_RADIANS = Math.PI / 180D;
+  static final double TO_RADIANS = Math.PI / 180D;
+  static final double TO_DEGREES = 180D / Math.PI;
   
   // cos/asin
   private static final double ONE_DIV_F2 = 1/2.0;
   private static final double ONE_DIV_F3 = 1/6.0;
   private static final double ONE_DIV_F4 = 1/24.0;
-  
+
+  static final double PIO2 = Math.PI / 2D;
   private static final double PIO2_HI = Double.longBitsToDouble(0x3FF921FB54400000L); // 1.57079632673412561417e+00 first 33 bits of pi/2
   private static final double PIO2_LO = Double.longBitsToDouble(0x3DD0B4611A626331L); // 6.07710050650619224932e-11 pi/2 - PIO2_HI
   private static final double TWOPI_HI = 4*PIO2_HI;

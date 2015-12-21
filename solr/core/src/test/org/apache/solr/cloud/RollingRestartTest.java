@@ -20,18 +20,18 @@ package org.apache.solr.cloud;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class RollingRestartTest extends AbstractFullDistribZkTestBase {
-  public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long MAX_WAIT_TIME = TimeUnit.NANOSECONDS.convert(300, TimeUnit.SECONDS);
 
@@ -97,7 +97,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
             if (leader == null)
               log.error("NOOVERSEER election queue is :" +
                   OverseerCollectionConfigSetProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
-                      OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE));
+                      "/overseer_elect/election"));
             fail("No overseer designate as leader found after restart #" + (i + 1) + ": " + leader);
           }
         }
@@ -108,7 +108,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
           if (leader == null)
             log.error("NOOVERSEER election queue is :" +
                 OverseerCollectionConfigSetProcessor.getSortedElectionNodes(cloudClient.getZkStateReader().getZkClient(),
-                    OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE));
+                    "/overseer_elect/election"));
           fail("No overseer leader found after restart #" + (i + 1) + ": " + leader);
         }
         

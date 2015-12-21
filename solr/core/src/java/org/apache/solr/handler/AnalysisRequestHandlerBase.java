@@ -17,36 +17,46 @@
 
 package org.apache.solr.handler;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.AttributeReflector;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.FieldType;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
 
 /**
  * A base class for all analysis request handlers.
@@ -114,11 +124,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     }
 
     TokenStream tokenStream = tfac.create();
-    try {
-      ((Tokenizer)tokenStream).setReader(tokenizerChain.initReader(null, new StringReader(value)));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    ((Tokenizer)tokenStream).setReader(tokenizerChain.initReader(null, new StringReader(value)));
     List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));

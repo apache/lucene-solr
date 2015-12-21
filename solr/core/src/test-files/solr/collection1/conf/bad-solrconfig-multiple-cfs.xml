@@ -27,4 +27,6 @@
     <useCompoundFile>false</useCompoundFile>
   </indexConfig>
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
 </config>

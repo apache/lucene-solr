@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -298,7 +297,13 @@ public class LRUQueryCache implements QueryCache, Accountable {
     final LeafCache leafCache = cache.remove(coreKey);
     if (leafCache != null) {
       ramBytesUsed -= HASHTABLE_RAM_BYTES_PER_ENTRY;
-      onDocIdSetEviction(coreKey, leafCache.cache.size(), leafCache.ramBytesUsed);
+      final int numEntries = leafCache.cache.size();
+      if (numEntries > 0) {
+        onDocIdSetEviction(coreKey, numEntries, leafCache.ramBytesUsed);
+      } else {
+        assert numEntries == 0;
+        assert leafCache.ramBytesUsed == 0;
+      }
     }
   }
 
@@ -409,8 +414,20 @@ public class LRUQueryCache implements QueryCache, Accountable {
   /**
    * Default cache implementation: uses {@link RoaringDocIdSet}.
    */
-  protected DocIdSet cacheImpl(DocIdSetIterator iterator, LeafReader reader) throws IOException {
-    return new RoaringDocIdSet.Builder(reader.maxDoc()).add(iterator).build();
+  protected DocIdSet cacheImpl(BulkScorer scorer, int maxDoc) throws IOException {
+    RoaringDocIdSet.Builder builder = new RoaringDocIdSet.Builder(maxDoc);
+    scorer.score(new LeafCollector() {
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {}
+
+      @Override
+      public void collect(int doc) throws IOException {
+        builder.add(doc);
+      }
+
+    }, null);
+    return builder.build();
   }
 
   /**
@@ -572,6 +589,20 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return worstCaseRamUsage * 5 < totalRamAvailable;
     }
 
+    private DocIdSet cache(LeafReaderContext context) throws IOException {
+      final BulkScorer scorer = in.bulkScorer(context);
+      if (scorer == null) {
+        return DocIdSet.EMPTY;
+      } else {
+        return cacheImpl(scorer, context.reader().maxDoc());
+      }
+    }
+
+    private boolean shouldCache(LeafReaderContext context) throws IOException {
+      return cacheEntryHasReasonableWorstCaseSize(ReaderUtil.getTopLevelContext(context).reader().maxDoc())
+          && policy.shouldCache(in.getQuery(), context);
+    }
+
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       if (used.compareAndSet(false, true)) {
@@ -579,14 +610,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
       }
       DocIdSet docIdSet = get(in.getQuery(), context);
       if (docIdSet == null) {
-        if (cacheEntryHasReasonableWorstCaseSize(ReaderUtil.getTopLevelContext(context).reader().maxDoc())
-            && policy.shouldCache(in.getQuery(), context)) {
-          final Scorer scorer = in.scorer(context);
-          if (scorer == null) {
-            docIdSet = DocIdSet.EMPTY;
-          } else {
-            docIdSet = cacheImpl(scorer, context.reader());
-          }
+        if (shouldCache(context)) {
+          docIdSet = cache(context);
           putIfAbsent(in.getQuery(), context, docIdSet);
         } else {
           return in.scorer(context);
@@ -603,6 +628,33 @@ public class LRUQueryCache implements QueryCache, Accountable {
       }
 
       return new ConstantScoreScorer(this, 0f, disi);
+    }
+
+    @Override
+    public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+      if (used.compareAndSet(false, true)) {
+        policy.onUse(getQuery());
+      }
+      DocIdSet docIdSet = get(in.getQuery(), context);
+      if (docIdSet == null) {
+        if (shouldCache(context)) {
+          docIdSet = cache(context);
+          putIfAbsent(in.getQuery(), context, docIdSet);
+        } else {
+          return in.bulkScorer(context);
+        }
+      }
+
+      assert docIdSet != null;
+      if (docIdSet == DocIdSet.EMPTY) {
+        return null;
+      }
+      final DocIdSetIterator disi = docIdSet.iterator();
+      if (disi == null) {
+        return null;
+      }
+
+      return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, disi));
     }
 
   }

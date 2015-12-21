@@ -132,7 +132,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     final GroupDocs<T>[] mergedGroupDocs = new GroupDocs[numGroups];
 
     final TopDocs[] shardTopDocs;
-    if (docSort == null) {
+    if (docSort.equals(Sort.RELEVANCE)) {
       shardTopDocs = new TopDocs[shardGroups.length];
     } else {
       shardTopDocs = new TopFieldDocs[shardGroups.length];
@@ -163,7 +163,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
         }
         */
 
-        if (docSort == null) {
+        if (docSort.equals(Sort.RELEVANCE)) {
           shardTopDocs[shardIDX] = new TopDocs(shardGroupDocs.totalHits,
                                                shardGroupDocs.scoreDocs,
                                                shardGroupDocs.maxScore);
@@ -179,7 +179,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
       }
 
       final TopDocs mergedTopDocs;
-      if (docSort == null) {
+      if (docSort.equals(Sort.RELEVANCE)) {
         mergedTopDocs = TopDocs.merge(docOffset + docTopN, shardTopDocs);
       } else {
         mergedTopDocs = TopDocs.merge(docSort, docOffset + docTopN, (TopFieldDocs[]) shardTopDocs);
@@ -231,7 +231,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
 
     if (totalGroupCount != null) {
       TopGroups<T> result = new TopGroups<>(groupSort.getSort(),
-                              docSort == null ? null : docSort.getSort(),
+                              docSort.getSort(),
                               totalHitCount,
                               totalGroupedHitCount,
                               mergedGroupDocs,
@@ -239,7 +239,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
       return new TopGroups<>(result, totalGroupCount);
     } else {
       return new TopGroups<>(groupSort.getSort(),
-                              docSort == null ? null : docSort.getSort(),
+                              docSort.getSort(),
                               totalHitCount,
                               totalGroupedHitCount,
                               mergedGroupDocs,

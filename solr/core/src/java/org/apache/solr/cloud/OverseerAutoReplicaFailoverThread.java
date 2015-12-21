@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,7 +80,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   
-  private static Logger log = LoggerFactory.getLogger(OverseerAutoReplicaFailoverThread.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private Integer lastClusterStateVersion;
   

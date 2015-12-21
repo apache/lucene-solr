@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -62,7 +63,7 @@ import java.util.Map;
 @Slow
 public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 
-  public static Logger log = LoggerFactory.getLogger(DistribCursorPagingTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DistribCursorPagingTest() {
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));

@@ -17,11 +17,11 @@
 
 package org.apache.solr.cloud;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.jute.InputArchive;
 import org.apache.jute.OutputArchive;
@@ -40,7 +41,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
-import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -51,15 +51,14 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.quorum.Leader.Proposal;
 import org.apache.zookeeper.server.DataNode;
 import org.apache.zookeeper.server.DataTree;
 import org.apache.zookeeper.server.DataTree.ProcessTxnResult;
 import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ZKDatabase;
+import org.apache.zookeeper.server.quorum.Leader.Proposal;
 import org.apache.zookeeper.txn.TxnHeader;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -82,16 +81,13 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    final File solrXml = getFile("solr").toPath().resolve("solr.xml").toFile();
-    final File testDir = createTempDir().toFile();
-    String zkDir = testDir.getAbsolutePath() + File.separator
-      + "zookeeper/server1/data";
+    final Path testDir = createTempDir();
+    String zkDir = testDir.resolve("zookeeper/server1/data").toString();
     zkTestServer = new ZkTestServer(zkDir);
     zkTestServer.run();
-    zkTestServer.setZKDatabase(
-        new FailureDuringCopyZKDatabase(zkTestServer.getZKDatabase(), zkTestServer));
+    zkTestServer.setZKDatabase(new FailureDuringCopyZKDatabase(zkTestServer.getZKDatabase(), zkTestServer));
     solrCluster = new MiniSolrCloudCluster(1, testDir,
-        solrXml, buildJettyConfig("/solr"), zkTestServer);
+        MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, buildJettyConfig("/solr"), zkTestServer);
   }
 
   @Override

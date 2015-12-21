@@ -30,10 +30,6 @@ solrAdminApp.controller('QueryController',
     $scope.spellcheck = {spellcheck:"on"};
     $scope.qt = "/select";
 
-    if ($location.search().q) {
-      $scope.query.q = $location.search()["q"];
-    }
-
     $scope.doQuery = function() {
       var params = {};
 
@@ -63,7 +59,9 @@ solrAdminApp.controller('QueryController',
       if ($scope.isSpellcheck) copy(params, $scope.spellcheck);
 
       if ($scope.rawParams) {
-        for (var param in $scope.rawParams.split(/[&\n]/)) {
+        var rawParams = $scope.rawParams.split(/[&\n]/);
+        for (var i in rawParams) {
+            var param = rawParams[i];
             var parts = param.split("=");
             set(parts[0], parts[1]);
         }
@@ -86,6 +84,11 @@ solrAdminApp.controller('QueryController',
                      $location.port() + url;
       });
     };
+
+    if ($location.search().q) {
+      $scope.query.q = $location.search()["q"];
+      $scope.doQuery();
+    }
 
     $scope.removeFilter = function(index) {
       if ($scope.filters.length === 1) {

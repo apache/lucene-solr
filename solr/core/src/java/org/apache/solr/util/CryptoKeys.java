@@ -22,6 +22,8 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +52,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public final class CryptoKeys {
-  private static final Logger log = LoggerFactory.getLogger(CryptoKeys.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keys;
   private Exception exception;
 
@@ -305,6 +307,10 @@ public final class CryptoKeys {
 
     public String getPublicKeyStr() {
       return pubKeyStr;
+    }
+
+    public PublicKey getPublicKey() {
+      return publicKey;
     }
 
     public byte[] encrypt(ByteBuffer buffer) {

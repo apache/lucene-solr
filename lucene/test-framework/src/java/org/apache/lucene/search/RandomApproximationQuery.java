@@ -1,16 +1,5 @@
 package org.apache.lucene.search;
 
-import java.io.IOException;
-import java.util.Random;
-import java.util.Set;
-
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.Bits;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,6 +16,16 @@ import org.apache.lucene.util.Bits;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+import java.util.Random;
+import java.util.Set;
+
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 
 /**
  * A {@link Query} that adds random approximations to its scorers.
@@ -128,11 +127,11 @@ public class RandomApproximationQuery extends Query {
     RandomApproximationScorer(Scorer scorer, Random random) {
       super(scorer.getWeight());
       this.scorer = scorer;
-      this.twoPhaseView = new RandomTwoPhaseView(random, scorer);
+      this.twoPhaseView = new RandomTwoPhaseView(random, scorer.iterator());
     }
 
     @Override
-    public TwoPhaseIterator asTwoPhaseIterator() {
+    public TwoPhaseIterator twoPhaseIterator() {
       return twoPhaseView;
     }
 
@@ -152,18 +151,8 @@ public class RandomApproximationQuery extends Query {
     }
 
     @Override
-    public int nextDoc() throws IOException {
-      return scorer.nextDoc();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return scorer.advance(target);
-    }
-
-    @Override
-    public long cost() {
-      return scorer.cost();
+    public DocIdSetIterator iterator() {
+      return scorer.iterator();
     }
 
   }
@@ -172,10 +161,12 @@ public class RandomApproximationQuery extends Query {
 
     private final DocIdSetIterator disi;
     private int lastDoc = -1;
+    private final float randomMatchCost;
 
     RandomTwoPhaseView(Random random, DocIdSetIterator disi) {
       super(new RandomApproximation(random, disi));
       this.disi = disi;
+      this.randomMatchCost = random.nextFloat() * 200; // between 0 and 200
     }
 
     @Override
@@ -190,6 +181,10 @@ public class RandomApproximationQuery extends Query {
       return approximation.docID() == disi.docID();
     }
 
+    @Override
+    public float matchCost() {
+      return randomMatchCost;
+    }
   }
 
   private static class RandomApproximation extends DocIdSetIterator {

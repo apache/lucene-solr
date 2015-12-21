@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,8 +67,7 @@ import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
 public class HdfsDirectoryFactory extends CachingDirectoryFactory implements SolrCoreAware {
-  public static Logger LOG = LoggerFactory
-      .getLogger(HdfsDirectoryFactory.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String BLOCKCACHE_SLAB_COUNT = "solr.hdfs.blockcache.slab.count";
   public static final String BLOCKCACHE_DIRECT_MEMORY_ALLOCATION = "solr.hdfs.blockcache.direct.memory.allocation";

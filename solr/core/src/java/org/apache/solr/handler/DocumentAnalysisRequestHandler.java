@@ -23,6 +23,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -45,7 +46,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.EmptyEntityResolver;
+import org.apache.solr.common.EmptyEntityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
-  public static final Logger log = LoggerFactory.getLogger(DocumentAnalysisRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   private static final float DEFAULT_BOOST = 1.0f;
@@ -105,7 +106,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       inputFactory.setProperty("reuse-instance", Boolean.FALSE);
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
+      // is implementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input factory: " + inputFactory);
     }
   }

@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /** 
  * Selects a value from the document's list to use as the representative value 
@@ -81,14 +81,14 @@ public class SortedNumericSelector {
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
-            return NumericUtils.sortableFloatBits((int) view.get(docID));
+            return LegacyNumericUtils.sortableFloatBits((int) view.get(docID));
           }
         };
       case DOUBLE:
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
-            return NumericUtils.sortableDoubleBits(view.get(docID));
+            return LegacyNumericUtils.sortableDoubleBits(view.get(docID));
           }
         };
       default:

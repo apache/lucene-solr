@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +39,8 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.HdfsUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** @lucene.experimental */
 public class HdfsUpdateLog extends UpdateLog {
@@ -47,6 +50,9 @@ public class HdfsUpdateLog extends UpdateLog {
   private volatile Path tlogDir;
   private final String confDir;
   private Integer tlogDfsReplication;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
   
   // used internally by tests to track total count of failed tran log loads in init
   public static AtomicLong INIT_FAILED_LOGS_COUNT = new AtomicLong();
@@ -101,7 +107,7 @@ public class HdfsUpdateLog extends UpdateLog {
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
     
     tlogDfsReplication = (Integer) info.initArgs.get( "tlogDfsReplication");
-    if (tlogDfsReplication == null) tlogDfsReplication = 1;
+    if (tlogDfsReplication == null) tlogDfsReplication = 3;
 
     log.info("Initializing HdfsUpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} tlogDfsReplication={}",
         dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep, tlogDfsReplication);
@@ -235,18 +241,17 @@ public class HdfsUpdateLog extends UpdateLog {
     
     // TODO: these startingVersions assume that we successfully recover from all
     // non-complete tlogs.
-    HdfsUpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
-    try {
+    try (RecentUpdates startingUpdates = getRecentUpdates()) {
       startingVersions = startingUpdates.getVersions(getNumRecordsToKeep());
       startingOperation = startingUpdates.getLatestOperation();
-      
+
       // populate recent deletes list (since we can't get that info from the
       // index)
       for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
         DeleteUpdate du = startingUpdates.deleteList.get(i);
         oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
       }
-      
+
       // populate recent deleteByQuery commands
       for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
         Update update = startingUpdates.deleteByQueryList.get(i);
@@ -255,9 +260,7 @@ public class HdfsUpdateLog extends UpdateLog {
         String q = (String) dbq.get(2);
         trackDeleteByQuery(q, version);
       }
-      
-    } finally {
-      startingUpdates.close();
+
     }
     
   }
@@ -346,6 +349,12 @@ public class HdfsUpdateLog extends UpdateLog {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  @Override
+  public void preSoftCommit(CommitUpdateCommand cmd) {
+    debug = log.isDebugEnabled();
+    super.preSoftCommit(cmd);
   }
   
   public String[] getLogList(Path tlogDir) throws FileNotFoundException, IOException {

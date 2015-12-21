@@ -89,7 +89,7 @@ public abstract class QueryRescorer extends Rescorer {
         int targetDoc = docID - docBase;
         int actualDoc = scorer.docID();
         if (actualDoc < targetDoc) {
-          actualDoc = scorer.advance(targetDoc);
+          actualDoc = scorer.iterator().advance(targetDoc);
         }
 
         if (actualDoc == targetDoc) {

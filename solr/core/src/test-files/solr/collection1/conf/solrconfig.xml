@@ -50,6 +50,8 @@
     <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:false}</str>
   </directoryFactory>
 
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <statsCache class="${solr.statsCache:}"/>

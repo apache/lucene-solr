@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 @Slow // Has to do some sleeping to wait for a future expiration
 public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistribZkTestBase {
 
-  public static Logger log = LoggerFactory.getLogger(DistribDocExpirationUpdateProcessorTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DistribDocExpirationUpdateProcessorTest() {
     configString = DocExpirationUpdateProcessorFactoryTest.CONFIG_XML;

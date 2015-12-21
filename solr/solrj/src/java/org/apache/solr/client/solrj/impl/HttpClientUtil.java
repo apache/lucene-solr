@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -87,8 +88,7 @@ public class HttpClientUtil {
   
   public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
   
-  private static final Logger logger = LoggerFactory
-      .getLogger(HttpClientUtil.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);

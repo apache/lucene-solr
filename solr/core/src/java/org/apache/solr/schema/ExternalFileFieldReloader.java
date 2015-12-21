@@ -26,6 +26,7 @@ import org.apache.solr.search.function.FileFloatSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +54,7 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
   private String datadir;
   private List<FileFloatSource> fieldSources = new ArrayList<>();
 
-  private static final Logger log = LoggerFactory.getLogger(ExternalFileFieldReloader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public ExternalFileFieldReloader(SolrCore core) {
     super(core);

@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -57,7 +58,9 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class HdfsTransactionLog extends TransactionLog {
-  public static Logger log = LoggerFactory.getLogger(HdfsTransactionLog.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
+  private static boolean trace = log.isTraceEnabled();
 
 
   Path tlogFile;
@@ -301,7 +304,7 @@ public class HdfsTransactionLog extends TransactionLog {
   }
   
   @Override
-  protected void close() {
+  public void close() {
     try {
       if (debug) {
         log.debug("Closing tlog" + this);

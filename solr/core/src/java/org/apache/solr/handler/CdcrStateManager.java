@@ -38,9 +38,9 @@ abstract class CdcrStateManager {
     }
   }
 
-  static interface CdcrStateObserver {
+  interface CdcrStateObserver {
 
-    public void stateUpdate();
+    void stateUpdate();
 
   }
 

@@ -22,6 +22,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 /**
@@ -33,7 +34,7 @@ import java.util.*;
  * @since solr 1.3
  */
 public class EntityProcessorBase extends EntityProcessor {
-  private static final Logger log = LoggerFactory.getLogger(EntityProcessorBase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected boolean isFirstInit = true;
 

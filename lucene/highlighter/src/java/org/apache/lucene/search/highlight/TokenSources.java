@@ -246,11 +246,7 @@ public class TokenSources {
   @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStream(String field, String contents,
       Analyzer analyzer) {
-    try {
-      return analyzer.tokenStream(field, contents);
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
+    return analyzer.tokenStream(field, contents);
   }
 
 }

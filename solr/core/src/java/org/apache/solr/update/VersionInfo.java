@@ -18,22 +18,21 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.IndexSchema;
@@ -45,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 public class VersionInfo {
 
-  public static Logger log = LoggerFactory.getLogger(VersionInfo.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String VERSION_FIELD="_version_";
 
@@ -221,7 +220,7 @@ public class VersionInfo {
     }
   }
 
-  public Long getMaxVersionFromIndex(SolrIndexSearcher searcher) throws IOException {
+  public Long getMaxVersionFromIndex(IndexSearcher searcher) throws IOException {
 
     String versionFieldName = versionField.getName();
 
@@ -230,8 +229,9 @@ public class VersionInfo {
 
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
-      Terms versionTerms = searcher.getLeafReader().terms(versionFieldName);
-      Long max = (versionTerms != null) ? NumericUtils.getMaxLong(versionTerms) : null;
+      LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
+      Terms versionTerms = leafReader.terms(versionFieldName);
+      Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
       if (max != null) {
         maxVersionInIndex = max.longValue();
         log.info("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);

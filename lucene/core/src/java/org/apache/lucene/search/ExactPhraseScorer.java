@@ -44,9 +44,11 @@ final class ExactPhraseScorer extends Scorer {
 
   private final Similarity.SimScorer docScorer;
   private final boolean needsScores;
+  private float matchCost;
 
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.SimScorer docScorer, boolean needsScores) throws IOException {
+                    Similarity.SimScorer docScorer, boolean needsScores,
+                    float matchCost) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.needsScores = needsScores;
@@ -57,36 +59,29 @@ final class ExactPhraseScorer extends Scorer {
       iterators.add(posting.postings);
       postingsAndPositions.add(new PostingsAndPosition(posting.postings, posting.position));
     }
-    conjunction = ConjunctionDISI.intersect(iterators);
+    conjunction = ConjunctionDISI.intersectIterators(iterators);
     this.postings = postingsAndPositions.toArray(new PostingsAndPosition[postingsAndPositions.size()]);
+    this.matchCost = matchCost;
   }
 
   @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
+  public TwoPhaseIterator twoPhaseIterator() {
     return new TwoPhaseIterator(conjunction) {
       @Override
       public boolean matches() throws IOException {
         return phraseFreq() > 0;
       }
+
+      @Override
+      public float matchCost() {
+        return matchCost;
+      }
     };
   }
 
-  private int doNext(int doc) throws IOException {
-    for (;; doc = conjunction.nextDoc()) {
-      if (doc == NO_MORE_DOCS || phraseFreq() > 0) {
-        return doc;
-      }
-    }
-  }
-
   @Override
-  public int nextDoc() throws IOException {
-    return doNext(conjunction.nextDoc());
-  }
-
-  @Override
-  public int advance(int target) throws IOException {
-    return doNext(conjunction.advance(target));
+  public DocIdSetIterator iterator() {
+    return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
   }
 
   @Override
@@ -172,8 +167,4 @@ final class ExactPhraseScorer extends Scorer {
     return this.freq = freq;
   }
 
-  @Override
-  public long cost() {
-    return conjunction.cost();
-  }
 }

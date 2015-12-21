@@ -22,6 +22,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.noggit.ObjectBuilder.getVal;
 
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -56,8 +57,7 @@ import org.slf4j.LoggerFactory;
 
 public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBase {
 
-
-  static final Logger log =  LoggerFactory.getLogger(TestSolrConfigHandlerConcurrent.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
   private void setupHarnesses() {

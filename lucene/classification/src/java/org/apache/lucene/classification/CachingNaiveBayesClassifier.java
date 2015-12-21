@@ -2,7 +2,6 @@ package org.apache.lucene.classification;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,38 +80,17 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
 
 
   protected List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
-    String[] tokenizedDoc = tokenizeDoc(inputDocument);
+    String[] tokenizedText = tokenize(inputDocument);
 
-    List<ClassificationResult<BytesRef>> dataList = calculateLogLikelihood(tokenizedDoc);
+    List<ClassificationResult<BytesRef>> assignedClasses = calculateLogLikelihood(tokenizedText);
 
     // normalization
     // The values transforms to a 0-1 range
-    ArrayList<ClassificationResult<BytesRef>> returnList = new ArrayList<>();
-    if (!dataList.isEmpty()) {
-      Collections.sort(dataList);
-      // this is a negative number closest to 0 = a
-      double smax = dataList.get(0).getScore();
-
-      double sumLog = 0;
-      // log(sum(exp(x_n-a)))
-      for (ClassificationResult<BytesRef> cr : dataList) {
-        // getScore-smax <=0 (both negative, smax is the smallest abs()
-        sumLog += Math.exp(cr.getScore() - smax);
-      }
-      // loga=a+log(sum(exp(x_n-a))) = log(sum(exp(x_n)))
-      double loga = smax;
-      loga += Math.log(sumLog);
-
-      // 1/sum*x = exp(log(x))*1/sum = exp(log(x)-log(sum))
-      for (ClassificationResult<BytesRef> cr : dataList) {
-        returnList.add(new ClassificationResult<>(cr.getAssignedClass(), Math.exp(cr.getScore() - loga)));
-      }
-    }
-
-    return returnList;
+    ArrayList<ClassificationResult<BytesRef>> asignedClassesNorm = super.normClassificationResults(assignedClasses);
+    return asignedClassesNorm;
   }
 
-  private List<ClassificationResult<BytesRef>> calculateLogLikelihood(String[] tokenizedDoc) throws IOException {
+  private List<ClassificationResult<BytesRef>> calculateLogLikelihood(String[] tokenizedText) throws IOException {
     // initialize the return List
     ArrayList<ClassificationResult<BytesRef>> ret = new ArrayList<>();
     for (BytesRef cclass : cclasses) {
@@ -120,7 +98,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
       ret.add(cr);
     }
     // for each word
-    for (String word : tokenizedDoc) {
+    for (String word : tokenizedText) {
       // search with text:word for all class:c
       Map<BytesRef, Integer> hitsInClasses = getWordFreqForClassess(word);
       // for each class

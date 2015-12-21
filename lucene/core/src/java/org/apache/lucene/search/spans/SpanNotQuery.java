@@ -17,6 +17,11 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -25,12 +30,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 /** Removes matches which overlap with another SpanQuery or which are
  * within x tokens before or y tokens after another SpanQuery.
@@ -127,7 +126,7 @@ public final class SpanNotQuery extends SpanQuery {
 
       Spans excludeSpans = excludeWeight.getSpans(context, requiredPostings);
       if (excludeSpans == null) {
-        return includeSpans;
+        return new ScoringWrapperSpans(includeSpans, getSimScorer(context));
       }
 
       TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
@@ -195,11 +194,10 @@ public final class SpanNotQuery extends SpanQuery {
     SpanQuery rewrittenInclude = (SpanQuery) include.rewrite(reader);
     SpanQuery rewrittenExclude = (SpanQuery) exclude.rewrite(reader);
     if (rewrittenInclude != include || rewrittenExclude != exclude) {
-      return new SpanNotQuery(rewrittenInclude, rewrittenExclude);
+      return new SpanNotQuery(rewrittenInclude, rewrittenExclude, pre, post);
     }
     return super.rewrite(reader);
   }
-
     /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {

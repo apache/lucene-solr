@@ -55,7 +55,7 @@ public class RangeMapFloatFunction extends ValueSource {
 
   @Override
   public String description() {
-    return "map(" + source.description() + "," + min + "," + max + "," + target.description() + ")";
+    return "map(" + source.description() + "," + min + "," + max + "," + target.description() + "," + (defaultVal == null ? "null" : defaultVal.description()) + ")";
   }
 
   @Override
@@ -71,7 +71,7 @@ public class RangeMapFloatFunction extends ValueSource {
       }
       @Override
       public String toString(int doc) {
-        return "map(" + vals.toString(doc) + ",min=" + min + ",max=" + max + ",target=" + targets.toString(doc) + ")";
+        return "map(" + vals.toString(doc) + ",min=" + min + ",max=" + max + ",target=" + targets.toString(doc) + ",defaultVal=" + (defaults == null ? "null" : (defaults.toString(doc))) + ")";
       }
     };
   }

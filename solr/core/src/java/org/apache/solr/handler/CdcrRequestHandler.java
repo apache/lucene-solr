@@ -17,6 +17,18 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -44,13 +56,6 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * <p>
@@ -81,7 +86,7 @@ import java.util.concurrent.Future;
  */
 public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrCore core;
   private String collection;
@@ -126,10 +131,10 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       replicasConfiguration = new HashMap<>();
       List replicas = args.getAll(CdcrParams.REPLICA_PARAM);
       for (Object replica : replicas) {
-        if (replicas != null && replica instanceof NamedList) {
+        if (replica != null && replica instanceof NamedList) {
           SolrParams params = SolrParams.toSolrParams((NamedList) replica);
           if (!replicasConfiguration.containsKey(params.get(CdcrParams.SOURCE_COLLECTION_PARAM))) {
-            replicasConfiguration.put(params.get(CdcrParams.SOURCE_COLLECTION_PARAM), new ArrayList<SolrParams>());
+            replicasConfiguration.put(params.get(CdcrParams.SOURCE_COLLECTION_PARAM), new ArrayList<>());
           }
           replicasConfiguration.get(params.get(CdcrParams.SOURCE_COLLECTION_PARAM)).add(params);
         }
@@ -405,11 +410,11 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
-    List<Long> versions = recentUpdates.getVersions(1);
-    long lastVersion = versions.isEmpty() ? -1 : Math.abs(versions.get(0));
-    rsp.add(CdcrParams.CHECKPOINT, lastVersion);
-    recentUpdates.close();
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      List<Long> versions = recentUpdates.getVersions(1);
+      long lastVersion = versions.isEmpty() ? -1 : Math.abs(versions.get(0));
+      rsp.add(CdcrParams.CHECKPOINT, lastVersion);
+    }
   }
 
   private void handleEnableBufferAction(SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -491,7 +496,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    log.info("Returning the lowest last processed version {}  @ {}:{}", lastProcessedVersion, collectionName, shard);
+    log.debug("Returning the lowest last processed version {}  @ {}:{}", lastProcessedVersion, collectionName, shard);
     rsp.add(CdcrParams.LAST_PROCESSED_VERSION, lastProcessedVersion);
   }
 
@@ -591,8 +596,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     @Override
     public Long call() throws Exception {
-      HttpSolrClient server = new HttpSolrClient(baseUrl);
-      try {
+      try (HttpSolrClient server = new HttpSolrClient(baseUrl)) {
         server.setConnectionTimeout(15000);
         server.setSoTimeout(60000);
 
@@ -604,8 +608,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
         NamedList response = server.request(request);
         return (Long) response.get(CdcrParams.CHECKPOINT);
-      } finally {
-        server.close();
       }
     }
 

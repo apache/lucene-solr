@@ -17,12 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
 import org.junit.Test;
 
-@Slow
+@Nightly
 public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
 
   @Override
@@ -32,16 +32,10 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
     super.distribSetUp();
   }
 
+  // check that the life-cycle state is properly synchronised across nodes
   @Test
   @ShardsFixed(num = 2)
-  public void doTest() throws Exception {
-    this.doTestLifeCycleActions();
-    this.doTestCheckpointActions();
-    this.doTestBufferActions();
-  }
-
-  // check that the life-cycle state is properly synchronised across nodes
-  public void doTestLifeCycleActions() throws Exception {
+  public void testLifeCycleActions() throws Exception {
     // check initial status
     this.assertState(SOURCE_COLLECTION, CdcrParams.ProcessState.STOPPED, CdcrParams.BufferState.ENABLED);
 
@@ -69,7 +63,9 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   // check the checkpoint API
-  public void doTestCheckpointActions() throws Exception {
+  @Test
+  @ShardsFixed(num = 2)
+  public void testCheckpointActions() throws Exception {
     // initial request on an empty index, must return -1
     NamedList rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.COLLECTIONCHECKPOINT);
     assertEquals(-1l, rsp.get(CdcrParams.CHECKPOINT));
@@ -125,7 +121,9 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
   }
 
   // check that the buffer state is properly synchronised across nodes
-  public void doTestBufferActions() throws Exception {
+  @Test
+  @ShardsFixed(num = 2)
+  public void testBufferActions() throws Exception {
     // check initial status
     this.assertState(SOURCE_COLLECTION, CdcrParams.ProcessState.STOPPED, CdcrParams.BufferState.ENABLED);
 

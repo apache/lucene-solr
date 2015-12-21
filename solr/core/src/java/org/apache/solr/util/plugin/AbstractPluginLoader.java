@@ -17,6 +17,7 @@
 
 package org.apache.solr.util.plugin;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +40,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public abstract class AbstractPluginLoader<T>
 {
-  public static Logger log = LoggerFactory.getLogger(AbstractPluginLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final String type;
   private final boolean preRegister;

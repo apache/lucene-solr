@@ -76,6 +76,14 @@ public class FieldEqualitor implements StreamEqualitor {
     return 0 == leftComp.compareTo(rightComp);
   }
   
+  public String getLeftFieldName(){
+    return leftFieldName;
+  }
+  
+  public String getRightFieldName(){
+    return rightFieldName;
+  }
+  
   @Override
   public boolean isDerivedFrom(StreamEqualitor base){
     if(null == base){ return false; }
@@ -99,7 +107,7 @@ public class FieldEqualitor implements StreamEqualitor {
     if(null == base){ return false; }
     if(base instanceof FieldComparator){
       FieldComparator baseComp = (FieldComparator)base;
-      return leftFieldName.equals(baseComp.getFieldName()) && rightFieldName.equals(baseComp.getFieldName());
+      return leftFieldName.equals(baseComp.getLeftFieldName()) || rightFieldName.equals(baseComp.getRightFieldName());
     }
     else if(base instanceof MultipleFieldComparator){
       // must equal the first one
@@ -110,12 +118,5 @@ public class FieldEqualitor implements StreamEqualitor {
     }
     
     return false;
-  }
-  
-  public String getLeftFieldName(){
-    return leftFieldName;
-  }
-  public String getRightFieldName(){
-    return rightFieldName;
   }
 }

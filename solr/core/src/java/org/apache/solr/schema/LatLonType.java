@@ -31,6 +31,7 @@ import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -219,7 +220,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     ArrayList<ValueSource> vs = new ArrayList<>(2);
     for (int i = 0; i < 2; i++) {
-      SchemaField sub = subField(field, i, parser.getReq().getSchema());
+      SchemaField sub = subField(field, i, schema);
       vs.add(sub.getType().getValueSource(sub, parser));
     }
     return new LatLonValueSource(field, vs);
@@ -427,27 +428,44 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       return doc;
     }
 
-    // instead of matching all docs, we could also embed a query.
-    // the score could either ignore the subscore, or boost it.
-    // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)
-    // Boost:        foo:myTerm^floatline("myFloatField",1.0,0.0f)
     @Override
-    public int nextDoc() throws IOException {
-      for(;;) {
-        ++doc;
-        if (doc>=maxDoc) {
-          return doc=NO_MORE_DOCS;
-        }
-        if (!match()) continue;
-        return doc;
-      }
-    }
+    public DocIdSetIterator iterator() {
+      return new DocIdSetIterator() {
 
-    @Override
-    public int advance(int target) throws IOException {
-      // this will work even if target==NO_MORE_DOCS
-      doc=target-1;
-      return nextDoc();
+        @Override
+        public int docID() {
+          return doc;
+        }
+
+        // instead of matching all docs, we could also embed a query.
+        // the score could either ignore the subscore, or boost it.
+        // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)
+        // Boost:        foo:myTerm^floatline("myFloatField",1.0,0.0f)
+        @Override
+        public int nextDoc() throws IOException {
+          for(;;) {
+            ++doc;
+            if (doc>=maxDoc) {
+              return doc=NO_MORE_DOCS;
+            }
+            if (!match()) continue;
+            return doc;
+          }
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          // this will work even if target==NO_MORE_DOCS
+          doc=target-1;
+          return nextDoc();
+        }
+
+        @Override
+        public long cost() {
+          return maxDoc;
+        }
+
+      };
     }
 
     @Override
@@ -459,11 +477,6 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     @Override
     public int freq() throws IOException {
       return 1;
-    }
-
-    @Override
-    public long cost() {
-      return maxDoc;
     }
 
     public Explanation explain(Explanation base, int doc) throws IOException {

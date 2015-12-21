@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReader;
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
 
 public class SortingResponseWriter implements QueryResponseWriter {
 
-  private final static Logger logger = LoggerFactory.getLogger(SortingResponseWriter.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void init(NamedList args) {
     /* NOOP */
@@ -93,7 +94,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
       exception = new IOException(new SyntaxError("No sort criteria was provided."));
     }
 
-    if(sort.needsScores()) {
+    if(sort != null && sort.needsScores()) {
       exception = new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
     }
 
@@ -108,16 +109,18 @@ public class SortingResponseWriter implements QueryResponseWriter {
     SolrParams params = req.getParams();
     String fl = params.get("fl");
 
+    String[] fields = null;
+
     if(fl == null) {
       exception = new IOException(new SyntaxError("export field list (fl) must be specified."));
-    }
+    } else  {
+      fields = fl.split(",");
 
-    String[] fields = fl.split(",");
-
-    for(int i=0;i<fields.length; i++) {
-      if(fl.trim().equals("score")) {
-        exception =  new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
-        break;
+      for(int i=0;i<fields.length; i++) {
+        if(fl.trim().equals("score")) {
+          exception =  new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
+          break;
+        }
       }
     }
 

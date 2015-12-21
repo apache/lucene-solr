@@ -35,11 +35,6 @@
     <path refid="solr.base.classpath"/>
   </path>
 
-  <path id="test.classpath">
-    <path refid="solr.test.base.classpath"/>
-    <fileset dir="${test.lib.dir}" includes="*.jar"/>
-  </path>
-
   <target name="module-jars-to-solr"
           depends="-module-jars-to-solr-not-for-package,-module-jars-to-solr-package"/>
   <target name="-module-jars-to-solr-not-for-package" unless="called.from.create-package">

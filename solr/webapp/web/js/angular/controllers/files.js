@@ -38,7 +38,10 @@ solrAdminApp.controller('FilesController',
                 }
 
                 Files.list(params, function (data) {
-                    for (var file in data.files) {
+                    var filenames = Object.keys(data.files);
+                    filenames.sort();
+                    for (var i in filenames) {
+                        var file = filenames[i];
                         var filedata = data.files[file];
                         var state = undefined;
                         var children = undefined;
@@ -68,7 +71,12 @@ solrAdminApp.controller('FilesController',
             process("", $scope.tree);
 
             if ($scope.file && $scope.file != '' && $scope.file.split('').pop()!='/') {
-                var extension = $scope.file.match( /\.(\w+)$/)[1] || '';
+                var extension;
+                if ($scope.file == "managed-schema") {
+                  extension = contentTypeMap['xml'];
+                } else {
+                  extension = $scope.file.match( /\.(\w+)$/)[1] || '';
+                }
                 var contentType = (contentTypeMap[extension] || 'text/plain' ) + ';charset=utf-8';
 
                 Files.get({core: $routeParams.core, file: $scope.file, contentType: contentType}, function(data) {

@@ -21,6 +21,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +54,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.handler.TestBlobHandler.getAsString;
 
 public class TestSolrConfigHandler extends RestTestBase {
-  public static final Logger log = LoggerFactory.getLogger(TestSolrConfigHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static File tmpSolrHome;
   private static File tmpConfDir;
@@ -199,6 +200,22 @@ public class TestSolrConfigHandler extends RestTestBase {
         cloudSolrClient,
         Arrays.asList("overlay", "requestHandler", "/x", "a"),
         "b",
+        10);
+
+    payload = "{\n" +
+        "'update-requesthandler' : { 'name' : '/dump', " +
+        "'initParams': 'a'," +
+        "'class': 'org.apache.solr.handler.DumpRequestHandler' ," +
+        " 'defaults': {'a':'A','b':'B','c':'C'}}\n" +
+        "}";
+
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config/overlay?wt=json",
+        cloudSolrClient,
+        Arrays.asList("overlay", "requestHandler", "/dump", "defaults", "c" ),
+        "C",
         10);
 
     testForResponseElement(writeHarness,
@@ -473,7 +490,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         10);
 
     payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/dump', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
+        "'create-requesthandler' : { 'name' : '/d', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
         "}";
 
     TestSolrConfigHandler.runConfigCommand(harness, "/config?wt=json", payload);
@@ -483,20 +500,20 @@ public class TestSolrConfigHandler extends RestTestBase {
         null,
         "/config/overlay?wt=json",
         null,
-        Arrays.asList("overlay", "requestHandler", "/dump", "name"),
-        "/dump",
+        Arrays.asList("overlay", "requestHandler", "/d", "name"),
+        "/d",
         10);
 
     TestSolrConfigHandler.testForResponseElement(harness,
         null,
-        "/dump?wt=json&useParams=x",
+        "/d?wt=json&useParams=x",
         null,
         Arrays.asList("params", "a"),
         "A val",
         5);
     TestSolrConfigHandler.testForResponseElement(harness,
         null,
-        "/dump?wt=json&useParams=x&a=fomrequest",
+        "/d?wt=json&useParams=x&a=fomrequest",
         null,
         Arrays.asList("params", "a"),
         "fomrequest",

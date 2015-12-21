@@ -58,7 +58,7 @@ public class GroupingSearch {
   private final Query groupEndDocs;
 
   private Sort groupSort = Sort.RELEVANCE;
-  private Sort sortWithinGroup;
+  private Sort sortWithinGroup = Sort.RELEVANCE;
 
   private int groupDocsOffset;
   private int groupDocsLimit = 1;

@@ -17,13 +17,14 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.util.EmptyEntityResolver;
+import org.apache.solr.common.EmptyEntityResolver;
 import javax.xml.stream.XMLInputFactory;
 import static javax.xml.stream.XMLStreamConstants.*;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  */
 public class XPathRecordReader {
-  private static final Logger LOG = LoggerFactory.getLogger(XPathRecordReader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
 
   private Node rootNode = new Node("/", null);

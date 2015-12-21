@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -89,7 +90,7 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 public class SolrConfigHandler extends RequestHandlerBase {
-  public static final Logger log = LoggerFactory.getLogger(SolrConfigHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
   public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
@@ -444,7 +445,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
       if (!verifyClass(op, clz, info.clazz)) return overlay;
-      if (overlay.getNamedPlugins(info.getCleanTag()).containsKey(name)) {
+      if (pluginExists(info, overlay, name)) {
         if (isCeate) {
           op.addError(formatString(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.getTagCleanLower()));
           return overlay;
@@ -459,6 +460,12 @@ public class SolrConfigHandler extends RequestHandlerBase {
           return overlay;
         }
       }
+    }
+
+    private boolean pluginExists(SolrConfig.SolrPluginInfo info, ConfigOverlay overlay, String name) {
+      List<PluginInfo> l = req.getCore().getSolrConfig().getPluginInfos(info.clazz.getName());
+      for (PluginInfo pluginInfo : l) if(name.equals( pluginInfo.name)) return true;
+      return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
     private boolean verifyClass(CommandOperation op, String clz, Class expected) {

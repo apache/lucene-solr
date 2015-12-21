@@ -106,7 +106,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     try {
       XMLResponseParser parser = new XMLResponseParser();
       return (NamedList<NamedList<NamedList<Object>>>)
-          parser.processResponse(new StringReader(content.substring(idx))).get("solr-mbeans");
+          parser.processResponse(new StringReader(content)).get("solr-mbeans");
     }
     catch(Exception ex) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to read original XML", ex);

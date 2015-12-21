@@ -20,14 +20,14 @@ package org.apache.lucene.queryparser.flexible.standard.config;
 import java.text.NumberFormat;
 import java.util.Objects;
 
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 
 /**
  * This class holds the configuration used to parse numeric queries and create
- * {@link NumericRangeQuery}s.
+ * {@link org.apache.lucene.search.LegacyNumericRangeQuery}s.
  * 
- * @see NumericRangeQuery
+ * @see org.apache.lucene.search.LegacyNumericRangeQuery
  * @see NumberFormat
  */
 public class NumericConfig {
@@ -36,7 +36,7 @@ public class NumericConfig {
   
   private NumberFormat format;
   
-  private NumericType type;
+  private FieldType.LegacyNumericType type;
   
   /**
    * Constructs a {@link NumericConfig} object.
@@ -51,10 +51,10 @@ public class NumericConfig {
    * 
    * @see NumericConfig#setPrecisionStep(int)
    * @see NumericConfig#setNumberFormat(NumberFormat)
-   * @see #setType(org.apache.lucene.document.FieldType.NumericType)
+   * @see #setType(org.apache.lucene.document.FieldType.LegacyNumericType)
    */
   public NumericConfig(int precisionStep, NumberFormat format,
-      NumericType type) {
+      LegacyNumericType type) {
     setPrecisionStep(precisionStep);
     setNumberFormat(format);
     setType(type);
@@ -66,7 +66,7 @@ public class NumericConfig {
    * 
    * @return the precision used to index the numeric values
    * 
-   * @see NumericRangeQuery#getPrecisionStep()
+   * @see org.apache.lucene.search.LegacyNumericRangeQuery#getPrecisionStep()
    */
   public int getPrecisionStep() {
     return precisionStep;
@@ -78,7 +78,7 @@ public class NumericConfig {
    * @param precisionStep
    *          the precision used to index the numeric values
    * 
-   * @see NumericRangeQuery#getPrecisionStep()
+   * @see org.apache.lucene.search.LegacyNumericRangeQuery#getPrecisionStep()
    */
   public void setPrecisionStep(int precisionStep) {
     this.precisionStep = precisionStep;
@@ -100,7 +100,7 @@ public class NumericConfig {
    * 
    * @return the numeric type used to index the numeric values
    */
-  public NumericType getType() {
+  public LegacyNumericType getType() {
     return type;
   }
   
@@ -109,7 +109,7 @@ public class NumericConfig {
    * 
    * @param type the numeric type used to index the numeric values
    */
-  public void setType(NumericType type) {
+  public void setType(LegacyNumericType type) {
     
     if (type == null) {
       throw new IllegalArgumentException("type cannot be null!");

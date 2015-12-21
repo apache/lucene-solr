@@ -23,8 +23,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.util.SolrPluginUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +33,6 @@ public abstract class SolrHighlighter
 {
 
   public static int DEFAULT_PHRASE_LIMIT = 5000;
-  public static Logger log = LoggerFactory.getLogger(SolrHighlighter.class);
 
   /**
    * Check whether Highlighting is enabled for this request.

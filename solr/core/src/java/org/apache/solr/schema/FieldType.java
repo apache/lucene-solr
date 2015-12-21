@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,7 +49,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.BytesRef;
@@ -78,7 +78,7 @@ import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MAT
  *
  */
 public abstract class FieldType extends FieldProperties {
-  public static final Logger log = LoggerFactory.getLogger(FieldType.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * The default poly field separator.
@@ -611,7 +611,7 @@ public abstract class FieldType extends FieldProperties {
 
   /** Return the numeric type of this field, or null if this field is not a
    *  numeric field. */
-  public org.apache.lucene.document.FieldType.NumericType getNumericType() {
+  public org.apache.lucene.document.FieldType.LegacyNumericType getNumericType() {
     return null;
   }
 
@@ -669,7 +669,7 @@ public abstract class FieldType extends FieldProperties {
    *  Lucene FieldCache.)
    */
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    field.checkFieldCacheSource(parser);
+    field.checkFieldCacheSource();
     return new StrFieldSource(field.name);
   }
 
@@ -745,7 +745,7 @@ public abstract class FieldType extends FieldProperties {
       // match-only
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
-      return new TermQuery(new Term(field.getName(), br.toBytesRef()));
+      return new TermQuery(new Term(field.getName(), br));
     }
   }
   

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,7 +81,7 @@ public class Overseer implements Closeable {
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   
-  private static Logger log = LoggerFactory.getLogger(Overseer.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   enum LeaderStatus {DONT_KNOW, NO, YES}
 
@@ -298,8 +299,8 @@ public class Overseer implements Closeable {
     private void checkIfIamStillLeader() {
       if (zkController != null && zkController.getCoreContainer().isShutDown()) return;//shutting down no need to go further
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-      String path = "/overseer_elect/leader";
-      byte[] data = null;
+      String path = OverseerElectionContext.OVERSEER_ELECT + "/leader";
+      byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
       } catch (Exception e) {
@@ -409,7 +410,7 @@ public class Overseer implements Closeable {
       boolean success = true;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
-            "/overseer_elect/leader", null, null, true));
+            OverseerElectionContext.OVERSEER_ELECT + "/leader", null, null, true));
         if (myId.equals(props.getStr("id"))) {
           return LeaderStatus.YES;
         }

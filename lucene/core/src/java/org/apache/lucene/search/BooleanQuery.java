@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -222,36 +223,141 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    if (minimumNumberShouldMatch == 0 && clauses.size() == 1) {// optimize 1-clause queries
+    // optimize 1-clause queries
+    if (clauses.size() == 1) {
       BooleanClause c = clauses.get(0);
-      if (!c.isProhibited()) {  // just return clause
-
-        Query query = c.getQuery();
-
-        if (c.isScoring() == false) {
-          // our single clause is a filter, so we need to disable scoring
-          query = new BoostQuery(new ConstantScoreQuery(query), 0);
-        }
-
+      Query query = c.getQuery();
+      if (minimumNumberShouldMatch == 1 && c.getOccur() == Occur.SHOULD) {
         return query;
+      } else if (minimumNumberShouldMatch == 0) {
+        switch (c.getOccur()) {
+          case SHOULD:
+          case MUST:
+            return query;
+          case FILTER:
+            // no scoring clauses, so return a score of 0
+            return new BoostQuery(new ConstantScoreQuery(query), 0);
+          case MUST_NOT:
+            // no positive clauses
+            return new MatchNoDocsQuery();
+          default:
+            throw new AssertionError();
+        }
       }
     }
 
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    builder.setDisableCoord(isCoordDisabled());
-    builder.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
-    boolean actuallyRewritten = false;
-    for (BooleanClause clause : this) {
-      Query query = clause.getQuery();
-      Query rewritten = query.rewrite(reader);
-      if (rewritten != query) {
-        actuallyRewritten = true;
+    // recursively rewrite
+    {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setDisableCoord(isCoordDisabled());
+      builder.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
+      boolean actuallyRewritten = false;
+      for (BooleanClause clause : this) {
+        Query query = clause.getQuery();
+        Query rewritten = query.rewrite(reader);
+        if (rewritten != query) {
+          actuallyRewritten = true;
+        }
+        builder.add(rewritten, clause.getOccur());
       }
-      builder.add(rewritten, clause.getOccur());
+      if (actuallyRewritten) {
+        return builder.build();
+      }
     }
-    if (actuallyRewritten) {
-      return builder.build();
+
+    // remove duplicate FILTER and MUST_NOT clauses
+    {
+      int clauseCount = 0;
+      for (Collection<Query> queries : clauseSets.values()) {
+        clauseCount += queries.size();
+      }
+      if (clauseCount != clauses.size()) {
+        // since clauseSets implicitly deduplicates FILTER and MUST_NOT
+        // clauses, this means there were duplicates
+        BooleanQuery.Builder rewritten = new BooleanQuery.Builder();
+        rewritten.setDisableCoord(disableCoord);
+        rewritten.setMinimumNumberShouldMatch(minimumNumberShouldMatch);
+        for (Map.Entry<Occur, Collection<Query>> entry : clauseSets.entrySet()) {
+          final Occur occur = entry.getKey();
+          for (Query query : entry.getValue()) {
+            rewritten.add(query, occur);
+          }
+        }
+        return rewritten.build();
+      }
     }
+
+    // remove FILTER clauses that are also MUST clauses
+    // or that match all documents
+    if (clauseSets.get(Occur.MUST).size() > 0 && clauseSets.get(Occur.FILTER).size() > 0) {
+      final Set<Query> filters = new HashSet<Query>(clauseSets.get(Occur.FILTER));
+      boolean modified = filters.remove(new MatchAllDocsQuery());
+      modified |= filters.removeAll(clauseSets.get(Occur.MUST));
+      if (modified) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.setDisableCoord(isCoordDisabled());
+        builder.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
+        for (BooleanClause clause : clauses) {
+          if (clause.getOccur() != Occur.FILTER) {
+            builder.add(clause);
+          }
+        }
+        for (Query filter : filters) {
+          builder.add(filter, Occur.FILTER);
+        }
+        return builder.build();
+      }
+    }
+
+    // Rewrite queries whose single scoring clause is a MUST clause on a
+    // MatchAllDocsQuery to a ConstantScoreQuery
+    {
+      final Collection<Query> musts = clauseSets.get(Occur.MUST);
+      final Collection<Query> filters = clauseSets.get(Occur.FILTER);
+      if (musts.size() == 1
+          && filters.size() > 0) {
+        Query must = musts.iterator().next();
+        float boost = 1f;
+        if (must instanceof BoostQuery) {
+          BoostQuery boostQuery = (BoostQuery) must;
+          must = boostQuery.getQuery();
+          boost = boostQuery.getBoost();
+        }
+        if (must.getClass() == MatchAllDocsQuery.class) {
+          // our single scoring clause matches everything: rewrite to a CSQ on the filter
+          // ignore SHOULD clause for now
+          BooleanQuery.Builder builder = new BooleanQuery.Builder();
+          for (BooleanClause clause : clauses) {
+            switch (clause.getOccur()) {
+              case FILTER:
+              case MUST_NOT:
+                builder.add(clause);
+                break;
+              default:
+                // ignore
+                break;
+            }
+          }
+          Query rewritten = builder.build();
+          rewritten = new ConstantScoreQuery(rewritten);
+          if (boost != 1f) {
+            rewritten = new BoostQuery(rewritten, boost);
+          }
+
+          // now add back the SHOULD clauses
+          builder = new BooleanQuery.Builder()
+            .setDisableCoord(isCoordDisabled())
+            .setMinimumNumberShouldMatch(getMinimumNumberShouldMatch())
+            .add(rewritten, Occur.MUST);
+          for (Query query : clauseSets.get(Occur.SHOULD)) {
+            builder.add(query, Occur.SHOULD);
+          }
+          rewritten = builder.build();
+          return rewritten;
+        }
+      }
+    }
+
     return super.rewrite(reader);
   }
 

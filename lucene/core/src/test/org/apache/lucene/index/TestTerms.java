@@ -17,20 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.*;
-
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyFloatField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestTerms extends LuceneTestCase {
@@ -92,8 +90,8 @@ public class TestTerms extends LuceneTestCase {
   }
 
   public void testEmptyIntFieldMinMax() throws Exception {
-    assertNull(NumericUtils.getMinInt(EMPTY_TERMS));
-    assertNull(NumericUtils.getMaxInt(EMPTY_TERMS));
+    assertNull(LegacyNumericUtils.getMinInt(EMPTY_TERMS));
+    assertNull(LegacyNumericUtils.getMaxInt(EMPTY_TERMS));
   }
   
   public void testIntFieldMinMax() throws Exception {
@@ -107,14 +105,14 @@ public class TestTerms extends LuceneTestCase {
       int num = random().nextInt();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new IntField("field", num, Field.Store.NO));
+      doc.add(new LegacyIntField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
     
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(new Integer(minValue), NumericUtils.getMinInt(terms));
-    assertEquals(new Integer(maxValue), NumericUtils.getMaxInt(terms));
+    assertEquals(new Integer(minValue), LegacyNumericUtils.getMinInt(terms));
+    assertEquals(new Integer(maxValue), LegacyNumericUtils.getMaxInt(terms));
 
     r.close();
     w.close();
@@ -122,8 +120,8 @@ public class TestTerms extends LuceneTestCase {
   }
 
   public void testEmptyLongFieldMinMax() throws Exception {
-    assertNull(NumericUtils.getMinLong(EMPTY_TERMS));
-    assertNull(NumericUtils.getMaxLong(EMPTY_TERMS));
+    assertNull(LegacyNumericUtils.getMinLong(EMPTY_TERMS));
+    assertNull(LegacyNumericUtils.getMaxLong(EMPTY_TERMS));
   }
   
   public void testLongFieldMinMax() throws Exception {
@@ -137,15 +135,15 @@ public class TestTerms extends LuceneTestCase {
       long num = random().nextLong();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new LongField("field", num, Field.Store.NO));
+      doc.add(new LegacyLongField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
     
     IndexReader r = w.getReader();
 
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(new Long(minValue), NumericUtils.getMinLong(terms));
-    assertEquals(new Long(maxValue), NumericUtils.getMaxLong(terms));
+    assertEquals(new Long(minValue), LegacyNumericUtils.getMinLong(terms));
+    assertEquals(new Long(maxValue), LegacyNumericUtils.getMaxLong(terms));
 
     r.close();
     w.close();
@@ -163,14 +161,14 @@ public class TestTerms extends LuceneTestCase {
       float num = random().nextFloat();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new FloatField("field", num, Field.Store.NO));
+      doc.add(new LegacyFloatField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
     
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, NumericUtils.sortableIntToFloat(NumericUtils.getMinInt(terms)), 0.0f);
-    assertEquals(maxValue, NumericUtils.sortableIntToFloat(NumericUtils.getMaxInt(terms)), 0.0f);
+    assertEquals(minValue, LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.getMinInt(terms)), 0.0f);
+    assertEquals(maxValue, LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.getMaxInt(terms)), 0.0f);
 
     r.close();
     w.close();
@@ -188,7 +186,7 @@ public class TestTerms extends LuceneTestCase {
       double num = random().nextDouble();
       minValue = Math.min(num, minValue);
       maxValue = Math.max(num, maxValue);
-      doc.add(new DoubleField("field", num, Field.Store.NO));
+      doc.add(new LegacyDoubleField("field", num, Field.Store.NO));
       w.addDocument(doc);
     }
     
@@ -196,8 +194,8 @@ public class TestTerms extends LuceneTestCase {
 
     Terms terms = MultiFields.getTerms(r, "field");
 
-    assertEquals(minValue, NumericUtils.sortableLongToDouble(NumericUtils.getMinLong(terms)), 0.0);
-    assertEquals(maxValue, NumericUtils.sortableLongToDouble(NumericUtils.getMaxLong(terms)), 0.0);
+    assertEquals(minValue, LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.getMinLong(terms)), 0.0);
+    assertEquals(maxValue, LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.getMaxLong(terms)), 0.0);
 
     r.close();
     w.close();

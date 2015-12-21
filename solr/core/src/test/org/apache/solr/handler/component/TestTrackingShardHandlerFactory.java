@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.Test;
 
 /**
@@ -60,7 +59,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     TrackingShardHandlerFactory.setTrackingQueue(runners, trackingQueue);
 
     for (JettySolrRunner runner : runners) {
-      CoreContainer container = ((SolrDispatchFilter) runner.getDispatchFilter().getFilter()).getCores();
+      CoreContainer container = runner.getCoreContainer();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
       assert factory instanceof TrackingShardHandlerFactory;
       TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
@@ -115,7 +114,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     TrackingShardHandlerFactory.setTrackingQueue(runners, null);
 
     for (JettySolrRunner runner : runners) {
-      CoreContainer container = ((SolrDispatchFilter) runner.getDispatchFilter().getFilter()).getCores();
+      CoreContainer container = runner.getCoreContainer();
       ShardHandlerFactory factory = container.getShardHandlerFactory();
       assert factory instanceof TrackingShardHandlerFactory;
       TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;

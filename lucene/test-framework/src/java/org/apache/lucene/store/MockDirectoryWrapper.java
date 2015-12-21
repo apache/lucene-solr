@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -403,11 +404,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   void maybeThrowIOException(String message) throws IOException {
     if (randomState.nextDouble() < randomIOExceptionRate) {
+      IOException ioe = new IOException("a random IOException" + (message == null ? "" : " (" + message + ")"));
       if (LuceneTestCase.VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception" + (message == null ? "" : " (" + message + ")"));
-        new Throwable().printStackTrace(System.out);
+        ioe.printStackTrace(System.out);
       }
-      throw new IOException("a random IOException" + (message == null ? "" : " (" + message + ")"));
+      throw ioe;
     }
   }
 
@@ -507,9 +509,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new AssertionError("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot overwrite");
     }
     
-    if (crashed) {
-      throw new IOException("cannot createOutput after crash");
-    }
     unSyncedFiles.add(name);
     createdFiles.add(name);
     
@@ -547,6 +546,43 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
   
+  @Override
+  public synchronized IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    maybeThrowDeterministicException();
+    maybeThrowIOExceptionOnOpen("temp: prefix=" + prefix + " suffix=" + suffix);
+    maybeYield();
+    if (failOnCreateOutput) {
+      maybeThrowDeterministicException();
+    }
+    if (crashed) {
+      throw new IOException("cannot createTempOutput after crash");
+    }
+    init();
+    
+    IndexOutput delegateOutput = in.createTempOutput(prefix, suffix, LuceneTestCase.newIOContext(randomState, context));
+    String name = delegateOutput.getName();
+    if (name.toLowerCase(Locale.ROOT).endsWith(".tmp") == false) {
+      throw new IllegalStateException("wrapped directory failed to use .tmp extension: got: " + name);
+    }
+
+    unSyncedFiles.add(name);
+    createdFiles.add(name);
+    final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
+    addFileHandle(io, name, Handle.Output);
+    openFilesForWrite.add(name);
+    
+    // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
+    if (throttling == Throttling.ALWAYS || 
+        (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
+      }
+      return throttledOutput.newFromDelegate(io);
+    } else {
+      return io;
+    }
+  }
+
   private static enum Handle {
     Input, Output, Slice
   }

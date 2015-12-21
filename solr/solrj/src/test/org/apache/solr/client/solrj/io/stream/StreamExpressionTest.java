@@ -21,11 +21,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -126,11 +131,19 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testReducerStream();
     testUniqueStream();
     testRollupStream();
+    testStatsStream();
     testParallelUniqueStream();
     testParallelReducerStream();
     testParallelRankStream();
     testParallelMergeStream();
     testParallelRollupStream();
+    testInnerJoinStream();
+    testLeftOuterJoinStream();
+    testHashJoinStream();
+    testOuterHashJoinStream();
+    testSelectStream();
+    testFacetStream();
+    testSubFacetStream();
   }
 
   private void testCloudSolrStream() throws Exception {
@@ -153,8 +166,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,2,1,3,4);
-    assertLong(tuples.get(0),"a_i", 0);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
+    assertLong(tuples.get(0), "a_i", 0);
 
     // Basic w/aliases
     expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\")");
@@ -162,9 +175,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,2,1,3,4);
-    assertLong(tuples.get(0),"alias.a_i", 0);
-    assertString(tuples.get(0),"name", "hello0");    
+    assertOrder(tuples, 0, 2, 1, 3, 4);
+    assertLong(tuples.get(0), "alias.a_i", 0);
+    assertString(tuples.get(0), "name", "hello0");
 
     // Basic filtered test
     expression = StreamExpressionParser.parse("search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
@@ -172,8 +185,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
-    assertLong(tuples.get(1),"a_i", 3);
+    assertOrder(tuples, 0, 3, 4);
+    assertLong(tuples.get(1), "a_i", 3);
     
     del("*:*");
     commit();
@@ -210,7 +223,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,2,1,3,4);
     assertLong(tuples.get(0),"alias.a_i", 0);
-    assertString(tuples.get(0),"name", "hello0");    
+    assertString(tuples.get(0), "name", "hello0");
 
     // Basic filtered test
     expression = StreamExpressionParser.parse("search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", zkHost=" + zkServer.getZkAddress() + ", sort=\"a_f asc, a_i asc\")");
@@ -219,7 +232,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     assert(tuples.size() == 3);
     assertOrder(tuples, 0,3,4);
-    assertLong(tuples.get(1),"a_i", 3);
+    assertLong(tuples.get(1), "a_i", 3);
     
     del("*:*");
     commit();
@@ -341,6 +354,17 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,2,1,3,4);
     
+    // full factory w/multi streams
+    stream = factory.constructStream("merge("
+                                    + "search(collection1, q=\"id:(0 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                                    + "search(collection1, q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                                    + "search(collection1, q=\"id:(2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                                    + "on=\"a_f asc\")");
+    tuples = getTuples(stream);
+    
+    assert(tuples.size() == 4);
+    assertOrder(tuples, 0,2,1,4);
+    
     del("*:*");
     commit();
   }
@@ -399,6 +423,18 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     assert(tuples.size() == 4);
     assertOrder(tuples, 0,1,3,4);
+
+    // full factory, switch order
+    stream = factory.constructStream("top("
+            + "n=4,"
+            + "unique("
+            +   "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
+            +   "over=\"a_f\"),"
+            + "sort=\"a_f asc\")");
+    tuples = getTuples(stream);
+    
+    assert(tuples.size() == 4);
+    assertOrder(tuples, 2,1,3,4);
     
     del("*:*");
     commit();
@@ -424,54 +460,57 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     List<Map> maps0, maps1, maps2;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withFunctionName("search", CloudSolrStream.class)
-      .withFunctionName("unique", UniqueStream.class)
-      .withFunctionName("top", RankStream.class)
-      .withFunctionName("group", ReducerStream.class);
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("reduce", ReducerStream.class)
+        .withFunctionName("group", GroupOperation.class);
 
     // basic
-    expression = StreamExpressionParser.parse("group("
-                                              + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
-                                              + "by=\"a_s asc\")");
-    stream = new ReducerStream(expression, factory);
+    expression = StreamExpressionParser.parse("reduce("
+        + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
+        + "by=\"a_s\","
+        + "group(sort=\"a_f desc\", n=\"4\"))");
+
+    stream = factory.constructStream(expression);
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     t0 = tuples.get(0);
-    maps0 = t0.getMaps();
-    assertMaps(maps0, 0, 2,1, 9);
+    maps0 = t0.getMaps("group");
+    assertMaps(maps0, 9, 1, 2, 0);
 
     t1 = tuples.get(1);
-    maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
+
 
     t2 = tuples.get(2);
-    maps2 = t2.getMaps();
-    assertMaps(maps2, 4, 6);
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 6, 4);
     
     // basic w/spaces
-    expression = StreamExpressionParser.parse("group("
-                                              + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
-                                              + "by=\"a_s asc\")");
-    stream = new ReducerStream(expression, factory);
+    expression = StreamExpressionParser.parse("reduce("
+                                              +       "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
+                                              +       "by=\"a_s\"," +
+                                                      "group(sort=\"a_i asc\", n=\"2\"))");
+    stream = factory.constructStream(expression);
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     t0 = tuples.get(0);
-    maps0 = t0.getMaps();
-    assertMaps(maps0, 0, 2,1, 9);
+    maps0 = t0.getMaps("group");
+    assert(maps0.size() == 2);
+
+    assertMaps(maps0, 0, 1);
 
     t1 = tuples.get(1);
-    maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 3, 5);
 
     t2 = tuples.get(2);
-    maps2 = t2.getMaps();
+    maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
 
     del("*:*");
@@ -600,6 +639,69 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     commit();
   }
   
+  private void testStatsStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    StreamFactory factory = new StreamFactory()
+    .withCollectionZkHost("collection1", zkServer.getZkAddress())
+    .withFunctionName("stats", StatsStream.class)
+    .withFunctionName("sum", SumMetric.class)
+    .withFunctionName("min", MinMetric.class)
+    .withFunctionName("max", MaxMetric.class)
+    .withFunctionName("avg", MeanMetric.class)
+    .withFunctionName("count", CountMetric.class);     
+  
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+  
+    expression = StreamExpressionParser.parse("stats(collection1, q=*:*, sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))");
+    stream = factory.constructStream(expression);
+
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 1);
+
+    //Test Long and Double Sums
+
+    Tuple tuple = tuples.get(0);
+
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
+
+    assertTrue(sumi.longValue() == 70);
+    assertTrue(sumf.doubleValue() == 55.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 7.0D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 10);
+
+    del("*:*");
+    commit();
+  }
+  
   private void testParallelUniqueStream() throws Exception {
 
     indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
@@ -656,54 +758,58 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     String zkHost = zkServer.getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
-        .withFunctionName("unique", UniqueStream.class)
-        .withFunctionName("top", RankStream.class)
-        .withFunctionName("group", ReducerStream.class)
+        .withFunctionName("group", GroupOperation.class)
+        .withFunctionName("reduce", ReducerStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1," +
+                                                                                    "reduce(" +
+                                                                                              "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), " +
+                                                                                              "by=\"a_s\"," +
+                                                                                              "group(sort=\"a_i asc\", n=\"5\")), " +
+                                                                                    "workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
 
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     Tuple t0 = tuples.get(0);
-    List<Map> maps0 = t0.getMaps();
-    assertMaps(maps0, 0, 2, 1, 9);
+    List<Map> maps0 = t0.getMaps("group");
+    assertMaps(maps0, 0, 1, 2, 9);
 
     Tuple t1 = tuples.get(1);
-    List<Map> maps1 = t1.getMaps();
+    List<Map> maps1 = t1.getMaps("group");
     assertMaps(maps1, 3, 5, 7, 8);
 
     Tuple t2 = tuples.get(2);
-    List<Map> maps2 = t2.getMaps();
+    List<Map> maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
 
-    //Test Descending with Ascending subsort
 
-    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s desc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s desc\")");
+    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, " +
+                                                                      "reduce(" +
+                                                                              "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), " +
+                                                                              "by=\"a_s\", " +
+                                                                              "group(sort=\"a_i desc\", n=\"5\")),"+
+                                                                      "workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s desc\")");
 
     tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 4,3,0);
 
     t0 = tuples.get(0);
-    maps0 = t0.getMaps();
-    assertMaps(maps0, 4, 6);
+    maps0 = t0.getMaps("group");
+    assertMaps(maps0, 6, 4);
 
 
     t1 = tuples.get(1);
-    maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
 
 
     t2 = tuples.get(2);
-    maps2 = t2.getMaps();
-    assertMaps(maps2, 0, 2, 1, 9);
-
-
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 9, 2, 1, 0);
 
     del("*:*");
     commit();
@@ -921,6 +1027,975 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     commit();
   }
 
+  private void testInnerJoinStream() throws Exception {
+
+    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
+    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
+    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
+    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
+    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
+    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+
+    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
+    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
+    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
+    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
+    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
+    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
+    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
+    commit();
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("innerJoin", InnerJoinStream.class);
+    
+    // Basic test
+    expression = StreamExpressionParser.parse("innerJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+                                                + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 8);
+    assertOrder(tuples, 1,1,15,15,3,4,5,7);
+
+    // Basic desc
+    expression = StreamExpressionParser.parse("innerJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 8);
+    assertOrder(tuples, 7,3,4,5,1,1,15,15);
+    
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("innerJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
+                                                + "on=\"ident_s=right.ident_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 0);
+    
+    // Differing field names
+    expression = StreamExpressionParser.parse("innerJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
+                                                + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    
+    assert(tuples.size() == 8);
+    assertOrder(tuples, 1,1,15,15,3,4,5,7);
+    
+    del("*:*");
+    commit();
+  }
+  
+  private void testLeftOuterJoinStream() throws Exception {
+
+    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
+    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
+    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
+    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
+    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
+    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+
+    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
+    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
+    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
+    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
+    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
+    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
+    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
+    commit();
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class);
+    
+    // Basic test
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+                                                + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 1,1,15,15,2,3,4,5,6,7);
+
+    // Basic desc
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 7,6,3,4,5,1,1,15,15,2);
+    
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
+                                                + "on=\"ident_s=right.ident_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 8);
+    assertOrder(tuples, 1,15,2,3,4,5,6,7);
+    
+    // Differing field names
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
+                                                + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 1,1,15,15,2,3,4,5,6,7);
+    
+    del("*:*");
+    commit();
+  }
+
+  private void testHashJoinStream() throws Exception {
+
+    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
+    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
+    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
+    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
+    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
+    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+
+    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
+    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
+    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
+    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
+    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
+    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
+    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
+    commit();
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("hashJoin", HashJoinStream.class);
+    
+    // Basic test
+    expression = StreamExpressionParser.parse("hashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+                                                + "on=\"join1_i, join2_s\")");
+    stream = new HashJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 8);
+    assertOrder(tuples, 1,1,15,15,3,4,5,7);
+
+    // Basic desc
+    expression = StreamExpressionParser.parse("hashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "on=\"join1_i, join2_s\")");
+    stream = new HashJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 8);
+    assertOrder(tuples, 7,3,4,5,1,1,15,15);
+    
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("hashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+                                                + "on=\"ident_s\")");
+    stream = new HashJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 0);
+    
+    del("*:*");
+    commit();
+  }
+  
+  private void testOuterHashJoinStream() throws Exception {
+
+    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
+    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
+    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
+    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
+    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
+    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+
+    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
+    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
+    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
+    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
+    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
+    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
+    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
+    commit();
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
+    
+    // Basic test
+    expression = StreamExpressionParser.parse("outerHashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+                                                + "on=\"join1_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 1,1,15,15,2,3,4,5,6,7);
+
+    // Basic desc
+    expression = StreamExpressionParser.parse("outerHashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "on=\"join1_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 7,6,3,4,5,1,1,15,15,2);
+    
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("outerHashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "on=\"ident_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    tuples = getTuples(stream);    
+    assert(tuples.size() == 8);
+    assertOrder(tuples, 1,15,2,3,4,5,6,7);
+        
+    del("*:*");
+    commit();
+  }
+  
+  private void testSelectStream() throws Exception {
+
+    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
+    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
+    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
+    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
+    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
+    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
+    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+
+    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
+    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
+    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
+    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
+    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
+    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
+    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
+    commit();
+
+    String clause;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("innerJoin", InnerJoinStream.class)
+      .withFunctionName("select", SelectStream.class)
+      .withFunctionName("replace", ReplaceOperation.class);
+    
+    // Basic test
+    clause = "select("
+            +   "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+            +   "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+
+    // Basic with replacements test
+    clause = "select("
+            +   "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+            +   "replace(join1, 0, withValue=12), replace(join1, 3, withValue=12), replace(join1, 2, withField=join2),"
+            +   "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+    assertLong(tuples.get(0), "join1", 12);
+    assertLong(tuples.get(1), "join1", 12);
+    assertLong(tuples.get(2), "join1", 12);
+    assertLong(tuples.get(7), "join1", 12);
+    assertString(tuples.get(6), "join1", "d");
+
+    
+    // Inner stream test
+    clause = "innerJoin("
+            +   "select("
+            +     "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+            +     "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            +   "),"
+            +   "select("
+            +     "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+            +     "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
+            +   "),"
+            +   "on=\"left.join1=right.join1, left.join2=right.join2\""
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "left.join1", "left.join2", "left.ident", "right.join1", "right.join2", "right.ident");
+    
+    // Wrapped select test
+    clause = "select("
+            +   "id, left.ident, right.ident,"
+            +   "innerJoin("
+            +     "select("
+            +       "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+            +       "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            +     "),"
+            +     "select("
+            +       "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+            +       "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
+            +     "),"
+            +     "on=\"left.join1=right.join1, left.join2=right.join2\""
+            +   ")"
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "left.ident", "right.ident");
+    assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
+    
+    del("*:*");
+    commit();
+  }
+  
+  private void testFacetStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+    
+    String clause;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("facet", FacetStream.class)
+      .withFunctionName("sum", SumMetric.class)
+      .withFunctionName("min", MinMetric.class)
+      .withFunctionName("max", MaxMetric.class)
+      .withFunctionName("avg", MeanMetric.class)
+      .withFunctionName("count", CountMetric.class);
+    
+    // Basic test
+    clause = "facet("
+              +   "collection1, "
+              +   "q=\"*:*\", "
+              +   "fl=\"a_s,a_i,a_f\", "
+              +   "sort=\"a_s asc\", "
+              +   "buckets=\"a_s\", "
+              +   "bucketSorts=\"sum(a_i) asc\", "
+              +   "bucketSizeLimit=100, "
+              +   "sum(a_i), sum(a_f), "
+              +   "min(a_i), min(a_f), "
+              +   "max(a_i), max(a_f), "
+              +   "avg(a_i), avg(a_f), "
+              +   "count(*)"
+              + ")";
+    
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 3);
+
+    //Test Long and Double Sums
+
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
+
+
+    //Reverse the Sort.
+
+    clause = "facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "fl=\"a_s,a_i,a_f\", "
+        +   "sort=\"a_s asc\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) desc\", "
+        +   "bucketSizeLimit=100, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")";
+
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+
+    //Test Long and Double Sums
+
+    tuple = tuples.get(0);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
+
+
+    //Test index sort
+    clause = "facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "fl=\"a_s,a_i,a_f\", "
+        +   "sort=\"a_s asc\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"a_s desc\", "
+        +   "bucketSizeLimit=100, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")";
+
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 3);
+
+
+    tuple = tuples.get(0);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
+
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
+
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+    //Test index sort
+
+    clause = "facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "fl=\"a_s,a_i,a_f\", "
+        +   "sort=\"a_s asc\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"a_s asc\", "
+        +   "bucketSizeLimit=100, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")";
+
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 3);
+
+
+    tuple = tuples.get(0);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
+
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
+
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
+
+    del("*:*");
+    commit();
+  }
+
+
+  private void testSubFacetStream() throws Exception {
+
+    indexr(id, "0", "level1_s", "hello0", "level2_s", "a", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "level1_s", "hello0", "level2_s", "a", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "level1_s", "hello3", "level2_s", "a", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "level1_s", "hello4", "level2_s", "a", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "level1_s", "hello0", "level2_s", "b", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "level1_s", "hello3", "level2_s", "b", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "level1_s", "hello4", "level2_s", "b", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "level1_s", "hello3", "level2_s", "b", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "level1_s", "hello3", "level2_s", "b", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "level1_s", "hello0", "level2_s", "b", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    String clause;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("facet", FacetStream.class)
+      .withFunctionName("sum", SumMetric.class)
+      .withFunctionName("min", MinMetric.class)
+      .withFunctionName("max", MaxMetric.class)
+      .withFunctionName("avg", MeanMetric.class)
+      .withFunctionName("count", CountMetric.class);
+    
+    // Basic test
+    clause = "facet("
+              +   "collection1, "
+              +   "q=\"*:*\", "
+              +   "buckets=\"level1_s, level2_s\", "
+              +   "bucketSorts=\"sum(a_i) desc, sum(a_i) desc)\", "
+              +   "bucketSizeLimit=100, "
+              +   "sum(a_i), count(*)"
+              + ")";
+    
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 6);
+
+    Tuple tuple = tuples.get(0);
+    String bucket1 = tuple.getString("level1_s");
+    String bucket2 = tuple.getString("level2_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello3"));
+    assertTrue(bucket2.equals("b"));
+    assertTrue(sumi.longValue() == 35);
+    assertTrue(count.doubleValue() == 3);
+
+    tuple = tuples.get(1);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello0"));
+    assertTrue(bucket2.equals("b"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(count.doubleValue() == 2);
+
+    tuple = tuples.get(2);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello4"));
+    assertTrue(bucket2.equals("b"));
+    assertTrue(sumi.longValue() == 11);
+    assertTrue(count.doubleValue() == 1);
+
+    tuple = tuples.get(3);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello4"));
+    assertTrue(bucket2.equals("a"));
+    assertTrue(sumi.longValue() == 4);
+    assertTrue(count.doubleValue() == 1);
+
+    tuple = tuples.get(4);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello3"));
+    assertTrue(bucket2.equals("a"));
+    assertTrue(sumi.longValue() == 3);
+    assertTrue(count.doubleValue() == 1);
+
+    tuple = tuples.get(5);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello0"));
+    assertTrue(bucket2.equals("a"));
+    assertTrue(sumi.longValue() == 2);
+    assertTrue(count.doubleValue() == 2);
+
+    clause = "facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "buckets=\"level1_s, level2_s\", "
+        +   "bucketSorts=\"level1_s desc, level2_s desc)\", "
+        +   "bucketSizeLimit=100, "
+        +   "sum(a_i), count(*)"
+        + ")";
+
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 6);
+
+    tuple = tuples.get(0);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello4"));
+    assertTrue(bucket2.equals("b"));
+    assertTrue(sumi.longValue() == 11);
+    assertTrue(count.doubleValue() == 1);
+
+    tuple = tuples.get(1);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello4"));
+    assertTrue(bucket2.equals("a"));
+    assertTrue(sumi.longValue() == 4);
+    assertTrue(count.doubleValue() == 1);
+
+    tuple = tuples.get(2);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello3"));
+    assertTrue(bucket2.equals("b"));
+    assertTrue(sumi.longValue() == 35);
+    assertTrue(count.doubleValue() == 3);
+
+    tuple = tuples.get(3);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello3"));
+    assertTrue(bucket2.equals("a"));
+    assertTrue(sumi.longValue() == 3);
+    assertTrue(count.doubleValue() == 1);
+
+    tuple = tuples.get(4);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello0"));
+    assertTrue(bucket2.equals("b"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(count.doubleValue() == 2);
+
+    tuple = tuples.get(5);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(bucket1.equals("hello0"));
+    assertTrue(bucket2.equals("a"));
+    assertTrue(sumi.longValue() == 2);
+    assertTrue(count.doubleValue() == 2);
+
+    del("*:*");
+    commit();
+  }
+  
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList<Tuple>();
@@ -945,6 +2020,42 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
+
+  protected boolean assertMapOrder(List<Tuple> tuples, int... ids) throws Exception {
+    int i = 0;
+    for(int val : ids) {
+      Tuple t = tuples.get(i);
+      List<Map> tip = t.getMaps("group");
+      int id = (int)tip.get(0).get("id");
+      if(id != val) {
+        throw new Exception("Found value:"+id+" expecting:"+val);
+      }
+      ++i;
+    }
+    return true;
+  }
+
+
+  protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
+    for(Tuple tuple : tuples){
+      for(String field : fields){
+        if(!tuple.fields.containsKey(field)){
+          throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
+        }
+      }
+    }
+    return true;
+  }
+  protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
+    for(Tuple tuple : tuples){
+      for(String field : fields){
+        if(tuple.fields.containsKey(field)){
+          throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
+        }
+      }
+    }
+    return true;
+  }  
 
   protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
     List<?> group = (List<?>)tuple.get("tuples");
@@ -997,6 +2108,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
+
 
   @Override
   protected void indexr(Object... fields) throws Exception {

@@ -20,11 +20,6 @@ package org.apache.lucene.uninverting;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
@@ -37,7 +32,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -88,18 +83,18 @@ interface FieldCache {
   public static FieldCache DEFAULT = new FieldCacheImpl();
 
   /**
-   * A parser instance for int values encoded by {@link NumericUtils}, e.g. when indexed
-   * via {@link IntField}/{@link NumericTokenStream}.
+   * A parser instance for int values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.LegacyIntField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
    */
   public static final Parser NUMERIC_UTILS_INT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return NumericUtils.prefixCodedToInt(term);
+      return LegacyNumericUtils.prefixCodedToInt(term);
     }
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedInts(terms.iterator());
+      return LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
     }
     
     @Override
@@ -109,13 +104,13 @@ interface FieldCache {
   };
 
   /**
-   * A parser instance for float values encoded with {@link NumericUtils}, e.g. when indexed
-   * via {@link FloatField}/{@link NumericTokenStream}.
+   * A parser instance for float values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.LegacyFloatField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
    */
   public static final Parser NUMERIC_UTILS_FLOAT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      int val = NumericUtils.prefixCodedToInt(term);
+      int val = LegacyNumericUtils.prefixCodedToInt(term);
       if (val<0) val ^= 0x7fffffff;
       return val;
     }
@@ -127,18 +122,18 @@ interface FieldCache {
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedInts(terms.iterator());
+      return LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
     }
   };
 
   /**
-   * A parser instance for long values encoded by {@link NumericUtils}, e.g. when indexed
-   * via {@link LongField}/{@link NumericTokenStream}.
+   * A parser instance for long values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.LegacyLongField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
    */
   public static final Parser NUMERIC_UTILS_LONG_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      return NumericUtils.prefixCodedToLong(term);
+      return LegacyNumericUtils.prefixCodedToLong(term);
     }
     @Override
     public String toString() { 
@@ -147,18 +142,18 @@ interface FieldCache {
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedLongs(terms.iterator());
+      return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
     }
   };
 
   /**
-   * A parser instance for double values encoded with {@link NumericUtils}, e.g. when indexed
-   * via {@link DoubleField}/{@link NumericTokenStream}.
+   * A parser instance for double values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.LegacyDoubleField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
    */
   public static final Parser NUMERIC_UTILS_DOUBLE_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
-      long val = NumericUtils.prefixCodedToLong(term);
+      long val = LegacyNumericUtils.prefixCodedToLong(term);
       if (val<0) val ^= 0x7fffffffffffffffL;
       return val;
     }
@@ -169,7 +164,7 @@ interface FieldCache {
     
     @Override
     public TermsEnum termsEnum(Terms terms) throws IOException {
-      return NumericUtils.filterPrefixCodedLongs(terms.iterator());
+      return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
     }
   };
   
@@ -196,7 +191,7 @@ interface FieldCache {
    * @param parser
    *          Computes long for string values. May be {@code null} if the
    *          requested field was indexed as {@link NumericDocValuesField} or
-   *          {@link LongField}.
+   *          {@link org.apache.lucene.document.LegacyLongField}.
    * @param setDocsWithField
    *          If true then {@link #getDocsWithField} will also be computed and
    *          stored in the FieldCache.
@@ -247,9 +242,9 @@ interface FieldCache {
   public SortedDocValues getTermsIndex(LeafReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /** Can be passed to {@link #getDocTermOrds} to filter for 32-bit numeric terms */
-  public static final BytesRef INT32_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_INT });
+  public static final BytesRef INT32_TERM_PREFIX = new BytesRef(new byte[] { LegacyNumericUtils.SHIFT_START_INT });
   /** Can be passed to {@link #getDocTermOrds} to filter for 64-bit numeric terms */
-  public static final BytesRef INT64_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_LONG });
+  public static final BytesRef INT64_TERM_PREFIX = new BytesRef(new byte[] { LegacyNumericUtils.SHIFT_START_LONG });
   
   /**
    * Checks the internal cache for an appropriate entry, and if none is found, reads the term values

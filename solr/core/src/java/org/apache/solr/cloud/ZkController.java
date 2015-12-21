@@ -19,25 +19,14 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -52,25 +41,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.BeforeReconnect;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ClusterStateUtil;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.OnReconnect;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -102,11 +73,11 @@ import org.slf4j.MDC;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 
 /**
  * Handle ZooKeeper interactions.
@@ -118,7 +89,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
  */
 public final class ZkController {
 
-  private static final Logger log = LoggerFactory.getLogger(ZkController.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
@@ -476,11 +447,6 @@ public final class ZkController {
           if (isClosed) {
             return;
           }
-          try {
-            Thread.sleep(5000);
-          } catch (InterruptedException e1) {
-            Thread.currentThread().interrupt();
-          }
         }
       }
     }
@@ -519,6 +485,7 @@ public final class ZkController {
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
         descriptor.getCloudDescriptor().setLeader(false);
+        descriptor.getCloudDescriptor().setHasRegistered(false);
       }
     }
   }
@@ -973,6 +940,8 @@ public final class ZkController {
         if (!didRecovery) {
           publish(desc, Replica.State.ACTIVE);
         }
+        
+        core.getCoreDescriptor().getCloudDescriptor().setHasRegistered(true);
       }
       
       // make sure we have an update cluster state right away
@@ -1071,7 +1040,7 @@ public final class ZkController {
         Thread.sleep(1000);
       }
       if (cc.isShutDown()) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is close");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is closed");
       }
     }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Could not get leader props", exp);
@@ -1334,7 +1303,6 @@ public final class ZkController {
     try {
       if (!zkClient.exists(collectionPath, true)) {
         log.info("Creating collection in ZooKeeper:" + collection);
-        SolrParams params = cd.getParams();
 
         try {
           Map<String, Object> collectionProps = new HashMap<>();
@@ -1343,15 +1311,8 @@ public final class ZkController {
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX + CONFIGNAME_PROP, collection);
 
           // params passed in - currently only done via core admin (create core commmand).
-          if (params != null) {
-            Iterator<String> iter = params.getParameterNamesIterator();
-            while (iter.hasNext()) {
-              String paramName = iter.next();
-              if (paramName.startsWith(COLLECTION_PARAM_PREFIX)) {
-                collectionProps.put(paramName.substring(COLLECTION_PARAM_PREFIX.length()), params.get(paramName));
-              }
-            }
-
+          if (cd.getParams().size() > 0) {
+            collectionProps.putAll(cd.getParams());
             // if the config name wasn't passed in, use the default
             if (!collectionProps.containsKey(CONFIGNAME_PROP)) {
               // TODO: getting the configName from the collectionPath should fail since we already know it doesn't exist?
@@ -1582,7 +1543,7 @@ public final class ZkController {
     if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String coreNodeName = cloudDesc.getCoreNodeName();
-      assert coreNodeName != null;
+      assert coreNodeName != null : "SolrCore: " + cd.getName() + " has no coreNodeName";
       if (cloudDesc.getShardId() == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "No shard id for :" + cd);
       }
@@ -1615,12 +1576,15 @@ public final class ZkController {
 
   private ZkCoreNodeProps waitForLeaderToSeeDownState(
       CoreDescriptor descriptor, final String coreZkNodeName) {
+    // try not to wait too long here - if we are waiting too long, we should probably
+    // move along and join the election
+    
     CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
     String collection = cloudDesc.getCollectionName();
     String shard = cloudDesc.getShardId();
     ZkCoreNodeProps leaderProps = null;
 
-    int retries = 6;
+    int retries = 2;
     for (int i = 0; i < retries; i++) {
       try {
         if (isClosed) {
@@ -1628,8 +1592,8 @@ public final class ZkController {
               "We have been closed");
         }
 
-        // go straight to zk, not the cloud state - we must have current info
-        leaderProps = getLeaderProps(collection, shard, 30000);
+        // go straight to zk, not the cloud state - we want current info
+        leaderProps = getLeaderProps(collection, shard, 5000);
         break;
       } catch (Exception e) {
         SolrException.log(log, "There was a problem finding the leader in zk", e);
@@ -1683,7 +1647,7 @@ public final class ZkController {
 
           // let's retry a couple times - perhaps the leader just went down,
           // or perhaps he is just not quite ready for us yet
-          retries = 6;
+          retries = 2;
           for (int i = 0; i < retries; i++) {
             if (isClosed) {
               throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
@@ -1792,8 +1756,7 @@ public final class ZkController {
       String confName = cd.getCollectionName();
       if (StringUtils.isEmpty(confName))
         confName = coreName;
-      String instanceDir = cd.getInstanceDir();
-      Path udir = Paths.get(instanceDir).resolve("conf");
+      Path udir = cd.getInstanceDir().resolve("conf");
       log.info("Uploading directory " + udir + " with name " + confName + " for SolrCore " + coreName);
       configManager.uploadConfigDir(udir, confName);
     }
@@ -1887,7 +1850,7 @@ public final class ZkController {
           //however delete it . This is possible when the last attempt at deleting the election node failed.
           if (electionNode.startsWith(getNodeName())) {
             try {
-              zkClient.delete(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE + "/" + electionNode, -1, true);
+              zkClient.delete(OverseerElectionContext.OVERSEER_ELECT + LeaderElector.ELECTION_NODE + "/" + electionNode, -1, true);
             } catch (NoNodeException e) {
               //no problem
             } catch (InterruptedException e) {
@@ -2359,7 +2322,10 @@ public final class ZkController {
   private void unregisterConfListener(String confDir, Runnable listener) {
     synchronized (confDirectoryListeners) {
       final Set<Runnable> listeners = confDirectoryListeners.get(confDir);
-      assert listeners != null : confDir + " has no more registered listeners, but a live one attempts to unregister!";
+      if (listeners == null) {
+        log.warn(confDir + " has no more registered listeners, but a live one attempted to unregister!");
+        return;
+      }
       if (listeners.remove(listener)) {
         log.info("removed listener for config directory [{}]", confDir);
       }
@@ -2520,5 +2486,23 @@ public final class ZkController {
     public NotLeaderException(ErrorCode code, String msg) {
       super(code, msg);
     }
+  }
+
+  public boolean checkIfCoreNodeNameAlreadyExists(CoreDescriptor dcore) {
+    DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(dcore.getCollectionName());
+    if (collection != null) {
+      Collection<Slice> slices = collection.getSlices();
+
+      for (Slice slice : slices) {
+        Collection<Replica> replicas = slice.getReplicas();
+        for (Replica replica : replicas) {
+          if (replica.getName().equals(
+              dcore.getCloudDescriptor().getCoreNodeName())) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 }

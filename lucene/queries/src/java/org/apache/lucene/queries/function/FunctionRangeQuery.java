@@ -132,7 +132,7 @@ public class FunctionRangeQuery extends Query {
       //  which can be slow since if that doc doesn't match, it has to linearly find the next matching
       ValueSourceScorer scorer = scorer(context);
       if (scorer.matches(doc)) {
-        scorer.advance(doc);
+        scorer.iterator().advance(doc);
         return Explanation.match(scorer.score(), FunctionRangeQuery.this.toString(), functionValues.explain(doc));
       } else {
         return Explanation.noMatch(FunctionRangeQuery.this.toString(), functionValues.explain(doc));

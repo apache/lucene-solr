@@ -32,6 +32,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -96,7 +97,7 @@ import java.util.Map;
  * </p>
  */
 public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
-  public static final Logger log = LoggerFactory.getLogger(ParseDateFieldUpdateProcessorFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String FORMATS_PARAM = "format";
   private static final String DEFAULT_TIME_ZONE_PARAM = "defaultTimeZone";

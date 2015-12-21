@@ -48,5 +48,4 @@
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
   
-  <similarity class="solr.SchemaSimilarityFactory"/>
 </schema>

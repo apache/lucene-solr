@@ -21,10 +21,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
 
@@ -151,8 +147,8 @@ public class StoredDocument implements Iterable<StorableField> {
     * Returns an array of values of the field specified as the method parameter.
     * This method returns an empty array when there are no
     * matching fields.  It never returns null.
-    * For {@link IntField}, {@link LongField}, {@link
-    * FloatField} and {@link DoubleField} it returns the string value of the number. If you want
+    * For {@link org.apache.lucene.document.LegacyIntField}, {@link org.apache.lucene.document.LegacyLongField}, {@link
+    * org.apache.lucene.document.LegacyFloatField} and {@link org.apache.lucene.document.LegacyDoubleField} it returns the string value of the number. If you want
     * the actual numeric field instances back, use {@link #getFields}.
     * @param name the name of the field
     * @return a <code>String[]</code> of field values
@@ -176,8 +172,8 @@ public class StoredDocument implements Iterable<StorableField> {
     * this document, or null.  If multiple fields exist with this name, this
     * method returns the first value added. If only binary fields with this name
     * exist, returns null.
-    * For {@link IntField}, {@link LongField}, {@link
-    * FloatField} and {@link DoubleField} it returns the string value of the number. If you want
+    * For {@link org.apache.lucene.document.LegacyIntField}, {@link org.apache.lucene.document.LegacyLongField}, {@link
+    * org.apache.lucene.document.LegacyFloatField} and {@link org.apache.lucene.document.LegacyDoubleField} it returns the string value of the number. If you want
     * the actual numeric field instance back, use {@link #getField}.
     */
    public final String get(String name) {

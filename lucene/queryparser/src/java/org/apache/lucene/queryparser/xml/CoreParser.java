@@ -37,8 +37,6 @@ public class CoreParser implements QueryBuilder {
   protected Analyzer analyzer;
   protected QueryParser parser;
   protected QueryBuilderFactory queryFactory;
-  //Controls the max size of the LRU cache used for QueryFilter objects parsed.
-  public static int maxNumCachedQueries = 20;
 
 
   /**
@@ -69,7 +67,7 @@ public class CoreParser implements QueryBuilder {
     queryFactory.addBuilder("TermsQuery", new TermsQueryBuilder(analyzer));
     queryFactory.addBuilder("MatchAllDocsQuery", new MatchAllDocsQueryBuilder());
     queryFactory.addBuilder("BooleanQuery", new BooleanQueryBuilder(queryFactory));
-    queryFactory.addBuilder("NumericRangeQuery", new NumericRangeQueryBuilder());
+    queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
     queryFactory.addBuilder("RangeQuery", new RangeQueryBuilder());
     queryFactory.addBuilder("DisjunctionMaxQuery", new DisjunctionMaxQueryBuilder(queryFactory));
     if (parser != null) {
@@ -78,7 +76,6 @@ public class CoreParser implements QueryBuilder {
       queryFactory.addBuilder("UserQuery", new UserInputQueryBuilder(defaultField, analyzer));
     }
     queryFactory.addBuilder("ConstantScoreQuery", new ConstantScoreQueryBuilder(queryFactory));
-    queryFactory.addBuilder("CachedQuery", new CachedQueryBuilder(queryFactory, maxNumCachedQueries));
 
     SpanQueryBuilderFactory sqof = new SpanQueryBuilderFactory();
 

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8135")
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
-  protected static final transient Logger log = LoggerFactory.getLogger(SolrCloudExampleTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public SolrCloudExampleTest() {
     super();

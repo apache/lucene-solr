@@ -17,6 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CloudConfig;
@@ -24,12 +30,13 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String SOLRXML = "<solr></solr>";
   private static final int MAX_NODES = 16;
   private static final int MIN_NODES = 4;
@@ -37,7 +44,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
   @Test
   public void testLeaderElectionWithZkExpiry() throws Exception {
     String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
-    String ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr").toFile().getAbsolutePath();
+    Path ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr");
     CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
     final ZkTestServer server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);

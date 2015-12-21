@@ -23,6 +23,7 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.*;
 
 /**
@@ -49,7 +50,7 @@ class CdcrReplicatorScheduler {
   private static final int DEFAULT_TIME_SCHEDULE = 10;
   private static final int DEFAULT_BATCH_SIZE = 128;
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrReplicatorScheduler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrReplicatorScheduler(final CdcrReplicatorManager replicatorStatesManager, final SolrParams replicatorConfiguration) {
     this.replicatorManager = replicatorStatesManager;
@@ -64,7 +65,6 @@ class CdcrReplicatorScheduler {
   void start() {
     if (!isStarted) {
       scheduler = Executors.newSingleThreadScheduledExecutor(new DefaultSolrThreadFactory("cdcr-scheduler"));
-      //replicatorsPool = Executors.newFixedThreadPool(poolSize, new DefaultSolrThreadFactory("cdcr-replicator"));
       replicatorsPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("cdcr-replicator"));
 
       // the scheduler thread is executed every second and submits one replication task
@@ -75,7 +75,7 @@ class CdcrReplicatorScheduler {
         public void run() {
           int nCandidates = statesQueue.size();
           for (int i = 0; i < nCandidates; i++) {
-            // a thread that pool one state from the queue, execute the replication task, and push back
+            // a thread that poll one state from the queue, execute the replication task, and push back
             // the state in the queue when the task is completed
             replicatorsPool.execute(new Runnable() {
 

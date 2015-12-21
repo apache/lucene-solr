@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -34,9 +34,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDocValuesRangeQuery extends LuceneTestCase {
@@ -53,12 +53,12 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
         for (int j = 0; j < numValues; ++j) {
           final long value = TestUtil.nextLong(random(), -100, 10000);
           doc.add(new SortedNumericDocValuesField("dv", value));
-          doc.add(new LongField("idx", value, Store.NO));
+          doc.add(new DimensionalLongField("idx", value));
         }
         iw.addDocument(doc);
       }
       if (random().nextBoolean()) {
-        iw.deleteDocuments(NumericRangeQuery.newLongRange("idx", 0L, 10L, true, true));
+        iw.deleteDocuments(DimensionalRangeQuery.new1DLongRange("idx", 0L, true, 10L, true));
       }
       iw.commit();
       final IndexReader reader = iw.getReader();
@@ -70,7 +70,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
         final Long max = random().nextBoolean() ? null : TestUtil.nextLong(random(), -100, 1000);
         final boolean minInclusive = random().nextBoolean();
         final boolean maxInclusive = random().nextBoolean();
-        final Query q1 = NumericRangeQuery.newLongRange("idx", min, max, minInclusive, maxInclusive);
+        final Query q1 = DimensionalRangeQuery.new1DLongRange("idx", min, minInclusive, max, maxInclusive);
         final Query q2 = DocValuesRangeQuery.newLongRange("dv", min, max, minInclusive, maxInclusive);
         assertSameMatches(searcher, q1, q2, false);
       }
@@ -84,9 +84,9 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
     if (l == null) {
       return null;
     } else {
-      final BytesRefBuilder bytes = new BytesRefBuilder();
-      NumericUtils.longToPrefixCoded(l, 0, bytes);
-      return bytes.get();
+      byte[] bytes = new byte[RamUsageEstimator.NUM_BYTES_LONG];
+      NumericUtils.longToBytes(l, bytes, 0);
+      return new BytesRef(bytes);
     }
   }
 
@@ -180,13 +180,13 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
         final long value = TestUtil.nextLong(random(), -100, 10000);
         doc.add(new SortedNumericDocValuesField("dv1", value));
         doc.add(new SortedSetDocValuesField("dv2", toSortableBytes(value)));
-        doc.add(new LongField("idx", value, Store.NO));
+        doc.add(new DimensionalLongField("idx", value));
         doc.add(new StringField("f", random().nextBoolean() ? "a" : "b", Store.NO));
       }
       iw.addDocument(doc);
     }
     if (random().nextBoolean()) {
-      iw.deleteDocuments(NumericRangeQuery.newLongRange("idx", 0L, 10L, true, true));
+      iw.deleteDocuments(DimensionalRangeQuery.new1DLongRange("idx", 0L, true, 10L, true));
     }
     iw.commit();
     final IndexReader reader = iw.getReader();
@@ -200,7 +200,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
       final boolean maxInclusive = random().nextBoolean();
 
       BooleanQuery.Builder ref = new BooleanQuery.Builder();
-      ref.add(NumericRangeQuery.newLongRange("idx", min, max, minInclusive, maxInclusive), Occur.FILTER);
+      ref.add(DimensionalRangeQuery.new1DLongRange("idx", min, minInclusive, max, maxInclusive), Occur.FILTER);
       ref.add(new TermQuery(new Term("f", "a")), Occur.MUST);
 
       BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
@@ -265,12 +265,12 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
     Query q1 = DocValuesRangeQuery.newLongRange("dv1", 0L, 100L, random().nextBoolean(), random().nextBoolean());
     Weight w = searcher.createNormalizedWeight(q1, true);
     Scorer s = w.scorer(ctx);
-    assertNotNull(s.asTwoPhaseIterator());
+    assertNotNull(s.twoPhaseIterator());
 
     Query q2 = DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(0L), toSortableBytes(100L), random().nextBoolean(), random().nextBoolean());
     w = searcher.createNormalizedWeight(q2, true);
     s = w.scorer(ctx);
-    assertNotNull(s.asTwoPhaseIterator());
+    assertNotNull(s.twoPhaseIterator());
 
     reader.close();
     dir.close();

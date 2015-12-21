@@ -77,8 +77,6 @@
     </dependency>
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test" />
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test" />
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test" />
-
 
     <!-- FasterXml Jackson Dependencies -->
     <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="${/com.fasterxml.jackson.core/jackson-core}" conf="test" />

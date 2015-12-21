@@ -118,7 +118,7 @@ NOTE: Tests expect every field in this schema to be sortable.
     <!-- ensure function sorts don't mistakenly get interpreted as field sorts
          https://issues.apache.org/jira/browse/SOLR-5354?focusedCommentId=13835891&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-13835891
     -->
-    <dynamicField name="*" type="str" multiValued="true" />
+    <dynamicField name="*" type="str" multiValued="false" />
   </fields>
 
   <copyField source="str" dest="str_last" />

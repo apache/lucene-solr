@@ -29,6 +29,7 @@
        not be changed if replication is in use. -->
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
@@ -185,7 +186,9 @@
     </lst>
   </requestHandler>
 
-  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler"/>
+  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
+    <str name="parseContext.config">parseContext.xml</str>
+  </requestHandler>
 
   <requestHandler name="/update/extract/lit-def" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
     <lst name="defaults">

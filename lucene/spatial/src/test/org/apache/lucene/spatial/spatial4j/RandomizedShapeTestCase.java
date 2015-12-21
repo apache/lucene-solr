@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.spatial4j;
  */
 
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Circle;
@@ -31,11 +30,15 @@ import com.spatial4j.core.shape.impl.Range;
 import static com.spatial4j.core.shape.SpatialRelation.CONTAINS;
 import static com.spatial4j.core.shape.SpatialRelation.WITHIN;
 
+import org.apache.lucene.util.LuceneTestCase;
+
+import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
+
 /**
  * A base test class with utility methods to help test shapes.
  * Extends from RandomizedTest.
  */
-public abstract class RandomizedShapeTestCase extends RandomizedTest {
+public abstract class RandomizedShapeTestCase extends LuceneTestCase {
 
   protected static final double EPS = 10e-9;
 

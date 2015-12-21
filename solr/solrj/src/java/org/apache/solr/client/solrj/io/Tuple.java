@@ -62,8 +62,8 @@ public class Tuple implements Cloneable {
   public void put(Object key, Object value) {
     this.fields.put(key, value);
   }
-
-  public void remove(Object key) {
+  
+  public void remove(Object key){
     this.fields.remove(key);
   }
 
@@ -119,12 +119,12 @@ public class Tuple implements Cloneable {
     return this.fields;
   }
 
-  public List<Map> getMaps() {
-    return (List<Map>)this.fields.get("_MAPS_");
+  public List<Map> getMaps(Object key) {
+    return (List<Map>)this.fields.get(key);
   }
 
-  public void setMaps(List<Map> maps) {
-    this.fields.put("_MAPS_", maps);
+  public void setMaps(Object key, List<Map> maps) {
+    this.fields.put(key, maps);
   }
 
   public Map<String,Map> getMetrics() {
@@ -140,5 +140,9 @@ public class Tuple implements Cloneable {
     m.putAll(fields);
     Tuple clone = new Tuple(m);
     return clone;
+  }
+  
+  public void merge(Tuple other){
+    fields.putAll(other.getMap());
   }
 }

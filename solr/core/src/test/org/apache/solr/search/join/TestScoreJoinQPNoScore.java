@@ -18,6 +18,7 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,8 +44,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeTests() throws Exception {

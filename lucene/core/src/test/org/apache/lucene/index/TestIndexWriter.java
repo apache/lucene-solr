@@ -18,12 +18,14 @@ package org.apache.lucene.index;
  */
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2810,5 +2812,28 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
   */
+
+  public void testLeftoverTempFiles() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.close();
+    
+    IndexOutput out = dir.createTempOutput("_0", "bkd", IOContext.DEFAULT);
+    String tempName = out.getName();
+    out.close();
+    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    w = new IndexWriter(dir, iwc);
+
+    // Make sure IW deleted the unref'd file:
+    try {
+      dir.openInput(tempName, IOContext.DEFAULT);
+      fail("did not hit exception");
+    } catch (FileNotFoundException | NoSuchFileException e) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
 }
 

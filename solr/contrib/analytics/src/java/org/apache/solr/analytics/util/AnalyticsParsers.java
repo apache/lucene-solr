@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieDoubleField;
@@ -80,7 +80,7 @@ public class AnalyticsParsers {
   public static final NumericParser INT_DOC_VALUES_PARSER = new NumericParser() {
     public String parse(BytesRef bytes) throws IOException {
       try {
-        return ""+NumericUtils.prefixCodedToInt(bytes);
+        return ""+ LegacyNumericUtils.prefixCodedToInt(bytes);
       } catch (NumberFormatException e) {
         throw new IOException("The byte array "+Arrays.toString(bytes.bytes)+" cannot be converted to an int.");
       }
@@ -97,7 +97,7 @@ public class AnalyticsParsers {
   public static final NumericParser LONG_DOC_VALUES_PARSER = new NumericParser() {
     public String parse(BytesRef bytes) throws IOException {
       try {
-        return ""+NumericUtils.prefixCodedToLong(bytes);
+        return ""+ LegacyNumericUtils.prefixCodedToLong(bytes);
       } catch (NumberFormatException e) {
         throw new IOException("The byte array "+Arrays.toString(bytes.bytes)+" cannot be converted to a long.");
       }
@@ -114,14 +114,14 @@ public class AnalyticsParsers {
   public static final NumericParser FLOAT_DOC_VALUES_PARSER = new NumericParser() {
     public String parse(BytesRef bytes) throws IOException {
       try {
-        return ""+NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(bytes));
+        return ""+ LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes));
       } catch (NumberFormatException e) {
         throw new IOException("The byte array "+Arrays.toString(bytes.bytes)+" cannot be converted to a float.");
       }
     }
     @Override
     public String parseNum(long l) {
-      return ""+NumericUtils.sortableIntToFloat((int)l);
+      return ""+ LegacyNumericUtils.sortableIntToFloat((int) l);
     }
   };
   
@@ -131,14 +131,14 @@ public class AnalyticsParsers {
   public static final NumericParser DOUBLE_DOC_VALUES_PARSER = new NumericParser() {
     public String parse(BytesRef bytes) throws IOException {
       try {
-        return ""+NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(bytes));
+        return ""+ LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(bytes));
       } catch (NumberFormatException e) {
         throw new IOException("The byte array "+Arrays.toString(bytes.bytes)+" cannot be converted to a double.");
       }
     }
     @Override
     public String parseNum(long l) {
-      return ""+NumericUtils.sortableLongToDouble(l);
+      return ""+ LegacyNumericUtils.sortableLongToDouble(l);
     }
   };
   
@@ -149,7 +149,7 @@ public class AnalyticsParsers {
     @SuppressWarnings("deprecation")
     public String parse(BytesRef bytes) throws IOException {
       try {
-        return DateFormatUtil.formatExternal(new Date(NumericUtils.prefixCodedToLong(bytes)));
+        return DateFormatUtil.formatExternal(new Date(LegacyNumericUtils.prefixCodedToLong(bytes)));
       } catch (NumberFormatException e) {
         throw new IOException("The byte array "+Arrays.toString(bytes.bytes)+" cannot be converted to a date.");
       }

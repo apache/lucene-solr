@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.params.SolrParams;
@@ -28,6 +29,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.carrot2.util.resource.IResource;
 import org.carrot2.util.resource.IResourceLocator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link IResourceLocator} that delegates resource searches to {@link SolrCore}.
@@ -37,6 +40,8 @@ import org.carrot2.util.resource.IResourceLocator;
 class SolrResourceLocator implements IResourceLocator {
   private final SolrResourceLoader resourceLoader;
   private final String carrot2ResourcesDir;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public SolrResourceLocator(SolrCore core, SolrParams initParams) {
     resourceLoader = core.getResourceLoader();
@@ -58,7 +63,7 @@ class SolrResourceLocator implements IResourceLocator {
   @Override
   public IResource[] getAll(final String resource) {
     final String resourceName = carrot2ResourcesDir + "/" + resource;
-    CarrotClusteringEngine.log.debug("Looking for Solr resource: " + resourceName);
+    log.debug("Looking for Solr resource: " + resourceName);
 
     InputStream resourceStream = null;
     final byte [] asBytes;
@@ -66,7 +71,7 @@ class SolrResourceLocator implements IResourceLocator {
       resourceStream = resourceLoader.openResource(resourceName);
       asBytes = IOUtils.toByteArray(resourceStream);
     } catch (IOException e) {
-      CarrotClusteringEngine.log.debug("Resource not found in Solr's config: " + resourceName
+      log.debug("Resource not found in Solr's config: " + resourceName
           + ". Using the default " + resource + " from Carrot JAR.");          
       return new IResource[] {};
     } finally {
@@ -79,7 +84,7 @@ class SolrResourceLocator implements IResourceLocator {
       }
     }
 
-    CarrotClusteringEngine.log.info("Loaded Solr resource: " + resourceName);
+    log.info("Loaded Solr resource: " + resourceName);
 
     final IResource foundResource = new IResource() {
       @Override

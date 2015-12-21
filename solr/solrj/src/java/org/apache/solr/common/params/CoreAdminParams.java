@@ -142,6 +142,8 @@ public abstract class CoreAdminParams
     OVERSEEROP,
     REQUESTSTATUS,
     REJOINLEADERELECTION,
+    //internal API used by force shard leader election
+    FORCEPREPAREFORLEADERSHIP,
     INVOKE;
 
     public static CoreAdminAction get( String p )

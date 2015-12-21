@@ -2,7 +2,7 @@ package org.apache.lucene.queryparser.xml;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.xml.builders.*;
+import org.apache.lucene.queryparser.xml.builders.FuzzyLikeThisQueryBuilder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,7 +26,7 @@ import org.apache.lucene.queryparser.xml.builders.*;
  * Lucene's <code>sandbox</code> and <code>queries</code>
  * modules in addition to core queries.
  */
-public class CorePlusExtensionsParser extends CoreParser {
+public class CorePlusExtensionsParser extends CorePlusQueriesParser {
 
   /**
    * Construct an XML parser that uses a single instance QueryParser for handling
@@ -49,9 +49,6 @@ public class CorePlusExtensionsParser extends CoreParser {
 
   private CorePlusExtensionsParser(String defaultField, Analyzer analyzer, QueryParser parser) {
     super(defaultField, analyzer, parser);
-    String fields[] = {"contents"};
-    queryFactory.addBuilder("LikeThisQuery", new LikeThisQueryBuilder(analyzer, fields));
-    queryFactory.addBuilder("BoostingQuery", new BoostingQueryBuilder(queryFactory));
     queryFactory.addBuilder("FuzzyLikeThisQuery", new FuzzyLikeThisQueryBuilder(analyzer));
 
   }

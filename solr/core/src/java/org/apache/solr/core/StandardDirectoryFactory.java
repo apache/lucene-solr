@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
-  private static final Logger log = LoggerFactory.getLogger(StandardDirectoryFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {

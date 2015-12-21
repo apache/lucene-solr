@@ -17,14 +17,9 @@ package org.apache.lucene.demo.facet;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.text.ParseException;
-
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.DimensionalDoubleField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
@@ -45,15 +40,19 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.SloppyMath;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.text.ParseException;
 
 /** Shows simple usage of dynamic range faceting, using the
  *  expressions module to calculate distance. */
@@ -92,25 +91,25 @@ public class DistanceFacetsExample implements Closeable {
     // TODO: we could index in radians instead ... saves all the conversions in getBoundingBoxFilter
 
     // Add documents with latitude/longitude location:
-    // we index these both as DoubleFields (for bounding box/ranges) and as NumericDocValuesFields (for scoring)
+    // we index these both as DimensionalDoubleFields (for bounding box/ranges) and as NumericDocValuesFields (for scoring)
     Document doc = new Document();
-    doc.add(new DoubleField("latitude", 40.759011, Field.Store.NO));
+    doc.add(new DimensionalDoubleField("latitude", 40.759011));
     doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.759011)));
-    doc.add(new DoubleField("longitude", -73.9844722, Field.Store.NO));
+    doc.add(new DimensionalDoubleField("longitude", -73.9844722));
     doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-73.9844722)));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new DoubleField("latitude", 40.718266, Field.Store.NO));
+    doc.add(new DimensionalDoubleField("latitude", 40.718266));
     doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.718266)));
-    doc.add(new DoubleField("longitude", -74.007819, Field.Store.NO));
+    doc.add(new DimensionalDoubleField("longitude", -74.007819));
     doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.007819)));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new DoubleField("latitude", 40.7051157, Field.Store.NO));
+    doc.add(new DimensionalDoubleField("latitude", 40.7051157));
     doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.7051157)));
-    doc.add(new DoubleField("longitude", -74.0088305, Field.Store.NO));
+    doc.add(new DimensionalDoubleField("longitude", -74.0088305));
     doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.0088305)));
     writer.addDocument(doc);
 
@@ -182,7 +181,7 @@ public class DistanceFacetsExample implements Closeable {
     BooleanQuery.Builder f = new BooleanQuery.Builder();
 
     // Add latitude range filter:
-    f.add(NumericRangeQuery.newDoubleRange("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat), true, true),
+    f.add(DimensionalRangeQuery.new1DDoubleRange("latitude", Math.toDegrees(minLat), true, Math.toDegrees(maxLat), true),
           BooleanClause.Occur.FILTER);
 
     // Add longitude range filter:
@@ -190,13 +189,13 @@ public class DistanceFacetsExample implements Closeable {
       // The bounding box crosses the international date
       // line:
       BooleanQuery.Builder lonF = new BooleanQuery.Builder();
-      lonF.add(NumericRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), null, true, true),
+      lonF.add(DimensionalRangeQuery.new1DDoubleRange("longitude", Math.toDegrees(minLng), true, null,  true),
                BooleanClause.Occur.SHOULD);
-      lonF.add(NumericRangeQuery.newDoubleRange("longitude", null, Math.toDegrees(maxLng), true, true),
+      lonF.add(DimensionalRangeQuery.new1DDoubleRange("longitude", null, true, Math.toDegrees(maxLng), true),
                BooleanClause.Occur.SHOULD);
       f.add(lonF.build(), BooleanClause.Occur.MUST);
     } else {
-      f.add(NumericRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng), true, true),
+      f.add(DimensionalRangeQuery.new1DDoubleRange("longitude", Math.toDegrees(minLng), true, Math.toDegrees(maxLng), true),
             BooleanClause.Occur.FILTER);
     }
 

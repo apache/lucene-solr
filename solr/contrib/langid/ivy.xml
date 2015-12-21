@@ -26,8 +26,6 @@
     <dependency org="com.cybozu.labs" name="langdetect" rev="${/com.cybozu.labs/langdetect}" conf="compile"/>
     <dependency org="net.arnx" name="jsonic" rev="${/net.arnx/jsonic}" conf="compile"/>
 
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test"/>
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

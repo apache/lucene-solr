@@ -1,5 +1,7 @@
 package org.apache.solr.cloud.rule;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,7 +42,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 
 public class RulesTest extends AbstractFullDistribZkTestBase {
-  static final Logger log = LoggerFactory.getLogger(RulesTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   @ShardsFixed(num = 5)

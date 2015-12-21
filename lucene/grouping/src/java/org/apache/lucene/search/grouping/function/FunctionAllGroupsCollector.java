@@ -79,9 +79,5 @@ public class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<Mutab
     filler = values.getValueFiller();
     mval = filler.getValue();
   }
-  
-  @Override
-  public boolean needsScores() {
-    return true; // TODO, maybe we don't?
-  }
+
 }

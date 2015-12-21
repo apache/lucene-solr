@@ -17,10 +17,8 @@
 
 package org.apache.solr.update;
 
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -55,10 +53,13 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 /** @lucene.experimental */
 public class PeerSync  {
-  public static Logger log = LoggerFactory.getLogger(PeerSync.class);
-  public boolean debug = log.isDebugEnabled();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean debug = log.isDebugEnabled();
 
   private List<String> replicas;
   private int nUpdates;
@@ -69,7 +70,6 @@ public class PeerSync  {
   private HttpShardHandlerFactory shardHandlerFactory;
   private ShardHandler shardHandler;
 
-  private UpdateLog.RecentUpdates recentUpdates;
   private List<Long> startingVersions;
 
   private List<Long> ourUpdates;
@@ -182,13 +182,6 @@ public class PeerSync  {
     try {
       log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
       
-      // TODO: does it ever make sense to allow sync when buffering or applying buffered? Someone might request that we
-      // do it...
-      if (!(ulog.getState() == UpdateLog.State.ACTIVE || ulog.getState() == UpdateLog.State.REPLAYING)) {
-        log.error(msg() + "ERROR, update log not in ACTIVE or REPLAY state. " + ulog);
-        // return false;
-      }
-      
       if (debug) {
         if (startingVersions != null) {
           log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
@@ -202,12 +195,9 @@ public class PeerSync  {
       for (String replica : replicas) {
         requestVersions(replica);
       }
-      
-      recentUpdates = ulog.getRecentUpdates();
-      try {
+
+      try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
         ourUpdates = recentUpdates.getVersions(nUpdates);
-      } finally {
-        recentUpdates.close();
       }
       
       Collections.sort(ourUpdates, absComparator);

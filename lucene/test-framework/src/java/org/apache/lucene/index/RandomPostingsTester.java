@@ -48,8 +48,8 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStrings;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
+import org.apache.lucene.util.automaton.AutomatonTestUtil.RandomAcceptedStrings;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 import static org.junit.Assert.assertEquals;
@@ -57,7 +57,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
 
 /** Helper class extracted from BasePostingsFormatTestCase to exercise a postings format. */
 public class RandomPostingsTester {
@@ -123,7 +122,8 @@ public class RandomPostingsTester {
 
       fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                DocValuesType.NONE, -1, new HashMap<>());
+                                                DocValuesType.NONE, -1, new HashMap<>(),
+                                                0, 0);
       fieldUpto++;
 
       SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
@@ -638,7 +638,8 @@ public class RandomPostingsTester {
                                                    indexOptions,
                                                    DocValuesType.NONE,
                                                    -1,
-                                                   new HashMap<>());
+                                                   new HashMap<>(),
+                                                   0, 0);
     }
 
     FieldInfos newFieldInfos = new FieldInfos(newFieldInfoArray);

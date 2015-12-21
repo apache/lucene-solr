@@ -17,6 +17,18 @@
 
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.DirectoryReader;
@@ -42,7 +54,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
@@ -51,17 +62,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.RefCounted;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.util.TestInjection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
@@ -95,6 +98,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   protected boolean commitWithinSoftCommit;
 
   protected boolean indexWriterCloseWaitsForMerges;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public DirectUpdateHandler2(SolrCore core) {
     super(core);
@@ -143,7 +148,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void deleteAll() throws IOException {
-    SolrCore.log.info(core.getLogId() + "REMOVING ALL DOCUMENTS FROM INDEX");
+    log.info(core.getLogId() + "REMOVING ALL DOCUMENTS FROM INDEX");
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       iw.get().deleteAll();
@@ -735,11 +740,14 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
 
-  public static boolean commitOnClose = true;  // TODO: make this a real config option?
+  public static boolean commitOnClose = true;  // TODO: make this a real config option or move it to TestInjection
 
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)
   @Override
   public void closeWriter(IndexWriter writer) throws IOException {
+
+    assert TestInjection.injectNonGracefullClose(core.getCoreDescriptor().getCoreContainer());
+    
     boolean clearRequestInfo = false;
     solrCoreState.getCommitLock().lock();
     try {

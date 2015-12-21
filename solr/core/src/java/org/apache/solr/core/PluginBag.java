@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,7 +52,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * This manages the lifecycle of a set of plugin of the same type .
  */
 public class PluginBag<T> implements AutoCloseable {
-  public static Logger log = LoggerFactory.getLogger(PluginBag.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, PluginHolder<T>> registry;
   private final Map<String, PluginHolder<T>> immutableRegistry;
@@ -125,6 +126,11 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
+  /** make a plugin available in an alternate name. This is an internal API and not for public use
+   * @param src key in which the plugin is already registered
+   * @param target the new key in which the plugin should be aliased to. If target exists already, the alias fails
+   * @return flag if the operation is successful or not
+   */
   boolean alias(String src, String target) {
     if (src == null) return false;
     PluginHolder<T> a = registry.get(src);

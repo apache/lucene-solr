@@ -46,16 +46,6 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
     return eqs;
   }
 
-  public boolean test(Tuple t1, Tuple t2) {
-    for(Equalitor<Tuple> eq : eqs) {
-      if(!eq.test(t1, t2)){
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StringBuilder sb = new StringBuilder();
@@ -108,5 +98,16 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
     }
     
     return false;
+
+  }
+  
+  public boolean test(Tuple t1, Tuple t2) {
+    for(Equalitor<Tuple> eq : eqs) {
+      if(!eq.test(t1, t2)){
+        return false;
+      }
+    }
+
+    return true;
   }
 }

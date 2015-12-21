@@ -17,11 +17,8 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -34,7 +31,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.xml.sax.SAXException;
 
 /**
  * Testcase for {@link SolrIndexConfig}
@@ -48,7 +44,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema.xml");
   }
   
-  private final String instanceDir = new File("solr", "collection1").getPath();
+  private final Path instanceDir = TEST_PATH().resolve("collection1");
   private final String solrConfigFileNameWarmer = "solrconfig-warmer.xml";
   private final String solrConfigFileNameTieredMergePolicy = "solrconfig-tieredmergepolicy.xml";
 

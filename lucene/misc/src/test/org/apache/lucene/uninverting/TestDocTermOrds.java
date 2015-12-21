@@ -29,8 +29,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -51,7 +51,7 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
@@ -171,7 +171,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new IntField("id", id, Field.Store.YES));
+      doc.add(new LegacyIntField("id", id, Field.Store.YES));
       
       final int termCount = TestUtil.nextInt(random(), 0, 20 * RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -269,7 +269,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new IntField("id", id, Field.Store.YES));
+      doc.add(new LegacyIntField("id", id, Field.Store.YES));
       
       final int termCount = TestUtil.nextInt(random(), 0, 20 * RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -462,12 +462,12 @@ public class TestDocTermOrds extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
-    doc.add(new IntField("foo", -3, Field.Store.NO));
+    doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyIntField("foo", -3, Field.Store.NO));
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -489,10 +489,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToInt(value));
+    assertEquals(-3, LegacyNumericUtils.prefixCodedToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToInt(value));
+    assertEquals(5, LegacyNumericUtils.prefixCodedToInt(value));
     
     ir.close();
     dir.close();
@@ -503,12 +503,12 @@ public class TestDocTermOrds extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
-    doc.add(new LongField("foo", -3, Field.Store.NO));
+    doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyLongField("foo", -3, Field.Store.NO));
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -530,10 +530,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToLong(value));
+    assertEquals(-3, LegacyNumericUtils.prefixCodedToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToLong(value));
+    assertEquals(5, LegacyNumericUtils.prefixCodedToLong(value));
     
     ir.close();
     dir.close();

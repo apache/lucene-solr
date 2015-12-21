@@ -32,13 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -681,7 +681,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           Document newDoc = new Document();
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
           newDoc.add(new NumericDocValuesField("number", value));
-          newDoc.add(new LongField("number", value, Field.Store.NO));
+          newDoc.add(new DimensionalLongField("number", value));
           w.addDocument(newDoc);
         }
 
@@ -737,7 +737,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             Document newDoc = new Document();
             long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
             newDoc.add(new NumericDocValuesField("number_" + newSchemaGen, value));
-            newDoc.add(new LongField("number", value, Field.Store.NO));
+            newDoc.add(new DimensionalLongField("number", value));
             w.addDocument(newDoc);
           }
         } else {
@@ -832,7 +832,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             Document newDoc = new Document();
             long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
             newDoc.add(new NumericDocValuesField("number", newSchemaGen*value));
-            newDoc.add(new LongField("number", value, Field.Store.NO));
+            newDoc.add(new DimensionalLongField("number", value));
             w.addDocument(newDoc);
           }
         } else {
@@ -1168,7 +1168,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       checkAllNumberDVs(r);
       IndexSearcher s = newSearcher(r);
       testNumericDVSort(s);
-      testNumericRangeQuery(s);
+      testDimensionalRangeQuery(s);
     } finally {
       reindexer.mgr.release(r);
     }
@@ -1190,7 +1190,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       checkAllNumberDVs(r);
       IndexSearcher s = newSearcher(r);
       testNumericDVSort(s);
-      testNumericRangeQuery(s);
+      testDimensionalRangeQuery(s);
     } finally {
       reindexer.mgr.release(r);
     }
@@ -1209,7 +1209,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       checkAllNumberDVs(r);
       IndexSearcher s = newSearcher(r);
       testNumericDVSort(s);
-      testNumericRangeQuery(s);
+      testDimensionalRangeQuery(s);
     } finally {
       reindexer.mgr.release(r);
     }
@@ -1261,7 +1261,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           checkAllNumberDVs(r);
           IndexSearcher s = newSearcher(r);
           testNumericDVSort(s);
-          testNumericRangeQuery(s);
+          testDimensionalRangeQuery(s);
         } finally {
           reindexer.mgr.release(r);
         }
@@ -1340,7 +1340,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
   }
 
-  private static void testNumericRangeQuery(IndexSearcher s) throws IOException {
+  private static void testDimensionalRangeQuery(IndexSearcher s) throws IOException {
     NumericDocValues numbers = MultiDocValues.getNumericValues(s.getIndexReader(), "number");
     for(int i=0;i<100;i++) {
       // Confirm we can range search by the new indexed (numeric) field:
@@ -1352,7 +1352,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         max = x;
       }
 
-      TopDocs hits = s.search(NumericRangeQuery.newLongRange("number", min, max, true, true), 100);
+      TopDocs hits = s.search(DimensionalRangeQuery.new1DLongRange("number", min, true, max, true), 100);
       for(ScoreDoc scoreDoc : hits.scoreDocs) {
         long value = Long.parseLong(s.doc(scoreDoc.doc).get("text").split(" ")[1]);
         assertTrue(value >= min);

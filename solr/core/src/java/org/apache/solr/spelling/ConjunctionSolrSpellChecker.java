@@ -57,7 +57,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
     try {
       if (stringDistance == null) {
         stringDistance = checker.getStringDistance();
-      } else if (stringDistance != checker.getStringDistance()) {
+      } else if (!stringDistance.equals(checker.getStringDistance())) {
         throw new IllegalArgumentException(
             "All checkers need to use the same StringDistance.");
       }

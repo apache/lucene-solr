@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
+import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -117,9 +118,10 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
                     .withFunctionName("merge", MergeStream.class)
                     .withFunctionName("unique", UniqueStream.class)
                     .withFunctionName("top", RankStream.class)
-                    .withFunctionName("group", ReducerStream.class)
-                    .withFunctionName("count", RecordCountStream.class)
-                    ;
+                    .withFunctionName("reduce", ReducerStream.class)
+                    .withFunctionName("group", GroupOperation.class)
+                    .withFunctionName("rollup", RollupStream.class)
+                    .withFunctionName("parallel", ParallelStream.class);
   }
 
   private void testUniqueStream() throws Exception {
@@ -191,6 +193,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", stream, 2, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
 
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 20); // Each tuple will be double counted.
@@ -199,9 +202,6 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     commit();
 
   }
-
-
-
 
   private void testParallelUniqueStream() throws Exception {
 
@@ -224,6 +224,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", params);
     UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", ustream, 2, new FieldComparator("a_f",ComparatorOrder.ASCENDING));
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,1,3,4,6);
@@ -290,6 +291,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", params);
     RankStream rstream = new RankStream(stream, 11, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 10);
@@ -355,26 +357,48 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     //Test with spaces in the parameter lists.
     Map paramsA = mapParams("q","*:*","fl","id,a_s, a_i,  a_f","sort", "a_s asc  ,  a_f   asc");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
-    ReducerStream rstream = new ReducerStream(stream, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
+    ReducerStream rstream  = new ReducerStream(stream,
+                                               new FieldEqualitor("a_s"),
+                                               new GroupOperation(new FieldComparator("a_f", ComparatorOrder.ASCENDING), 5));
 
     List<Tuple> tuples = getTuples(rstream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     Tuple t0 = tuples.get(0);
-    List<Map> maps0 = t0.getMaps();
+    List<Map> maps0 = t0.getMaps("group");
     assertMaps(maps0, 0, 2, 1, 9);
 
     Tuple t1 = tuples.get(1);
-    List<Map> maps1 = t1.getMaps();
+    List<Map> maps1 = t1.getMaps("group");
     assertMaps(maps1, 3, 5, 7, 8);
 
     Tuple t2 = tuples.get(2);
-    List<Map> maps2 = t2.getMaps();
+    List<Map> maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
 
+    //Test with spaces in the parameter lists using a comparator
+    paramsA = mapParams("q","*:*","fl","id,a_s, a_i,  a_f","sort", "a_s asc  ,  a_f   asc");
+    stream  = new CloudSolrStream(zkHost, "collection1", paramsA);
+    rstream = new ReducerStream(stream,
+                                new FieldComparator("a_s", ComparatorOrder.ASCENDING),
+                                new GroupOperation(new FieldComparator("a_f", ComparatorOrder.DESCENDING), 5));
 
+    tuples = getTuples(rstream);
+
+    assert(tuples.size() == 3);
+
+    t0 = tuples.get(0);
+    maps0 = t0.getMaps("group");
+    assertMaps(maps0, 9, 1, 2, 0);
+
+    t1 = tuples.get(1);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
+
+    t2 = tuples.get(2);
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 6, 4);
 
     del("*:*");
     commit();
@@ -402,7 +426,9 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     //Test with spaces in the parameter lists.
     Map paramsA = mapParams("q", "blah", "fl", "id,a_s, a_i,  a_f", "sort", "a_s asc  ,  a_f   asc");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
-    ReducerStream rstream = new ReducerStream(stream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+    ReducerStream rstream = new ReducerStream(stream,
+                                              new FieldEqualitor("a_s"),
+                                              new GroupOperation(new FieldComparator("a_f", ComparatorOrder.ASCENDING), 5));
 
     List<Tuple> tuples = getTuples(rstream);
 
@@ -433,51 +459,57 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     Map paramsA = mapParams("q","*:*","fl","id,a_s,a_i,a_f","sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
-    ReducerStream rstream = new ReducerStream(stream, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
+
+    ReducerStream rstream = new ReducerStream(stream,
+                                              new FieldEqualitor("a_s"),
+                                              new GroupOperation(new FieldComparator("a_f", ComparatorOrder.DESCENDING), 5));
+
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
 
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
 
     Tuple t0 = tuples.get(0);
-    List<Map> maps0 = t0.getMaps();
-    assertMaps(maps0, 0, 2, 1, 9);
+    List<Map> maps0 = t0.getMaps("group");
+    assertMaps(maps0, 9, 1, 2, 0);
 
     Tuple t1 = tuples.get(1);
-    List<Map> maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
+    List<Map> maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
 
     Tuple t2 = tuples.get(2);
-    List<Map> maps2 = t2.getMaps();
-    assertMaps(maps2, 4, 6);
+    List<Map> maps2 = t2.getMaps("group");
+    assertMaps(maps2, 6, 4);
 
     //Test Descending with Ascending subsort
 
     paramsA = mapParams("q","*:*","fl","id,a_s,a_i,a_f","sort", "a_s desc,a_f asc", "partitionKeys", "a_s");
     stream = new CloudSolrStream(zkHost, "collection1", paramsA);
-    rstream = new ReducerStream(stream, new FieldComparator("a_s",ComparatorOrder.DESCENDING));
+
+    rstream = new ReducerStream(stream,
+                                new FieldEqualitor("a_s"),
+                                new GroupOperation(new FieldComparator("a_f", ComparatorOrder.ASCENDING), 3));
+
     pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_s",ComparatorOrder.DESCENDING));
 
+    attachStreamFactory(pstream);
     tuples = getTuples(pstream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 4,3,0);
 
     t0 = tuples.get(0);
-    maps0 = t0.getMaps();
+    maps0 = t0.getMaps("group");
     assertMaps(maps0, 4, 6);
 
-
     t1 = tuples.get(1);
-    maps1 = t1.getMaps();
-    assertMaps(maps1, 3, 5, 7, 8);
-
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 3, 5, 7);
 
     t2 = tuples.get(2);
-    maps2 = t2.getMaps();
-    assertMaps(maps2, 0, 2, 1, 9);
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 0, 2, 1);
 
 
 
@@ -1375,6 +1407,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     RollupStream rollupStream = new RollupStream(stream, buckets, metrics);
     ParallelStream parallelStream = new ParallelStream(zkHost, "collection1", rollupStream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+    attachStreamFactory(parallelStream);
     List<Tuple> tuples = getTuples(parallelStream);
 
     assert(tuples.size() == 3);
@@ -1474,9 +1507,13 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     Map paramsA = mapParams("q","blah","fl","id,a_s,a_i,a_f","sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
-    ReducerStream rstream = new ReducerStream(stream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+    ReducerStream rstream = new ReducerStream(stream,
+                                              new FieldEqualitor("a_s"),
+                                              new GroupOperation(new FieldComparator("a_s", ComparatorOrder.ASCENDING), 2));
+
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", rstream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
 
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 0);
     del("*:*");
@@ -1621,13 +1658,14 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
     ParallelStream pstream = new ParallelStream(zkHost, "collection1", mstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 9);
     assertOrder(tuples, 0,1,2,3,4,7,6,8,9);
 
     //Test descending
-    paramsA = mapParams("q","id:(4 1 8 9)","fl","id,a_s,a_i","sort", "a_i desc", "partitionKeys", "a_i");
+    paramsA = mapParams("q", "id:(4 1 8 9)", "fl", "id,a_s,a_i", "sort", "a_i desc", "partitionKeys", "a_i");
     streamA = new CloudSolrStream(zkHost, "collection1", paramsA);
 
     paramsB = mapParams("q","id:(0 2 3 6)","fl","id,a_s,a_i","sort", "a_i desc", "partitionKeys", "a_i");
@@ -1635,6 +1673,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
     pstream = new ParallelStream(zkHost, "collection1", mstream, 2, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+    attachStreamFactory(pstream);
     tuples = getTuples(pstream);
 
     assert(tuples.size() == 8);
@@ -1670,23 +1709,14 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     CloudSolrStream streamB = new CloudSolrStream(zkHost, "collection1", paramsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
-    RecordCountStream cstream = new RecordCountStream(mstream);
-    ParallelStream pstream = new ParallelStream(zkHost, "collection1", cstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
+    ParallelStream pstream = new ParallelStream(zkHost, "collection1", mstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
+    
+    attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 9);
     Map<String, Tuple> eofTuples = pstream.getEofTuples();
     assert(eofTuples.size() == 2); // There should be an EOF Tuple for each worker.
-
-    long totalCount = 0;
-
-    Iterator<Tuple> it = eofTuples.values().iterator();
-    while(it.hasNext()) {
-      Tuple t = it.next();
-      totalCount += t.getLong("count");
-    }
-
-    assert(tuples.size() == totalCount);
 
     del("*:*");
     commit();
@@ -1875,5 +1905,11 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);
+  }
+  
+  private void attachStreamFactory(TupleStream tupleStream) {
+    StreamContext streamContext = new StreamContext();
+    streamContext.setStreamFactory(streamFactory);
+    tupleStream.setStreamContext(streamContext);
   }
 }

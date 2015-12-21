@@ -106,7 +106,7 @@ public abstract class Filter extends Query {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         final Scorer scorer = scorer(context);
-        final boolean match = (scorer != null && scorer.advance(doc) == doc);
+        final boolean match = (scorer != null && scorer.iterator().advance(doc) == doc);
         if (match) {
           assert scorer.score() == 0f;
           return Explanation.match(0f, "Match on id " + doc);
@@ -128,6 +128,11 @@ public abstract class Filter extends Query {
             @Override
             public boolean matches() throws IOException {
               return bits.get(approximation.docID());
+            }
+
+            @Override
+            public float matchCost() {
+              return 10; // TODO use cost of bits.get()
             }
           };
           return new ConstantScoreScorer(this, 0f, twoPhase);

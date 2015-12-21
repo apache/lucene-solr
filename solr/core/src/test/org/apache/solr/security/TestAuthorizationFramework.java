@@ -1,5 +1,7 @@
 package org.apache.solr.security;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -39,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
-  final private Logger log = LoggerFactory.getLogger(TestAuthorizationFramework.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int TIMEOUT = 10000;
   public void distribSetUp() throws Exception {

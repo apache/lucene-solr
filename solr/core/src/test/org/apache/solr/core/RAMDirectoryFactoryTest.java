@@ -51,6 +51,7 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
 
     factory.release(dir1);
     factory.release(dir2);
+    factory.close();
   }
 
   private void dotestOpenSucceedForEmptyDir() throws IOException {
@@ -59,5 +60,6 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
     assertNotNull("RAMDirectoryFactory should create RefCntRamDirectory even if the path doen't lead " +
         "to index directory on the file system", dir);
     factory.release(dir);
+    factory.close();
   }
 }

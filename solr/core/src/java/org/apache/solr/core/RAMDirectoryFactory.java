@@ -25,16 +25,12 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory to instantiate {@link org.apache.lucene.store.RAMDirectory}
  */
 public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
 
-  public static Logger LOG = LoggerFactory.getLogger(RAMDirectoryFactory.class);
-  
   @Override
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (!(rawLockType == null || "single".equalsIgnoreCase(rawLockType.trim()))) {

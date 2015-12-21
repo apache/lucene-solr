@@ -42,15 +42,18 @@ import java.util.List;
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
-public class NearSpansOrdered extends NearSpans {
+public class NearSpansOrdered extends ConjunctionSpans {
 
   protected int matchStart = -1;
   protected int matchEnd = -1;
   protected int matchWidth = -1;
 
-  public NearSpansOrdered(SpanNearQuery query, List<Spans> subSpans) throws IOException {
-    super(query, subSpans);
+  private final int allowedSlop;
+
+  public NearSpansOrdered(int allowedSlop, List<Spans> subSpans) throws IOException {
+    super(subSpans);
     this.atFirstInCurrentDoc = true; // -1 startPosition/endPosition also at doc -1
+    this.allowedSlop = allowedSlop;
   }
 
   @Override
@@ -145,11 +148,6 @@ public class NearSpansOrdered extends NearSpans {
     for (Spans span : subSpans) {
       span.collect(collector);
     }
-  }
-
-  @Override
-  public String toString() {
-    return "NearSpansOrdered("+query.toString()+")@"+docID()+": "+startPosition()+" - "+endPosition();
   }
 
 }

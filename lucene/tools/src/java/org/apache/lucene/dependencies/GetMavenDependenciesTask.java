@@ -104,7 +104,7 @@ public class GetMavenDependenciesTask extends Task {
     // (i.e., not invoke Maven's transitive dependency mechanism).
     // Format is "groupId:artifactId"
     globalOptionalExternalDependencies.addAll(Arrays.asList
-        ("org.slf4j:jcl-over-slf4j", "org.slf4j:jul-to-slf4j", "org.slf4j:slf4j-log4j12"));
+        ("org.slf4j:jul-to-slf4j", "org.slf4j:slf4j-log4j12"));
   }
 
   private final XPath xpath = XPathFactory.newInstance().newXPath();

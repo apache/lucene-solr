@@ -30,7 +30,7 @@ import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
@@ -82,7 +82,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
               assert !exists(doc) : "zero bytes for doc, but exists is true";
               return 0;
             }
-            return NumericUtils.prefixCodedToInt(bytes);
+            return LegacyNumericUtils.prefixCodedToInt(bytes);
           }
 
           @Override
@@ -108,7 +108,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
                 //
                 BytesRef bytes = view.get(doc);
                 mval.exists = (0 == bytes.length);
-                mval.value = mval.exists ? NumericUtils.prefixCodedToInt(bytes) : 0;
+                mval.value = mval.exists ? LegacyNumericUtils.prefixCodedToInt(bytes) : 0;
               }
             };
           }

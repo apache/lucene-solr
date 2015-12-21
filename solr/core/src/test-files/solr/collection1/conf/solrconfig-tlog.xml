@@ -30,6 +30,7 @@
     <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
     <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</str>
   </directoryFactory>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   
   <dataDir>${solr.data.dir:}</dataDir>
 
@@ -53,6 +54,16 @@
       <str name="numRecordsToKeep">${solr.ulog.numRecordsToKeep:100}</str>
       <int name="tlogDfsReplication">${solr.ulog.tlogDfsReplication:2}</int>
     </updateLog>
+    
+      
+    <autoCommit> 
+      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime> 
+      <openSearcher>false</openSearcher> 
+    </autoCommit>
+
+    <autoSoftCommit> 
+      <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime> 
+    </autoSoftCommit>
   </updateHandler>
 
   <updateRequestProcessorChain name="dedupe">
@@ -108,6 +119,13 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
+
+  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a">
+    <lst name="defaults">
+      <str name="a">A</str>
+      <str name="b">B</str>
+    </lst>
+  </requestHandler>
 
 </config>

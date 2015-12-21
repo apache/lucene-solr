@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,7 +73,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   
   private static final String REPLICATION_HANDLER = "/replication";
 
-  private static Logger log = LoggerFactory.getLogger(RecoveryStrategy.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static interface RecoveryListener {
     public void recovered();
@@ -253,17 +254,11 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     boolean firstTime = true;
 
     List<Long> recentVersions;
-    UpdateLog.RecentUpdates recentUpdates = null;
-    try {
-      recentUpdates = ulog.getRecentUpdates();
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     } catch (Exception e) {
       SolrException.log(log, "Corrupt tlog - ignoring.", e);
       recentVersions = new ArrayList<>(0);
-    } finally {
-      if (recentUpdates != null) {
-        recentUpdates.close();
-      }
     }
 
     List<Long> startingVersions = ulog.getStartingVersions();
@@ -356,14 +351,14 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
         
         if (isClosed()) {
-          log.info("Recovery was cancelled");
+          log.info("RecoveryStrategy has been closed");
           break;
         }
 
         sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName, slice);
         
         if (isClosed()) {
-          log.info("Recovery was cancelled");
+          log.info("RecoveryStrategy has been closed");
           break;
         }
         
@@ -425,7 +420,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
 
         if (isClosed()) {
-          log.info("Recovery was cancelled");
+          log.info("RecoveryStrategy has been closed");
           break;
         }
         
@@ -436,7 +431,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           replicate(zkController.getNodeName(), core, leaderprops);
 
           if (isClosed()) {
-            log.info("Recovery was cancelled");
+            log.info("RecoveryStrategy has been closed");
             break;
           }
 
@@ -444,7 +439,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           replayed = true;
           
           if (isClosed()) {
-            log.info("Recovery was cancelled");
+            log.info("RecoveryStrategy has been closed");
             break;
           }
 
@@ -462,11 +457,19 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       } finally {
         if (!replayed) {
+          // dropBufferedUpdate()s currently only supports returning to ACTIVE state, which risks additional updates
+          // being added w/o UpdateLog.FLAG_GAP, hence losing the info on restart that we are not up-to-date.
+          // For now, ulog will simply remain in BUFFERING state, and an additional call to bufferUpdates() will
+          // reset our starting point for playback.
+          log.info("Replay not started, or was not successful... still buffering updates.");
+
+          /** this prev code is retained in case we want to switch strategies.
           try {
             ulog.dropBufferedUpdates();
           } catch (Exception e) {
             SolrException.log(log, "", e);
           }
+          **/
         }
         if (successfulRecovery) {
           log.info("Registering as Active after recovery.");
@@ -491,6 +494,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         try {
 
           if (isClosed()) {
+            log.info("RecoveryStrategy has been closed");
             break;
           }
           
@@ -515,7 +519,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           double loopCount = Math.min(Math.pow(2, retries), 60);
           log.info("Wait {} seconds before trying to recover again ({})", loopCount, retries);
           for (int i = 0; i < loopCount; i++) {
-            if (isClosed()) break; // check if someone closed us
+            if (isClosed()) {
+              log.info("RecoveryStrategy has been closed");
+              break; // check if someone closed us
+            }
             Thread.sleep(STARTING_RECOVERY_DELAY);
           }
         } catch (InterruptedException e) {
@@ -534,7 +541,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       core.seedVersionBuckets();
     }
 
-    log.info("Finished recovery process.");
+    log.info("Finished recovery process, successful=", Boolean.toString(successfulRecovery));
 
     
   }

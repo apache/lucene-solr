@@ -1,5 +1,7 @@
 package org.apache.solr.handler.dataimport;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -38,8 +40,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static ZkTestServer zkServer;
 
   protected static String zkDir;
@@ -62,7 +67,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
         "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
     //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
-    cc = createDefaultCoreContainer(getFile("dih/solr").getAbsolutePath());
+    cc = createDefaultCoreContainer(getFile("dih/solr").toPath());
   }
 
   @Before

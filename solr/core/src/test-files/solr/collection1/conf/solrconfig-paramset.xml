@@ -24,6 +24,7 @@
   <dataDir>${solr.data.dir:}</dataDir>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
   <initParams name="a" path="/dump3,/dump6,/root/*,/root1/**">
     <lst name="defaults">

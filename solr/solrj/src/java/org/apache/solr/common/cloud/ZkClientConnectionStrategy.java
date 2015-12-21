@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public abstract class ZkClientConnectionStrategy {
-  private static Logger log = LoggerFactory.getLogger(ZkClientConnectionStrategy.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private volatile ZkCredentialsProvider zkCredentialsToAddAutomatically;
   private volatile boolean zkCredentialsToAddAutomaticallyUsed;

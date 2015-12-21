@@ -17,6 +17,7 @@ package org.apache.lucene.queries.payloads;
  */
 
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.spans.Spans;
 
 /**
  * An abstract class that defines a way for PayloadScoreQuery instances to transform
@@ -41,7 +42,7 @@ public abstract class PayloadFunction {
    * @param currentPayloadScore The score for the current payload
    * @return The new current Score
    *
-   * @see org.apache.lucene.search.spans.Spans
+   * @see Spans
    */
   public abstract float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore);
 

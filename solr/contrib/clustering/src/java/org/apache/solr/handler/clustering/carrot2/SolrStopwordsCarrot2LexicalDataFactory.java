@@ -37,7 +37,6 @@ import org.carrot2.text.util.MutableCharArray;
 import org.carrot2.util.attribute.Attribute;
 import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
-import org.slf4j.Logger;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -55,8 +54,6 @@ import com.google.common.collect.Multimap;
  */
 @Bindable
 public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFactory {
-  final static Logger logger = org.slf4j.LoggerFactory
-      .getLogger(SolrStopwordsCarrot2LexicalDataFactory.class);
 
   @Init
   @Input

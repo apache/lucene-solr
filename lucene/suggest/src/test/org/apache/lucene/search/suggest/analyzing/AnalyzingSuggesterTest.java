@@ -329,7 +329,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
           }
         };
       }
@@ -397,7 +397,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
           }
         };
       }
@@ -472,7 +472,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader)  {
           }
         };
       }
@@ -998,7 +998,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
           }
         };
       }
@@ -1068,7 +1068,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           }
          
           @Override
-          protected void setReader(final Reader reader) throws IOException {
+          protected void setReader(final Reader reader) {
           }
         };
       }
@@ -1142,7 +1142,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
             }
          
             @Override
-            protected void setReader(final Reader reader) throws IOException {
+            protected void setReader(final Reader reader) {
             }
           };
         }
@@ -1205,7 +1205,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
             }
          
             @Override
-            protected void setReader(final Reader reader) throws IOException {
+            protected void setReader(final Reader reader) {
             }
           };
         }

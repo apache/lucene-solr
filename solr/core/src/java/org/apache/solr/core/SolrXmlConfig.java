@@ -21,10 +21,10 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
@@ -55,7 +55,7 @@ public class SolrXmlConfig {
 
   public final static String SOLR_XML_FILE = "solr.xml";
 
-  private static final Logger log = LoggerFactory.getLogger(SolrXmlConfig.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static NodeConfig fromConfig(Config config) {
 
@@ -99,16 +99,16 @@ public class SolrXmlConfig {
     return fillSolrSection(configBuilder, entries);
   }
 
-  public static NodeConfig fromFile(SolrResourceLoader loader, File configFile) {
+  public static NodeConfig fromFile(SolrResourceLoader loader, Path configFile) {
 
-    log.info("Loading container configuration from {}", configFile.getAbsolutePath());
+    log.info("Loading container configuration from {}", configFile);
 
-    if (!configFile.exists()) {
+    if (!Files.exists(configFile)) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "solr.xml does not exist in " + configFile.getAbsolutePath() + " cannot start Solr");
+          "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
     }
 
-    try (InputStream inputStream = new FileInputStream(configFile)) {
+    try (InputStream inputStream = Files.newInputStream(configFile)) {
       return fromInputStream(loader, inputStream);
     } catch (SolrException exc) {
       throw exc;
@@ -136,13 +136,13 @@ public class SolrXmlConfig {
     }
   }
 
-  public static NodeConfig fromSolrHome(SolrResourceLoader loader, String solrHome) {
-    return fromFile(loader, new File(solrHome, SOLR_XML_FILE));
+  public static NodeConfig fromSolrHome(SolrResourceLoader loader, Path solrHome) {
+    return fromFile(loader, solrHome.resolve(SOLR_XML_FILE));
   }
 
   public static NodeConfig fromSolrHome(Path solrHome) {
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome.toString());
-    return fromSolrHome(loader, solrHome.toString());
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
+    return fromSolrHome(loader, solrHome);
   }
 
   private static void checkForIllegalConfig(Config config) {

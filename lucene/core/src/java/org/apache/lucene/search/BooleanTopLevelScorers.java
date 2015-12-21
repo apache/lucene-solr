@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.util.Bits;
+
 /** Internal document-at-a-time scorers used to deal with stupid coord() computation */
 class BooleanTopLevelScorers {
   
@@ -48,7 +50,39 @@ class BooleanTopLevelScorers {
       return Collections.singleton(new ChildScorer(in, "BOOSTED"));
     }
   }
-  
+
+  /**
+   * Used when there is more than one scorer in a query, but a segment
+   * only had one non-null scorer.
+   */
+  static class BoostedBulkScorer extends BulkScorer {
+
+    final BulkScorer in;
+    final float boost;
+
+    BoostedBulkScorer(BulkScorer scorer, float boost) {
+      this.in = scorer;
+      this.boost = boost;
+    }
+
+    @Override
+    public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+      final LeafCollector wrapped = new FilterLeafCollector(collector) {
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(new BoostedScorer(scorer, boost));
+        }
+      };
+      return in.score(wrapped, acceptDocs, min, max);
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
+  }
+
   /** 
    * Used when there are both mandatory and optional clauses, but minShouldMatch
    * dictates that some of the optional clauses must match. The query is a conjunction,
@@ -89,22 +123,25 @@ class BooleanTopLevelScorers {
       this.coordReq = coordReq;
       this.coordBoth = coordBoth;
     }
-    
+
     @Override
     public float score() throws IOException {
+      // TODO: sum into a double and cast to float if we ever send required clauses to BS1
       int curDoc = reqScorer.docID();
-      float reqScore = reqScorer.score();
-      if (optScorer == null) {
-        return reqScore * coordReq;
+      float score = reqScorer.score();
+
+      int optScorerDoc = optIterator.docID();
+      if (optScorerDoc < curDoc) {
+        optScorerDoc = optIterator.advance(curDoc);
       }
       
-      int optScorerDoc = optScorer.docID();
-      if (optScorerDoc < curDoc && (optScorerDoc = optScorer.advance(curDoc)) == NO_MORE_DOCS) {
-        optScorer = null;
-        return reqScore * coordReq;
+      if (optScorerDoc == curDoc) {
+        score = (score + optScorer.score()) * coordBoth;
+      } else {
+        score = score * coordReq;
       }
       
-      return optScorerDoc == curDoc ? (reqScore + optScorer.score()) * coordBoth : reqScore * coordReq;
+      return score;
     }
   }
 
@@ -121,22 +158,25 @@ class BooleanTopLevelScorers {
       this.requiredCount = requiredCount;
       this.coords = coords;
     }
-    
+
     @Override
     public float score() throws IOException {
+      // TODO: sum into a double and cast to float if we ever send required clauses to BS1
       int curDoc = reqScorer.docID();
-      float reqScore = reqScorer.score();
-      if (optScorer == null) {
-        return reqScore * coords[requiredCount];
+      float score = reqScorer.score();
+
+      int optScorerDoc = optIterator.docID();
+      if (optScorerDoc < curDoc) {
+        optScorerDoc = optIterator.advance(curDoc);
       }
       
-      int optScorerDoc = optScorer.docID();
-      if (optScorerDoc < curDoc && (optScorerDoc = optScorer.advance(curDoc)) == NO_MORE_DOCS) {
-        optScorer = null;
-        return reqScore * coords[requiredCount];
+      if (optScorerDoc == curDoc) {
+        score = (score + optScorer.score()) * coords[requiredCount + optScorer.freq()];
+      } else {
+        score = score * coords[requiredCount];
       }
       
-      return optScorerDoc == curDoc ? (reqScore + optScorer.score()) * coords[requiredCount + optScorer.freq()] : reqScore * coords[requiredCount];
+      return score;
     }
   }
 }

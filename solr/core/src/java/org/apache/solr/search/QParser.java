@@ -244,7 +244,7 @@ public abstract class QParser {
     int start = startS != null ? Integer.parseInt(startS) : 0;
     int rows = rowsS != null ? Integer.parseInt(rowsS) : 10;
 
-    SortSpec sort = QueryParsing.parseSortSpec(sortStr, req);
+    SortSpec sort = SortSpecParsing.parseSortSpec(sortStr, req);
 
     sort.setOffset(start);
     sort.setCount(rows);

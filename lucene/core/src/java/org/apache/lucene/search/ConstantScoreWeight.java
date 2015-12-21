@@ -82,9 +82,9 @@ public abstract class ConstantScoreWeight extends Weight {
     if (s == null) {
       exists = false;
     } else {
-      final TwoPhaseIterator twoPhase = s.asTwoPhaseIterator();
+      final TwoPhaseIterator twoPhase = s.twoPhaseIterator();
       if (twoPhase == null) {
-        exists = s.advance(doc) == doc;
+        exists = s.iterator().advance(doc) == doc;
       } else {
         exists = twoPhase.approximation().advance(doc) == doc && twoPhase.matches();
       }

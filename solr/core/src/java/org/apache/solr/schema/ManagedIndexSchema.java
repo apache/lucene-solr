@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +73,8 @@ import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
@@ -86,6 +89,8 @@ public final class ManagedIndexSchema extends IndexSchema {
   int schemaZkVersion;
   
   final Object schemaUpdateLock;
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /**
    * Constructs a schema using the specified resource name and stream.

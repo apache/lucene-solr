@@ -31,11 +31,6 @@
     <path refid="solr.base.classpath"/>   
   </path>
 
-  <path id="test.classpath">
-    <path refid="solr.test.base.classpath"/>
-    <fileset dir="${test.lib.dir}" includes="*.jar"/>
-  </path>
-
   <!-- we don't actually need to compile this thing, we just want its libs -->
   <target name="resolve-extraction-libs">
     <ant dir="${common-solr.dir}/contrib/extraction" target="resolve" inheritAll="false">

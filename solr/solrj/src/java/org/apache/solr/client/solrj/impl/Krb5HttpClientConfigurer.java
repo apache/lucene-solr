@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.client.config.AuthSchemes;
+import org.apache.http.client.params.ClientPNames;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +52,7 @@ import org.apache.http.entity.BufferedHttpEntity;
 public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
   
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
-  private static final Logger logger = LoggerFactory.getLogger(Krb5HttpClientConfigurer.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Configuration jaasConfig = new SolrJaasConfiguration();
 
@@ -92,6 +94,10 @@ public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
           }
         };
 
+        SolrPortAwareCookieSpecFactory cookieFactory = new SolrPortAwareCookieSpecFactory();
+        httpClient.getCookieSpecs().register(cookieFactory.POLICY_NAME, cookieFactory);
+        httpClient.getParams().setParameter(ClientPNames.COOKIE_POLICY, cookieFactory.POLICY_NAME);
+        
         httpClient.getCredentialsProvider().setCredentials(AuthScope.ANY, useJaasCreds);
 
         httpClient.addRequestInterceptor(bufferedEntityInterceptor);

@@ -151,14 +151,12 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         ,"/response/docs/[0]/id=='1'"
     );
 
-    // boost should multiply
     assertJQ(req("fq","id:1", "fl","id,score", "q", subqq+"^3", "qq","text:x^2"
         , "debug","query"
     )
         ,"/debug/parsedquery_toString=='((text:x)^2.0)^3.0'"
     );
 
-    // boost should multiply
     assertJQ(req("fq","id:1", "fl","id,score", "q", "  {!v=$qq}^3", "qq","text:x^2"
         , "debug","query"
     )
@@ -306,7 +304,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     assertJQ(req("q","+filter(*:*)^=10 +filter(id:1)", "fl","id,score", "sort","id asc")
-        ,"/response/docs/[0]/score==1.0"  // normalization reduces to 1
+        ,"/response/docs/[0]/score==10.0" 
     );
 
   }

@@ -84,8 +84,4 @@ public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupin
     mval = filler.getValue();
   }
 
-  @Override
-  public boolean needsScores() {
-    return true; // TODO, maybe we don't?
-  }
 }

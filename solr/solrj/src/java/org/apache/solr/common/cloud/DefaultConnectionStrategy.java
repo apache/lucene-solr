@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.SolrException;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
-  private static Logger log = LoggerFactory.getLogger(DefaultConnectionStrategy.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   @Override
   public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {

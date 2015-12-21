@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 /**
@@ -44,7 +45,7 @@ class CdcrReplicatorState {
 
   private BenchmarkTimer benchmarkTimer;
 
-  private static Logger log = LoggerFactory.getLogger(CdcrReplicatorState.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrReplicatorState(final String targetCollection, final String zkHost, final CloudSolrClient targetClient) {
     this.targetCollection = targetCollection;
@@ -147,7 +148,7 @@ class CdcrReplicatorState {
       // Shift back to the right by 20 bits the version number - See VersionInfo#getNewClock
       return DateFormatUtil.formatExternal(new Date(logReader.getLastVersion() >> 20));
     }
-    return new String();
+    return "";
   }
 
   /**
@@ -201,7 +202,6 @@ class CdcrReplicatorState {
         }
 
         default:
-          return;
       }
     }
 

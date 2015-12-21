@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 
 /**
@@ -45,7 +46,7 @@ import java.lang.ref.WeakReference;
  * @since solr 1.4
  */
 public class ConcurrentLRUCache<K,V> implements Cache<K,V> {
-  private static Logger log = LoggerFactory.getLogger(ConcurrentLRUCache.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ConcurrentHashMap<Object, CacheEntry<K,V>> map;
   private final int upperWaterMark, lowerWaterMark;
@@ -481,7 +482,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V> {
     return map;
   }
 
-  private static class CacheEntry<K,V> implements Comparable<CacheEntry<K,V>> {
+  public static class CacheEntry<K,V> implements Comparable<CacheEntry<K,V>> {
     K key;
     V value;
     volatile long lastAccessed = 0;

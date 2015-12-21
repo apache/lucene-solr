@@ -17,6 +17,13 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -27,13 +34,6 @@ import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 
 /** Matches the union of its clauses.
@@ -166,12 +166,12 @@ public final class SpanOrQuery extends SpanQuery {
       if (subSpans.size() == 0) {
         return null;
       } else if (subSpans.size() == 1) {
-        return subSpans.get(0);
+        return new ScoringWrapperSpans(subSpans.get(0), getSimScorer(context));
       }
 
-      DisiPriorityQueue<Spans> byDocQueue = new DisiPriorityQueue<>(subSpans.size());
+      DisiPriorityQueue byDocQueue = new DisiPriorityQueue(subSpans.size());
       for (Spans spans : subSpans) {
-        byDocQueue.add(new DisiWrapper<>(spans));
+        byDocQueue.add(new DisiWrapper(spans));
       }
 
       SpanPositionQueue byPositionQueue = new SpanPositionQueue(subSpans.size()); // when empty use -1
@@ -182,7 +182,7 @@ public final class SpanOrQuery extends SpanQuery {
         @Override
         public int nextDoc() throws IOException {
           topPositionSpans = null;
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+          DisiWrapper topDocSpans = byDocQueue.top();
           int currentDoc = topDocSpans.doc;
           do {
             topDocSpans.doc = topDocSpans.iterator.nextDoc();
@@ -194,7 +194,7 @@ public final class SpanOrQuery extends SpanQuery {
         @Override
         public int advance(int target) throws IOException {
           topPositionSpans = null;
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+          DisiWrapper topDocSpans = byDocQueue.top();
           do {
             topDocSpans.doc = topDocSpans.iterator.advance(target);
             topDocSpans = byDocQueue.updateTop();
@@ -204,36 +204,68 @@ public final class SpanOrQuery extends SpanQuery {
 
         @Override
         public int docID() {
-          DisiWrapper<Spans> topDocSpans = byDocQueue.top();
+          DisiWrapper topDocSpans = byDocQueue.top();
           return topDocSpans.doc;
         }
 
         @Override
         public TwoPhaseIterator asTwoPhaseIterator() {
-          boolean hasApproximation = false;
-          for (DisiWrapper<Spans> w : byDocQueue) {
+          float sumMatchCost = 0; // See also DisjunctionScorer.asTwoPhaseIterator()
+          long sumApproxCost = 0;
+
+          for (DisiWrapper w : byDocQueue) {
             if (w.twoPhaseView != null) {
-              hasApproximation = true;
-              break;
+              long costWeight = (w.cost <= 1) ? 1 : w.cost;
+              sumMatchCost += w.twoPhaseView.matchCost() * costWeight;
+              sumApproxCost += costWeight;
             }
           }
 
-          if (!hasApproximation) { // none of the sub spans supports approximations
+          if (sumApproxCost == 0) { // no sub spans supports approximations
+            computePositionsCost();
             return null;
           }
 
-          return new TwoPhaseIterator(new DisjunctionDISIApproximation<Spans>(byDocQueue)) {
+          final float matchCost = sumMatchCost / sumApproxCost;
+
+          return new TwoPhaseIterator(new DisjunctionDISIApproximation(byDocQueue)) {
             @Override
             public boolean matches() throws IOException {
               return twoPhaseCurrentDocMatches();
             }
+
+            @Override
+            public float matchCost() {
+              return matchCost;
+            }
           };
+        }
+
+        float positionsCost = -1;
+
+        void computePositionsCost() {
+          float sumPositionsCost = 0;
+          long sumCost = 0;
+          for (DisiWrapper w : byDocQueue) {
+            long costWeight = (w.cost <= 1) ? 1 : w.cost;
+            sumPositionsCost += w.spans.positionsCost() * costWeight;
+            sumCost += costWeight;
+          }
+          positionsCost = sumPositionsCost / sumCost;
+        }
+
+        @Override
+        public float positionsCost() {
+          // This may be called when asTwoPhaseIterator returned null,
+          // which happens when none of the sub spans supports approximations.
+          assert positionsCost > 0;
+          return positionsCost;
         }
 
         int lastDocTwoPhaseMatched = -1;
 
         boolean twoPhaseCurrentDocMatches() throws IOException {
-          DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
+          DisiWrapper listAtCurrentDoc = byDocQueue.topList();
           // remove the head of the list as long as it does not match
           final int currentDoc = listAtCurrentDoc.doc;
           while (listAtCurrentDoc.twoPhaseView != null) {
@@ -257,9 +289,9 @@ public final class SpanOrQuery extends SpanQuery {
         void fillPositionQueue() throws IOException { // called at first nextStartPosition
           assert byPositionQueue.size() == 0;
           // add all matching Spans at current doc to byPositionQueue
-          DisiWrapper<Spans> listAtCurrentDoc = byDocQueue.topList();
+          DisiWrapper listAtCurrentDoc = byDocQueue.topList();
           while (listAtCurrentDoc != null) {
-            Spans spansAtDoc = listAtCurrentDoc.iterator;
+            Spans spansAtDoc = listAtCurrentDoc.spans;
             if (lastDocTwoPhaseMatched == listAtCurrentDoc.doc) { // matched by DisjunctionDisiApproximation
               if (listAtCurrentDoc.twoPhaseView != null) { // matched by approximation
                 if (listAtCurrentDoc.lastApproxNonMatchDoc == listAtCurrentDoc.doc) { // matches() returned false

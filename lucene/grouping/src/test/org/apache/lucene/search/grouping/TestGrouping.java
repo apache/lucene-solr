@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -150,7 +149,7 @@ public class TestGrouping extends LuceneTestCase {
     final AbstractFirstPassGroupingCollector<?> c1 = createRandomFirstPassCollector(groupField, groupSort, 10);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
 
-    final AbstractSecondPassGroupingCollector<?> c2 = createSecondPassCollector(c1, groupField, groupSort, null, 0, 5, true, true, true);
+    final AbstractSecondPassGroupingCollector<?> c2 = createSecondPassCollector(c1, groupField, groupSort, Sort.RELEVANCE, 0, 5, true, true, true);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c2);
 
     final TopGroups<?> groups = c2.getTopGroups(0);
@@ -597,7 +596,6 @@ public class TestGrouping extends LuceneTestCase {
         doc.add(new SortedDocValuesField("sort1", BytesRef.deepCopyOf(groupValue.sort1)));
         doc.add(newStringField("sort2", groupValue.sort2.utf8ToString(), Field.Store.NO));
         doc.add(new SortedDocValuesField("sort2", BytesRef.deepCopyOf(groupValue.sort2)));
-        doc.add(new IntField("id", groupValue.id, Field.Store.NO));
         doc.add(new NumericDocValuesField("id", groupValue.id));
         doc.add(newTextField("content", groupValue.content, Field.Store.NO));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
@@ -712,11 +710,8 @@ public class TestGrouping extends LuceneTestCase {
       Field content = newTextField("content", "", Field.Store.NO);
       doc.add(content);
       docNoGroup.add(content);
-      IntField id = new IntField("id", 0, Field.Store.NO);
-      doc.add(id);
       NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
       doc.add(idDV);
-      docNoGroup.add(id);
       docNoGroup.add(idDV);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for(int i=0;i<numDocs;i++) {
@@ -751,7 +746,6 @@ public class TestGrouping extends LuceneTestCase {
         sort1.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort1));
         sort2.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort2));
         content.setStringValue(groupDoc.content);
-        id.setIntValue(groupDoc.id);
         idDV.setLongValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);
@@ -839,22 +833,9 @@ public class TestGrouping extends LuceneTestCase {
         final boolean getMaxScores = random().nextBoolean();
         final Sort groupSort = getRandomSort();
         //final Sort groupSort = new Sort(new SortField[] {new SortField("sort1", SortField.STRING), new SortField("id", SortField.INT)});
-        // TODO: also test null (= sort by relevance)
         final Sort docSort = getRandomSort();
         
-        for(SortField sf : docSort.getSort()) {
-          if (sf.getType() == SortField.Type.SCORE) {
-            getScores = true;
-            break;
-          }
-        }
-        
-        for(SortField sf : groupSort.getSort()) {
-          if (sf.getType() == SortField.Type.SCORE) {
-            getScores = true;
-            break;
-          }
-        }
+        getScores |= (groupSort.needsScores() || docSort.needsScores());
         
         final int topNGroups = TestUtil.nextInt(random(), 1, 30);
         //final int topNGroups = 10;
@@ -865,7 +846,7 @@ public class TestGrouping extends LuceneTestCase {
         
         final int docOffset = TestUtil.nextInt(random(), 0, docsPerGroup - 1);
         //final int docOffset = 0;
-        
+
         final boolean doCache = random().nextBoolean();
         final boolean doAllGroups = random().nextBoolean();
         if (VERBOSE) {
@@ -1172,7 +1153,7 @@ public class TestGrouping extends LuceneTestCase {
       System.out.println("TEST: " + subSearchers.length + " shards: " + Arrays.toString(subSearchers) + " canUseIDV=" + canUseIDV);
     }
     // Run 1st pass collector to get top groups per shard
-    final Weight w = topSearcher.createNormalizedWeight(query, true);
+    final Weight w = topSearcher.createNormalizedWeight(query, getScores);
     final List<Collection<SearchGroup<BytesRef>>> shardGroups = new ArrayList<>();
     List<AbstractFirstPassGroupingCollector<?>> firstPassGroupingCollectors = new ArrayList<>();
     AbstractFirstPassGroupingCollector<?> firstPassCollector = null;

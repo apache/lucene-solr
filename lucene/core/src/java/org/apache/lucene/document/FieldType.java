@@ -18,11 +18,11 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
+import org.apache.lucene.index.DimensionalValues; // javadocs
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.search.NumericRangeQuery; // javadocs
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
  * Describes the properties of a field.
@@ -31,8 +31,11 @@ public class FieldType implements IndexableFieldType  {
 
   /** Data type of the numeric value
    * @since 3.2
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
-  public enum NumericType {
+  @Deprecated
+  public enum LegacyNumericType {
     /** 32-bit integer numeric type */
     INT, 
     /** 64-bit long numeric type */
@@ -51,10 +54,12 @@ public class FieldType implements IndexableFieldType  {
   private boolean storeTermVectorPayloads;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.NONE;
-  private NumericType numericType;
+  private LegacyNumericType numericType;
   private boolean frozen;
-  private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
+  private int numericPrecisionStep = LegacyNumericUtils.PRECISION_STEP_DEFAULT;
   private DocValuesType docValuesType = DocValuesType.NONE;
+  private int dimensionCount;
+  private int dimensionNumBytes;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -71,6 +76,8 @@ public class FieldType implements IndexableFieldType  {
     this.numericType = ref.numericType();
     this.numericPrecisionStep = ref.numericPrecisionStep();
     this.docValuesType = ref.docValuesType();
+    this.dimensionCount = dimensionCount;
+    this.dimensionNumBytes = dimensionNumBytes;
     // Do not copy frozen!
   }
   
@@ -296,21 +303,27 @@ public class FieldType implements IndexableFieldType  {
    * @throws IllegalStateException if this FieldType is frozen against
    *         future modifications.
    * @see #numericType()
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
-  public void setNumericType(NumericType type) {
+  @Deprecated
+  public void setNumericType(LegacyNumericType type) {
     checkIfFrozen();
     numericType = type;
   }
 
   /** 
-   * NumericType: if non-null then the field's value will be indexed
-   * numerically so that {@link NumericRangeQuery} can be used at 
+   * LegacyNumericType: if non-null then the field's value will be indexed
+   * numerically so that {@link org.apache.lucene.search.LegacyNumericRangeQuery} can be used at
    * search time. 
    * <p>
    * The default is <code>null</code> (no numeric type) 
-   * @see #setNumericType(NumericType)
+   * @see #setNumericType(org.apache.lucene.document.FieldType.LegacyNumericType)
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
-  public NumericType numericType() {
+  @Deprecated
+  public LegacyNumericType numericType() {
     return numericType;
   }
 
@@ -321,7 +334,10 @@ public class FieldType implements IndexableFieldType  {
    * @throws IllegalStateException if this FieldType is frozen against
    *         future modifications.
    * @see #numericPrecisionStep()
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
+  @Deprecated
   public void setNumericPrecisionStep(int precisionStep) {
     checkIfFrozen();
     if (precisionStep < 1) {
@@ -335,11 +351,48 @@ public class FieldType implements IndexableFieldType  {
    * <p>
    * This has no effect if {@link #numericType()} returns null.
    * <p>
-   * The default is {@link NumericUtils#PRECISION_STEP_DEFAULT}
+   * The default is {@link org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
    * @see #setNumericPrecisionStep(int)
+   *
+   * @deprecated Please switch to {@link DimensionalValues} instead
    */
+  @Deprecated
   public int numericPrecisionStep() {
     return numericPrecisionStep;
+  }
+
+  /**
+   * Enables dimensional indexing.
+   */
+  public void setDimensions(int dimensionCount, int dimensionNumBytes) {
+    if (dimensionCount < 0) {
+      throw new IllegalArgumentException("dimensionCount must be >= 0; got " + dimensionCount);
+    }
+    if (dimensionNumBytes < 0) {
+      throw new IllegalArgumentException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
+    }
+    if (dimensionCount == 0) {
+      if (dimensionNumBytes != 0) {
+        throw new IllegalArgumentException("when dimensionCount is 0 dimensionNumBytes must 0; got " + dimensionNumBytes);
+      }
+    } else if (dimensionNumBytes == 0) {
+      if (dimensionCount != 0) {
+        throw new IllegalArgumentException("when dimensionNumBytes is 0 dimensionCount must 0; got " + dimensionCount);
+      }
+    }
+
+    this.dimensionCount = dimensionCount;
+    this.dimensionNumBytes = dimensionNumBytes;
+  }
+
+  @Override
+  public int dimensionCount() {
+    return dimensionCount;
+  }
+
+  @Override
+  public int dimensionNumBytes() {
+    return dimensionNumBytes;
   }
 
   /** Prints a Field for human consumption. */
@@ -380,6 +433,12 @@ public class FieldType implements IndexableFieldType  {
         result.append(numericType);
         result.append(",numericPrecisionStep=");
         result.append(numericPrecisionStep);
+      }
+      if (dimensionCount != 0) {
+        result.append(",dimensionCount=");
+        result.append(dimensionCount);
+        result.append(",dimensionNumBytes=");
+        result.append(dimensionNumBytes);
       }
     }
     if (docValuesType != DocValuesType.NONE) {

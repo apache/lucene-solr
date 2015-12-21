@@ -28,9 +28,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.File;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * <p>
@@ -45,7 +42,6 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  **/
 public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
-  private static final Logger log = LoggerFactory.getLogger(IndexBasedSpellChecker.class);
 
   public static final String THRESHOLD_TOKEN_FREQUENCY = "thresholdTokenFrequency";
 

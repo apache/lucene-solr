@@ -22,6 +22,8 @@ solrAdminApp.controller('CollectionsController',
 
       $scope.refresh = function() {
 
+          $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
+
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
@@ -77,7 +79,7 @@ solrAdminApp.controller('CollectionsController',
         $scope.hideAll();
         $scope.showAdd = true;
         $scope.newCollection = {
-          name: "new_collection",
+          name: "",
           routerName: "compositeId",
           numShards: 1,
           configName: "",
@@ -207,7 +209,6 @@ solrAdminApp.controller('CollectionsController',
       };
 
       $scope.deleteReplica = function(replica) {
-        alert("DELETE");
         Collections.deleteReplica({collection: replica.collection, shard:replica.shard, replica:replica.name}, function(data) {
           replica.deleted = true;
           $timeout(function() {

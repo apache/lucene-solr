@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -156,12 +157,18 @@ public class MockRandomMergePolicy extends MergePolicy {
           int thingToDo = r.nextInt(7);
           if (thingToDo == 0) {
             // simple no-op FilterReader
+            if (LuceneTestCase.VERBOSE) {
+              System.out.println("NOTE: MockRandomMergePolicy now swaps in a SlowCodecReaderWrapper for merging reader=" + readers.get(i));
+            }
             readers.set(i, SlowCodecReaderWrapper.wrap(new FilterLeafReader(readers.get(i))));
           } else if (thingToDo == 1) {
             // renumber fields
             // NOTE: currently this only "blocks" bulk merges just by
             // being a FilterReader. But it might find bugs elsewhere, 
             // and maybe the situation can be improved in the future.
+            if (LuceneTestCase.VERBOSE) {
+              System.out.println("NOTE: MockRandomMergePolicy now swaps in a MismatchedLeafReader for merging reader=" + readers.get(i));
+            }
             readers.set(i, SlowCodecReaderWrapper.wrap(new MismatchedLeafReader(readers.get(i), r)));
           }
           // otherwise, reader is unchanged

@@ -17,6 +17,18 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -28,7 +40,13 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -37,15 +55,17 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.CdcrParams;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.CreateMode;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.*;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -79,6 +99,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
  * </p>
  */
 public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected int shardCount = 2;
   protected int replicationFactor = 2;
@@ -221,12 +243,26 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   /**
-   * Returns the number of documents in a given collection
+   * Assert the number of documents in a given collection
    */
-  protected long getNumDocs(String collection) throws SolrServerException, IOException {
+  protected void assertNumDocs(int expectedNumDocs, String collection)
+  throws SolrServerException, IOException, InterruptedException {
     CloudSolrClient client = createCloudClient(collection);
     try {
-      return client.query(new SolrQuery("*:*")).getResults().getNumFound();
+      int cnt = 30; // timeout after 15 seconds
+      AssertionError lastAssertionError = null;
+      while (cnt > 0) {
+        try {
+          assertEquals(expectedNumDocs, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+          return;
+        }
+        catch (AssertionError e) {
+          lastAssertionError = e;
+          cnt--;
+          Thread.sleep(500);
+        }
+      }
+      throw new AssertionError("Timeout while trying to assert number of documents @ " + collection, lastAssertionError);
     } finally {
       client.close();
     }
@@ -533,9 +569,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       jettys.add(jetty);
     }
 
-    ZkStateReader zkStateReader = ((SolrDispatchFilter) jettys.get(0)
-        .getDispatchFilter().getFilter()).getCores().getZkController()
-        .getZkStateReader();
+    ZkStateReader zkStateReader = jettys.get(0).getCoreContainer().getZkController().getZkStateReader();
 
     // now wait till we see the leader for each shard
     for (int i = 1; i <= shardCount; i++) {
@@ -553,6 +587,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
     // delete the temporary collection - we will create our own collections later
     this.deleteCollection(temporaryCollection);
+    this.waitForCollectionToDisappear(temporaryCollection);
     System.clearProperty("collection");
 
     return nodeNames;
@@ -744,8 +779,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     for (String shard : shardToJetty.get(collection).keySet()) {
       List<CloudJettyRunner> jettyRunners = shardToJetty.get(collection).get(shard);
       for (CloudJettyRunner jettyRunner : jettyRunners) {
-        SolrDispatchFilter filter = (SolrDispatchFilter) jettyRunner.jetty.getDispatchFilter().getFilter();
-        for (SolrCore core : filter.getCores().getCores()) {
+        for (SolrCore core : jettyRunner.jetty.getCoreContainer().getCores()) {
           info.addCore(core, shard, shardToLeaderJetty.get(collection).containsValue(jettyRunner));
         }
       }

@@ -57,6 +57,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -245,7 +246,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected Map<String, Integer> handle = new HashMap<>();
 
   protected String id = "id";
-  public static Logger log = LoggerFactory.getLogger(BaseDistributedSearchTestCase.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static RandVal rint = new RandVal() {
     @Override
@@ -778,10 +779,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     String cmp;
     int f = flags(handle, "maxScore");
-    if ((f & SKIPVAL) == 0) {
+    if (f == 0) {
       cmp = compare(a.getMaxScore(), b.getMaxScore(), 0, handle);
       if (cmp != null) return ".maxScore" + cmp;
-    } else {
+    } else if ((f & SKIP) == 0) { // so we skip val but otherwise both should be present
+      assert (f & SKIPVAL) != 0;
       if (b.getMaxScore() != null) {
         if (a.getMaxScore() == null) {
           return ".maxScore missing";
@@ -961,7 +963,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         createServers(numShards);
         RandVal.uniqueValues = new HashSet(); //reset random values
         statement.evaluate();
-        destroyServers();
+        try {
+          destroyServers();
+        } catch (Throwable t) {
+          log.error("Error while shutting down servers", t);
+        }
       }
     }
 

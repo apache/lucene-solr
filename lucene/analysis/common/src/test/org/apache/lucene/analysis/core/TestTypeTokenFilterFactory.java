@@ -17,11 +17,11 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.NumericTokenStream;
+import java.util.Set;
+
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-
-import java.util.Set;
 
 /**
  * Testcase for {@link TypeTokenFilterFactory}
@@ -46,8 +46,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testCreationWithBlackList() throws Exception {
     TokenFilterFactory factory = tokenFilterFactory("Type",
         "types", "stoptypes-1.txt, stoptypes-2.txt");
-    NumericTokenStream input = new NumericTokenStream();
-    input.setIntValue(123);
+    CannedTokenStream input = new CannedTokenStream();
     factory.create(input);
   }
   
@@ -55,8 +54,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
     TokenFilterFactory factory = tokenFilterFactory("Type",
         "types", "stoptypes-1.txt, stoptypes-2.txt",
         "useWhitelist", "true");
-    NumericTokenStream input = new NumericTokenStream();
-    input.setIntValue(123);
+    CannedTokenStream input = new CannedTokenStream();
     factory.create(input);
   }
 

@@ -20,7 +20,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   <indexConfig>
     <!-- set some values to -1 to force the use of internal lucene defaults -->
     <maxBufferedDocs>-1</maxBufferedDocs>

@@ -39,8 +39,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
@@ -48,8 +46,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
 public class Assign {
   private static Pattern COUNT = Pattern.compile("core_node(\\d+)");
-  private static Logger log = LoggerFactory
-      .getLogger(Assign.class);
 
   public static String assignNode(String collection, ClusterState state) {
     Map<String, Slice> sliceMap = state.getSlicesMap(collection);

@@ -28,8 +28,8 @@ import java.util.Collections;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -41,7 +41,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestUninvertingReader extends LuceneTestCase {
@@ -51,12 +51,12 @@ public class TestUninvertingReader extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
-    doc.add(new IntField("foo", 5, Field.Store.NO));
-    doc.add(new IntField("foo", -3, Field.Store.NO));
+    doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyIntField("foo", -3, Field.Store.NO));
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -78,10 +78,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToInt(value));
+    assertEquals(-3, LegacyNumericUtils.prefixCodedToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToInt(value));
+    assertEquals(5, LegacyNumericUtils.prefixCodedToInt(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -92,12 +92,12 @@ public class TestUninvertingReader extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
-    doc.add(new IntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
+    doc.add(new LegacyIntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
-    doc.add(new IntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
-    doc.add(new IntField("foo", Float.floatToRawIntBits(-3f), Field.Store.NO));
+    doc.add(new LegacyIntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
+    doc.add(new LegacyIntField("foo", Float.floatToRawIntBits(-3f), Field.Store.NO));
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -120,10 +120,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(Float.floatToRawIntBits(-3f), NumericUtils.prefixCodedToInt(value));
+    assertEquals(Float.floatToRawIntBits(-3f), LegacyNumericUtils.prefixCodedToInt(value));
     
     value = v.lookupOrd(1);
-    assertEquals(Float.floatToRawIntBits(5f), NumericUtils.prefixCodedToInt(value));
+    assertEquals(Float.floatToRawIntBits(5f), LegacyNumericUtils.prefixCodedToInt(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -134,12 +134,12 @@ public class TestUninvertingReader extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
-    doc.add(new LongField("foo", 5, Field.Store.NO));
-    doc.add(new LongField("foo", -3, Field.Store.NO));
+    doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
+    doc.add(new LegacyLongField("foo", -3, Field.Store.NO));
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -161,10 +161,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(-3, NumericUtils.prefixCodedToLong(value));
+    assertEquals(-3, LegacyNumericUtils.prefixCodedToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(5, NumericUtils.prefixCodedToLong(value));
+    assertEquals(5, LegacyNumericUtils.prefixCodedToLong(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -175,12 +175,12 @@ public class TestUninvertingReader extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
     Document doc = new Document();
-    doc.add(new LongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
+    doc.add(new LegacyLongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
-    doc.add(new LongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
-    doc.add(new LongField("foo", Double.doubleToRawLongBits(-3d), Field.Store.NO));
+    doc.add(new LegacyLongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
+    doc.add(new LegacyLongField("foo", Double.doubleToRawLongBits(-3d), Field.Store.NO));
     iw.addDocument(doc);
     
     iw.forceMerge(1);
@@ -202,10 +202,10 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
     BytesRef value = v.lookupOrd(0);
-    assertEquals(Double.doubleToRawLongBits(-3d), NumericUtils.prefixCodedToLong(value));
+    assertEquals(Double.doubleToRawLongBits(-3d), LegacyNumericUtils.prefixCodedToLong(value));
     
     value = v.lookupOrd(1);
-    assertEquals(Double.doubleToRawLongBits(5d), NumericUtils.prefixCodedToLong(value));
+    assertEquals(Double.doubleToRawLongBits(5d), LegacyNumericUtils.prefixCodedToLong(value));
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
@@ -217,7 +217,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     final Directory dir = newDirectory();
     final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
-    final FieldType NO_TRIE_TYPE = new FieldType(IntField.TYPE_NOT_STORED);
+    final FieldType NO_TRIE_TYPE = new FieldType(LegacyIntField.TYPE_NOT_STORED);
     NO_TRIE_TYPE.setNumericPrecisionStep(Integer.MAX_VALUE);
 
     final Map<String,Type> UNINVERT_MAP = new LinkedHashMap<String,Type>();
@@ -238,8 +238,8 @@ public class TestUninvertingReader extends LuceneTestCase {
     { // (at least) one doc should have every value, so that at least one segment has every value
       final Document doc = new Document();
       for (int i = MIN; i <= MAX; i++) {
-        doc.add(new IntField("trie_multi", i, Field.Store.NO));
-        doc.add(new IntField("notrie_multi", i, NO_TRIE_TYPE));
+        doc.add(new LegacyIntField("trie_multi", i, Field.Store.NO));
+        doc.add(new LegacyIntField("notrie_multi", i, NO_TRIE_TYPE));
       }
       iw.addDocument(doc);
     }
@@ -249,15 +249,15 @@ public class TestUninvertingReader extends LuceneTestCase {
       final Document doc = new Document();
       if (0 != TestUtil.nextInt(random(), 0, 9)) {
         int val = TestUtil.nextInt(random(), MIN, MAX);
-        doc.add(new IntField("trie_single", val, Field.Store.NO));
-        doc.add(new IntField("notrie_single", val, NO_TRIE_TYPE));
+        doc.add(new LegacyIntField("trie_single", val, Field.Store.NO));
+        doc.add(new LegacyIntField("notrie_single", val, NO_TRIE_TYPE));
       }
       if (0 != TestUtil.nextInt(random(), 0, 9)) {
         int numMulti = atLeast(1);
         while (0 < numMulti--) {
           int val = TestUtil.nextInt(random(), MIN, MAX);
-          doc.add(new IntField("trie_multi", val, Field.Store.NO));
-          doc.add(new IntField("notrie_multi", val, NO_TRIE_TYPE));
+          doc.add(new LegacyIntField("trie_multi", val, Field.Store.NO));
+          doc.add(new LegacyIntField("notrie_multi", val, NO_TRIE_TYPE));
         }
       }
       iw.addDocument(doc);

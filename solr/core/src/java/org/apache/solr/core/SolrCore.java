@@ -17,9 +17,6 @@
 
 package org.apache.solr.core;
 
-import static com.google.common.base.Preconditions.*;
-import static org.apache.solr.common.params.CommonParams.*;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,26 +24,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -55,7 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.FileUtils;
@@ -83,6 +65,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.IndexFetcher;
@@ -94,20 +77,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.CSVResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
-import org.apache.solr.response.SchemaXmlResponseWriter;
-import org.apache.solr.response.SmileResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.SortingResponseWriter;
-import org.apache.solr.response.XMLResponseWriter;
+import org.apache.solr.response.*;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -147,20 +117,17 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 /**
  *
  */
 public final class SolrCore implements SolrInfoMBean, Closeable {
   public static final String version="1.0";
 
-  // These should *only* be used for debugging or monitoring purposes
-  public static final AtomicLong numOpens = new AtomicLong();
-  public static final AtomicLong numCloses = new AtomicLong();
-  public static Map<SolrCore,Exception> openHandles = Collections.synchronizedMap(new IdentityHashMap<SolrCore, Exception>());
-
-
-  public static final Logger log = LoggerFactory.getLogger(SolrCore.class);
-  public static final Logger requestLog = LoggerFactory.getLogger(SolrCore.class.getName() + ".Request");
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
 
   private String name;
   private String logid; // used to show what name is set
@@ -259,17 +226,37 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public String getSchemaResource() {
     return getLatestSchema().getResourceName();
   }
-
-  /** @return the latest snapshot of the schema used by this core instance. */
+  
+  /** 
+   * @return the latest snapshot of the schema used by this core instance. 
+   * @see #setLatestSchema 
+   */
   public IndexSchema getLatestSchema() {
     return schema;
   }
-
-  /** Sets the latest schema snapshot to be used by this core instance. */
+  
+  /** 
+   * Sets the latest schema snapshot to be used by this core instance. 
+   * If the specified <code>replacementSchema</code> uses a {@link SimilarityFactory} which is 
+   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that factory about 
+   * this SolrCore prior to using the <code>replacementSchema</code>
+   * @see #getLatestSchema
+   */
   public void setLatestSchema(IndexSchema replacementSchema) {
-    schema = replacementSchema;
+    // 1) For a newly instantiated core, the Similarity needs SolrCore before inform() is called on
+    // any registered SolrCoreAware listeners (which will likeley need to use the SolrIndexSearcher.
+    //
+    // 2) If a new IndexSchema is assigned to an existing live SolrCore (ie: managed schema
+    // replacement via SolrCloud) then we need to explicitly inform() the similarity because
+    // we can't rely on the normal SolrResourceLoader lifecycle because the sim was instantiated
+    // after the SolrCore was already live (see: SOLR-8311 + SOLR-8280)
+    final SimilarityFactory similarityFactory = replacementSchema.getSimilarityFactory();
+    if (similarityFactory instanceof SolrCoreAware) {
+      ((SolrCoreAware) similarityFactory).inform(this);
+    }
+    this.schema = replacementSchema;
   }
-
+  
   public NamedList getConfigSetProperties() {
     return configSetProperties;
   }
@@ -721,6 +708,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       IndexSchema schema, NamedList configSetProperties,
       CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
       IndexDeletionPolicyWrapper delPolicy, SolrCore prev) {
+    
+    assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
+    
     checkNotNull(coreDescriptor, "coreDescriptor cannot be null");
     
     this.coreDescriptor = coreDescriptor;
@@ -743,7 +733,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.dataDir = initDataDir(dataDir, config, coreDescriptor);
     this.ulogDir = initUpdateLogDir(coreDescriptor);
 
-    log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstanceDir(), dataDir);
+    log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(), this.dataDir);
 
     checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
@@ -751,7 +741,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     this.infoRegistry = initInfoRegistry(name, config);
     infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
 
-    this.schema = initSchema(config, schema);
+    initSchema(config, schema);
 
     this.maxWarmingSearchers = config.maxWarmingSearchers;
     this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
@@ -859,13 +849,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     seedVersionBuckets();
 
     bufferUpdatesIfConstructing(coreDescriptor);
-    
-    // For debugging   
-//    numOpens.incrementAndGet();
-//    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
 
     this.ruleExpiryLock = new ReentrantLock();
     registerConfListener();
+    
+    assert ObjectReleaseTracker.track(this);
   }
 
   public void seedVersionBuckets() {
@@ -948,17 +936,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
   }
-
-  private IndexSchema initSchema(SolrConfig config, IndexSchema schema) {
+  
+  /**
+   * Initializes the "Latest Schema" for this SolrCore using either the provided <code>schema</code> 
+   * if non-null, or a new instance build via the factory identified in the specified <code>config</code>
+   * @see IndexSchemaFactory
+   * @see #setLatestSchema
+   */
+  private void initSchema(SolrConfig config, IndexSchema schema) {
     if (schema == null) {
       schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
     }
-    final SimilarityFactory similarityFactory = schema.getSimilarityFactory();
-    if (similarityFactory instanceof SolrCoreAware) {
-      // Similarity needs SolrCore before inform() is called on all registered SolrCoreAware listeners below
-      ((SolrCoreAware) similarityFactory).inform(this);
-    }
-    return schema;
+    setLatestSchema(schema);
   }
 
   private Map<String,SolrInfoMBean> initInfoRegistry(String name, SolrConfig config) {
@@ -1013,10 +1002,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private String initUpdateLogDir(CoreDescriptor coreDescriptor) {
     String updateLogDir = coreDescriptor.getUlogDir();
     if (updateLogDir == null) {
-      updateLogDir = dataDir;
-      if (new File(updateLogDir).isAbsolute() == false) {
-        updateLogDir = SolrResourceLoader.normalizeDir(coreDescriptor.getInstanceDir()) + updateLogDir;
-      }
+      updateLogDir = coreDescriptor.getInstanceDir().resolve(dataDir).normalize().toAbsolutePath().toString();
     }
     return updateLogDir;
   }
@@ -1236,6 +1222,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         throw (Error) e;
       }
     }
+    assert ObjectReleaseTracker.release(searcherExecutor);
 
     try {
       // Since we waited for the searcherExecutor to shut down,
@@ -1275,7 +1262,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     }
 
-
     if( closeHooks != null ) {
        for( CloseHook hook : closeHooks ) {
          try {
@@ -1288,10 +1274,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
          }
       }
     }
-
-    // For debugging 
-//    numCloses.incrementAndGet();
-//    openHandles.remove(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   /** Current core usage count. */
@@ -2169,7 +2152,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(QueryResponseWriter.class, this);
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
-    HashMap<String, QueryResponseWriter> m= new HashMap<>();
+    HashMap<String, QueryResponseWriter> m= new HashMap<>(14, 1);
     m.put("xml", new XMLResponseWriter());
     m.put("standard", m.get("xml"));
     m.put(CommonParams.JSON, new JSONResponseWriter());
@@ -2243,14 +2226,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<TransformerFactory> transformerFactories = new PluginBag<>(TransformerFactory.class, this);
 
   <T> Map<String, T> createInstances(Map<String, Class<? extends T>> map) {
-    Map<String, T> result = new LinkedHashMap<>();
+    Map<String, T> result = new LinkedHashMap<>(map.size(), 1);
     for (Map.Entry<String, Class<? extends T>> e : map.entrySet()) {
       try {
         Object o = getResourceLoader().newInstance(e.getValue().getName(), e.getValue());
         result.put(e.getKey(), (T) o);
       } catch (Exception exp) {
         //should never happen
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unbale to instantiate class", exp);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to instantiate class", exp);
       }
     }
     return result;
@@ -2293,7 +2276,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    */
   public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
     if(pluginInfos.isEmpty()) return Collections.emptyList();
-    List<T> result = new ArrayList<>();
+    List<T> result = new ArrayList<>(pluginInfos.size());
     for (PluginInfo info : pluginInfos) result.add(createInitInstance(info,type, type.getSimpleName(), defClassName));
     return result;
   }
@@ -2440,11 +2423,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   @Override
   public NamedList getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<>();
+    NamedList<Object> lst = new SimpleOrderedMap<>(8);
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", startTime);
     lst.add("refCount", getOpenCount());
-    lst.add("instanceDir", resourceLoader.getInstanceDir());
+    lst.add("instanceDir", resourceLoader.getInstancePath());
     lst.add("indexDir", getIndexDir());
 
     CoreDescriptor cd = getCoreDescriptor();
@@ -2499,12 +2482,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         public void postClose(SolrCore core) {
           CoreDescriptor cd = core.getCoreDescriptor();
           if (cd != null) {
-            File instanceDir = new File(cd.getInstanceDir());
             try {
-              FileUtils.deleteDirectory(instanceDir);
+              FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
             } catch (IOException e) {
               SolrException.log(log, "Failed to delete instance dir for core:"
-                  + core.getName() + " dir:" + instanceDir.getAbsolutePath());
+                  + core.getName() + " dir:" + cd.getInstanceDir());
             }
           }
         }
@@ -2523,12 +2505,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
     if (deleteInstanceDir) {
-      File instanceDir = new File(cd.getInstanceDir());
       try {
-        FileUtils.deleteDirectory(instanceDir);
+        FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
       } catch (IOException e) {
         SolrException.log(log, "Failed to delete instance dir for unloaded core:" + cd.getName()
-            + " dir:" + instanceDir.getAbsolutePath());
+            + " dir:" + cd.getInstanceDir());
       }
     }
   }

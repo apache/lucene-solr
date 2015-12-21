@@ -50,6 +50,10 @@ public class TestClassNameShortening extends RestTestBase {
             "/response/lst[@name='fieldType']/lst[@name='similarity']/str[@name='class'] = 'org.apache.lucene.misc.SweetSpotSimilarity'");
   }
 
+  /** 
+   * See {@link TestSchemaSimilarityResource#testGetSchemaSimilarity} for where the long class name
+   * is verified when the config doesn't specify a sim at all
+   */
   @Test
   public void testShortenedGlobalSimilarityStaysShortened() throws Exception {
     assertQ("/schema/similarity?indent=on&wt=xml",

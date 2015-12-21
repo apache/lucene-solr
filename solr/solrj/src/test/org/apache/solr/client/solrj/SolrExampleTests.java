@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -81,7 +82,7 @@ import static org.junit.internal.matchers.StringContains.containsString;
 @SuppressSSL
 abstract public class SolrExampleTests extends SolrExampleTestsBase
 {
-  private static Logger log = LoggerFactory.getLogger(SolrExampleTests.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
     ignoreException("uniqueKey");
@@ -1594,6 +1595,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
   
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7339")
   public void testUpdateField() throws Exception {
     //no versions
     SolrClient client = getSolrClient();

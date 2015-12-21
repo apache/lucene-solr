@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
@@ -45,6 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
+    assumeFalse("This test fails with Java 9 (https://issues.apache.org/jira/browse/PDFBOX-3155)", Constants.JRE_IS_MINIMUM_JAVA9);
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").getAbsolutePath());
   }
 
@@ -657,6 +659,28 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testPdfWithImages() throws Exception {
+    //Tests possibility to configure ParseContext (by example to extract embedded images from pdf)
+    loadLocal("extraction/pdf-with-image.pdf",
+        "fmap.created", "extractedDate",
+        "fmap.producer", "extractedProducer",
+        "fmap.creator", "extractedCreator",
+        "fmap.Keywords", "extractedKeywords",
+        "fmap.Creation-Date", "extractedDate",
+        "uprefix", "ignored_",
+        "fmap.Author", "extractedAuthor",
+        "fmap.content", "wdf_nocase",
+        "literal.id", "pdfWithImage",
+        "resource.name", "pdf-with-image.pdf",
+        "resource.password", "solrRules",
+        "fmap.Last-Modified", "extractedDate");
+
+    assertQ(req("wdf_nocase:\"embedded:image0.jpg\""), "//*[@numFound='0']");
+    assertU(commit());
+    assertQ(req("wdf_nocase:\"embedded:image0.jpg\""), "//*[@numFound='1']");
+  }
+
+  @Test
   public void testPasswordProtected() throws Exception {
     // PDF, Passwords from resource.password
     loadLocal("extraction/encrypted-password-is-solrRules.pdf",
@@ -705,7 +729,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     // DOCX, Passwords from file
     loadLocal("extraction/password-is-Word2010.docx", 
-        "fmap.created", "extractedDate", 
+        "fmap.created", "extractedDate",
         "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", 
         "fmap.Keywords", "extractedKeywords",

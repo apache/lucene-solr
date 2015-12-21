@@ -35,6 +35,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
 
 public class LegacyFacet {
@@ -233,7 +234,7 @@ public class LegacyFacet {
 
 
   private void addStat(String val) {
-    QueryParsing.StrParser sp = new QueryParsing.StrParser(val);
+    StrParser sp = new StrParser(val);
     int start = 0;
     sp.eatws();
     if (sp.pos >= sp.end) addStat(val, val);

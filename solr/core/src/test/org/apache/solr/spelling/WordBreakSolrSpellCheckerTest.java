@@ -70,6 +70,17 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     QueryConverter qc = new SpellingQueryConverter();
     qc.setAnalyzer(new MockAnalyzer(random()));
+    
+    {
+      //Prior to SOLR-8175, the required term would cause an AIOOBE.
+      Collection<Token> tokens = qc.convert("+pine apple good ness");
+      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
+      SpellingResult result = checker.getSuggestions(spellOpts);
+      searcher.decref();      
+      assertTrue(result != null && result.getSuggestions() != null);
+      assertTrue(result.getSuggestions().size()==5);
+    }
+    
     Collection<Token> tokens = qc.convert("paintable pine apple good ness");
     SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
     SpellingResult result = checker.getSuggestions(spellOpts);

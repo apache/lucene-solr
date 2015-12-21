@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class ExceptionStream extends TupleStream {
 
   private TupleStream stream;
   private Exception openException;
-  private Logger log = LoggerFactory.getLogger(ExceptionStream.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public ExceptionStream(TupleStream stream) {
     this.stream = stream;

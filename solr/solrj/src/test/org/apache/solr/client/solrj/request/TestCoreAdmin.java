@@ -17,6 +17,9 @@
 
 package org.apache.solr.client.solrj.request;
 
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
@@ -39,22 +42,19 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
-  protected static Logger log = LoggerFactory.getLogger(TestCoreAdmin.class);
-  
-  private static final String SOLR_XML = "solr.xml";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String tempDirProp;
 
   @Rule
   public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-  
+
+  /*
   @Override
   protected File getSolrXml() throws Exception {
     // This test writes on the directory where the solr.xml is located. Better
@@ -65,7 +65,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     FileUtils.copyFile(origSolrXml, solrXml);
     return solrXml;
   }
-  
+  */
+
   protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");
   }

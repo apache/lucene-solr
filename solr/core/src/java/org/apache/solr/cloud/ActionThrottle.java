@@ -1,5 +1,7 @@
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 // this class may be accessed by multiple threads, but only one at a time
 public class ActionThrottle {
-  private static Logger log = LoggerFactory.getLogger(ActionThrottle.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private volatile Long lastActionStartedAt;
   private volatile Long minMsBetweenActions;

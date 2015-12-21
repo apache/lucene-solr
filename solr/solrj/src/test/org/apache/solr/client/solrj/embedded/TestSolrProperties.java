@@ -18,6 +18,9 @@
 package org.apache.solr.client.solrj.embedded;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
+import java.lang.invoke.MethodHandles;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -34,25 +37,16 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-
 /**
  *
  * @since solr 1.3
  */
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
-  protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
-
-  private static final String SOLR_XML = "solr.xml";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Rule
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  @Override
-  protected File getSolrXml() throws Exception {
-    return new File(SOLR_HOME, SOLR_XML);
-  }
 
   protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");

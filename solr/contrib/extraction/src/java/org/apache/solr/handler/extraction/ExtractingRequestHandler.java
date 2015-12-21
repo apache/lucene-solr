@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,12 +47,14 @@ import java.util.Map;
  */
 public class ExtractingRequestHandler extends ContentStreamHandlerBase implements SolrCoreAware {
 
-  private transient static Logger log = LoggerFactory.getLogger(ExtractingRequestHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String PARSE_CONTEXT_CONFIG = "parseContext.config";
   public static final String CONFIG_LOCATION = "tika.config";
   public static final String DATE_FORMATS = "date.formats";
 
   protected TikaConfig config;
+  protected ParseContextConfig parseContextConfig;
 
 
   protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
@@ -79,6 +82,16 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
+
+      String parseContextConfigLoc = (String) initArgs.get(PARSE_CONTEXT_CONFIG);
+      if (parseContextConfigLoc != null) {
+        try {
+          parseContextConfig = new ParseContextConfig(core.getResourceLoader(), parseContextConfigLoc);
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
+
       NamedList configDateFormats = (NamedList) initArgs.get(DATE_FORMATS);
       if (configDateFormats != null && configDateFormats.size() > 0) {
         dateFormats = new HashSet<>();
@@ -97,6 +110,9 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     }
+    if (parseContextConfig == null) {
+      parseContextConfig = new ParseContextConfig();
+    }
     factory = createFactory();
   }
 
@@ -111,7 +127,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
-    return new ExtractingDocumentLoader(req, processor, config, factory);
+    return new ExtractingDocumentLoader(req, processor, config, parseContextConfig, factory);
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////

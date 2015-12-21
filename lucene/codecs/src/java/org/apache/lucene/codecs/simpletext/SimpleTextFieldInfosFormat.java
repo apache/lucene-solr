@@ -64,6 +64,8 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
   static final BytesRef NUM_ATTS        =  new BytesRef("  attributes ");
   static final BytesRef ATT_KEY         =  new BytesRef("    key ");
   static final BytesRef ATT_VALUE       =  new BytesRef("    value ");
+  static final BytesRef DIM_COUNT       =  new BytesRef("  dimensional count ");
+  static final BytesRef DIM_NUM_BYTES   =  new BytesRef("  dimensional num bytes ");
   
   @Override
   public FieldInfos read(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, IOContext iocontext) throws IOException {
@@ -130,8 +132,17 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
           atts.put(key, value);
         }
 
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch.get(), DIM_COUNT);
+        int dimensionalCount = Integer.parseInt(readString(DIM_COUNT.length, scratch));
+
+        SimpleTextUtil.readLine(input, scratch);
+        assert StringHelper.startsWith(scratch.get(), DIM_NUM_BYTES);
+        int dimensionalNumBytes = Integer.parseInt(readString(DIM_NUM_BYTES.length, scratch));
+
         infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(atts));
+                                 omitNorms, storePayloads, indexOptions, docValuesType, dvGen, Collections.unmodifiableMap(atts),
+                                 dimensionalCount, dimensionalNumBytes);
       }
 
       SimpleTextUtil.checkFooter(input);
@@ -219,6 +230,14 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
             SimpleTextUtil.writeNewline(out);
           }
         }
+
+        SimpleTextUtil.write(out, DIM_COUNT);
+        SimpleTextUtil.write(out, Integer.toString(fi.getDimensionCount()), scratch);
+        SimpleTextUtil.writeNewline(out);
+        
+        SimpleTextUtil.write(out, DIM_NUM_BYTES);
+        SimpleTextUtil.write(out, Integer.toString(fi.getDimensionNumBytes()), scratch);
+        SimpleTextUtil.writeNewline(out);
       }
       SimpleTextUtil.writeChecksum(out, scratch);
       success = true;

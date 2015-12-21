@@ -17,19 +17,26 @@ package org.apache.lucene.search.suggest.document;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.lucene.analysis.BaseTokenStreamTestCase.assertTokenStreamContents;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
@@ -84,6 +91,40 @@ public class TestContextSuggestField extends LuceneTestCase {
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("[0x1d]"));
     }
+  }
+
+  @Test
+  public void testTokenStream() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    ContextSuggestField field = new ContextSuggestField("field", "input", 1, "context1", "context2");
+    BytesRef surfaceForm = new BytesRef("input");
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    try (OutputStreamDataOutput output = new OutputStreamDataOutput(byteArrayOutputStream)) {
+      output.writeVInt(surfaceForm.length);
+      output.writeBytes(surfaceForm.bytes, surfaceForm.offset, surfaceForm.length);
+      output.writeVInt(1 + 1);
+      output.writeByte(ContextSuggestField.TYPE);
+    }
+    BytesRef payload = new BytesRef(byteArrayOutputStream.toByteArray());
+    String[] expectedOutputs = new String[2];
+    CharsRefBuilder builder = new CharsRefBuilder();
+    builder.append("context1");
+    builder.append(((char) ContextSuggestField.CONTEXT_SEPARATOR));
+    builder.append(((char) CompletionAnalyzer.SEP_LABEL));
+    builder.append("input");
+    expectedOutputs[0] = builder.toCharsRef().toString();
+    builder.clear();
+    builder.append("context2");
+    builder.append(((char) ContextSuggestField.CONTEXT_SEPARATOR));
+    builder.append(((char) CompletionAnalyzer.SEP_LABEL));
+    builder.append("input");
+    expectedOutputs[1] = builder.toCharsRef().toString();
+    TokenStream stream = new CompletionTokenStreamTest.PayloadAttrToTypeAttrFilter(field.tokenStream(analyzer, null));
+    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 1}, null, null);
+
+    CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(analyzer);
+    stream = new CompletionTokenStreamTest.PayloadAttrToTypeAttrFilter(field.tokenStream(completionAnalyzer, null));
+    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 1}, null, null);
   }
 
   @Test
@@ -146,6 +187,41 @@ public class TestContextSuggestField extends LuceneTestCase {
         new Entry("suggestion3", "type3", 2),
         new Entry("suggestion4", "type4", 1));
 
+    reader.close();
+    iw.close();
+  }
+
+  @Test
+  public void testCompletionAnalyzer() throws Exception {
+    CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(new StandardAnalyzer(), true, true);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(completionAnalyzer, "suggest_field"));
+    Document document = new Document();
+
+    document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion2", 3, "type2"));
+    document.add(new ContextSuggestField("suggest_field", "suggestion3", 2, "type3"));
+    iw.addDocument(document);
+    document = new Document();
+    document.add(new ContextSuggestField("suggest_field", "suggestion4", 1, "type4"));
+    iw.addDocument(document);
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
+    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(completionAnalyzer, new Term("suggest_field", "sugg")));
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4);
+    assertSuggestions(suggest,
+        new Entry("suggestion1", "type1", 4),
+        new Entry("suggestion2", "type2", 3),
+        new Entry("suggestion3", "type3", 2),
+        new Entry("suggestion4", "type4", 1));
+    query.addContext("type1");
+    suggest = suggestIndexSearcher.suggest(query, 4);
+    assertSuggestions(suggest,
+        new Entry("suggestion1", "type1", 4));
     reader.close();
     iw.close();
   }

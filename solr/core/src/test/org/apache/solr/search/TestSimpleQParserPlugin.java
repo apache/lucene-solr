@@ -220,6 +220,14 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
     assertJQ(req("defType", "simple", "qf", "text0", "q", "BAR*"), "/response/numFound==0");
   }
 
+  /** Test that multiterm analysis chain is used for fuzzy. */
+  public void testFuzzyChain() throws Exception {
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "FOOBAT~1"), "/response/numFound==1");
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "Fóóba~1"), "/response/numFound==1");
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "FOOB~2"), "/response/numFound==1");
+    assertJQ(req("defType", "simple", "qf", "text0", "q", "BAR~1"), "/response/numFound==0");
+  }
+
   public void testQueryAnalyzerIsUsed() throws Exception {
     // this should only match one doc, which was lower cased before being added
     assertJQ(req("defType", "simple", "qf", "text-query0", "q", "HELLO"),

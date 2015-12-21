@@ -22,6 +22,11 @@ import java.io.File;
 import org.apache.lucene.util.Constants;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.AfterClass;
@@ -29,13 +34,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * 
+ *
  */
 public class DistributedQueryElevationComponentTest extends BaseDistributedSearchTestCase {
 
   @BeforeClass
   public static void betterNotBeJ9() {
-    assumeFalse("FIXME: SOLR-5791: This test fails under IBM J9", 
+    assumeFalse("FIXME: SOLR-5791: This test fails under IBM J9",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
   }
 
@@ -46,13 +51,13 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     configString = "solrconfig-elevate.xml";
     schemaString = "schema11.xml";
   }
-  
+
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("elevate.data.file", "elevate.xml");
     File parent = new File(TEST_HOME(), "conf");
   }
-  
+
   @AfterClass
   public static void afterClass() {
     System.clearProperty("elevate.data.file");
@@ -61,8 +66,8 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
   @Test
   @ShardsFixed(num = 3)
   public void test() throws Exception {
-    
-    
+
+
     del("*:*");
     indexr(id,"1", "int_i", "1", "text", "XXXX XXXX", "field_t", "anything");
     indexr(id,"2", "int_i", "2", "text", "YYYY YYYY", "plow_t", "rake");
@@ -70,10 +75,10 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     indexr(id,"4", "int_i", "4", "text", "XXXX XXXX");
     indexr(id,"5", "int_i", "5", "text", "ZZZZ ZZZZ ZZZZ");
     indexr(id,"6", "int_i", "6", "text", "ZZZZ");
-    
+
     index_specific(2, id, "7", "int_i", "7", "text", "solr");
     commit();
-    
+
     handle.put("explain", SKIPVAL);
     handle.put("debug", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
@@ -88,10 +93,35 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     query("q", "*:*", "qt", "/elevate", "shards.qt", "/elevate", "rows", "500", "sort", "id desc", CommonParams.FL, "id, score, [elevated]");
 
     query("q", "ZZZZ", "qt", "/elevate", "shards.qt", "/elevate", "rows", "500", CommonParams.FL, "*, [elevated]", "forceElevation", "true", "sort", "int_i desc");
-    
+
     query("q", "solr", "qt", "/elevate", "shards.qt", "/elevate", "rows", "500", CommonParams.FL, "*, [elevated]", "forceElevation", "true", "sort", "int_i asc");
-    
+
     query("q", "ZZZZ", "qt", "/elevate", "shards.qt", "/elevate", "rows", "500", CommonParams.FL, "*, [elevated]", "forceElevation", "true", "sort", "id desc");
+
+    // See SOLR-4854 for background on following test code
+
+    // Uses XML response format by default
+    QueryResponse response = query("q", "XXXX", "qt", "/elevate", "shards.qt", "/elevate", "rows", "500", CommonParams.FL, "id, [elevated]", "enableElevation", "true",
+        "forceElevation", "true", "elevateIds", "6", "sort", "id desc");
+
+    assertTrue(response.getResults().getNumFound() > 0);
+    SolrDocument document = response.getResults().get(0);
+    assertEquals(6.0f, document.getFieldValue("id"));
+    assertEquals(true, document.getFieldValue("[elevated]"));
+
+    // Force javabin format
+    HttpSolrClient client = new HttpSolrClient(((HttpSolrClient)clients.get(0)).getBaseURL());
+    client.setParser(new BinaryResponseParser());
+    SolrQuery solrQuery = new SolrQuery("XXXX").setParam("qt", "/elevate").setParam("shards.qt", "/elevate").setRows(500).setFields("id,[elevated]")
+        .setParam("enableElevation", "true").setParam("forceElevation", "true").setParam("elevateIds", "6", "wt", "javabin")
+        .setSort("id", SolrQuery.ORDER.desc);
+    setDistributedParams(solrQuery);
+    response = client.query(solrQuery);
+
+    assertTrue(response.getResults().getNumFound() > 0);
+    document = response.getResults().get(0);
+    assertEquals(6.0f, document.getFieldValue("id"));
+    assertEquals(true, document.getFieldValue("[elevated]"));
   }
   
   @Override

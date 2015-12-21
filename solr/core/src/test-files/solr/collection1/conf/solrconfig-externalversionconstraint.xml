@@ -29,6 +29,7 @@
     <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
     <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
   </directoryFactory>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   
   <dataDir>${solr.data.dir:}</dataDir>
 

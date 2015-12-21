@@ -20,29 +20,20 @@ package org.apache.solr.core;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
-
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
-
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.Version;
@@ -68,8 +59,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.RegexFileFilter;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -79,9 +68,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
@@ -98,7 +87,7 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY
  */
 public class SolrConfig extends Config implements MapSerializable {
 
-  public static final Logger log = LoggerFactory.getLogger(SolrConfig.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
   private RequestParams requestParams;
@@ -166,7 +155,7 @@ public class SolrConfig extends Config implements MapSerializable {
    * @param name        the configuration name used by the loader if the stream is null
    * @param is          the configuration stream
    */
-  public SolrConfig(String instanceDir, String name, InputSource is)
+  public SolrConfig(Path instanceDir, String name, InputSource is)
       throws ParserConfigurationException, IOException, SAXException {
     this(new SolrResourceLoader(instanceDir), name, is);
   }
@@ -179,7 +168,7 @@ public class SolrConfig extends Config implements MapSerializable {
       if (loader instanceof ZkSolrResourceLoader) {
         resource = name;
       } else {
-        resource = loader.getConfigDir() + name;
+        resource = Paths.get(loader.getConfigDir()).resolve(name).toString();
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading solr config from " + resource, e);
     }
@@ -318,7 +307,7 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     solrRequestParsers = new SolrRequestParsers(this);
-    Config.log.info("Loaded SolrConfig: " + name);
+    log.info("Loaded SolrConfig: " + name);
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
@@ -745,32 +734,38 @@ public class SolrConfig extends Config implements MapSerializable {
 
     log.info("Adding specified lib dirs to ClassLoader");
     SolrResourceLoader loader = getResourceLoader();
+    List<URL> urls = new ArrayList<>();
 
-    try {
-      for (int i = 0; i < nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-
-        String baseDir = DOMUtil.getAttr(node, "dir");
-        String path = DOMUtil.getAttr(node, PATH);
-        if (null != baseDir) {
-          // :TODO: add support for a simpler 'glob' mutually exclusive of regex
-          String regex = DOMUtil.getAttr(node, "regex");
-          FileFilter filter = (null == regex) ? null : new RegexFileFilter(regex);
-          loader.addToClassLoader(baseDir, filter, false);
-        } else if (null != path) {
-          final File file = FileUtils.resolvePath(new File(loader.getInstanceDir()), path);
-          loader.addToClassLoader(file.getParent(), new FileFilter() {
-            @Override
-            public boolean accept(File pathname) {
-              return pathname.equals(file);
-            }
-          }, false);
-        } else {
-          throw new RuntimeException(
-              "lib: missing mandatory attributes: 'dir' or 'path'");
+    for (int i = 0; i < nodes.getLength(); i++) {
+      Node node = nodes.item(i);
+      String baseDir = DOMUtil.getAttr(node, "dir");
+      String path = DOMUtil.getAttr(node, PATH);
+      if (null != baseDir) {
+        // :TODO: add support for a simpler 'glob' mutually exclusive of regex
+        Path dir = loader.getInstancePath().resolve(baseDir);
+        String regex = DOMUtil.getAttr(node, "regex");
+        try {
+          if (regex == null)
+            urls.addAll(SolrResourceLoader.getURLs(dir));
+          else
+            urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
+        } catch (IOException e) {
+          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e.getMessage());
         }
+      } else if (null != path) {
+        final Path dir = loader.getInstancePath().resolve(path);
+        try {
+          urls.add(dir.toUri().toURL());
+        } catch (MalformedURLException e) {
+          log.warn("Couldn't add file {} to classpath: {}", dir, e.getMessage());
+        }
+      } else {
+        throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
       }
-    } finally {
+    }
+
+    if (urls.size() > 0) {
+      loader.addToClassLoader(urls);
       loader.reloadLuceneSPI();
     }
   }

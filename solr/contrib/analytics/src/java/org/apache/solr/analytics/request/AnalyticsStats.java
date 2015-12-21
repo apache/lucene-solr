@@ -18,6 +18,7 @@
 package org.apache.solr.analytics.request;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -45,7 +46,7 @@ public class AnalyticsStats {
   protected SolrIndexSearcher searcher;
   protected SolrQueryRequest req;
   protected AnalyticsStatisticsCollector statsCollector;
-  private static final Logger log = LoggerFactory.getLogger(AnalyticsStats.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public AnalyticsStats(SolrQueryRequest req, DocSet docs, SolrParams params, AnalyticsStatisticsCollector statsCollector) {
     this.req = req;

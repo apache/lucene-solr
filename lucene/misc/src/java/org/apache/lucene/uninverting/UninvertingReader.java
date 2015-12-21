@@ -23,10 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.document.BinaryDocValuesField; // javadocs
-import org.apache.lucene.document.DoubleField; // javadocs
-import org.apache.lucene.document.FloatField; // javadocs
-import org.apache.lucene.document.IntField; // javadocs
-import org.apache.lucene.document.LongField; // javadocs
 import org.apache.lucene.document.NumericDocValuesField; // javadocs
 import org.apache.lucene.document.SortedDocValuesField; // javadocs
 import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
@@ -64,28 +60,28 @@ public class UninvertingReader extends FilterLeafReader {
    */
   public static enum Type {
     /** 
-     * Single-valued Integer, (e.g. indexed with {@link IntField})
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.LegacyIntField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
      */
     INTEGER,
     /** 
-     * Single-valued Long, (e.g. indexed with {@link LongField}) 
+     * Single-valued Long, (e.g. indexed with {@link org.apache.lucene.document.LegacyLongField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
      */
     LONG,
     /** 
-     * Single-valued Float, (e.g. indexed with {@link FloatField}) 
+     * Single-valued Float, (e.g. indexed with {@link org.apache.lucene.document.LegacyFloatField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
      */
     FLOAT,
     /** 
-     * Single-valued Double, (e.g. indexed with {@link DoubleField}) 
+     * Single-valued Double, (e.g. indexed with {@link org.apache.lucene.document.LegacyDoubleField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -113,28 +109,28 @@ public class UninvertingReader extends FilterLeafReader {
      */
     SORTED_SET_BINARY,
     /** 
-     * Multi-valued Integer, (e.g. indexed with {@link IntField}) 
+     * Multi-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.LegacyIntField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_INTEGER,
     /** 
-     * Multi-valued Float, (e.g. indexed with {@link FloatField}) 
+     * Multi-valued Float, (e.g. indexed with {@link org.apache.lucene.document.LegacyFloatField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_FLOAT,
     /** 
-     * Multi-valued Long, (e.g. indexed with {@link LongField}) 
+     * Multi-valued Long, (e.g. indexed with {@link org.apache.lucene.document.LegacyLongField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_LONG,
     /** 
-     * Multi-valued Double, (e.g. indexed with {@link DoubleField}) 
+     * Multi-valued Double, (e.g. indexed with {@link org.apache.lucene.document.LegacyDoubleField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
@@ -216,7 +212,7 @@ public class UninvertingReader extends FilterLeafReader {
         }
       }
       filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
-                                      fi.hasPayloads(), fi.getIndexOptions(), type, -1, Collections.emptyMap()));
+                                      fi.hasPayloads(), fi.getIndexOptions(), type, -1, Collections.emptyMap(), 0, 0));
     }
     fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }

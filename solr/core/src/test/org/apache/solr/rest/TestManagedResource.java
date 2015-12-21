@@ -23,6 +23,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.io.StringReader;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -216,7 +217,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     storageIO.storage.put(storedResourceId, new BytesRef(json(storedJson)));
     
     ManagedTestResource res = 
-        new ManagedTestResource(resourceId, new SolrResourceLoader("./"), storageIO);
+        new ManagedTestResource(resourceId, new SolrResourceLoader(Paths.get("./")), storageIO);
     res.loadManagedDataAndNotify(observers);
     
     assertTrue("Observer was not notified by ManagedResource!", observer.wasNotified);
@@ -282,7 +283,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     storageIO.storage.put(storedResourceId, ser2bytes((Serializable)storedData));
     
     CustomStorageFormatResource res = 
-        new CustomStorageFormatResource(resourceId, new SolrResourceLoader("./"), storageIO);
+        new CustomStorageFormatResource(resourceId, new SolrResourceLoader(Paths.get("./")), storageIO);
     res.loadManagedDataAndNotify(observers);
     
     assertTrue("Observer was not notified by ManagedResource!", observer.wasNotified);

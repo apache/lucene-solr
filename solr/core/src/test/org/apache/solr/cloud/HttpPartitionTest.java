@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,7 +52,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
 import org.apache.solr.util.RTimer;
@@ -68,8 +68,7 @@ import org.slf4j.LoggerFactory;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
-  protected static final transient Logger log =
-      LoggerFactory.getLogger(HttpPartitionTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // To prevent the test assertions firing too fast before cluster state
   // recognizes (and propagates) partitions
@@ -137,7 +136,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
 
-    CoreContainer cores = ((SolrDispatchFilter)leaderJetty.getDispatchFilter().getFilter()).getCores();
+    CoreContainer cores = leaderJetty.getCoreContainer();
     ZkController zkController = cores.getZkController();
     assertNotNull("ZkController is null", zkController);
 
@@ -310,8 +309,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // Get the max version from the replica core to make sure it gets updated after recovery (see SOLR-7625)
     JettySolrRunner replicaJetty = getJettyOnPort(getReplicaPort(notLeader));
-    SolrDispatchFilter filter = (SolrDispatchFilter)replicaJetty.getDispatchFilter().getFilter();
-    CoreContainer coreContainer = filter.getCores();
+    CoreContainer coreContainer = replicaJetty.getCoreContainer();
     ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
     String coreName = replicaCoreNodeProps.getCoreName();
     Long maxVersionBefore = null;

@@ -108,6 +108,8 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
       assertTrue("evaluation took more than 1m: " + evaluationTime / 1000 + "s", evaluationTime < 60000);
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue(5000 > avgClassificationTime);
+      double accuracy = confusionMatrix.getAccuracy();
+      assertTrue(accuracy > 0d);
     } finally {
       leafReader.close();
     }

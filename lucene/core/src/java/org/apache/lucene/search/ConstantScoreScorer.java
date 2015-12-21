@@ -54,8 +54,18 @@ public final class ConstantScoreScorer extends Scorer {
   }
 
   @Override
-  public TwoPhaseIterator asTwoPhaseIterator() {
+  public DocIdSetIterator iterator() {
+    return disi;
+  }
+
+  @Override
+  public TwoPhaseIterator twoPhaseIterator() {
     return twoPhaseIterator;
+  }
+
+  @Override
+  public int docID() {
+    return disi.docID();
   }
 
   @Override
@@ -68,24 +78,5 @@ public final class ConstantScoreScorer extends Scorer {
     return 1;
   }
 
-  @Override
-  public int docID() {
-    return disi.docID();
-  }
-
-  @Override
-  public int nextDoc() throws IOException {
-    return disi.nextDoc();
-  }
-
-  @Override
-  public int advance(int target) throws IOException {
-    return disi.advance(target);
-  }
-
-  @Override
-  public long cost() {
-    return disi.cost();
-  }
 }
 

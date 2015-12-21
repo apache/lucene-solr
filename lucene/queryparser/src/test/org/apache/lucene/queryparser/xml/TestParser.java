@@ -23,8 +23,7 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -37,7 +36,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 
 import java.io.BufferedReader;
@@ -45,12 +43,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 
 public class TestParser extends LuceneTestCase {
 
-  private static CoreParser builder;
+  private static Analyzer analyzer;
+  private static CoreParser coreParser;
   private static Directory dir;
   private static IndexReader reader;
   private static IndexSearcher searcher;
@@ -58,9 +56,9 @@ public class TestParser extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
+    analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     //initialize the parser
-    builder = new CorePlusExtensionsParser("contents", analyzer);
+    coreParser = new CorePlusExtensionsParser("contents", analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
         TestParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
@@ -74,7 +72,7 @@ public class TestParser extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("date", date, Field.Store.YES));
       doc.add(newTextField("contents", content, Field.Store.YES));
-      doc.add(new IntField("date2", Integer.valueOf(date), Field.Store.NO));
+      doc.add(new LegacyIntField("date2", Integer.valueOf(date), Field.Store.NO));
       writer.addDocument(doc);
       line = d.readLine();
     }
@@ -92,7 +90,8 @@ public class TestParser extends LuceneTestCase {
     reader = null;
     searcher = null;
     dir = null;
-    builder = null;
+    coreParser = null;
+    analyzer = null;
   }
 
   public void testSimpleXML() throws ParserException, IOException {
@@ -181,21 +180,24 @@ public class TestParser extends LuceneTestCase {
     dumpResults("Nested Boolean query", q, 5);
   }
 
-  public void testCachedFilterXML() throws ParserException, IOException {
-    Query q = parse("CachedQuery.xml");
-    dumpResults("Cached filter", q, 5);
-  }
-
-  public void testNumericRangeQueryQueryXML() throws ParserException, IOException {
-    Query q = parse("NumericRangeQueryQuery.xml");
-    dumpResults("NumericRangeQuery", q, 5);
+  public void testNumericRangeQueryXML() throws ParserException, IOException {
+    Query q = parse("LegacyNumericRangeQuery.xml");
+    dumpResults("LegacyNumericRangeQuery", q, 5);
   }
 
   //================= Helper methods ===================================
 
+  protected Analyzer analyzer() {
+    return analyzer;
+  }
+
+  protected CoreParser coreParser() {
+    return coreParser;
+  }
+
   private Query parse(String xmlFileName) throws ParserException, IOException {
     InputStream xmlStream = TestParser.class.getResourceAsStream(xmlFileName);
-    Query result = builder.parse(xmlStream);
+    Query result = coreParser().parse(xmlStream);
     xmlStream.close();
     return result;
   }

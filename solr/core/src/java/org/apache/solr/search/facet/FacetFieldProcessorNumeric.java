@@ -342,7 +342,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     // add a modest amount of over-request if this is a shard request
     int lim = freq.limit >= 0 ? (fcontext.isShard() ? (int)(freq.limit*1.1+4) : (int)freq.limit) : Integer.MAX_VALUE;
 
-    int maxsize = (int)(freq.limit > 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
+    int maxsize = (int)(freq.limit >= 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
     maxsize = Math.min(maxsize, table.cardinality);
 
     final int sortMul = freq.sortDirection.getMultiplier();

@@ -19,8 +19,6 @@ package org.apache.solr.handler;
 
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.CdcrUpdateLog;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This manager is responsible in enabling or disabling the buffering of the update logs. Currently, buffer
@@ -33,8 +31,6 @@ class CdcrBufferManager implements CdcrStateManager.CdcrStateObserver {
   private CdcrBufferStateManager bufferStateManager;
 
   private final SolrCore core;
-
-  protected static Logger log = LoggerFactory.getLogger(CdcrBufferManager.class);
 
   CdcrBufferManager(SolrCore core) {
     this.core = core;

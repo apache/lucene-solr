@@ -30,12 +30,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LegacyFloatField;
+import org.apache.lucene.document.LegacyIntField;
+import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -57,8 +57,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -88,16 +88,16 @@ public class TestFieldCache extends LuceneTestCase {
     }
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(new LongField("theLong", theLong--, Field.Store.NO));
-      doc.add(new DoubleField("theDouble", theDouble--, Field.Store.NO));
-      doc.add(new IntField("theInt", theInt--, Field.Store.NO));
-      doc.add(new FloatField("theFloat", theFloat--, Field.Store.NO));
+      doc.add(new LegacyLongField("theLong", theLong--, Field.Store.NO));
+      doc.add(new LegacyDoubleField("theDouble", theDouble--, Field.Store.NO));
+      doc.add(new LegacyIntField("theInt", theInt--, Field.Store.NO));
+      doc.add(new LegacyFloatField("theFloat", theFloat--, Field.Store.NO));
       if (i%2 == 0) {
-        doc.add(new IntField("sparse", i, Field.Store.NO));
+        doc.add(new LegacyIntField("sparse", i, Field.Store.NO));
       }
 
       if (i%2 == 0) {
-        doc.add(new IntField("numInt", i, Field.Store.NO));
+        doc.add(new LegacyIntField("numInt", i, Field.Store.NO));
       }
 
       // sometimes skip the field:
@@ -142,11 +142,11 @@ public class TestFieldCache extends LuceneTestCase {
       cache.getNumerics(reader, "theDouble", new FieldCache.Parser() {
         @Override
         public TermsEnum termsEnum(Terms terms) throws IOException {
-          return NumericUtils.filterPrefixCodedLongs(terms.iterator());
+          return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
         }
         @Override
         public long parseValue(BytesRef term) {
-          int val = (int) NumericUtils.prefixCodedToLong(term);
+          int val = (int) LegacyNumericUtils.prefixCodedToLong(term);
           if (val<0) val ^= 0x7fffffff;
           return val;
         }
@@ -672,7 +672,7 @@ public class TestFieldCache extends LuceneTestCase {
     cfg.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
     Document doc = new Document();
-    LongField field = new LongField("f", 0L, Store.YES);
+    LegacyLongField field = new LegacyLongField("f", 0L, Store.YES);
     doc.add(field);
     final long[] values = new long[TestUtil.nextInt(random(), 1, 10)];
     for (int i = 0; i < values.length; ++i) {
@@ -718,7 +718,7 @@ public class TestFieldCache extends LuceneTestCase {
     cfg.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
     Document doc = new Document();
-    IntField field = new IntField("f", 0, Store.YES);
+    LegacyIntField field = new LegacyIntField("f", 0, Store.YES);
     doc.add(field);
     final int[] values = new int[TestUtil.nextInt(random(), 1, 10)];
     for (int i = 0; i < values.length; ++i) {

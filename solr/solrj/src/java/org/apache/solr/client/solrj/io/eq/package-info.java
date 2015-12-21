@@ -16,6 +16,6 @@
  */
 
 /**
- * Primary APIs for communicating with a Solr Server from a Java client.
+ * Equalitors for the Streaming Aggregation API
  **/
 package org.apache.solr.client.solrj.io.eq;

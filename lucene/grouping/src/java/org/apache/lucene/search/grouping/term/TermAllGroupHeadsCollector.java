@@ -171,6 +171,11 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
+    public boolean needsScores() {
+      return sortWithinGroup.needsScores();
+    }
+
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       for (GroupHead groupHead : groups.values()) {
@@ -247,6 +252,11 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     @Override
     protected Collection<GroupHead> getCollectedGroupHeads() {
       return collectedGroups;
+    }
+
+    @Override
+    public boolean needsScores() {
+      return true;
     }
 
     @Override
@@ -410,6 +420,11 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
+    public boolean needsScores() {
+      return false;
+    }
+
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
     }
 
@@ -541,6 +556,11 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
+    public boolean needsScores() {
+      return true;
+    }
+
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
@@ -626,9 +646,5 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
   }
-  
-  @Override
-  public boolean needsScores() {
-    return true; // TODO, maybe we don't?
-  }
+
 }

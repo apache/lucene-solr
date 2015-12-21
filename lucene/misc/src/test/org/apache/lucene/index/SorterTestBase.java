@@ -30,9 +30,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.DimensionalBinaryField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -40,6 +41,8 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
+import org.apache.lucene.index.DimensionalValues.Relation;
 import org.apache.lucene.index.SortingLeafReader.SortingDocsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.CollectionStatistics;
@@ -51,10 +54,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public abstract class SorterTestBase extends LuceneTestCase {
 
@@ -134,6 +137,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
   protected static final String SORTED_DV_FIELD = "sorted";
   protected static final String SORTED_SET_DV_FIELD = "sorted_set";
   protected static final String TERM_VECTORS_FIELD = "term_vectors";
+  protected static final String DIMENSIONAL_FIELD = "numeric1d";
 
   private static final FieldType TERM_VECTORS_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
   static {
@@ -169,6 +173,9 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
     doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
     doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
+    byte[] bytes = new byte[4];
+    NumericUtils.intToBytes(id, bytes, 0);
+    doc.add(new DimensionalBinaryField(DIMENSIONAL_FIELD, bytes));
     return doc;
   }
 
@@ -224,7 +231,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     dir = null;
   }
   
-  @Test
   public void testBinaryDocValuesField() throws Exception {
     BinaryDocValues dv = sortedReader.getBinaryDocValues(BINARY_DV_FIELD);
     for (int i = 0; i < sortedReader.maxDoc(); i++) {
@@ -233,7 +239,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
   }
   
-  @Test
   public void testDocsAndPositionsEnum() throws Exception {
     TermsEnum termsEnum = sortedReader.terms(DOC_POSITIONS_FIELD).iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
@@ -293,14 +298,12 @@ public abstract class SorterTestBase extends LuceneTestCase {
     return bits;
   }
 
-  @Test
   public void testDocsEnum() throws Exception {
     TermsEnum termsEnum = sortedReader.terms(DOCS_ENUM_FIELD).iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOCS_ENUM_TERM)));
     PostingsEnum docs = termsEnum.postings(null);
 
     int doc;
-    int prev = -1;
     while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).get(ID_FIELD)));
     }
@@ -311,13 +314,11 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertTrue(((SortingDocsEnum) docs).reused(reuse)); // make sure reuse worked
     }
     doc = -1;
-    prev = -1;
     while ((doc = docs.advance(doc + 1)) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(sortedReader.document(doc).get(ID_FIELD)));
     }
   }
   
-  @Test
   public void testNormValues() throws Exception {
     NumericDocValues dv = sortedReader.getNormValues(NORMS_FIELD);
     int maxDoc = sortedReader.maxDoc();
@@ -326,7 +327,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
   }
   
-  @Test
   public void testNumericDocValuesField() throws Exception {
     NumericDocValues dv = sortedReader.getNumericDocValues(NUMERIC_DV_FIELD);
     int maxDoc = sortedReader.maxDoc();
@@ -335,7 +335,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
   }
   
-  @Test
   public void testSortedDocValuesField() throws Exception {
     SortedDocValues dv = sortedReader.getSortedDocValues(SORTED_DV_FIELD);
     int maxDoc = sortedReader.maxDoc();
@@ -345,7 +344,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
   }
   
-  @Test
   public void testSortedSetDocValuesField() throws Exception {
     SortedSetDocValues dv = sortedReader.getSortedSetDocValues(SORTED_SET_DV_FIELD);
     int maxDoc = sortedReader.maxDoc();
@@ -360,7 +358,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
   }
   
-  @Test
   public void testSortedNumericDocValuesField() throws Exception {
     SortedNumericDocValues dv = sortedReader.getSortedNumericDocValues(SORTED_NUMERIC_DV_FIELD);
     int maxDoc = sortedReader.maxDoc();
@@ -373,7 +370,6 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
   }
   
-  @Test
   public void testTermVectors() throws Exception {
     int maxDoc = sortedReader.maxDoc();
     for (int i = 0; i < maxDoc; i++) {
@@ -382,5 +378,25 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertEquals("incorrect term vector for doc " + i, sortedValues[i].toString(), terms.iterator().next().utf8ToString());
     }
   }
-  
+
+  public void testDimensionalValues() throws Exception {
+    DimensionalValues values = sortedReader.getDimensionalValues();
+    values.intersect(DIMENSIONAL_FIELD,
+                     new IntersectVisitor() {
+                       @Override
+                       public void visit(int docID) {
+                         throw new IllegalStateException();
+                       }
+
+                       @Override
+                       public void visit(int docID, byte[] packedValues) {
+                         assertEquals(sortedValues[docID].intValue(), NumericUtils.bytesToInt(packedValues, 0));
+                       }
+
+                       @Override
+                       public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                         return Relation.CELL_CROSSES_QUERY;
+                       }
+                     });
+  }
 }

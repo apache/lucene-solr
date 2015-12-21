@@ -30,7 +30,7 @@ import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
@@ -83,7 +83,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
               assert !exists(doc) : "zero bytes for doc, but exists is true";
               return 0F;
             }
-            return  NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(bytes));
+            return  LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes));
           }
 
           @Override
@@ -109,7 +109,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
                 //
                 BytesRef bytes = view.get(doc);
                 mval.exists = (0 == bytes.length);
-                mval.value = mval.exists ? NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(bytes)) : 0F;
+                mval.value = mval.exists ? LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes)) : 0F;
               }
             };
           }

@@ -18,6 +18,7 @@ package org.apache.solr.store.hdfs;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -35,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HdfsLockFactory extends LockFactory {
-  public static Logger log = LoggerFactory.getLogger(HdfsLockFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final HdfsLockFactory INSTANCE = new HdfsLockFactory();
   
@@ -88,17 +89,17 @@ public class HdfsLockFactory extends LockFactory {
       }
     }
 
-    return new HdfsLock(fs, lockFile);
+    return new HdfsLock(conf, lockFile);
   }
   
   private static final class HdfsLock extends Lock {
-    
-    private final FileSystem fs;
+
+    private final Configuration conf;
     private final Path lockFile;
     private volatile boolean closed;
     
-    HdfsLock(FileSystem fs, Path lockFile) {
-      this.fs = fs;
+    HdfsLock(Configuration conf, Path lockFile) {
+      this.conf = conf;
       this.lockFile = lockFile;
     }
     
@@ -107,6 +108,7 @@ public class HdfsLockFactory extends LockFactory {
       if (closed) {
         return;
       }
+      final FileSystem fs = FileSystem.get(lockFile.toUri(), conf);
       try {
         if (fs.exists(lockFile) && !fs.delete(lockFile, false)) {
           throw new LockReleaseFailedException("failed to delete: " + lockFile);
@@ -119,6 +121,11 @@ public class HdfsLockFactory extends LockFactory {
     @Override
     public void ensureValid() throws IOException {
       // no idea how to implement this on HDFS
+    }
+
+    @Override
+    public String toString() {
+      return "HdfsLock(lockFile=" + lockFile + ")";
     }
   }
 }

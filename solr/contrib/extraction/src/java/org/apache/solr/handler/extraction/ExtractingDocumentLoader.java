@@ -19,6 +19,7 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
@@ -66,7 +67,7 @@ import org.xml.sax.SAXException;
  **/
 public class ExtractingDocumentLoader extends ContentStreamLoader {
 
-  private static final Logger log = LoggerFactory.getLogger(ExtractingDocumentLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Extract Only supported format
@@ -91,13 +92,16 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   private final AddUpdateCommand templateAdd;
 
   protected TikaConfig config;
+  protected ParseContextConfig parseContextConfig;
   protected SolrContentHandlerFactory factory;
 
   public ExtractingDocumentLoader(SolrQueryRequest req, UpdateRequestProcessor processor,
-                           TikaConfig config, SolrContentHandlerFactory factory) {
+                           TikaConfig config, ParseContextConfig parseContextConfig,
+                                  SolrContentHandlerFactory factory) {
     this.params = req.getParams();
     this.core = req.getCore();
     this.config = config;
+    this.parseContextConfig = parseContextConfig;
     this.processor = processor;
 
     templateAdd = new AddUpdateCommand(req);
@@ -199,7 +203,10 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
         try{
           //potentially use a wrapper handler for parsing, but we still need the SolrContentHandler for getting the document.
-          ParseContext context = new ParseContext();//TODO: should we design a way to pass in parse context?
+          ParseContext context = parseContextConfig.create();
+
+
+          context.set(Parser.class, parser);
           context.set(HtmlMapper.class, MostlyPassthroughHtmlMapper.INSTANCE);
 
           // Password handling

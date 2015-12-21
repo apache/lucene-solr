@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.codecs.DimensionalFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -150,6 +151,11 @@ public class Lucene50Codec extends Codec {
   @Override
   public final DocValuesFormat docValuesFormat() {
     return docValuesFormat;
+  }
+
+  @Override
+  public final DimensionalFormat dimensionalFormat() {
+    return DimensionalFormat.EMPTY;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");

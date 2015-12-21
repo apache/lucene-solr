@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.flexible.standard.builders;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -26,12 +26,12 @@ import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.LegacyNumericRangeQuery;
 
 /**
- * Builds {@link NumericRangeQuery}s out of {@link NumericRangeQueryNode}s.
+ * Builds {@link org.apache.lucene.search.LegacyNumericRangeQuery}s out of {@link NumericRangeQueryNode}s.
  *
- * @see NumericRangeQuery
+ * @see org.apache.lucene.search.LegacyNumericRangeQuery
  * @see NumericRangeQueryNode
  */
 public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
@@ -44,7 +44,7 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
   }
   
   @Override
-  public NumericRangeQuery<? extends Number> build(QueryNode queryNode)
+  public LegacyNumericRangeQuery<? extends Number> build(QueryNode queryNode)
       throws QueryNodeException {
     NumericRangeQueryNode numericRangeNode = (NumericRangeQueryNode) queryNode;
     
@@ -55,7 +55,7 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
     Number upperNumber = upperNumericNode.getValue();
     
     NumericConfig numericConfig = numericRangeNode.getNumericConfig();
-    NumericType numberType = numericConfig.getType();
+    FieldType.LegacyNumericType numberType = numericConfig.getType();
     String field = StringUtils.toString(numericRangeNode.getField());
     boolean minInclusive = numericRangeNode.isLowerInclusive();
     boolean maxInclusive = numericRangeNode.isUpperInclusive();
@@ -64,21 +64,21 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
     switch (numberType) {
       
       case LONG:
-        return NumericRangeQuery.newLongRange(field, precisionStep,
+        return LegacyNumericRangeQuery.newLongRange(field, precisionStep,
             (Long) lowerNumber, (Long) upperNumber, minInclusive, maxInclusive);
       
       case INT:
-        return NumericRangeQuery.newIntRange(field, precisionStep,
+        return LegacyNumericRangeQuery.newIntRange(field, precisionStep,
             (Integer) lowerNumber, (Integer) upperNumber, minInclusive,
             maxInclusive);
       
       case FLOAT:
-        return NumericRangeQuery.newFloatRange(field, precisionStep,
+        return LegacyNumericRangeQuery.newFloatRange(field, precisionStep,
             (Float) lowerNumber, (Float) upperNumber, minInclusive,
             maxInclusive);
       
       case DOUBLE:
-        return NumericRangeQuery.newDoubleRange(field, precisionStep,
+        return LegacyNumericRangeQuery.newDoubleRange(field, precisionStep,
             (Double) lowerNumber, (Double) upperNumber, minInclusive,
             maxInclusive);
         

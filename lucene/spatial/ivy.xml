@@ -23,8 +23,9 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="compile">
-      <artifact name="spatial4j" ext="jar" />
+    <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="compile"/>
+
+    <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="test">
       <artifact name="spatial4j" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
 

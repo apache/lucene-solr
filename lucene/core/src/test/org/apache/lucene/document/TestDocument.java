@@ -17,7 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -356,17 +355,15 @@ public class TestDocument extends LuceneTestCase {
       fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
     }
   }
   
   public void testNumericFieldAsString() throws Exception {
     Document doc = new Document();
-    doc.add(new IntField("int", 5, Field.Store.YES));
+    doc.add(new LegacyIntField("int", 5, Field.Store.YES));
     assertEquals("5", doc.get("int"));
     assertNull(doc.get("somethingElse"));
-    doc.add(new IntField("int", 4, Field.Store.YES));
+    doc.add(new LegacyIntField("int", 4, Field.Store.YES));
     assertArrayEquals(new String[] { "5", "4" }, doc.getValues("int"));
     
     Directory dir = newDirectory();

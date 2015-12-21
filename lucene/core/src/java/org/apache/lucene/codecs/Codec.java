@@ -18,8 +18,8 @@ package org.apache.lucene.codecs;
  */
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.ServiceLoader; // javadocs
+import java.util.Set;
 
 import org.apache.lucene.index.IndexWriterConfig; // javadocs
 import org.apache.lucene.util.NamedSPILoader;
@@ -57,7 +57,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     }
     
     // TODO: should we use this, or maybe a system property is better?
-    static Codec defaultCodec = LOADER.lookup("Lucene53");
+    static Codec defaultCodec = LOADER.lookup("Lucene60");
   }
 
   private final String name;
@@ -107,6 +107,9 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   /** Encodes/decodes compound files */
   public abstract CompoundFormat compoundFormat();
+
+  /** Encodes/decodes dimensional index */
+  public abstract DimensionalFormat dimensionalFormat();
   
   /** looks up a codec by name */
   public static Codec forName(String name) {

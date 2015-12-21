@@ -214,7 +214,7 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
   }
   
   // helper method to strip strip away 'prefix' from 'scratch' and return as String
-  private String stripPrefix(BytesRefBuilder scratch, BytesRef prefix) throws IOException {
+  private String stripPrefix(BytesRefBuilder scratch, BytesRef prefix) {
     return new String(scratch.bytes(), prefix.length, scratch.length() - prefix.length, StandardCharsets.UTF_8);
   }
   

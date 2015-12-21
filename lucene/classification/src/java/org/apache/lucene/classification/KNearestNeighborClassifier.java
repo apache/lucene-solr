@@ -19,6 +19,7 @@ package org.apache.lucene.classification;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -48,12 +49,35 @@ import org.apache.lucene.util.BytesRef;
  */
 public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
-  private final MoreLikeThis mlt;
-  private final String[] textFieldNames;
-  private final String classFieldName;
-  private final IndexSearcher indexSearcher;
-  private final int k;
-  private final Query query;
+  /**
+   * a {@link MoreLikeThis} instance used to perform MLT queries
+   */
+  protected final MoreLikeThis mlt;
+
+  /**
+   * the name of the fields used as the input text
+   */
+  protected final String[] textFieldNames;
+
+  /**
+   * the name of the field used as the output text
+   */
+  protected final String classFieldName;
+
+  /**
+   * an {@link IndexSearcher} used to perform queries
+   */
+  protected final IndexSearcher indexSearcher;
+
+  /**
+   * the no. of docs to compare in order to find the nearest neighbor to the input text
+   */
+  protected final int k;
+
+  /**
+   * a {@link Query} used to filter the documents that should be used from this classifier's underlying {@link LeafReader}
+   */
+  protected final Query query;
 
   /**
    * Creates a {@link KNearestNeighborClassifier}.
@@ -159,7 +183,13 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   }
 
   //ranking of classes must be taken in consideration
-  private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
+  /**
+   * build a list of classification results from search results
+   * @param topDocs the search results as a {@link TopDocs} object
+   * @return a {@link List} of {@link ClassificationResult}, one for each existing class
+   * @throws IOException if it's not possible to get the stored value of class field
+   */
+  protected List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
     Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
     float maxScore = topDocs.getMaxScore();
@@ -203,5 +233,16 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       returnList = temporaryList;
     }
     return returnList;
+  }
+
+  @Override
+  public String toString() {
+    return "KNearestNeighborClassifier{" +
+        "textFieldNames=" + Arrays.toString(textFieldNames) +
+        ", classFieldName='" + classFieldName + '\'' +
+        ", k=" + k +
+        ", query=" + query +
+        ", similarity=" + indexSearcher.getSimilarity(true) +
+        '}';
   }
 }

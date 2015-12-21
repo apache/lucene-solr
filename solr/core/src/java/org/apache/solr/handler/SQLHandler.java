@@ -18,6 +18,7 @@ package org.apache.solr.handler;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,6 +29,7 @@ import com.facebook.presto.sql.ExpressionFormatter;
 import com.facebook.presto.sql.tree.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
+
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -40,8 +42,8 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
-import org.apache.solr.client.solrj.io.stream.EditStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.SelectStream;
 import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -58,12 +60,13 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import com.facebook.presto.sql.parser.SqlParser;
 
@@ -78,7 +81,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     remove.add("count(*)");
   }
 
-  private Logger logger = LoggerFactory.getLogger(SQLHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void inform(SolrCore core) {
 
@@ -224,7 +227,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           .withFunctionName("count", CountMetric.class);
 
       parallelStream.setStreamFactory(factory);
-      parallelStream.setObjectSerialize(false);
       tupleStream = parallelStream;
     }
 
@@ -276,15 +278,17 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     if(sqlVisitor.sorts != null && sqlVisitor.sorts.size() > 0) {
       StreamComparator[] adjustedSorts = adjustSorts(sqlVisitor.sorts, buckets);
+        // Because of the way adjustSorts works we know that each FieldComparator has a single
+        // field name. For this reason we can just look at the leftFieldName
       FieldEqualitor[] fieldEqualitors = new FieldEqualitor[adjustedSorts.length];
       StringBuilder buf = new StringBuilder();
       for(int i=0; i<adjustedSorts.length; i++) {
         FieldComparator fieldComparator = (FieldComparator)adjustedSorts[i];
-        fieldEqualitors[i] = new FieldEqualitor(fieldComparator.getFieldName());
+        fieldEqualitors[i] = new FieldEqualitor(fieldComparator.getLeftFieldName());
         if(i>0) {
           buf.append(",");
         }
-        buf.append(fieldComparator.getFieldName()).append(" ").append(fieldComparator.getOrder().toString());
+        buf.append(fieldComparator.getLeftFieldName()).append(" ").append(fieldComparator.getOrder().toString());
       }
 
       sort = buf.toString();
@@ -353,7 +357,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           .withFunctionName("unique", UniqueStream.class);
 
       parallelStream.setStreamFactory(factory);
-      parallelStream.setObjectSerialize(false);
       tupleStream = parallelStream;
     }
 
@@ -447,7 +450,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
     }
 
-    return new EditStream(tupleStream, remove);
+    return new SelectStream(tupleStream, sqlVisitor.fields);
   }
 
   private static TupleStream doGroupByWithAggregatesFacets(SQLVisitor sqlVisitor) throws IOException {

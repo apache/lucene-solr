@@ -190,7 +190,7 @@ final class BooleanWeight extends Weight {
   /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
    *  cannot be used. */
   // pkg-private for forcing use of BooleanScorer in tests
-  BooleanScorer booleanScorer(LeafReaderContext context) throws IOException {
+  BulkScorer booleanScorer(LeafReaderContext context) throws IOException {
     List<BulkScorer> optional = new ArrayList<BulkScorer>();
     Iterator<BooleanClause> cIter = query.iterator();
     for (Weight w  : weights) {
@@ -222,12 +222,21 @@ final class BooleanWeight extends Weight {
       return null;
     }
 
+    if (optional.size() == 1) {
+      BulkScorer opt = optional.get(0);
+      if (!disableCoord && maxCoord > 1) {
+        return new BooleanTopLevelScorers.BoostedBulkScorer(opt, coord(1, maxCoord));
+      } else {
+        return opt;
+      }
+    }
+
     return new BooleanScorer(this, disableCoord, maxCoord, optional, Math.max(1, query.getMinimumNumberShouldMatch()), needsScores);
   }
 
   @Override
   public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-    final BooleanScorer bulkScorer = booleanScorer(context);
+    final BulkScorer bulkScorer = booleanScorer(context);
     if (bulkScorer != null) { // BooleanScorer is applicable
       // TODO: what is the right heuristic here?
       final long costThreshold;

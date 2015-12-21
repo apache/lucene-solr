@@ -24,7 +24,7 @@ import java.text.DecimalFormatSymbols;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
@@ -33,9 +33,9 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
 
-  /** Tests NumericRangeQuery on a multi-valued field (multiple numeric values per document).
+  /** Tests LegacyNumericRangeQuery on a multi-valued field (multiple numeric values per document).
    * This test ensures, that a classical TermRangeQuery returns exactly the same document numbers as
-   * NumericRangeQuery (see SOLR-1322 for discussion) and the multiple precision terms per numeric value
+   * LegacyNumericRangeQuery (see SOLR-1322 for discussion) and the multiple precision terms per numeric value
    * do not interfere with multiple numeric values.
    */
   public void testMultiValuedNRQ() throws Exception {
@@ -52,7 +52,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       for (int m=0, c=random().nextInt(10); m<=c; m++) {
         int value = random().nextInt(Integer.MAX_VALUE);
         doc.add(newStringField("asc", format.format(value), Field.Store.NO));
-        doc.add(new IntField("trie", value, Field.Store.NO));
+        doc.add(new LegacyIntField("trie", value, Field.Store.NO));
       }
       writer.addDocument(doc);
     }
@@ -68,10 +68,10 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
         int a=lower; lower=upper; upper=a;
       }
       TermRangeQuery cq=TermRangeQuery.newStringRange("asc", format.format(lower), format.format(upper), true, true);
-      NumericRangeQuery<Integer> tq=NumericRangeQuery.newIntRange("trie", lower, upper, true, true);
+      LegacyNumericRangeQuery<Integer> tq= LegacyNumericRangeQuery.newIntRange("trie", lower, upper, true, true);
       TopDocs trTopDocs = searcher.search(cq, 1);
       TopDocs nrTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits );
+      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits );
     }
     reader.close();
     directory.close();

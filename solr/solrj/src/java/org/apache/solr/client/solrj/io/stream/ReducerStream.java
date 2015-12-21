@@ -26,7 +26,13 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.ops.ReduceOperation;
+import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
@@ -53,21 +59,43 @@ public class ReducerStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
 
   private PushBackStream stream;
-  private StreamComparator comp;
+  private StreamEqualitor eq;
+  private ReduceOperation op;
+  private boolean needsReduce;
 
   private transient Tuple currentGroupHead;
+  
+  public ReducerStream(TupleStream stream, StreamEqualitor eq, ReduceOperation op) throws IOException {
+    init(stream, eq, op);
+  }
 
-  public ReducerStream(TupleStream stream,StreamComparator comp) throws IOException {
-    init(stream,comp);
+  public ReducerStream(TupleStream stream, StreamComparator comp, ReduceOperation op) throws IOException {
+    init(stream, convertToEqualitor(comp), op);
   }
   
+  private StreamEqualitor convertToEqualitor(StreamComparator comp){
+    if(comp instanceof MultipleFieldComparator){
+      MultipleFieldComparator mComp = (MultipleFieldComparator)comp;
+      StreamEqualitor[] eqs = new StreamEqualitor[mComp.getComps().length];
+      for(int idx = 0; idx < mComp.getComps().length; ++idx){
+        eqs[idx] = convertToEqualitor(mComp.getComps()[idx]);
+      }
+      return new MultipleFieldEqualitor(eqs);
+    }
+    else{
+      FieldComparator fComp = (FieldComparator)comp;
+      return new FieldEqualitor(fComp.getLeftFieldName(), fComp.getRightFieldName());
+    }
+  }
+
   public ReducerStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     StreamExpressionNamedParameter byExpression = factory.getNamedOperand(expression, "by");
-    
+    List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, ReduceOperation.class);
+
     // validate expression contains only what we want.
-    if(expression.getParameters().size() != streamExpressions.size() + 1){
+    if(expression.getParameters().size() != streamExpressions.size() + 2){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
     }
     
@@ -77,19 +105,31 @@ public class ReducerStream extends TupleStream implements Expressible {
     if(null == byExpression || !(byExpression.getParameter() instanceof StreamExpressionValue)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting single 'by' parameter listing fields to group by but didn't find one",expression));
     }
-    
-    // Reducing is always done over equality, so always use an EqualTo comparator
-    
+
+    ReduceOperation reduceOperation = null;
+    if(operationExpressions != null && operationExpressions.size() == 1) {
+      StreamExpression ex = operationExpressions.get(0);
+      StreamOperation operation = factory.constructOperation(ex);
+      if(operation instanceof ReduceOperation) {
+        reduceOperation = (ReduceOperation) operation;
+      } else {
+        throw new IOException("The ReducerStream requires a ReduceOperation. A StreamOperation was provided.");
+      }
+    } else {
+      throw new IOException("The ReducerStream requires a ReduceOperation.");
+    }
+
     init(factory.constructStream(streamExpressions.get(0)),
-         factory.constructComparator(((StreamExpressionValue)byExpression.getParameter()).getValue(), FieldComparator.class)
-        );
+         factory.constructEqualitor(((StreamExpressionValue) byExpression.getParameter()).getValue(), FieldEqualitor.class),
+         reduceOperation);
   }
   
-  private void init(TupleStream stream, StreamComparator comp) throws IOException{
+  private void init(TupleStream stream, StreamEqualitor eq, ReduceOperation op) throws IOException{
     this.stream = new PushBackStream(stream);
-    this.comp = comp;
+    this.eq = eq;
+    this.op = op;
     
-    if(!comp.isDerivedFrom(stream.getStreamSort())){
+    if(!eq.isDerivedFrom(stream.getStreamSort())){
       throw new IOException("Invalid ReducerStream - substream comparator (sort) must be a superset of this stream's comparator.");
     }
   }
@@ -103,11 +143,17 @@ public class ReducerStream extends TupleStream implements Expressible {
     expression.addParameter(stream.toExpression(factory));
     
     // over
-    if(comp instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("by",((Expressible)comp).toExpression(factory)));
+    if(eq instanceof Expressible){
+      expression.addParameter(new StreamExpressionNamedParameter("by",((Expressible)eq).toExpression(factory)));
     }
     else{
       throw new IOException("This ReducerStream contains a non-expressible comparator - it cannot be converted to an expression");
+    }
+
+    if(op instanceof Expressible) {
+      expression.addParameter(op.toExpression(factory));
+    } else {
+      throw new IOException("This ReducerStream contains a non-expressible operation - it cannot be converted to an expression");
     }
     
     return expression;   
@@ -133,19 +179,14 @@ public class ReducerStream extends TupleStream implements Expressible {
 
   public Tuple read() throws IOException {
 
-    List<Map> maps = new ArrayList();
     while(true) {
       Tuple t = stream.read();
 
       if(t.EOF) {
-       if(maps.size() > 0) {
+       if(needsReduce) {
          stream.pushBack(t);
-         Map map1 = maps.get(0);
-         Map map2 = new HashMap();
-         map2.putAll(map1);
-         Tuple groupHead = new Tuple(map2);
-         groupHead.setMaps(maps);
-         return groupHead;
+         needsReduce = false;
+         return op.reduce();
        } else {
          return t;
        }
@@ -153,16 +194,17 @@ public class ReducerStream extends TupleStream implements Expressible {
 
       if(currentGroupHead == null) {
         currentGroupHead = t;
-        maps.add(t.getMap());
+        op.operate(t);
+        needsReduce = true;
       } else {
-        if(comp.compare(currentGroupHead, t) == 0) {
-          maps.add(t.getMap());
+        if(eq.test(currentGroupHead, t)) {
+          op.operate(t);
+          needsReduce = true;
         } else {
-          Tuple groupHead = currentGroupHead.clone();
           stream.pushBack(t);
           currentGroupHead = null;
-          groupHead.setMaps(maps);
-          return groupHead;
+          needsReduce = false;
+          return op.reduce();
         }
       }
     }
@@ -170,7 +212,7 @@ public class ReducerStream extends TupleStream implements Expressible {
   
   /** Return the stream sort - ie, the order in which records are returned */
   public StreamComparator getStreamSort(){
-    return comp;
+    return stream.getStreamSort();
   }
 
   public int getCost() {

@@ -27,7 +27,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
@@ -103,7 +102,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public SpanScorer scorer(LeafReaderContext context) throws IOException {
       if (field == null)
         return null;
 
@@ -112,9 +111,12 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
       }
 
-      Spans spans = getSpans(context, Postings.PAYLOADS);
-      Similarity.SimScorer simScorer = simWeight == null ? null : similarity.simScorer(simWeight, context);
-      return (spans == null) ? null : new SpanScorer(spans, this, simScorer);
+      final Spans spans = getSpans(context, Postings.PAYLOADS);
+      if (spans == null) {
+        return null;
+      }
+      final Similarity.SimScorer docScorer = getSimScorer(context);
+      return new SpanScorer(this, spans, docScorer);
     }
   }
 

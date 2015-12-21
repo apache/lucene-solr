@@ -16,6 +16,7 @@ import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 
@@ -204,10 +205,45 @@ public class StreamFactory implements Serializable {
       }
       return new MultipleFieldComparator(comps);
     }
+    else if(comparatorString.contains("=")){
+      // expected format is "left=right order"
+      String[] parts = comparatorString.split("[ =]");
+      
+      if(parts.length < 3){
+        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting 'left=right order'",comparatorString));
+      }
+      
+      String leftFieldName = null;
+      String rightFieldName = null;
+      String order = null;
+      for(String part : parts){
+        // skip empty
+        if(null == part || 0 == part.trim().length()){ continue; }
+        
+        // assign each in order
+        if(null == leftFieldName){ 
+          leftFieldName = part.trim(); 
+        }
+        else if(null == rightFieldName){ 
+          rightFieldName = part.trim(); 
+        }
+        else if(null == order){ 
+          order = part.trim();
+          break; // we're done, stop looping
+        }
+      }
+      
+      if(null == leftFieldName || null == rightFieldName || null == order){
+        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting 'left=right order'",comparatorString));
+      }
+      
+      return (StreamComparator)createInstance(comparatorType, new Class[]{ String.class, String.class, ComparatorOrder.class }, new Object[]{ leftFieldName, rightFieldName, ComparatorOrder.fromString(order) });
+    }
     else{
+      // expected format is "field order"
       String[] parts = comparatorString.split(" ");
       if(2 != parts.length){
-        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting fieldName and order",comparatorString));
+        throw new IOException(String.format(Locale.ROOT,"Invalid comparator expression %s - expecting 'field order'",comparatorString));
       }
       
       String fieldName = parts[0].trim();
@@ -246,6 +282,22 @@ public class StreamFactory implements Serializable {
       return (StreamEqualitor)createInstance(equalitorType, new Class[]{ String.class, String.class }, new Object[]{ leftFieldName, rightFieldName });
     }
   }
+  
+  public Metric constructOperation(String expressionClause) throws IOException {
+    return constructMetric(StreamExpressionParser.parse(expressionClause));
+  }
+  public StreamOperation constructOperation(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && StreamOperation.class.isAssignableFrom(clazz)){
+        return (StreamOperation)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+      }
+    }
+    
+    throw new IOException(String.format(Locale.ROOT,"Invalid operation expression %s - function '%s' is unknown (not mapped to a valid StreamOperation)", expression, expression.getFunctionName()));
+  }
+
 
   public <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException{
     Constructor<T> ctor;
@@ -254,7 +306,12 @@ public class StreamFactory implements Serializable {
       return ctor.newInstance(params);
       
     } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-      throw new IOException(String.format(Locale.ROOT,"Unable to construct instance of %s", clazz.getName()),e);
+      if(null != e.getMessage()){
+        throw new IOException(String.format(Locale.ROOT,"Unable to construct instance of %s caused by %s", clazz.getName(), e.getMessage()),e);
+      }
+      else{
+        throw new IOException(String.format(Locale.ROOT,"Unable to construct instance of %s", clazz.getName()),e);
+      }
     }
   }
   
@@ -266,5 +323,18 @@ public class StreamFactory implements Serializable {
     }
     
     throw new IOException(String.format(Locale.ROOT, "Unable to find function name for class '%s'", clazz.getName()));
+  }
+  
+  public Object constructPrimitiveObject(String original){
+    String lower = original.trim().toLowerCase(Locale.ROOT);
+    
+    if("null".equals(lower)){ return null; }
+    if("true".equals(lower) || "false".equals(lower)){ return Boolean.parseBoolean(lower); }
+    try{ return Long.valueOf(original); } catch(Exception e){};
+    try{ if (original.matches(".{1,8}")){ return Float.valueOf(original); }} catch(Exception e){};
+    try{ if (original.matches(".{1,17}")){ return Double.valueOf(original); }} catch(Exception e){};
+    
+    // is a string
+    return original;
   }
 }

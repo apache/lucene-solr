@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
@@ -63,7 +64,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class SystemInfoHandler extends RequestHandlerBase 
 {
-  private static Logger log = LoggerFactory.getLogger(SystemInfoHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
 
   // on some platforms, resolving canonical hostname can cause the thread
@@ -142,7 +143,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
-    dirs.add( "instance", new File( core.getResourceLoader().getInstanceDir() ).getAbsolutePath() );
+    dirs.add("instance", core.getResourceLoader().getInstancePath().toString());
     try {
       dirs.add( "data", core.getDirectoryFactory().normalize(core.getDataDir()));
     } catch (IOException e) {

@@ -19,6 +19,7 @@ package org.apache.solr.store.hdfs;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HdfsFileReader extends DataInput {
   
-  public static Logger LOG = LoggerFactory.getLogger(HdfsFileReader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final Path path;
   private FSDataInputStream inputStream;

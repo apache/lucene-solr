@@ -93,7 +93,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   public void testGetRawFile() throws SolrServerException, IOException {
     SolrClient client = getSolrClient();
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
-    QueryRequest request = new QueryRequest(params("file","schema.xml"));
+    QueryRequest request = new QueryRequest(params("file", "managed-schema"));
     request.setPath("/admin/file");
     final AtomicBoolean readFile = new AtomicBoolean();
     request.setResponseParser(new ResponseParser() {

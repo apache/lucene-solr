@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -79,7 +80,7 @@ import static org.apache.solr.common.params.FacetParams.FACET_SORT;
 @SuppressSSL // Too Slow
 public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
-  public static Logger log = LoggerFactory.getLogger(TestCloudPivotFacet.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // param used by test purely for tracing & validation
   private static String TRACE_MIN = "_test_min";

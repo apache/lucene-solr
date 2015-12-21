@@ -166,7 +166,7 @@ public class TestCustomFunctions extends LuceneTestCase {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
       fail();
     } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("is not public"));
+      assertTrue(e.getMessage().contains("not public"));
     }
   }
 
@@ -182,7 +182,7 @@ public class TestCustomFunctions extends LuceneTestCase {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
       fail();
     } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("is not public"));
+      assertTrue(e.getMessage().contains("not public"));
     }
   }
   

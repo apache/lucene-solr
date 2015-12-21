@@ -16,6 +16,7 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.PluginInfo;
@@ -29,10 +30,11 @@ import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 
 /** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
-  private static final Logger log = LoggerFactory.getLogger(IndexSchemaFactory.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** Returns an index schema created from a local resource */
   public IndexSchema create(String resourceName, SolrConfig config) {
@@ -64,7 +66,12 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
       factory = config.getResourceLoader().newInstance(info.className, IndexSchemaFactory.class);
       factory.init(info.initArgs);
     } else {
-      factory = new ClassicIndexSchemaFactory();
+      if (config.luceneMatchVersion.onOrAfter(Version.LUCENE_6_0_0)) {
+        // ManagedIndexSchemaFactory is SolrCoreAware so we must create using the resource loader
+        factory = config.getResourceLoader().newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);
+      } else {
+        factory = new ClassicIndexSchemaFactory();
+      }
     }
     IndexSchema schema = factory.create(resourceName, config);
     return schema;

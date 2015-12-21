@@ -67,7 +67,7 @@ limitations under the License.
                 <a ng-click="showReplica(replica)"><h3>{{replica.core}}</h3></a>
                 <dl ng-show="replica.show">
                   <dt>Base URL: </dt><dd>{{replica.base_url}}</dd>
-                  <dt>Core: </dt><dd><a href="{{replica.base_url}}/{{replica.core}}">{{replica.core}}</a></dd>
+                  <dt>Core: </dt><dd><a href="{{replica.base_url}}{{rootUrl}}#/{{replica.core}}">{{replica.core}}</a></dd>
                   <dt>Active: </dt>
                     <dd class="ico value" ng-class="replica.state == 'active' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
                   <dt>Leader: </dt>

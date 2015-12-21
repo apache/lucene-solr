@@ -75,11 +75,6 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     groupedFacetHits = new ArrayList<>(initialSize);
     segmentGroupedFacetHits = new SentinelIntSet(initialSize, Integer.MIN_VALUE);
   }
-  
-  @Override
-  public boolean needsScores() {
-    return true; // TODO, maybe we don't?
-  }
 
   // Implementation for single valued facet fields.
   static class SV extends TermGroupFacetCollector {

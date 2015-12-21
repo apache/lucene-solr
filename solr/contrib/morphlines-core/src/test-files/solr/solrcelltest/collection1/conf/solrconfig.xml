@@ -115,7 +115,9 @@
        persistent, and doesn't work with replication.
     -->
   <directoryFactory name="DirectoryFactory" 
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/> 
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene

@@ -38,8 +38,8 @@ public class TestField extends LuceneTestCase {
   
   public void testDoubleField() throws Exception {
     Field fields[] = new Field[] {
-        new DoubleField("foo", 5d, Field.Store.NO),
-        new DoubleField("foo", 5d, Field.Store.YES)
+        new LegacyDoubleField("foo", 5d, Field.Store.NO),
+        new LegacyDoubleField("foo", 5d, Field.Store.YES)
     };
 
     for (Field field : fields) {
@@ -100,8 +100,8 @@ public class TestField extends LuceneTestCase {
   
   public void testFloatField() throws Exception {
     Field fields[] = new Field[] {
-        new FloatField("foo", 5f, Field.Store.NO),
-        new FloatField("foo", 5f, Field.Store.YES)
+        new LegacyFloatField("foo", 5f, Field.Store.NO),
+        new LegacyFloatField("foo", 5f, Field.Store.YES)
     };
 
     for (Field field : fields) {
@@ -124,8 +124,8 @@ public class TestField extends LuceneTestCase {
   
   public void testIntField() throws Exception {
     Field fields[] = new Field[] {
-        new IntField("foo", 5, Field.Store.NO),
-        new IntField("foo", 5, Field.Store.YES)
+        new LegacyIntField("foo", 5, Field.Store.NO),
+        new LegacyIntField("foo", 5, Field.Store.YES)
     };
 
     for (Field field : fields) {
@@ -167,8 +167,8 @@ public class TestField extends LuceneTestCase {
   
   public void testLongField() throws Exception {
     Field fields[] = new Field[] {
-        new LongField("foo", 5L, Field.Store.NO),
-        new LongField("foo", 5L, Field.Store.YES)
+        new LegacyLongField("foo", 5L, Field.Store.NO),
+        new LegacyLongField("foo", 5L, Field.Store.YES)
     };
 
     for (Field field : fields) {

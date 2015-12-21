@@ -160,22 +160,22 @@
  *     and an upper
  *     {@link org.apache.lucene.index.Term Term}
  *     according to {@link org.apache.lucene.util.BytesRef#compareTo BytesRef.compareTo()}. It is not intended
- *     for numerical ranges; use {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery} instead.
+ *     for numerical ranges; use {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery} instead.
  * 
  *     For example, one could find all documents
  *     that have terms beginning with the letters <tt>a</tt> through <tt>c</tt>.
  * 
  * <h3>
- *     {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery}
+ *     {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery}
  * </h3>
  * 
  * <p>The
- *     {@link org.apache.lucene.search.NumericRangeQuery NumericRangeQuery}
+ *     {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery}
  *     matches all documents that occur in a numeric range.
- *     For NumericRangeQuery to work, you must index the values
- *     using a one of the numeric fields ({@link org.apache.lucene.document.IntField IntField},
- *     {@link org.apache.lucene.document.LongField LongField}, {@link org.apache.lucene.document.FloatField FloatField},
- *     or {@link org.apache.lucene.document.DoubleField DoubleField}).
+ *     For DimensionalRangeQuery to work, you must index the values
+ *     using a one of the numeric fields ({@link org.apache.lucene.document.DimensionalIntField DimensionalIntField},
+ *     {@link org.apache.lucene.document.DimensionalLongField DimensionalLongField}, {@link org.apache.lucene.document.DimensionalFloatField DimensionalFloatField},
+ *     or {@link org.apache.lucene.document.DimensionalDoubleField DimensionalDoubleField}).
  * 
  * <h3>
  *     {@link org.apache.lucene.search.PrefixQuery PrefixQuery},
@@ -427,13 +427,14 @@
  *     <p>The
  *         {@link org.apache.lucene.search.Scorer Scorer}
  *         abstract class provides common scoring functionality for all Scorer implementations and
- *         is the heart of the Lucene scoring process. The Scorer defines the following abstract (some of them are not
- *         yet abstract, but will be in future versions and should be considered as such now) methods which
- *         must be implemented (some of them inherited from {@link org.apache.lucene.search.DocIdSetIterator DocIdSetIterator}):
+ *         is the heart of the Lucene scoring process. The Scorer defines the following methods which
+ *         must be implemented:
  *         <ol>
  *             <li>
- *                 {@link org.apache.lucene.search.Scorer#nextDoc nextDoc()} &mdash; Advances to the next
- *                 document that matches this Query, returning true if and only if there is another document that matches.</li>
+ *                 {@link org.apache.lucene.search.Scorer#iterator iterator()} &mdash; Return a
+ *                 {@link org.apache.lucene.search.DocIdSetIterator DocIdSetIterator} that can iterate over all
+ *                 document that matches this Query.
+ *             </li>
  *             <li>
  *                 {@link org.apache.lucene.search.Scorer#docID docID()} &mdash; Returns the id of the
  *                 {@link org.apache.lucene.document.Document Document} that contains the match.
@@ -449,13 +450,6 @@
  *                 for the current document. This value can be determined in any appropriate way for an application. For instance, the
  *                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the term frequency from the inverted index:
  *                 {@link org.apache.lucene.index.PostingsEnum#freq PostingsEnum.freq()}.
- *             </li>
- *             <li>
- *                 {@link org.apache.lucene.search.Scorer#advance advance()} &mdash; Skip ahead in
- *                 the document matches to the document whose id is greater than
- *                 or equal to the passed in value. In many instances, advance can be
- *                 implemented more efficiently than simply looping through all the matching documents until
- *                 the target document is identified.
  *             </li>
  *             <li>
  *                 {@link org.apache.lucene.search.Scorer#getChildren getChildren()} &mdash; Returns any child subscorers
@@ -531,7 +525,7 @@
  * <p>Assuming a BooleanScorer2, we first initialize the Coordinator, which is used to apply the coord() 
  *   factor. We then get a internal Scorer based on the required, optional and prohibited parts of the query.
  *   Using this internal Scorer, the BooleanScorer2 then proceeds into a while loop based on the 
- *   {@link org.apache.lucene.search.Scorer#nextDoc Scorer.nextDoc()} method. The nextDoc() method advances 
+ *   {@link org.apache.lucene.search.DocIdSetIterator#nextDoc DocIdSetIterator.nextDoc()} method. The nextDoc() method advances 
  *   to the next document matching the query. This is an abstract method in the Scorer class and is thus 
  *   overridden by all derived  implementations. If you have a simple OR query your internal Scorer is most 
  *   likely a DisjunctionSumScorer, which essentially combines the scorers from the sub scorers of the OR'd terms.

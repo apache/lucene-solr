@@ -17,6 +17,11 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
@@ -37,9 +42,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-
-import java.io.File;
-import java.util.Map;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -117,16 +119,15 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    String instDir;
+    Path instDir;
     try (SolrCore template = cores.getCore("collection1")) {
       assertNotNull(template);
       instDir = template.getCoreDescriptor().getInstanceDir();
     }
-    
-    final File instDirFile = new File(instDir);
-    assertTrue("instDir doesn't exist: " + instDir, instDirFile.exists());
+
+    assertTrue("instDir doesn't exist: " + instDir, Files.exists(instDir));
     final File instPropFile = new File(workDir, "instProp");
-    FileUtils.copyDirectory(instDirFile, instPropFile);
+    FileUtils.copyDirectory(instDir.toFile(), instPropFile);
     
     // create a new core (using CoreAdminHandler) w/ properties
     

@@ -18,6 +18,7 @@ package org.apache.solr.security;
  */
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,7 +48,7 @@ import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 
 public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, ConfigEditablePlugin {
-  static final Logger log = LoggerFactory.getLogger(RuleBasedAuthorizationPlugin.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, Set<String>> usersVsRoles = new HashMap<>();
   private final Map<String, WildCardSupportMap> mapping = new HashMap<>();
@@ -89,7 +90,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   public AuthorizationResponse authorize(AuthorizationContext context) {
     List<AuthorizationContext.CollectionRequest> collectionRequests = context.getCollectionRequests();
     if (context.getRequestType() == AuthorizationContext.RequestType.ADMIN) {
-      MatchStatus flag = checkCollPerm(mapping.get(""), context);
+      MatchStatus flag = checkCollPerm(mapping.get(null), context);
       return flag.rsp;
     }
 
@@ -98,8 +99,8 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
       MatchStatus flag = checkCollPerm(mapping.get(collreq.collectionName), context);
       if (flag != MatchStatus.NO_PERMISSIONS_FOUND) return flag.rsp;
     }
-    //check global permissions.
-    MatchStatus flag = checkCollPerm(mapping.get(null), context);
+    //check wildcard (all=*) permissions.
+    MatchStatus flag = checkCollPerm(mapping.get("*"), context);
     return flag.rsp;
   }
 
@@ -142,17 +143,22 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
         return MatchStatus.PERMITTED;
       }
       if (principal == null) {
+        log.info("request has come without principal. failed permission {} ",permission);
         //this resource needs a principal but the request has come without
         //any credential.
         return MatchStatus.USER_REQUIRED;
+      } else if (permission.role.contains("*")) {
+        return MatchStatus.PERMITTED;
       }
 
       for (String role : permission.role) {
         Set<String> userRoles = usersVsRoles.get(principal.getName());
         if (userRoles != null && userRoles.contains(role)) return MatchStatus.PERMITTED;
       }
+      log.info("This resource is configured to have a permission {}, The principal {} does not have the right role ", permission, principal);
       return MatchStatus.FORBIDDEN;
     }
+    log.debug("No permissions configured for the resource {} . So allowed to access", context.getResource());
     return MatchStatus.NO_PERMISSIONS_FOUND;
   }
 
@@ -206,7 +212,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
       if("collection".equals(key)){
         //for collection collection: null means a core admin/ collection admin request
         // otherwise it means a request where collection name is ignored
-        return m.containsKey(key) ?  singleton("") : singleton(null);
+        return m.containsKey(key) ? singleton(null) : singleton("*");
       }
       return null;
     }
@@ -460,17 +466,19 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
           "    update :{" +
           "      path:'/update/*'}," +
           "    read :{" +
-          "      path:['/select', '/get']}," +
+          "      path:['/select', '/get','/browse','/tvrh','/terms','/clustering','/elevate', '/export','/spell','/clustering']}," +
           "    config-edit:{" +
           "      method:POST," +
-          "      path:'/config/*'}}");
+              "      path:'/config/*'}," +
+              "    all:{collection:['*', null]}" +
+              "}");
 
   static {
-    ((Map) well_known_permissions.get("collection-admin-edit")).put(Predicate.class.getName(), getPredicate(true));
-    ((Map) well_known_permissions.get("collection-admin-read")).put(Predicate.class.getName(), getPredicate(false));
+    ((Map) well_known_permissions.get("collection-admin-edit")).put(Predicate.class.getName(), getCollectionActionPredicate(true));
+    ((Map) well_known_permissions.get("collection-admin-read")).put(Predicate.class.getName(), getCollectionActionPredicate(false));
   }
 
-  private static Predicate<AuthorizationContext> getPredicate(final boolean isEdit) {
+  private static Predicate<AuthorizationContext> getCollectionActionPredicate(final boolean isEdit) {
     return new Predicate<AuthorizationContext>() {
       @Override
       public boolean test(AuthorizationContext context) {

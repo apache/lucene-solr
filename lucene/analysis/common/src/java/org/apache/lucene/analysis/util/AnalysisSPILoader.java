@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.ServiceConfigurationError;
@@ -54,6 +55,9 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     this.suffixes = suffixes;
     // if clazz' classloader is not a parent of the given one, we scan clazz's classloader, too:
     final ClassLoader clazzClassloader = clazz.getClassLoader();
+    if (classloader == null) {
+      classloader = clazzClassloader;
+    }
     if (clazzClassloader != null && !SPIClassIterator.isParentClassLoader(clazzClassloader, classloader)) {
       reload(clazzClassloader);
     }
@@ -72,6 +76,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
    * of new service providers on the given classpath/classloader!</em>
    */
   public synchronized void reload(ClassLoader classloader) {
+    Objects.requireNonNull(classloader, "classloader");
     final LinkedHashMap<String,Class<? extends S>> services =
       new LinkedHashMap<>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);

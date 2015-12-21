@@ -16,6 +16,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -68,7 +69,7 @@ public class HttpShardHandler extends ShardHandler {
   private Map<String,List<String>> shardToURLs;
   private HttpClient httpClient;
 
-  protected static Logger log = LoggerFactory.getLogger(HttpShardHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
     this.httpClient = httpClient;
@@ -114,11 +115,13 @@ public class HttpShardHandler extends ShardHandler {
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
-  private List<String> getURLs(ShardRequest sreq, String shard) {
+  private List<String> getURLs(String shard, String preferredHostAddress) {
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
       urls = httpShardHandlerFactory.makeURLList(shard);
-      preferCurrentHostForDistributedReq(sreq, urls);
+      if (preferredHostAddress != null && urls.size() > 1) {
+        preferCurrentHostForDistributedReq(preferredHostAddress, urls);
+      }
       shardToURLs.put(shard, urls);
     }
     return urls;
@@ -131,27 +134,7 @@ public class HttpShardHandler extends ShardHandler {
    * If all nodes prefer local-cores then a bad/heavily-loaded node will receive less requests from healthy nodes.
    * This will help prevent a distributed deadlock or timeouts in all the healthy nodes due to one bad node.
    */
-  private void preferCurrentHostForDistributedReq(final ShardRequest sreq, final List<String> urls) {
-    if (sreq == null || sreq.rb == null || sreq.rb.req == null || urls == null || urls.size() <= 1)
-      return;
-
-    SolrQueryRequest req = sreq.rb.req;
-
-    // determine if we should apply the local preference
-    if (!req.getOriginalParams().getBool(CommonParams.PREFER_LOCAL_SHARDS, false))
-      return;
-
-    // Get this node's base URL from ZK
-    SolrCore core = req.getCore();
-    ZkController zkController = (core != null) ? core.getCoreDescriptor().getCoreContainer().getZkController() : null;
-    String currentHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
-    if (currentHostAddress == null) {
-      log.debug("Couldn't determine current host address to prefer local shards " +
-                "because either core is null? {} or there is no ZkController? {}",
-                Boolean.valueOf(core == null), Boolean.valueOf(zkController == null));
-      return;
-    }
-
+  private void preferCurrentHostForDistributedReq(final String currentHostAddress, final List<String> urls) {
     if (log.isDebugEnabled())
       log.debug("Trying to prefer local shard on {} among the urls: {}",
           currentHostAddress, Arrays.toString(urls.toArray()));
@@ -174,9 +157,9 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   @Override
-  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
+  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params, String preferredHostAddress) {
     // do this outside of the callable for thread safety reasons
-    final List<String> urls = getURLs(sreq, shard);
+    final List<String> urls = getURLs(shard, preferredHostAddress);
 
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       @Override
@@ -335,6 +318,12 @@ public class HttpShardHandler extends ShardHandler {
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
     ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
 
+    if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
+      rb.preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
+      if (rb.preferredHostAddress == null) {
+        log.warn("Couldn't determine current host address to prefer local shards");
+      }
+    }
 
     if (shards != null) {
       List<String> lst = StrUtils.splitSmart(shards, ",", true);

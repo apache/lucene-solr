@@ -130,8 +130,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posofftv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posoffpaytv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
-            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
-            " 'uniqueKeyFieldName':'id'}"
+            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}}"
     );
     // tv.fl diff from fl
     assertJQ(req("json.nl","map", 
@@ -143,8 +142,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  TermVectorParams.TF, "true")
        ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
-            " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
-            " 'uniqueKeyFieldName':'id'}"
+            " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}}"
     );
     // multi-valued tv.fl 
     assertJQ(req("json.nl","map", 
@@ -157,8 +155,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  TermVectorParams.TF, "true")
        ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
-            " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
-            " 'uniqueKeyFieldName':'id'}"
+            " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}}}"
     );
     // re-use fl glob
     assertJQ(req("json.nl","map", 
@@ -172,8 +169,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
             " 'test_offtv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posofftv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
             " 'test_posoffpaytv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
-            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
-            " 'uniqueKeyFieldName':'id'}"
+            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}}"
     );
     // re-use fl, ignore things we can't handle
     assertJQ(req("json.nl","map", 
@@ -184,8 +180,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  TermVectorParams.TF, "true")
        ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
-            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
-            " 'uniqueKeyFieldName':'id'}"
+            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}}"
     );
     // re-use (multi-valued) fl, ignore things we can't handle
     assertJQ(req("json.nl","map", 
@@ -197,8 +192,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
                  TermVectorParams.TF, "true")
        ,"/termVectors=={'0':{'uniqueKey':'0'," +
             " 'test_basictv':{'anoth':{'tf':1},'titl':{'tf':2}}," +
-            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}," +
-            " 'uniqueKeyFieldName':'id'}"
+            " 'test_postv':{'anoth':{'tf':1},'titl':{'tf':2}}}}"
     );
 
   }

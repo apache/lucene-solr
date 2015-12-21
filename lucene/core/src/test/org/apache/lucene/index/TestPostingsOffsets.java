@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -239,7 +238,6 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     for(int docCount=0;docCount<numDocs;docCount++) {
       Document doc = new Document();
-      doc.add(new IntField("id", docCount, Field.Store.YES));
       doc.add(new NumericDocValuesField("id", docCount));
       List<Token> tokens = new ArrayList<>();
       final int numTokens = atLeast(100);

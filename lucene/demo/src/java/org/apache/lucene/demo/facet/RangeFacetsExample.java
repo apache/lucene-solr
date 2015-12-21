@@ -17,13 +17,9 @@ package org.apache.lucene.demo.facet;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
@@ -36,12 +32,15 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
+import java.io.Closeable;
+import java.io.IOException;
 
 /** Shows simple usage of dynamic range faceting. */
 public class RangeFacetsExample implements Closeable {
@@ -70,7 +69,7 @@ public class RangeFacetsExample implements Closeable {
       // Add as doc values field, so we can compute range facets:
       doc.add(new NumericDocValuesField("timestamp", then));
       // Add as numeric field so we can drill-down:
-      doc.add(new LongField("timestamp", then, Field.Store.NO));
+      doc.add(new DimensionalLongField("timestamp", then));
       indexWriter.addDocument(doc);
     }
 
@@ -108,7 +107,7 @@ public class RangeFacetsExample implements Closeable {
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(getConfig());
 
-    q.add("timestamp", NumericRangeQuery.newLongRange("timestamp", range.min, range.max, range.minInclusive, range.maxInclusive));
+    q.add("timestamp", DimensionalRangeQuery.new1DLongRange("timestamp", range.min, range.minInclusive, range.max, range.maxInclusive));
 
     return searcher.search(q, 10);
   }

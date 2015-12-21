@@ -47,4 +47,5 @@
   </fields>
 
   <uniqueKey>id</uniqueKey>
+
 </schema>

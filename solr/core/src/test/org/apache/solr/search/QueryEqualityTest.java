@@ -236,7 +236,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testQueryCollapse() throws Exception {
-    SolrQueryRequest req = req("myField","foo_s");
+    SolrQueryRequest req = req("myField","foo_s",
+                               "g_sort","foo_s1 asc, foo_i desc");
 
     try {
       assertQueryEquals("collapse", req,
@@ -246,7 +247,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "{!collapse field=$myField max=a}");
 
       assertQueryEquals("collapse", req,
-          "{!collapse field=$myField min=a}");
+                        "{!collapse field=$myField min=a}",
+                        "{!collapse field=$myField min=a nullPolicy=ignore}");
+      
+      assertQueryEquals("collapse", req,
+                        "{!collapse field=$myField sort=$g_sort}",
+                        "{!collapse field=$myField sort='foo_s1 asc, foo_i desc'}",
+                        "{!collapse field=$myField sort=$g_sort nullPolicy=ignore}");
 
       assertQueryEquals("collapse", req,
           "{!collapse field=$myField max=a nullPolicy=expand}");
@@ -1013,7 +1020,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   protected void assertFuncEquals(final SolrQueryRequest req,
                                   final String... inputs) throws Exception {
     // pull out the function name
-    final String funcName = (new QueryParsing.StrParser(inputs[0])).getId();
+    final String funcName = (new StrParser(inputs[0])).getId();
     valParsersTested.add(funcName);
 
     assertQueryEquals(FunctionQParserPlugin.NAME, req, inputs);

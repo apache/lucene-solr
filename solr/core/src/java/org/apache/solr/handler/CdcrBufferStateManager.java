@@ -27,6 +27,7 @@ import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 
 /**
@@ -44,7 +45,7 @@ class CdcrBufferStateManager extends CdcrStateManager {
 
   static CdcrParams.BufferState DEFAULT_STATE = CdcrParams.BufferState.ENABLED;
 
-  protected static Logger log = LoggerFactory.getLogger(CdcrBufferStateManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CdcrBufferStateManager(final SolrCore core, SolrParams bufferConfiguration) {
     this.core = core;
@@ -118,12 +119,14 @@ class CdcrBufferStateManager extends CdcrStateManager {
     try {
       if (!zkClient.exists(this.getZnodePath(), true)) {
         if (!zkClient.exists(this.getZnodeBase(), true)) {
-          zkClient.makePath(this.getZnodeBase(), CreateMode.PERSISTENT, true);
+          zkClient.makePath(this.getZnodeBase(), null, CreateMode.PERSISTENT, null, false, true); // Should be a no-op if node exists
         }
         zkClient.create(this.getZnodePath(), DEFAULT_STATE.getBytes(), CreateMode.PERSISTENT, true);
         log.info("Created znode {}", this.getZnodePath());
       }
-    } catch (KeeperException | InterruptedException e) {
+    } catch (KeeperException.NodeExistsException ne) {
+      // Someone got in first and created the node.
+    }  catch (KeeperException | InterruptedException e) {
       log.warn("Failed to create CDCR buffer state node", e);
     }
   }

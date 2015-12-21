@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * To use, tests must be able to run iptables, eg sudo chmod u+s iptables
  */
 public class IpTables {
-  static final Logger log = LoggerFactory.getLogger(IpTables.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final boolean ENABLED = Boolean.getBoolean("solr.tests.use.iptables");
   

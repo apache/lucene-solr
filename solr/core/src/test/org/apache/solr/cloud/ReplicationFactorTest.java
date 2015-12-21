@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,8 +51,7 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6944")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
-  private static final transient Logger log = 
-      LoggerFactory.getLogger(ReplicationFactorTest.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public ReplicationFactorTest() {
     super();

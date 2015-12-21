@@ -55,12 +55,16 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,7 +85,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slow 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
-  
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final String DEFAULT_COLLECTION = "collection1";
   protected static final boolean DEBUG = false;
   String t1="a_t";
@@ -317,21 +323,28 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     // try commitWithin
     long before = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    for (SolrClient client : clients) {
+      assertEquals("unexpected pre-commitWithin document count on node: " + ((HttpSolrClient)client).getBaseURL(), before, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("commitWithin", 10);
     add(cloudClient, params, getDoc("id", 300));
 
+    final List<SolrClient> clientsToCheck = new ArrayList<>(clients);
     TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
-    while (cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() != before + 1) {
-      if (timeout.hasTimedOut()) {
-        fail("commitWithin did not work");
+    do {
+      final Iterator<SolrClient> it = clientsToCheck.iterator();
+      while (it.hasNext()) {
+        final SolrClient sc = it.next();
+        if ((before + 1) == sc.query(new SolrQuery("*:*")).getResults().getNumFound()) {
+          it.remove();
+        }
       }
       Thread.sleep(100);
-    }
+    } while (!clientsToCheck.isEmpty() && !timeout.hasTimedOut());
     
-    for (SolrClient client : clients) {
-      assertEquals("commitWithin did not work on node: " + ((HttpSolrClient)client).getBaseURL(), before + 1, client.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    assertTrue("commitWithin did not work on some nodes: "+clientsToCheck, clientsToCheck.isEmpty());
     
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.

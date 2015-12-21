@@ -174,9 +174,8 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
  public void testPingInClusterWithNoHealthCheck() throws Exception {
-   
-    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir().toFile(), solrXml, buildJettyConfig("/solr"));
+
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 

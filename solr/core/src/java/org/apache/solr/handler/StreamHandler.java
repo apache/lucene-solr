@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.lang.invoke.MethodHandles;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -29,13 +30,20 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
+import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
+import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
 import org.apache.solr.client.solrj.io.stream.MergeStream;
+import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.RankStream;
 import org.apache.solr.client.solrj.io.stream.ReducerStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
@@ -65,7 +73,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
 
   static SolrClientCache clientCache = new SolrClientCache();
   private StreamFactory streamFactory = new StreamFactory();
-  private Logger logger = LoggerFactory.getLogger(StreamHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void inform(SolrCore core) {
     
@@ -95,10 +103,17 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("merge", MergeStream.class)
       .withFunctionName("unique", UniqueStream.class)
       .withFunctionName("top", RankStream.class)
-      .withFunctionName("group", ReducerStream.class)
+      .withFunctionName("group", GroupOperation.class)
+         .withFunctionName("reduce", ReducerStream.class)
       .withFunctionName("parallel", ParallelStream.class)
       .withFunctionName("rollup", RollupStream.class)
-      
+      .withFunctionName("stats", StatsStream.class)
+      .withFunctionName("innerJoin", InnerJoinStream.class)
+      .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class) 
+      .withFunctionName("hashJoin", HashJoinStream.class)
+      .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
+      .withFunctionName("facet", FacetStream.class)
+     
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
@@ -106,7 +121,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("sum", SumMetric.class)
       .withFunctionName("count", CountMetric.class)
       ;
-
     
     // This pulls all the overrides and additions from the config
     Object functionMappingsObj = initArgs.get("streamFunctions");
@@ -135,20 +149,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     SolrParams params = req.getParams();
     params = adjustParams(params);
     req.setParams(params);
-    boolean objectSerialize = params.getBool("objectSerialize", false);
     TupleStream tupleStream = null;
 
     try {
-      if (objectSerialize) {
-        String encodedStream = params.get("stream");
-        encodedStream = URLDecoder.decode(encodedStream, "UTF-8");
-        byte[] bytes = Base64.base64ToByteArray(encodedStream);
-        ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
-        ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
-        tupleStream = (TupleStream) objectInputStream.readObject();
-      } else {
-        tupleStream = this.streamFactory.constructStream(params.get("stream"));
-      }
+      tupleStream = this.streamFactory.constructStream(params.get("expr"));
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(logger, e);

@@ -1,5 +1,7 @@
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -44,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * Public for tests.
  */
 public final class CommitTracker implements Runnable {
-  protected final static Logger log = LoggerFactory.getLogger(CommitTracker.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // scheduler delay for maxDoc-triggered autocommits
   public final int DOC_COMMIT_DELAY_MS = 1;
@@ -80,7 +82,7 @@ public final class CommitTracker implements Runnable {
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
 
-    SolrCore.log.info(name + " AutoCommit: " + this);
+    log.info(name + " AutoCommit: " + this);
   }
 
   public boolean getOpenSearcher() {

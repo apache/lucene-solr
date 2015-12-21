@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexReader;
     <li> {@link FuzzyQuery}
     <li> {@link RegexpQuery}
     <li> {@link TermRangeQuery}
-    <li> {@link NumericRangeQuery}
+    <li> {@link DimensionalRangeQuery}
     <li> {@link ConstantScoreQuery}
     <li> {@link DisjunctionMaxQuery}
     <li> {@link MatchAllDocsQuery}

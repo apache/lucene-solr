@@ -17,14 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
@@ -32,6 +24,15 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Properties;
+
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.internal.matchers.StringContains.containsString;
@@ -68,7 +69,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isLazy));
     props.put(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
     props.put(CoreDescriptor.CORE_DATADIR, "${core.dataDir:stuffandnonsense}");
-    props.put(CoreDescriptor.CORE_INSTDIR, "totallybogus"); // For testing that this property is ignored if present.
 
     for (String extra : extraProps) {
       String[] parts = extra.split("=");
@@ -154,9 +154,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
         // This is too long and ugly to put in. Besides, it varies.
         assertNotNull(desc.getInstanceDir());
-
-        // Prove we're ignoring this even though it's set in the properties file
-        assertFalse("InstanceDir should be ignored", desc.getInstanceDir().contains("totallybogus"));
 
         assertEquals("core1", desc.getDataDir());
         assertEquals("solrconfig-minimal.xml", desc.getConfigName());
@@ -302,8 +299,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
       assertNull(cc.getCore("core0"));
 
-      SolrCore core3 = cc.create(new CoreDescriptor(cc, "core3", "core3", "configSet", "minimal"));
-      assertThat(core3.getCoreDescriptor().getInstanceDir(), containsString("relative"));
+      SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
+      assertThat(core3.getCoreDescriptor().getInstanceDir().toAbsolutePath().toString(), containsString("relative"));
 
     } finally {
       cc.shutdown();
@@ -429,11 +426,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     CoreContainer cc = null;
     try {
       cc = init();
+      fail("Should have thrown an exception here");
     } catch (Exception ex) {
-      String eoe = ex.getMessage();
-
-      assertTrue("Should have had a runtime exception here",
-          0 < ex.getMessage().indexOf("doesn't have read permissions"));
+      assertThat(ex.getMessage(), containsString("Error reading core root directory"));
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -459,12 +454,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   @Test
   public void testRootDirectoryResolution() {
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.getAbsolutePath());
+    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
 
     NodeConfig config = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
-    assertThat(config.getCoreRootDirectory(), containsString(solrHomeDirectory.getAbsolutePath()));
+    assertThat(config.getCoreRootDirectory().toString(), containsString(solrHomeDirectory.getAbsolutePath()));
 
     NodeConfig absConfig = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
-    assertThat(absConfig.getCoreRootDirectory(), not(containsString(solrHomeDirectory.getAbsolutePath())));
+    assertThat(absConfig.getCoreRootDirectory().toString(), not(containsString(solrHomeDirectory.getAbsolutePath())));
   }
 }

@@ -25,6 +25,7 @@
        <dataDir>${solr.data.dir:}</dataDir>
 
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <indexConfig>
     <lockType>single</lockType>

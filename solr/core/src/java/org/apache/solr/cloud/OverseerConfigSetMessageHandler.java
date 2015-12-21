@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,9 +47,8 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.OverseerMessageHandler.ExclusiveMarking.NONEXCLUSIVE;
 import static org.apache.solr.cloud.OverseerMessageHandler.ExclusiveMarking.NOTDETERMINED;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.DELETE;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
 
 /**
  * A {@link OverseerMessageHandler} that handles ConfigSets API related
@@ -82,8 +82,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   final private Set configSetWriteWip;
   final private Set configSetReadWip;
 
-  private static Logger log = LoggerFactory
-      .getLogger(OverseerConfigSetMessageHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public OverseerConfigSetMessageHandler(ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
@@ -349,6 +348,12 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     ZkConfigManager configManager = new ZkConfigManager(zkStateReader.getZkClient());
     if (!configManager.configExists(configSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
+    }
+
+    for (String s : zkStateReader.getClusterState().getCollections()) {
+      if (configSetName.equals(zkStateReader.readConfigName(s)))
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Can not delete ConfigSet as it is currently being used by collection [" + s + "]");
     }
 
     String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;

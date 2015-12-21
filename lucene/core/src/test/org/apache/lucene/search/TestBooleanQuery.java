@@ -250,9 +250,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, BooleanClause.Occur.MUST);
     assertEquals(0, s.search(q.build(), 10).totalHits);
 
-    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(1.0f);
-    dmq.add(new TermQuery(new Term("field", "a")));
-    dmq.add(pq);
+    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(
+        Arrays.asList(new TermQuery(new Term("field", "a")), pq),
+        1.0f);
     assertEquals(1, s.search(dmq, 10).totalHits);
 
     r.close();
@@ -357,7 +357,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
       // First pass: just use .nextDoc() to gather all hits
       final List<ScoreDoc> hits = new ArrayList<>();
-      while(scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      while(scorer.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         hits.add(new ScoreDoc(scorer.docID(), scorer.score()));
       }
 
@@ -384,12 +384,12 @@ public class TestBooleanQuery extends LuceneTestCase {
           if (left == 1 || random().nextBoolean()) {
             // next
             nextUpto = 1+upto;
-            nextDoc = scorer.nextDoc();
+            nextDoc = scorer.iterator().nextDoc();
           } else {
             // advance
             int inc = TestUtil.nextInt(random(), 1, left - 1);
             nextUpto = inc + upto;
-            nextDoc = scorer.advance(hits.get(nextUpto).doc);
+            nextDoc = scorer.iterator().advance(hits.get(nextUpto).doc);
           }
 
           if (nextUpto == hits.size()) {
@@ -442,34 +442,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals("Bug in boolean query composed of span queries", failed, false);
     assertEquals("Bug in boolean query composed of span queries", hits, 1);
     directory.close();
-  }
-
-  public void testOneClauseRewriteOptimization() throws Exception {
-    final String FIELD = "content";
-    final String VALUE = "foo";
-
-    Directory dir = newDirectory();
-    (new RandomIndexWriter(random(), dir)).close();
-    IndexReader r = DirectoryReader.open(dir);
-
-    TermQuery expected = new TermQuery(new Term(FIELD, VALUE));
-
-    final int numLayers = atLeast(3);
-    Query actual = new TermQuery(new Term(FIELD, VALUE));
-
-    for (int i = 0; i < numLayers; i++) {
-
-      BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.add(actual, random().nextBoolean()
-             ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST);
-      actual = bq.build();
-    }
-
-    assertEquals(numLayers + ": " + actual.toString(),
-                 expected, new IndexSearcher(r).rewrite(actual));
-
-    r.close();
-    dir.close();
   }
 
   public void testMinShouldMatchLeniency() throws Exception {
@@ -662,43 +634,6 @@ public class TestBooleanQuery extends LuceneTestCase {
     dir.close();
   }
 
-  public void testSingleFilterClause() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    Field f = newTextField("field", "a", Field.Store.NO);
-    doc.add(f);
-    w.addDocument(doc);
-    w.commit();
-
-    DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
-
-    BooleanQuery.Builder query1 = new BooleanQuery.Builder();
-    query1.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
-
-    // Single clauses rewrite to a term query
-    final Query rewritten1 = query1.build().rewrite(reader);
-    assertTrue(rewritten1 instanceof BoostQuery);
-    assertEquals(0f, ((BoostQuery) rewritten1).getBoost(), 0f);
-
-    // When there are two clauses, we cannot rewrite, but if one of them creates
-    // a null scorer we will end up with a single filter scorer and will need to
-    // make sure to set score=0
-    BooleanQuery.Builder query2 = new BooleanQuery.Builder();
-    query2.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
-    query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
-    final Weight weight = searcher.createNormalizedWeight(query2.build(), true);
-    final Scorer scorer = weight.scorer(reader.leaves().get(0));
-    assertEquals(0, scorer.nextDoc());
-    assertTrue(scorer.getClass().getName(), scorer instanceof FilterScorer);
-    assertEquals(0f, scorer.score(), 0f);
-
-    reader.close();
-    w.close();
-    dir.close();
-  }
-
   public void testConjunctionPropagatesApproximations() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -723,7 +658,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertTrue(scorer instanceof ConjunctionScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -752,7 +687,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof DisjunctionScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -783,7 +718,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
     assertTrue(scorer instanceof BoostedScorer || scorer instanceof ExactPhraseScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -812,7 +747,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqExclScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();
@@ -841,7 +776,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     final Weight weight = searcher.createNormalizedWeight(q.build(), true);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertTrue(scorer instanceof ReqOptSumScorer);
-    assertNotNull(scorer.asTwoPhaseIterator());
+    assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();
     w.close();

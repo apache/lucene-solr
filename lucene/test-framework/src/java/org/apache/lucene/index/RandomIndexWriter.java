@@ -24,7 +24,6 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -49,7 +48,6 @@ public class RandomIndexWriter implements Closeable {
   int flushAt;
   private double flushAtFactor = 1.0;
   private boolean getReaderCalled;
-  private final Codec codec; // sugar
   private final Analyzer analyzer; // only if WE created it (then we close it)
 
   /** Returns an indexwriter that randomly mixes up thread scheduling (by yielding at test points) */
@@ -120,7 +118,6 @@ public class RandomIndexWriter implements Closeable {
     } else {
       analyzer = null;
     }
-    codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW dir=" + dir);
     }
@@ -173,16 +170,23 @@ public class RandomIndexWriter implements Closeable {
       w.addDocument(doc);
     }
     
-    maybeCommit();
+    maybeFlushOrCommit();
   }
 
-  private void maybeCommit() throws IOException {
+  private void maybeFlushOrCommit() throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     if (docCount++ == flushAt) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("RIW.add/updateDocument: now doing a commit at docCount=" + docCount);
+      if (r.nextBoolean()) {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("RIW.add/updateDocument: now doing a flush at docCount=" + docCount);
+        }
+        w.flush();
+      } else {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("RIW.add/updateDocument: now doing a commit at docCount=" + docCount);
+        }
+        w.commit();
       }
-      w.commit();
       flushAt += TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
       if (flushAtFactor < 2e6) {
         // gradually but exponentially increase time b/w flushes
@@ -194,13 +198,13 @@ public class RandomIndexWriter implements Closeable {
   public void addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.addDocuments(docs);
-    maybeCommit();
+    maybeFlushOrCommit();
   }
 
   public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.updateDocuments(delTerm, docs);
-    maybeCommit();
+    maybeFlushOrCommit();
   }
 
   /**
@@ -241,7 +245,7 @@ public class RandomIndexWriter implements Closeable {
     } else {
       w.updateDocument(t, doc);
     }
-    maybeCommit();
+    maybeFlushOrCommit();
   }
   
   public void addIndexes(Directory... dirs) throws IOException {
@@ -381,19 +385,28 @@ public class RandomIndexWriter implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    if (w.isClosed() == false) {
-      LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    }
-    // if someone isn't using getReader() API, we want to be sure to
-    // forceMerge since presumably they might open a reader on the dir.
-    if (getReaderCalled == false && r.nextInt(8) == 2 && w.isClosed() == false) {
-      doRandomForceMerge();
-      if (w.getConfig().getCommitOnClose() == false) {
-        // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
-        w.commit();
+    boolean success = false;
+    try {
+      if (w.isClosed() == false) {
+        LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+      }
+      // if someone isn't using getReader() API, we want to be sure to
+      // forceMerge since presumably they might open a reader on the dir.
+      if (getReaderCalled == false && r.nextInt(8) == 2 && w.isClosed() == false) {
+        doRandomForceMerge();
+        if (w.getConfig().getCommitOnClose() == false) {
+          // index may have changed, must commit the changes, or otherwise they are discarded by the call to close()
+          w.commit();
+        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(w, analyzer);
+      } else {
+        IOUtils.closeWhileHandlingException(w, analyzer);
       }
     }
-    IOUtils.close(w, analyzer);
   }
 
   /**
@@ -438,6 +451,11 @@ public class RandomIndexWriter implements Closeable {
     }
   }
   
+  /** Writes all in-memory segments to the {@link Directory}. */
+  public final void flush() throws IOException {
+    w.flush();
+  }
+
   /**
    * Simple interface that is executed for each <tt>TP</tt> {@link InfoStream} component
    * message. See also {@link RandomIndexWriter#mockIndexWriter(Random, Directory, IndexWriterConfig, TestPoint)}

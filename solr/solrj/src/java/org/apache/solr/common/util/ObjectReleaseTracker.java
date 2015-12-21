@@ -17,15 +17,24 @@ package org.apache.solr.common.util;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.HashSet;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ObjectReleaseTracker {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>();
   
   public static boolean track(Object object) {
@@ -41,15 +50,30 @@ public class ObjectReleaseTracker {
     return true;
   }
   
+  public static void clear() {
+    OBJECTS.clear();
+  }
+  
   /**
    * @return null if ok else error message
    */
   public static String clearObjectTrackerAndCheckEmpty() {
+    String result = checkEmpty();
+    
+    OBJECTS.clear();
+    
+    return result;
+  }
+  
+  /**
+   * @return null if ok else error message
+   */
+  public static String checkEmpty() {
     String error = null;
     Set<Entry<Object,String>> entries = OBJECTS.entrySet();
-    boolean empty = entries.isEmpty();
+
     if (entries.size() > 0) {
-      Set<String> objects = new HashSet<>();
+      List<String> objects = new ArrayList<>();
       for (Entry<Object,String> entry : entries) {
         objects.add(entry.getKey().getClass().getSimpleName());
       }
@@ -62,12 +86,33 @@ public class ObjectReleaseTracker {
       }
     }
     
-    OBJECTS.clear();
-    
     return error;
+  }
+  
+  public static void tryClose() {
+    Set<Entry<Object,String>> entries = OBJECTS.entrySet();
+
+    if (entries.size() > 0) {
+      for (Entry<Object,String> entry : entries) {
+        if (entry.getKey() instanceof Closeable) {
+          try {
+            ((Closeable)entry.getKey()).close();
+          } catch (Throwable t) {
+            log.error("", t);
+          }
+        } else if (entry.getKey() instanceof ExecutorService) {
+          try {
+            ExecutorUtil.shutdownAndAwaitTermination((ExecutorService)entry.getKey());
+          } catch (Throwable t) {
+            log.error("", t);
+          }
+        }
+      }
+    }
   }
   
   private static class ObjectTrackerException extends RuntimeException {
     
   }
+
 }

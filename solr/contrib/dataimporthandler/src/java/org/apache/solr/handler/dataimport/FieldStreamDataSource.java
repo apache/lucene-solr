@@ -20,6 +20,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * @since 3.1
  */
 public class FieldStreamDataSource extends DataSource<InputStream> {
-  private static final Logger LOG = LoggerFactory.getLogger(FieldReaderDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected VariableResolver vr;
   protected String dataField;
   private EntityProcessorWrapper wrapper;

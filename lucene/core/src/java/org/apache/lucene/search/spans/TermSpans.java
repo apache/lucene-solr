@@ -16,12 +16,13 @@ package org.apache.lucene.search.spans;
  */
 
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
-
-import java.io.IOException;
-import java.util.Objects;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * Expert:
@@ -36,12 +37,16 @@ public class TermSpans extends Spans {
   protected int count;
   protected int position;
   protected boolean readPayload;
+  private final float positionsCost;
 
-  public TermSpans(PostingsEnum postings, Term term) {
+  public TermSpans(Similarity.SimScorer scorer,
+                    PostingsEnum postings, Term term, float positionsCost) {
     this.postings = Objects.requireNonNull(postings);
     this.term = Objects.requireNonNull(term);
     this.doc = -1;
     this.position = -1;
+    assert positionsCost > 0; // otherwise the TermSpans should not be created.
+    this.positionsCost = positionsCost;
   }
 
   @Override
@@ -117,6 +122,11 @@ public class TermSpans extends Spans {
   }
 
   @Override
+  public float positionsCost() {
+    return positionsCost;
+  }
+
+  @Override
   public String toString() {
     return "spans(" + term.toString() + ")@" +
             (doc == -1 ? "START" : (doc == NO_MORE_DOCS) ? "ENDDOC"
@@ -126,5 +136,4 @@ public class TermSpans extends Spans {
   public PostingsEnum getPostings() {
     return postings;
   }
-
 }

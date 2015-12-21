@@ -17,12 +17,9 @@
 
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.util.StrUtils;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.io.IOException;
 
 /**
  *
@@ -80,30 +77,6 @@ public class MultiMapSolrParams extends SolrParams {
 
   public Map<String,String[]> getMap() { return map; }
 
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder(128);
-    try {
-      boolean first=true;
-
-      for (Map.Entry<String,String[]> entry : map.entrySet()) {
-        String key = entry.getKey();
-        String[] valarr = entry.getValue();
-
-        for (String val : valarr) {
-          if (!first) sb.append('&');
-          first=false;
-          sb.append(key);
-          sb.append('=');
-          StrUtils.partialURLEncodeVal(sb, val==null ? "" : val);
-        }
-      }
-    }
-    catch (IOException e) {throw new RuntimeException(e);}  // can't happen
-
-    return sb.toString();
-  }
-
   /** Returns a MultiMap view of the SolrParams as efficiently as possible.  The returned map may or may not be a backing implementation. */
   public static Map<String,String[]> asMultiMap(SolrParams params) {
     return asMultiMap(params, false);
@@ -133,6 +106,5 @@ public class MultiMapSolrParams extends SolrParams {
       return map;
     }
   }
-
 
 }
