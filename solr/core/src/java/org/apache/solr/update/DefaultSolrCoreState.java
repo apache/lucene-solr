@@ -63,7 +63,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private DirectoryFactory directoryFactory;
 
   private volatile RecoveryStrategy recoveryStrat;
-  private volatile Future future;
+
   private volatile boolean lastReplicationSuccess = true;
 
   // will we attempt recovery as if we just started up (i.e. use starting versions rather than recent versions for peersync
@@ -295,7 +295,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
               
               recoveryStrat = new RecoveryStrategy(cc, cd, DefaultSolrCoreState.this);
               recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
-              future = cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryStrat);
+              Future<?> future = cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryStrat);
               try {
                 future.get();
               } catch (InterruptedException e) {
