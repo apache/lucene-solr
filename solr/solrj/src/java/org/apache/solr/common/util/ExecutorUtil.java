@@ -255,8 +255,15 @@ public class ExecutorUtil {
 
   private static final ThreadLocal<Boolean> isServerPool = new ThreadLocal<>();
 
+  /// this tells whether a thread is owned/run by solr or not.
   public static boolean isSolrServerThread() {
     return Boolean.TRUE.equals(isServerPool.get());
+  }
+
+  public static void setServerThreadFlag(Boolean flag) {
+    if (flag == null) isServerPool.remove();
+    else isServerPool.set(flag);
+
   }
 
 }

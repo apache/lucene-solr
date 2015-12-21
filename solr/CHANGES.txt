@@ -286,6 +286,9 @@ Bug Fixes
 * SOLR-8015: HdfsLock may fail to close a FileSystem instance if it cannot immediately
   obtain an index lock. (Mark Miller)
 
+* SOLR-8422: When authentication enabled, requests fail if sent to a node that doesn't host
+  the collection (noble)
+
 Other Changes
 ----------------------
 
