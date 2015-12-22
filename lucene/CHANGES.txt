@@ -190,6 +190,9 @@ Other
 * LUCENE-6925: add ForceMergePolicy class in test-framework
   (Christine Poerschke)
 
+* LUCENE-6945: factor out TestCorePlus(Queries|Extensions)Parser from
+  TestParser (Christine Poerschke)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
