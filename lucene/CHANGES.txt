@@ -89,6 +89,9 @@ API Changes
 * LUCENE-6917: Deprecate and rename NumericXXX classes to
   LegacyNumericXXX in favor of dimensional values (Mike McCandless)
 
+* LUCENE-6947: SortField.missingValue is now protected. You can read its value
+  using the new SortField.getMissingValue getter. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing dimensional values in 
