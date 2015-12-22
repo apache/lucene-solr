@@ -40,6 +40,12 @@ public class TestSolrQueryResponse extends LuceneTestCase {
   }
 
   @Test
+  public void testResponseHeaderPartialResults() throws Exception {
+    assertEquals("SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY value changed",
+        "partialResults", SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
+  }
+
+  @Test
   public void testValues() throws Exception {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("values initially not empty", 0, response.getValues().size());

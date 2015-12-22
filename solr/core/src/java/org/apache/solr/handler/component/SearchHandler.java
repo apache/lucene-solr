@@ -300,7 +300,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           debug.add("explain", new NamedList());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+        rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       } finally {
         SolrQueryTimeoutImpl.reset();
       }
@@ -393,8 +393,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                   throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
                 }
               } else {
-                if(rsp.getResponseHeader().get("partialResults") == null) {
-                  rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+                if(rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
+                  rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
                 }
               }
             }

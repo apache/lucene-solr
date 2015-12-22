@@ -55,6 +55,7 @@ import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1161,7 +1162,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
           }
           else {
-            assertEquals("Expected to find the partialResults header set if a shard is down", Boolean.TRUE, rsp.getHeader().get("partialResults"));
+            assertEquals("Expected to find the "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" header set if a shard is down",
+                Boolean.TRUE, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
             assertTrue("Expected to find error in the down shard info",info.get("error") != null);
           }
         }
@@ -1173,7 +1175,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   @Override
   public void validateControlData(QueryResponse control) throws Exception {
     super.validateControlData(control);
-    assertNull("Expected the partialResults header to be null", control.getHeader().get("partialResults"));
+    assertNull("Expected the "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" header to be null",
+        control.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 
   private void validateCommonQueryParameters() throws Exception {

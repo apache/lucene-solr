@@ -228,7 +228,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
         }
 
         NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get("partialResults"))) {
+        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           partialResults = true;
         }
 
@@ -317,7 +317,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       rb.setResponseDocs(responseDocs);
 
       if (partialResults) {
-        rb.rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
+        rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE );
       }
     }
   }
@@ -547,7 +547,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
         }
 
         NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get("partialResults"))) {
+        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           partialResults = true;
         }
 
@@ -638,7 +638,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       rb.setResponseDocs(responseDocs);
 
       if (partialResults) {
-        rb.rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
+        rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE );
       }
     }
 

@@ -1029,7 +1029,7 @@ public class QueryComponent extends SearchComponent
         }
         
         NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get("partialResults"))) {
+        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           partialResults = true;
         }
         
@@ -1118,8 +1118,8 @@ public class QueryComponent extends SearchComponent
       populateNextCursorMarkFromMergedShards(rb);
 
       if (partialResults) {
-        if(rb.rsp.getResponseHeader().get("partialResults") == null) {
-          rb.rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+        if(rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
+          rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
         }
       }
   }

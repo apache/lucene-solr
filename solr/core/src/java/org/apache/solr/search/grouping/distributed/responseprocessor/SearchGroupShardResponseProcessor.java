@@ -28,6 +28,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommandResult;
@@ -102,8 +103,8 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
           shardInfo.add(srsp.getShard(), nl);
         }
         if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false) && srsp.getException() != null) {
-          if(rb.rsp.getResponseHeader().get("partialResults") == null) {
-            rb.rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+          if(rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
+            rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
           }
           continue; // continue if there was an error and we're tolerant.  
         }

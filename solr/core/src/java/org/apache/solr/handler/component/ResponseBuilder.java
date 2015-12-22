@@ -447,7 +447,7 @@ public class ResponseBuilder
   public void setResult(SolrIndexSearcher.QueryResult result) {
     setResults(result.getDocListAndSet());
     if (result.isPartialResults()) {
-      rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+      rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
