@@ -49,18 +49,19 @@ import java.util.List;
 
 public class TestParser extends LuceneTestCase {
 
+  final private static String defaultField = "contents";
   private static Analyzer analyzer;
   private static CoreParser coreParser;
   private static Directory dir;
   private static IndexReader reader;
-  private static IndexSearcher searcher;
+  protected static IndexSearcher searcher;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
     analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     //initialize the parser
-    coreParser = new CorePlusExtensionsParser("contents", analyzer);
+    coreParser = new CoreParser(defaultField, analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
         TestParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
@@ -143,30 +144,6 @@ public class TestParser extends LuceneTestCase {
     assertEquals("UserInputQueryCustomField should produce 0 result ", 0, h);
   }
 
-  public void testLikeThisQueryXML() throws Exception {
-    Query q = parse("LikeThisQuery.xml");
-    dumpResults("like this", q, 5);
-  }
-
-  public void testBoostingQueryXML() throws Exception {
-    Query q = parse("BoostingQuery.xml");
-    dumpResults("boosting ", q, 5);
-  }
-
-  public void testFuzzyLikeThisQueryXML() throws Exception {
-    Query q = parse("FuzzyLikeThisQuery.xml");
-    //show rewritten fuzzyLikeThisQuery - see what is being matched on
-    if (VERBOSE) {
-      System.out.println(q.rewrite(reader));
-    }
-    dumpResults("FuzzyLikeThis", q, 5);
-  }
-
-  public void testTermsFilterXML() throws Exception {
-    Query q = parse("TermsFilterQuery.xml");
-    dumpResults("Terms Filter", q, 5);
-  }
-
   public void testBoostingTermQueryXML() throws Exception {
     Query q = parse("BoostingTermQuery.xml");
     dumpResults("BoostingTermQuery", q, 5);
@@ -187,11 +164,6 @@ public class TestParser extends LuceneTestCase {
     dumpResults("MatchAllDocsQuery with range filter", q, 5);
   }
 
-  public void testBooleanFilterXML() throws ParserException, IOException {
-    Query q = parse("BooleanFilter.xml");
-    dumpResults("Boolean filter", q, 5);
-  }
-
   public void testNestedBooleanQuery() throws ParserException, IOException {
     Query q = parse("NestedBooleanQuery.xml");
     dumpResults("Nested Boolean query", q, 5);
@@ -200,14 +172,6 @@ public class TestParser extends LuceneTestCase {
   public void testCachedFilterXML() throws ParserException, IOException {
     Query q = parse("CachedFilter.xml");
     dumpResults("Cached filter", q, 5);
-  }
-
-  public void testDuplicateFilterQueryXML() throws ParserException, IOException {
-    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
-    Assume.assumeTrue(leaves.size() == 1);
-    Query q = parse("DuplicateFilterQuery.xml");
-    int h = searcher.search(q, 1000).totalHits;
-    assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);
   }
 
   public void testNumericRangeFilterQueryXML() throws ParserException, IOException {
@@ -222,6 +186,10 @@ public class TestParser extends LuceneTestCase {
 
   //================= Helper methods ===================================
 
+  protected String defaultField() {
+    return defaultField;
+  }
+
   protected Analyzer analyzer() {
     return analyzer;
   }
@@ -230,14 +198,18 @@ public class TestParser extends LuceneTestCase {
     return coreParser;
   }
 
-  private Query parse(String xmlFileName) throws ParserException, IOException {
+  protected Query parse(String xmlFileName) throws ParserException, IOException {
     InputStream xmlStream = TestParser.class.getResourceAsStream(xmlFileName);
     Query result = coreParser().parse(xmlStream);
     xmlStream.close();
     return result;
   }
 
-  private void dumpResults(String qType, Query q, int numDocs) throws IOException {
+  protected Query rewrite(Query q) throws IOException {
+    return q.rewrite(reader);
+  }
+
+  protected void dumpResults(String qType, Query q, int numDocs) throws IOException {
     if (VERBOSE) {
       System.out.println("TEST: query=" + q);
     }
