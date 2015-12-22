@@ -498,7 +498,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // First build up a starting index:
     MockDirectoryWrapper startDir = newMockDirectory();
-    assumeFalse("test uses IW unref'ed helper which is unaware of retries", TestUtil.hasVirusChecker(startDir));
 
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     for (int i = 0; i < 157; i++) {
@@ -525,7 +524,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(startDir));
       dir.setPreventDoubleWrite(false);
       dir.setAllowRandomFileNotFoundException(false);
-      assumeFalse("test uses IW unref'ed helper which is unaware of retries", TestUtil.hasVirusChecker(dir));
       IndexWriter modifier = new IndexWriter(dir,
                                              newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
                                              .setMaxBufferedDocs(1000)
@@ -910,7 +908,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     String[] text = { "Amsterdam", "Venice" };
 
     MockDirectoryWrapper dir = newMockDirectory();
-    assumeFalse("test uses IW unref'ed helper which is unaware of retries", TestUtil.hasVirusChecker(dir));
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     modifier.commit();
     dir.failOn(failure.reset());

@@ -55,7 +55,6 @@ public class Test64kAffixes extends LuceneTestCase {
     dictWriter.close();
     
     try (InputStream affStream = Files.newInputStream(affix); InputStream dictStream = Files.newInputStream(dict); Directory tempDir2 = newDirectory()) {
-      assumeFalse("test does direct file deletion", TestUtil.hasVirusChecker(tempDir2);
       Dictionary dictionary = new Dictionary(tempDir2, "dictionary", affStream, dictStream);
       Stemmer stemmer = new Stemmer(dictionary);
       // drinks should still stem to drink

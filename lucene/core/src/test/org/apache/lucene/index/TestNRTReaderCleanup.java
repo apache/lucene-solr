@@ -42,8 +42,6 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
 
     MockDirectoryWrapper dir = newMockDirectory();
     
-    assumeFalse("don't act like windows either, or the test won't simulate the condition", TestUtil.hasVirusChecker(dir));
-
     // Allow writing to same file more than once:
     dir.setPreventDoubleWrite(false);
 

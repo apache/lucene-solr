@@ -213,7 +213,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lats = new double[2*numPoints];
     double[] lons = new double[2*numPoints];
     Directory dir = newDirectory();
-    noVirusChecker(dir);
     IndexWriterConfig iwc = newIndexWriterConfig();
     initIndexWriterConfig(FIELD_NAME, iwc);
 
@@ -575,7 +574,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       dir = newDirectory();
     }
-    noVirusChecker(dir);
 
     Set<Integer> deleted = new HashSet<>();
     // RandomIndexWriter is too slow here:
@@ -768,13 +766,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       thread.join();
     }
     IOUtils.close(r, dir);
-  }
-
-  protected Directory noVirusChecker(Directory dir) {
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
   }
 }
 

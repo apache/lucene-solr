@@ -129,8 +129,6 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   }
 
   private static Directory getDirectory() {
-    Directory dir = newDirectory();
-    assumeFalse("test does direct file deletion", TestUtil.hasVirusChecker(dir);
-    return dir;
+    return newDirectory();
   }
 }

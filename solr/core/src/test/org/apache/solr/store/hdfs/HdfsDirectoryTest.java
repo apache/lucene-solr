@@ -18,6 +18,8 @@ package org.apache.solr.store.hdfs;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -88,9 +90,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   @Test
   public void testWritingAndReadingAFile() throws IOException {
     String[] listAll = directory.listAll();
-    for (String file : listAll) {
-      directory.deleteFile(file);
-    }
+    directory.deleteFiles(Arrays.asList(listAll));
     
     IndexOutput output = directory.createOutput("testing.test", new IOContext());
     output.writeInt(12345);
@@ -117,15 +117,13 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
     assertFalse(slowFileExists(directory, "testing.test.other"));
     assertTrue(slowFileExists(directory, "testing.test"));
-    directory.deleteFile("testing.test");
+    directory.deleteFiles(Collections.singleton("testing.test"));
     assertFalse(slowFileExists(directory, "testing.test"));
   }
   
   public void testRename() throws IOException {
     String[] listAll = directory.listAll();
-    for (String file : listAll) {
-      directory.deleteFile(file);
-    }
+    directory.deleteFiles(Arrays.asList(listAll));
     
     IndexOutput output = directory.createOutput("testing.test", new IOContext());
     output.writeInt(12345);
@@ -137,7 +135,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     assertEquals(12345, input.readInt());
     assertEquals(input.getFilePointer(), input.length());
     input.close();
-    directory.deleteFile("testing.test.renamed");
+    directory.deleteFiles(Collections.singleton("testing.test.renamed"));
     assertFalse(slowFileExists(directory, "testing.test.renamed"));
   }
   

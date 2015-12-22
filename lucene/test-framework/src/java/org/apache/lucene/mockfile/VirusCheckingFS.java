@@ -24,6 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 
+import org.apache.lucene.index.IndexWriter;
+
 /** 
  * Acts like Windows, where random programs may open the files you just wrote in an unfriendly
  * way preventing deletion (e.g. not passing FILE_SHARE_DELETE) or renaming or overwriting etc.
@@ -32,17 +34,27 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
 
   final Random random;
 
+  private boolean enabled = true;
+
   /** 
    * Create a new instance, wrapping {@code delegate}.
    */
   public VirusCheckingFS(FileSystem delegate, Random random) {
     super("viruschecking://", delegate);
-    this.random = random;
+    this.random = new Random(random.nextLong());
+  }
+
+  public void disable() {
+    enabled = false;
   }
 
   @Override
   public void delete(Path path) throws IOException {
-    if (random.nextInt(5) == 1) {
+    
+    if (enabled // test infra disables when it's "really" time to delete after test is done
+        && Files.exists(path) // important that we NOT delay a NoSuchFileException until later
+        && path.getFileName().toString().equals(IndexWriter.WRITE_LOCK_NAME) == false // life is particularly difficult if the virus checker hits our lock file
+        && random.nextInt(5) == 1) {
       throw new AccessDeniedException("VirusCheckingFS is randomly refusing to delete file \"" + path + "\"");
     }
     super.delete(path);

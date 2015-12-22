@@ -315,11 +315,19 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         // Delete original and copy bytes back:
         deleteFiles(Collections.singleton(name));
         
-        final IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
-        ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
-        out.copyBytes(ii, ii.length());
-        out.close();
-        ii.close();
+        try(IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
+          ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
+          out.copyBytes(ii, ii.length());
+          ii.close();
+        } catch (IOException ioe) {
+          // VirusCheckingFS may have blocked the delete, at which point FSDir cannot overwrite here
+          if (ioe.getMessage().equals("file \"" + name + "\" is pending delete and cannot be overwritten")) {
+            // OK
+            action = "deleted";
+          } else {
+            throw ioe;
+          }
+        }
         deleteFiles(Collections.singleton(tempFileName));
       } else if (damage == 3) {
         // The file survived intact:
@@ -328,8 +336,16 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         action = "fully truncated";
         // Totally truncate the file to zero bytes
         deleteFiles(Collections.singleton(name));
-        IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
-        out.close();
+        try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
+        } catch (IOException ioe) {
+          // VirusCheckingFS may have blocked the delete, at which point FSDir cannot overwrite here
+          if (ioe.getMessage().equals("file \"" + name + "\" is pending delete and cannot be overwritten")) {
+            // OK
+            action = "deleted";
+          } else {
+            throw ioe;
+          }
+        }
       }
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: " + action + " unsynced file: " + name);
@@ -720,7 +736,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         randomIOExceptionRate = 0.0;
         randomIOExceptionRateOnOpen = 0.0;
 
-        // nocommit we should also confirm all prior segments_N are intact?
         if (DirectoryReader.indexExists(this)) {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
@@ -729,6 +744,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
           } 
+
+          // nocommit: we should also confirm all prior segments_N are not corrupt?
           TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true);
           
           // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles

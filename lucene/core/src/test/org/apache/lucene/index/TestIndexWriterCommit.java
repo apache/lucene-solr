@@ -94,7 +94,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
    */
   public void testCommitOnCloseAbort() throws IOException {
     Directory dir = newDirectory();
-    assumeFalse("test uses IW unref'ed check which is unaware of retries", TestUtil.hasVirusChecker(dir));
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setMaxBufferedDocs(10));
     for (int i = 0; i < 14; i++) {
@@ -186,7 +185,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     final String contentFormat = TestUtil.getPostingsFormat("content");
     assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
     MockDirectoryWrapper dir = newMockDirectory();
-    assumeFalse("the virus scanner can use up too much disk space", TestUtil.hasVirusChecker(dir));
     Analyzer analyzer;
     if (random().nextBoolean()) {
       // no payloads
@@ -272,7 +270,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
     }
-    assumeFalse("test uses IW unref'ed check which is unaware of retries", TestUtil.hasVirusChecker(dir));
     IndexWriter writer = new IndexWriter(
         dir,
         newIndexWriterConfig(new MockAnalyzer(random()))
@@ -589,7 +586,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     IndexReader reader2 = DirectoryReader.open(dir);
     assertEquals(0, reader2.numDocs());
 
-    assumeFalse("We need to let IW delete the partial segments_N that was written in prepareCommit, else we get a false fail below", TestUtil.hasVirusChecker(mockDir));
     writer.rollback();
 
     IndexReader reader3 = DirectoryReader.openIfChanged(reader);

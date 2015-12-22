@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -148,7 +149,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    */
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
     toDir.copyFrom(fromDir, fileName, fileName, ioContext);
-    fromDir.deleteFile(fileName);
+    fromDir.deleteFiles(Collections.singleton(fileName));
   }
   
   /**
@@ -241,9 +242,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     try {
       contents = dir.listAll();
       if (contents != null) {
-        for (String file : contents) {
-          dir.deleteFile(file);
-        }
+        dir.deleteFiles(Arrays.asList(contents));
       }
     } catch (IOException e) {
       SolrException.log(log, "Error deleting files from Directory", e);

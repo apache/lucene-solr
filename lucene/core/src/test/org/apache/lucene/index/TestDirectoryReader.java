@@ -436,40 +436,43 @@ void assertTermDocsCount(String msg,
     rmDir(fileDirName);
   }*/
   
-public void testFilesOpenClose() throws IOException {
-      // Create initial data set
-      Path dirFile = createTempDir("TestIndexReader.testFilesOpenClose");
-      Directory dir = newFSDirectory(dirFile);
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      addDoc(writer, "test");
-      writer.close();
-      dir.close();
+  public void testFilesOpenClose() throws IOException {
+    // Create initial data set
+    Path dirFile = createTempDir("TestIndexReader.testFilesOpenClose");
+    assumeFalse("test directly deletes files", TestUtil.hasVirusChecker(dirFile));
+    Directory dir = newFSDirectory(dirFile);
+    
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    addDoc(writer, "test");
+    writer.close();
+    dir.close();
 
-      // Try to erase the data - this ensures that the writer closed all files
-      IOUtils.rm(dirFile);
-      dir = newFSDirectory(dirFile);
+    // Try to erase the data - this ensures that the writer closed all files
+    IOUtils.rm(dirFile);
+    dir = newFSDirectory(dirFile);
 
-      // Now create the data set again, just as before
-      writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                       .setOpenMode(OpenMode.CREATE));
-      addDoc(writer, "test");
-      writer.close();
-      dir.close();
+    // Now create the data set again, just as before
+    writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                              .setOpenMode(OpenMode.CREATE));
+    addDoc(writer, "test");
+    writer.close();
+    dir.close();
 
-      // Now open existing directory and test that reader closes all files
-      dir = newFSDirectory(dirFile);
-      DirectoryReader reader1 = DirectoryReader.open(dir);
-      reader1.close();
-      dir.close();
+    // Now open existing directory and test that reader closes all files
+    dir = newFSDirectory(dirFile);
+    DirectoryReader reader1 = DirectoryReader.open(dir);
+    reader1.close();
+    dir.close();
 
-      // The following will fail if reader did not close
-      // all files
-      IOUtils.rm(dirFile);
+    // The following will fail if reader did not close
+    // all files
+    IOUtils.rm(dirFile);
   }
 
   public void testOpenReaderAfterDelete() throws IOException {
     Path dirFile = createTempDir("deletetest");
     Directory dir = newFSDirectory(dirFile);
+    assumeFalse("test deletes files directly", TestUtil.hasVirusChecker(dir));
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper)dir).setCheckIndexOnClose(false); // we will hit NoSuchFileException in MDW since we nuked it!
     }
@@ -717,7 +720,6 @@ public void testFilesOpenClose() throws IOException {
   // good exception
   public void testNoDir() throws Throwable {
     Path tempDir = createTempDir("doesnotexist");
-    IOUtils.rm(tempDir);
     Directory dir = newFSDirectory(tempDir);
     try {
       DirectoryReader.open(dir);

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -325,9 +326,11 @@ public class BlockDirectory extends FilterDirectory {
     return dest;
   }
   
-  public void deleteFile(String name) throws IOException {
-    cache.delete(getFileCacheName(name));
-    super.deleteFile(name);
+  public void deleteFiles(Collection<String> names) throws IOException {
+    for(String name : names) {
+      cache.delete(getFileCacheName(name));
+    }
+    super.deleteFiles(names);
   }
     
   public boolean isBlockCacheReadEnabled() {

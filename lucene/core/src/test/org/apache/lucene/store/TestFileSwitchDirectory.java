@@ -100,7 +100,6 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   public void testNoDir() throws Throwable {
     Path primDir = createTempDir("foo");
     Path secondDir = createTempDir("bar");
-    IOUtils.rm(primDir, secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);

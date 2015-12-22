@@ -188,42 +188,37 @@ public class TestFieldsReader extends LuceneTestCase {
   public void testExceptions() throws Throwable {
     Path indexDir = createTempDir("testfieldswriterexceptions");
 
-    try {
-      Directory fsDir = newFSDirectory(indexDir);
-      FaultyFSDirectory dir = new FaultyFSDirectory(fsDir);
-      IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-                                .setOpenMode(OpenMode.CREATE);
-      IndexWriter writer = new IndexWriter(dir, iwc);
-      for(int i=0;i<2;i++)
-        writer.addDocument(testDoc);
-      writer.forceMerge(1);
-      writer.close();
+    Directory fsDir = newFSDirectory(indexDir);
+    FaultyFSDirectory dir = new FaultyFSDirectory(fsDir);
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+      .setOpenMode(OpenMode.CREATE);
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    for(int i=0;i<2;i++)
+      writer.addDocument(testDoc);
+    writer.forceMerge(1);
+    writer.close();
 
-      IndexReader reader = DirectoryReader.open(dir);
-      dir.startFailing();
+    IndexReader reader = DirectoryReader.open(dir);
+    dir.startFailing();
 
-      boolean exc = false;
+    boolean exc = false;
 
-      for(int i=0;i<2;i++) {
-        try {
-          reader.document(i);
-        } catch (IOException ioe) {
-          // expected
-          exc = true;
-        }
-        try {
-          reader.document(i);
-        } catch (IOException ioe) {
-          // expected
-          exc = true;
-        }
+    for(int i=0;i<2;i++) {
+      try {
+        reader.document(i);
+      } catch (IOException ioe) {
+        // expected
+        exc = true;
       }
-      assertTrue(exc);
-      reader.close();
-      dir.close();
-    } finally {
-      IOUtils.rm(indexDir);
+      try {
+        reader.document(i);
+      } catch (IOException ioe) {
+        // expected
+        exc = true;
+      }
     }
-
+    assertTrue(exc);
+    reader.close();
+    dir.close();
   }
 }

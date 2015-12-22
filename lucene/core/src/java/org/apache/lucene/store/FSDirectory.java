@@ -266,8 +266,6 @@ public abstract class FSDirectory extends BaseDirectory {
     }
   }
 
-  // nocommit openInput must refuse if it's a pending delete file?
-
   protected void ensureCanWrite(String name) throws IOException {
     deletePendingFiles();
     if (pendingDeletes.contains(name)) {
@@ -383,7 +381,6 @@ public abstract class FSDirectory extends BaseDirectory {
     // leave a corrupt commit in the index even in the presense of virus checkers:
     for(String fileName : toDelete) {
       if (fileName.startsWith(IndexFileNames.SEGMENTS) == false) {
-        // nocommit if we hit exc here ... should we continue deleting the rest, and do the addSuppressed thing...?
         deleteFile(fileName);
       }
     }

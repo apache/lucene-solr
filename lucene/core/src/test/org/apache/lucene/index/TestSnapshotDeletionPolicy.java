@@ -104,7 +104,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   }
 
   private void runTest(Random random, Directory dir) throws Exception {
-    assumeFalse("we use the IW unref'ed files check which is unaware of retries:", TestUtil.hasVirusChecker(dir));
     // Run for ~1 seconds
     final long stopTime = System.currentTimeMillis() + 1000;
 
@@ -255,7 +254,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     
     // Create 3 snapshots: snapshot0, snapshot1, snapshot2
     Directory dir = newDirectory();
-    assumeFalse("we verify some files get deleted", TestUtil.hasVirusChecker(dir));
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, numSnapshots);
@@ -280,7 +278,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testMultiThreadedSnapshotting() throws Exception {
     Directory dir = newDirectory();
-    assumeFalse("test relies on files actually being deleted", TestUtil.hasVirusChecker(dir));
 
     final IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     final SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
@@ -357,7 +354,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testReleaseSnapshot() throws Exception {
     Directory dir = newDirectory();
-    assumeFalse("we rely upon existence of files", TestUtil.hasVirusChecker(dir));
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, 1);
@@ -407,7 +403,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Tests the behavior of SDP when commits that are given at ctor are missing
     // on onInit().
     Directory dir = newDirectory();
-    assumeFalse("we rely upon existence of files", TestUtil.hasVirusChecker(dir));
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());

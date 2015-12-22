@@ -126,7 +126,6 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
   public void testForceMergeTempSpaceUsage() throws IOException {
 
     final MockDirectoryWrapper dir = newMockDirectory();
-    assumeFalse("deletes must succeed else too much disk is used", TestUtil.hasVirusChecker(dir));
     // don't use MockAnalyzer, variable length payloads can cause merge to make things bigger,
     // since things are optimized for fixed length case. this is a problem for MemoryPF's encoding.
     // (it might have other problems too)

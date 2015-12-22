@@ -165,7 +165,6 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
         file.directory = null;
         sizeInBytes.addAndGet(-file.sizeInBytes);
       } else {
-        // nocommit but should we keep trying to delete the rest, and throw this only at the end?
         throw new FileNotFoundException(name);
       }
     }

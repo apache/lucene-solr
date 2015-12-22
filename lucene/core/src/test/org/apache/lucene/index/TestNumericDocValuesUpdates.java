@@ -1182,7 +1182,6 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   @Test
   public void testDeleteUnusedUpdatesFiles() throws Exception {
     Directory dir = newDirectory();
-    assumeFalse("test explicitly needs files to always be actually deleted", TestUtil.hasVirusChecker(dir));
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
     

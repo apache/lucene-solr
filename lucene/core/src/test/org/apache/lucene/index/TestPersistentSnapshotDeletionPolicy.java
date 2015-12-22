@@ -51,7 +51,6 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   public void testExistingSnapshots() throws Exception {
     int numSnapshots = 3;
     MockDirectoryWrapper dir = newMockDirectory();
-    assumeFalse("test relies on files actually being deleted", TestUtil.hasVirusChecker(dir));
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy(dir)));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     assertNull(psdp.getLastSaveFile());

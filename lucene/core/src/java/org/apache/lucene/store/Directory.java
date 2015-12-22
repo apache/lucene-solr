@@ -49,7 +49,8 @@ public abstract class Directory implements Closeable {
    */
   public abstract String[] listAll() throws IOException;
 
-  /** Removes the specified files from the directory. */
+  /** Removes the specified files from the directory.  If an exception is thrown, behavior is undefined
+   *  (none, some or all of the files may have in fact been deleted). */
   public abstract void deleteFiles(Collection<String> name) throws IOException;
 
   /**

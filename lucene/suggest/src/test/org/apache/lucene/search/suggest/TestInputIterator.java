@@ -171,10 +171,6 @@ public class TestInputIterator extends LuceneTestCase {
   }
 
   private Directory getDirectory() {     
-    Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
+    return newDirectory();
   }
 }

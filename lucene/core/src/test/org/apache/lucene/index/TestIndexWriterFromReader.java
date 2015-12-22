@@ -112,7 +112,6 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
   // Pull NRT reader after writer has committed and then indexed another doc:
   public void testAfterCommitThenIndex() throws Exception {
     Directory dir = newDirectory();
-    assumeFalse("We only hit exc if stale segments file was deleted", TestUtil.hasVirusChecker(dir));
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.addDocument(new Document());
     w.commit();
@@ -138,7 +137,6 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
   // NRT rollback: pull NRT reader after writer has committed and then before indexing another doc
   public void testNRTRollback() throws Exception {
     Directory dir = newDirectory();
-    assumeFalse("We only hit exc if stale segments file was deleted", TestUtil.hasVirusChecker(dir));
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.addDocument(new Document());
     w.commit();

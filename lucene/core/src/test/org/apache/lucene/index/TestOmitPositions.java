@@ -189,7 +189,6 @@ public class TestOmitPositions extends LuceneTestCase {
   // Verifies no *.prx exists when all fields omit term positions:
   public void testNoPrxFile() throws Throwable {
     Directory ram = newDirectory();
-    assumeFalse("we verify some files get deleted", TestUtil.hasVirusChecker(ram));
 
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)

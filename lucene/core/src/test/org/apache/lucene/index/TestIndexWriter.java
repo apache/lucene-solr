@@ -1267,6 +1267,7 @@ public class TestIndexWriter extends LuceneTestCase {
     for(int iter=0;iter<2;iter++) {
       // relies on windows semantics
       Path path = createTempDir();
+      assumeFalse("test directly deletes files", TestUtil.hasVirusChecker(path));
       FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
       Path indexPath = new FilterPath(path, fs);
 
@@ -1351,7 +1352,6 @@ public class TestIndexWriter extends LuceneTestCase {
     // Validates that iw.deleteUnusedFiles() also deletes unused index commits
     // in case a deletion policy which holds onto commits is used.
     Directory dir = newDirectory();
-    assumeFalse("otherwise the delete of old commit might not actually succeed temporarily", TestUtil.hasVirusChecker(dir));
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
@@ -1404,7 +1404,6 @@ public class TestIndexWriter extends LuceneTestCase {
     // indexed, flushed (but not committed) and then IW rolls back, then no
     // files are left in the Directory.
     Directory dir = newDirectory();
-    assumeFalse("must delete files", TestUtil.hasVirusChecker(dir));
     
     String[] origFiles = dir.listAll();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
@@ -1469,7 +1468,6 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testNoUnwantedTVFiles() throws Exception {
 
     Directory dir = newDirectory();
-    assumeFalse("test uses IW unref'ed check which is unaware of retries", TestUtil.hasVirusChecker(dir));
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                      .setRAMBufferSizeMB(0.01)
                                                      .setMergePolicy(newLogMergePolicy()));
@@ -1635,7 +1633,6 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testDeleteAllNRTLeftoverFiles() throws Exception {
 
     MockDirectoryWrapper d = new MockDirectoryWrapper(random(), new RAMDirectory());
-    assumeFalse("needs for files to actually be deleted", TestUtil.hasVirusChecker(d));
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     for(int i = 0; i < 20; i++) {
@@ -1758,7 +1755,6 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-3872
   public void testPrepareCommitThenRollback() throws Exception {
     Directory dir = newDirectory();
-    assumeFalse("indexExists might return true if virus scanner prevents deletions", TestUtil.hasVirusChecker(dir));
     IndexWriter w = new IndexWriter(dir,
                                     new IndexWriterConfig(new MockAnalyzer(random())));
 

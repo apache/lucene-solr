@@ -47,7 +47,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-      assumeFalse("ensure we actually delete files", TestUtil.hasVirusChecker(dir));
     }
 
     MergePolicy mergePolicy = newLogMergePolicy(true, 10);
@@ -222,7 +221,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   public void testVirusScannerDoesntCorruptIndex() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setPreventDoubleWrite(false); // we arent trying to test this
-    assumeFalse("we have our own to make test reproduce always", TestUtil.hasVirusChecker(dir));
     
     // add empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();

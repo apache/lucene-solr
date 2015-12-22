@@ -26,6 +26,7 @@ import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -90,6 +91,9 @@ import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.mockfile.FilterFileSystem;
+import org.apache.lucene.mockfile.VirusCheckingFS;
+import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -1285,15 +1289,42 @@ public final class TestUtil {
     return ram;
   }
 
-  public static boolean hasVirusChecker(Directory dir) {
+  public static boolean hasWindowsFS(Directory dir) {
     dir = FilterDirectory.unwrap(dir);
     if (dir instanceof FSDirectory) {
       Path path = ((FSDirectory) dir).getDirectory();
-      System.out.println("HERE: " + path.toString());
-      // nocommit doesn't work?
-      return path.getFileSystem().toString().contains("VirusCheckingFS");
+      FileSystem fs = path.getFileSystem();
+      while (fs instanceof FilterFileSystem) {
+        FilterFileSystem ffs = (FilterFileSystem) fs;
+        if (ffs.getParent() instanceof WindowsFS) {
+          return true;
+        }
+        fs = ffs.getDelegate();
+      }
+    }
+
+    return false;
+  }
+
+  public static boolean hasVirusChecker(Directory dir) {
+    dir = FilterDirectory.unwrap(dir);
+    if (dir instanceof FSDirectory) {
+      return hasVirusChecker(((FSDirectory) dir).getDirectory());
     } else {
       return false;
     }
+  }
+
+  public static boolean hasVirusChecker(Path path) {
+    FileSystem fs = path.getFileSystem();
+    while (fs instanceof FilterFileSystem) {
+      FilterFileSystem ffs = (FilterFileSystem) fs;
+      if (ffs.getParent() instanceof VirusCheckingFS) {
+        return true;
+      }
+      fs = ffs.getDelegate();
+    }
+
+    return false;
   }
 }

@@ -668,6 +668,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
     Path tempDir = createTempDir("doesnotexist");
+    assumeFalse("test directly deletes files", TestUtil.hasVirusChecker(tempDir));
     IOUtils.rm(tempDir);
     Directory dir = getDirectory(tempDir);
     try {
@@ -825,6 +826,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   // TODO: somehow change this test to 
   public void testFsyncDoesntCreateNewFiles() throws Exception {
     Path path = createTempDir("nocreate");
+    assumeFalse("we directly delete files", TestUtil.hasVirusChecker(path));
     Directory fsdir = getDirectory(path);
     
     // this test backdoors the directory via the filesystem. so it must be an FSDir (for now)

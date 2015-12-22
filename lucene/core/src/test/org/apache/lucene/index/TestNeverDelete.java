@@ -101,7 +101,5 @@ public class TestNeverDelete extends LuceneTestCase {
     }
     w.close();
     d.close();
-
-    IOUtils.rm(tmpDir);
   }
 }
