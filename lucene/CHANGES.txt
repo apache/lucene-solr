@@ -172,6 +172,9 @@ Bug Fixes
 * SOLR-7865: BlendedInfixSuggester was returning too many results
   (Arcadius Ahouansou via Mike McCandless)
 
+* LUCENE-6946: SortField.equals now takes the missingValue parameter into
+  account. (Adrien Grand)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)

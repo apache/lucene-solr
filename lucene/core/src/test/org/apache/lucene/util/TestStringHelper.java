@@ -24,13 +24,6 @@ public class TestStringHelper extends LuceneTestCase {
     BytesRef right = new BytesRef("foozo");
     assertEquals(3, StringHelper.bytesDifference(left, right));
   }
-
-  public void testEquals() {
-    assertTrue(StringHelper.equals("foo", "foo"));
-    assertFalse(StringHelper.equals("foo", null));
-    assertFalse(StringHelper.equals(null, "foo"));
-    assertTrue(StringHelper.equals(null, null));
-  }
   
   public void testStartsWith() {
     BytesRef ref = new BytesRef("foobar");

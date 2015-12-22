@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Objects;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Stores information about how to sort documents by terms in an individual
@@ -300,23 +300,20 @@ public class SortField {
     if (!(o instanceof SortField)) return false;
     final SortField other = (SortField)o;
     return (
-      StringHelper.equals(other.field, this.field)
+      Objects.equals(other.field, this.field)
       && other.type == this.type
       && other.reverse == this.reverse
-      && (other.comparatorSource == null ? this.comparatorSource == null : other.comparatorSource.equals(this.comparatorSource))
+      && Objects.equals(this.comparatorSource, other.comparatorSource)
+      && Objects.equals(this.missingValue, other.missingValue)
     );
   }
 
-  /** Returns true if <code>o</code> is equal to this.  If a
+  /** Returns a hash code for this {@link SortField} instance.  If a
    *  {@link FieldComparatorSource} was provided, it must properly
-   *  implement hashCode (unless a singleton is always
-   *  used). */
+   *  implement hashCode (unless a singleton is always used). */
   @Override
   public int hashCode() {
-    int hash = type.hashCode() ^ 0x346565dd + Boolean.valueOf(reverse).hashCode() ^ 0xaf5998bb;
-    if (field != null) hash += field.hashCode()^0xff5685dd;
-    if (comparatorSource != null) hash += comparatorSource.hashCode();
-    return hash;
+    return Objects.hash(field, type, reverse, comparatorSource, missingValue);
   }
 
   private Comparator<BytesRef> bytesComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
