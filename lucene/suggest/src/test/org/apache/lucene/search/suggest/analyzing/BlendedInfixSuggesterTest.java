@@ -112,6 +112,18 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     assertEquals(w, getInResults(suggester, "top", pl, 1));
     assertEquals((int) (w * 1 / (1 + 2)), getInResults(suggester, "the", pl, 1));
     assertEquals((int) (w * 1 / (1 + 3)), getInResults(suggester, "lake", pl, 1));
+    suggester.close();
+
+    // BlenderType.EXPONENTIAL_RECIPROCAL is using 1/(pow(1+p, exponent)) * w where w is weight and p the position of the word
+    suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
+        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+        BlendedInfixSuggester.BlenderType.POSITION_EXPONENTIAL_RECIPROCAL, 1, 4.0, false, true, false);
+
+    suggester.build(new InputArrayIterator(keys));
+
+    assertEquals(w, getInResults(suggester, "top", pl, 1));
+    assertEquals((int) (w * 1 / (Math.pow(1 + 2, 4.0))), getInResults(suggester, "the", pl, 1));
+    assertEquals((int) (w * 1 / (Math.pow(1 + 3, 4.0))), getInResults(suggester, "lake", pl, 1));
 
     suggester.close();
   }

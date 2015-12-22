@@ -63,6 +63,8 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    */
   protected static double LINEAR_COEF = 0.10;
 
+  private Double exponent = 2.0;
+
   /**
    * Default factor
    */
@@ -89,6 +91,8 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
     POSITION_LINEAR,
     /** weight/(1+position) */
     POSITION_RECIPROCAL,
+    /** weight/pow(1+position, exponent) */
+    POSITION_EXPONENTIAL_RECIPROCAL
     // TODO:
     //SCORE
   }
@@ -136,13 +140,14 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
     this.blenderType = blenderType;
     this.numFactor = numFactor;
   }
-  
+
   /**
    * Create a new instance, loading from a previously built
    * directory, if it exists.
    *
    * @param blenderType Type of blending strategy, see BlenderType for more precisions
    * @param numFactor   Factor to multiply the number of searched elements before ponderate
+   * @param exponent exponent used only when blenderType is  BlenderType.POSITION_EXPONENTIAL_RECIPROCAL
    * @param commitOnBuild Call commit after the index has finished building. This would persist the
    *                      suggester index to disk and future instances of this suggester can use this pre-built dictionary.
    * @param allTermsRequired All terms in the suggest query must be matched.
@@ -150,13 +155,16 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    * @throws IOException If there are problems opening the underlying Lucene index.
    */
   public BlendedInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer,
-                               int minPrefixChars, BlenderType blenderType, int numFactor, 
+                               int minPrefixChars, BlenderType blenderType, int numFactor, Double exponent,
                                boolean commitOnBuild, boolean allTermsRequired, boolean highlight) throws IOException {
     super(dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild, allTermsRequired, highlight);
     this.blenderType = blenderType;
     this.numFactor = numFactor;
+    if(exponent != null) {
+      this.exponent = exponent;
+    }
   }
-  
+
   @Override
   public List<Lookup.LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) throws IOException {
     // Don't * numFactor here since we do it down below, once, in the call chain:
@@ -319,6 +327,10 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
       case POSITION_RECIPROCAL:
         coefficient = 1. / (position + 1);
+        break;
+
+      case POSITION_EXPONENTIAL_RECIPROCAL:
+        coefficient = 1. / Math.pow((position + 1.0), exponent);
         break;
 
       default:
