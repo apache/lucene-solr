@@ -166,7 +166,8 @@
       <str name="indexPath">blendedInfixDir1</str>
 
       <!-- Suggester properties -->
-      <str name="blenderType">linear</str>
+      <!--full enum name of BlenderType-->
+      <str name="blenderType">position_linear</str>
       <str name="suggestAnalyzerFieldType">text</str>
     </lst>
     
@@ -179,10 +180,40 @@
       <str name="indexPath">blendedInfixDir2</str>
 
       <!-- Suggester properties -->
-      <str name="blenderType">reciprocal</str>
+      <!--full enum name of BlenderType-->
+      <str name="blenderType">position_reciprocal</str>
       <str name="suggestAnalyzerFieldType">text</str>
     </lst>
-    
+
+    <lst name="suggester">
+      <!-- exponential with default exponent -->
+      <str name="name">blended_infix_suggest_exponential_reciprocal</str>
+      <str name="lookupImpl">BlendedInfixLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">blendedInfixSuggest.txt</str>
+      <str name="indexPath">blended_infix_suggest_exponential_reciprocal</str>
+
+      <!-- Suggester properties -->
+      <!--full enum name of BlenderType-->
+      <str name="blenderType">position_exponential_reciprocal</str>
+      <str name="suggestAnalyzerFieldType">text</str>
+    </lst>
+
+    <lst name="suggester">
+      <str name="name">blended_infix_suggest_exponential_reciprocal_1</str>
+      <str name="lookupImpl">BlendedInfixLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">blendedInfixSuggest.txt</str>
+      <str name="indexPath">blended_infix_suggest_exponential_reciprocal_1</str>
+
+      <!-- Suggester properties -->
+      <str name="blenderType">position_exponential_reciprocal</str>
+      <double name="exponent">1.0</double>
+      <str name="suggestAnalyzerFieldType">text</str>
+    </lst>
+
   </searchComponent>
   
   <!-- FuzzyLookup suggest component with FileDictionaryFactory -->

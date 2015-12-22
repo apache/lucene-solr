@@ -117,6 +117,10 @@ New Features
   for LONG and INT fields with NUMERIC and SORTED_NUMERIC doc values.
   (Alexey Zelin via Mikhail Khludnev) 
 
+* LUCENE-6939: Add exponential reciprocal scoring to
+  BlendedInfixSuggester, to even more strongly favor suggestions that
+  match closer to the beginning (Arcadius Ahouansou via Mike McCandless)
+
 API Changes
 
 * LUCENE-6908: GeoUtils static relational methods have been refactored to new 

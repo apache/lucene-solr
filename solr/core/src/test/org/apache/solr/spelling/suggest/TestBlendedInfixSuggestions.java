@@ -58,7 +58,37 @@ public class TestBlendedInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='payload'][.='star']"
     );
   }
-  
+
+  public void testExponentialReciprocalBlenderTypeExponent1() { //exponent=1 will give same output as reciprocal
+    assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "10", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_exponential_reciprocal_1"),
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/int[@name='numFound'][.='3']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='<b>the</b> returned']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='10']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[1]/str[@name='payload'][.='ret']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='top of <b>the</b> lake']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='6']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[2]/str[@name='payload'][.='lake']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='term'][.='star wars: episode v - <b>the</b> empire strikes back']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[3]/long[@name='weight'][.='2']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal_1']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='payload'][.='star']"
+    );
+  }
+
+  public void testExponentialReciprocalBlenderType() { // default is exponent=2.0
+    assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "10", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_exponential_reciprocal"),
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/int[@name='numFound'][.='3']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='<b>the</b> returned']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='10']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[1]/str[@name='payload'][.='ret']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='top of <b>the</b> lake']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='2']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[2]/str[@name='payload'][.='lake']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='term'][.='star wars: episode v - <b>the</b> empire strikes back']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[3]/long[@name='weight'][.='0']",
+        "//lst[@name='suggest']/lst[@name='blended_infix_suggest_exponential_reciprocal']/lst[@name='the']/arr[@name='suggestions']/lst[3]/str[@name='payload'][.='star']"
+    );
+  }
+
   public void testMultiSuggester() {
     assertQ(req("qt", URI, "q", "the", SuggesterParams.SUGGEST_COUNT, "10", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_linear", SuggesterParams.SUGGEST_DICT, "blended_infix_suggest_reciprocal"),
         "//lst[@name='suggest']/lst[@name='blended_infix_suggest_linear']/lst[@name='the']/int[@name='numFound'][.='3']",
