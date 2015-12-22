@@ -140,7 +140,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     }
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
-    assertTrue(response.getResponseHeader().getBooleanArg("partialResults"));
+    assertTrue(response.getResponseHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
     NamedList<Object> shardsInfo = ((NamedList<Object>)response.getResponse().get(ShardParams.SHARDS_INFO));
     boolean foundError = false;
     for (int i = 0; i < shardsInfo.size(); i++) {
@@ -188,7 +188,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     }
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
-    assertTrue(response.getResponseHeader().getBooleanArg("partialResults"));
+    assertTrue(response.getResponseHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
     NamedList<Object> shardsInfo = ((NamedList<Object>)response.getResponse().get(ShardParams.SHARDS_INFO));
     boolean foundError = false;
     for (int i = 0; i < shardsInfo.size(); i++) {

@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
@@ -103,7 +104,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);
 
     Map header = (Map) (res.get("responseHeader"));
-    assertTrue("Should have partial results", (Boolean) (header.get("partialResults")));
+    assertTrue("Should have partial results", (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
     assertEquals("Should NOT have inserted partial results in the cache!",
         (long) queryCacheStats.getStatistics().get("inserts"), qrInserts);
@@ -122,7 +123,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     assertEquals("Should have exactly " + NUM_DOCS, (long) (body.get("numFound")), NUM_DOCS);
     header = (Map) (res.get("responseHeader"));
-    assertTrue("Should NOT have partial results", header.get("partialResults") == null);
+    assertTrue("Should NOT have partial results", header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null);
   }
 
   // When looking at a problem raised on the user's list I ran across this anomaly with timeAllowed
@@ -146,7 +147,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     Map header = (Map) (res.get("responseHeader"));
 
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);
-    assertTrue("Should have partial results", (Boolean) (header.get("partialResults")));
+    assertTrue("Should have partial results", (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
     response = JQ(req("q", q, "indent", "true", "timeAllowed", longTimeout));
 
@@ -160,7 +161,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     header = (Map) (res.get("responseHeader"));
 
     assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound")));
-    Boolean test = (Boolean) (header.get("partialResults"));
+    Boolean test = (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
     if (test != null) {
       assertFalse("Should NOT have partial results", test);
     }

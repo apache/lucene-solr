@@ -13,6 +13,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -400,7 +401,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     }
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
-    assertTrue((Boolean)response.getResponseHeader().get("partialResults"));
+    assertTrue((Boolean)response.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
     @SuppressWarnings("unchecked")
     NamedList<String> badShardTrack = (NamedList<String>) ((NamedList<NamedList<String>>)
         ((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);

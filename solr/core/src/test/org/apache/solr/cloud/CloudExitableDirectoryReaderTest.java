@@ -19,11 +19,10 @@ package org.apache.solr.cloud;
 
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Test;
 
 /**
@@ -100,7 +99,8 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
    */
   public void assertPartialResults(ModifiableSolrParams p) throws Exception {
       QueryResponse rsp = queryServer(p);
-      assertEquals("partialResults were expected", true, rsp.getHeader().get("partialResults"));
+      assertEquals(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" were expected",
+          true, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
   
   public void assertSuccess(ModifiableSolrParams p) throws Exception {

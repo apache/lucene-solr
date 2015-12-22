@@ -373,6 +373,9 @@ Other Changes
 
 * SOLR-8317: add & use responseHeader and response accessors to SolrQueryResponse. (Christine Poerschke)
 
+* SOLR-8452: replace "partialResults" occurrences with SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
