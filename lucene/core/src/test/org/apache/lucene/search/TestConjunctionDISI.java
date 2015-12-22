@@ -253,7 +253,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
         }
       }
 
-      TwoPhaseIterator twoPhaseIterator = ((Scorer) conjunction).twoPhaseIterator();
+      TwoPhaseIterator twoPhaseIterator = conjunction.twoPhaseIterator();
       assertEquals(hasApproximation, twoPhaseIterator != null);
       if (hasApproximation) {
         assertEquals(intersect(sets), toBitSet(maxDoc, TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator)));
