@@ -527,6 +527,9 @@ Changes in Runtime Behavior
 * LUCENE-6305: BooleanQuery.equals and hashcode do not depend on the order of
   clauses anymore. (Adrien Grand)
 
+======================= Lucene 5.3.2 =======================
+(No Changes)
+
 ======================= Lucene 5.3.1 =======================
 
 Bug Fixes

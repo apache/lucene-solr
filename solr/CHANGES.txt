@@ -832,6 +832,9 @@ Other Changes
 * SOLR-8363: Fix check-example-lucene-match-version Ant task and addVersion.py script to
   check and update luceneMatchVersion under solr/example/ configs as well logic. (Varun Thacker)
 
+==================  5.3.2 ==================
+(No Changes)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
