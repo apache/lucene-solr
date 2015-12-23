@@ -27,10 +27,13 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -44,6 +47,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -58,9 +62,11 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
@@ -131,6 +137,28 @@ public class RealTimeGetComponent extends SearchComponent
       return;
     }
 
+    // parse any existing filters
+    try {
+      String[] fqs = req.getParams().getParams(CommonParams.FQ);
+      if (fqs!=null && fqs.length!=0) {
+        List<Query> filters = rb.getFilters();
+        // if filters already exists, make a copy instead of modifying the original
+        filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
+        for (String fq : fqs) {
+          if (fq != null && fq.trim().length()!=0) {
+            QParser fqp = QParser.getParser(fq, null, req);
+            filters.add(fqp.getQuery());
+          }
+        }
+        if (!filters.isEmpty()) {
+          rb.setFilters( filters );
+        }
+      }
+    } catch (SyntaxError e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+
+
     String[] allIds = id==null ? new String[0] : id;
 
     if (ids != null) {
@@ -173,6 +201,20 @@ public class RealTimeGetComponent extends SearchComponent
            int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
            switch (oper) {
              case UpdateLog.ADD:
+
+               if (rb.getFilters() != null) {
+                 // we have filters, so we need to check those against the indexed form of the doc
+                 if (searcherHolder != null) {
+                   // close handles to current searchers
+                   searcher = null;
+                   searcherHolder.decref();
+                   searcherHolder = null;
+                 }
+                 ulog.openRealtimeSearcher();  // force open a new realtime searcher
+                 o = null;  // pretend we never found this record and fall through to use the searcher
+                 break;
+               }
+
                SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
                if(transformer!=null) {
                  transformer.transform(doc, -1, 0); // unknown docID
@@ -184,7 +226,7 @@ public class RealTimeGetComponent extends SearchComponent
              default:
                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
            }
-           continue;
+           if (o != null) continue;
          }
        }
 
@@ -194,9 +236,26 @@ public class RealTimeGetComponent extends SearchComponent
          searcher = searcherHolder.get();
        }
 
-       // SolrCore.verbose("RealTimeGet using searcher ", searcher);
+       int docid = -1;
+       long segAndId = searcher.lookupId(idBytes.get());
+       if (segAndId >= 0) {
+         int segid = (int) segAndId;
+         LeafReaderContext ctx = searcher.getTopReaderContext().leaves().get((int) (segAndId >> 32));
+         docid = segid + ctx.docBase;
 
-       int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes.get()));
+         if (rb.getFilters() != null) {
+           for (Query q : rb.getFilters()) {
+             Scorer scorer = searcher.createWeight(q, false).scorer(ctx);
+             if (scorer == null || segid != scorer.iterator().advance(segid)) {
+               // filter doesn't match.
+               docid = -1;
+               break;
+             }
+           }
+         }
+       }
+
+
        if (docid < 0) continue;
        StoredDocument luceneDocument = searcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());

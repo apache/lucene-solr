@@ -444,23 +444,10 @@ public class UpdateLog implements PluginInfoInitialized {
         }
 
       } else {
-        // replicate the deleteByQuery logic.  See deleteByQuery for comments.
-
-        if (map != null) map.clear();
-        if (prevMap != null) prevMap.clear();
-        if (prevMap2 != null) prevMap2.clear();
-
-        try {
-          RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
-          holder.decref();
-        } catch (Exception e) {
-          SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
-        }
-
+        openRealtimeSearcher();
         if (trace) {
           log.trace("TLOG: added id " + cmd.getPrintableId() + " to " + tlog + " clearCaches=true");
         }
-
       }
 
     }
@@ -508,32 +495,33 @@ public class UpdateLog implements PluginInfoInitialized {
       if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
         // given that we just did a delete-by-query, we don't know what documents were
         // affected and hence we must purge our caches.
-        if (map != null) map.clear();
-        if (prevMap != null) prevMap.clear();
-        if (prevMap2 != null) prevMap2.clear();
-
+        openRealtimeSearcher();
         trackDeleteByQuery(cmd.getQuery(), cmd.getVersion());
 
-        // oldDeletes.clear();
-
-        // We must cause a new IndexReader to be opened before anything looks at these caches again
-        // so that a cache miss will read fresh data.
-        //
-        // TODO: FUTURE: open a new searcher lazily for better throughput with delete-by-query commands
-        try {
-          RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
-          holder.decref();
-        } catch (Exception e) {
-          SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
+        if (trace) {
+          LogPtr ptr = new LogPtr(pos, cmd.getVersion());
+          log.trace("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
         }
+      }
+    }
+  }
 
+  /** Opens a new realtime searcher and clears the id caches */
+  public void openRealtimeSearcher() {
+    synchronized (this) {
+      // We must cause a new IndexReader to be opened before anything looks at these caches again
+      // so that a cache miss will read fresh data.
+      try {
+        RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
+        holder.decref();
+      } catch (Exception e) {
+        SolrException.log(log, "Error opening realtime searcher", e);
+        return;
       }
 
-      LogPtr ptr = new LogPtr(pos, cmd.getVersion());
-
-      if (trace) {
-        log.trace("TLOG: added deleteByQuery " + cmd.query + " to " + tlog + " " + ptr + " map=" + System.identityHashCode(map));
-      }
+      if (map != null) map.clear();
+      if (prevMap != null) prevMap.clear();
+      if (prevMap2 != null) prevMap2.clear();
     }
   }
 

@@ -121,6 +121,8 @@ New Features
 * SOLR-6398: Add IterativeMergeStrategy to support running Parallel Iterative Algorithms inside of Solr
   (Joel Bernstein)
 
+* SOLR-8436: Real-time get now supports filters. (yonik) 
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been

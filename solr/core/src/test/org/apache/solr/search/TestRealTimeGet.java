@@ -18,6 +18,8 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.RefCounted;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -107,6 +109,64 @@ public class TestRealTimeGet extends TestRTGBase {
         ,"=={'doc':{'id':'11'}}"
     );
 
+
+    SolrQueryRequest req = req();
+    RefCounted<SolrIndexSearcher> realtimeHolder = req.getCore().getRealtimeSearcher();
+
+    //
+    // filters
+    //
+    assertU(adoc("id", "12"));
+    assertU(adoc("id", "13"));
+
+    // this should not need to open another realtime searcher
+    assertJQ(req("qt","/get","id","11", "fl","id", "fqX","id:11") // nocommit
+        ,"=={doc:{id:'11'}}"
+    );
+
+    // assert that the same realtime searcher is still in effect (i.e. that we didn't
+    // open a new searcher when we didn't have to).
+    RefCounted<SolrIndexSearcher> realtimeHolder2 = req.getCore().getRealtimeSearcher();
+    assertEquals(realtimeHolder.get(), realtimeHolder2.get());  // Autocommit could possibly cause this to fail?
+    realtimeHolder2.decref();
+
+    // filter most likely different segment
+    assertJQ(req("qt","/get","id","12", "fl","id", "fq","id:11")
+        ,"=={doc:null}"
+    );
+
+    // filter most likely same different segment
+    assertJQ(req("qt","/get","id","12", "fl","id", "fq","id:13")
+        ,"=={doc:null}"
+    );
+
+    assertJQ(req("qt","/get","id","12", "fl","id", "fq","id:12")
+        ,"=={doc:{id:'12'}}"
+    );
+
+    assertU(adoc("id", "14"));
+    assertU(adoc("id", "15"));
+
+    // id list, with some in index and some not, first id from index. Also test mutiple fq params.
+    assertJQ(req("qt","/get","ids","12,14,13,15", "fl","id", "fq","id:[10 TO 14]", "fq","id:[13 TO 19]")
+        ,"/response/docs==[{id:'14'},{id:'13'}]"
+    );
+
+    assertU(adoc("id", "16"));
+    assertU(adoc("id", "17"));
+
+    // id list, with some in index and some not, first id from tlog
+    assertJQ(req("qt","/get","ids","17,16,15,14", "fl","id", "fq","id:[15 TO 16]")
+        ,"/response/docs==[{id:'16'},{id:'15'}]"
+    );
+
+    // more complex filter
+    assertJQ(req("qt","/get","ids","17,16,15,14", "fl","id", "fq","{!frange l=15 u=16}id")
+        ,"/response/docs==[{id:'16'},{id:'15'}]"
+    );
+
+    realtimeHolder.decref();
+    req.close();
 
   }
 
@@ -411,6 +471,7 @@ public class TestRealTimeGet extends TestRTGBase {
     final int deleteByQueryPercent = 1+random().nextInt(5);
     final int optimisticPercent = 1+random().nextInt(50);    // percent change that an update uses optimistic locking
     final int optimisticCorrectPercent = 25+random().nextInt(70);    // percent change that a version specified will be correct
+    final int filteredGetPercent = random().nextInt( random().nextInt(20)+1 );   // percent of time that a get will be filtered... we normally don't want too high.
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 5 + random().nextInt(25);
 
@@ -640,9 +701,17 @@ public class TestRealTimeGet extends TestRTGBase {
               if (VERBOSE) {
                 verbose("querying id", id);
               }
+
+              boolean filteredOut = false;
               SolrQueryRequest sreq;
               if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
+                ModifiableSolrParams p = params("wt","json", "qt","/get", "ids",Integer.toString(id));
+                if (rand.nextInt(100) < filteredGetPercent) {
+                  int idToFilter = rand.nextBoolean() ? id : rand.nextInt(ndocs);
+                  filteredOut = idToFilter != id;
+                  p.add("fq", "id:"+idToFilter);
+                }
+                sreq = req(p);
               } else {
                 sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
               }
@@ -652,11 +721,12 @@ public class TestRealTimeGet extends TestRTGBase {
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization
+                // This is also correct when filteredOut==true
               } else {
                 assertEquals(1, doclist.size());
                 long foundVal = (Long)(((Map)doclist.get(0)).get(field));
                 long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
-                if (foundVal < Math.abs(info.val)
+                if (filteredOut || foundVal < Math.abs(info.val)
                     || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
                   verbose("ERROR, id=", id, "found=",response,"model",info);
                   assertTrue(false);
