@@ -376,6 +376,8 @@ Other Changes
 * SOLR-8452: replace "partialResults" occurrences with SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
   (Christine Poerschke)
 
+* SOLR-8454: ZkStateReader logging improvements and cleanup of dead code (Shai Erera, Anshum Gupta)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
