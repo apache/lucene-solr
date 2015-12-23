@@ -45,7 +45,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 
-public class TestParser extends LuceneTestCase {
+public class TestCoreParser extends LuceneTestCase {
 
   final private static String defaultField = "contents";
   private static Analyzer analyzer;
@@ -62,7 +62,7 @@ public class TestParser extends LuceneTestCase {
     coreParser = new CoreParser(defaultField, analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
-        TestParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
+        TestCoreParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
     dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
     String line = d.readLine();
@@ -182,7 +182,7 @@ public class TestParser extends LuceneTestCase {
   }
 
   protected Query parse(String xmlFileName) throws ParserException, IOException {
-    InputStream xmlStream = TestParser.class.getResourceAsStream(xmlFileName);
+    InputStream xmlStream = TestCoreParser.class.getResourceAsStream(xmlFileName);
     Query result = coreParser().parse(xmlStream);
     xmlStream.close();
     return result;

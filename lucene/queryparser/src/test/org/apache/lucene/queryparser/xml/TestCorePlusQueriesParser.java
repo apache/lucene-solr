@@ -19,7 +19,7 @@ package org.apache.lucene.queryparser.xml;
 
 import org.apache.lucene.search.Query;
 
-public class TestCorePlusQueriesParser extends TestParser {
+public class TestCorePlusQueriesParser extends TestCoreParser {
 
   private CoreParser corePlusQueriesParser;
 
