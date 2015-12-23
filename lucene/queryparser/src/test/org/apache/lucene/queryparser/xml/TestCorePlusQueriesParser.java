@@ -21,7 +21,7 @@ import org.apache.lucene.search.Query;
 
 import java.io.IOException;
 
-public class TestCorePlusQueriesParser extends TestParser {
+public class TestCorePlusQueriesParser extends TestCoreParser {
 
   private CoreParser corePlusQueriesParser;
 
