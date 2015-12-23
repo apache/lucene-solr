@@ -378,6 +378,9 @@ Other Changes
 
 * SOLR-8454: ZkStateReader logging improvements and cleanup of dead code (Shai Erera, Anshum Gupta)
 
+* SOLR-8455: RecovertStrategy logging improvements and sleep-between-recovery-attempts bug fix.
+  (Shai Erera)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
