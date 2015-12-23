@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
@@ -135,9 +136,18 @@ class SimpleTextDimensionalReader extends DimensionalReader {
   /** Finds all documents and points matching the provided visitor */
   @Override
   public void intersect(String field, IntersectVisitor visitor) throws IOException {
+    FieldInfo fieldInfo = readState.fieldInfos.fieldInfo(field);
+    if (fieldInfo == null) {
+      throw new IllegalArgumentException("field=\"" + field + "\" is unrecognized");
+    }
+    if (fieldInfo.getDimensionCount() == 0) {
+      throw new IllegalArgumentException("field=\"" + field + "\" did not index dimensional values");
+    }
     BKDReader bkdReader = readers.get(field);
     if (bkdReader == null) {
-      throw new IllegalArgumentException("field=\"" + field + "\" was not indexed with dimensional values");
+      // Schema ghost corner case!  This field did index dimensional values in the past, but
+      // now all docs having this dimensional field were deleted in this segment:
+      return;
     }
     bkdReader.intersect(visitor);
   }

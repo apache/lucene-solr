@@ -157,7 +157,11 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
           return Relation.CELL_CROSSES_QUERY;
         }
       });
-    indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+
+    // We could have 0 points on merge since all docs with dimensional fields may be deleted:
+    if (writer.getPointCount() > 0) {
+      indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+    }
   }
 
   private void write(IndexOutput out, String s) throws IOException {

@@ -105,7 +105,7 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
           }
         });
 
-      // We could have 0 points since all docs with dimensional fields may be deleted:
+      // We could have 0 points on merge since all docs with dimensional fields may be deleted:
       if (writer.getPointCount() > 0) {
         indexFPs.put(fieldInfo.name, writer.finish(dataOut));
       }
