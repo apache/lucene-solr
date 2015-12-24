@@ -17,8 +17,22 @@
 
 package org.apache.solr.handler;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttributeImpl;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
+import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
@@ -27,10 +41,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.CustomAnalyzerStrField;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.TextField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -432,5 +450,99 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     }
     Collections.sort(vals);
     assertEquals( "[s, s7, s7w, s7w1+, s9, s9v, s9v2+, sp, spp, spp5+, sv, svk, svk6+]", vals.toString() );
+  }
+
+  @Test //See SOLR-8460
+  public void testCustomAttribute() throws Exception {
+    FieldAnalysisRequest request = new FieldAnalysisRequest();
+    request.addFieldType("skutype1");
+    request.setFieldValue("hi, 3456-12 a Test");
+    request.setShowMatch(false);
+    FieldType fieldType = new TextField();
+    Analyzer analyzer = new TokenizerChain(
+        new TokenizerFactory(Collections.<String, String>emptyMap()) {
+          @Override
+          public Tokenizer create(AttributeFactory factory) {
+            return new CustomTokenizer(factory);
+          }
+        },
+        new TokenFilterFactory[] {
+            new TokenFilterFactory(Collections.<String, String>emptyMap()) {
+              @Override
+              public TokenStream create(TokenStream input) {
+                return new CustomTokenFilter(input);
+              }
+            }
+        }
+    );
+    fieldType.setIndexAnalyzer(analyzer);
+
+    NamedList<NamedList> result = handler.analyzeValues(request, fieldType, "fieldNameUnused");
+    // just test that we see "900" in the flags attribute here
+    List<NamedList> tokenInfoList = (List<NamedList>) result.findRecursive("index", CustomTokenFilter.class.getName());
+    // '1' from CustomTokenFilter plus 900 from CustomFlagsAttributeImpl.
+    assertEquals(901, tokenInfoList.get(0).get("org.apache.lucene.analysis.tokenattributes.FlagsAttribute#flags"));
+  }
+
+  /** A custom impl of a standard attribute impl; test this instance is used. */
+  public class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
+    @Override
+    public void setFlags(int flags) {
+      super.setFlags(900 + flags);//silly modification
+    }
+  }
+
+  private class CustomTokenizer extends Tokenizer {
+    CharTermAttribute charAtt;
+    FlagsAttribute customAtt;
+    boolean sentOneToken;
+
+    public CustomTokenizer(AttributeFactory factory) {
+      super(factory);
+      addAttributeImpl(new CustomFlagsAttributeImpl());
+      charAtt = addAttribute(CharTermAttribute.class);
+      customAtt = addAttribute(FlagsAttribute.class);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      sentOneToken = false;
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (sentOneToken) {
+        return false;
+      }
+      sentOneToken = true;
+      clearAttributes();
+      charAtt.append("firstToken");
+      return true;
+    }
+  }
+
+  private class CustomTokenFilter extends TokenFilter {
+    FlagsAttribute flagAtt;
+
+    public CustomTokenFilter(TokenStream input) {
+      super(input);
+      flagAtt = getAttribute(FlagsAttribute.class);
+      if (flagAtt == null) {
+        throw new IllegalStateException("FlagsAttribute should have been added already");
+      }
+      if (!(flagAtt instanceof CustomFlagsAttributeImpl)) {
+        throw new IllegalStateException("FlagsAttribute should be our custom " + CustomFlagsAttributeImpl.class);
+      }
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        flagAtt.setFlags(1);
+        return true;
+      } else {
+        return false;
+      }
+    }
   }
 }
