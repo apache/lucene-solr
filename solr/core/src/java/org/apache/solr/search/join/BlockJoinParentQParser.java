@@ -39,7 +39,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
-class BlockJoinParentQParser extends QParser {
+public class BlockJoinParentQParser extends QParser {
   /** implementation detail subject to change */
   public String CACHE_NAME="perSegFilter";
 
@@ -70,9 +70,8 @@ class BlockJoinParentQParser extends QParser {
     return createQuery(parentQ, childrenQuery, scoreMode);
   }
 
-  protected Query createQuery(Query parentList, Query query, String scoreMode) throws SyntaxError {
-    return new ToParentBlockJoinQuery(query, getFilter(parentList).filter, 
-        ScoreModeParser.parse(scoreMode));
+  protected Query createQuery(final Query parentList, Query query, String scoreMode) throws SyntaxError {
+    return new AllParentsAware(query, getFilter(parentList).filter, ScoreModeParser.parse(scoreMode), parentList);
   }
 
   BitDocIdSetFilterWrapper getFilter(Query parentList) {
@@ -96,6 +95,20 @@ class BlockJoinParentQParser extends QParser {
 
   private BitSetProducer createParentFilter(Query parentQ) {
     return new QueryBitSetProducer(parentQ);
+  }
+
+  static final class AllParentsAware extends ToParentBlockJoinQuery {
+    private final Query parentQuery;
+    
+    private AllParentsAware(Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode,
+        Query parentList) {
+      super(childQuery, parentsFilter, scoreMode);
+      parentQuery = parentList;
+    }
+    
+    public Query getParentQuery(){
+      return parentQuery;
+    }
   }
 
   // We need this wrapper since BitDocIdSetFilter does not extend Filter
