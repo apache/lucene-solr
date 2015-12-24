@@ -294,6 +294,8 @@ Bug Fixes
 * SOLR-8059: &debug=results for distributed search when distrib.singlePass (sometimes activated
   automatically) could result in an NPE. (David Smiley, Markus Jelsma)
 
+* SOLR-8460: /analysis/field could throw exceptions for custom attributes. (David Smiley, Uwe Schindler)
+
 Other Changes
 ----------------------
 
@@ -835,7 +837,11 @@ Other Changes
   check and update luceneMatchVersion under solr/example/ configs as well logic. (Varun Thacker)
 
 ==================  5.3.2 ==================
-(No Changes)
+
+Bug Fixes
+----------------------
+
+* SOLR-8460: /analysis/field could throw exceptions for custom attributes. (David Smiley, Uwe Schindler)
 
 ==================  5.3.1 ==================
 
