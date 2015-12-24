@@ -54,7 +54,6 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
     HttpClientConfigurer configurer = HttpClientUtil.getConfigurer();
-    log.info("############### HttpClientConfigurer ##################:"+configurer.getClass());
     httpClient =  HttpClientUtil.createClient(params);
   }
 
@@ -94,6 +93,9 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
     private ShardResponse originalShardResponse;
 
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
+      
+      log.info("############### HttpClientConfigurer ##################:" + HttpClientUtil.getConfigurer().getClass());
+
       log.info("################ SHARD ADDRESSS ##############:" + originalShardResponse.getShardAddress());
       log.info("############ HTTP Client #############:"+ httpClient.getClass());
       List<String> schemes = httpClient.getConnectionManager().getSchemeRegistry().getSchemeNames();
