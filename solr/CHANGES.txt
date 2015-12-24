@@ -9,7 +9,11 @@ caching, replication, and a web administration interface.
 See http://lucene.apache.org/solr for more information.
 
 ==================  5.3.2 ==================
-(No Changes)
+
+Bug Fixes
+----------------------
+
+* SOLR-8460: /analysis/field could throw exceptions for custom attributes. (David Smiley, Uwe Schindler)
 
 ==================  5.3.1 ==================
 

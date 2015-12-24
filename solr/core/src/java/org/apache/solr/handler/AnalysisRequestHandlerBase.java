@@ -123,16 +123,17 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
 
-    ListBasedTokenStream listBasedTokenStream = new ListBasedTokenStream(tokens);
+    ListBasedTokenStream listBasedTokenStream = new ListBasedTokenStream(tokenStream, tokens);
 
     for (TokenFilterFactory tokenFilterFactory : filtfacs) {
       for (final AttributeSource tok : tokens) {
         tok.getAttribute(TokenTrackingAttribute.class).freezeStage();
       }
+      // overwrite the vars "tokenStream", "tokens", and "listBasedTokenStream"
       tokenStream = tokenFilterFactory.create(listBasedTokenStream);
       tokens = analyzeTokenStream(tokenStream);
       namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
-      listBasedTokenStream = new ListBasedTokenStream(tokens);
+      listBasedTokenStream = new ListBasedTokenStream(listBasedTokenStream, tokens);
     }
 
     return namedList;
@@ -184,7 +185,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
         trackerAtt.setActPosition(position);
         tokens.add(tokenStream.cloneAttributes());
       }
-      tokenStream.end();
+      tokenStream.end(); // TODO should we capture?
     } catch (IOException ioe) {
       throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
     } finally {
@@ -312,7 +313,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
   }
 
   // ================================================= Inner classes =================================================
-
   /**
    * TokenStream that iterates over a list of pre-existing Tokens
    * @lucene.internal
@@ -324,10 +324,19 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     /**
      * Creates a new ListBasedTokenStream which uses the given tokens as its token source.
      *
+     * @param attributeSource source of the attribute factory and attribute impls
      * @param tokens Source of tokens to be used
      */
-    ListBasedTokenStream(List<AttributeSource> tokens) {
+    ListBasedTokenStream(AttributeSource attributeSource, List<AttributeSource> tokens) {
+      super(attributeSource.getAttributeFactory());
       this.tokens = tokens;
+      // Make sure all the attributes of the source are here too
+      addAttributes(attributeSource);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
       tokenIterator = tokens.iterator();
     }
 
@@ -336,9 +345,9 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       if (tokenIterator.hasNext()) {
         clearAttributes();
         AttributeSource next = tokenIterator.next();
-        Iterator<Class<? extends Attribute>> atts = next.getAttributeClassesIterator();
-        while (atts.hasNext()) // make sure all att impls in the token exist here
-          addAttribute(atts.next());
+
+        addAttributes(next); // just in case there were delayed attribute additions
+
         next.copyTo(this);
         return true;
       } else {
@@ -346,10 +355,15 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    @Override
-    public void reset() throws IOException {
-      super.reset();
-      tokenIterator = tokens.iterator();
+
+    protected void addAttributes(AttributeSource attributeSource) {
+      // note: ideally we wouldn't call addAttributeImpl which is marked internal. But nonetheless it's possible
+      //  this method is used by some custom attributes, especially since Solr doesn't provide a way to customize the
+      //  AttributeFactory which is the recommended way to choose which classes implement which attributes.
+      Iterator<AttributeImpl> atts = attributeSource.getAttributeImplsIterator();
+      while (atts.hasNext()) {
+        addAttributeImpl(atts.next()); // adds both impl & interfaces
+      }
     }
   }
 
