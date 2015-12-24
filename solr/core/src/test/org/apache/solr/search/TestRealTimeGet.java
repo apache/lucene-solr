@@ -120,7 +120,7 @@ public class TestRealTimeGet extends TestRTGBase {
     assertU(adoc("id", "13"));
 
     // this should not need to open another realtime searcher
-    assertJQ(req("qt","/get","id","11", "fl","id", "fqX","id:11") // nocommit
+    assertJQ(req("qt","/get","id","11", "fl","id", "fq","id:11")
         ,"=={doc:{id:'11'}}"
     );
 
