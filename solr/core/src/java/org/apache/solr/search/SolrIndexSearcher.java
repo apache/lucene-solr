@@ -1375,7 +1375,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     return qr.getDocList();
   }
 
-  static final int NO_CHECK_QCACHE       = 0x80000000;
+  public static final int NO_CHECK_QCACHE       = 0x80000000;
   public static final int GET_DOCSET            = 0x40000000;
   static final int NO_CHECK_FILTERCACHE  = 0x20000000;
   static final int NO_SET_QCACHE         = 0x10000000;

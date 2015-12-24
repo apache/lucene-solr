@@ -190,8 +190,40 @@ public class ToParentBlockJoinQuery extends Query {
       return Explanation.noMatch("Not a match");
     }
   }
-
-  static class BlockJoinScorer extends Scorer {
+  
+  /** 
+   * Ascendant for {@link ToParentBlockJoinQuery}'s scorer. 
+   * @lucene.experimental it might be removed at <b>6.0</b>
+   * */
+  public static abstract class ChildrenMatchesScorer extends Scorer{
+    
+    /** inherited constructor */
+    protected ChildrenMatchesScorer(Weight weight) {
+      super(weight);
+    }
+    
+    /** 
+     * enables children matches recording 
+     * */
+    public abstract void trackPendingChildHits() ;
+    
+    /**
+     * reports matched children 
+     * @return number of recorded matched children docs 
+     * */
+    public abstract int getChildCount() ;
+    
+    /**
+     * reports matched children 
+     * @param other array for recording matching children docs of next parent,
+     * it might be null (that's slower) or the same array which was returned 
+     * from the previous call
+     * @return array with {@link #getChildCount()} matched children docnums
+     *  */
+    public abstract int[] swapChildDocs(int[] other);
+  }
+  
+  static class BlockJoinScorer extends ChildrenMatchesScorer{
     private final Scorer childScorer;
     private final BitSet parentBits;
     private final ScoreMode scoreMode;
@@ -218,7 +250,8 @@ public class ToParentBlockJoinQuery extends Query {
       return Collections.singleton(new ChildScorer(childScorer, "BLOCK_JOIN"));
     }
 
-    int getChildCount() {
+    @Override
+    public int getChildCount() {
       return childDocUpto;
     }
 
@@ -226,7 +259,8 @@ public class ToParentBlockJoinQuery extends Query {
       return parentDoc;
     }
 
-    int[] swapChildDocs(int[] other) {
+    @Override
+    public int[] swapChildDocs(int[] other) {
       final int[] ret = pendingChildDocs;
       if (other == null) {
         pendingChildDocs = new int[5];
@@ -413,6 +447,7 @@ public class ToParentBlockJoinQuery extends Query {
     /**
      * Instructs this scorer to keep track of the child docIds and score ids for retrieval purposes.
      */
+    @Override
     public void trackPendingChildHits() {
       pendingChildDocs = new int[5];
       if (scoreMode != ScoreMode.None) {

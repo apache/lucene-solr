@@ -242,6 +242,9 @@ New Features
 
 * SOLR-8428: RuleBasedAuthorizationPlugin adds an 'all' permission (noble)
 
+* SOLR-5743: BlockJoinFacetComponent and BlockJoinDocSetFacetComponent for calculating facets by
+  child.facet.field parameter with {!parent ..}.. query. They count facets on children documents
+  aggregating (deduplicating) counts by parent documents (Dr. Oleg Savrasov via Mikhail Khludnev)
 
 Bug Fixes
 ----------------------
