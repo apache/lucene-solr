@@ -554,7 +554,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     return obj;
   }
 
- 
+
 
   public <T> T newInstance(String cName, Class<T> expectedType, String [] subPackages, Class[] params, Object[] args){
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
@@ -566,8 +566,19 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     T obj = null;
     try {
 
-      Constructor<? extends T> constructor = clazz.getConstructor(params);
-      obj = constructor.newInstance(args);
+      Constructor<? extends T> constructor = null;
+      try {
+        constructor = clazz.getConstructor(params);
+        obj = constructor.newInstance(args);
+      } catch (NoSuchMethodException e) {
+        //look for a zero arg constructor if the constructor args do not match
+        try {
+          constructor = clazz.getConstructor();
+          obj = constructor.newInstance();
+        } catch (NoSuchMethodException e1) {
+          throw e;
+        }
+      }
 
     } catch (Error err) {
       log.error("Loading Class " + cName + " ("+clazz.getName() + ") triggered serious java error: "

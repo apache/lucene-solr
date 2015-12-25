@@ -38,6 +38,7 @@ import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.client.config.AuthSchemes;
+import org.apache.http.client.params.ClientPNames;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +89,10 @@ public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
           }
         };
 
+        SolrPortAwareCookieSpecFactory cookieFactory = new SolrPortAwareCookieSpecFactory();
+        httpClient.getCookieSpecs().register(cookieFactory.POLICY_NAME, cookieFactory);
+        httpClient.getParams().setParameter(ClientPNames.COOKIE_POLICY, cookieFactory.POLICY_NAME);
+        
         httpClient.getCredentialsProvider().setCredentials(AuthScope.ANY, useJaasCreds);
 
         httpClient.addRequestInterceptor(bufferedEntityInterceptor);
