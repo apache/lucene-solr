@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="schema-docValues" version="1.5">
+<schema name="schema-docValues" version="1.6">
   <types>
 
     <!-- field type definitions... note that the "name" attribute is

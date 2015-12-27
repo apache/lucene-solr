@@ -9,7 +9,40 @@ caching, replication, and a web administration interface.
 See http://lucene.apache.org/solr for more information.
 
 
-======================= Lucene 5.5.0 =======================
+======================= 5.5.0 =======================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.10.4
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.13.v20150730
+
+Upgrading from Solr 5.4
+-----------------------
+
+* The Solr schema version has been increased to 1.6. Since schema version 1.6, all non-stored docValues fields
+  will be returned along with other stored fields when all fields (or pattern matching globs) are specified
+  to be returned (e.g. fl=*) for search queries. This behavior can be turned on and off by setting
+  'useDocValuesAsStored' parameter for a field or a field type to true (default since schema version 1.6)
+  or false (default till schema version 1.5).
+  Note that enabling this property has performance implications because DocValues are column-oriented and may
+  therefore incur additional cost to retrieve for each returned document. All example schema are upgraded to
+  version 1.6 but any older schemas will default to useDocValuesAsStored=false and continue to work as in
+  older versions of Solr. If this new behavior is desirable, then you should set version attribute in your
+  schema file to '1.6'. Re-indexing is not necessary to upgrade the schema version.
+  Also note that while returning non-stored fields from docValues (default in schema versions 1.6+, unless
+  useDocValuesAsStored is false), the values of a multi-valued field are returned in sorted order.
+  If you require the multi-valued fields to be returned in the original insertion order, then make your
+  multi-valued field as stored. This requires re-indexing.
+  See SOLR-8220 for more details.
+
+Detailed Change List
+----------------------
 
 New Features
 ----------------------
@@ -35,6 +68,9 @@ New Features
 * SOLR-5743: BlockJoinFacetComponent and BlockJoinDocSetFacetComponent for calculating facets by
   child.facet.field parameter with {!parent ..}.. query. They count facets on children documents
   aggregating (deduplicating) counts by parent documents (Dr. Oleg Savrasov via Mikhail Khludnev)
+
+* SOLR-8220: Read field from DocValues for non stored fields.
+  (Keith Laban, yonik, Erick Erickson, Ishan Chattopadhyaya, shalin)
 
 Bug Fixes
 ----------------------

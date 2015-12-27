@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="example" version="1.5">
+<schema name="example" version="1.6">
   <fields>
     <field name="_version_" type="long" indexed="false" stored="true" docValues="true"/>
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>

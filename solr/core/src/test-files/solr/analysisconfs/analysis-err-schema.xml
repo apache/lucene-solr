@@ -20,7 +20,7 @@
      text field that blows up in analysis, and an ID field for diagnosis.
   -->
 
-<schema name="test" version="1.5">
+<schema name="test" version="1.6">
   <types>
     <fieldType name="long" class="solr.TrieLongField" stored="true" indexed="true" />
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0"/>

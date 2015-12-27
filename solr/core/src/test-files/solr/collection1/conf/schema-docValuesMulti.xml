@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="schema-docValuesMulti" version="1.5">
+<schema name="schema-docValuesMulti" version="1.6">
   <types>
 
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>

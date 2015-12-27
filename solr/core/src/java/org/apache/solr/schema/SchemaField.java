@@ -99,6 +99,8 @@ public final class SchemaField extends FieldProperties {
   public boolean omitPositions() { return (properties & OMIT_POSITIONS)!=0; }
   public boolean storeOffsetsWithPositions() { return (properties & STORE_OFFSETS)!=0; }
 
+  public boolean useDocValuesAsStored() { return (properties & USE_DOCVALUES_AS_STORED)!=0; }
+
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
@@ -335,6 +337,7 @@ public final class SchemaField extends FieldProperties {
       }
       properties.add(getPropertyName(REQUIRED), isRequired());
       properties.add(getPropertyName(TOKENIZED), isTokenized());
+      properties.add(getPropertyName(USE_DOCVALUES_AS_STORED), useDocValuesAsStored());
       // The BINARY property is always false
       // properties.add(getPropertyName(BINARY), isBinary());
     } else {

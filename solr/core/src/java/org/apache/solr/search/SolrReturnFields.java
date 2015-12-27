@@ -398,7 +398,16 @@ public class SolrReturnFields extends ReturnFields {
   @Override
   public Set<String> getLuceneFieldNames()
   {
-    return (_wantsAllFields || fields.isEmpty()) ? null : fields;
+    return getLuceneFieldNames(false);
+  }
+
+  @Override
+  public Set<String> getLuceneFieldNames(boolean ignoreWantsAll)
+  {
+    if (ignoreWantsAll)
+      return fields;
+    else
+      return (_wantsAllFields || fields.isEmpty()) ? null : fields;
   }
 
   @Override

@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="test-custom-comparator" version="1.5">
+<schema name="test-custom-comparator" version="1.6">
   <types>
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
