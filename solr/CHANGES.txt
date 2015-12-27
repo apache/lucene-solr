@@ -217,6 +217,21 @@ Jetty 9.2.13.v20150730
 Upgrading from Solr 5.4
 -----------------------
 
+* The Solr schema version has been increased to 1.6. Since schema version 1.6, all non-stored docValues fields
+  will be returned along with other stored fields when all fields (or pattern matching globs) are specified
+  to be returned (e.g. fl=*) for search queries. This behavior can be turned on and off by setting
+  'useDocValuesAsStored' parameter for a field or a field type to true (default since schema version 1.6)
+  or false (default till schema version 1.5).
+  Note that enabling this property has performance implications because DocValues are column-oriented and may
+  therefore incur additional cost to retrieve for each returned document. All example schema are upgraded to
+  version 1.6 but any older schemas will default to useDocValuesAsStored=false and continue to work as in
+  older versions of Solr. If this new behavior is desirable, then you should set version attribute in your
+  schema file to '1.6'.
+  Also note that returning stored fields from docValues (default in schema versions 1.6+) returns multiValued
+  fields in sorted order. If you require the older behavior of multiValued fields being returned in the
+  original insertion order, set useDocValuesAsStored="false" for the individual fields or make
+  sure your schema version is < 1.6. This does not require re-indexing.
+  See SOLR-8220 for more details.
 
 Detailed Change List
 ----------------------
@@ -245,6 +260,9 @@ New Features
 * SOLR-5743: BlockJoinFacetComponent and BlockJoinDocSetFacetComponent for calculating facets by
   child.facet.field parameter with {!parent ..}.. query. They count facets on children documents
   aggregating (deduplicating) counts by parent documents (Dr. Oleg Savrasov via Mikhail Khludnev)
+
+* SOLR-8220: Read field from DocValues for non stored fields.
+  (Keith Laban, yonik, Erick Erickson, Ishan Chattopadhyaya, shalin)
 
 Bug Fixes
 ----------------------

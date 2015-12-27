@@ -27,6 +27,7 @@
     <fieldType name="text" class="solr.TextField"/>
     <fieldType name="bool" class="solr.BoolField"/>
     <fieldType name="str" class="solr.StrField"/>
+    <fieldType name="int" class="solr.TrieIntField"/>
 
     <!-- explicit props on type -->
     <fieldType name="multi_f" class="solr.StrField" multiValued="false"/>
@@ -42,80 +43,94 @@
     <fieldType name="txtTfP_f" class="solr.TextField" omitTermFreqAndPositions="false"/>
     <fieldType name="txtTfP_t" class="solr.TextField" omitTermFreqAndPositions="true"/>
 
-    <fieldType name="txt_phrase_f" class="solr.TextField" 
+    <fieldType name="txt_phrase_f" class="solr.TextField"
                autoGeneratePhraseQueries="false"/>
     <fieldType name="txt_phrase_t" class="solr.TextField"
-               autoGeneratePhraseQueries="true" />
+               autoGeneratePhraseQueries="true"/>
 
+    <fieldType name="int_dvas_t" class="solr.TrieIntField" useDocValuesAsStored="true"/>
+    <fieldType name="int_dvas_f" class="solr.TrieIntField" useDocValuesAsStored="false"/>
   </types>
   <fields>
 
     <!-- all behavior is default -->
 
-    <field name="text" type="text" />
-    <field name="bool" type="bool" />
-    <field name="str" type="str" />
+    <field name="text" type="text"/>
+    <field name="bool" type="bool"/>
+    <field name="str" type="str"/>
+    <field name="int" type="int"/>
 
-    <dynamicField name="*_dyn_text" type="text" />
-    <dynamicField name="*_dyn_bool" type="bool" />
-    <dynamicField name="*_dyn_str" type="str" />
+    <dynamicField name="*_dyn_text" type="text"/>
+    <dynamicField name="*_dyn_bool" type="bool"/>
+    <dynamicField name="*_dyn_str" type="str"/>
+    <dynamicField name="*_dyn_int" type="int"/>
 
     <!-- explicit props on type -->
-    <field name="ft_multi_f" type="multi_f" />
-    <field name="ft_multi_t" type="multi_t" />
-    <dynamicField name="*_dyn_str_ft_multi_f" type="multi_f" />
-    <dynamicField name="*_dyn_str_ft_multi_t" type="multi_t" />
+    <field name="ft_multi_f" type="multi_f"/>
+    <field name="ft_multi_t" type="multi_t"/>
+    <dynamicField name="*_dyn_str_ft_multi_f" type="multi_f"/>
+    <dynamicField name="*_dyn_str_ft_multi_t" type="multi_t"/>
 
-    <field name="ft_strnorm_f" type="strnorm_f" />
-    <field name="ft_strnorm_t" type="strnorm_t" />
-    <dynamicField name="*_dyn_ft_strnorm_f" type="strnorm_f" />
-    <dynamicField name="*_dyn_ft_strnorm_t" type="strnorm_t" />
+    <field name="ft_strnorm_f" type="strnorm_f"/>
+    <field name="ft_strnorm_t" type="strnorm_t"/>
+    <dynamicField name="*_dyn_ft_strnorm_f" type="strnorm_f"/>
+    <dynamicField name="*_dyn_ft_strnorm_t" type="strnorm_t"/>
 
-    <field name="ft_txtnorm_f" type="txtnorm_f" />
-    <field name="ft_txtnorm_t" type="txtnorm_t" />
-    <dynamicField name="*_dyn_ft_txtnorm_f" type="txtnorm_f" />
-    <dynamicField name="*_dyn_ft_txtnorm_t" type="txtnorm_t" />
+    <field name="ft_txtnorm_f" type="txtnorm_f"/>
+    <field name="ft_txtnorm_t" type="txtnorm_t"/>
+    <dynamicField name="*_dyn_ft_txtnorm_f" type="txtnorm_f"/>
+    <dynamicField name="*_dyn_ft_txtnorm_t" type="txtnorm_t"/>
 
-    <field name="ft_strTfP_f" type="strTfP_f" />
-    <field name="ft_strTfP_t" type="strTfP_t" />
-    <dynamicField name="*_dyn_ft_strTfP_f" type="strTfP_f" />
-    <dynamicField name="*_dyn_ft_strTfP_t" type="strTfP_t" />
+    <field name="ft_strTfP_f" type="strTfP_f"/>
+    <field name="ft_strTfP_t" type="strTfP_t"/>
+    <dynamicField name="*_dyn_ft_strTfP_f" type="strTfP_f"/>
+    <dynamicField name="*_dyn_ft_strTfP_t" type="strTfP_t"/>
 
-    <field name="ft_txtTfP_f" type="txtTfP_f" />
-    <field name="ft_txtTfP_t" type="txtTfP_t" />
-    <dynamicField name="*_dyn_ft_txtTfP_f" type="txtTfP_f" />
-    <dynamicField name="*_dyn_ft_txtTfP_t" type="txtTfP_t" />
+    <field name="ft_txtTfP_f" type="txtTfP_f"/>
+    <field name="ft_txtTfP_t" type="txtTfP_t"/>
+    <dynamicField name="*_dyn_ft_txtTfP_f" type="txtTfP_f"/>
+    <dynamicField name="*_dyn_ft_txtTfP_t" type="txtTfP_t"/>
 
-    <field name="ft_txt_phrase_f" type="txt_phrase_f" />
-    <field name="ft_txt_phrase_t" type="txt_phrase_t" />
-    <dynamicField name="*_dyn_ft_txt_phrase_f" type="txt_phrase_f" />
-    <dynamicField name="*_dyn_ft_txt_phrase_t" type="txt_phrase_t" />
-    
+    <field name="ft_txt_phrase_f" type="txt_phrase_f"/>
+    <field name="ft_txt_phrase_t" type="txt_phrase_t"/>
+    <dynamicField name="*_dyn_ft_txt_phrase_f" type="txt_phrase_f"/>
+    <dynamicField name="*_dyn_ft_txt_phrase_t" type="txt_phrase_t"/>
+
+    <field name="ft_intdvas_t" type="int_dvas_t"/>
+    <field name="ft_intdvas_f" type="int_dvas_f"/>
+    <dynamicField name="*_dyn_ft_intdvas_t" type="int_dvas_t"/>
+    <dynamicField name="*_dyn_ft_intdvas_f" type="int_dvas_f"/>
+
     <!-- explicit props on field -->
-    <field name="multi_f" type="str" multiValued="false" />
-    <field name="multi_t" type="str" multiValued="true" />
-    <dynamicField name="*_dyn_str_multi_f" type="str" multiValued="false" />
-    <dynamicField name="*_dyn_str_multi_t" type="str" multiValued="true" />
+    <field name="multi_f" type="str" multiValued="false"/>
+    <field name="multi_t" type="str" multiValued="true"/>
+    <dynamicField name="*_dyn_str_multi_f" type="str" multiValued="false"/>
+    <dynamicField name="*_dyn_str_multi_t" type="str" multiValued="true"/>
 
-    <field name="strnorm_f" type="str" omitNorms="false" />
-    <field name="strnorm_t" type="str" omitNorms="true" />
-    <dynamicField name="*_dyn_strnorm_f" type="str" omitNorms="false" />
-    <dynamicField name="*_dyn_strnorm_t" type="str" omitNorms="true" />
+    <field name="strnorm_f" type="str" omitNorms="false"/>
+    <field name="strnorm_t" type="str" omitNorms="true"/>
+    <dynamicField name="*_dyn_strnorm_f" type="str" omitNorms="false"/>
+    <dynamicField name="*_dyn_strnorm_t" type="str" omitNorms="true"/>
 
-    <field name="txtnorm_f" type="text" omitNorms="false" />
-    <field name="txtnorm_t" type="text" omitNorms="true" />
-    <dynamicField name="*_dyn_txtnorm_f" type="text" omitNorms="false" />
-    <dynamicField name="*_dyn_txtnorm_t" type="text" omitNorms="true" />
+    <field name="txtnorm_f" type="text" omitNorms="false"/>
+    <field name="txtnorm_t" type="text" omitNorms="true"/>
+    <dynamicField name="*_dyn_txtnorm_f" type="text" omitNorms="false"/>
+    <dynamicField name="*_dyn_txtnorm_t" type="text" omitNorms="true"/>
 
-    <field name="strTfP_f" type="str" omitTermFreqAndPositions="false" />
-    <field name="strTfP_t" type="str" omitTermFreqAndPositions="true" />
-    <dynamicField name="*_dyn_strTfP_f" type="str" omitTermFreqAndPositions="false" />
-    <dynamicField name="*_dyn_strTfP_t" type="str" omitTermFreqAndPositions="true" />
+    <field name="strTfP_f" type="str" omitTermFreqAndPositions="false"/>
+    <field name="strTfP_t" type="str" omitTermFreqAndPositions="true"/>
+    <dynamicField name="*_dyn_strTfP_f" type="str" omitTermFreqAndPositions="false"/>
+    <dynamicField name="*_dyn_strTfP_t" type="str" omitTermFreqAndPositions="true"/>
 
-    <field name="txtTfP_f" type="text" omitTermFreqAndPositions="false" />
-    <field name="txtTfP_t" type="text" omitTermFreqAndPositions="true" />
-    <dynamicField name="*_dyn_txtTfP_f" type="text" omitTermFreqAndPositions="false" />
-    <dynamicField name="*_dyn_txtTfP_t" type="text" omitTermFreqAndPositions="true" />
+    <field name="txtTfP_f" type="text" omitTermFreqAndPositions="false"/>
+    <field name="txtTfP_t" type="text" omitTermFreqAndPositions="true"/>
+    <dynamicField name="*_dyn_txtTfP_f" type="text" omitTermFreqAndPositions="false"/>
+    <dynamicField name="*_dyn_txtTfP_t" type="text" omitTermFreqAndPositions="true"/>
+
+    <field name="intdvas_t" type="int" useDocValuesAsStored="true"/>
+    <field name="intdvas_f" type="int" useDocValuesAsStored="false"/>
+    <dynamicField name="*_dyn_intdvas_t" type="int" useDocValuesAsStored="true"/>
+    <dynamicField name="*_dyn_intdvas_f" type="int" useDocValuesAsStored="false"/>
 
   </fields>
 </schema>

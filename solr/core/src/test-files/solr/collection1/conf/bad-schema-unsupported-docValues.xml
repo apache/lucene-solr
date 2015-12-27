@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-docValues-unsupported" version="1.5">
+<schema name="bad-schema-docValues-unsupported" version="1.6">
   <types>
     <fieldType name="binary" class="solr.BinaryField" />
  </types>

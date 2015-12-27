@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="test" version="1.5">
+<schema name="test" version="1.6">
   <types>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   </types>

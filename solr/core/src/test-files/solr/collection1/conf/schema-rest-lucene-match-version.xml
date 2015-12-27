@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="test-class-name-shortening-on-serialization" version="1.5">
+<schema name="test-class-name-shortening-on-serialization" version="1.6">
   <types>
     <fieldType name="explicitLuceneMatchVersions" class="org.apache.solr.schema.TextField">
       <analyzer>

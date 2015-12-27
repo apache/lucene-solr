@@ -13,7 +13,7 @@
 <!-- This is a stripped down schema that includes the node_id and edge_id 
   fields to test graph queries -->
 
-<schema name="graphexample" version="1.5">
+<schema name="graphexample" version="1.6">
   <!-- field names should consist of alphanumeric or underscore characters 
     only and not start with a digit. This is not currently strictly enforced, 
     but other field names will not have first class support from all components 

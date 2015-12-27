@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="add-schema-fields-update-processor" version="1.5">
+<schema name="add-schema-fields-update-processor" version="1.6">
 
   <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
   <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>

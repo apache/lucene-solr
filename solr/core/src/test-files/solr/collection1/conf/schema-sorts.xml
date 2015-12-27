@@ -22,7 +22,7 @@ NOTE: Tests expect every field in this schema to be sortable.
 
 -->
 
-<schema name="sortable" version="1.5">
+<schema name="sortable" version="1.6">
   <uniqueKey>id</uniqueKey>
 
   <fields>

@@ -18,7 +18,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="xinclude" version="1.5" xmlns:xi="http://www.w3.org/2001/XInclude">
+<schema name="xinclude" version="1.6" xmlns:xi="http://www.w3.org/2001/XInclude">
  <types>
   <fieldType name="string" class="solr.StrField"/>
   <xi:include href="schema-snippet-type.xml" />

@@ -46,8 +46,8 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
@@ -124,7 +124,12 @@ public abstract class FieldType extends FieldProperties {
     return false;
   }
 
-
+  /**
+   * Returns true if the fields' docValues should be used for obtaining stored value
+   */
+  public boolean useDocValuesAsStored() {
+    return (properties & USE_DOCVALUES_AS_STORED) != 0;
+  }
 
   /** Returns true if a single field value of this type has multiple logical values
    *  for the purposes of faceting, sorting, etc.  Text fields normally return
@@ -153,6 +158,7 @@ public abstract class FieldType extends FieldProperties {
     if (schemaVersion < 1.3) {
       args.remove("compressThreshold");
     }
+    if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
 
     this.args = Collections.unmodifiableMap(args);
     Map<String,String> initArgs = new HashMap<>(args);

@@ -21,7 +21,7 @@
 Test for HighlighterMaxOffsetTest which requires the use of ReversedWildcardFilterFactory
 
 -->
-<schema name="example" version="1.5">
+<schema name="example" version="1.6">
 
  <fields>
         

@@ -29,7 +29,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
             "/response/lst[@name='schema']/str[@name='name'][.='test-rest']",
 
             "count(/response/lst[@name='schema']/float[@name='version']) = 1",
-            "/response/lst[@name='schema']/float[@name='version'][.='1.5']",
+            "/response/lst[@name='schema']/float[@name='version'][.='1.6']",
 
             "count(/response/lst[@name='schema']/lst[@name='solrQueryParser']/str[@name='defaultOperator']) = 1",
             "/response/lst[@name='schema']/lst[@name='solrQueryParser']/str[@name='defaultOperator'][.='OR']",
@@ -114,7 +114,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
     assertJQ("/schema?wt=json", // Should work with or without a trailing slash
 
              "/schema/name=='test-rest'",
-             "/schema/version==1.5",
+             "/schema/version==1.6",
              "/schema/solrQueryParser/defaultOperator=='OR'",
              "/schema/uniqueKey=='id'",
              "/schema/defaultSearchField=='text'",
@@ -155,7 +155,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
     assertQ("/schema?wt=schema.xml",  // should work with or without trailing slash on '/schema/' path
 
             "/schema/@name = 'test-rest'",
-            "/schema/@version = '1.5'",
+            "/schema/@version = '1.6'",
             "/schema/solrQueryParser/@defaultOperator = 'OR'",
             "/schema/uniqueKey = 'id'",
             "/schema/defaultSearchField = 'text'",

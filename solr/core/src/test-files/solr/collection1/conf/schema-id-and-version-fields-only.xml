@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="id-and-version-fields-only" version="1.5">
+<schema name="id-and-version-fields-only" version="1.6">
   <types>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>

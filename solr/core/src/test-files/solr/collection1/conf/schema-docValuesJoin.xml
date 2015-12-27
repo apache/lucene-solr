@@ -16,14 +16,26 @@
  limitations under the License.
 -->
 
-<schema name="doc-values-for-Join" version="1.5">
+<schema name="doc-values-for-Join" version="1.6">
+  <!-- attribute "name" is the name of this schema and is only used for display purposes.
+       Applications should change this to reflect the nature of the search collection.
+       version="x.y" is Solr's version number for the schema syntax and semantics.  It should
+       not normally be changed by applications.
+       1.0: multiValued attribute did not exist, all fields are multiValued by nature
+       1.1: multiValued attribute introduced, false by default 
+       1.2: omitTermFreqAndPositions attribute introduced, true by default except for text fields.
+       1.3: removed optional field compress feature
+       1.4: default auto-phrase (QueryParser feature) to off
+       1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
+       1.6: useDocValuesAsStored defaults to true.
+     -->
   <types>
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldtype name="string" class="solr.StrField" sortMissingLast="true" useDocValuesAsStored="false"/>
     <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true" >
       <analyzer type="index">
         <tokenizer class="solr.MockTokenizerFactory"/>
@@ -86,4 +98,5 @@
   <copyField source="*_s" dest="*_s_dv" />
   <copyField source="*_ss" dest="*_ss_dv" />
   <copyField source="id" dest="id_dv" />
+  
 </schema>

@@ -18,7 +18,7 @@
 
 <!-- schema file for testing sorting/faceting/functions on single-valued DV with missing values -->
 
-<schema name="schema-docValuesMissing" version="1.5">
+<schema name="schema-docValuesMissing" version="1.6">
   <types>
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
