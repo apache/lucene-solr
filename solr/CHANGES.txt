@@ -226,11 +226,11 @@ Upgrading from Solr 5.4
   therefore incur additional cost to retrieve for each returned document. All example schema are upgraded to
   version 1.6 but any older schemas will default to useDocValuesAsStored=false and continue to work as in
   older versions of Solr. If this new behavior is desirable, then you should set version attribute in your
-  schema file to '1.6'.
-  Also note that returning stored fields from docValues (default in schema versions 1.6+) returns multiValued
-  fields in sorted order. If you require the older behavior of multiValued fields being returned in the
-  original insertion order, set useDocValuesAsStored="false" for the individual fields or make
-  sure your schema version is < 1.6. This does not require re-indexing.
+  schema file to '1.6'. Re-indexing is not necessary to upgrade the schema version.
+  Also note that while returning non-stored fields from docValues (default in schema versions 1.6+, unless
+  useDocValuesAsStored is false), the values of a multi-valued field are returned in sorted order.
+  If you require the multi-valued fields to be returned in the original insertion order, then make your
+  multi-valued field as stored. This requires re-indexing.
   See SOLR-8220 for more details.
 
 Detailed Change List
