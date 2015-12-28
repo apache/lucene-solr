@@ -223,8 +223,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       if (suiteFailureMarker.wasSuccessful()) {
         // if the tests passed, make sure everything was closed / released
         if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
-          String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
           endTrackingSearchers(120, true);
+          String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
           assertNull(orr, orr);
         } else {
           endTrackingSearchers(15, false);
