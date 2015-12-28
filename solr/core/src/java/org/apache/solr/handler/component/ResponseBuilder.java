@@ -251,6 +251,10 @@ public class ResponseBuilder
     return this.mergeStrategies;
   }
 
+  public RankQuery getRankQuery() {
+    return rankQuery;
+  }
+
   public void setRankQuery(RankQuery rankQuery) {
     this.rankQuery = rankQuery;
   }
@@ -428,7 +432,8 @@ public class ResponseBuilder
     return cmd;
   }
 
-  Query wrap(Query q) {
+  /** Calls {@link RankQuery#wrap(Query)} if there's a rank query, otherwise just returns the query. */
+  public Query wrap(Query q) {
     if(this.rankQuery != null) {
       return this.rankQuery.wrap(q);
     } else {
