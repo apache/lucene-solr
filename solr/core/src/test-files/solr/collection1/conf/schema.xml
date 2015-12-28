@@ -654,7 +654,14 @@
    <dynamicField name="*_d_dv"  type="double"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_dt_dv"  type="date"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_f1_dv"  type="float"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-   
+
+   <!--  Non-stored, DocValues=true -->
+   <dynamicField name="*_i_dvo" multiValued="false" type="int"    docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
+   <dynamicField name="*_d_dvo" multiValued="false" type="double" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
+   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
+   <dynamicField name="*_ii_dvo" multiValued="true" type="int"    docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
+   <dynamicField name="*_dd_dvo" multiValued="true" type="double" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
+
  </fields>
 
  <defaultSearchField>text</defaultSearchField>

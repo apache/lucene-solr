@@ -1009,7 +1009,64 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     }
 
   }
-  
+
+  @Test
+  public void testAtomicUpdatesOnNonStoredDocValues() throws Exception {
+    assertU(adoc(sdoc("id", 2, "title", "title2", "single_i_dvo", 100)));
+    assertU(adoc(sdoc("id", 3, "title", "title3", "single_d_dvo", 3.14)));
+    assertU(adoc(sdoc("id", 4, "single_s_dvo", "abc", "single_i_dvo", 1)));
+    assertU(commit());
+
+    assertU(adoc(sdoc("id", 2, "title", ImmutableMap.of("set", "newtitle2"),
+        "single_i_dvo", ImmutableMap.of("inc", 1))));
+    assertU(adoc(sdoc("id", 3, "title", ImmutableMap.of("set", "newtitle3"),
+        "single_d_dvo", ImmutableMap.of("inc", 1))));
+    assertU(adoc(sdoc("id", 4, "single_i_dvo", ImmutableMap.of("inc", 1))));
+    assertU(commit());
+
+    assertJQ(req("q", "id:2"),
+        "/response/docs/[0]/id==2",
+        "/response/docs/[0]/title/[0]=='newtitle2'",
+        "/response/docs/[0]/single_i_dvo==101");
+
+    assertJQ(req("q", "id:3"),
+        1e-4,
+        "/response/docs/[0]/id==3",
+        "/response/docs/[0]/title/[0]=='newtitle3'",
+        "/response/docs/[0]/single_d_dvo==4.14");
+
+    assertJQ(req("q", "id:4"),
+        1e-4,
+        "/response/docs/[0]/id==4",
+        "/response/docs/[0]/single_s_dvo=='abc'",
+        "/response/docs/[0]/single_i_dvo==2");
+
+    // test that non stored docvalues was carried forward for a non-docvalue update
+    assertU(adoc(sdoc("id", 3, "title", ImmutableMap.of("set", "newertitle3"))));
+    assertU(commit());
+    assertJQ(req("q", "id:3"),
+        1e-4,
+        "/response/docs/[0]/id==3",
+        "/response/docs/[0]/title/[0]=='newertitle3'",
+        "/response/docs/[0]/single_d_dvo==4.14");
+  }
+
+  @Test
+  public void testAtomicUpdatesOnNonStoredDocValuesMulti() throws Exception {
+    assertU(adoc(sdoc("id", 1, "title", "title1", "multi_ii_dvo", 100, "multi_ii_dvo", Integer.MAX_VALUE)));
+    assertU(commit());
+
+    assertU(adoc(sdoc("id", 1, "title", ImmutableMap.of("set", "newtitle1"))));
+    assertU(commit());
+
+    // test that non stored multivalued docvalues was carried forward for a non docvalues update
+    assertJQ(req("q", "id:1"),
+        "/response/docs/[0]/id==1",
+        "/response/docs/[0]/title/[0]=='newtitle1'",
+        "/response/docs/[0]/multi_ii_dvo/[0]==100",
+        "/response/docs/[0]/multi_ii_dvo/[1]==" + Integer.MAX_VALUE);
+  }
+
   @Test
   public void testInvalidOperation() {
     SolrInputDocument doc;

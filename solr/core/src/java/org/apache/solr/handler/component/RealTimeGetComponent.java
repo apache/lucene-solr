@@ -341,6 +341,7 @@ public class RealTimeGetComponent extends SearchComponent
         if (docid < 0) return null;
         StoredDocument luceneDocument = searcher.doc(docid);
         sid = toSolrInputDocument(luceneDocument, core.getLatestSchema());
+        searcher.decorateDocValueFields(sid, docid, searcher.getNonStoredDVs(false));
       }
     } finally {
       if (searcherHolder != null) {
@@ -358,7 +359,7 @@ public class RealTimeGetComponent extends SearchComponent
       SchemaField sf = schema.getFieldOrNull(f.name());
       Object val = null;
       if (sf != null) {
-        if (!sf.stored() || schema.isCopyFieldTarget(sf)) continue;
+        if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) continue;
         val = sf.getType().toObject(f);   // object or external string?
       } else {
         val = f.stringValue();
