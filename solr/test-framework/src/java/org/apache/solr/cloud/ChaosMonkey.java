@@ -185,9 +185,22 @@ public class ChaosMonkey {
     assert(jetty != null);
     monkeyLog("stop shard! " + jetty.getLocalPort());
     SolrDispatchFilter sdf = jetty.getSolrDispatchFilter();
-    if (sdf != null)
-      sdf.destroy();
-    jetty.stop();
+    if (sdf != null) {
+      try {
+        sdf.destroy();
+      } catch (Throwable t) {
+        log.error("", t);
+      }
+    }
+    try {
+      jetty.stop();
+    } catch (InterruptedException e) {
+      log.info("Jetty stop interrupted - should be a test caused interruption, we will try again to be sure we shutdown");
+    } 
+    
+    if (!jetty.isStopped()) {
+      jetty.stop();
+    }
 
     if (!jetty.isStopped()) {
       throw new RuntimeException("could not stop jetty");
@@ -231,12 +244,27 @@ public class ChaosMonkey {
   
   public void stopAll(int pauseBetweenMs) throws Exception {
     Set<String> keys = shardToJetty.keySet();
+    List<Thread> jettyThreads = new ArrayList<>(keys.size());
     for (String key : keys) {
       List<CloudJettyRunner> jetties = shardToJetty.get(key);
-      for (CloudJettyRunner jetty : jetties) {
+      for (final CloudJettyRunner jetty : jetties) {
         Thread.sleep(pauseBetweenMs);
-        stopJetty(jetty);
+        Thread thread = new Thread() {
+          public void run() {
+            try {
+              stopJetty(jetty);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+        jettyThreads.add(thread);
+        thread.start();
+
       }
+    }
+    for (Thread thread : jettyThreads) {
+      thread.join();
     }
   }
   
@@ -359,12 +387,17 @@ public class ChaosMonkey {
 
       // cluster state can be stale - also go by our 'near real-time' is leader prop
       boolean rtIsLeader;
-      try (SolrCore core = cjetty.jetty.getCoreContainer().getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-        if (core == null) {
-          monkeyLog("selected jetty not running correctly - skip");
-          return null;
+      CoreContainer cc = cjetty.jetty.getCoreContainer();
+      if (cc != null) {
+        try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
+          if (core == null) {
+            monkeyLog("selected jetty not running correctly - skip");
+            return null;
+          }
+          rtIsLeader = core.getCoreDescriptor().getCloudDescriptor().isLeader();
         }
-        rtIsLeader = core.getCoreDescriptor().getCloudDescriptor().isLeader();
+      } else {
+        return null;
       }
 
       boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)

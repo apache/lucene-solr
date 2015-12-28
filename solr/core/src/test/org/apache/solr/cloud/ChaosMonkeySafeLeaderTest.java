@@ -40,6 +40,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   @BeforeClass
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
+    System.setProperty("solr.autoCommit.maxTime", "15000");
     SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
       @Override
       public void call(Object... data) {
@@ -54,6 +55,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   @AfterClass
   public static void afterSuperClass() {
+    System.clearProperty("solr.autoCommit.maxTime");
     SolrCmdDistributor.testing_errorHook = null;
   }
   

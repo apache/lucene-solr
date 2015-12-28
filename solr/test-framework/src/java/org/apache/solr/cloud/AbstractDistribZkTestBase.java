@@ -158,7 +158,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
               + " live:"
               + clusterState.liveNodesContain(shard.getValue().getNodeName()));
           final Replica.State state = shard.getValue().getState();
-          if ((state == Replica.State.RECOVERING || state == Replica.State.DOWN)
+          if ((state == Replica.State.RECOVERING || state == Replica.State.DOWN || state == Replica.State.RECOVERY_FAILED)
               && clusterState.liveNodesContain(shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP))) {
             sawLiveRecovering = true;
           }

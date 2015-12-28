@@ -171,8 +171,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void destroy() {
     if (cores != null) {
-      cores.shutdown();
-      cores = null;
+      try {
+        cores.shutdown();
+      } finally {
+        cores = null;
+      }
     }
   }
   

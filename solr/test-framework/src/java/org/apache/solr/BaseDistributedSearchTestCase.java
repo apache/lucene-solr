@@ -963,7 +963,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         createServers(numShards);
         RandVal.uniqueValues = new HashSet(); //reset random values
         statement.evaluate();
-        destroyServers();
+        try {
+          destroyServers();
+        } catch (Throwable t) {
+          log.error("Error while shutting down servers", t);
+        }
       }
     }
 

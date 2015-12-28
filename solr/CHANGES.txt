@@ -198,6 +198,9 @@ Other Changes
 
 * SOLR-8410: Add all read paths to 'read' permission in RuleBasedAuthorizationPlugin (noble)
 
+* SOLR-8279: Add a new test fault injection approach and a new SolrCloud test that stops and starts the cluster
+  while indexing data and with random faults. (Mark Miller)
+
 * SOLR-8419: TermVectorComponent for distributed search now requires a uniqueKey in the schema.  Also, it no longer
   returns "uniqueKeyField" in the response. (David Smiley)
 

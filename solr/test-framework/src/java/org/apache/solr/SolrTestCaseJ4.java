@@ -222,20 +222,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       
       if (suiteFailureMarker.wasSuccessful()) {
         // if the tests passed, make sure everything was closed / released
-        endTrackingSearchers();
-        String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
         if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
+          String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+          endTrackingSearchers(120, true);
           assertNull(orr, orr);
         } else {
+          endTrackingSearchers(15, false);
+          String orr = ObjectReleaseTracker.checkEmpty();
           if (orr != null) {
             log.warn(
-                "Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation.");
+                "Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation, trying to close them now.");
+            ObjectReleaseTracker.tryClose();
           }
         }
       }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
+      ObjectReleaseTracker.clear();
       initCoreDataDir = null;
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
@@ -423,14 +427,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  public static void endTrackingSearchers() {
+  public static void endTrackingSearchers(int waitSeconds, boolean failTest) {
      long endNumOpens = SolrIndexSearcher.numOpens.get();
      long endNumCloses = SolrIndexSearcher.numCloses.get();
 
      // wait a bit in case any ending threads have anything to release
      int retries = 0;
      while (endNumOpens - numOpens != endNumCloses - numCloses) {
-       if (retries++ > 120) {
+       if (retries++ > waitSeconds) {
          break;
        }
        try {
@@ -450,7 +454,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
        if ("TestReplicationHandler".equals(RandomizedContext.current().getTargetClass().getSimpleName())) {
          log.warn("TestReplicationHandler wants to fail!: " + msg);
        } else {
-         fail(msg);
+         if (failTest) fail(msg);
        }
      }
   }

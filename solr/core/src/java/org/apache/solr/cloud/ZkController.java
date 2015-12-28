@@ -2329,7 +2329,10 @@ public final class ZkController {
   private void unregisterConfListener(String confDir, Runnable listener) {
     synchronized (confDirectoryListeners) {
       final Set<Runnable> listeners = confDirectoryListeners.get(confDir);
-      assert listeners != null : confDir + " has no more registered listeners, but a live one attempts to unregister!";
+      if (listeners == null) {
+        log.warn(confDir + " has no more registered listeners, but a live one attempted to unregister!");
+        return;
+      }
       if (listeners.remove(listener)) {
         log.info("removed listener for config directory [{}]", confDir);
       }
