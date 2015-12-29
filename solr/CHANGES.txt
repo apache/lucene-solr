@@ -870,6 +870,8 @@ Bug Fixes
 * SOLR-8373: KerberosPlugin: Using multiple nodes on same machine leads clients to
   fetch TGT for every request (Ishan Chattopadhyaya via noble)
 
+* SOLR-8340: Fixed NullPointerException in HighlightComponent. (zengjie via Christine Poerschke)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
