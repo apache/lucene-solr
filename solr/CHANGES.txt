@@ -320,6 +320,9 @@ Bug Fixes
 * SOLR-8276: Atomic updates and realtime-get do not work with non-stored docvalues.
   (Ishan Chattopadhyaya, yonik via shalin)
 
+* SOLR-7462: AIOOBE in RecordingJSONParser (Scott Dawson, noble)
+
+
 Other Changes
 ----------------------
 
