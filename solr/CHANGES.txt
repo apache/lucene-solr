@@ -867,6 +867,9 @@ Bug Fixes
 
 * SOLR-8460: /analysis/field could throw exceptions for custom attributes. (David Smiley, Uwe Schindler)
 
+* SOLR-8373: KerberosPlugin: Using multiple nodes on same machine leads clients to
+  fetch TGT for every request (Ishan Chattopadhyaya via noble)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
