@@ -879,6 +879,8 @@ Bug Fixes
 
 * SOLR-8355: update permissions were failing node recovery (noble , Anshum Gupta)
 
+* SOLR-8326: If BasicAuth enabled, inter node requests fail after node restart (noble, Anshum Gupta)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
