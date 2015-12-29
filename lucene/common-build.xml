@@ -87,23 +87,13 @@
   <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
   <property name="ivy.lock-strategy" value="artifact-lock"/>
 
-  <property name="junit.jar" value="junit-4.10.jar"/>
-  <property name="junit-location.jar" location="${common.dir}/test-framework/lib/${junit.jar}"/>
-
   <property name="local.caches" location="${common.dir}/../.caches" />
   <property name="tests.cachedir"  location="${local.caches}/test-stats" />
   <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
   <property name="tests.cachefilehistory" value="10" />
 
   <path id="junit-path">
-    <fileset dir="${common.dir}/test-framework/lib">
-      <include name="junit-*.jar" />
-      <include name="randomizedtesting-runner-*.jar" />
-    </fileset>
-  </path>
-
-  <path id="ant-path">
-    <fileset dir="${common.dir}/test-framework/lib" includes="ant-*.jar"/>
+    <fileset dir="${common.dir}/test-framework/lib"/>
   </path>
 
   <!-- default arguments to pass to JVM executing tests -->
@@ -1369,16 +1359,14 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="install-junit4-taskdef" depends="ivy-configure">
     <!-- JUnit4 taskdef. -->
-    <ivy:resolve   file="${common.dir}/test-framework/ivy.xml" type="jar" log="quiet" />
-    <ivy:cachepath file="${common.dir}/test-framework/ivy.xml" conf="junit4-stdalone" type="jar" transitive="false" pathid="path.junit4" />
+    <ivy:cachepath organisation="com.carrotsearch.randomizedtesting" module="junit4-ant" revision="${/com.carrotsearch.randomizedtesting/junit4-ant}"
+                   type="jar" inline="true" log="download-only" pathid="path.junit4" />
 
     <taskdef uri="antlib:com.carrotsearch.junit4">
       <classpath refid="path.junit4" />
     </taskdef>
   </target>
 
-  <!-- note: order here is important, the taskdef depends on test-framework
-       jars so we just order it after compile-test to ensure that -->
   <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
   <target name="beast" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
 
