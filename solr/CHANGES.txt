@@ -877,6 +877,8 @@ Bug Fixes
 
 * SOLR-8167: Authorization framework does not work with POST params (noble)
 
+* SOLR-8355: update permissions were failing node recovery (noble , Anshum Gupta)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
