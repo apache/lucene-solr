@@ -132,7 +132,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       "This piece of text refers to Kennedy at the beginning then has a longer piece of text that is very long in the middle and finally ends with another reference to Kennedy",
       "JFK has been shot", "John Kennedy has been shot",
       "This text has a typo in referring to Keneddy",
-      "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
+      "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets",
+      "Attribute instances are reused for all tokens of a document. Thus, a TokenStream/-Filter needs to update the appropriate Attribute(s) in incrementToken(). The consumer, commonly the Lucene indexer, consumes the data in the Attributes and then calls incrementToken() again until it retuns false, which indicates that the end of the stream was reached. This means that in each call of incrementToken() a TokenStream/-Filter can safely overwrite the data in the Attribute instances. "
+  };
 
   // Convenience method for succinct tests; doesn't represent "best practice"
   private TokenStream getAnyTokenStream(String fieldName, int docId)
@@ -345,6 +347,29 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     // Not sure we can assert anything here - just running to check we dont
     // throw any exceptions
+  }
+
+  // LUCENE-2229
+  public void testSimpleSpanHighlighterWithStopWordsStraddlingFragmentBoundaries() throws Exception {
+    doSearching(new PhraseQuery(FIELD_NAME, "all", "tokens"));
+
+    int maxNumFragmentsRequired = 1;
+
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+
+    assertEquals("Must have one hit", 1, hits.totalHits);
+    for (int i = 0; i < hits.totalHits; i++) {
+      String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, text);
+
+      highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 36));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired, "...");
+      if (VERBOSE) System.out.println("\t" + result);
+
+      assertTrue("Fragment must be less than 60 characters long", result.length() < 60);
+    }
   }
 
   // LUCENE-1752

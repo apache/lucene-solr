@@ -179,6 +179,10 @@ Bug Fixes
   hide the true docvalues update generation or other properties. 
   (Ishan Chattopadhyaya via Robert Muir)
 
+* LUCENE-2229: Fix Highlighter's SimpleSpanFragmenter when multiple adjacent
+  stop words following a span can unduly make the fragment way too long.
+  (Elmer Garduno, Lukhnos Liu via David Smiley)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
