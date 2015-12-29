@@ -883,6 +883,9 @@ Bug Fixes
 
 * SOLR-8269: Upgrade commons-collections to 3.2.2. This fixes a known serialization vulnerability (janhoy)
 
+* SOLR-8422: When authentication enabled, requests fail if sent to a node that doesn't host
+  the collection (noble)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
