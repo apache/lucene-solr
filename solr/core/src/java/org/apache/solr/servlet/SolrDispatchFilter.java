@@ -208,8 +208,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
     }
-    
+
     HttpSolrCall call = getHttpSolrCall((HttpServletRequest) request, (HttpServletResponse) response, retry);
+    ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
     try {
       Action result = call.call();
       switch (result) {
@@ -225,6 +226,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }  
     } finally {
       call.destroy();
+      ExecutorUtil.setServerThreadFlag(null);
     }
   }
   
