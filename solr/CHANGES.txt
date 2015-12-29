@@ -875,6 +875,8 @@ Bug Fixes
 * SOLR-8059: &debug=results for distributed search when distrib.singlePass (sometimes activated
   automatically) could result in an NPE. (David Smiley, Markus Jelsma)
 
+* SOLR-8167: Authorization framework does not work with POST params (noble)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
