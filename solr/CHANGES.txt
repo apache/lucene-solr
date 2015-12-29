@@ -872,6 +872,9 @@ Bug Fixes
 
 * SOLR-8340: Fixed NullPointerException in HighlightComponent. (zengjie via Christine Poerschke)
 
+* SOLR-8059: &debug=results for distributed search when distrib.singlePass (sometimes activated
+  automatically) could result in an NPE. (David Smiley, Markus Jelsma)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
