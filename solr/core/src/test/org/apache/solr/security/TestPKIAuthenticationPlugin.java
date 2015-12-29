@@ -88,7 +88,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
         return principal.get();
       }
     };
-    mock.remoteKeys.put(nodeName, CryptoKeys.deserializeX509PublicKey(mock.getPublicKey()));
+    final PublicKey  correctKey = CryptoKeys.deserializeX509PublicKey(mock.getPublicKey());
+    mock.remoteKeys.put(nodeName, correctKey);
+
     principal.set(new BasicUserPrincipal("solr"));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
     BasicHttpRequest request = new BasicHttpRequest("GET", "http://localhost:56565");
@@ -135,6 +137,27 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mock.doAuthenticate(mockReq, null, filterChain);
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+
+
+
+    MockPKIAuthenticationPlugin mock1 = new MockPKIAuthenticationPlugin(null, nodeName) {
+      int called = 0;
+      @Override
+      PublicKey getRemotePublicKey(String nodename) {
+        try {
+          return called == 0 ? new CryptoKeys.RSAKeyPair().getPublicKey() : correctKey;
+        } finally {
+          called++;
+        }
+      }
+    };
+
+    mock1.doAuthenticate(mockReq, null,filterChain );
+    assertNotNull(wrappedRequestByFilter.get());
+    assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+
+
+
 
   }
 
