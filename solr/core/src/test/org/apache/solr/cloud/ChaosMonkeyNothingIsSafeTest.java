@@ -65,7 +65,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       public void call(Object... data) {
         Exception e = (Exception) data[0];
         if (e == null) return;
-        if (e.getMessage().contains("Timeout")) {
+        String msg = e.getMessage();
+        if (msg != null && msg.contains("Timeout")) {
           Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + e.getMessage());
         }
       }
