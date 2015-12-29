@@ -959,7 +959,7 @@ public class HttpSolrCall {
     return new AuthorizationContext() {
       @Override
       public SolrParams getParams() {
-        return getQueryParams();
+        return solrReq.getParams();
       }
 
       @Override

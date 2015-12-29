@@ -459,7 +459,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
           "    update :{" +
           "      path:'/update/*'}," +
           "    read :{" +
-          "      path:['/update/*', '/get']}," +
+          "      path:['/select', '/get']}," +
           "    config-edit:{" +
           "      method:POST," +
           "      path:'/config/*'}}");

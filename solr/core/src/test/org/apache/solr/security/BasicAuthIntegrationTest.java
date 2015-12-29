@@ -163,6 +163,13 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     } catch (HttpSolrClient.RemoteSolrException e) {
 
     }
+    reload.setMethod(SolrRequest.METHOD.POST);
+    try {
+      rsp = solrClient.request(reload);
+      fail("must have failed");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+
+    }
 
    /* httpPost = new HttpPost(baseUrl + "/admin/authorization");
     setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
