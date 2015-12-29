@@ -175,6 +175,10 @@ Bug Fixes
 * LUCENE-6946: SortField.equals now takes the missingValue parameter into
   account. (Adrien Grand)
 
+* LUCENE-6950: Fix FieldInfos handling of UninvertingReader, e.g. do not
+  hide the true docvalues update generation or other properties. 
+  (Ishan Chattopadhyaya via Robert Muir)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)

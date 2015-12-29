@@ -19,18 +19,26 @@ package org.apache.lucene.uninverting;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Collections;
 
+import org.apache.lucene.document.DimensionalIntField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
@@ -335,6 +343,51 @@ public class TestUninvertingReader extends LuceneTestCase {
       
     }
 
+    ir.close();
+    dir.close();
+  }
+
+  public void testFieldInfos() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+
+    Document doc = new Document();
+    BytesRef idBytes = new BytesRef("id");
+    doc.add(new StringField("id", idBytes, Store.YES));
+    doc.add(new LegacyIntField("int", 5, Store.YES));
+    doc.add(new NumericDocValuesField("dv", 5));
+    doc.add(new DimensionalIntField("dint", 5));
+    doc.add(new StoredField("stored", 5)); // not indexed
+    iw.addDocument(doc);
+
+    iw.forceMerge(1);
+    iw.close();
+
+    Map<String, Type> uninvertingMap = new HashMap<>();
+    uninvertingMap.put("int", Type.INTEGER);
+    uninvertingMap.put("dv", Type.INTEGER);
+
+    DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
+                         uninvertingMap);
+    LeafReader leafReader = ir.leaves().get(0).reader();
+
+    FieldInfo intFInfo = leafReader.getFieldInfos().fieldInfo("int");
+    assertEquals(DocValuesType.NUMERIC, intFInfo.getDocValuesType());
+    assertEquals(0, intFInfo.getDimensionCount());
+    assertEquals(0, intFInfo.getDimensionNumBytes());
+
+    FieldInfo dintFInfo = leafReader.getFieldInfos().fieldInfo("dint");
+    assertEquals(1, dintFInfo.getDimensionCount());
+    assertEquals(4, dintFInfo.getDimensionNumBytes());
+
+    FieldInfo dvFInfo = leafReader.getFieldInfos().fieldInfo("dv");
+    assertEquals(DocValuesType.NUMERIC, dvFInfo.getDocValuesType());
+    assertEquals("0", dvFInfo.getAttribute("PerFieldDocValuesFormat.suffix"));
+
+    FieldInfo storedFInfo = leafReader.getFieldInfos().fieldInfo("stored");
+    assertEquals(DocValuesType.NONE, storedFInfo.getDocValuesType());
+
+    TestUtil.checkReader(ir);
     ir.close();
     dir.close();
   }
