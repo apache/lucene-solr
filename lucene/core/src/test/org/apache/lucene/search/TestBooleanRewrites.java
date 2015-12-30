@@ -286,12 +286,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
       Query query = randomQuery();
       final TopDocs td1 = searcher1.search(query, 100);
       final TopDocs td2 = searcher2.search(query, 100);
-      try {
       assertEquals(td1, td2);
-      } catch (AssertionError e) {
-        System.out.println(query);
-        throw e;
-      }
     }
 
     searcher1.getIndexReader().close();
@@ -320,7 +315,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
 
   private Query randomQuery() {
     if (random().nextInt(10) == 0) {
-      return new BoostQuery(randomQuery(), random().nextFloat());
+      return new BoostQuery(randomBooleanQuery(), TestUtil.nextInt(random(), 1, 10));
     }
     switch (random().nextInt(6)) {
       case 0:
