@@ -156,6 +156,9 @@ Optimizations
 * LUCENE-6944: BooleanWeight no longer creates sub-scorers if BS1 is not
   applicable. (Adrien Grand)
 
+* LUCENE-6940: MUST_NOT clauses execute faster, especially when they are sparse.
+  (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least

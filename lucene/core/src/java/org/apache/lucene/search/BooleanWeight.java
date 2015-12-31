@@ -28,6 +28,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Bits;
 
 /**
  * Expert: the Weight for BooleanQuery, used to
@@ -187,27 +188,45 @@ final class BooleanWeight extends Weight {
     }
   }
 
-  /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
-   *  cannot be used. */
-  // pkg-private for forcing use of BooleanScorer in tests
-  BulkScorer booleanScorer(LeafReaderContext context) throws IOException {
-    if (query.getClauses(Occur.MUST).isEmpty() == false
-        || query.getClauses(Occur.FILTER).isEmpty() == false) {
-      // TODO: there are some cases where BooleanScorer
-      // would handle conjunctions faster than
-      // BooleanScorer2...
-      return null;
-    } else if (query.getClauses(Occur.MUST_NOT).isEmpty() == false) {
-      // TODO: there are some cases where BooleanScorer could do this faster
-      return null;
-    }
+  static BulkScorer disableScoring(final BulkScorer scorer) {
+    return new BulkScorer() {
 
+      @Override
+      public int score(final LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+        final LeafCollector noScoreCollector = new LeafCollector() {
+          FakeScorer fake = new FakeScorer();
+
+          @Override
+          public void setScorer(Scorer scorer) throws IOException {
+            collector.setScorer(fake);
+          }
+
+          @Override
+          public void collect(int doc) throws IOException {
+            fake.doc = doc;
+            collector.collect(doc);
+          }
+        };
+        return scorer.score(noScoreCollector, acceptDocs, min, max);
+      }
+
+      @Override
+      public long cost() {
+        return scorer.cost();
+      }
+    };
+  }
+
+  // Return a BulkScorer for the optional clauses only,
+  // or null if it is not applicable
+  // pkg-private for forcing use of BooleanScorer in tests
+  BulkScorer optionalBulkScorer(LeafReaderContext context) throws IOException {
     List<BulkScorer> optional = new ArrayList<BulkScorer>();
     Iterator<BooleanClause> cIter = query.iterator();
     for (Weight w  : weights) {
       BooleanClause c =  cIter.next();
       if (c.getOccur() != Occur.SHOULD) {
-        throw new AssertionError();
+        continue;
       }
       BulkScorer subScorer = w.bulkScorer(context);
 
@@ -236,10 +255,50 @@ final class BooleanWeight extends Weight {
     return new BooleanScorer(this, disableCoord, maxCoord, optional, Math.max(1, query.getMinimumNumberShouldMatch()), needsScores);
   }
 
-  @Override
-  public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-    final BulkScorer bulkScorer = booleanScorer(context);
-    if (bulkScorer != null) { // BooleanScorer is applicable
+  // Return a BulkScorer for the required clauses only,
+  // or null if it is not applicable
+  private BulkScorer requiredBulkScorer(LeafReaderContext context) throws IOException {
+    BulkScorer scorer = null;
+
+    Iterator<BooleanClause> cIter = query.iterator();
+    for (Weight w  : weights) {
+      BooleanClause c =  cIter.next();
+      if (c.isRequired() == false) {
+        continue;
+      }
+      if (scorer != null) {
+        // we don't have a BulkScorer for conjunctions
+        return null;
+      }
+      scorer = w.bulkScorer(context);
+      if (scorer == null) {
+        // no matches
+        return null;
+      }
+      if (c.isScoring() == false) {
+        if (needsScores) {
+          scorer = disableScoring(scorer);
+        }
+      } else {
+        assert maxCoord == 1;
+      }
+    }
+    return scorer;
+  }
+
+  /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
+   *  cannot be used. */
+  BulkScorer booleanScorer(LeafReaderContext context) throws IOException {
+    final int numOptionalClauses = query.getClauses(Occur.SHOULD).size();
+    final int numRequiredClauses = query.getClauses(Occur.MUST).size() + query.getClauses(Occur.FILTER).size();
+    
+    BulkScorer positiveScorer;
+    if (numRequiredClauses == 0) {
+      positiveScorer = optionalBulkScorer(context);
+      if (positiveScorer == null) {
+        return null;
+      }
+
       // TODO: what is the right heuristic here?
       final long costThreshold;
       if (query.getMinimumNumberShouldMatch() <= 1) {
@@ -257,11 +316,59 @@ final class BooleanWeight extends Weight {
         costThreshold = context.reader().maxDoc() / 3;
       }
 
-      if (bulkScorer.cost() > costThreshold) {
-        return bulkScorer;
+      if (positiveScorer.cost() < costThreshold) {
+        return null;
+      }
+
+    } else if (numRequiredClauses == 1
+        && numOptionalClauses == 0
+        && query.getMinimumNumberShouldMatch() == 0) {
+      positiveScorer = requiredBulkScorer(context);
+    } else {
+      // TODO: there are some cases where BooleanScorer
+      // would handle conjunctions faster than
+      // BooleanScorer2...
+      return null;
+    }
+
+    if (positiveScorer == null) {
+      return null;
+    }
+
+    List<Scorer> prohibited = new ArrayList<>();
+    Iterator<BooleanClause> cIter = query.iterator();
+    for (Weight w  : weights) {
+      BooleanClause c =  cIter.next();
+      if (c.isProhibited()) {
+        Scorer scorer = w.scorer(context);
+        if (scorer != null) {
+          prohibited.add(scorer);
+        }
       }
     }
-    return super.bulkScorer(context);
+
+    if (prohibited.isEmpty()) {
+      return positiveScorer;
+    } else {
+      Scorer prohibitedScorer = opt(prohibited, 1, true);
+      if (prohibitedScorer.twoPhaseIterator() != null) {
+        // ReqExclBulkScorer can't deal efficiently with two-phased prohibited clauses
+        return null;
+      }
+      return new ReqExclBulkScorer(positiveScorer, prohibitedScorer.iterator());
+    }
+  }
+
+  @Override
+  public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+    final BulkScorer bulkScorer = booleanScorer(context);
+    if (bulkScorer != null) {
+      // bulk scoring is applicable, use it
+      return bulkScorer;
+    } else {
+      // use a Scorer-based impl (BS2)
+      return super.bulkScorer(context);
+    }
   }
 
   @Override
