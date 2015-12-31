@@ -107,45 +107,69 @@ public class GeoRelationUtils {
       return false;
     }
 
-    final double[][] bbox = new double[][] { {rMinX, rMinY}, {rMaxX, rMinY}, {rMaxX, rMaxY}, {rMinX, rMaxY}, {rMinX, rMinY} };
     final int polyLength = shapeX.length-1;
-    double d, s, t, a1, b1, c1, a2, b2, c2;
-    double x00, y00, x01, y01, x10, y10, x11, y11;
-
-    // computes the intersection point between each bbox edge and the polygon edge
-    for (short b=0; b<4; ++b) {
-      a1 = bbox[b+1][1]-bbox[b][1];
-      b1 = bbox[b][0]-bbox[b+1][0];
-      c1 = a1*bbox[b+1][0] + b1*bbox[b+1][1];
-      for (int p=0; p<polyLength; ++p) {
-        a2 = shapeY[p+1]-shapeY[p];
-        b2 = shapeX[p]-shapeX[p+1];
-        // compute determinant
-        d = a1*b2 - a2*b1;
-        if (d != 0) {
-          // lines are not parallel, check intersecting points
-          c2 = a2*shapeX[p+1] + b2*shapeY[p+1];
-          s = (1/d)*(b2*c1 - b1*c2);
-          t = (1/d)*(a1*c2 - a2*c1);
-          x00 = StrictMath.min(bbox[b][0], bbox[b+1][0]) - GeoUtils.TOLERANCE;
-          x01 = StrictMath.max(bbox[b][0], bbox[b+1][0]) + GeoUtils.TOLERANCE;
-          y00 = StrictMath.min(bbox[b][1], bbox[b+1][1]) - GeoUtils.TOLERANCE;
-          y01 = StrictMath.max(bbox[b][1], bbox[b+1][1]) + GeoUtils.TOLERANCE;
-          x10 = StrictMath.min(shapeX[p], shapeX[p+1]) - GeoUtils.TOLERANCE;
-          x11 = StrictMath.max(shapeX[p], shapeX[p+1]) + GeoUtils.TOLERANCE;
-          y10 = StrictMath.min(shapeY[p], shapeY[p+1]) - GeoUtils.TOLERANCE;
-          y11 = StrictMath.max(shapeY[p], shapeY[p+1]) + GeoUtils.TOLERANCE;
-          // check whether the intersection point is touching one of the line segments
-          boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
-              || ((x10 == s && y10 == t) || (x11 == s && y11 == t));
-          // if line segments are not touching and the intersection point is within the range of either segment
-          if (!(touching || x00 > s || x01 < s || y00 > t || y01 < t || x10 > s || x11 < s || y10 > t || y11 < t)) {
-            return true;
-          }
-        }
-      } // for each poly edge
-    } // for each bbox edge
+    for (short p=0; p<polyLength; ++p) {
+      if (lineCrossesRect(shapeX[p], shapeY[p], shapeX[p+1], shapeY[p+1], rMinX, rMinY, rMaxX, rMaxY) == true) {
+        return true;
+      }
+    }
     return false;
+  }
+
+  private static boolean lineCrossesRect(double aX1, double aY1, double aX2, double aY2,
+                                         final double rMinX, final double rMinY, final double rMaxX, final double rMaxY) {
+    // short-circuit: if one point inside rect, other outside
+    if (pointInRect(aX1, aY1, rMinX, rMinY, rMaxX, rMaxY) ?
+        !pointInRect(aX2, aY2, rMinX, rMinY, rMaxX, rMaxY) : pointInRect(aX2, aY2, rMinX, rMinY, rMaxX, rMaxY)) {
+      return true;
+    }
+
+    return lineCrossesLine(aX1, aY1, aX2, aY2, rMinX, rMinY, rMaxX, rMaxY)
+        || lineCrossesLine(aX1, aY1, aX2, aY2, rMaxX, rMinY, rMinX, rMaxY);
+  }
+
+  private static boolean lineCrossesLine(final double aX1, final double aY1, final double aX2, final double aY2,
+                                         final double bX1, final double bY1, final double bX2, final double bY2) {
+    // determine if three points are ccw (right-hand rule) by computing the determinate
+    final double aX2X1d = aX2 - aX1;
+    final double aY2Y1d = aY2 - aY1;
+    final double bX2X1d = bX2 - bX1;
+    final double bY2Y1d = bY2 - bY1;
+
+    final double t1B = aX2X1d * (bY2 - aY1) - aY2Y1d * (bX2 - aX1);
+    final double test1 = (aX2X1d * (bY1 - aY1) - aY2Y1d * (bX1 - aX1)) * t1B;
+    final double t2B = bX2X1d * (aY2 - bY1) - bY2Y1d * (aX2 - bX1);
+    final double test2 = (bX2X1d * (aY1 - bY1) - bY2Y1d * (aX1 - bX1)) * t2B;
+
+    if (test1 < 0 && test2 < 0) {
+      return true;
+    }
+
+    if (test1 == 0 || test2 == 0) {
+      // vertically collinear
+      if (aX1 == aX2 || bX1 == bX2) {
+        final double minAy = Math.min(aY1, aY2);
+        final double maxAy = Math.max(aY1, aY2);
+        final double minBy = Math.min(bY1, bY2);
+        final double maxBy = Math.max(bY1, bY2);
+
+        return !(minBy > maxAy || maxBy < minAy) || !(minAy > maxBy || maxAy < minBy);
+      }
+      // horizontally collinear
+      final double minAx = Math.min(aX1, aX2);
+      final double maxAx = Math.max(aX1, aY2);
+      final double minBx = Math.min(bX1, bX2);
+      final double maxBx = Math.max(bX1, bX2);
+
+      return !(minBx >= maxAx || maxBx <= minAx) || !(minAx >= maxBx || maxAx <= minBx);
+    }
+    return false;
+  }
+
+  public static boolean rectWithinPoly(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+                                       final double[] shapeX, final double[] shapeY, final double sMinX,
+                                       final double sMinY, final double sMaxX, final double sMaxY) {
+    return rectWithinPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY, false);
   }
 
   /**
@@ -153,7 +177,13 @@ public class GeoRelationUtils {
    */
   public static boolean rectWithinPoly(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                        final double[] shapeX, final double[] shapeY, final double sMinX,
-                                       final double sMinY, final double sMaxX, final double sMaxY) {
+                                       final double sMinY, final double sMaxX, final double sMaxY, boolean approx) {
+    // approximation: check if rectangle crosses poly (to handle concave/pacman polys), then check one of the corners
+    // are contained
+    if (approx == true) {
+      return !(rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
+          !pointInPolygon(shapeX, shapeY, rMinY, rMinX));
+    }
     // check if rectangle crosses poly (to handle concave/pacman polys), then check that all 4 corners
     // are contained
     return !(rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
