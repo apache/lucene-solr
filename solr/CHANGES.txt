@@ -322,6 +322,8 @@ Bug Fixes
 
 * SOLR-7462: AIOOBE in RecordingJSONParser (Scott Dawson, noble)
 
+* SOLR-8418: Adapt to changes in LUCENE-6590 for use of boosts with MLTHandler and
+  Simple/CloudMLTQParser (Jens Wille, Ramkumar Aiyengar)
 
 Other Changes
 ----------------------
