@@ -139,6 +139,10 @@ API Changes
 
 Optimizations
 
+* LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based
+  line crossing algorithm, and adding result for multi-value docs when least
+  1 point satisfies polygon criteria. (Nick Knize)
+
 * LUCENE-6889: BooleanQuery.rewrite now performs some query optimization, in
   particular to rewrite queries that look like: "+*:* #filter" to a
   "ConstantScore(filter)". (Adrien Grand)

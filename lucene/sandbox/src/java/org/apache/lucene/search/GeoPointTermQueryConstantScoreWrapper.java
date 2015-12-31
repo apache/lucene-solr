@@ -82,14 +82,14 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointTermQuery> 
           // boundary terms need post filtering by
           if (termsEnum.boundaryTerm()) {
             int docId = docs.nextDoc();
+            long hash;
             do {
               sdv.setDocument(docId);
               for (int i=0; i<sdv.count(); ++i) {
-                final long hash = sdv.valueAt(i);
-                final double lon = GeoUtils.mortonUnhashLon(hash);
-                final double lat = GeoUtils.mortonUnhashLat(hash);
-                if (termsEnum.postFilter(lon, lat)) {
+                hash = sdv.valueAt(i);
+                if (termsEnum.postFilter(GeoUtils.mortonUnhashLon(hash), GeoUtils.mortonUnhashLat(hash))) {
                   builder.add(docId);
+                  break;
                 }
               }
             } while ((docId = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS);
