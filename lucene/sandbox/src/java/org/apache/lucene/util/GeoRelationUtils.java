@@ -200,35 +200,72 @@ public class GeoRelationUtils {
         || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radiusMeters;
   }
 
+  /**
+   * Compute whether any of the 4 corners of the rectangle (defined by min/max X/Y) are outside the circle (defined
+   * by centerLon, centerLat, radiusMeters)
+   *
+   * Note: exotic rectangles at the poles (e.g., those whose lon/lat distance ratios greatly deviate from 1) can not
+   * be determined by using distance alone. For this reason the approx flag may be set to false, in which case the
+   * space will be further divided to more accurately compute whether the rectangle crosses the circle
+   */
   private static boolean rectAnyCornersOutsideCircle(final double rMinX, final double rMinY, final double rMaxX,
                                                      final double rMaxY, final double centerLon, final double centerLat,
                                                      final double radiusMeters, final boolean approx) {
     if (approx == true) {
       return rectAnyCornersOutsideCircleSloppy(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters);
     }
-    double w = Math.abs(rMaxX - rMinX);
-    if (w <= 90.0) {
+    // if span is less than 70 degrees we can approximate using distance alone
+    if (Math.abs(rMaxX - rMinX) <= 70.0) {
       return GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMinX) > radiusMeters
           || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMinX) > radiusMeters
           || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMaxX) > radiusMeters
           || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMaxX) > radiusMeters;
     }
-    // partition
-    w /= 4;
-    final double p1 = rMinX + w;
-    final double p2 = p1 + w;
-    final double p3 = p2 + w;
+    return rectCrossesOblateCircle(centerLon, centerLat, radiusMeters, rMinX, rMinY, rMaxX, rMaxY);
+  }
 
-    return GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMinX) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMinX) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, p1) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, p1) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, p2) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, p2) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, p3) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, p3) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMaxX) > radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMaxX) > radiusMeters;
+  /**
+   * Compute whether the rectangle (defined by min/max Lon/Lat) crosses a potentially oblate circle
+   *
+   * TODO benchmark for replacing existing rectCrossesCircle.
+   */
+  public static boolean rectCrossesOblateCircle(double centerLon, double centerLat, double radiusMeters, double rMinLon, double rMinLat, double  rMaxLon, double rMaxLat) {
+    double w = Math.abs(rMaxLon - rMinLon);
+    final int segs = (int)Math.ceil(w / 45.0);
+    w /= segs;
+    short i = 1;
+    double p1 = rMinLon;
+    double maxLon, midLon;
+    double[] pt = new double[2];
+
+    do {
+      maxLon = (i == segs) ? rMaxLon : p1 + w;
+
+      final double d1, d2;
+      // short-circuit if we find a corner outside the circle
+      if ( (d1 = GeoDistanceUtils.haversin(centerLat, centerLon, rMinLat, p1)) > radiusMeters
+          || (d2 = GeoDistanceUtils.haversin(centerLat, centerLon, rMinLat, maxLon)) > radiusMeters
+          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxLat, p1) > radiusMeters
+          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxLat, maxLon) > radiusMeters) {
+        return true;
+      }
+
+      // else we treat as an oblate circle by slicing the longitude space and checking the azimuthal range
+      // OPTIMIZATION: this is only executed for latitude values "closeTo" the poles (e.g., 88.0 > lat < -88.0)
+      if ( (rMaxLat > 88.0 || rMinLat < -88.0)
+          && (pt = GeoProjectionUtils.pointFromLonLatBearingGreatCircle(p1, rMinLat,
+          GeoProjectionUtils.bearingGreatCircle(p1, rMinLat, p1, rMaxLat), radiusMeters - d1, pt))[1] < rMinLat || pt[1] < rMaxLat
+          || (pt = GeoProjectionUtils.pointFromLonLatBearingGreatCircle(maxLon, rMinLat,
+          GeoProjectionUtils.bearingGreatCircle(maxLon, rMinLat, maxLon, rMaxLat), radiusMeters - d2, pt))[1] < rMinLat || pt[1] < rMaxLat
+          || (pt = GeoProjectionUtils.pointFromLonLatBearingGreatCircle(maxLon, rMinLat,
+          GeoProjectionUtils.bearingGreatCircle(maxLon, rMinLat, (midLon = p1 + 0.5*(maxLon - p1)), rMaxLat),
+          radiusMeters - GeoDistanceUtils.haversin(centerLat, centerLon, rMinLat, midLon), pt))[1] < rMinLat
+          || pt[1] < rMaxLat == false ) {
+        return true;
+      }
+      p1 += w;
+    } while (++i <= segs);
+    return false;
   }
 
   private static boolean rectAnyCornersOutsideCircleSloppy(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,

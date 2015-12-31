@@ -419,4 +419,20 @@ public class GeoProjectionUtils {
     return pt;
   }
 
+  /**
+   * Finds the bearing (in degrees) between 2 geo points (lon, lat) using great circle arc
+   * @param lon1 first point longitude in degrees
+   * @param lat1 first point latitude in degrees
+   * @param lon2 second point longitude in degrees
+   * @param lat2 second point latitude in degrees
+   * @return the bearing (in degrees) between the two provided points
+   */
+  public static double bearingGreatCircle(double lon1, double lat1, double lon2, double lat2) {
+    double dLon = (lon2 - lon1) * TO_RADIANS;
+    lat2 *= TO_RADIANS;
+    lat1 *= TO_RADIANS;
+    double y = SloppyMath.sin(dLon) * SloppyMath.cos(lat2);
+    double x = SloppyMath.cos(lat1) * SloppyMath.sin(lat2) - SloppyMath.sin(lat1) * SloppyMath.cos(lat2) * SloppyMath.cos(dLon);
+    return Math.atan2(y, x) * TO_DEGREES;
+  }
 }
