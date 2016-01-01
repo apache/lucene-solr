@@ -97,7 +97,7 @@ public class SimpleMLTQParser extends QParser {
         boostFields = SolrPluginUtils.parseFieldBoosts(qf);
       }
       
-      ArrayList<String> fields = new ArrayList();
+      ArrayList<String> fields = new ArrayList<>();
 
       if (qf != null) {
         for (String fieldName : qf) {
@@ -136,12 +136,14 @@ public class SimpleMLTQParser extends QParser {
 
         for (BooleanClause clause : boostedMLTQuery) {
           Query q = clause.getQuery();
-          Float b = boostFields.get(((TermQuery) q).getTerm().field());
-
-          if (b != null) {
-            q = new BoostQuery(q, b);
+          float originalBoost = 1f;
+          if (q instanceof BoostQuery) {
+            BoostQuery bq = (BoostQuery) q;
+            q = bq.getQuery();
+            originalBoost = bq.getBoost();
           }
-
+          Float fieldBoost = boostFields.get(((TermQuery) q).getTerm().field());
+          q = ((fieldBoost != null) ? new BoostQuery(q, fieldBoost * originalBoost) : clause.getQuery());
           newQ.add(q, clause.getOccur());
         }
 

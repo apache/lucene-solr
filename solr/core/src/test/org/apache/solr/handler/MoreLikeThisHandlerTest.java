@@ -89,6 +89,12 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/int[@name='id'][.='46']"
         ,"//result/doc[2]/int[@name='id'][.='43']");
+
+    params.set(MoreLikeThisParams.BOOST, "true");
+    mltreq.close(); mltreq = new LocalSolrQueryRequest( core, params);
+    assertQ("morelikethis - tom cruise",mltreq
+        ,"//result/doc[1]/int[@name='id'][.='46']"
+        ,"//result/doc[2]/int[@name='id'][.='43']");
     
     params.set(CommonParams.Q, "id:44");
     mltreq.close(); mltreq = new LocalSolrQueryRequest(h.getCore(), params);
