@@ -144,7 +144,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         // Hold on to the interesting terms if relevant
         TermStyle termStyle = TermStyle.get(params.get(MoreLikeThisParams.INTERESTING_TERMS));
         List<InterestingTerm> interesting = (termStyle == TermStyle.NONE)
-            ? null : new ArrayList<>(mlt.mlt.getMaxQueryTerms());
+            ? null : new ArrayList<InterestingTerm>(mlt.mlt.getMaxQueryTerms());
 
         DocListAndSet mltDocs = null;
 
