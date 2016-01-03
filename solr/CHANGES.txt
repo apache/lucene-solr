@@ -200,6 +200,7 @@ Other Changes
 
 * SOLR-8443: Change /stream handler http param from "stream" to "expr" (Joel Bernstein, Dennis Gove)
 
+* SOLR-8476: Refactor and cleanup CoreAdminHandler (noble)
 
 ======================= 5.5.0 =======================
 
