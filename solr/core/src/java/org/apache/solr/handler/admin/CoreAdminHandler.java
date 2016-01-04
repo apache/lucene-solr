@@ -289,39 +289,32 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
   /**
-   * Helper method to add a task to a tracking map.
+   * Helper method to add a task to a tracking type.
    */
-  void addTask(String map, TaskObject o, boolean limit) {
-    synchronized (getRequestStatusMap(map)) {
-      if(limit && getRequestStatusMap(map).size() == MAX_TRACKED_REQUESTS) {
-        String key = getRequestStatusMap(map).entrySet().iterator().next().getKey();
-        getRequestStatusMap(map).remove(key);
+  void addTask(String type, TaskObject o, boolean limit) {
+    synchronized (getRequestStatusMap(type)) {
+      if(limit && getRequestStatusMap(type).size() == MAX_TRACKED_REQUESTS) {
+        String key = getRequestStatusMap(type).entrySet().iterator().next().getKey();
+        getRequestStatusMap(type).remove(key);
       }
-      addTask(map, o);
+      addTask(type, o);
     }
   }
 
 
- void addTask(String map, TaskObject o) {
-    synchronized (getRequestStatusMap(map)) {
-      getRequestStatusMap(map).put(o.taskId, o);
+ private void addTask(String type, TaskObject o) {
+    synchronized (getRequestStatusMap(type)) {
+      getRequestStatusMap(type).put(o.taskId, o);
     }
   }
 
   /**
    * Helper method to remove a task from a tracking map.
    */
-  void removeTask(String map, String taskId) {
+  private void removeTask(String map, String taskId) {
     synchronized (getRequestStatusMap(map)) {
       getRequestStatusMap(map).remove(taskId);
     }
-  }
-
-  /**
-   * Helper method to check if a map contains a taskObject with the given taskId.
-   */
-  boolean mapContainsTask(String map, String taskId) {
-    return getRequestStatusMap(map).containsKey(taskId);
   }
 
   /**

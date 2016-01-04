@@ -734,12 +734,12 @@ enum CoreAdminOperation {
       String requestId = params.get(CoreAdminParams.REQUESTID);
       log.info("Checking request status for : " + requestId);
 
-      if (callInfo.handler.mapContainsTask(RUNNING, requestId)) {
+      if (callInfo.handler.getRequestStatusMap(RUNNING).containsKey(requestId)) {
         callInfo.rsp.add(RESPONSE_STATUS, RUNNING);
-      } else if (callInfo.handler.mapContainsTask(COMPLETED, requestId)) {
+      } else if (callInfo.handler.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
         callInfo.rsp.add(RESPONSE_STATUS, COMPLETED);
         callInfo.rsp.add(RESPONSE, callInfo.handler.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
-      } else if (callInfo.handler.mapContainsTask(FAILED, requestId)) {
+      } else if (callInfo.handler.getRequestStatusMap(FAILED).containsKey(requestId)) {
         callInfo.rsp.add(RESPONSE_STATUS, FAILED);
         callInfo.rsp.add(RESPONSE, callInfo.handler.getRequestStatusMap(FAILED).get(requestId).getRspObject());
       } else {
