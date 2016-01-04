@@ -51,6 +51,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
+
 /**
  *
  * @since solr 1.3
@@ -140,14 +143,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
 
       // Pick the action
-      SolrParams params = req.getParams();
-      CoreAdminAction action = CoreAdminAction.STATUS;
-      String a = params.get(CoreAdminParams.ACTION);
-      if (a == null) return;
-
-      CoreAdminOperation op = opMap.get(a.toLowerCase(Locale.ROOT));
+      CoreAdminOperation op = opMap.get(req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT));
       if (op == null) {
-        this.handleCustomAction(req, rsp);
+        handleCustomAction(req, rsp);
         return;
       }
 
@@ -157,7 +155,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       } else {
         try {
           MDC.put("CoreAdminHandler.asyncId", taskId);
-          MDC.put("CoreAdminHandler.action", action.name());
+          MDC.put("CoreAdminHandler.action", op.action.toString());
           parallelExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -196,7 +194,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   protected void handleCustomAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported operation: " +
-            req.getParams().get(CoreAdminParams.ACTION));
+            req.getParams().get(ACTION));
   }
 
   public static ImmutableMap<String, String> paramToProp = ImmutableMap.<String, String>builder()
