@@ -49,15 +49,6 @@ SOLR_SCRIPT="$0"
 verbose=false
 THIS_OS=`uname -s`
 
-if hash jar 2>/dev/null ; then      # hash returns true if jar is on the path
-  UNPACK_WAR_CMD=("$(command -v jar)" xf)
-elif hash unzip 2>/dev/null ; then  # hash returns true if unzip is on the path
-  UNPACK_WAR_CMD=("$(command -v unzip)" -q)
-else
-  echo -e "This script requires extracting a WAR file with either the jar or unzip utility, please install these utilities or contact your administrator for assistance."
-  exit 1
-fi
-  
 stop_all=false
 
 # for now, we don't support running this script from cygwin due to problems
