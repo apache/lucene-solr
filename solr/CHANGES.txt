@@ -222,6 +222,8 @@ Other Changes
 * SOLR-8455: RecovertStrategy logging improvements and sleep-between-recovery-attempts bug fix.
   (Shai Erera)
 
+* SOLR-8476: Refactor and cleanup CoreAdminHandler (noble)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
