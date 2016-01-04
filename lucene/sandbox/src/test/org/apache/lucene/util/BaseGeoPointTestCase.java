@@ -490,7 +490,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   private static abstract class VerifyHits {
 
-    public void test(boolean small, IndexSearcher s, NumericDocValues docIDToID, Set<Integer> deleted, Query query, double[] lats, double[] lons) throws Exception {
+    public void test(AtomicBoolean failed, boolean small, IndexSearcher s, NumericDocValues docIDToID, Set<Integer> deleted, Query query, double[] lats, double[] lons) throws Exception {
       int maxDoc = s.getIndexReader().maxDoc();
       final FixedBitSet hits = new FixedBitSet(maxDoc);
       s.search(query, new SimpleCollector() {
@@ -544,6 +544,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
 
       if (fail) {
+        failed.set(true);
         fail("some hits were wrong");
       }
     }
@@ -750,7 +751,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                 System.out.println("  query=" + query);
               }
 
-              verifyHits.test(small, s, docIDToID, deleted, query, lats, lons);
+              verifyHits.test(failed, small, s, docIDToID, deleted, query, lats, lons);
             }
           }
         }
@@ -764,6 +765,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       thread.join();
     }
     IOUtils.close(r, dir);
+    assertFalse(failed.get());
   }
 }
 
