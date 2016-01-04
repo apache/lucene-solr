@@ -171,7 +171,9 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     List<String> files = splitFileNames(synonyms);
     for (String file : files) {
       decoder.reset();
-      parser.parse(new InputStreamReader(loader.openResource(file), decoder));
+      try (final Reader isr = new InputStreamReader(loader.openResource(file), decoder)) {
+        parser.parse(isr);
+      }
     }
     return parser.build();
   }
