@@ -230,6 +230,9 @@ Other Changes
 
 * SOLR-8476: Refactor and cleanup CoreAdminHandler (noble)
 
+* SOLR-8481: TestSearchPerf no longer needs to duplicate SolrIndexSearcher.(NO_CHECK_QCACHE|NO_CHECK_FILTERCACHE)
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
