@@ -421,6 +421,9 @@ Other Changes
 * SOLR-8455: RecovertStrategy logging improvements and sleep-between-recovery-attempts bug fix.
   (Shai Erera)
 
+* SOLR-8481: TestSearchPerf no longer needs to duplicate SolrIndexSearcher.(NO_CHECK_QCACHE|NO_CHECK_FILTERCACHE)
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

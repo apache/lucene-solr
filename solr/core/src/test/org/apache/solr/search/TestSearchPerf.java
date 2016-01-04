@@ -163,15 +163,9 @@ public class TestSearchPerf extends AbstractSolrTestCase {
 
     final RTimer timer = new RTimer();
 
-    // These aren't public in SolrIndexSearcher
-    int NO_CHECK_QCACHE       = 0x80000000;
-    int GET_DOCSET            = 0x40000000;
-    int NO_CHECK_FILTERCACHE  = 0x20000000;
-    int GET_SCORES            = 0x01;
-
     int ret = 0;
     for (int i=0; i<iter; i++) {
-      DocList l = searcher.getDocList(q, filt, (Sort)null, 0, 10, (cacheQuery?0:NO_CHECK_QCACHE)|(cacheFilt?0:NO_CHECK_FILTERCACHE) );
+      DocList l = searcher.getDocList(q, filt, (Sort)null, 0, 10, (cacheQuery?0:SolrIndexSearcher.NO_CHECK_QCACHE)|(cacheFilt?0:SolrIndexSearcher.NO_CHECK_FILTERCACHE) );
       ret += l.matches();
     }
 
