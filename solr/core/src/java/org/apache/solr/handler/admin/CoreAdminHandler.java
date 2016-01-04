@@ -119,67 +119,72 @@ public class CoreAdminHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Make sure the cores is enabled
-    CoreContainer cores = getCoreContainer();
-    if (cores == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Core container instance missing");
-    }
-    //boolean doPersist = false;
-    final String taskId = req.getParams().get(CommonAdminParams.ASYNC);
-    final TaskObject taskObject = new TaskObject(taskId);
+    try {
+      CoreContainer cores = getCoreContainer();
+      if (cores == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Core container instance missing");
+      }
+      //boolean doPersist = false;
+      final String taskId = req.getParams().get(CommonAdminParams.ASYNC);
+      final TaskObject taskObject = new TaskObject(taskId);
 
-    if(taskId != null) {
-      // Put the tasks into the maps for tracking
-      if (getRequestStatusMap(RUNNING).containsKey(taskId) || getRequestStatusMap(COMPLETED).containsKey(taskId) || getRequestStatusMap(FAILED).containsKey(taskId)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Duplicate request with the same requestid found.");
+      if(taskId != null) {
+        // Put the tasks into the maps for tracking
+        if (getRequestStatusMap(RUNNING).containsKey(taskId) || getRequestStatusMap(COMPLETED).containsKey(taskId) || getRequestStatusMap(FAILED).containsKey(taskId)) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Duplicate request with the same requestid found.");
+        }
+
+        addTask(RUNNING, taskObject);
       }
 
-      addTask(RUNNING, taskObject);
-    }
+      // Pick the action
+      SolrParams params = req.getParams();
+      CoreAdminAction action = CoreAdminAction.STATUS;
+      String a = params.get(CoreAdminParams.ACTION);
+      if (a == null) return;
 
-    // Pick the action
-    SolrParams params = req.getParams();
-    CoreAdminAction action = CoreAdminAction.STATUS;
-    String a = params.get(CoreAdminParams.ACTION);
-    if (a == null) throw new SolrException(ErrorCode.BAD_REQUEST, "No action");
+      CoreAdminOperation op = opMap.get(a.toLowerCase(Locale.ROOT));
+      if (op == null) {
+        this.handleCustomAction(req, rsp);
+        return;
+      }
 
-    CoreAdminOperation op = opMap.get(a.toLowerCase(Locale.ROOT));
-    if (op == null) {
-      this.handleCustomAction(req, rsp);
-      return;
-    }
-
-    final CallInfo callInfo = new CallInfo(this, req, rsp, op);
-    if (taskId == null) {
-      callInfo.call();
-    } else {
-      try {
-        MDC.put("CoreAdminHandler.asyncId", taskId);
-        MDC.put("CoreAdminHandler.action", action.name());
-        parallelExecutor.execute(new Runnable() {
-          @Override
-          public void run() {
-            boolean exceptionCaught = false;
-            try {
-              callInfo.call();
-              taskObject.setRspObject(callInfo.rsp);
-            } catch (Exception e) {
-              exceptionCaught = true;
-              taskObject.setRspObjectFromException(e);
-            } finally {
-              removeTask("running", taskObject.taskId);
-              if (exceptionCaught) {
-                addTask("failed", taskObject, true);
-              } else
-                addTask("completed", taskObject, true);
+      final CallInfo callInfo = new CallInfo(this, req, rsp, op);
+      if (taskId == null) {
+        callInfo.call();
+      } else {
+        try {
+          MDC.put("CoreAdminHandler.asyncId", taskId);
+          MDC.put("CoreAdminHandler.action", action.name());
+          parallelExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+              boolean exceptionCaught = false;
+              try {
+                callInfo.call();
+                taskObject.setRspObject(callInfo.rsp);
+              } catch (Exception e) {
+                exceptionCaught = true;
+                taskObject.setRspObjectFromException(e);
+              } finally {
+                removeTask("running", taskObject.taskId);
+                if (exceptionCaught) {
+                  addTask("failed", taskObject, true);
+                } else
+                  addTask("completed", taskObject, true);
+              }
             }
-          }
-        });
-      } finally {
-        MDC.remove("CoreAdminHandler.asyncId");
-        MDC.remove("CoreAdminHandler.action");
+          });
+        } finally {
+          MDC.remove("CoreAdminHandler.asyncId");
+          MDC.remove("CoreAdminHandler.action");
+        }
       }
+    } finally {
+      rsp.setHttpCaching(false);
+
     }
   }
 
@@ -350,7 +355,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
     void call() throws Exception {
       op.call(this);
-      rsp.setHttpCaching(false);
     }
 
   }
