@@ -234,6 +234,9 @@ Upgrading from Solr 5.4
   multi-valued field as stored. This requires re-indexing.
   See SOLR-8220 for more details.
 
+* All protected methods from CoreAdminHandler other than handleCustomAction() is removed by SOLR-8476 and can
+  no more be overridden. If you still wish to override those methods, override the handleRequestBody()
+
 Detailed Change List
 ----------------------
 
