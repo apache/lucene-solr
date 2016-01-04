@@ -74,7 +74,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
 
     assertNotNull("null mp", iwc.getMergePolicy());
-    assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);
+    assertTrue("mp is not TieredMergePolicy", iwc.getMergePolicy() instanceof TieredMergePolicy);
     TieredMergePolicy mp = (TieredMergePolicy) iwc.getMergePolicy();
     assertEquals("mp.maxMergeAtOnceExplicit", 19, mp.getMaxMergeAtOnceExplicit());
     assertEquals("mp.segmentsPerTier",9,(int)mp.getSegmentsPerTier());

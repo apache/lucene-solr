@@ -136,7 +136,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     IndexWriterConfig iwc = sic.toIndexWriterConfig(h.getCore());
 
     assertNotNull("null mp", iwc.getMergePolicy());
-    assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);
+    assertTrue("mp is not TieredMergePolicy", iwc.getMergePolicy() instanceof TieredMergePolicy);
 
     assertNotNull("null ms", iwc.getMergeScheduler());
     assertTrue("ms is not CMS", iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler);
