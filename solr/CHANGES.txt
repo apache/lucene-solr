@@ -37,6 +37,12 @@ Bug Fixes
 * SOLR-7462: AIOOBE in RecordingJSONParser (Scott Dawson, noble)
 
 
+New Features
+----------------------
+
+* SOLR-8470: Make TTL of PKIAuthenticationPlugin's tokens configurable through a system property
+  (pkiauth.ttl) (noble)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
