@@ -214,6 +214,10 @@ Other
 * LUCENE-6945: factor out TestCorePlus(Queries|Extensions)Parser from
   TestParser, rename TestParser to TestCoreParser (Christine Poerschke)
 
+* LUCENE-6949: fix (potential) resource leak in SynonymFilterFactory
+  (https://scan.coverity.com/projects/5620 CID 120656)
+  (Christine Poerschke, Coverity Scan (via Rishabh Patel))
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
