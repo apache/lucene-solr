@@ -66,8 +66,10 @@ import org.apache.lucene.util.RamUsageEstimator;
  *  <p>
  *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> total points.
  *
- * @lucene.experimental */
-
+ * @lucene.experimental
+ *
+ * @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 class BKD3DTreeWriter {
 
   // x (int), y (int), z (int) + ord (long) + docID (int)

@@ -31,8 +31,10 @@ import java.util.Collections;
 
 /** Handles intersection of a shape with a BKD tree previously written with {@link BKDTreeWriter}.
  *
- * @lucene.experimental */
-
+ * @lucene.experimental
+ *
+ * @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 final class BKDTreeReader implements Accountable {
   final private int[] splitValues;
   final private int leafNodeOffset;

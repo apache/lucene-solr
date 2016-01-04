@@ -30,8 +30,10 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /** Handles intersection of a shape with a BKD tree previously written with {@link BKD3DTreeWriter}.
  *
- * @lucene.experimental */
-
+ * @lucene.experimental
+ *
+ * @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 final class BKD3DTreeReader implements Accountable {
   final private int[] splitValues; 
   final private int leafNodeOffset;

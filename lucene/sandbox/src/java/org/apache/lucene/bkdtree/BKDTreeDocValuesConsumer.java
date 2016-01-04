@@ -32,6 +32,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
+/* @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 class BKDTreeDocValuesConsumer extends DocValuesConsumer implements Closeable {
   final DocValuesConsumer delegate;
   final int maxPointsInLeafNode;

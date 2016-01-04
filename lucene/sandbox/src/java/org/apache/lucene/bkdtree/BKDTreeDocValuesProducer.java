@@ -43,6 +43,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
+/* @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 class BKDTreeDocValuesProducer extends DocValuesProducer {
 
   private final Map<String,BKDTreeReader> treeReaders = new HashMap<>();

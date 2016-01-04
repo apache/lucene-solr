@@ -17,5 +17,7 @@
 
 /**
  * Fast "indexed point inside geo3d shape" query implementation.
+ *
+ * @deprecated Use dimensional values in Lucene 6.0 instead
  */
 package org.apache.lucene.bkdtree3d;

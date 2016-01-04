@@ -58,8 +58,10 @@ import org.apache.lucene.index.SegmentWriteState;
  *
  * <p>The disk format is experimental and free to change suddenly, and this code likely has new and exciting bugs!
  *
- * @lucene.experimental */
-
+ * @lucene.experimental
+ *
+ * @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 public class BKDTreeDocValuesFormat extends DocValuesFormat {
 
   static final String DATA_CODEC_NAME = "BKDData";

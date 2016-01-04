@@ -20,6 +20,8 @@ package org.apache.lucene.bkdtree3d;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
+/* @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 class Geo3DBinaryDocValues extends BinaryDocValues {
   final BKD3DTreeReader bkdTreeReader;
   final BinaryDocValues delegate;

@@ -19,6 +19,8 @@ package org.apache.lucene.bkdtree;
 
 import org.apache.lucene.index.SortedNumericDocValues;
 
+/* @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 class BKDTreeSortedNumericDocValues extends SortedNumericDocValues {
   final BKDTreeReader bkdTreeReader;
   final SortedNumericDocValues delegate;

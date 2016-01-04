@@ -27,8 +27,10 @@ import org.apache.lucene.util.BytesRef;
 // TODO: allow multi-valued, packing all points into a single BytesRef
 
 /** Add this to a document to index lat/lon point, but be sure to use {@link Geo3DDocValuesFormat} for the field.
-
- *  @lucene.experimental */
+ *  @lucene.experimental
+ *
+ *  @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 public final class Geo3DPointField extends Field {
 
   /** Indexing {@link FieldType}. */

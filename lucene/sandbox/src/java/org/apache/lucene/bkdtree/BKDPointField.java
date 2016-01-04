@@ -21,7 +21,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 
-/** Add this to a document to index lat/lon point, but be sure to use {@link BKDTreeDocValuesFormat} for the field. */
+/** Add this to a document to index lat/lon point, but be sure to use {@link BKDTreeDocValuesFormat} for the field.
+ *
+ * @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 public final class BKDPointField extends Field {
 
   public static final FieldType TYPE = new FieldType();

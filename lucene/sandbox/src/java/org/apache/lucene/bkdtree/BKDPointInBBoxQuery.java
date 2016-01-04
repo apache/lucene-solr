@@ -42,8 +42,10 @@ import org.apache.lucene.util.ToStringUtils;
  *
  *  <p><b>NOTE</b>: for fastest performance, this allocates FixedBitSet(maxDoc) for each segment.  The score of each hit is the query boost.
  *
- * @lucene.experimental */
-
+ * @lucene.experimental
+ *
+ * @deprecated Use dimensional values in Lucene 6.0 instead */
+@Deprecated
 public class BKDPointInBBoxQuery extends Query {
   final String field;
   final double minLat;
