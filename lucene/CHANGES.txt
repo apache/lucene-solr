@@ -5,7 +5,11 @@ http://s.apache.org/luceneversions
 
 
 ======================= Lucene 5.3.2 =======================
-(No Changes)
+
+Bug Fixes
+
+* SOLR-7865: BlendedInfixSuggester was returning too many results
+  (Arcadius Ahouansou via Mike McCandless)
 
 ======================= Lucene 5.3.1 =======================
 
