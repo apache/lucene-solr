@@ -112,7 +112,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   
   public S newInstance(String name, Map<String,String> args) {
     final Class<? extends S> service = lookupClass(name);
-    return newFactoryInstance(service, args);
+    return newFactoryClassInstance(service, args);
   }
   
   public Class<? extends S> lookupClass(String name) {
@@ -130,7 +130,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     return services.keySet();
   }  
   
-  public static <T extends AbstractAnalysisFactory> T newFactoryInstance(Class<T> clazz, Map<String,String> args) {
+  private static <T extends AbstractAnalysisFactory> T newFactoryClassInstance(Class<T> clazz, Map<String,String> args) {
     try {
       return clazz.getConstructor(Map.class).newInstance(args);
     } catch (InvocationTargetException ite) {
@@ -141,7 +141,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       if (cause instanceof Error) {
         throw (Error) cause;
       }
-      throw new RuntimeException(cause);
+      throw new RuntimeException("Unexpected checked exception while calling constructor of "+clazz.getName(), cause);
     } catch (ReflectiveOperationException e) {
       throw new UnsupportedOperationException("Factory "+clazz.getName()+" cannot be instantiated. This is likely due to missing Map<String,String> constructor.", e);
     }
