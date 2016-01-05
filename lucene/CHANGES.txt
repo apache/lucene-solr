@@ -218,6 +218,10 @@ Other
   (https://scan.coverity.com/projects/5620 CID 120656)
   (Christine Poerschke, Coverity Scan (via Rishabh Patel))
 
+* LUCENE-6961: Improve Exception handling in AnalysisFactories /
+  AnalysisSPILoader: Don't wrap exceptions occuring in factory's
+  ctor inside InvocationTargetException.  (Uwe Schindler)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features

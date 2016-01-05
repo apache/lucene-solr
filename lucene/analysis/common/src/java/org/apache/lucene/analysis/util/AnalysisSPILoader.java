@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
@@ -111,12 +112,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   
   public S newInstance(String name, Map<String,String> args) {
     final Class<? extends S> service = lookupClass(name);
-    try {
-      return service.getConstructor(Map.class).newInstance(args);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
-            "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);
-    }
+    return newFactoryInstance(service, args);
   }
   
   public Class<? extends S> lookupClass(String name) {
@@ -133,4 +129,21 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   public Set<String> availableServices() {
     return services.keySet();
   }  
+  
+  public static <T extends AbstractAnalysisFactory> T newFactoryInstance(Class<T> clazz, Map<String,String> args) {
+    try {
+      return clazz.getConstructor(Map.class).newInstance(args);
+    } catch (InvocationTargetException ite) {
+      final Throwable cause = ite.getCause();
+      if (cause instanceof RuntimeException) {
+        throw (RuntimeException) cause;
+      }
+      if (cause instanceof Error) {
+        throw (Error) cause;
+      }
+      throw new RuntimeException(cause);
+    } catch (ReflectiveOperationException e) {
+      throw new UnsupportedOperationException("Factory "+clazz.getName()+" cannot be instantiated. This is likely due to missing Map<String,String> constructor.", e);
+    }
+  }
 }
