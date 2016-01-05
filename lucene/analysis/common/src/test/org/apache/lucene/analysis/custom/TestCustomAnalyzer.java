@@ -30,14 +30,42 @@ import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
 import org.apache.lucene.analysis.standard.ClassicTokenizerFactory;
+import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
 
 public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
   
   // Test some examples (TODO: we only check behavior, we may need something like TestRandomChains...)
+
+  public void testWhitespaceFactoryWithFolding() throws Exception {
+    CustomAnalyzer a = CustomAnalyzer.builder()
+        .withTokenizer(WhitespaceTokenizerFactory.class)
+        .addTokenFilter(ASCIIFoldingFilterFactory.class, "preserveOriginal", "true")
+        .addTokenFilter(LowerCaseFilterFactory.class)
+        .build();
+    
+    assertSame(WhitespaceTokenizerFactory.class, a.getTokenizerFactory().getClass());
+    assertEquals(Collections.emptyList(), a.getCharFilterFactories());
+    List<TokenFilterFactory> tokenFilters = a.getTokenFilterFactories();
+    assertEquals(2, tokenFilters.size());
+    assertSame(ASCIIFoldingFilterFactory.class, tokenFilters.get(0).getClass());
+    assertSame(LowerCaseFilterFactory.class, tokenFilters.get(1).getClass());
+    assertEquals(0, a.getPositionIncrementGap("dummy"));
+    assertEquals(1, a.getOffsetGap("dummy"));
+    assertSame(Version.LATEST, a.getVersion());
+
+    assertAnalyzesTo(a, "foo bar FOO BAR", 
+        new String[] { "foo", "bar", "foo", "bar" },
+        new int[]    { 1,     1,     1,     1});
+    assertAnalyzesTo(a, "föó bär FÖÖ BAR", 
+        new String[] { "foo", "föó", "bar", "bär", "foo", "föö", "bar" },
+        new int[]    { 1,     0,     1,     0,     1,     0,     1});
+    a.close();
+  }
 
   public void testWhitespaceWithFolding() throws Exception {
     CustomAnalyzer a = CustomAnalyzer.builder()
@@ -65,6 +93,38 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     a.close();
   }
 
+  public void testFactoryHtmlStripClassicFolding() throws Exception {
+    CustomAnalyzer a = CustomAnalyzer.builder()
+        .withDefaultMatchVersion(Version.LUCENE_5_0_0)
+        .addCharFilter(HTMLStripCharFilterFactory.class)
+        .withTokenizer(ClassicTokenizerFactory.class)
+        .addTokenFilter(ASCIIFoldingFilterFactory.class, "preserveOriginal", "true")
+        .addTokenFilter(LowerCaseFilterFactory.class)
+        .withPositionIncrementGap(100)
+        .withOffsetGap(1000)
+        .build();
+    
+    assertSame(ClassicTokenizerFactory.class, a.getTokenizerFactory().getClass());
+    List<CharFilterFactory> charFilters = a.getCharFilterFactories();
+    assertEquals(1, charFilters.size());
+    assertEquals(HTMLStripCharFilterFactory.class, charFilters.get(0).getClass());
+    List<TokenFilterFactory> tokenFilters = a.getTokenFilterFactories();
+    assertEquals(2, tokenFilters.size());
+    assertSame(ASCIIFoldingFilterFactory.class, tokenFilters.get(0).getClass());
+    assertSame(LowerCaseFilterFactory.class, tokenFilters.get(1).getClass());
+    assertEquals(100, a.getPositionIncrementGap("dummy"));
+    assertEquals(1000, a.getOffsetGap("dummy"));
+    assertSame(Version.LUCENE_5_0_0, a.getVersion());
+
+    assertAnalyzesTo(a, "<p>foo bar</p> FOO BAR", 
+        new String[] { "foo", "bar", "foo", "bar" },
+        new int[]    { 1,     1,     1,     1});
+    assertAnalyzesTo(a, "<p><b>föó</b> bär     FÖÖ BAR</p>", 
+        new String[] { "foo", "föó", "bar", "bär", "foo", "föö", "bar" },
+        new int[]    { 1,     0,     1,     0,     1,     0,     1});
+    a.close();
+  }
+  
   public void testHtmlStripClassicFolding() throws Exception {
     CustomAnalyzer a = CustomAnalyzer.builder()
         .withDefaultMatchVersion(Version.LUCENE_5_0_0)
@@ -99,7 +159,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
   
   public void testStopWordsFromClasspath() throws Exception {
     CustomAnalyzer a = CustomAnalyzer.builder()
-        .withTokenizer("whitespace")
+        .withTokenizer(WhitespaceTokenizerFactory.class)
         .addTokenFilter("stop",
             "ignoreCase", "true",
             "words", "org/apache/lucene/analysis/custom/teststop.txt",
@@ -125,7 +185,8 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     stopConfig1.put("words", "org/apache/lucene/analysis/custom/teststop.txt");
     stopConfig1.put("format", "wordset");
     
-    Map<String,String> stopConfig2 = Collections.unmodifiableMap(new HashMap<>(stopConfig1));
+    Map<String,String> stopConfig2 = new HashMap<>(stopConfig1);
+    Map<String,String> stopConfigImmutable = Collections.unmodifiableMap(new HashMap<>(stopConfig1));
 
     CustomAnalyzer a = CustomAnalyzer.builder()
         .withTokenizer("whitespace")
@@ -134,14 +195,21 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertTrue(stopConfig1.isEmpty());
     assertAnalyzesTo(a, "foo Foo Bar", new String[0]);
     
+    a = CustomAnalyzer.builder()
+        .withTokenizer(WhitespaceTokenizerFactory.class)
+        .addTokenFilter(StopFilterFactory.class, stopConfig2)
+        .build();
+    assertTrue(stopConfig2.isEmpty());
+    assertAnalyzesTo(a, "foo Foo Bar", new String[0]);
+    
     // try with unmodifiableMap, should fail
     try {
       CustomAnalyzer.builder()
           .withTokenizer("whitespace")
-          .addTokenFilter("stop", stopConfig2)
+          .addTokenFilter("stop", stopConfigImmutable)
           .build();
       fail();
-    } catch (IllegalArgumentException | UnsupportedOperationException e) {
+    } catch (UnsupportedOperationException e) {
       // pass
     }
     a.close();
@@ -202,7 +270,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     try {
       CustomAnalyzer.builder()
           .withTokenizer("whitespace")
-          .withTokenizer("standard")
+          .withTokenizer(StandardTokenizerFactory.class)
           .build();
       fail();
     } catch (AlreadySetException e) {
@@ -261,7 +329,18 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
   public void testNullTokenizer() throws Exception {
     try {
       CustomAnalyzer.builder()
-        .withTokenizer(null)
+        .withTokenizer((String) null)
+        .build();
+      fail();
+    } catch (NullPointerException e) {
+      // pass
+    }
+  }
+
+  public void testNullTokenizerFactory() throws Exception {
+    try {
+      CustomAnalyzer.builder()
+        .withTokenizer((Class<TokenizerFactory>) null)
         .build();
       fail();
     } catch (NullPointerException e) {

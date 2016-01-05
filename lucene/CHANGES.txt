@@ -124,6 +124,10 @@ New Features
   BlendedInfixSuggester, to even more strongly favor suggestions that
   match closer to the beginning (Arcadius Ahouansou via Mike McCandless)
 
+* LUCENE-6958: Improved CustomAnalyzer to take class references to factories
+  as alternative to their SPI name. This enables compile-time safety when
+  defining analyzer's components.  (Uwe Schindler, Shai Erera)
+
 API Changes
 
 * LUCENE-6908: GeoUtils static relational methods have been refactored to new 
