@@ -431,6 +431,9 @@ Other Changes
 * SOLR-8483: relocate 'IMPORTANT NOTE' in open-exchange-rates.json test-file to avoid
   OpenExchangeRatesOrgProvider.java warnings (Christine Poerschke)
 
+* SOLR-8489: TestMiniSolrCloudCluster.createCollection to support extra & alternative collectionProperties
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
