@@ -33,7 +33,7 @@ import org.apache.lucene.util.SPIClassIterator;
  * Helper class for loading named SPIs from classpath (e.g. Tokenizers, TokenStreams).
  * @lucene.internal
  */
-final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
+public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   private volatile Map<String,Class<? extends S>> services = Collections.emptyMap();
   private final Class<S> clazz;
@@ -130,7 +130,8 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     return services.keySet();
   }  
   
-  private static <T extends AbstractAnalysisFactory> T newFactoryClassInstance(Class<T> clazz, Map<String,String> args) {
+  /** Creates a new instance of the given {@link AbstractAnalysisFactory} by invoking the constructor, passing the given argument map. */
+  public static <T extends AbstractAnalysisFactory> T newFactoryClassInstance(Class<T> clazz, Map<String,String> args) {
     try {
       return clazz.getConstructor(Map.class).newInstance(args);
     } catch (InvocationTargetException ite) {
