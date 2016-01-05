@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -41,12 +42,14 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     
     factory = new StreamFactory()
                     .withCollectionZkHost("collection1", "testhost:1234")
+                    .withCollectionZkHost("collection2", "testhost:1234")
                     .withFunctionName("search", CloudSolrStream.class)
                     .withFunctionName("merge", MergeStream.class)
                     .withFunctionName("unique", UniqueStream.class)
                     .withFunctionName("top", RankStream.class)
                     .withFunctionName("reduce", ReducerStream.class)
                     .withFunctionName("group", GroupOperation.class)
+                    .withFunctionName("update", UpdateStream.class)
                     .withFunctionName("stats", StatsStream.class)
                     .withFunctionName("facet", FacetStream.class)
                     .withFunctionName("count", CountMetric.class)
@@ -162,6 +165,25 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     expressionString = stream.toExpression(factory).toString();
     assertTrue(expressionString.contains("reduce(search(collection1"));
     assertTrue(expressionString.contains("by=a_s"));
+  }
+  
+  @Test
+  public void testUpdateStream() throws Exception {
+    StreamExpression expression = StreamExpressionParser.parse("update("
+                                                               + "collection2, "
+                                                               + "batchSize=5, "
+                                                               + "search("
+                                                                 + "collection1, "
+                                                                 + "q=*:*, "
+                                                                 + "fl=\"id,a_s,a_i,a_f\", "
+                                                                 + "sort=\"a_f asc, a_i asc\"))");
+    
+    UpdateStream updateStream = new UpdateStream(expression, factory);
+    String expressionString = updateStream.toExpression(factory).toString();
+    
+    assertTrue(expressionString.contains("update(collection2"));
+    assertTrue(expressionString.contains("batchSize=5"));
+    assertTrue(expressionString.contains("search(collection1"));
   }
   
   @Test

@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
+import org.apache.solr.client.solrj.io.stream.UpdateStream;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -74,6 +75,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
   static SolrClientCache clientCache = new SolrClientCache();
   private StreamFactory streamFactory = new StreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private String coreName;
 
   public void inform(SolrCore core) {
     
@@ -90,11 +92,13 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     String defaultCollection = null;
     String defaultZkhost     = null;
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
+    this.coreName = core.getName();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
+      streamFactory.withDefaultZkHost(defaultZkhost);
     }
 
      streamFactory
@@ -113,6 +117,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("hashJoin", HashJoinStream.class)
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
       .withFunctionName("facet", FacetStream.class)
+      .withFunctionName("update", UpdateStream.class)
      
       // metrics
       .withFunctionName("min", MinMetric.class)
@@ -167,6 +172,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     context.workerID = worker;
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
+    context.put("core", this.coreName);
     tupleStream.setStreamContext(context);
     rsp.add("result-set", new TimerStream(new ExceptionStream(tupleStream)));
   }

@@ -117,7 +117,10 @@ public class SortingResponseWriter implements QueryResponseWriter {
       fields = fl.split(",");
 
       for(int i=0;i<fields.length; i++) {
-        if(fl.trim().equals("score")) {
+
+        fields[i] = fields[i].trim();
+
+        if(fields[i].equals("score")) {
           exception =  new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
           break;
         }

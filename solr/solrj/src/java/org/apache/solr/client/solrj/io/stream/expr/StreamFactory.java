@@ -44,6 +44,7 @@ public class StreamFactory implements Serializable {
   
   private transient HashMap<String,String> collectionZkHosts;
   private transient HashMap<String,Class> functionNames;
+  private transient String defaultZkHost;
   
   public StreamFactory(){
     collectionZkHosts = new HashMap<String,String>();
@@ -54,6 +55,16 @@ public class StreamFactory implements Serializable {
     this.collectionZkHosts.put(collectionName, zkHost);
     return this;
   }
+
+  public StreamFactory withDefaultZkHost(String zkHost) {
+    this.defaultZkHost = zkHost;
+    return this;
+  }
+
+  public String getDefaultZkHost() {
+    return this.defaultZkHost;
+  }
+
   public String getCollectionZkHost(String collectionName){
     if(this.collectionZkHosts.containsKey(collectionName)){
       return this.collectionZkHosts.get(collectionName);

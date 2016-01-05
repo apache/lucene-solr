@@ -123,6 +123,8 @@ New Features
 
 * SOLR-8436: Real-time get now supports filters. (yonik) 
 
+* SOLR-7535: Add UpdateStream to Streaming API and Streaming Expression (Jason Gerlowski, Joel Bernstein)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been

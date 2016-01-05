@@ -33,7 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * substreams.
  **/
 
-public class PushBackStream extends TupleStream {
+public class PushBackStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
