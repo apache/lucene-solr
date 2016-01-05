@@ -20,9 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.handler.component.MergeStrategy;
-import java.io.IOException;
 
 import java.io.IOException;
 
