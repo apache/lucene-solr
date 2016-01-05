@@ -428,6 +428,9 @@ Other Changes
 
 * SOLR-8486: No longer require jar/unzip for bin/solr (Steven E. Harris, janhoy)
 
+* SOLR-8483: relocate 'IMPORTANT NOTE' in open-exchange-rates.json test-file to avoid
+  OpenExchangeRatesOrgProvider.java warnings (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
