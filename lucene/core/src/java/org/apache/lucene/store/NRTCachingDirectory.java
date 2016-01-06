@@ -240,7 +240,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     if (VERBOSE) {
       System.out.println("nrtdir.createTempOutput prefix=" + prefix + " suffix=" + suffix);
     }
-    List<String> toDelete = new ArrayList<>();
+    Set<String> toDelete = new HashSet<>();
 
     // This is very ugly/messy/dangerous (can in some disastrous case maybe create too many temp files), but I don't know of a cleaner way:
     boolean success = false;
@@ -264,6 +264,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
         if (slowFileExists(second, name)) {
           out.close();
         } else {
+          toDelete.remove(name);
           success = true;
           break;
         }
