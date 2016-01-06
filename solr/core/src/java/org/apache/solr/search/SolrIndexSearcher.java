@@ -190,7 +190,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private void buildAndRunCollectorChain(QueryResult qr, Query query,
       Collector collector, QueryCommand cmd, DelegatingCollector postFilter) throws IOException {
     
-    final boolean terminateEarly = (cmd.getFlags() & TERMINATE_EARLY) == TERMINATE_EARLY;
+    final boolean terminateEarly = cmd.getTerminateEarly();
     if (terminateEarly) {
       collector = new EarlyTerminatingCollector(collector, cmd.getLen());
     }
@@ -2555,6 +2555,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public boolean isNeedDocSet() { return (flags & GET_DOCSET) != 0; }
     public QueryCommand setNeedDocSet(boolean needDocSet) {
       return needDocSet ? setFlags(GET_DOCSET) : clearFlags(GET_DOCSET);
+    }
+
+    public boolean getTerminateEarly() { return (flags & TERMINATE_EARLY) != 0; }
+    public QueryCommand setTerminateEarly(boolean segmentTerminateEarly) {
+      return segmentTerminateEarly ? setFlags(TERMINATE_EARLY) : clearFlags(TERMINATE_EARLY);
     }
   }
 
