@@ -17,11 +17,6 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -60,12 +55,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * A simple utility class for posting raw updates to a Solr server, 
@@ -791,7 +790,7 @@ public class SimplePostTool {
       }
       info("POSTing file " + file.getName() + (auto?" ("+type+")":"") + " to [base]" + suffix);
       is = new FileInputStream(file);
-      postData(is, (int)file.length(), output, type, url);
+      postData(is, file.length(), output, type, url);
     } catch (IOException e) {
       e.printStackTrace();
       warn("Can't open/read file: " + file);
@@ -861,7 +860,7 @@ public class SimplePostTool {
    * writes to the response to output
    * @return true if success
    */
-  public boolean postData(InputStream data, Integer length, OutputStream output, String type, URL url) {
+  public boolean postData(InputStream data, Long length, OutputStream output, String type, URL url) {
     if(mockMode) return true;
     boolean success = true;
     if(type == null)
