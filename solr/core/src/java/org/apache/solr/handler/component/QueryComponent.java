@@ -93,7 +93,7 @@ import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
-import org.apache.solr.search.grouping.distributed.command.QueryCommand;
+import org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommand;
 import org.apache.solr.search.grouping.distributed.command.TopGroupsFieldCommand;
 import org.apache.solr.search.grouping.distributed.requestfactory.SearchGroupsRequestFactory;
@@ -439,7 +439,7 @@ public class QueryComponent extends SearchComponent
           }
 
           for (String query : groupingSpec.getQueries()) {
-            secondPhaseBuilder.addCommandField(new QueryCommand.Builder()
+            secondPhaseBuilder.addCommandField(new Builder()
                 .setDocsToCollect(groupingSpec.getOffset() + groupingSpec.getLimit())
                 .setSort(groupingSpec.getGroupSort())
                 .setQuery(query, rb.req)
