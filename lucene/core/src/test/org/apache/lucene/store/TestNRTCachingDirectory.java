@@ -123,7 +123,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     cachedFSDir.close();
   }
 
-  public void testCreateTempOutput() throws Exception {
+  public void testCreateTempOutputSameName() throws Exception {
 
     Directory fsDir = FSDirectory.open(createTempDir("verify"));
     NRTCachingDirectory nrtDir = new NRTCachingDirectory(fsDir, 2.0, 25.0);
