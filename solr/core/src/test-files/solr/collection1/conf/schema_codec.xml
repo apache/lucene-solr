@@ -25,6 +25,17 @@
   <fieldType name="string_memory" class="solr.StrField" docValuesFormat="Memory" />
 
   <fieldType name="string" class="solr.StrField" />
+  
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+  </fieldType>
 
  </types>
  <fields>
@@ -36,6 +47,7 @@
    <field name="string_memory_f" type="string_memory" indexed="false" stored="false" docValues="true" default="" />
 
    <field name="string_f" type="string" indexed="true" stored="true" docValues="true" required="true"/>
+   <field name="text" type="text_general" indexed="true" stored="true"/>
 
    <dynamicField name="*_simple" type="string_simpletext"  indexed="true" stored="true"/>
    <dynamicField name="*_direct" type="string_direct"  indexed="true" stored="true"/>
