@@ -190,7 +190,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     
     final boolean terminateEarly = (cmd.getFlags() & TERMINATE_EARLY) == TERMINATE_EARLY;
     if (terminateEarly) {
-      collector = new EarlyTerminatingCollector(collector, cmd.len);
+      collector = new EarlyTerminatingCollector(collector, cmd.getLen());
     }
 
     final long timeAllowed = cmd.getTimeAllowed();
