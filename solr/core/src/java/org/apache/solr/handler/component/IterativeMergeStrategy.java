@@ -48,15 +48,6 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
-  static {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
-    HttpClientConfigurer configurer = HttpClientUtil.getConfigurer();
-    httpClient =  HttpClientUtil.createClient(params);
-  }
-
   public void merge(ResponseBuilder rb, ShardRequest sreq) {
     rb._responseDocs = new SolrDocumentList(); // Null pointers will occur otherwise.
     rb.onePassDistributedQuery = true;   // Turn off the second pass distributed.
@@ -93,17 +84,8 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
     private ShardResponse originalShardResponse;
 
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
-      
-      log.info("############### HttpClientConfigurer ##################:" + HttpClientUtil.getConfigurer().getClass());
 
-      log.info("################ SHARD ADDRESSS ##############:" + originalShardResponse.getShardAddress());
-      log.info("############ HTTP Client #############:"+ httpClient.getClass());
-      List<String> schemes = httpClient.getConnectionManager().getSchemeRegistry().getSchemeNames();
-      for(String scheme : schemes) {
-        log.info("############ Scheme #############:"+ scheme);
-      }
-
-      this.solrClient = new HttpSolrClient(originalShardResponse.getShardAddress(), httpClient);
+      this.solrClient = new HttpSolrClient(originalShardResponse.getShardAddress(), getHttpClient());
       this.req = req;
       this.originalShardResponse = originalShardResponse;
       req.setMethod(SolrRequest.METHOD.POST);
@@ -139,4 +121,16 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
   protected abstract void process(ResponseBuilder rb, ShardRequest sreq) throws Exception;
 
+  static synchronized HttpClient getHttpClient() {
+
+      if(httpClient == null) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
+        params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
+        httpClient = HttpClientUtil.createClient(params);
+        return httpClient;
+      } else {
+        return httpClient;
+      }
+  }
 }
