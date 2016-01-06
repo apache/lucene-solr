@@ -122,4 +122,18 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     writer.close();
     cachedFSDir.close();
   }
+
+  public void testCreateTempOutput() throws Exception {
+
+    Directory fsDir = FSDirectory.open(createTempDir("verify"));
+    NRTCachingDirectory nrtDir = new NRTCachingDirectory(fsDir, 2.0, 25.0);
+    String name = "foo_bar_0.tmp";
+    nrtDir.createOutput(name, IOContext.DEFAULT).close();
+
+    IndexOutput out = nrtDir.createTempOutput("foo", "bar", IOContext.DEFAULT);
+    assertFalse(name.equals(out.getName()));
+    out.close();
+    nrtDir.close();
+    fsDir.close();
+  }
 }

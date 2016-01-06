@@ -17,11 +17,15 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.store.RAMDirectory;      // javadocs
@@ -175,7 +179,6 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     in.renameFile(source, dest);
   }
 
-
   @Override
   public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     if (VERBOSE) {
@@ -232,6 +235,64 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     return (bytes <= maxMergeSizeBytes) && (bytes + cache.ramBytesUsed()) <= maxCachedBytes;
   }
 
+  @Override
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    if (VERBOSE) {
+      System.out.println("nrtdir.createTempOutput prefix=" + prefix + " suffix=" + suffix);
+    }
+    List<String> toDelete = new ArrayList<>();
+
+    // This is very ugly/messy/dangerous (can in some disastrous case maybe create too many temp files), but I don't know of a cleaner way:
+    boolean success = false;
+
+    Directory first;
+    Directory second;
+    if (doCacheWrite(prefix, context)) {
+      first = cache;
+      second = in;
+    } else {
+      first = in;
+      second = cache;
+    }
+
+    IndexOutput out = null;
+    try {
+      while (true) {
+        out = first.createTempOutput(prefix, suffix, context);
+        String name = out.getName();
+        toDelete.add(name);
+        if (slowFileExists(second, name)) {
+          out.close();
+        } else {
+          success = true;
+          break;
+        }
+      }
+    } finally {
+      if (success) {
+        IOUtils.deleteFiles(first, toDelete);
+      } else {
+        IOUtils.closeWhileHandlingException(out);
+        IOUtils.deleteFilesIgnoringExceptions(first, toDelete);
+      }
+    }
+
+    return out;
+  }
+
+  /** Returns true if the file exists
+   *  (can be opened), false if it cannot be opened, and
+   *  (unlike Java's File.exists) throws IOException if
+   *  there's some unexpected error. */
+  static boolean slowFileExists(Directory dir, String fileName) throws IOException {
+    try {
+      dir.openInput(fileName, IOContext.DEFAULT).close();
+      return true;
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      return false;
+    }
+  }
+
   private final Object uncacheLock = new Object();
 
   private void unCache(String fileName) throws IOException {
@@ -245,6 +306,8 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
         // Another thread beat us...
         return;
       }
+      assert slowFileExists(in, fileName) == false: "fileName=" + fileName + " exists both in cache and in delegate";
+
       final IOContext context = IOContext.DEFAULT;
       final IndexOutput out = in.createOutput(fileName, context);
       IndexInput in = null;
