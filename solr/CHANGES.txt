@@ -438,6 +438,8 @@ Other Changes
 
 * SOLR-8482: add & use QueryCommand.[gs]etTerminateEarly accessors. (Christine Poerschke)
 
+* SOLR-8498: Improve error message when a large value is stored in an indexed string field. (shalin)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
