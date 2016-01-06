@@ -273,6 +273,8 @@ New Features
 * SOLR-8470: Make TTL of PKIAuthenticationPlugin's tokens configurable through a system property
   (pkiauth.ttl) (noble)
 
+* SOLR-8477: Let users choose compression mode in SchemaCodecFactory (Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
