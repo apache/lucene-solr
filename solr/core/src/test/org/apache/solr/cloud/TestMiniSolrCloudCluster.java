@@ -100,13 +100,25 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     if (collectionProperties == null) {
       collectionProperties = new HashMap<>();
     }
-    collectionProperties.putIfAbsent(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
-    collectionProperties.putIfAbsent("solr.tests.maxBufferedDocs", "100000");
-    collectionProperties.putIfAbsent("solr.tests.ramBufferSizeMB", "100");
+    if (!collectionProperties.containsKey(CoreDescriptor.CORE_CONFIG))  {
+      collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
+    }
+    if (!collectionProperties.containsKey("solr.tests.maxBufferedDocs"))  {
+      collectionProperties.put("solr.tests.maxBufferedDocs", "100000");
+    }
+    if (!collectionProperties.containsKey("solr.tests.ramBufferSizeMB"))  {
+      collectionProperties.put("solr.tests.ramBufferSizeMB", "100");
+    }
     // use non-test classes so RandomizedRunner isn't necessary
-    collectionProperties.putIfAbsent("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
-    collectionProperties.putIfAbsent("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
-    collectionProperties.putIfAbsent("solr.directoryFactory", (persistIndex ? "solr.StandardDirectoryFactory" : "solr.RAMDirectoryFactory"));
+    if (!collectionProperties.containsKey("solr.tests.mergePolicy"))  {
+      collectionProperties.put("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
+    }
+    if (!collectionProperties.containsKey("solr.tests.mergeScheduler")) {
+      collectionProperties.put("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
+    }
+    if (!collectionProperties.containsKey("solr.directoryFactory")) {
+      collectionProperties.put("solr.directoryFactory", (persistIndex ? "solr.StandardDirectoryFactory" : "solr.RAMDirectoryFactory"));
+    }
     
     miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, createNodeSet, asyncId, collectionProperties);
   }
