@@ -185,7 +185,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   /**
-   * This is the implementation of {@link #addDoc0(AddUpdateCommand)}. It is factored out to allow an exception
+   * This is the implementation of {@link #addDoc(AddUpdateCommand)}. It is factored out to allow an exception
    * handler to decorate RuntimeExceptions with information about the document being handled.
    * @param cmd the command.
    * @return the count.
