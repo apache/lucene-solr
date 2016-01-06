@@ -334,6 +334,8 @@ Bug Fixes
 * SOLR-8418: Adapt to changes in LUCENE-6590 for use of boosts with MLTHandler and
   Simple/CloudMLTQParser (Jens Wille, Ramkumar Aiyengar)
 
+* SOLR-8494: SimplePostTool and therefore the bin/post script cannot upload files larger than 2.1GB. (shalin)
+
 Other Changes
 ----------------------
 
