@@ -1148,7 +1148,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close(); // close again
   }
   
-  public final void testDoubleCloseOutput() throws Throwable {
+  public void testDoubleCloseOutput() throws Throwable {
     Directory dir = getDirectory(createTempDir());
     IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
     out.writeString("testing");
