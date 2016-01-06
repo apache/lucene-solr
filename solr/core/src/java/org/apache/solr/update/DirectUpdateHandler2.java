@@ -43,6 +43,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -169,6 +170,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return addDoc0(cmd);
     } catch (SolrException e) {
       throw e;
+    } catch (IllegalArgumentException iae) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "Exception writing document id %s to the index; possible analysis error: "
+              + iae.getMessage()
+              + (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException ?
+              ". Perhaps the document has an indexed string field (solr.StrField) which is too large" : ""),
+              cmd.getPrintableId()), iae);
     } catch (RuntimeException t) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "Exception writing document id %s to the index; possible analysis error.",
