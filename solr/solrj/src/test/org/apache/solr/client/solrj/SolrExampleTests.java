@@ -1595,7 +1595,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
   
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7339")
   public void testUpdateField() throws Exception {
     //no versions
     SolrClient client = getSolrClient();

@@ -27,7 +27,6 @@ Carrot2 3.10.4
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.3.6.v20151106
 
 System Requirements
 ----------------------
@@ -189,8 +188,6 @@ Other Changes
 
 * SOLR-8179: SQL JDBC - DriverImpl loadParams doesn't support keys with no values in the connection string
   (Kevin Risden, Joel Bernstein)
-
-* SOLR-7339: Upgrade Jetty to v9.3.6.v20151106. (Gregg Donovan, shalin)
 
 * SOLR-8131: Make ManagedIndexSchemaFactory the default schemaFactory when luceneMatchVersion >= 6
   (Uwe Schindler, shalin, Varun Thacker)

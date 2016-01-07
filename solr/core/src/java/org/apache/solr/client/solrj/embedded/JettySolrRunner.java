@@ -50,7 +50,6 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.BaseHolder;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -352,16 +351,7 @@ public class JettySolrRunner {
 
     // for some reason, there must be a servlet for this to get applied
     root.addServlet(Servlet404.class, "/*");
-    GzipHandler gzipHandler = new GzipHandler();
-    gzipHandler.setHandler(root);
 
-    gzipHandler.setMinGzipSize(2048);
-    gzipHandler.setCheckGzExists(false);
-    gzipHandler.setCompressionLevel(-1);
-    gzipHandler.setExcludedAgentPatterns(".*MSIE.6\\.0.*");
-    gzipHandler.setIncludedMethods("GET");
-
-    server.setHandler(gzipHandler);
   }
 
   /**
@@ -514,7 +504,7 @@ public class JettySolrRunner {
         throw new IllegalStateException("Jetty Connector is not open: " + 
                                         c.getLocalPort());
       }
-      protocol = c.getDefaultProtocol().startsWith("SSL")  ? "https" : "http";
+      protocol = c.getDefaultProtocol().equals("SSL-http/1.1")  ? "https" : "http";
       return new URL(protocol, c.getHost(), c.getLocalPort(), config.context);
 
     } catch (MalformedURLException e) {

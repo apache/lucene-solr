@@ -35,7 +35,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.common.params.SolrParams;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 
 public class SSLTestConfig extends SSLConfig {
@@ -83,7 +82,7 @@ public class SSLTestConfig extends SSLConfig {
   
   protected static KeyStore buildKeyStore(String keyStoreLocation, String password) {
     try {
-      return CertificateUtils.getKeyStore(Resource.newResource(keyStoreLocation), "JKS", null, password);
+      return CertificateUtils.getKeyStore(null, keyStoreLocation, "JKS", null, password);
     } catch (Exception ex) {
       throw new IllegalStateException("Unable to build KeyStore from file: " + keyStoreLocation, ex);
     }
