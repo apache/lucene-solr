@@ -96,14 +96,14 @@ public final class JavascriptCompiler {
   static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
 
   private static final org.objectweb.asm.commons.Method
-    EXPRESSION_CTOR = getMethod("void <init>(String, String[])"),
-    EVALUATE_METHOD = getMethod("double evaluate(int, " + FunctionValues.class.getName() + "[])");
+    EXPRESSION_CTOR = getAsmMethod(void.class, "<init>", String.class, String[].class),
+    EVALUATE_METHOD = getAsmMethod(double.class, "evaluate", int.class, FunctionValues[].class);
 
-  static final org.objectweb.asm.commons.Method DOUBLE_VAL_METHOD = getMethod("double doubleVal(int)");
+  static final org.objectweb.asm.commons.Method DOUBLE_VAL_METHOD = getAsmMethod(double.class, "doubleVal", int.class);
   
-  // to work around import clash:
-  private static org.objectweb.asm.commons.Method getMethod(String method) {
-    return org.objectweb.asm.commons.Method.getMethod(method);
+  /** create an ASM Method object from return type, method name, and parameters. */
+  private static org.objectweb.asm.commons.Method getAsmMethod(Class<?> rtype, String name, Class<?>... ptypes) {
+    return new org.objectweb.asm.commons.Method(name, MethodType.methodType(rtype, ptypes).toMethodDescriptorString());
   }
   
   // This maximum length is theoretically 65535 bytes, but as it's CESU-8 encoded we dont know how large it is in bytes, so be safe
@@ -230,14 +230,14 @@ public final class JavascriptCompiler {
    */
   private void generateClass(final ParseTree parseTree, final ClassWriter classWriter, final Map<String, Integer> externalsMap) throws ParseException {
     classWriter.visit(CLASSFILE_VERSION,
-        Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
+        Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL,
         COMPILED_EXPRESSION_INTERNAL,
         null, EXPRESSION_TYPE.getInternalName(), null);
     final String clippedSourceText = (sourceText.length() <= MAX_SOURCE_LENGTH) ?
         sourceText : (sourceText.substring(0, MAX_SOURCE_LENGTH - 3) + "...");
     classWriter.visitSource(clippedSourceText, null);
     
-    final GeneratorAdapter constructor = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+    final GeneratorAdapter constructor = new GeneratorAdapter(Opcodes.ACC_PUBLIC,
         EXPRESSION_CTOR, null, null, classWriter);
     constructor.loadThis();
     constructor.loadArgs();
@@ -245,7 +245,7 @@ public final class JavascriptCompiler {
     constructor.returnValue();
     constructor.endMethod();
     
-    final GeneratorAdapter gen = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+    final GeneratorAdapter gen = new GeneratorAdapter(Opcodes.ACC_PUBLIC,
         EVALUATE_METHOD, null, null, classWriter);
     
     // to completely hide the ANTLR visitor we use an anonymous impl:

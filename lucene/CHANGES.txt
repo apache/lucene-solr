@@ -230,6 +230,10 @@ Other
   with bad function names or bad arity instead of IllegalArgumentException
   (Tomás Fernández Löbbe)
 
+* LUCENE-6964: String-based signatures in JavascriptCompiler replaced
+  with better compile-time-checked MethodType; generated class files
+  are no longer marked as synthetic.  (Uwe Schindler)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
