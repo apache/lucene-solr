@@ -64,12 +64,15 @@ public class TestInjection {
 
   public static String failReplicaRequests = null;
   
+  public static String failUpdateRequests = null;
+  
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
 
   public static void reset() {
     nonGracefullClose = null;
     failReplicaRequests = null;
+    failUpdateRequests = null;
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -117,6 +120,19 @@ public class TestInjection {
   public static boolean injectFailReplicaRequests() {
     if (failReplicaRequests != null) {
       Pair<Boolean,Integer> pair = parseValue(failReplicaRequests);
+      boolean enabled = pair.getKey();
+      int chanceIn100 = pair.getValue();
+      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Random test update fail");
+      }
+    }
+
+    return true;
+  }
+  
+  public static boolean injectFailUpdateRequests() {
+    if (failUpdateRequests != null) {
+      Pair<Boolean,Integer> pair = parseValue(failUpdateRequests);
       boolean enabled = pair.getKey();
       int chanceIn100 = pair.getValue();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {

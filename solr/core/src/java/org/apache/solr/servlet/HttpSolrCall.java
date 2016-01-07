@@ -519,7 +519,6 @@ public class HttpSolrCall {
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
     HttpRequestBase method = null;
     HttpEntity httpEntity = null;
-    boolean success = false;
     try {
       String urlstr = coreUrl + queryParams.toQueryString();
 
@@ -578,24 +577,17 @@ public class HttpSolrCall {
 
         InputStream is = httpEntity.getContent();
         OutputStream os = resp.getOutputStream();
-        try {
-          IOUtils.copyLarge(is, os);
-          os.flush();
-        } finally {
-          IOUtils.closeQuietly(os);   // TODO: I thought we weren't supposed to explicitly close servlet streams
-          IOUtils.closeQuietly(is);
-        }
+
+        IOUtils.copyLarge(is, os);
+        os.flush();
       }
-      success = true;
+
     } catch (IOException e) {
       sendError(new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Error trying to proxy request for url: " + coreUrl, e));
     } finally {
       EntityUtils.consumeQuietly(httpEntity);
-      if (method != null && !success) {
-        method.abort();
-      }
     }
 
   }

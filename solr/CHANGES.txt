@@ -335,6 +335,9 @@ Bug Fixes
 
 * SOLR-8494: SimplePostTool and therefore the bin/post script cannot upload files larger than 2.1GB. (shalin)
 
+* SOLR-8451: We should not call method.abort in HttpSolrClient or HttpSolrCall#remoteQuery and 
+  HttpSolrCall#remoteQuery should not close streams. (Mark Miller)
+  
 Other Changes
 ----------------------
 
