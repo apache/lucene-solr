@@ -226,6 +226,10 @@ Other
   AnalysisSPILoader: Don't wrap exceptions occuring in factory's
   ctor inside InvocationTargetException.  (Uwe Schindler)
 
+* LUCENE-6965: Expression's JavascriptCompiler now throw ParseException 
+  with bad function names or bad arity instead of IllegalArgumentException
+  (Tomás Fernández Löbbe)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features

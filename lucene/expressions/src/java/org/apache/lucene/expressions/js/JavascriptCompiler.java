@@ -228,7 +228,7 @@ public final class JavascriptCompiler {
   /**
    * Sends the bytecode of class file to {@link ClassWriter}.
    */
-  private void generateClass(final ParseTree parseTree, final ClassWriter classWriter, final Map<String, Integer> externalsMap) {
+  private void generateClass(final ParseTree parseTree, final ClassWriter classWriter, final Map<String, Integer> externalsMap) throws ParseException {
     classWriter.visit(CLASSFILE_VERSION,
         Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
         COMPILED_EXPRESSION_INTERNAL,
@@ -247,9 +247,9 @@ public final class JavascriptCompiler {
     
     final GeneratorAdapter gen = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
         EVALUATE_METHOD, null, null, classWriter);
-
+    
     // to completely hide the ANTLR visitor we use an anonymous impl:
-    new JavascriptBaseVisitor<Void>() {
+    JavascriptBaseVisitor<Void> visitor = new JavascriptBaseVisitor<Void>() {
       private final Deque<Type> typeStack = new ArrayDeque<>();
 
       @Override
@@ -295,8 +295,9 @@ public final class JavascriptCompiler {
           int arity = method.getParameterTypes().length;
 
           if (arguments != arity) {
-            throw new IllegalArgumentException(
-                "Expected (" + arity + ") arguments for function call (" + text + "), but found (" + arguments + ").");
+            throw new ParseRuntimeException(
+                "Expected (" + arity + ") arguments for function call (" + text + "), but found (" + arguments + ").", 
+                ctx.start.getStartIndex());
           }
 
           typeStack.push(Type.DOUBLE_TYPE);
@@ -330,7 +331,7 @@ public final class JavascriptCompiler {
           gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
           gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
         } else {
-          throw new IllegalArgumentException("Unrecognized function call (" + text + ").");
+          throw new ParseRuntimeException("Unrecognized function call (" + text + ").", ctx.start.getStartIndex());
         }
 
         return null;
@@ -621,7 +622,15 @@ public final class JavascriptCompiler {
             throw new IllegalStateException("Invalid expected type: " + typeStack.peek());
         }
       }
-    }.visit(parseTree);
+    };
+    
+    try {
+      visitor.visit(parseTree);
+    } catch (final ParseRuntimeException e) {
+      ParseException exception = new ParseException("Invalid expression '" + sourceText + "': " + e.getMessage(), e.position);
+      exception.initCause(e);
+      throw exception;
+    }
     
     gen.returnValue();
     gen.endMethod();
@@ -702,6 +711,16 @@ public final class JavascriptCompiler {
       throw new Error("Cannot resolve function", e);
     }
     DEFAULT_FUNCTIONS = Collections.unmodifiableMap(map);
+  }
+  
+  @SuppressWarnings("serial")
+  private final static class ParseRuntimeException extends RuntimeException {
+    final int position;
+    public ParseRuntimeException(String msg, int position) {
+      super(msg);
+      this.position = position;
+    }
+    
   }
     
   /** Check Method signature for compatibility. */

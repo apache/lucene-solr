@@ -42,8 +42,9 @@ public class TestCustomFunctions extends LuceneTestCase {
     try {
       JavascriptCompiler.compile("sqrt(20)", functions, getClass().getClassLoader());
       fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("Unrecognized function"));
+    } catch (ParseException expected) {
+      assertEquals("Invalid expression 'sqrt(20)': Unrecognized function call (sqrt).", expected.getMessage());
+      assertEquals(expected.getErrorOffset(), 0);
     }
   }
   
@@ -98,19 +99,35 @@ public class TestCustomFunctions extends LuceneTestCase {
     try {
       JavascriptCompiler.compile("method()");
       fail();
-    } catch (ParseException exception) {
-      fail();
     } catch (IllegalArgumentException exception) {
+      fail();
+    } catch (ParseException expected) {
       //expected
+      assertEquals("Invalid expression 'method()': Unrecognized function call (method).", expected.getMessage());
+      assertEquals(0, expected.getErrorOffset());
+      assertTrue(expected.getCause() != null && expected.getCause() != expected);
     }
 
     try {
       JavascriptCompiler.compile("method.method(1)");
       fail();
-    } catch (ParseException exception) {
+    } catch (IllegalArgumentException exception) {
+      fail();
+    } catch (ParseException expected) {
+      //expected
+      assertEquals("Invalid expression 'method.method(1)': Unrecognized function call (method.method).", expected.getMessage());
+      assertEquals(0, expected.getErrorOffset());
+    }
+    
+    try {
+      JavascriptCompiler.compile("1 + method()");
       fail();
     } catch (IllegalArgumentException exception) {
+      fail();
+    } catch (ParseException expected) {
       //expected
+      assertEquals("Invalid expression '1 + method()': Unrecognized function call (method).", expected.getMessage());
+      assertEquals(4, expected.getErrorOffset());
     }
   }
 
