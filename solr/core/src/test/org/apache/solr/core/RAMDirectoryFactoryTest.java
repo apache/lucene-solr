@@ -44,8 +44,8 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
       }
     };
     String path = "/fake/path";
-    Directory dir1 = factory.get(path, DirContext.DEFAULT, "single");
-    Directory dir2 = factory.get(path, DirContext.DEFAULT, "single");
+    Directory dir1 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
+    Directory dir2 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     assertEquals("RAMDirectoryFactory should not create new instance of RefCntRamDirectory " +
         "every time open() is called for the same path", dir1, dir2);
 
@@ -56,7 +56,7 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
 
   private void dotestOpenSucceedForEmptyDir() throws IOException {
     RAMDirectoryFactory factory = new RAMDirectoryFactory();
-    Directory dir = factory.get("/fake/path", DirContext.DEFAULT, "single");
+    Directory dir = factory.get("/fake/path", DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     assertNotNull("RAMDirectoryFactory should create RefCntRamDirectory even if the path doen't lead " +
         "to index directory on the file system", dir);
     factory.release(dir);

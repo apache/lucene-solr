@@ -54,6 +54,12 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public enum DirContext {DEFAULT, META_DATA}
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // Available lock types
+  public final static String LOCK_TYPE_SIMPLE = "simple";
+  public final static String LOCK_TYPE_NATIVE = "native";
+  public final static String LOCK_TYPE_SINGLE = "single";
+  public final static String LOCK_TYPE_NONE   = "none";
   
   /**
    * Indicates a Directory will no longer be used, and when its ref count

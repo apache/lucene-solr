@@ -193,10 +193,10 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
             if (tracker == null) {
               tracker = new Tracker();
               tracker.path = path;
-              tracker.dir = df.get(path, DirContext.DEFAULT, "single");
+              tracker.dir = df.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
               dirs.put(path, tracker);
             } else {
-              tracker.dir = df.get(path, DirContext.DEFAULT, "single");
+              tracker.dir = df.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
             }
             tracker.refCnt.incrementAndGet();
           }

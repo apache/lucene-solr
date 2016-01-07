@@ -442,6 +442,9 @@ Other Changes
 
 * SOLR-8498: Improve error message when a large value is stored in an indexed string field. (shalin)
 
+* SOLR-8484: refactor update/SolrIndexConfig.LOCK_TYPE_* into core/DirectoryFactory.LOCK_TYPE_*
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

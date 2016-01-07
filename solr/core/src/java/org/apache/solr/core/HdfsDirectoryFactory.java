@@ -162,9 +162,9 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     switch (lockType) {
       case "hdfs":
         return HdfsLockFactory.INSTANCE;
-      case "single":
+      case DirectoryFactory.LOCK_TYPE_SINGLE:
         return new SingleInstanceLockFactory();
-      case "none":
+      case DirectoryFactory.LOCK_TYPE_NONE:
         return NoLockFactory.INSTANCE;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
