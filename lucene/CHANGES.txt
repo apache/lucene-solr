@@ -227,8 +227,8 @@ Other
   ctor inside InvocationTargetException.  (Uwe Schindler)
 
 * LUCENE-6965: Expression's JavascriptCompiler now throw ParseException 
-  with bad function names or bad arity instead of IllegalArgumentException
-  (Tomás Fernández Löbbe)
+  with bad function names or bad arity instead of IllegalArgumentException.
+  (Tomás Fernández Löbbe, Uwe Schindler, Ryan Ernst)
 
 * LUCENE-6964: String-based signatures in JavascriptCompiler replaced
   with better compile-time-checked MethodType; generated class files
