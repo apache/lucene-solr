@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.TestMergePolicyConfig;
 import org.apache.solr.schema.IndexSchema;
@@ -129,10 +130,10 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ++mSizeExpected; assertTrue(m.get("lockType") instanceof String);
     {
       final String lockType = (String)m.get("lockType");
-      assertTrue(SolrIndexConfig.LOCK_TYPE_SIMPLE.equals(lockType) ||
-          SolrIndexConfig.LOCK_TYPE_NATIVE.equals(lockType) ||
-          SolrIndexConfig.LOCK_TYPE_SINGLE.equals(lockType) ||
-          SolrIndexConfig.LOCK_TYPE_NONE.equals(lockType));
+      assertTrue(DirectoryFactory.LOCK_TYPE_SIMPLE.equals(lockType) ||
+          DirectoryFactory.LOCK_TYPE_NATIVE.equals(lockType) ||
+          DirectoryFactory.LOCK_TYPE_SINGLE.equals(lockType) ||
+          DirectoryFactory.LOCK_TYPE_NONE.equals(lockType));
     }
 
     ++mSizeExpected; assertTrue(m.get("infoStreamEnabled") instanceof Boolean);

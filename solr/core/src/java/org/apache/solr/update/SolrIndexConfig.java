@@ -29,6 +29,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.MapSerializable;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -68,12 +69,6 @@ public class SolrIndexConfig implements MapSerializable {
   
   public InfoStream infoStream = InfoStream.NO_OUTPUT;
 
-  // Available lock types
-  public final static String LOCK_TYPE_SIMPLE = "simple";
-  public final static String LOCK_TYPE_NATIVE = "native";
-  public final static String LOCK_TYPE_SINGLE = "single";
-  public final static String LOCK_TYPE_NONE   = "none";
-
   /**
    * Internal constructor for setting defaults based on Lucene Version
    */
@@ -86,7 +81,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergeFactor = -1;
     ramBufferSizeMB = 100;
     writeLockTimeout = -1;
-    lockType = LOCK_TYPE_NATIVE;
+    lockType = DirectoryFactory.LOCK_TYPE_NATIVE;
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();

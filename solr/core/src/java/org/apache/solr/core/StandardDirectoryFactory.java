@@ -56,19 +56,18 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   @Override
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
-      // we default to "native"
-      log.warn("No lockType configured, assuming 'native'.");
-      rawLockType = "native";
+      rawLockType = DirectoryFactory.LOCK_TYPE_NATIVE;
+      log.warn("No lockType configured, assuming '"+rawLockType+"'.");
     }
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
-      case "simple":
+      case DirectoryFactory.LOCK_TYPE_SIMPLE:
         return SimpleFSLockFactory.INSTANCE;
-      case "native":
+      case DirectoryFactory.LOCK_TYPE_NATIVE:
         return NativeFSLockFactory.INSTANCE;
-      case "single":
+      case DirectoryFactory.LOCK_TYPE_SINGLE:
         return new SingleInstanceLockFactory();
-      case "none":
+      case DirectoryFactory.LOCK_TYPE_NONE:
         return NoLockFactory.INSTANCE;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
