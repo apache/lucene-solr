@@ -249,7 +249,7 @@ public final class JavascriptCompiler {
         EVALUATE_METHOD, null, null, classWriter);
     
     // to completely hide the ANTLR visitor we use an anonymous impl:
-    JavascriptBaseVisitor<Void> visitor = new JavascriptBaseVisitor<Void>() {
+    new JavascriptBaseVisitor<Void>() {
       private final Deque<Type> typeStack = new ArrayDeque<>();
 
       @Override
@@ -295,9 +295,10 @@ public final class JavascriptCompiler {
           int arity = method.getParameterTypes().length;
 
           if (arguments != arity) {
-            throw new ParseRuntimeException(
-                "Expected (" + arity + ") arguments for function call (" + text + "), but found (" + arguments + ").", 
-                ctx.start.getStartIndex());
+            throwChecked(new ParseException(
+                "Invalid expression '" + sourceText + "': Expected (" + 
+                arity + ") arguments for function call (" + text + "), but found (" + arguments + ").", 
+                ctx.start.getStartIndex()));
           }
 
           typeStack.push(Type.DOUBLE_TYPE);
@@ -331,7 +332,8 @@ public final class JavascriptCompiler {
           gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
           gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
         } else {
-          throw new ParseRuntimeException("Unrecognized function call (" + text + ").", ctx.start.getStartIndex());
+          throwChecked(new ParseException("Invalid expression '" + sourceText + "': Unrecognized function call (" +
+              text + ").", ctx.start.getStartIndex()));
         }
 
         return null;
@@ -622,15 +624,17 @@ public final class JavascriptCompiler {
             throw new IllegalStateException("Invalid expected type: " + typeStack.peek());
         }
       }
-    };
-    
-    try {
-      visitor.visit(parseTree);
-    } catch (final ParseRuntimeException e) {
-      ParseException exception = new ParseException("Invalid expression '" + sourceText + "': " + e.getMessage(), e.position);
-      exception.initCause(e);
-      throw exception;
-    }
+      
+      /** Needed to throw checked ParseException in this visitor (that does not allow it). */
+      private void throwChecked(Throwable t) {
+        this.<Error>throwChecked0(t);
+      }
+      
+      @SuppressWarnings("unchecked")
+      private <T extends Throwable> void throwChecked0(Throwable t) throws T {
+        throw (T) t;
+      }
+    }.visit(parseTree);
     
     gen.returnValue();
     gen.endMethod();
@@ -713,16 +717,6 @@ public final class JavascriptCompiler {
     DEFAULT_FUNCTIONS = Collections.unmodifiableMap(map);
   }
   
-  @SuppressWarnings("serial")
-  private final static class ParseRuntimeException extends RuntimeException {
-    final int position;
-    public ParseRuntimeException(String msg, int position) {
-      super(msg);
-      this.position = position;
-    }
-    
-  }
-    
   /** Check Method signature for compatibility. */
   private static void checkFunction(Method method) {
     // check that the Method is public in some public reachable class:

@@ -105,7 +105,6 @@ public class TestCustomFunctions extends LuceneTestCase {
       //expected
       assertEquals("Invalid expression 'method()': Unrecognized function call (method).", expected.getMessage());
       assertEquals(0, expected.getErrorOffset());
-      assertTrue(expected.getCause() != null && expected.getCause() != expected);
     }
 
     try {
