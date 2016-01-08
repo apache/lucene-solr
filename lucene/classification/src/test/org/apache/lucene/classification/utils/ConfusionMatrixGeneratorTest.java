@@ -65,6 +65,12 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue(avgClassificationTime >= 0d );
+      assertTrue(confusionMatrix.getAccuracy() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() <= 1d);
+      assertTrue(confusionMatrix.getPrecision() >= 0d);
+      assertTrue(confusionMatrix.getPrecision() <= 1d);
+      assertTrue(confusionMatrix.getRecall() >= 0d);
+      assertTrue(confusionMatrix.getRecall() <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -83,8 +89,13 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
-      assertTrue(confusionMatrix.getAvgClassificationTime() > 0d);
-      assertTrue(confusionMatrix.getAccuracy() > 0d);
+      assertTrue(confusionMatrix.getAvgClassificationTime() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() <= 1d);
+      assertTrue(confusionMatrix.getPrecision() >= 0d);
+      assertTrue(confusionMatrix.getPrecision() <= 1d);
+      assertTrue(confusionMatrix.getRecall() >= 0d);
+      assertTrue(confusionMatrix.getRecall() <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -103,8 +114,13 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
-      assertTrue(confusionMatrix.getAvgClassificationTime() > 0d);
-      assertTrue(confusionMatrix.getAccuracy() > 0d);
+      assertTrue(confusionMatrix.getAvgClassificationTime() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() <= 1d);
+      assertTrue(confusionMatrix.getPrecision() >= 0d);
+      assertTrue(confusionMatrix.getPrecision() <= 1d);
+      assertTrue(confusionMatrix.getRecall() >= 0d);
+      assertTrue(confusionMatrix.getRecall() <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -123,8 +139,13 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
-      assertTrue(confusionMatrix.getAvgClassificationTime() > 0d);
-      assertTrue(confusionMatrix.getAccuracy() > 0d);
+      assertTrue(confusionMatrix.getAvgClassificationTime() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() <= 1d);
+      assertTrue(confusionMatrix.getPrecision() >= 0d);
+      assertTrue(confusionMatrix.getPrecision() <= 1d);
+      assertTrue(confusionMatrix.getRecall() >= 0d);
+      assertTrue(confusionMatrix.getRecall() <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -144,13 +165,24 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       assertTrue(confusionMatrix.getAvgClassificationTime() >= 0d);
-      assertTrue(confusionMatrix.getAccuracy() > 0d);
-      assertTrue(confusionMatrix.getPrecision("true") > 0d);
-      assertTrue(confusionMatrix.getPrecision("false") > 0d);
-      assertTrue(confusionMatrix.getRecall("true") > 0d);
-      assertTrue(confusionMatrix.getRecall("false") > 0d);
-      assertTrue(confusionMatrix.getF1Measure("true") > 0d);
-      assertTrue(confusionMatrix.getF1Measure("false") > 0d);
+      assertTrue(confusionMatrix.getAccuracy() >= 0d);
+      assertTrue(confusionMatrix.getAccuracy() <= 1d);
+      assertTrue(confusionMatrix.getPrecision() >= 0d);
+      assertTrue(confusionMatrix.getPrecision() <= 1d);
+      assertTrue(confusionMatrix.getRecall() >= 0d);
+      assertTrue(confusionMatrix.getRecall() <= 1d);
+      assertTrue(confusionMatrix.getPrecision("true") >= 0d);
+      assertTrue(confusionMatrix.getPrecision("true") <= 1d);
+      assertTrue(confusionMatrix.getPrecision("false") >= 0d);
+      assertTrue(confusionMatrix.getPrecision("false") <= 1d);
+      assertTrue(confusionMatrix.getRecall("true") >= 0d);
+      assertTrue(confusionMatrix.getRecall("true") <= 1d);
+      assertTrue(confusionMatrix.getRecall("false") >= 0d);
+      assertTrue(confusionMatrix.getRecall("false") <= 1d);
+      assertTrue(confusionMatrix.getF1Measure("true") >= 0d);
+      assertTrue(confusionMatrix.getF1Measure("true") <= 1d);
+      assertTrue(confusionMatrix.getF1Measure("false") >= 0d);
+      assertTrue(confusionMatrix.getF1Measure("false") <= 1d);
     } finally {
       if (reader != null) {
         reader.close();

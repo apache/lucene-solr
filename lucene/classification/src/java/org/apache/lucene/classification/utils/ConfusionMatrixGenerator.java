@@ -246,6 +246,54 @@ public class ConfusionMatrixGenerator {
       return this.accuracy;
     }
 
+    /**
+     * get the precision (see {@link #getPrecision(String)}) over all the classes.
+     *
+     * @return the precision as computed from the whole confusion matrix
+     */
+    public double getPrecision() {
+      double tp = 0;
+      double fp = 0;
+      for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
+        String klass = classification.getKey();
+        for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
+          if (klass.equals(entry.getKey())) {
+            tp += entry.getValue();
+          }
+        }
+        for (Map<String, Long> values : linearizedMatrix.values()) {
+          if (values.containsKey(klass)) {
+            fp += values.get(klass);
+          }
+        }
+      }
+
+      return tp + fp > 0 ? tp / (tp + fp) : 0;
+
+    }
+
+    /**
+     * get the recall (see {@link #getRecall(String)}) over all the classes
+     *
+     * @return the recall as computed from the whole confusion matrix
+     */
+    public double getRecall() {
+      double tp = 0;
+      double fn = 0;
+      for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
+        String klass = classification.getKey();
+        for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
+          if (klass.equals(entry.getKey())) {
+            tp += entry.getValue();
+          } else {
+            fn += entry.getValue();
+          }
+        }
+      }
+
+      return tp + fn > 0 ? tp / (tp + fn) : 0;
+    }
+
     @Override
     public String toString() {
       return "ConfusionMatrix{" +

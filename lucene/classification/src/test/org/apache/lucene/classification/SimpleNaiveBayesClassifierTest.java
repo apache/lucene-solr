@@ -24,7 +24,10 @@ import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Ignore;
@@ -110,7 +113,33 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue("avg classification time: " + avgClassificationTime, 5000 > avgClassificationTime);
       double accuracy = confusionMatrix.getAccuracy();
-      assertTrue(accuracy > 0d);
+      assertTrue(accuracy >= 0d);
+      assertTrue(accuracy <= 1d);
+
+      double recall = confusionMatrix.getRecall();
+      assertTrue(recall >= 0d);
+      assertTrue(recall <= 1d);
+
+      double precision = confusionMatrix.getPrecision();
+      assertTrue(precision >= 0d);
+      assertTrue(precision <= 1d);
+
+      Terms terms = MultiFields.getTerms(leafReader, categoryFieldName);
+      TermsEnum iterator = terms.iterator();
+      BytesRef term;
+      while ((term = iterator.next()) != null) {
+        String s = term.utf8ToString();
+        recall = confusionMatrix.getRecall(s);
+        assertTrue(recall >= 0d);
+        assertTrue(recall <= 1d);
+        precision = confusionMatrix.getPrecision(s);
+        assertTrue(precision >= 0d);
+        assertTrue(precision <= 1d);
+        double f1Measure = confusionMatrix.getF1Measure(s);
+        assertTrue(f1Measure >= 0d);
+        assertTrue(f1Measure <= 1d);
+      }
+
     } finally {
       leafReader.close();
     }
