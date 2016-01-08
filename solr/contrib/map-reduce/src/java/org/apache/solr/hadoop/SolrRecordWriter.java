@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -151,7 +152,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
 
     // TODO: This is fragile and should be well documented
     System.setProperty("solr.directoryFactory", HdfsDirectoryFactory.class.getName()); 
-    System.setProperty("solr.lock.type", "hdfs"); 
+    System.setProperty("solr.lock.type", DirectoryFactory.LOCK_TYPE_HDFS);
     System.setProperty("solr.hdfs.nrtcachingdirectory", "false");
     System.setProperty("solr.hdfs.blockcache.enabled", "false");
     System.setProperty("solr.autoCommit.maxTime", "600000");

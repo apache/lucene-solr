@@ -26,6 +26,7 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     assertEquals("native", DirectoryFactory.LOCK_TYPE_NATIVE);
     assertEquals("single", DirectoryFactory.LOCK_TYPE_SINGLE);
     assertEquals("none", DirectoryFactory.LOCK_TYPE_NONE);
+    assertEquals("hdfs", DirectoryFactory.LOCK_TYPE_HDFS);
   }
 
 }

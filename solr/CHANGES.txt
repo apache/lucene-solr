@@ -454,6 +454,9 @@ Other Changes
 * SOLR-8504: (IndexSchema|SolrIndexConfig)Test: private static finals for
   solrconfig.xml and schema.xml String literals. (Christine Poerschke)
 
+* SOLR-8505: core/DirectoryFactory.LOCK_TYPE_HDFS - add & use it instead of String literals
+  (Christine Poerschke)
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
