@@ -1,5 +1,7 @@
 package org.apache.solr.client.solrj;
 
+import java.io.BufferedOutputStream;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,8 +21,8 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.Socket;
@@ -234,9 +236,9 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     return sb.toString();
   }
 
-  char[] whitespace(int n) {
-    char[] arr = new char[n];
-    Arrays.fill(arr, ' ');
+  byte[] whitespace(int n) {
+    byte[] arr = new byte[n];
+    Arrays.fill(arr, (byte) ' ');
     return arr;
   }
 
@@ -277,7 +279,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     conn.setDoOutput(true);
     conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
 
-    OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+    OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8);
     writer.write(bodyString);
     writer.flush();
 
@@ -321,58 +323,54 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     String hostName = "127.0.0.1";
     int port = jetty.getLocalPort();
 
-    Socket socket = new Socket(hostName, port);
-    PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
-    // BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    InputStream in = socket.getInputStream();
+    try (Socket socket = new Socket(hostName, port);
+        OutputStream out = new BufferedOutputStream(socket.getOutputStream());
+        InputStream in = socket.getInputStream();
+    ) {
+      byte[] body = getJsonDocs(100000).getBytes(StandardCharsets.UTF_8);
+      int bodyLen = body.length;
 
-    String body = getJsonDocs(100000);
-    int bodyLen = body.length();
+      // bodyLen *= 10;  // make server wait for more
 
-    // bodyLen *= 10;  // make server wait for more
+      byte[] whitespace = whitespace(1000000);
+      bodyLen += whitespace.length;
 
-    char[] whitespace = whitespace(1000000);
-    bodyLen += whitespace.length;
-
-    String headers = "POST /solr/collection1/update HTTP/1.1\n" +
-        "Host: localhost:" + port + "\n" +
+      String headers = "POST /solr/collection1/update HTTP/1.1\n" +
+          "Host: localhost:" + port + "\n" +
 //        "User-Agent: curl/7.43.0\n" +
-        "Accept: */*\n" +
-        "Content-type:application/json\n" +
-        "Content-Length: " + bodyLen + "\n" +
-        "Connection: Keep-Alive\n";
+          "Accept: */*\n" +
+          "Content-type:application/json\n" +
+          "Content-Length: " + bodyLen + "\n" +
+          "Connection: Keep-Alive\n";
 
-    out.write(headers);
-    out.write("\n");  // extra newline separates headers from body
-    out.write(body);
-    out.flush();
+      // Headers of HTTP connection are defined to be ASCII only:
+      out.write(headers.getBytes(StandardCharsets.US_ASCII));
+      out.write('\n');  // extra newline separates headers from body
+      out.write(body);
+      out.flush();
 
-    // Now what if I try to write more?  This doesn't seem to throw an exception!
-    Thread.sleep(1000);
-    out.write(whitespace);  // whitespace
-    out.flush();
+      // Now what if I try to write more?  This doesn't seem to throw an exception!
+      Thread.sleep(1000);
+      out.write(whitespace);  // whitespace
+      out.flush();
 
-    String rbody = getResponse(in);  // This will throw a connection reset exception if you try to read past the end of the HTTP response
-    log.info("RESPONSE BODY:" + rbody);
-    assertTrue(rbody.contains("unknown_field"));
+      String rbody = getResponse(in);  // This will throw a connection reset exception if you try to read past the end of the HTTP response
+      log.info("RESPONSE BODY:" + rbody);
+      assertTrue(rbody.contains("unknown_field"));
 
-    /***
-    // can I reuse now?
-    // writing another request doesn't actually throw an exception, but the following read does
-    out.write(headers);
-    out.write("\n");  // extra newline separates headers from body
-    out.write(body);
-    out.flush();
+      /***
+      // can I reuse now?
+      // writing another request doesn't actually throw an exception, but the following read does
+      out.write(headers);
+      out.write("\n");  // extra newline separates headers from body
+      out.write(body);
+      out.flush();
 
-    rbody = getResponse(in);
-    log.info("RESPONSE BODY:" + rbody);
-    assertTrue(rbody.contains("unknown_field"));
-    ***/
-
-
-    IOUtils.closeQuietly(out);
-    IOUtils.closeQuietly(in);
-    IOUtils.closeQuietly(socket);
+      rbody = getResponse(in);
+      log.info("RESPONSE BODY:" + rbody);
+      assertTrue(rbody.contains("unknown_field"));
+      ***/
+    }
   }
 
 
