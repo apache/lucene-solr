@@ -225,7 +225,7 @@ class SimpleTextDimensionalReader extends DimensionalReader {
       // now all docs having this dimensional field were deleted in this segment:
       return null;
     }
-    return bkdReader.getMinPackedValue();
+    return bkdReader.getMaxPackedValue();
   }
 
   @Override

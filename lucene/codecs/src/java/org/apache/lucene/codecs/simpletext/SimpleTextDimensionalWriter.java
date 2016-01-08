@@ -95,10 +95,12 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
           write(out, MIN_VALUE);
           BytesRef br = new BytesRef(minPackedValue, 0, minPackedValue.length);
           write(out, br.toString());
+          newline(out);
 
           write(out, MAX_VALUE);
           br = new BytesRef(maxPackedValue, 0, maxPackedValue.length);
           write(out, br.toString());
+          newline(out);
 
           for(int i=0;i<leafBlockFPs.length;i++) {
             write(out, BLOCK_FP);
