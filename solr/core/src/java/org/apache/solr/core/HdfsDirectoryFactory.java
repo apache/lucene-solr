@@ -156,12 +156,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   @Override
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
-      LOG.warn("No lockType configured, assuming 'hdfs'.");
-      rawLockType = "hdfs";
+      rawLockType = DirectoryFactory.LOCK_TYPE_HDFS;
+      LOG.warn("No lockType configured, assuming '"+rawLockType+"'.");
     }
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
-      case "hdfs":
+      case DirectoryFactory.LOCK_TYPE_HDFS:
         return HdfsLockFactory.INSTANCE;
       case DirectoryFactory.LOCK_TYPE_SINGLE:
         return new SingleInstanceLockFactory();
