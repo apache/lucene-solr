@@ -382,7 +382,6 @@ public class TestUninvertingReader extends LuceneTestCase {
 
     FieldInfo dvFInfo = leafReader.getFieldInfos().fieldInfo("dv");
     assertEquals(DocValuesType.NUMERIC, dvFInfo.getDocValuesType());
-    assertEquals("0", dvFInfo.getAttribute("PerFieldDocValuesFormat.suffix"));
 
     FieldInfo storedFInfo = leafReader.getFieldInfos().fieldInfo("stored");
     assertEquals(DocValuesType.NONE, storedFInfo.getDocValuesType());
