@@ -75,7 +75,8 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     try {
       Analyzer analyzer = new NGramAnalyzer();
       leafReader = getSampleIndex(analyzer);
-      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      SimpleNaiveBayesClassifier classifier = new SimpleNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
+      checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();

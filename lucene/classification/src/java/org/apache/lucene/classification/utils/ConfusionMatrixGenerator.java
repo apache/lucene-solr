@@ -167,7 +167,7 @@ public class ConfusionMatrixGenerator {
     public double getPrecision(String klass) {
       Map<String, Long> classifications = linearizedMatrix.get(klass);
       double tp = 0;
-      double fp = 0;
+      double fp = -1;
       if (classifications != null) {
         for (Map.Entry<String, Long> entry : classifications.entrySet()) {
           if (klass.equals(entry.getKey())) {
@@ -253,7 +253,7 @@ public class ConfusionMatrixGenerator {
      */
     public double getPrecision() {
       double tp = 0;
-      double fp = 0;
+      double fp = -linearizedMatrix.size();
       for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
         String klass = classification.getKey();
         for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
