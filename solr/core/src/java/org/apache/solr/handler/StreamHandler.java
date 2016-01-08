@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.FacetStream;
 import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
+import org.apache.solr.client.solrj.io.stream.JDBCStream;
 import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
 import org.apache.solr.client.solrj.io.stream.HashJoinStream;
 import org.apache.solr.client.solrj.io.stream.MergeStream;
@@ -108,7 +109,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("unique", UniqueStream.class)
       .withFunctionName("top", RankStream.class)
       .withFunctionName("group", GroupOperation.class)
-         .withFunctionName("reduce", ReducerStream.class)
+      .withFunctionName("reduce", ReducerStream.class)
       .withFunctionName("parallel", ParallelStream.class)
       .withFunctionName("rollup", RollupStream.class)
       .withFunctionName("stats", StatsStream.class)
@@ -118,7 +119,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
       .withFunctionName("facet", FacetStream.class)
       .withFunctionName("update", UpdateStream.class)
-     
+      .withFunctionName("jdbc", JDBCStream.class)
+      
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)

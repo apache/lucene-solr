@@ -53,6 +53,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("update", UpdateStream.class)
                     .withFunctionName("stats", StatsStream.class)
                     .withFunctionName("facet", FacetStream.class)
+                    .withFunctionName("jdbc", JDBCStream.class)
                     .withFunctionName("count", CountMetric.class)
                     .withFunctionName("sum", SumMetric.class)
                     .withFunctionName("min", MinMetric.class)
@@ -238,6 +239,21 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("avg(a_f)"));
     assertTrue(expressionString.contains("count(*)"));
   }
+  
+  @Test
+  public void testJDBCStream() throws Exception {
+
+    JDBCStream stream;
+    String expressionString;
+    
+    // Basic test
+    stream = new JDBCStream(StreamExpressionParser.parse("jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\")"), factory);
+    expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("jdbc(connection=\"jdbc:hsqldb:mem:.\","));
+    assertTrue(expressionString.contains("sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\""));
+    assertTrue(expressionString.contains("sort=\"ID asc\""));
+  }
+
   
   @Test
   public void testCountMetric() throws Exception {

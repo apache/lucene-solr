@@ -124,6 +124,9 @@ New Features
 
 * SOLR-7535: Add UpdateStream to Streaming API and Streaming Expression (Jason Gerlowski, Joel Bernstein)
 
+* SOLR-8479: Add JDBCStream to Streaming API and Streaming Expressions for integration with external data sources
+  (Dennis Gove)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
