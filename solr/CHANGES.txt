@@ -135,6 +135,7 @@ Bug Fixes
 * SOLR-8371: Try and prevent too many recovery requests from stacking up and clean up some faulty 
   cancel recovery logic. (Mark Miller)
 
+* SOLR-8485: SelectStream now properly handles non-lowercase and/or quoted select field names (Dennis Gove)
 
 Optimizations
 ----------------------

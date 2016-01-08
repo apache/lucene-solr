@@ -23,15 +23,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -89,9 +86,14 @@ public class SelectStream extends TupleStream implements Expressible {
     selectedFields = new HashMap<String,String>(selectFieldsExpressions.size());
     for(StreamExpressionParameter parameter : selectFieldsExpressions){
       StreamExpressionValue selectField = (StreamExpressionValue)parameter;
-      String value = selectField.getValue().trim().toLowerCase(Locale.ROOT);
-      if(value.contains(" as ")){
-        String[] parts = value.split(" as ");
+      String value = selectField.getValue().trim();
+      
+      // remove possible wrapping quotes
+      if(value.length() > 2 && value.startsWith("\"") && value.endsWith("\"")){
+        value = value.substring(1, value.length() - 1);
+      }
+      if(value.toLowerCase(Locale.ROOT).contains(" as ")){
+        String[] parts = value.split("(?i) as "); // ensure we are splitting in a case-insensitive way
         if(2 != parts.length){
           throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting select field of form 'fieldA' or 'fieldA as alias' but found %s",expression, value));
         }

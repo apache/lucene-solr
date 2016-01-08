@@ -44,6 +44,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withCollectionZkHost("collection1", "testhost:1234")
                     .withCollectionZkHost("collection2", "testhost:1234")
                     .withFunctionName("search", CloudSolrStream.class)
+                    .withFunctionName("select", SelectStream.class)
                     .withFunctionName("merge", MergeStream.class)
                     .withFunctionName("unique", UniqueStream.class)
                     .withFunctionName("top", RankStream.class)
@@ -59,8 +60,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("avg", MeanMetric.class)
                     ;
   }
-  
-  
+    
   @Test
   public void testCloudSolrStream() throws Exception {
 
@@ -81,6 +81,23 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("id=izzy"));
     assertTrue(expressionString.contains("a_s=kayden"));
 
+  }
+  
+  @Test
+  public void testSelectStream() throws Exception {
+
+    SelectStream stream;
+    String expressionString;
+    
+    // Basic test
+    stream = new SelectStream(StreamExpressionParser.parse("select(\"a_s as fieldA\", search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"), factory);
+    expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("select(search(collection1,"));
+    assertTrue(expressionString.contains("q=\"*:*\""));
+    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+    assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
+    assertTrue(expressionString.contains("a_s as fieldA"));
+    
   }
   
   @Test
