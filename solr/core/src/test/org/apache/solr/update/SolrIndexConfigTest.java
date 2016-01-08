@@ -40,21 +40,25 @@ import org.junit.Test;
  */
 public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
+  private static final String solrConfigFileName = "solrconfig.xml";
+  private static final String solrConfigFileNameWarmer = "solrconfig-warmer.xml";
+  private static final String solrConfigFileNameTieredMergePolicy = "solrconfig-tieredmergepolicy.xml";
+
+  private static final String schemaFileName = "schema.xml";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore(solrConfigFileName,schemaFileName);
   }
   
   private final Path instanceDir = TEST_PATH().resolve("collection1");
-  private final String solrConfigFileNameWarmer = "solrconfig-warmer.xml";
-  private final String solrConfigFileNameTieredMergePolicy = "solrconfig-tieredmergepolicy.xml";
 
   @Test
   public void testFailingSolrIndexConfigCreation() {
     try {
       SolrConfig solrConfig = new SolrConfig("bad-mp-solrconfig.xml");
       SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
-      IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+      IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
       h.getCore().setLatestSchema(indexSchema);
       solrIndexConfig.toIndexWriterConfig(h.getCore());
       fail("a mergePolicy should have an empty constructor in order to be instantiated in Solr thus this should fail ");
@@ -69,7 +73,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null,
         null);
     assertNotNull(solrIndexConfig);
-    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
     
     h.getCore().setLatestSchema(indexSchema);
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
@@ -95,7 +99,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
     assertEquals(SimpleMergedSegmentWarmer.class.getName(),
         solrIndexConfig.mergedSegmentWarmerInfo.className);
-    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
     h.getCore().setLatestSchema(indexSchema);
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());

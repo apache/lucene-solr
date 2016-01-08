@@ -31,9 +31,13 @@ import java.util.Map;
 
 
 public class IndexSchemaTest extends SolrTestCaseJ4 {
+
+  final private static String solrConfigFileName = "solrconfig.xml";
+  final private static String schemaFileName = "schema.xml";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore(solrConfigFileName, schemaFileName);
   }
 
   /**
