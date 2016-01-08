@@ -272,7 +272,7 @@ class SvnWorkingCopy(SubProcessAtPath):
     return result
 
   def switch(self, repoBranchName):
-    self.checkCall((self.svnCmd, "switch", ("^/" + repoBranchName)))
+    self.checkCall((self.svnCmd, "switch", ("^/" + repoBranchName), "--ignore-ancestry"))
 
   def parseInfo(self):
     infoXml = self.checkOutput((self.svnCmd, "info", "--xml")) # bytes in python 3.
@@ -555,8 +555,10 @@ From svn help update:
     assert lockChar == " ",                "revision %d lockChar %s fileName %s"                             % (revision, lockChar, fileName)
     assert treeConflictChar == " ",        "revision %d treeConflictChar %s fileName %s"                     % (revision, treeConflictChar, fileName)
 
+    fileNameInSvnWorkingCopy = os.path.join(svnWorkingCopy.getPathName(), fileName)
     fileNameInGitRepo = os.path.join(gitRepo.getPathName(), fileName)
     setFileProtectionBits = False
+
     if itemChar == "D": # deleted in svn working copy
       if os.path.isdir(fileNameInGitRepo):
         print("Deleting directory %s" % fileNameInGitRepo)
@@ -571,7 +573,6 @@ From svn help update:
       else:
         print("Non deleting non existing file %s" % fileName)
     elif itemChar in ("A", "U"): # added or updated in svn working copy
-      fileNameInSvnWorkingCopy = os.path.join(svnWorkingCopy.getPathName(), fileName)
       if os.path.isdir(fileNameInSvnWorkingCopy):
         if not os.path.isdir(fileNameInGitRepo):
           print("Creating directory %s" % fileName)
@@ -598,11 +599,12 @@ From svn help update:
       setFileProtectionBits = True # svn:executable may have been set or unset.
 
     if setFileProtectionBits:
-      statSvn = os.stat(fileNameInSvnWorkingCopy)
-      statGit = os.stat(fileNameInGitRepo)
-      if statSvn.st_mode != statGit.st_mode:
-        print("Changing mode from %s to %s for %s" % (octal(statGit.st_mode), octal(statSvn.st_mode), fileNameInGitRepo))
-        os.chmod(fileNameInGitRepo, statSvn.st_mode)
+      if os.path.isfile(fileNameInSvnWorkingCopy):
+        statSvn = os.stat(fileNameInSvnWorkingCopy)
+        statGit = os.stat(fileNameInGitRepo)
+        if statSvn.st_mode != statGit.st_mode:
+          print("Changing mode from %s to %s for %s" % (octal(statGit.st_mode), octal(statSvn.st_mode), fileNameInGitRepo))
+          os.chmod(fileNameInGitRepo, statSvn.st_mode)
 
 
 def assertUrlsSameExceptScheme(url1, url2): # may only differ by scheme http:// or https://
@@ -774,10 +776,17 @@ if __name__ == "__main__":
 
   home = os.path.expanduser("~")
 
-  svnWorkingCopyOfBranchPath = os.path.join(home, "svnwork", repo)
+  svnWorkingCopiesPath = os.path.join(home, "svnwork")
+  gitReposPath = os.path.join(home, "gitrepos")
+
+
+  if sys.argv[0].startswith(svnWorkingCopiesPath) or sys.argv[0].startswith(gitReposPath):
+    errorExit(sys.argv[0] + " cannot run from svn working copy or git working tree, copy to another place and run from there.")
+
+  svnWorkingCopyOfBranchPath = os.path.join(svnWorkingCopiesPath, repo)
   svnRepoBranchName = "lucene/dev/" + branchName # for svn switch to
 
-  gitRepoPath = os.path.join(home, "gitrepos", repo)
+  gitRepoPath = os.path.join(gitReposPath, repo)
   gitUpstream = "upstream"
 
   maintainTempGitSvnBranch(branchName, tempGitBranchName,
@@ -785,3 +794,4 @@ if __name__ == "__main__":
                             gitRepoPath, gitUpstream,
                             maxCommits=maxCommits,
                             testMode=testMode)
+
