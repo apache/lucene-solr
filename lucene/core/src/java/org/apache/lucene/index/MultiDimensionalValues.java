@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.StringHelper;
+
 class MultiDimensionalValues extends DimensionalValues {
 
   private final List<DimensionalValues> subs;
@@ -94,5 +96,75 @@ class MultiDimensionalValues extends DimensionalValues {
     }
     b.append(')');
     return b.toString();
+  }
+
+  @Override
+  public byte[] getMinPackedValue(String fieldName) throws IOException {
+    byte[] result = null;
+    for(int i=0;i<subs.size();i++) {
+      byte[] minPackedValue = subs.get(i).getMinPackedValue(fieldName);
+      if (result == null) {
+        if (minPackedValue != null) {
+          result = minPackedValue.clone();
+        }
+      } else {
+        int numDims = subs.get(0).getNumDimensions(fieldName);
+        int bytesPerDim = subs.get(0).getBytesPerDimension(fieldName);
+        for(int dim=0;dim<numDims;dim++) {
+          int offset = dim*bytesPerDim;
+          if (StringHelper.compare(bytesPerDim, minPackedValue, offset, result, offset) < 0) {
+            System.arraycopy(minPackedValue, offset, result, offset, bytesPerDim);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  @Override
+  public byte[] getMaxPackedValue(String fieldName) throws IOException {
+    byte[] result = null;
+    for(int i=0;i<subs.size();i++) {
+      byte[] maxPackedValue = subs.get(i).getMaxPackedValue(fieldName);
+      if (result == null) {
+        if (maxPackedValue != null) {
+          result = maxPackedValue.clone();
+        }
+      } else {
+        int numDims = subs.get(0).getNumDimensions(fieldName);
+        int bytesPerDim = subs.get(0).getBytesPerDimension(fieldName);
+        for(int dim=0;dim<numDims;dim++) {
+          int offset = dim*bytesPerDim;
+          if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, result, offset) > 0) {
+            System.arraycopy(maxPackedValue, offset, result, offset, bytesPerDim);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  @Override
+  public int getNumDimensions(String fieldName) throws IOException {
+    for(int i=0;i<subs.size();i++) {
+      int result = subs.get(i).getNumDimensions(fieldName);
+      if (result != 0) {
+        return result;
+      }
+    }
+    return 0;
+  }
+
+  @Override
+  public int getBytesPerDimension(String fieldName) throws IOException {
+    for(int i=0;i<subs.size();i++) {
+      int result = subs.get(i).getBytesPerDimension(fieldName);
+      if (result != 0) {
+        return result;
+      }
+    }
+    return 0;
   }
 }

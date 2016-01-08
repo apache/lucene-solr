@@ -123,6 +123,10 @@ public class TestBKD extends LuceneTestCase {
       }
       int[][] docs = new int[numDocs][];
       byte[] scratch = new byte[4*numDims];
+      int[] minValue = new int[numDims];
+      int[] maxValue = new int[numDims];
+      Arrays.fill(minValue, Integer.MAX_VALUE);
+      Arrays.fill(maxValue, Integer.MIN_VALUE);
       for(int docID=0;docID<numDocs;docID++) {
         int[] values = new int[numDims];
         if (VERBOSE) {
@@ -130,6 +134,12 @@ public class TestBKD extends LuceneTestCase {
         }
         for(int dim=0;dim<numDims;dim++) {
           values[dim] = random().nextInt();
+          if (values[dim] < minValue[dim]) {
+            minValue[dim] = values[dim];
+          }
+          if (values[dim] > maxValue[dim]) {
+            maxValue[dim] = values[dim];
+          }
           NumericUtils.intToBytes(values[dim], scratch, dim);
           if (VERBOSE) {
             System.out.println("    " + dim + " -> " + values[dim]);
@@ -147,6 +157,13 @@ public class TestBKD extends LuceneTestCase {
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
         BKDReader r = new BKDReader(in);
+
+        byte[] minPackedValue = r.getMinPackedValue();
+        byte[] maxPackedValue = r.getMaxPackedValue();
+        for(int dim=0;dim<numDims;dim++) {
+          assertEquals(minValue[dim], NumericUtils.bytesToInt(minPackedValue, dim));
+          assertEquals(maxValue[dim], NumericUtils.bytesToInt(maxPackedValue, dim));
+        }
 
         int iters = atLeast(100);
         for(int iter=0;iter<iters;iter++) {

@@ -265,8 +265,8 @@ public class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public void intersect(String field, IntersectVisitor visitor) throws IOException {
-      in.intersect(field,
+    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
+      in.intersect(fieldName,
                    new IntersectVisitor() {
                      @Override
                      public void visit(int docID) throws IOException {
@@ -283,6 +283,26 @@ public class SortingLeafReader extends FilterLeafReader {
                        return visitor.compare(minPackedValue, maxPackedValue);
                      }
                    });
+    }
+
+    @Override
+    public byte[] getMinPackedValue(String fieldName) throws IOException {
+      return in.getMinPackedValue(fieldName);
+    }
+
+    @Override
+    public byte[] getMaxPackedValue(String fieldName) throws IOException {
+      return in.getMaxPackedValue(fieldName);
+    }
+
+    @Override
+    public int getNumDimensions(String fieldName) throws IOException {
+      return in.getNumDimensions(fieldName);
+    }
+
+    @Override
+    public int getBytesPerDimension(String fieldName) throws IOException {
+      return in.getBytesPerDimension(fieldName);
     }
   }
 

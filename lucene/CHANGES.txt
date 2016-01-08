@@ -55,6 +55,9 @@ New Features
 * LUCENE-6837: Add N-best output support to JapaneseTokenizer.
   (Hiroharu Konno via Christian Moen)
 
+* LUCENE-6962: Add per-dimension min/max to dimensional values
+  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3312: The API of oal.document was restructured to

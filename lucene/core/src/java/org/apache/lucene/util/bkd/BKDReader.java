@@ -43,6 +43,8 @@ public class BKDReader implements Accountable {
   final int bytesPerDim;
   final IndexInput in;
   final int maxPointsInLeafNode;
+  final byte[] minPackedValue;
+  final byte[] maxPackedValue;
   protected final int packedBytesLength;
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
@@ -57,6 +59,11 @@ public class BKDReader implements Accountable {
     int numLeaves = in.readVInt();
     assert numLeaves > 0;
     leafNodeOffset = numLeaves;
+
+    minPackedValue = new byte[packedBytesLength];
+    maxPackedValue = new byte[packedBytesLength];
+    in.readBytes(minPackedValue, 0, packedBytesLength);
+    in.readBytes(maxPackedValue, 0, packedBytesLength);
 
     splitPackedValues = new byte[(1+bytesPerDim)*numLeaves];
 
@@ -116,8 +123,9 @@ public class BKDReader implements Accountable {
     this.in = in;
   }
 
-  /** Called by consumers that have their own on-disk format for the index */
-  protected BKDReader(IndexInput in, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
+  /** Called by consumers that have their own on-disk format for the index (e.g. SimpleText) */
+  protected BKDReader(IndexInput in, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
+                      byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
     this.in = in;
     this.numDims = numDims;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
@@ -126,6 +134,10 @@ public class BKDReader implements Accountable {
     this.leafNodeOffset = leafBlockFPs.length;
     this.leafBlockFPs = leafBlockFPs;
     this.splitPackedValues = splitPackedValues;
+    this.minPackedValue = minPackedValue;
+    this.maxPackedValue = maxPackedValue;
+    assert minPackedValue.length == packedBytesLength;
+    assert maxPackedValue.length == packedBytesLength;
   }
 
   private static class VerifyVisitor implements IntersectVisitor {
@@ -404,5 +416,21 @@ public class BKDReader implements Accountable {
   public long ramBytesUsed() {
     return splitPackedValues.length +
       leafBlockFPs.length * RamUsageEstimator.NUM_BYTES_LONG;
+  }
+
+  public byte[] getMinPackedValue() {
+    return minPackedValue.clone();
+  }
+
+  public byte[] getMaxPackedValue() {
+    return maxPackedValue.clone();
+  }
+
+  public int getNumDimensions() {
+    return numDims;
+  }
+
+  public int getBytesPerDimension() {
+    return bytesPerDim;
   }
 }

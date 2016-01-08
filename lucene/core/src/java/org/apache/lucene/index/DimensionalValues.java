@@ -39,7 +39,7 @@ public abstract class DimensionalValues {
   /** Maximum number of dimensions */
   public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
 
-  /** Defautl constructor */
+  /** Default constructor */
   protected DimensionalValues() {
   }
 
@@ -78,4 +78,16 @@ public abstract class DimensionalValues {
    *  This method does not enforce live docs, so it's up to the caller
    *  to test whether each document is deleted, if necessary. */
   public abstract void intersect(String fieldName, IntersectVisitor visitor) throws IOException;
+
+  /** Returns minimum value for each dimension, packed, or null if no points were indexed */
+  public abstract byte[] getMinPackedValue(String fieldName) throws IOException;
+
+  /** Returns maximum value for each dimension, packed, or null if no points were indexed */
+  public abstract byte[] getMaxPackedValue(String fieldName) throws IOException;
+
+  /** Returns how many dimensions were indexed */
+  public abstract int getNumDimensions(String fieldName) throws IOException;
+
+  /** Returns the number of bytes per dimension */
+  public abstract int getBytesPerDimension(String fieldName) throws IOException;
 }

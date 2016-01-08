@@ -98,6 +98,26 @@ public final class AssertingDimensionalFormat extends DimensionalFormat {
     public String toString() {
       return getClass().getSimpleName() + "(" + in.toString() + ")";
     }
+
+    @Override
+    public byte[] getMinPackedValue(String fieldName) throws IOException {
+      return in.getMinPackedValue(fieldName);
+    }
+
+    @Override
+    public byte[] getMaxPackedValue(String fieldName) throws IOException {
+      return in.getMaxPackedValue(fieldName);
+    }
+
+    @Override
+    public int getNumDimensions(String fieldName) throws IOException {
+      return in.getNumDimensions(fieldName);
+    }
+
+    @Override
+    public int getBytesPerDimension(String fieldName) throws IOException {
+      return in.getBytesPerDimension(fieldName);
+    }
   }
 
   static class AssertingDimensionalWriter extends DimensionalWriter {

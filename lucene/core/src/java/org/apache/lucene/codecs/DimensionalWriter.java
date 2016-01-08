@@ -95,6 +95,26 @@ public abstract class DimensionalWriter implements Closeable {
                  @Override
                  public void close() {
                  }
+
+                 @Override
+                 public byte[] getMinPackedValue(String fieldName) {
+                   throw new UnsupportedOperationException();
+                 }
+
+                 @Override
+                 public byte[] getMaxPackedValue(String fieldName) {
+                   throw new UnsupportedOperationException();
+                 }
+
+                 @Override
+                 public int getNumDimensions(String fieldName) {
+                   throw new UnsupportedOperationException();
+                 }
+
+                 @Override
+                 public int getBytesPerDimension(String fieldName) {
+                   throw new UnsupportedOperationException();
+                 }
                });
   }
 

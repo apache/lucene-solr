@@ -119,6 +119,12 @@ public class BKDWriter implements Closeable {
   protected final int maxPointsInLeafNode;
   private final int maxPointsSortInHeap;
 
+  /** Minimum per-dim values, packed */
+  protected final byte[] minPackedValue;
+
+  /** Maximum per-dim values, packed */
+  protected final byte[] maxPackedValue;
+
   private long pointCount;
 
   public BKDWriter(Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim) throws IOException {
@@ -141,6 +147,9 @@ public class BKDWriter implements Closeable {
     scratch1 = new byte[packedBytesLength];
     scratch2 = new byte[packedBytesLength];
     commonPrefixLengths = new int[numDims];
+
+    minPackedValue = new byte[packedBytesLength];
+    maxPackedValue = new byte[packedBytesLength];
 
     // dimensional values (numDims * bytesPerDim) + ord (long) + docID (int)
     bytesPerDoc = packedBytesLength + RamUsageEstimator.NUM_BYTES_LONG + RamUsageEstimator.NUM_BYTES_INT;
@@ -211,6 +220,22 @@ public class BKDWriter implements Closeable {
     } else {
       // Not too many points added yet, continue using heap:
       heapPointWriter.append(packedValue, pointCount, docID);
+    }
+
+    // TODO: we could specialize for the 1D case:
+    if (pointCount == 0) {
+      System.arraycopy(packedValue, 0, minPackedValue, 0, packedBytesLength);
+      System.arraycopy(packedValue, 0, maxPackedValue, 0, packedBytesLength);
+    } else {
+      for(int dim=0;dim<numDims;dim++) {
+        int offset = dim*bytesPerDim;
+        if (StringHelper.compare(bytesPerDim, packedValue, offset, minPackedValue, offset) < 0) {
+          System.arraycopy(packedValue, offset, minPackedValue, offset, bytesPerDim);
+        }
+        if (StringHelper.compare(bytesPerDim, packedValue, offset, maxPackedValue, offset) > 0) {
+          System.arraycopy(packedValue, offset, maxPackedValue, offset, bytesPerDim);
+        }
+      }
     }
 
     pointCount++;
@@ -397,6 +422,11 @@ public class BKDWriter implements Closeable {
       // NOTE: doesn't work with subclasses (e.g. SimpleText!)
       leafBlockDocIDs[leafCount] = reader.docIDBase + reader.docID;
       System.arraycopy(reader.state.scratchPackedValue, 0, leafBlockPackedValues[leafCount], 0, packedBytesLength);
+
+      if (valueCount == 0) {
+        System.arraycopy(reader.state.scratchPackedValue, 0, minPackedValue, 0, packedBytesLength);
+      }
+      System.arraycopy(reader.state.scratchPackedValue, 0, maxPackedValue, 0, packedBytesLength);
 
       assert numDims > 1 || valueInOrder(valueCount++, lastPackedValue, reader.state.scratchPackedValue);
 
@@ -836,6 +866,8 @@ public class BKDWriter implements Closeable {
 
     assert leafBlockFPs.length > 0;
     out.writeVInt(leafBlockFPs.length);
+    out.writeBytes(minPackedValue, 0, packedBytesLength);
+    out.writeBytes(maxPackedValue, 0, packedBytesLength);
 
     // TODO: for 1D case, don't waste the first byte of each split value (it's always 0)
 

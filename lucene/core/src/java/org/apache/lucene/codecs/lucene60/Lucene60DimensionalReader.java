@@ -84,24 +84,29 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
     }
   }
 
-  @Override
-  public void intersect(String field, IntersectVisitor visitor) throws IOException {
-    FieldInfo fieldInfo = readState.fieldInfos.fieldInfo(field);
+  private BKDReader getBKDReader(String fieldName) {
+    FieldInfo fieldInfo = readState.fieldInfos.fieldInfo(fieldName);
     if (fieldInfo == null) {
-      throw new IllegalArgumentException("field=\"" + field + "\" is unrecognized");
+      throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
     }
     if (fieldInfo.getDimensionCount() == 0) {
-      throw new IllegalArgumentException("field=\"" + field + "\" did not index dimensional values");
+      throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index dimensional values");
     }
 
-    BKDReader reader = readers.get(fieldInfo.number);
-    if (reader == null) {
+    return readers.get(fieldInfo.number);
+  }
+
+  @Override
+  public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
+    BKDReader bkdReader = getBKDReader(fieldName);
+
+    if (bkdReader == null) {
       // Schema ghost corner case!  This field did index dimensional values in the past, but
       // now all docs having this dimensional field were deleted in this segment:
       return;
     }
 
-    reader.intersect(visitor);
+    bkdReader.intersect(visitor);
   }
 
   @Override
@@ -133,6 +138,52 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
     dataIn.close();
     // Free up heap:
     readers.clear();
+  }
+
+  @Override
+  public byte[] getMinPackedValue(String fieldName) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index dimensional values in the past, but
+      // now all docs having this dimensional field were deleted in this segment:
+      return null;
+    }
+
+    return bkdReader.getMinPackedValue();
+  }
+
+  @Override
+  public byte[] getMaxPackedValue(String fieldName) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index dimensional values in the past, but
+      // now all docs having this dimensional field were deleted in this segment:
+      return null;
+    }
+
+    return bkdReader.getMaxPackedValue();
+  }
+
+  @Override
+  public int getNumDimensions(String fieldName) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index dimensional values in the past, but
+      // now all docs having this dimensional field were deleted in this segment:
+      return 0;
+    }
+    return bkdReader.getNumDimensions();
+  }
+
+  @Override
+  public int getBytesPerDimension(String fieldName) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index dimensional values in the past, but
+      // now all docs having this dimensional field were deleted in this segment:
+      return 0;
+    }
+    return bkdReader.getBytesPerDimension();
   }
 }
   

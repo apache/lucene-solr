@@ -152,6 +152,26 @@ public final class SlowCodecReaderWrapper {
       public long ramBytesUsed() {
         return 0;
       }
+
+      @Override
+      public byte[] getMinPackedValue(String fieldName) throws IOException {
+        return values.getMinPackedValue(fieldName);
+      }
+
+      @Override
+      public byte[] getMaxPackedValue(String fieldName) throws IOException {
+        return values.getMaxPackedValue(fieldName);
+      }
+
+      @Override
+      public int getNumDimensions(String fieldName) throws IOException {
+        return values.getNumDimensions(fieldName);
+      }
+
+      @Override
+      public int getBytesPerDimension(String fieldName) throws IOException {
+        return values.getBytesPerDimension(fieldName);
+      }
     };
   }
   

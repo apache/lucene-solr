@@ -49,6 +49,8 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
   final static BytesRef FIELD_COUNT   = new BytesRef("field count ");
   final static BytesRef FIELD_FP_NAME = new BytesRef("  field fp name ");
   final static BytesRef FIELD_FP      = new BytesRef("  field fp ");
+  final static BytesRef MIN_VALUE     = new BytesRef("min value ");
+  final static BytesRef MAX_VALUE     = new BytesRef("max value ");
 
   private IndexOutput dataOut;
   final BytesRefBuilder scratch = new BytesRefBuilder();
@@ -90,6 +92,14 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
           writeInt(out, leafBlockFPs.length);
           newline(out);
 
+          write(out, MIN_VALUE);
+          BytesRef br = new BytesRef(minPackedValue, 0, minPackedValue.length);
+          write(out, br.toString());
+
+          write(out, MAX_VALUE);
+          br = new BytesRef(maxPackedValue, 0, maxPackedValue.length);
+          write(out, br.toString());
+
           for(int i=0;i<leafBlockFPs.length;i++) {
             write(out, BLOCK_FP);
             writeLong(out, leafBlockFPs[i]);
@@ -109,7 +119,7 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
             writeInt(out, splitPackedValues[i * (1 + fieldInfo.getDimensionNumBytes())] & 0xff);
             newline(out);
             write(out, SPLIT_VALUE);
-            BytesRef br = new BytesRef(splitPackedValues, 1+(i * (1+fieldInfo.getDimensionNumBytes())), fieldInfo.getDimensionNumBytes());
+            br = new BytesRef(splitPackedValues, 1+(i * (1+fieldInfo.getDimensionNumBytes())), fieldInfo.getDimensionNumBytes());
             write(out, br.toString());
             newline(out);
           }

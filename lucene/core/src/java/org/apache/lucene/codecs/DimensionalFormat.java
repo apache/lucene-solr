@@ -75,6 +75,26 @@ public abstract class DimensionalFormat {
           public void intersect(String fieldName, IntersectVisitor visitor) {
             throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
           }
+
+          @Override
+          public byte[] getMinPackedValue(String fieldName) {
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+          }
+
+          @Override
+          public byte[] getMaxPackedValue(String fieldName) {
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+          }
+
+          @Override
+          public int getNumDimensions(String fieldName) {
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+          }
+
+          @Override
+          public int getBytesPerDimension(String fieldName) {
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+          }
         };
       }
     };

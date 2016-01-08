@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
@@ -46,6 +47,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 // TODO: factor out a BaseTestDimensionFormat
@@ -906,6 +908,28 @@ public class TestDimensionalValues extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     DirectoryReader r = null;
 
+    // Compute actual min/max values:
+    byte[][] expectedMinValues = new byte[numDims][];
+    byte[][] expectedMaxValues = new byte[numDims][];
+    for(int ord=0;ord<docValues.length;ord++) {
+      for(int dim=0;dim<numDims;dim++) {
+        if (ord == 0) {
+          expectedMinValues[dim] = new byte[numBytesPerDim];
+          System.arraycopy(docValues[ord][dim], 0, expectedMinValues[dim], 0, numBytesPerDim);
+          expectedMaxValues[dim] = new byte[numBytesPerDim];
+          System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
+        } else {
+          // TODO: it's cheating that we use StringHelper.compare for "truth": what if it's buggy?
+          if (StringHelper.compare(numBytesPerDim, docValues[ord][dim], 0, expectedMinValues[dim], 0) < 0) {
+            System.arraycopy(docValues[ord][dim], 0, expectedMinValues[dim], 0, numBytesPerDim);
+          }
+          if (StringHelper.compare(numBytesPerDim, docValues[ord][dim], 0, expectedMaxValues[dim], 0) > 0) {
+            System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
+          }
+        }
+      }
+    }
+
     // 20% of the time we add into a separate directory, then at some point use
     // addIndexes to bring the indexed dimensional values to the main directory:
     Directory saveDir;
@@ -1035,6 +1059,19 @@ public class TestDimensionalValues extends LuceneTestCase {
 
       NumericDocValues idValues = MultiDocValues.getNumericValues(r, "id");
       Bits liveDocs = MultiFields.getLiveDocs(r);
+
+      // Verify min/max values are correct:
+      byte[] minValues = dimValues.getMinPackedValue("field");
+      byte[] maxValues = dimValues.getMaxPackedValue("field");
+      byte[] scratch = new byte[numBytesPerDim];
+      for(int dim=0;dim<numDims;dim++) {
+        System.arraycopy(minValues, dim*numBytesPerDim, scratch, 0, scratch.length);
+        //System.out.println("dim=" + dim + " expectedMin=" + new BytesRef(expectedMinValues[dim]) + " min=" + new BytesRef(scratch));
+        assertTrue(Arrays.equals(expectedMinValues[dim], scratch));
+        System.arraycopy(maxValues, dim*numBytesPerDim, scratch, 0, scratch.length);
+        //System.out.println("dim=" + dim + " expectedMax=" + new BytesRef(expectedMaxValues[dim]) + " max=" + new BytesRef(scratch));
+        assertTrue(Arrays.equals(expectedMaxValues[dim], scratch));
+      }
 
       int iters = atLeast(100);
       for(int iter=0;iter<iters;iter++) {

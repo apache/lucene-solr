@@ -329,6 +329,58 @@ public class ParallelLeafReader extends LeafReader {
         }
         dimValues.intersect(fieldName, visitor);
       }
+
+      @Override
+      public byte[] getMinPackedValue(String fieldName) throws IOException {
+        LeafReader reader = fieldToReader.get(fieldName);
+        if (reader == null) {
+          return null;
+        }
+        DimensionalValues dimValues = reader.getDimensionalValues();
+        if (dimValues == null) {
+          return null;
+        }
+        return dimValues.getMinPackedValue(fieldName);
+      }
+
+      @Override
+      public byte[] getMaxPackedValue(String fieldName) throws IOException {
+        LeafReader reader = fieldToReader.get(fieldName);
+        if (reader == null) {
+          return null;
+        }
+        DimensionalValues dimValues = reader.getDimensionalValues();
+        if (dimValues == null) {
+          return null;
+        }
+        return dimValues.getMaxPackedValue(fieldName);
+      }
+
+      @Override
+      public int getNumDimensions(String fieldName) throws IOException {
+        LeafReader reader = fieldToReader.get(fieldName);
+        if (reader == null) {
+          return 0;
+        }
+        DimensionalValues dimValues = reader.getDimensionalValues();
+        if (dimValues == null) {
+          return 0;
+        }
+        return dimValues.getNumDimensions(fieldName);
+      }
+
+      @Override
+      public int getBytesPerDimension(String fieldName) throws IOException {
+        LeafReader reader = fieldToReader.get(fieldName);
+        if (reader == null) {
+          return 0;
+        }
+        DimensionalValues dimValues = reader.getDimensionalValues();
+        if (dimValues == null) {
+          return 0;
+        }
+        return dimValues.getBytesPerDimension(fieldName);
+      }
     };
   }
 

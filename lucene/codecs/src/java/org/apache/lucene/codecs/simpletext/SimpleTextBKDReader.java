@@ -33,8 +33,9 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.BL
 
 class SimpleTextBKDReader extends BKDReader {
 
-  public SimpleTextBKDReader(IndexInput datIn, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
-    super(datIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues);
+  public SimpleTextBKDReader(IndexInput datIn, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
+                             byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
+    super(datIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue);
   }
 
   @Override
