@@ -17,15 +17,11 @@ package org.apache.solr.client.solrj;
  * limitations under the License.
  */
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
@@ -37,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.IOUtils;
@@ -47,7 +42,6 @@ import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -328,7 +322,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     int port = jetty.getLocalPort();
 
     Socket socket = new Socket(hostName, port);
-    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+    PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
     // BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     InputStream in = socket.getInputStream();
 
