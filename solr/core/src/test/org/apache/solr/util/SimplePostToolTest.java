@@ -146,6 +146,8 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     assertEquals("application/msword", SimplePostTool.guessType(f));
     f = new File("foobar");
     assertEquals("application/octet-stream", SimplePostTool.guessType(f));
+    f = new File("foo.jsonl");
+    assertEquals("application/json", SimplePostTool.guessType(f));
   }
 
   @Test

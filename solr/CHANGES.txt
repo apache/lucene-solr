@@ -244,6 +244,9 @@ Upgrading from Solr 5.4
 * All protected methods from CoreAdminHandler other than handleCustomAction() is removed by SOLR-8476 and can
   no more be overridden. If you still wish to override those methods, override the handleRequestBody()
 
+* bin/post now defaults application/json files to the /update/json/docs end-point.  Use `-format solr` to force
+  files to the /update end-point.   See SOLR-7042 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -460,6 +463,9 @@ Other Changes
 
 * SOLR-8505: core/DirectoryFactory.LOCK_TYPE_HDFS - add & use it instead of String literals
   (Christine Poerschke)
+
+* SOLR-7042: bin/post now uses /update/json/docs for application/json content types, including support for
+  .jsonl (JSON Lines) files.  (Erik Hatcher and shalin)
 
 ==================  5.4.0 ==================
 
