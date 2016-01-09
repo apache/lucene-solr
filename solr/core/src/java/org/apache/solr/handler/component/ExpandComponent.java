@@ -741,7 +741,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               DocValuesType.NONE,
               fieldInfo.getDocValuesGen(),
               fieldInfo.attributes(),
-              0, 0);
+              fieldInfo.getDimensionCount(), 
+              fieldInfo.getDimensionNumBytes());
           newInfos.add(f);
 
         } else {

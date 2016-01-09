@@ -140,6 +140,10 @@ Bug Fixes
 
 * SOLR-8485: SelectStream now properly handles non-lowercase and/or quoted select field names (Dennis Gove)
 
+* SOLR-8525: Fix a few places that were failing to pass dimensional
+  values settings when copying a FieldInfo (Ishan Chattopadhyaya via
+  Mike McCandless)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
